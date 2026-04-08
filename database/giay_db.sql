@@ -653,4 +653,525 @@ CREATE INDEX ix_tt_hoa_don_id             ON thanh_toan(hoa_don_id);
 CREATE INDEX ix_pth_hoa_don_id            ON phieu_tra_hang(hoa_don_id);
 GO
 
+-- =============================================
+-- [01] nhan_vien
+-- =============================================
+INSERT INTO nhan_vien (ma, ho_ten, email, mat_khau, sdt, dia_chi, vai_tro, trang_thai)
+VALUES 
+('NV001', N'Nguyễn Văn An', 'an.nguyen@giay.com', 'hashedpass123', '0912345678', N'Hà Nội', 1, 1),   -- Admin
+('NV002', N'Trần Thị Bình', 'binh.tran@giay.com', 'hashedpass123', '0987654321', N'Hồ Chí Minh', 2, 1), -- Nhân viên
+('NV003', N'Lê Hoàng Cường', 'cuong.le@giay.com', 'hashedpass123', '0978123456', N'Đà Nẵng', 2, 1),    -- Nhân viên
+('NV004', N'Phạm Thị Dung', 'dung.pham@giay.com', 'hashedpass123', '0901234567', N'Hà Nội', 2, 1),     -- Nhân viên
+('NV005', N'Hoàng Minh Đức', 'duc.hoang@giay.com', 'hashedpass123', '0934567890', N'Hồ Chí Minh', 1, 1),-- Admin
+('NV006', N'Vũ Thị Hương', 'huong.vu@giay.com', 'hashedpass123', '0918765432', N'Cần Thơ', 2, 1),      -- Nhân viên
+('NV007', N'Đặng Văn Khải', 'khai.dang@giay.com', 'hashedpass123', '0945678901', N'Hà Nội', 2, 1);     -- Nhân viên
+GO
 
+-- =============================================
+-- [02] khach_hang
+-- =============================================
+INSERT INTO khach_hang (ten_dang_nhap, ho_ten, email, sdt, ngay_sinh, mat_khau, trang_thai)
+VALUES 
+('khach1', N'Nguyễn Thị Lan', 'lan.nguyen@gmail.com', '0911111111', '1995-03-15', 'pass123', 1),
+('khach2', N'Trần Văn Hải', 'hai.tran@yahoo.com', '0988888888', '1998-07-20', 'pass123', 1),
+('khach3', N'Lê Thị Mai', 'mai.le@hotmail.com', '0977777777', '2000-11-05', 'pass123', 1),
+('khach4', N'Phạm Minh Quân', 'quan.pham@gmail.com', '0909999999', '1997-01-30', 'pass123', 1),
+('khach5', N'Hoàng Thị Ngọc', 'ngoc.hoang@gmail.com', '0933333333', '1996-09-12', 'pass123', 1),
+('khach6', N'Vũ Văn Long', 'long.vu@yahoo.com', '0912222222', '1999-04-18', 'pass123', 1),
+('khach7', N'Đặng Thị Hạnh', 'hanh.dang@gmail.com', '0944444444', '2001-12-25', 'pass123', 1);
+GO
+
+-- =============================================
+-- [03] dia_chi_khach_hang
+-- =============================================
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai)
+SELECT id, ho_ten, sdt, N'Hà Nội', N'Hoàn Kiếm', N'Phường Hàng Đào', N'12 Hàng Đào', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach1'
+UNION ALL
+SELECT id, ho_ten, sdt, N'Hồ Chí Minh', N'Quận 1', N'Phường Bến Nghé', N'45 Nguyễn Huệ', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach2'
+UNION ALL
+SELECT id, ho_ten, sdt, N'Đà Nẵng', N'Hải Châu', N'Phường Hải Châu 1', N'78 Trần Phú', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach3'
+UNION ALL
+SELECT id, ho_ten, sdt, N'Hà Nội', N'Cầu Giấy', N'Phường Yên Hòa', N'123 Xuân Thủy', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach4'
+UNION ALL
+SELECT id, ho_ten, sdt, N'Hồ Chí Minh', N'Quận 7', N'Phường Tân Phong', N'67 Nguyễn Lương Bằng', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach5'
+UNION ALL
+SELECT id, ho_ten, sdt, N'Cần Thơ', N'Ninh Kiều', N'Phường An Bình', N'89 Võ Văn Tần', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach6'
+UNION ALL
+SELECT id, ho_ten, sdt, N'Hà Nội', N'Ba Đình', N'Phường Trúc Bạch', N'34 Trúc Bạch', 1, 1 FROM khach_hang WHERE ten_dang_nhap = 'khach7';
+GO
+
+-- =============================================
+-- [04] kich_co
+-- =============================================
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai)
+VALUES 
+('38', N'Size nữ nhỏ', 1),
+('39', N'Size nữ', 1),
+('40', N'Size unisex phổ biến', 1),
+('41', N'Size nam', 1),
+('42', N'Size nam', 1),
+('43', N'Size nam lớn', 1),
+('44', N'Size nam lớn', 1);
+GO
+
+-- =============================================
+-- [05] mau_sac
+-- =============================================
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai)
+VALUES 
+('MS001', N'Trắng', '#FFFFFF', 1),
+('MS002', N'Đen', '#000000', 1),
+('MS003', N'Xanh Navy', '#001F3F', 1),
+('MS004', N'Đỏ', '#FF0000', 1),
+('MS005', N'Xám', '#808080', 1),
+('MS006', N'Xanh Lá', '#00FF00', 1),
+('MS007', N'Hồng', '#FFC0CB', 1);
+GO
+
+-- =============================================
+-- [06] thuong_hieu 
+-- =============================================
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, logo_url, website, trang_thai)
+VALUES 
+('TH001', N'Nike', N'Mỹ', N'Thương hiệu giày thể thao hàng đầu thế giới', 'https://example.com/nike-logo.png', 'https://nike.com', 1),
+('TH002', N'Adidas', N'Đức', N'Performance và Originals', 'https://example.com/adidas-logo.png', 'https://adidas.com', 1),
+('TH003', N'New Balance', N'Mỹ', N'Chuyên giày chạy bộ và lifestyle', 'https://example.com/nb-logo.png', 'https://newbalance.com', 1),
+('TH004', N'Puma', N'Đức', N'Thể thao và thời trang', 'https://example.com/puma-logo.png', 'https://puma.com', 1),
+('TH005', N'Asics', N'Nhật Bản', N'Giày chạy bộ chuyên nghiệp', 'https://example.com/asics-logo.png', 'https://asics.com', 1),
+('TH006', N'Vans', N'Mỹ', N'Skate và casual', 'https://example.com/vans-logo.png', 'https://vans.com', 1),
+('TH007', N'Converse', N'Mỹ', N'All Star kinh điển', 'https://example.com/converse-logo.png', 'https://converse.com', 1);
+GO
+
+-- =============================================
+-- [07] loai_giay 
+-- =============================================
+INSERT INTO loai_giay (ma, ten, mo_ta, trang_thai)
+VALUES 
+('LG001', N'Running', N'Giày chạy bộ', 1),
+('LG002', N'Basketball', N'Giày bóng rổ', 1),
+('LG003', N'Lifestyle', N'Giày thời trang hàng ngày', 1),
+('LG004', N'Skateboarding', N'Giày trượt ván', 1),
+('LG005', N'Training', N'Giày tập gym', 1),
+('LG006', N'Casual', N'Giày đi chơi', 1),
+('LG007', N'Walking', N'Giày đi bộ', 1);
+GO
+
+-- =============================================
+-- [08] de_giay 
+-- =============================================
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai)
+VALUES 
+('DG001', N'Phylon', N'Đế nhẹ, đàn hồi tốt', 1),
+('DG002', N'Rubber', N'Đế cao su bền bỉ', 1),
+('DG003', N'EVA', N'Đế EVA nhẹ và êm', 1),
+('DG004', N'Boost', N'Đế Boost siêu đàn hồi', 1),
+('DG005', N'Zoom Air', N'Đế có túi khí', 1),
+('DG006', N'Gel', N'Đế Gel giảm chấn', 1),
+('DG007', N'FuelCell', N'Đế PEBA cao cấp', 1);
+GO
+
+-- =============================================
+-- [09] co_giay 
+-- =============================================
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai)
+VALUES 
+('CG001', N'Low', N'Cổ thấp', 1),
+('CG002', N'Mid', N'Cổ trung', 1),
+('CG003', N'High', N'Cổ cao', 1),
+('CG004', N'Slip-on', N'Không dây', 1),
+('CG005', N'Ankle', N'Cổ ngắn', 1),
+('CG006', N'Boot', N'Phong cách boot', 1),
+('CG007', N'Low-top', N'Cổ thấp thể thao', 1);
+GO
+
+-- =============================================
+-- [10] trong_luong 
+-- =============================================
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai)
+VALUES 
+('TL001', 280, N'Nhẹ cho chạy bộ', 1),
+('TL002', 320, N'Trung bình', 1),
+('TL003', 350, N'Bền bỉ', 1),
+('TL004', 400, N'Heavy duty', 1),
+('TL005', 250, N'Rất nhẹ', 1),
+('TL006', 300, N'Phổ biến', 1),
+('TL007', 270, N'Nhẹ cho nữ', 1);
+GO
+
+-- =============================================
+-- [11] cong_nghe_dem 
+-- =============================================
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai)
+VALUES 
+('CND001', N'Zoom Air', N'Túi khí Nike tăng độ bật', 1),
+('CND002', N'Boost', N'Đệm năng lượng Adidas', 1),
+('CND003', N'Fresh Foam', N'Đệm êm New Balance', 1),
+('CND004', N'Gel Cushioning', N'Giảm chấn Asics', 1),
+('CND005', N'React', N'Đệm phản hồi Nike', 1),
+('CND006', N'FuelCell', N'Đệm PEBA New Balance', 1),
+('CND007', N' EVA Foam', N'Đệm cơ bản nhẹ', 1);
+GO
+
+-- =============================================
+-- [12] dot_giam_gia 
+-- =============================================
+INSERT INTO dot_giam_gia (ma, ten, mo_ta, loai_giam, gia_tri_giam, ngay_bat_dau, ngay_ket_thuc, kich_hoat)
+VALUES 
+('DGG001', N'Giảm 20% Toàn Shop', N'Khuyến mãi lớn', 1, 20, '2026-04-01', '2026-04-30', 1),
+('DGG002', N'Giảm 500k Nike', N'Áp dụng cho Nike', 2, 500000, '2026-04-05', '2026-05-05', 1),
+('DGG003', N'Flash Sale 15%', N'Bán nhanh', 1, 15, '2026-04-08', '2026-04-10', 1),
+('DGG004', N'Giảm 300k Adidas', N'Chỉ Adidas', 2, 300000, '2026-03-01', '2026-06-01', 1),
+('DGG005', N'Miễn phí ship', N'Đơn trên 1 triệu', 2, 50000, NULL, NULL, 1),  -- giả sử số tiền
+('DGG006', N'Giảm 10% Thành Viên', N'Khách VIP', 1, 10, '2026-01-01', '2026-12-31', 1),
+('DGG007', N'Sale Cuối Tháng', N'Giảm 25%', 1, 25, '2026-04-25', '2026-04-30', 1);
+GO
+
+-- =============================================
+-- [13] giay 
+-- =============================================
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai)
+VALUES 
+('G001', N'Nike Air Force 1', 1, 3, 3, N'Da tổng hợp', N'Giày thể thao kinh điển', 1),
+('G002', N'Adidas Samba OG', 2, 3, 3, N'Da lộn + Cao su', N'Phong cách retro', 1),
+('G003', N'New Balance 530', 3, 1, 1, N'Mesh + Da', N'Giày chạy bộ hàng ngày', 1),
+('G004', N'Puma RS-X', 4, 5, 2, N'Mesh', N'Giày training', 1),
+('G005', N'Asics Gel-Kayano 30', 5, 1, 1, N'FlyteFoam', N'Giày chạy bộ hỗ trợ', 1),
+('G006', N'Vans Old Skool', 6, 4, 3, N'Canvas', N'Giày skate kinh điển', 1),
+('G007', N'Converse Chuck 70', 7, 3, 3, N'Canvas', N'All Star cao cấp', 1);
+GO
+
+-- =============================================
+-- [14] giay_thuoc_tinh 
+-- =============================================
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai)
+VALUES 
+(1, 5, 1, 2, 1, 1),   -- Nike AF1
+(2, 2, 1, 3, 2, 1),   -- Adidas Samba
+(3, 3, 1, 1, 3, 1),   -- NB 530
+(4, 1, 2, 4, 5, 1),   -- Puma
+(5, 6, 1, 2, 4, 1),   -- Asics
+(6, 2, 1, 5, 7, 1),   -- Vans
+(7, 2, 3, 3, 7, 1);   -- Converse
+GO
+
+-- =============================================
+-- [15] dot_giam_gia_san_pham 
+-- =============================================
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_id, trang_thai)
+VALUES 
+(1,1,1),(1,2,1),(2,1,1),(3,3,1),(4,2,1),(5,4,1),(6,5,1);
+GO
+
+-- =============================================
+-- [16] giay_chi_tiet 
+-- =============================================
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat)
+VALUES 
+(1, 'AF1-WH-40', 1, 4, 50, 2500000, 2290000, 'AF1WH40', 1),
+(2, 'SAM-BL-41', 2, 5, 30, 2300000, 1990000, 'SAMBL41', 1),
+(3, 'NB530-GR-42', 5, 6, 40, 2800000, 2590000, 'NB530GR42', 1),
+(4, 'RSX-PI-39', 7, 3, 25, 1800000, 1590000, 'RSXPI39', 1),
+(5, 'GEL-BL-43', 2, 7, 35, 4200000, 3890000, 'GELBL43', 1),
+(6, 'VANS-BK-40', 2, 4, 60, 1500000, 1390000, 'VANSBK40', 1),
+(7, 'CH70-WH-41', 1, 5, 45, 1700000, 1490000, 'CH70WH41', 1);
+GO
+
+-- =============================================
+-- [17] hinh_anh_giay
+-- =============================================
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, loai_hinh, url, mo_ta, la_hinh_chinh, trang_thai)
+VALUES 
+(1, 1, 'https://example.com/af1-white-main.jpg', N'Ảnh chính AF1 trắng', 1, 1),
+(2, 1, 'https://example.com/samba-black-main.jpg', N'Ảnh chính Samba đen', 1, 1),
+(3, 1, 'https://example.com/nb530-grey-main.jpg', N'Ảnh chính NB530 xám', 1, 1),
+(4, 1, 'https://example.com/rsx-pink-main.jpg', N'Ảnh chính RS-X hồng', 1, 1),
+(5, 1, 'https://example.com/gel-kayano-black-main.jpg', N'Ảnh chính Gel Kayano đen', 1, 1),
+(6, 1, 'https://example.com/vans-black-main.jpg', N'Ảnh chính Vans đen', 1, 1),
+(7, 1, 'https://example.com/chuck70-white-main.jpg', N'Ảnh chính Chuck 70 trắng', 1, 1);
+GO
+
+-- =============================================
+-- [18] phieu_giam_gia
+-- =============================================
+INSERT INTO phieu_giam_gia (ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, ngay_bat_dau, ngay_ket_thuc, so_luong, trang_thai)
+VALUES 
+('PGG001', N'Giảm 10% đơn đầu', 1, 10, 500000, 300000, '2026-04-01', '2026-06-01', 100, 1),
+('PGG002', N'Giảm 200k', 2, 200000, 1000000, NULL, '2026-04-01', '2026-04-30', 50, 1),
+('PGG003', N'Miễn phí ship', 3, 0, 800000, NULL, '2026-01-01', '2026-12-31', 200, 1),
+('PGG004', N'Giảm 15%', 1, 15, 1500000, 500000, '2026-03-15', '2026-05-15', 80, 1),
+('PGG005', N'Giảm 150k', 2, 150000, 500000, NULL, NULL, NULL, 30, 1),
+('PGG006', N'Giảm 20% cho thành viên', 1, 20, 2000000, 600000, '2026-04-01', '2026-04-15', 40, 1),
+('PGG007', N'Giảm 300k Black Friday', 2, 300000, 2500000, NULL, '2026-11-20', '2026-11-30', 25, 1);
+GO
+
+-- =============================================
+-- [19] phieu_giam_gia_khach_hang
+-- =============================================
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai)
+SELECT 1, id, 1 FROM khach_hang WHERE ten_dang_nhap IN ('khach1','khach2','khach3')
+UNION ALL
+SELECT 2, id, 1 FROM khach_hang WHERE ten_dang_nhap IN ('khach4','khach5')
+UNION ALL
+SELECT 3, id, 1 FROM khach_hang WHERE ten_dang_nhap IN ('khach6','khach7');
+GO
+
+-- =============================================
+-- [20..25] Các bảng nghiệp vụ 
+-- =============================================
+-- Hoa don 
+INSERT INTO hoa_don (ma, kenh_ban, khach_hang_id, nhan_vien_id, phieu_giam_gia_id, ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_hang, trang_thai, tong_tien_hang, tien_giam, tong_tien_thanh_toan)
+VALUES 
+('HD001', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach1'), (SELECT id FROM nhan_vien WHERE ma='NV002'), 1, N'Nguyễn Thị Lan', '0911111111', N'12 Hàng Đào, Hà Nội', 4, 4500000, 450000, 4050000),
+('HD002', 1, NULL, (SELECT id FROM nhan_vien WHERE ma='NV001'), NULL, N'Trần Văn Hải', '0988888888', N'45 Nguyễn Huệ, HCM', 2, 3200000, 0, 3200000),
+('HD003', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach3'), (SELECT id FROM nhan_vien WHERE ma='NV003'), 2, N'Lê Thị Mai', '0977777777', N'78 Trần Phú, Đà Nẵng', 3, 2800000, 200000, 2600000),
+('HD004', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach4'), NULL, NULL, N'Phạm Minh Quân', '0909999999', N'123 Xuân Thủy, Hà Nội', 4, 5500000, 0, 5500000),
+('HD005', 1, NULL, (SELECT id FROM nhan_vien WHERE ma='NV002'), 3, N'Hoàng Thị Ngọc', '0933333333', N'67 Nguyễn Lương Bằng, HCM', 2, 1800000, 0, 1800000),
+('HD006', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach6'), (SELECT id FROM nhan_vien WHERE ma='NV005'), NULL, N'Vũ Văn Long', '0912222222', N'89 Võ Văn Tần, Cần Thơ', 1, 3900000, 0, 3900000),
+('HD007', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach7'), NULL, 4, N'Đặng Thị Hạnh', '0944444444', N'34 Trúc Bạch, Hà Nội', 4, 6200000, 930000, 5270000);
+GO
+-- =============================================
+-- [21] hoa_don_chi_tiet
+-- =============================================
+INSERT INTO hoa_don_chi_tiet (hoa_don_id, giay_chi_tiet_id, so_luong, gia_don_vi, thanh_tien, trang_thai)
+VALUES 
+(1, 1, 1, 2290000, 2290000, 1),   -- HD001 mua AF1 trắng size 40
+(1, 6, 1, 1390000, 1390000, 1),   -- + Vans đen
+(2, 2, 2, 1990000, 3980000, 1),   -- HD002 mua 2 đôi Samba
+(3, 3, 1, 2590000, 2590000, 1),   -- HD003 mua NB530
+(4, 5, 1, 3890000, 3890000, 1),   -- HD004 mua Asics Gel
+(5, 4, 1, 1590000, 1590000, 1),   -- HD005 mua Puma RS-X
+(6, 7, 2, 1490000, 2980000, 1),   -- HD006 mua 2 đôi Converse
+(7, 1, 1, 2290000, 2290000, 1);   -- HD007 mua AF1
+GO
+
+-- =============================================
+-- [22] van_chuyen
+-- =============================================
+INSERT INTO van_chuyen (hoa_don_id, don_vi_van_chuyen, ma_van_don, phi_van_chuyen, ngay_gui, ngay_du_kien, ngay_giao_that, trang_thai, ghi_chu)
+VALUES 
+(1, N'Giao Hàng Nhanh (GHN)', 'GHN123456789', 35000, '2026-04-02', '2026-04-05', '2026-04-04', 3, N'Giao thành công'),
+(2, N'GHTK', 'GHTK987654', 0, '2026-04-03', '2026-04-04', NULL, 1, N'Đang chuẩn bị lấy hàng'),
+(3, N'Viettel Post', 'VT123987', 30000, '2026-04-01', '2026-04-06', '2026-04-05', 3, N'Đã giao'),
+(4, N'J&T Express', 'JT456789', 25000, '2026-04-04', '2026-04-07', NULL, 2, N'Đang vận chuyển'),
+(5, N'Giao Hàng Nhanh (GHN)', 'GHN111222', 0, '2026-04-05', '2026-04-06', '2026-04-06', 3, N'Giao tại quầy'),
+(6, N'GHN', 'GHN333444', 40000, '2026-04-06', '2026-04-09', NULL, 2, N'Đang giao'),
+(7, N'Viettel Post', 'VT555666', 30000, '2026-04-02', '2026-04-05', '2026-04-04', 3, N'Hoàn thành');
+GO
+
+-- =============================================
+-- [23] thanh_toan
+-- =============================================
+INSERT INTO thanh_toan (hoa_don_id, nhan_vien_id, ma_giao_dich, hinh_thuc, so_tien, tien_thoi_lai, ngan_hang, noi_dung_ck, cong_thanh_toan, ngay_thanh_toan, trang_thai, ghi_chu)
+VALUES 
+(1, (SELECT id FROM nhan_vien WHERE ma='NV002'), 'MOMO-20260402-001', 2, 4050000, 0, NULL, NULL, N'Momo', '2026-04-02 14:30:00', 1, N'Thanh toán online'),
+(2, (SELECT id FROM nhan_vien WHERE ma='NV001'), NULL, 1, 3200000, 0, NULL, NULL, NULL, '2026-04-03 10:15:00', 1, N'Tiền mặt tại quầy'),
+(3, (SELECT id FROM nhan_vien WHERE ma='NV003'), 'VNPAY-20260401-003', 2, 2600000, 0, NULL, NULL, N'VNPay', '2026-04-01 16:45:00', 1, NULL),
+(4, NULL, 'BANK-20260404-004', 2, 5500000, 0, N'Vietcombank', N'HD004 - Nguyen Minh Quan', NULL, '2026-04-04 09:20:00', 1, N'Chuyển khoản'),
+(5, (SELECT id FROM nhan_vien WHERE ma='NV002'), NULL, 1, 1800000, 200000, NULL, NULL, NULL, '2026-04-05 11:00:00', 1, N'Tiền mặt, trả lại 200k'),
+(6, NULL, 'ZALOPAY-20260406-006', 3, 3900000, 0, NULL, NULL, N'ZaloPay', '2026-04-06 20:10:00', 1, NULL),
+(7, (SELECT id FROM nhan_vien WHERE ma='NV005'), 'BANK-20260402-007', 2, 5270000, 0, N'Techcombank', N'Thanh toán HD007', NULL, '2026-04-02 15:55:00', 1, NULL);
+GO
+
+-- =============================================
+-- [24] phieu_tra_hang   (ĐÃ SỬA)
+-- =============================================
+INSERT INTO phieu_tra_hang (ma, hoa_don_id, khach_hang_id, nhan_vien_id, ly_do, tong_tien_hoan, hinh_thuc_hoan, trang_thai)
+VALUES 
+('PTH001', 1, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach1'), (SELECT id FROM nhan_vien WHERE ma='NV004'), N'Sản phẩm bị lỗi size', 2290000, 2, 2),
+('PTH002', 3, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach3'), (SELECT id FROM nhan_vien WHERE ma='NV003'), N'Đổi màu khác', 2590000, 1, 1),
+('PTH003', 4, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach4'), NULL, N'Không vừa chân', 3890000, 2, 3),
+('PTH004', 5, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach5'), (SELECT id FROM nhan_vien WHERE ma='NV002'), N'Hàng lỗi nhỏ', 1590000, 3, 2),
+('PTH005', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach2'), (SELECT id FROM nhan_vien WHERE ma='NV001'), N'Khách đổi ý', 1990000, 1, 1),   -- SỬA: Dùng khach2 thay vì NULL
+('PTH006', 7, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach7'), (SELECT id FROM nhan_vien WHERE ma='NV005'), N'Sai mẫu', 2290000, 2, 2),
+('PTH007', 6, (SELECT id FROM khach_hang WHERE ten_dang_nhap='khach6'), NULL, N'Đổi size lớn hơn', 1490000, 1, 1);
+GO
+
+-- =============================================
+-- [25] phieu_tra_hang_chi_tiet   (ĐÃ SỬA)
+-- =============================================
+INSERT INTO phieu_tra_hang_chi_tiet (phieu_tra_hang_id, hoa_don_chi_tiet_id, giay_chi_tiet_id, so_luong_tra, gia_ban, thanh_tien, trang_thai, ghi_chu)
+VALUES 
+(1, 1, 1, 1, 2290000, 2290000, 1, N'Trả toàn bộ'),
+(2, 4, 3, 1, 2590000, 2590000, 1, NULL),
+(3, 5, 5, 1, 3890000, 3890000, 1, N'Từ chối trả'),
+(4, 6, 4, 1, 1590000, 1590000, 1, N'Hoàn tiền thành công'),
+(5, 3, 2, 1, 1990000, 1990000, 1, N'Đổi ý'),
+(6, 8, 1, 1, 2290000, 2290000, 1, NULL),
+(7, 7, 7, 1, 1490000, 1490000, 1, N'Đổi size');
+GO
+USE giay;
+GO
+
+-- [01] nhan_vien
+SELECT 
+    id, ma, ho_ten, email, mat_khau, sdt, dia_chi, 
+    vai_tro, trang_thai, ngay_tao, ngay_cap_nhat
+FROM nhan_vien;
+GO
+
+-- [02] khach_hang
+SELECT 
+    id, ten_dang_nhap, ho_ten, email, sdt, ngay_sinh, 
+    mat_khau, trang_thai, ngay_tao, ngay_cap_nhat
+FROM khach_hang;
+GO
+
+-- [03] dia_chi_khach_hang
+SELECT 
+    id, khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, 
+    phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, 
+    ngay_tao, ngay_cap_nhat
+FROM dia_chi_khach_hang;
+GO
+
+-- [04] kich_co
+SELECT 
+    id, gia_tri, ghi_chu, trang_thai, ngay_tao, ngay_cap_nhat
+FROM kich_co;
+GO
+
+-- [05] mau_sac
+SELECT 
+    id, ma, ten, ma_mau_hex, trang_thai, ngay_tao, ngay_cap_nhat
+FROM mau_sac;
+GO
+
+-- [06] thuong_hieu
+SELECT 
+    id, ma, ten, xuat_xu, mo_ta, logo_url, website, 
+    trang_thai, ngay_tao, ngay_cap_nhat
+FROM thuong_hieu;
+GO
+
+-- [07] loai_giay
+SELECT 
+    id, ma, ten, mo_ta, trang_thai, ngay_tao, ngay_cap_nhat
+FROM loai_giay;
+GO
+
+-- [08] de_giay
+SELECT 
+    id, ma, ten, mo_ta, trang_thai, ngay_tao, ngay_cap_nhat
+FROM de_giay;
+GO
+
+-- [09] co_giay
+SELECT 
+    id, ma, ten, mo_ta, trang_thai, ngay_tao, ngay_cap_nhat
+FROM co_giay;
+GO
+
+-- [10] trong_luong
+SELECT 
+    id, ma, gia_tri, mo_ta, trang_thai, ngay_tao, ngay_cap_nhat
+FROM trong_luong;
+GO
+
+-- [11] cong_nghe_dem
+SELECT 
+    id, ma, ten, mo_ta, trang_thai, ngay_tao, ngay_cap_nhat
+FROM cong_nghe_dem;
+GO
+
+-- [12] dot_giam_gia
+SELECT 
+    id, ma, ten, mo_ta, loai_giam, gia_tri_giam, 
+    ngay_bat_dau, ngay_ket_thuc, kich_hoat, ngay_tao, ngay_cap_nhat
+FROM dot_giam_gia;
+GO
+
+-- [13] giay
+SELECT 
+    id, ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, 
+    chat_lieu, mo_ta, trang_thai, ngay_tao, ngay_cap_nhat
+FROM giay;
+GO
+
+-- [14] giay_thuoc_tinh
+SELECT 
+    id, giay_id, de_giay_id, co_giay_id, trong_luong_id, 
+    cong_nghe_dem_id, trang_thai, ngay_tao, ngay_cap_nhat
+FROM giay_thuoc_tinh;
+GO
+
+-- [15] dot_giam_gia_san_pham
+SELECT 
+    id, dot_giam_gia_id, giay_id, trang_thai, ngay_tao
+FROM dot_giam_gia_san_pham;
+GO
+
+-- [16] giay_chi_tiet
+SELECT 
+    id, giay_id, ma_bien_the, mau_sac_id, kich_co_id, 
+    so_luong, gia_goc, gia_ban, sku, kich_hoat, 
+    ngay_tao, ngay_cap_nhat
+FROM giay_chi_tiet;
+GO
+
+-- [17] hinh_anh_giay
+SELECT 
+    id, giay_chi_tiet_id, loai_hinh, url, mo_ta, 
+    la_hinh_chinh, trang_thai, ngay_tao, ngay_cap_nhat
+FROM hinh_anh_giay;
+GO
+
+-- [18] phieu_giam_gia
+SELECT 
+    id, ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, 
+    ngay_bat_dau, ngay_ket_thuc, so_luong, so_luong_da_dung, 
+    trang_thai, ngay_tao, ngay_cap_nhat
+FROM phieu_giam_gia;
+GO
+
+-- [19] phieu_giam_gia_khach_hang
+SELECT 
+    id, phieu_giam_gia_id, khach_hang_id, ngay_su_dung, 
+    trang_thai, ngay_tao
+FROM phieu_giam_gia_khach_hang;
+GO
+
+-- [20] hoa_don
+SELECT 
+    id, ma, kenh_ban, khach_hang_id, nhan_vien_id, phieu_giam_gia_id,
+    ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_hang, ngay_lap, 
+    ngay_thanh_toan, trang_thai, tong_tien_hang, tien_giam, 
+    tong_tien_thanh_toan, ghi_chu, ngay_tao, ngay_cap_nhat
+FROM hoa_don;
+GO
+
+-- [21] hoa_don_chi_tiet
+SELECT 
+    id, hoa_don_id, giay_chi_tiet_id, so_luong, gia_don_vi, 
+    thanh_tien, trang_thai, ngay_tao
+FROM hoa_don_chi_tiet;
+GO
+
+-- [22] van_chuyen
+SELECT 
+    id, hoa_don_id, don_vi_van_chuyen, ma_van_don, phi_van_chuyen,
+    ngay_gui, ngay_du_kien, ngay_giao_that, trang_thai, ghi_chu, 
+    ngay_tao, ngay_cap_nhat
+FROM van_chuyen;
+GO
+
+-- [23] thanh_toan
+SELECT 
+    id, hoa_don_id, nhan_vien_id, ma_giao_dich, hinh_thuc, so_tien, 
+    tien_thoi_lai, ngan_hang, noi_dung_ck, cong_thanh_toan, 
+    ngay_thanh_toan, trang_thai, ghi_chu, ngay_tao
+FROM thanh_toan;
+GO
+
+-- [24] phieu_tra_hang
+SELECT 
+    id, ma, hoa_don_id, khach_hang_id, nhan_vien_id, ly_do, 
+    tong_tien_hoan, hinh_thuc_hoan, trang_thai, ngay_tao, ngay_cap_nhat
+FROM phieu_tra_hang;
+GO
+
+-- [25] phieu_tra_hang_chi_tiet
+SELECT 
+    id, phieu_tra_hang_id, hoa_don_chi_tiet_id, giay_chi_tiet_id, 
+    so_luong_tra, gia_ban, thanh_tien, trang_thai, ghi_chu, ngay_tao
+FROM phieu_tra_hang_chi_tiet;
+GO
