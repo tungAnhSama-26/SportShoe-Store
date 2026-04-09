@@ -4,20 +4,7 @@ import { Calendar, Edit, Eye, Filter, Plus, RotateCcw, Search, Trash2 } from 'lu
 import AppPagination from '../../../components/common/AppPagination.vue';
 import { usePagination } from '../../../composable/usePagination';
 
-const coupons = [
-  { id: 1, code: 'V01', name: 'Giảm 10%', type: 'Phần trăm', value: '10%', startDate: '2026-03-01', endDate: '2026-12-31', quantity: 100, status: 'Đang áp dụng' },
-  { id: 2, code: 'V02', name: 'Giảm 20%', type: 'Phần trăm', value: '20%', startDate: '2026-03-01', endDate: '2026-12-31', quantity: 100, status: 'Đang áp dụng' },
-  { id: 3, code: 'V03', name: 'Giảm 30.000', type: 'Tiền cố định', value: '30.000', startDate: '2025-03-01', endDate: '2025-12-31', quantity: 100, status: 'Hết hạn' },
-  { id: 4, code: 'V04', name: 'Giảm 50.000', type: 'Tiền cố định', value: '50.000', startDate: '2026-03-01', endDate: '2026-12-31', quantity: 0, status: 'Hết số lượng' },
-  { id: 5, code: 'V05', name: 'Miễn phí vận chuyển', type: 'Vận chuyển', value: '0', startDate: '2027-03-01', endDate: '2027-12-31', quantity: 100, status: 'Chưa áp dụng' },
-  { id: 6, code: 'V06', name: 'Giảm 15%', type: 'Phần trăm', value: '15%', startDate: '2026-04-01', endDate: '2026-10-31', quantity: 250, status: 'Đang áp dụng' },
-  { id: 7, code: 'V07', name: 'Giảm 70.000', type: 'Tiền cố định', value: '70.000', startDate: '2026-06-01', endDate: '2026-08-31', quantity: 40, status: 'Chưa áp dụng' },
-  { id: 8, code: 'V08', name: 'Giảm 5%', type: 'Phần trăm', value: '5%', startDate: '2026-02-15', endDate: '2026-06-30', quantity: 500, status: 'Đang áp dụng' },
-  { id: 9, code: 'V09', name: 'Giảm 100.000', type: 'Tiền cố định', value: '100.000', startDate: '2025-11-01', endDate: '2025-12-15', quantity: 20, status: 'Hết hạn' },
-  { id: 10, code: 'V10', name: 'Giảm 25%', type: 'Phần trăm', value: '25%', startDate: '2026-07-01', endDate: '2026-12-31', quantity: 60, status: 'Chưa áp dụng' },
-  { id: 11, code: 'V11', name: 'Giảm 40.000', type: 'Tiền cố định', value: '40.000', startDate: '2026-01-01', endDate: '2026-05-31', quantity: 90, status: 'Đang áp dụng' },
-  { id: 12, code: 'V12', name: 'Freeship nội thành', type: 'Vận chuyển', value: '0', startDate: '2026-05-01', endDate: '2026-09-30', quantity: 150, status: 'Chưa áp dụng' },
-];
+const coupons = [];
 
 const getStatusClass = (status: string) => {
   if (status === 'Đang áp dụng') return 'bg-[#10b981] text-white';

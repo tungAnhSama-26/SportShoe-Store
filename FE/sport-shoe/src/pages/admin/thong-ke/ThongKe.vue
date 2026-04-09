@@ -26,13 +26,13 @@ ChartJS.register(
 )
 
 const lineChartData = {
-  labels: ['1/01', '1/02', '1/03', '1/04', '1/05', '1/06', '1/07', '1/08', '1/09', '1/10', '1/11', '1/12', '21/12'],
+  labels: [],
   datasets: [
     {
       label: 'Doanh thu',
       backgroundColor: '#f87171',
       borderColor: '#8b5cf6',
-      data: [100, 80, 90, 250, 100, 380, 270, 260, 230, 260, 210, 350, 480],
+      data: [],
       tension: 0.4,
       pointBackgroundColor: '#ffffff',
       pointBorderColor: '#8b5cf6',
@@ -66,11 +66,11 @@ const lineChartOptions = {
 }
 
 const pieChartData = {
-  labels: ['Nike', 'Adidas', 'Jordan', 'New Balance', 'On', 'Puma', 'Asics', 'Reebok', 'Vans', 'Converse', 'Skechers', 'Celine'],
+  labels: [],
   datasets: [
     {
       backgroundColor: ['#6366f1', '#a855f7', '#fb923c', '#eab308', '#22d3ee', '#3b82f6', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#0ea5e9', '#64748b'],
-      data: [15, 12, 10, 9, 8, 7, 6, 5, 5, 4, 3, 2],
+      data: [],
       borderWidth: 0
     }
   ]
@@ -93,11 +93,7 @@ const pieChartOptions = {
   }
 }
 
-const products = [
-  { rank: 1, name: 'Nike Air Force', sold: 120, revenue: '144,000,000đ', stock: 35 },
-  { rank: 2, name: 'Adidas Ultraboost 22', sold: 85, revenue: '127,500,000đ', stock: 20 },
-  { rank: 3, name: 'Nike Air Force', sold: 120, revenue: '54,000,000đ', stock: 50 },
-]
+const products = []
 
 </script>
 
