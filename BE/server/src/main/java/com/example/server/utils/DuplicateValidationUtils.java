@@ -1,6 +1,7 @@
 package com.example.server.utils;
 
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.exception.ErrorCode;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
@@ -12,7 +13,7 @@ public final class DuplicateValidationUtils {
 
     public static void validateUniqueText(String value, boolean exists, String fieldLabel) {
         if (TextUtils.hasText(value) && exists) {
-            throw new BusinessException(fieldLabel + " đã tồn tại");
+            throw new BusinessException(ErrorCode.DUPLICATE_DATA, fieldLabel);
         }
     }
 
@@ -30,7 +31,7 @@ public final class DuplicateValidationUtils {
                 .anyMatch(normalizedCandidate::equals);
 
         if (duplicated) {
-            throw new BusinessException(fieldLabel + " đã tồn tại");
+            throw new BusinessException(ErrorCode.DUPLICATE_DATA, fieldLabel);
         }
     }
 
@@ -51,7 +52,7 @@ public final class DuplicateValidationUtils {
                 .anyMatch(normalizedCandidate::equals);
 
         if (duplicated) {
-            throw new BusinessException(fieldLabel + " đã tồn tại");
+            throw new BusinessException(ErrorCode.DUPLICATE_DATA, fieldLabel);
         }
     }
 }

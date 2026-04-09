@@ -31,16 +31,16 @@ import {
 const route = useRoute();
 const isActive = (path: string) => route.path.startsWith(path);
 
-const checkSanPhamActive = (newPath: string) => {
-  const routes = ['/admin/san-pham', '/admin/loai-giay', '/admin/co-giay', '/admin/de-giay', '/admin/thuong-hieu', '/admin/cong-nghe-dem', '/admin/mau-sac', '/admin/kich-co', '/admin/trong-luong'];
+const checkDanhMucActive = (newPath: string) => {
+  const routes = ['/admin/loai-giay', '/admin/co-giay', '/admin/de-giay', '/admin/thuong-hieu', '/admin/cong-nghe-dem', '/admin/mau-sac', '/admin/kich-co', '/admin/trong-luong'];
   return routes.some(r => newPath.startsWith(r));
 };
 
-const openSanPham = ref(checkSanPhamActive(route.path));
+const openDanhMuc = ref(checkDanhMucActive(route.path));
 const openKhuyenMai = ref(isActive('/admin/phieu-giam-gia') || isActive('/admin/dot-giam-gia'));
 
 watch(() => route.path, (newPath) => {
-  if (checkSanPhamActive(newPath)) openSanPham.value = true;
+  if (checkDanhMucActive(newPath)) openDanhMuc.value = true;
   if (newPath.startsWith('/admin/phieu-giam-gia') || newPath.startsWith('/admin/dot-giam-gia')) {
     openKhuyenMai.value = true;
   }
@@ -49,7 +49,7 @@ watch(() => route.path, (newPath) => {
 
 <template>
   <aside 
-    class="w-[260px] bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col h-screen fixed lg:sticky top-0 z-50 shrink-0 transition-all duration-300 ease-in-out"
+    class="w-[260px] bg-white dark:bg-slate-700 border-r border-gray-100 dark:border-slate-600/50 flex flex-col h-screen fixed lg:sticky top-0 z-50 shrink-0 transition-all duration-300 ease-in-out"
     :class="[isSidebarOpen ? 'translate-x-0 ml-0' : '-translate-x-full lg:ml-[-260px]']"
   >
     <div class="px-6 flex flex-col items-center mt-6 mb-2 relative">
@@ -81,21 +81,22 @@ watch(() => route.path, (newPath) => {
         <span class="text-sm">Bán hàng tại quầy</span>
       </router-link>
 
+      <router-link to="/admin/san-pham" class="flex items-center px-4 py-3 rounded-xl transition-colors group" :class="isActive('/admin/san-pham') ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+        <Package class="w-5 h-5 mr-3" :class="isActive('/admin/san-pham') ? 'text-red-500' : 'text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300'" />
+        <span class="text-sm">Quản lý sản phẩm</span>
+      </router-link>
+
       <div class="space-y-1">
-        <button @click="openSanPham = !openSanPham" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors group" :class="(checkSanPhamActive(route.path) || openSanPham) ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+        <button @click="openDanhMuc = !openDanhMuc" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors group" :class="(checkDanhMucActive(route.path) || openDanhMuc) ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
           <div class="flex items-center">
-            <Package class="w-5 h-5 mr-3" :class="(checkSanPhamActive(route.path) || openSanPham) ? 'text-red-500' : 'text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300'" />
-            <span class="text-sm font-medium">Quản lý sản phẩm</span>
+            <Layers class="w-5 h-5 mr-3" :class="(checkDanhMucActive(route.path) || openDanhMuc) ? 'text-red-500' : 'text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300'" />
+            <span class="text-sm font-medium">Quản lý danh mục</span>
           </div>
-          <ChevronDown class="w-4 h-4 transition-transform duration-200" :class="[openSanPham ? 'rotate-180 text-red-500' : 'text-gray-400']"/>
+          <ChevronDown class="w-4 h-4 transition-transform duration-200" :class="[openDanhMuc ? 'rotate-180 text-red-500' : 'text-gray-400']"/>
         </button>
-        <div class="pl-[36px] pr-4 space-y-1 overflow-hidden transition-all duration-300" v-show="openSanPham">
-          <router-link to="/admin/san-pham" class="flex items-center px-4 py-2.5 rounded-xl text-[13px] font-medium transition-colors border border-transparent" :class="isActive('/admin/san-pham') ? 'bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'">
-            <Box class="w-[18px] h-[18px] mr-3" :class="isActive('/admin/san-pham') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            Sản phẩm
-          </router-link>
+        <div class="pl-[36px] pr-4 space-y-1 overflow-hidden transition-all duration-300" v-show="openDanhMuc">
           <router-link to="/admin/loai-giay" class="flex items-center px-4 py-2.5 rounded-xl text-[13px] font-medium transition-colors border border-transparent" :class="isActive('/admin/loai-giay') ? 'bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'">
-            <Layers class="w-4 h-4 mr-3" :class="isActive('/admin/loai-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <Box class="w-4 h-4 mr-3" :class="isActive('/admin/loai-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
             Loại giày
           </router-link>
           <router-link to="/admin/thuong-hieu" class="flex items-center px-4 py-2.5 rounded-xl text-[13px] font-medium transition-colors border border-transparent" :class="isActive('/admin/thuong-hieu') ? 'bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'">

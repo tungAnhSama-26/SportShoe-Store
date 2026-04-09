@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Calendar, Edit, Eye, Filter, Plus, RotateCcw, Search, Trash2 } from 'lucide-vue-next';
-import AppPagination from '../../components/common/AppPagination.vue';
-import { usePagination } from '../../composable/usePagination';
+import AppPagination from '../../../components/common/AppPagination.vue';
+import { usePagination } from '../../../composable/usePagination';
 
 const coupons = [
   { id: 1, code: 'V01', name: 'Giảm 10%', type: 'Phần trăm', value: '10%', startDate: '2026-03-01', endDate: '2026-12-31', quantity: 100, status: 'Đang áp dụng' },

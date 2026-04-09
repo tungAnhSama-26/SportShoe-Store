@@ -7,7 +7,7 @@ const { isDark, toggleDark } = useDarkMode();
 </script>
 
 <template>
-  <header class="h-20 bg-white dark:bg-gray-800 mx-4 mt-4 lg:ml-6 lg:mr-6 lg:mt-6 rounded-[20px] flex items-center justify-between px-4 lg:px-8 shadow-[0_2px_10px_rgba(0,0,0,0.02)] shrink-0 transition-all duration-300">
+  <header class="h-20 bg-white dark:bg-slate-700 mx-4 mt-4 lg:ml-6 lg:mr-6 lg:mt-6 rounded-[20px] flex items-center justify-between px-4 lg:px-8 shadow-[0_2px_10px_rgba(0,0,0,0.02)] shrink-0 transition-all duration-300">
     <button @click="isSidebarOpen = !isSidebarOpen" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl transition-colors shrink-0">
       <Menu class="w-6 h-6" />
     </button>

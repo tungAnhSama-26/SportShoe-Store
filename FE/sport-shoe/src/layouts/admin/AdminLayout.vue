@@ -5,7 +5,7 @@ import { isSidebarOpen } from '../../composable/useSidebar';
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8f9fa] dark:bg-gray-900 flex font-sans text-gray-800 dark:text-gray-100 relative transition-colors duration-300">
+  <div class="min-h-screen bg-[#f8f9fa] dark:bg-slate-800 flex font-sans text-gray-800 dark:text-slate-100 relative transition-colors duration-300">
     <!-- Mobile overlay -->
     <div 
       v-show="isSidebarOpen" 
