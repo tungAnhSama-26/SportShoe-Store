@@ -2,11 +2,8 @@ package com.example.server.utils;
 
 import com.example.server.entity.Giay;
 import com.example.server.entity.GiayChiTiet;
-import com.example.server.entity.enums.Gender;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Subquery;
 import java.math.BigDecimal;
-import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
 
 public final class GiaySpecifications {
@@ -14,69 +11,59 @@ public final class GiaySpecifications {
     private GiaySpecifications() {
     }
 
-    public static Specification<Giay> activeCatalog(
+    public static Specification<Giay> filter(
             String keyword,
-            UUID brandId,
-            UUID categoryId,
-            UUID materialId,
-            Gender gender,
+            Integer gioiTinh,
+            Integer trangThai,
             BigDecimal minPrice,
             BigDecimal maxPrice
     ) {
-        return Specification.allOf(
-                notDeleted(),
-                keywordContains(keyword),
-                hasBrand(brandId),
-                hasCategory(categoryId),
-                hasMaterial(materialId),
-                hasGender(gender),
-                priceFrom(minPrice),
-                priceTo(maxPrice)
-        );
+        return Specification.where(keywordContains(keyword))
+                .and(hasGender(gioiTinh))
+                .and(hasStatus(trangThai))
+                .and(priceFrom(minPrice))
+                .and(priceTo(maxPrice));
     }
 
-    private static Specification<Giay> notDeleted() {
-        return (root, query, cb) -> cb.isFalse(root.get("deleted"));
+    public static Specification<Giay> activeProducts() {
+        return hasStatus(1);
     }
 
     private static Specification<Giay> keywordContains(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
+        if (!SpecificationUtils.hasText(keyword)) {
             return null;
         }
-        String normalized = "%" + keyword.trim().toLowerCase() + "%";
+
+        String normalized = SpecificationUtils.containsPattern(keyword);
         return (root, query, cb) -> cb.or(
-                cb.like(cb.lower(root.get("name")), normalized),
-                cb.like(cb.lower(root.get("code")), normalized)
+                cb.like(cb.lower(root.get("ma")), normalized),
+                cb.like(cb.lower(root.get("ten")), normalized),
+                cb.like(cb.lower(cb.coalesce(root.get("chatLieu"), "")), normalized)
         );
     }
 
-    private static Specification<Giay> hasBrand(UUID brandId) {
-        return brandId == null ? null : (root, query, cb) -> cb.equal(root.join("thuongHieu").get("id"), brandId);
+    private static Specification<Giay> hasGender(Integer gioiTinh) {
+        return gioiTinh == null ? null : (root, query, cb) -> cb.equal(root.get("gioiTinh"), gioiTinh);
     }
 
-    private static Specification<Giay> hasCategory(UUID categoryId) {
-        return categoryId == null ? null : (root, query, cb) -> cb.equal(root.join("loaiGiay", JoinType.LEFT).get("id"), categoryId);
-    }
-
-    private static Specification<Giay> hasMaterial(UUID materialId) {
-        return materialId == null ? null : (root, query, cb) -> cb.equal(root.join("chatLieu", JoinType.LEFT).get("id"), materialId);
-    }
-
-    private static Specification<Giay> hasGender(Gender gender) {
-        return gender == null ? null : (root, query, cb) -> cb.equal(root.get("gender"), gender);
+    private static Specification<Giay> hasStatus(Integer trangThai) {
+        return trangThai == null ? null : (root, query, cb) -> cb.equal(root.get("trangThai"), trangThai);
     }
 
     private static Specification<Giay> priceFrom(BigDecimal minPrice) {
         if (minPrice == null) {
             return null;
         }
+
         return (root, query, cb) -> {
-            query.distinct(true);
-            Join<Giay, GiayChiTiet> variants = root.join("bienThe", JoinType.LEFT);
-            return cb.and(
-                    cb.isFalse(variants.get("deleted")),
-                    cb.greaterThanOrEqualTo(variants.get("salePrice"), minPrice)
-            );
+            Subquery<Integer> subquery = query.subquery(Integer.class);
+            var chiTietRoot = subquery.from(GiayChiTiet.class);
+            subquery.select(chiTietRoot.get("id"))
+                    .where(
+                            cb.equal(chiTietRoot.get("giay"), root),
+                            cb.greaterThanOrEqualTo(chiTietRoot.get("giaBan"), minPrice)
+                    );
+            return cb.exists(subquery);
         };
     }
 
@@ -84,13 +71,16 @@ public final class GiaySpecifications {
         if (maxPrice == null) {
             return null;
         }
+
         return (root, query, cb) -> {
-            query.distinct(true);
-            Join<Giay, GiayChiTiet> variants = root.join("bienThe", JoinType.LEFT);
-            return cb.and(
-                    cb.isFalse(variants.get("deleted")),
-                    cb.lessThanOrEqualTo(variants.get("salePrice"), maxPrice)
-            );
+            Subquery<Integer> subquery = query.subquery(Integer.class);
+            var chiTietRoot = subquery.from(GiayChiTiet.class);
+            subquery.select(chiTietRoot.get("id"))
+                    .where(
+                            cb.equal(chiTietRoot.get("giay"), root),
+                            cb.lessThanOrEqualTo(chiTietRoot.get("giaBan"), maxPrice)
+                    );
+            return cb.exists(subquery);
         };
     }
 }

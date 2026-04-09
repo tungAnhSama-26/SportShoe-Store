@@ -7,6 +7,21 @@ import GioiThieu from '../pages/GioiThieu.vue';
 import AdminLayout from '../layouts/admin/AdminLayout.vue';
 import ThongKe from '../pages/admin/ThongKe.vue';
 import PhieuGiamGia from '../pages/admin/PhieuGiamGia.vue';
+import QuanLyDonHang from '../pages/admin/QuanLyDonHang.vue';
+import HoaDon from '../pages/admin/HoaDon.vue';
+import BanHangTaiQuay from '../pages/admin/BanHangTaiQuay.vue';
+import QuanLySanPham from '../pages/admin/QuanLySanPham.vue';
+import DotGiamGia from '../pages/admin/DotGiamGia.vue';
+import QuanLyNhanVien from '../pages/admin/QuanLyNhanVien.vue';
+import QuanLyKhachHang from '../pages/admin/QuanLyKhachHang.vue';
+import LoaiGiay from '../pages/admin/LoaiGiay.vue';
+import CoGiay from '../pages/admin/CoGiay.vue';
+import DeGiay from '../pages/admin/DeGiay.vue';
+import ThuongHieu from '../pages/admin/ThuongHieu.vue';
+import CongNgheDem from '../pages/admin/CongNgheDem.vue';
+import MauSac from '../pages/admin/MauSac.vue';
+import KichCo from '../pages/admin/KichCo.vue';
+import TrongLuong from '../pages/admin/TrongLuong.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -63,6 +78,49 @@ const router = createRouter({
           path: 'phieu-giam-gia',
           name: 'admin-phieu-giam-gia',
           component: PhieuGiamGia
+        },
+        {
+          path: 'don-hang',
+          name: 'admin-don-hang',
+          component: QuanLyDonHang
+        },
+        {
+          path: 'hoa-don',
+          name: 'admin-hoa-don',
+          component: HoaDon
+        },
+        {
+          path: 'ban-hang',
+          name: 'admin-ban-hang',
+          component: BanHangTaiQuay
+        },
+        {
+          path: 'san-pham',
+          name: 'admin-san-pham',
+          component: QuanLySanPham
+        },
+        { path: 'loai-giay', name: 'admin-loai-giay', component: LoaiGiay },
+        { path: 'co-giay', name: 'admin-co-giay', component: CoGiay },
+        { path: 'de-giay', name: 'admin-de-giay', component: DeGiay },
+        { path: 'thuong-hieu', name: 'admin-thuong-hieu', component: ThuongHieu },
+        { path: 'cong-nghe-dem', name: 'admin-cong-nghe-dem', component: CongNgheDem },
+        { path: 'mau-sac', name: 'admin-mau-sac', component: MauSac },
+        { path: 'kich-co', name: 'admin-kich-co', component: KichCo },
+        { path: 'trong-luong', name: 'admin-trong-luong', component: TrongLuong },
+        {
+          path: 'dot-giam-gia',
+          name: 'admin-dot-giam-gia',
+          component: DotGiamGia
+        },
+        {
+          path: 'nhan-vien',
+          name: 'admin-nhan-vien',
+          component: QuanLyNhanVien
+        },
+        {
+          path: 'khach-hang',
+          name: 'admin-khach-hang',
+          component: QuanLyKhachHang
         }
       ]
     },

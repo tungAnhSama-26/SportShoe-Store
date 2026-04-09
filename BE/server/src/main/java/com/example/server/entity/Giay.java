@@ -1,56 +1,62 @@
 package com.example.server.entity;
 
-import com.example.server.entity.enums.Gender;
-import com.example.server.entity.enums.ProductStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "giay")
-public class Giay extends BaseEntity {
+public class Giay {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-    @Column(name = "ma", nullable = false, unique = true, length = 100)
-    private String code;
+    @Size(max = 100)
+    @NotNull
+    @Nationalized
+    @Column(name = "ma", nullable = false, length = 100)
+    private String ma;
 
+    @Size(max = 300)
+    @NotNull
+    @Nationalized
     @Column(name = "ten", nullable = false, length = 300)
-    private String name;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "thuong_hieu_id", nullable = false)
-    private ThuongHieu thuongHieu;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "loai_giay_id")
-    private LoaiGiay loaiGiay;
+    private String ten;
 
     @Column(name = "gioi_tinh")
-    private Gender gender;
+    private Integer gioiTinh;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chat_lieu_id")
-    private ChatLieu chatLieu;
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "chat_lieu", length = 100)
+    private String chatLieu;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dot_giam_gia_id")
-    private DotGiamGia dotGiamGia;
+    @Nationalized
+    @Lob
+    @Column(name = "mo_ta")
+    private String moTa;
 
-    @Column(name = "mo_ta", columnDefinition = "nvarchar(max)")
-    private String description;
-
+    @NotNull
+    @ColumnDefault("1")
     @Column(name = "trang_thai", nullable = false)
-    private ProductStatus status = ProductStatus.DRAFT;
+    private Integer trangThai;
 
-    @OneToMany(mappedBy = "product")
-    private List<GiayChiTiet> bienThe = new ArrayList<>();
+    @NotNull
+    @ColumnDefault("sysdatetime()")
+    @Column(name = "ngay_tao", nullable = false)
+    private Instant ngayTao;
+
+    @Column(name = "ngay_cap_nhat")
+    private Instant ngayCapNhat;
+
+
 }

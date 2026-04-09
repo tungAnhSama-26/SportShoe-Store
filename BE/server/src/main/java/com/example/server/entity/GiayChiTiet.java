@@ -1,54 +1,71 @@
 package com.example.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "giay_chi_tiet")
-public class GiayChiTiet extends BaseEntity {
+public class GiayChiTiet {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "giay_id", nullable = false)
     private Giay giay;
 
-    @Column(name = "ma_bien_the", nullable = false, unique = true, length = 150)
-    private String variantCode;
+    @Size(max = 150)
+    @NotNull
+    @Nationalized
+    @Column(name = "ma_bien_the", nullable = false, length = 150)
+    private String maBienThe;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "mau_sac_id", nullable = false)
-    private MauSac mauSac;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "kich_co_id", nullable = false)
-    private KichCo kichCo;
-
+    @NotNull
+    @ColumnDefault("0")
     @Column(name = "so_luong", nullable = false)
-    private Integer quantity = 0;
+    private Integer soLuong;
 
+    @NotNull
     @Column(name = "gia_goc", nullable = false, precision = 18, scale = 2)
-    private BigDecimal originalPrice;
+    private BigDecimal giaGoc;
 
+    @NotNull
     @Column(name = "gia_ban", nullable = false, precision = 18, scale = 2)
-    private BigDecimal salePrice;
+    private BigDecimal giaBan;
 
-    @Column(name = "sku", nullable = false, unique = true, length = 150)
+    @Size(max = 150)
+    @NotNull
+    @Nationalized
+    @Column(name = "sku", nullable = false, length = 150)
     private String sku;
 
+    @NotNull
+    @ColumnDefault("1")
     @Column(name = "kich_hoat", nullable = false)
-    private boolean active = true;
+    private Integer kichHoat;
 
-    @OneToMany(mappedBy = "variant")
-    private List<HinhAnhGiay> hinhAnh = new ArrayList<>();
+    @NotNull
+    @ColumnDefault("sysdatetime()")
+    @Column(name = "ngay_tao", nullable = false)
+    private Instant ngayTao;
+
+    @Column(name = "ngay_cap_nhat")
+    private Instant ngayCapNhat;
+
+
 }

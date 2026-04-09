@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/BE.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/.gitattributes" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/mvnw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/mvnw.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/ServerApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/core/khachhang/danhmuc/KhachHangDanhMucService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/core/khachhang/giay/KhachHangGiayService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/core/khachhang/package-info.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/core/nhanvien/hotro/NhanVienHoTroService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/core/nhanvien/package-info.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/ActivatableEntity.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/BaseEntity.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/ChatLieu.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/DotGiamGia.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/Giay.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/GiayChiTiet.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/HinhAnhGiay.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/KichCo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/LoaiGiay.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/MauSac.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/ThuongHieu.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/converter/ActiveStatusConverter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/converter/GenderConverter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/converter/ImageTypeConverter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/converter/ProductStatusConverter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/enums/ActiveStatus.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/enums/Gender.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/enums/ImageType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/entity/enums/ProductStatus.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/AdminGiayController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/AppProperties.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/ApplicationConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/CorsConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/HeThongController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/KhachHangDanhMucController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/KhachHangGiayController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/api/ApiResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/api/PageResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/CatalogOptionResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/CatalogOptionsResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/CreateProductRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/ProductDetailResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/ProductFilterRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/ProductImageResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/ProductSummaryResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/ProductVariantResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/dto/PromotionResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/exception/BusinessException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/exception/GlobalExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/infrastructure/exception/ResourceNotFoundException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/ChatLieuRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/DotGiamGiaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/GiayChiTietRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/GiayRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/HinhAnhGiayRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/KichCoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/LoaiGiayRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/MauSacRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/repository/ThuongHieuRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/example/server/utils/GiaySpecifications.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/test/java/com/example/server/ServerApplicationTests.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/test/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../FE/sport-shoe/src/layouts/admin/SidebarAdmin.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../FE/sport-shoe/src/layouts/admin/SidebarAdmin.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../FE/sport-shoe/src/router/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../FE/sport-shoe/src/router/index.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="3C55LV8i7AmXvZV1OQO3RC1MYwb" />
+  <component name="ProjectViewState">
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.32098.37" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.32098.37" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="" />
+      <created>1775662536460</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1775662536460</updated>
+      <workItem from="1775662536929" duration="98000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

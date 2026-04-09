@@ -1,40 +1,69 @@
 package com.example.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "dot_giam_gia")
-public class DotGiamGia extends BaseEntity {
+public class DotGiamGia {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-    @Column(name = "ma", nullable = false, unique = true, length = 100)
-    private String code;
+    @Size(max = 100)
+    @NotNull
+    @Nationalized
+    @Column(name = "ma", nullable = false, length = 100)
+    private String ma;
 
+    @Size(max = 200)
+    @NotNull
+    @Nationalized
     @Column(name = "ten", nullable = false, length = 200)
-    private String name;
+    private String ten;
 
+    @Size(max = 500)
+    @Nationalized
     @Column(name = "mo_ta", length = 500)
-    private String description;
+    private String moTa;
 
-    @Column(name = "phan_tram", precision = 5, scale = 2)
-    private BigDecimal discountPercent;
+    @NotNull
+    @Column(name = "loai_giam", nullable = false)
+    private Integer loaiGiam;
 
-    @Column(name = "so_tien_giam", precision = 18, scale = 2)
-    private BigDecimal discountAmount;
+    @NotNull
+    @Column(name = "gia_tri_giam", nullable = false, precision = 18, scale = 2)
+    private BigDecimal giaTriGiam;
 
     @Column(name = "ngay_bat_dau")
-    private LocalDateTime startAt;
+    private Instant ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private LocalDateTime endAt;
+    private Instant ngayKetThuc;
 
+    @NotNull
+    @ColumnDefault("1")
     @Column(name = "kich_hoat", nullable = false)
-    private boolean active = true;
+    private Integer kichHoat;
+
+    @NotNull
+    @ColumnDefault("sysdatetime()")
+    @Column(name = "ngay_tao", nullable = false)
+    private Instant ngayTao;
+
+    @Column(name = "ngay_cap_nhat")
+    private Instant ngayCapNhat;
+
+
 }

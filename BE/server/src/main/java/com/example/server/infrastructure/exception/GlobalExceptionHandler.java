@@ -2,6 +2,7 @@ package com.example.server.infrastructure.exception;
 
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,6 +43,7 @@ public class GlobalExceptionHandler {
         body.put("success", false);
         body.put("message", "Validation failed");
         body.put("errors", errors);
+        body.put("timestamp", Instant.now());
         return ResponseEntity.badRequest().body(body);
     }
 

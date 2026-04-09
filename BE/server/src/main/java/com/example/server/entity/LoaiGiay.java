@@ -1,23 +1,54 @@
 package com.example.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "loai_giay")
-public class LoaiGiay extends ActivatableEntity {
+public class LoaiGiay {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-    @Column(name = "ma", nullable = false, unique = true, length = 50)
-    private String code;
+    @Size(max = 50)
+    @NotNull
+    @Nationalized
+    @Column(name = "ma", nullable = false, length = 50)
+    private String ma;
 
-    @Column(name = "ten", nullable = false, unique = true, length = 100)
-    private String name;
+    @Size(max = 200)
+    @NotNull
+    @Nationalized
+    @Column(name = "ten", nullable = false, length = 200)
+    private String ten;
 
-    @Column(name = "mo_ta", length = 255)
-    private String description;
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "mo_ta", length = 500)
+    private String moTa;
+
+    @NotNull
+    @ColumnDefault("1")
+    @Column(name = "trang_thai", nullable = false)
+    private Integer trangThai;
+
+    @NotNull
+    @ColumnDefault("sysdatetime()")
+    @Column(name = "ngay_tao", nullable = false)
+    private Instant ngayTao;
+
+    @Column(name = "ngay_cap_nhat")
+    private Instant ngayCapNhat;
+
+
 }

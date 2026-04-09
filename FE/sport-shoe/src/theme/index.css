@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @source "../**/*.{vue,js,ts}";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --mau-do-logo: #cf1018;
@@ -21,6 +23,12 @@
       linear-gradient(180deg, #fff8f4 0%, #ffffff 34%, #fff6ef 100%);
     color: #1f2937;
     font-family: Arial, sans-serif;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .dark body {
+    background: #111827;
+    color: #f3f4f6;
   }
 
   * {
