@@ -1,2 +1,32 @@
+# Thư mục chứa các thư viện cài đặt (Nặng nhất, tuyệt đối không push)
+node_modules/
+
+# Thư mục chứa code sau khi build xong (Để chạy production)
+dist/
+dist-ssr/
+*.local
+
+# Các file log của npm hoặc yarn khi gặp lỗi
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Các file môi trường (Chứa mật khẩu, API key bí mật)
+.env
 .env.local
 .env.*.local
+
+# Thư mục cấu hình của IDE (VS Code, WebStorm)
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Các file rác của hệ điều hành
+DS_Store
+Thumbs.db
