@@ -40,10 +40,14 @@ export interface SanPhamTaiQuay {
 export interface HoaDonChoTomTat {
   id: number;
   ma: string;
+  khachHangId: string | null;
   tenKhachHang: string;
   soDienThoai: string;
   tongSanPham: number;
+  tongTienHang: number;
+  tienGiam: number;
   tongTien: number;
+  phieuGiamGia: ThongTinPhieuGiamGiaHoaDon | null;
   ngayTao: string;
 }
 
@@ -59,21 +63,62 @@ export interface HoaDonChoChiTietItem {
 export interface HoaDonChoChiTiet {
   id: number;
   ma: string;
+  khachHangId: string | null;
   tenKhachHang: string;
   soDienThoai: string;
+  tongTienHang: number;
+  tienGiam: number;
   tongTien: number;
+  phieuGiamGia: ThongTinPhieuGiamGiaHoaDon | null;
   ngayTao: string;
   items: HoaDonChoChiTietItem[];
+}
+
+export interface ThongTinPhieuGiamGiaHoaDon {
+  ma: string;
+  ten: string;
+  soTienGiam: number;
+}
+
+export interface PhieuGiamGiaTaiQuay {
+  id: number;
+  ma: string;
+  ten: string;
+  loai: number;
+  giaTri: number;
+  giaTriToiThieu?: number | null;
+  giamToiDa?: number | null;
+  soTienGiam: number;
+  tongTienHang: number;
+  tongTienSauGiam: number;
 }
 
 export interface TaoHoaDonChoPayload {
   khachHangId: string | null;
   tenKhachHang: string;
   soDienThoai: string;
+  maPhieuGiamGia: string | null;
   items: Array<{
     chiTietId: number;
     soLuong: number;
   }>;
+}
+
+export interface ApDungPhieuGiamGiaPayload {
+  hoaDonId: number | null;
+  khachHangId: string | null;
+  maPhieuGiamGia: string;
+  items: Array<{
+    chiTietId: number;
+    soLuong: number;
+  }>;
+}
+
+export interface TimPhieuGiamGiaTaiQuayParams {
+  keyword?: string;
+  hoaDonId?: number | null;
+  khachHangId?: string | null;
+  tongTienHang?: number | null;
 }
 
 export interface ThanhToanTaiQuayPayload {
@@ -81,6 +126,7 @@ export interface ThanhToanTaiQuayPayload {
   khachHangId: string | null;
   tenKhachHang: string;
   soDienThoai: string;
+  maPhieuGiamGia: string | null;
   hinhThucThanhToan: number;
   tienKhachDua: number;
   ghiChu?: string;
@@ -93,12 +139,16 @@ export interface ThanhToanTaiQuayPayload {
 export interface ThanhToanTaiQuayResponse {
   hoaDonId: number;
   maHoaDon: string;
+  khachHangId: string | null;
+  tongTienHang: number;
+  tienGiam: number;
   tongTien: number;
   tienKhachDua: number;
   tienThua: number;
   hinhThucThanhToan: number;
   tenKhachHang: string;
   soDienThoai: string;
+  phieuGiamGia: ThongTinPhieuGiamGiaHoaDon | null;
   ngayThanhToan: string;
 }
 
@@ -153,6 +203,30 @@ export function taoHoaDonCho(payload: TaoHoaDonChoPayload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function apDungPhieuGiamGiaTaiQuay(payload: ApDungPhieuGiamGiaPayload) {
+  return request<PhieuGiamGiaTaiQuay>("/admin/ban-hang-tai-quay/phieu-giam-gia/ap-dung", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function timPhieuGiamGiaTaiQuay(params: TimPhieuGiamGiaTaiQuayParams) {
+  const searchParams = new URLSearchParams();
+  if (params.keyword?.trim()) {
+    searchParams.set("keyword", params.keyword.trim());
+  }
+  if (params.hoaDonId != null) {
+    searchParams.set("hoaDonId", String(params.hoaDonId));
+  }
+  if (params.khachHangId) {
+    searchParams.set("khachHangId", params.khachHangId);
+  }
+  if (params.tongTienHang != null) {
+    searchParams.set("tongTienHang", String(params.tongTienHang));
+  }
+  return request<PhieuGiamGiaTaiQuay[]>(`/admin/ban-hang-tai-quay/phieu-giam-gia?${searchParams.toString()}`);
 }
 
 export function thanhToanTaiQuay(payload: ThanhToanTaiQuayPayload) {

@@ -39,6 +39,7 @@ record TaoHoaDonChoRequest(
         UUID khachHangId,
         String tenKhachHang,
         String soDienThoai,
+        String maPhieuGiamGia,
         @NotEmpty(message = "Danh sach san pham khong duoc de trong")
         List<TaoHoaDonChoItemRequest> items
 ) {
@@ -53,13 +54,47 @@ record TaoHoaDonChoItemRequest(
 ) {
 }
 
+record ApDungPhieuGiamGiaRequest(
+        Integer hoaDonId,
+        UUID khachHangId,
+        String maPhieuGiamGia,
+        @NotEmpty(message = "Danh sach san pham khong duoc de trong")
+        List<TaoHoaDonChoItemRequest> items
+) {
+}
+
+record PhieuGiamGiaTaiQuayResponse(
+        Integer id,
+        String ma,
+        String ten,
+        Integer loai,
+        BigDecimal giaTri,
+        BigDecimal giaTriToiThieu,
+        BigDecimal giamToiDa,
+        BigDecimal soTienGiam,
+        BigDecimal tongTienHang,
+        BigDecimal tongTienSauGiam
+) {
+}
+
+record ThongTinPhieuGiamGiaHoaDonResponse(
+        String ma,
+        String ten,
+        BigDecimal soTienGiam
+) {
+}
+
 record HoaDonChoTomTatResponse(
         Integer id,
         String ma,
+        UUID khachHangId,
         String tenKhachHang,
         String soDienThoai,
         Integer tongSanPham,
+        BigDecimal tongTienHang,
+        BigDecimal tienGiam,
         BigDecimal tongTien,
+        ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
         Instant ngayTao
 ) {
 }
@@ -67,9 +102,13 @@ record HoaDonChoTomTatResponse(
 record HoaDonChoChiTietResponse(
         Integer id,
         String ma,
+        UUID khachHangId,
         String tenKhachHang,
         String soDienThoai,
+        BigDecimal tongTienHang,
+        BigDecimal tienGiam,
         BigDecimal tongTien,
+        ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
         Instant ngayTao,
         List<HoaDonChoDongSanPhamResponse> items
 ) {
@@ -90,6 +129,7 @@ record ThanhToanTaiQuayRequest(
         UUID khachHangId,
         String tenKhachHang,
         String soDienThoai,
+        String maPhieuGiamGia,
         @NotNull(message = "Hinh thuc thanh toan khong duoc de trong")
         Integer hinhThucThanhToan,
         BigDecimal tienKhachDua,
@@ -101,12 +141,16 @@ record ThanhToanTaiQuayRequest(
 record ThanhToanTaiQuayResponse(
         Integer hoaDonId,
         String maHoaDon,
+        UUID khachHangId,
+        BigDecimal tongTienHang,
+        BigDecimal tienGiam,
         BigDecimal tongTien,
         BigDecimal tienKhachDua,
         BigDecimal tienThua,
         Integer hinhThucThanhToan,
         String tenKhachHang,
         String soDienThoai,
+        ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
         Instant ngayThanhToan
 ) {
 }

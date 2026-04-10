@@ -1,19 +1,36 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { Award, Box, Feather, Footprints, MoveVertical, Palette, Ruler, Weight } from "lucide-vue-next";
 import {
+  Award,
+  BadgePercent,
+  Box,
+  Feather,
+  Footprints,
+  MoveVertical,
+  Palette,
+  Ruler,
+  Search,
+  Weight,
+} from "lucide-vue-next";
+import {
+  apDungPhieuGiamGiaTaiQuay,
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
   thanhToanTaiQuay,
   taoHoaDonCho,
   timKhachHangTheoSoDienThoai,
+  timPhieuGiamGiaTaiQuay,
   timSanPhamTaiQuay,
   type HoaDonChoChiTiet,
   type HoaDonChoTomTat,
   type KhachHangTaiQuay,
+  type PhieuGiamGiaTaiQuay,
   type SanPhamTaiQuay,
 } from "../../../services/ban-hang-tai-quay";
+
+const GUEST_LABEL = "Kh\u00e1ch v\u00e3ng lai";
+const HIDDEN_INFO_LABEL = "\u1ea8n th\u00f4ng tin";
 
 interface GioHangItem {
   chiTietId: number;
@@ -26,6 +43,7 @@ interface GioHangItem {
 
 const customerKeyword = ref("");
 const productKeyword = ref("");
+const couponCode = ref("");
 const customerResults = ref<KhachHangTaiQuay[]>([]);
 const productResults = ref<SanPhamTaiQuay[]>([]);
 const selectedProductDetail = ref<SanPhamTaiQuay | null>(null);
@@ -36,6 +54,7 @@ const selectedCustomer = ref<KhachHangTaiQuay | null>(null);
 const cartItems = ref<GioHangItem[]>([]);
 const pendingInvoices = ref<HoaDonChoTomTat[]>([]);
 const activePendingInvoice = ref<HoaDonChoTomTat | null>(null);
+const appliedCoupon = ref<PhieuGiamGiaTaiQuay | null>(null);
 
 const loadingCustomers = ref(false);
 const loadingProducts = ref(false);
@@ -44,8 +63,12 @@ const savingPendingInvoice = ref(false);
 const cancelingPendingInvoice = ref(false);
 const payingInvoice = ref(false);
 const invoiceLoading = ref(false);
+const applyingCoupon = ref(false);
 const showCustomerDropdown = ref(false);
 const showProductDropdown = ref(false);
+const couponResults = ref<PhieuGiamGiaTaiQuay[]>([]);
+const loadingCoupons = ref(false);
+const showCouponDropdown = ref(false);
 const pageError = ref("");
 const successMessage = ref("");
 const paymentMethod = ref(1);
@@ -54,6 +77,8 @@ const paymentNote = ref("");
 
 let customerTimer: number | undefined;
 let productTimer: number | undefined;
+let couponTimer: number | undefined;
+let couponDropdownTimer: number | undefined;
 
 const tongSoLuong = computed(() =>
   cartItems.value.reduce((total, item) => total + item.soLuong, 0),
@@ -61,16 +86,43 @@ const tongSoLuong = computed(() =>
 const tongTien = computed(() =>
   cartItems.value.reduce((total, item) => total + item.soLuong * item.giaBan, 0),
 );
+const tienGiam = computed(() => appliedCoupon.value?.soTienGiam ?? 0);
 const productSearchLabel = computed(() =>
-  productKeyword.value.trim() ? "Kết quả tìm kiếm sản phẩm" : "Sản phẩm tại quầy",
+  productKeyword.value.trim() ? "K\u1ebft qu\u1ea3 t\u00ecm ki\u1ebfm s\u1ea3n ph\u1ea9m" : "S\u1ea3n ph\u1ea9m t\u1ea1i qu\u1ea7y",
 );
+const isGuestCustomer = computed(
+  () => customerKeyword.value.trim().toLowerCase() === GUEST_LABEL.toLowerCase(),
+);
+const tenKhachHangHienThi = computed(() => {
+  if (selectedCustomer.value) {
+    return selectedCustomer.value.hoTen;
+  }
+  if (isGuestCustomer.value) {
+    return GUEST_LABEL;
+  }
+  return customerKeyword.value.trim() || activePendingInvoice.value?.tenKhachHang || GUEST_LABEL;
+});
+const soDienThoaiKhachHangHienThi = computed(() => {
+  if (selectedCustomer.value) {
+    return selectedCustomer.value.sdt;
+  }
+  if (isGuestCustomer.value) {
+    return HIDDEN_INFO_LABEL;
+  }
+  return activePendingInvoice.value?.soDienThoai || HIDDEN_INFO_LABEL;
+});
+const maPhieuChuaApDung = computed(() => Boolean(couponCode.value.trim()) && !appliedCoupon.value);
 const daChonKhach = computed(
-  () =>
-    Boolean(selectedCustomer.value) ||
-    Boolean(activePendingInvoice.value) ||
-    customerKeyword.value.trim().toLowerCase() === "khách vãng lai",
+  () => Boolean(selectedCustomer.value) || Boolean(activePendingInvoice.value) || isGuestCustomer.value,
 );
-const khachCanTra = computed(() => tongTien.value);
+const khachCanTra = computed(() => appliedCoupon.value?.tongTienSauGiam ?? tongTien.value);
+const coTheTimPhieu = computed(() => cartItems.value.length > 0 && tongTien.value > 0);
+const coTheApDungPhieu = computed(() =>
+  Boolean(couponCode.value.trim()) &&
+  cartItems.value.length > 0 &&
+  !applyingCoupon.value &&
+  (!appliedCoupon.value || appliedCoupon.value.ma.toLowerCase() !== couponCode.value.trim().toLowerCase()),
+);
 const tienKhachThanhToan = computed(() => {
   const parsed = Number(amountPaid.value.replace(/[^\d]/g, ""));
   return Number.isFinite(parsed) ? parsed : 0;
@@ -81,9 +133,11 @@ const tienThua = computed(() => {
   }
   return Math.max(tienKhachThanhToan.value - khachCanTra.value, 0);
 });
-const canCreatePendingInvoice = computed(() => cartItems.value.length > 0 && !savingPendingInvoice.value);
+const canCreatePendingInvoice = computed(
+  () => cartItems.value.length > 0 && !savingPendingInvoice.value && !maPhieuChuaApDung.value,
+);
 const canPay = computed(() => {
-  if (!cartItems.value.length || payingInvoice.value) {
+  if (!cartItems.value.length || payingInvoice.value || maPhieuChuaApDung.value) {
     return false;
   }
   if (paymentMethod.value === 1) {
@@ -100,9 +154,57 @@ function dinhDangTien(value: number) {
   }).format(value || 0);
 }
 
+function dinhDangSo(value: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
 function clearFeedback() {
   pageError.value = "";
   successMessage.value = "";
+}
+
+function taoDanhSachSanPhamThanhToan() {
+  return cartItems.value.map((item) => ({
+    chiTietId: item.chiTietId,
+    soLuong: item.soLuong,
+  }));
+}
+
+function layKhachHangIdHienTai() {
+  if (selectedCustomer.value) {
+    return selectedCustomer.value.id;
+  }
+  if (isGuestCustomer.value) {
+    return null;
+  }
+  return activePendingInvoice.value?.khachHangId ?? null;
+}
+
+function capNhatTienKhachThanhToan(force = false) {
+  if (!cartItems.value.length) {
+    amountPaid.value = "";
+    return;
+  }
+
+  if (paymentMethod.value !== 1 || force) {
+    amountPaid.value = dinhDangSo(khachCanTra.value);
+    return;
+  }
+
+  if (!amountPaid.value.trim()) {
+    amountPaid.value = dinhDangSo(khachCanTra.value);
+  }
+}
+
+function danhDauCanApDungLaiPhieu() {
+  if (!couponCode.value.trim()) {
+    appliedCoupon.value = null;
+    return;
+  }
+
+  appliedCoupon.value = null;
 }
 
 function soLuongDaChon(chiTietId: number) {
@@ -123,14 +225,14 @@ const productDetailFields = computed(() => {
   }
 
   return [
-    { label: "Loại giày", value: selectedProductDetail.value.loaiGiay || "--", icon: Box },
-    { label: "Thương hiệu", value: selectedProductDetail.value.thuongHieu || "--", icon: Award },
-    { label: "Đế giày", value: selectedProductDetail.value.deGiay || "--", icon: Footprints },
-    { label: "Cổ giày", value: selectedProductDetail.value.coGiay || "--", icon: MoveVertical },
-    { label: "Công nghệ đệm", value: selectedProductDetail.value.congNgheDem || "--", icon: Feather },
-    { label: "Màu sắc", value: selectedProductDetail.value.mauSac || "--", icon: Palette },
-    { label: "Kích cỡ", value: selectedProductDetail.value.kichCo || "--", icon: Ruler },
-    { label: "Trọng lượng", value: selectedProductDetail.value.trongLuong || "--", icon: Weight },
+    { label: "Lo\u1ea1i gi\u00e0y", value: selectedProductDetail.value.loaiGiay || "--", icon: Box },
+    { label: "Th\u01b0\u01a1ng hi\u1ec7u", value: selectedProductDetail.value.thuongHieu || "--", icon: Award },
+    { label: "\u0110\u1ebf gi\u00e0y", value: selectedProductDetail.value.deGiay || "--", icon: Footprints },
+    { label: "C\u1ed5 gi\u00e0y", value: selectedProductDetail.value.coGiay || "--", icon: MoveVertical },
+    { label: "C\u00f4ng ngh\u1ec7 \u0111\u1ec7m", value: selectedProductDetail.value.congNgheDem || "--", icon: Feather },
+    { label: "M\u00e0u s\u1eafc", value: selectedProductDetail.value.mauSac || "--", icon: Palette },
+    { label: "K\u00edch c\u1ee1", value: selectedProductDetail.value.kichCo || "--", icon: Ruler },
+    { label: "Tr\u1ecdng l\u01b0\u1ee3ng", value: selectedProductDetail.value.trongLuong || "--", icon: Weight },
   ];
 });
 const relatedVariants = computed(() => {
@@ -177,24 +279,39 @@ const selectedVariant = computed(() => {
     ) || selectedProductDetail.value
   );
 });
+const chiTietDangChon = computed(() => selectedVariant.value || selectedProductDetail.value);
+const soLuongTonKhaDungChiTiet = computed(() => {
+  if (!chiTietDangChon.value) {
+    return 0;
+  }
+
+  return soLuongConLai(chiTietDangChon.value.chiTietId, chiTietDangChon.value.soLuongTon);
+});
+const soLuongTonSauKhiChon = computed(() =>
+  Math.max(soLuongTonKhaDungChiTiet.value - selectedQuantity.value, 0),
+);
 
 function resetDraft() {
   selectedCustomer.value = null;
   customerKeyword.value = "";
   productKeyword.value = "";
+  couponCode.value = "";
   customerResults.value = [];
   productResults.value = [];
+  couponResults.value = [];
   selectedProductDetail.value = null;
   selectedColor.value = "";
   selectedSize.value = "";
   selectedQuantity.value = 1;
   cartItems.value = [];
   activePendingInvoice.value = null;
+  appliedCoupon.value = null;
   paymentMethod.value = 1;
   amountPaid.value = "";
   paymentNote.value = "";
   showCustomerDropdown.value = false;
   showProductDropdown.value = false;
+  showCouponDropdown.value = false;
   clearFeedback();
   void fetchProducts("");
 }
@@ -204,14 +321,14 @@ async function fetchPendingInvoices() {
   try {
     pendingInvoices.value = await layDanhSachHoaDonCho();
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể tải danh sách hóa đơn chờ";
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch h\u00f3a \u0111\u01a1n ch\u1edd";
   } finally {
     loadingPendingInvoices.value = false;
   }
 }
 
 async function fetchCustomers(keyword: string) {
-  if (!keyword.trim() || keyword.trim().toLowerCase() === "khách vãng lai") {
+  if (!keyword.trim() || keyword.trim().toLowerCase() === GUEST_LABEL.toLowerCase()) {
     customerResults.value = [];
     return;
   }
@@ -220,7 +337,7 @@ async function fetchCustomers(keyword: string) {
   try {
     customerResults.value = await timKhachHangTheoSoDienThoai(keyword);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể tìm khách hàng";
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u00ecm kh\u00e1ch h\u00e0ng";
   } finally {
     loadingCustomers.value = false;
   }
@@ -231,9 +348,31 @@ async function fetchProducts(keyword: string) {
   try {
     productResults.value = await timSanPhamTaiQuay(keyword);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể tìm sản phẩm";
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u00ecm s\u1ea3n ph\u1ea9m";
   } finally {
     loadingProducts.value = false;
+  }
+}
+
+async function fetchCoupons(keyword: string) {
+  if (!coTheTimPhieu.value) {
+    couponResults.value = [];
+    return;
+  }
+
+  loadingCoupons.value = true;
+  try {
+    couponResults.value = await timPhieuGiamGiaTaiQuay({
+      keyword,
+      hoaDonId: activePendingInvoice.value?.id ?? null,
+      khachHangId: layKhachHangIdHienTai(),
+      tongTienHang: tongTien.value,
+    });
+  } catch (error) {
+    couponResults.value = [];
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u00ecm phi\u1ebfu gi\u1ea3m gi\u00e1";
+  } finally {
+    loadingCoupons.value = false;
   }
 }
 
@@ -242,8 +381,7 @@ watch(customerKeyword, (value) => {
     window.clearTimeout(customerTimer);
   }
   const keyword = value.trim().toLowerCase();
-  showCustomerDropdown.value =
-    value.trim().length > 0 && keyword !== "khách vãng lai";
+  showCustomerDropdown.value = value.trim().length > 0 && keyword !== GUEST_LABEL.toLowerCase();
   customerTimer = window.setTimeout(() => {
     void fetchCustomers(value);
   }, 250);
@@ -257,6 +395,53 @@ watch(productKeyword, (value) => {
   productTimer = window.setTimeout(() => {
     void fetchProducts(value);
   }, 250);
+});
+
+watch(couponCode, (value) => {
+  if (couponTimer) {
+    window.clearTimeout(couponTimer);
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    appliedCoupon.value = null;
+    if (showCouponDropdown.value) {
+      couponTimer = window.setTimeout(() => {
+        void fetchCoupons("");
+      }, 250);
+    }
+    return;
+  }
+
+  if (appliedCoupon.value && appliedCoupon.value.ma.toLowerCase() !== trimmed.toLowerCase()) {
+    appliedCoupon.value = null;
+  }
+
+  if (!showCouponDropdown.value) {
+    return;
+  }
+
+  couponTimer = window.setTimeout(() => {
+    void fetchCoupons(value);
+  }, 250);
+});
+
+watch([paymentMethod, khachCanTra], () => {
+  capNhatTienKhachThanhToan();
+});
+
+watch([coTheTimPhieu, tongTien, selectedCustomer, activePendingInvoice], ([coTheTim]) => {
+  if (!coTheTim) {
+    couponResults.value = [];
+    showCouponDropdown.value = false;
+    return;
+  }
+
+  if (!showCouponDropdown.value) {
+    return;
+  }
+
+  void fetchCoupons(couponCode.value);
 });
 
 watch(pageError, (message) => {
@@ -277,32 +462,66 @@ watch(successMessage, (message) => {
   successMessage.value = "";
 });
 
+function handleCouponFocus() {
+  if (couponDropdownTimer) {
+    window.clearTimeout(couponDropdownTimer);
+  }
+
+  showCouponDropdown.value = true;
+  void fetchCoupons(couponCode.value);
+}
+
+function handleCouponBlur() {
+  if (couponDropdownTimer) {
+    window.clearTimeout(couponDropdownTimer);
+  }
+
+  couponDropdownTimer = window.setTimeout(() => {
+    showCouponDropdown.value = false;
+  }, 150);
+}
+
+function chonPhieuGiamGia(coupon: PhieuGiamGiaTaiQuay) {
+  if (couponDropdownTimer) {
+    window.clearTimeout(couponDropdownTimer);
+  }
+
+  couponCode.value = coupon.ma;
+  appliedCoupon.value = coupon;
+  showCouponDropdown.value = false;
+  capNhatTienKhachThanhToan();
+  clearFeedback();
+}
+
 function chonKhachHang(customer: KhachHangTaiQuay) {
   selectedCustomer.value = customer;
   customerKeyword.value = customer.hoTen;
   customerResults.value = [];
   showCustomerDropdown.value = false;
+  danhDauCanApDungLaiPhieu();
   clearFeedback();
 }
 
 function boChonKhachHang() {
   selectedCustomer.value = null;
-  customerKeyword.value = "Khách vãng lai";
+  customerKeyword.value = GUEST_LABEL;
   customerResults.value = [];
   showCustomerDropdown.value = false;
+  danhDauCanApDungLaiPhieu();
 }
 
 function chonKhachVangLai() {
   selectedCustomer.value = null;
-  customerKeyword.value = "Khách vãng lai";
+  customerKeyword.value = GUEST_LABEL;
   customerResults.value = [];
   showCustomerDropdown.value = false;
+  danhDauCanApDungLaiPhieu();
   clearFeedback();
 }
 
 function moChiTietSanPham(product: SanPhamTaiQuay) {
   if (!daChonKhach.value) {
-    pageError.value = "Vui lòng chọn khách hàng hoặc Khách vãng lai trước khi thêm sản phẩm";
+    pageError.value = "Vui l\u00f2ng ch\u1ecdn kh\u00e1ch h\u00e0ng ho\u1eb7c Kh\u00e1ch v\u00e3ng lai tr\u01b0\u1edbc khi th\u00eam s\u1ea3n ph\u1ea9m";
     return;
   }
 
@@ -321,7 +540,7 @@ function dongChiTietSanPham() {
 
 function themSanPham(product: SanPhamTaiQuay, quantity = 1) {
   if (!daChonKhach.value) {
-    pageError.value = "Vui lòng chọn khách hàng hoặc Khách vãng lai trước khi thêm sản phẩm";
+    pageError.value = "Vui l\u00f2ng ch\u1ecdn kh\u00e1ch h\u00e0ng ho\u1eb7c Kh\u00e1ch v\u00e3ng lai tr\u01b0\u1edbc khi th\u00eam s\u1ea3n ph\u1ea9m";
     return;
   }
 
@@ -329,13 +548,13 @@ function themSanPham(product: SanPhamTaiQuay, quantity = 1) {
   const existing = cartItems.value.find((item) => item.chiTietId === product.chiTietId);
   if (existing) {
     if (quantity > soLuongCoTheThem) {
-      pageError.value = `Sản phẩm ${existing.tenSanPham} đã đạt giới hạn tồn kho`;
+      pageError.value = `S\u1ea3n ph\u1ea9m ${existing.tenSanPham} \u0111\u00e3 \u0111\u1ea1t gi\u1edbi h\u1ea1n t\u1ed3n kho`;
       return;
     }
     existing.soLuong += quantity;
   } else {
     if (quantity > soLuongCoTheThem) {
-      pageError.value = `Sáº£n pháº©m ${product.tenSanPham} Ä‘Ã£ vÆ°á»£t giá»›i háº¡n tá»“n kho`;
+      pageError.value = `S\u1ea3n ph\u1ea9m ${product.tenSanPham} \u0111\u00e3 v\u01b0\u1ee3t gi\u1edbi h\u1ea1n t\u1ed3n kho`;
       return;
     }
     cartItems.value = [
@@ -358,7 +577,8 @@ function themSanPham(product: SanPhamTaiQuay, quantity = 1) {
   selectedSize.value = "";
   selectedQuantity.value = 1;
   showProductDropdown.value = false;
-  amountPaid.value = new Intl.NumberFormat("vi-VN").format(tongTien.value);
+  danhDauCanApDungLaiPhieu();
+  capNhatTienKhachThanhToan();
   clearFeedback();
 }
 
@@ -388,7 +608,7 @@ function tangSoLuongChiTiet() {
 
 function themBienTheDangChon() {
   if (!selectedVariant.value) {
-    pageError.value = "Vui lòng chọn màu sắc và kích cỡ phù hợp";
+    pageError.value = "Vui l\u00f2ng ch\u1ecdn m\u00e0u s\u1eafc v\u00e0 k\u00edch c\u1ee1 ph\u00f9 h\u1ee3p";
     return;
   }
 
@@ -408,12 +628,11 @@ function tangSoLuong(chiTietId: number) {
     return { ...item, soLuong: item.soLuong + 1 };
   });
   if (reachedLimit) {
-    pageError.value = `Sản phẩm ${reachedLimit} đã vượt giới hạn tồn kho`;
+    pageError.value = `S\u1ea3n ph\u1ea9m ${reachedLimit} \u0111\u00e3 v\u01b0\u1ee3t gi\u1edbi h\u1ea1n t\u1ed3n kho`;
     return;
   }
-  if (paymentMethod.value !== 1) {
-    amountPaid.value = new Intl.NumberFormat("vi-VN").format(tongTien.value);
-  }
+  danhDauCanApDungLaiPhieu();
+  capNhatTienKhachThanhToan();
 }
 
 function giamSoLuong(chiTietId: number) {
@@ -422,16 +641,20 @@ function giamSoLuong(chiTietId: number) {
       item.chiTietId === chiTietId ? { ...item, soLuong: item.soLuong - 1 } : item,
     )
     .filter((item) => item.soLuong > 0);
-  if (!cartItems.value.length) {
-    amountPaid.value = "";
-  } else if (paymentMethod.value !== 1) {
-    amountPaid.value = new Intl.NumberFormat("vi-VN").format(tongTien.value);
-  }
+  danhDauCanApDungLaiPhieu();
+  capNhatTienKhachThanhToan();
 }
 
 function mapInvoiceToDraft(invoice: HoaDonChoChiTiet) {
-  customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || "";
-  selectedCustomer.value = null;
+  customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || GUEST_LABEL;
+  selectedCustomer.value = invoice.khachHangId
+    ? {
+        id: invoice.khachHangId,
+        hoTen: invoice.tenKhachHang,
+        sdt: invoice.soDienThoai,
+        email: null,
+      }
+    : null;
   cartItems.value = invoice.items.map((item) => ({
     chiTietId: item.chiTietId,
     maSanPham: item.maSanPham,
@@ -440,7 +663,24 @@ function mapInvoiceToDraft(invoice: HoaDonChoChiTiet) {
     giaBan: item.giaBan,
     soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong),
   }));
-  amountPaid.value = new Intl.NumberFormat("vi-VN").format(invoice.tongTien || 0);
+  couponCode.value = invoice.phieuGiamGia?.ma ?? "";
+  appliedCoupon.value = invoice.phieuGiamGia
+    ? {
+        id: 0,
+        ma: invoice.phieuGiamGia.ma,
+        ten: invoice.phieuGiamGia.ten,
+        loai: 0,
+        giaTri: 0,
+        giaTriToiThieu: null,
+        giamToiDa: null,
+        soTienGiam: invoice.tienGiam || invoice.phieuGiamGia.soTienGiam,
+        tongTienHang: invoice.tongTienHang || 0,
+        tongTienSauGiam: invoice.tongTien || 0,
+      }
+    : null;
+  couponResults.value = [];
+  showCouponDropdown.value = false;
+  capNhatTienKhachThanhToan(true);
 }
 
 async function chonHoaDonCho(invoice: HoaDonChoTomTat) {
@@ -458,6 +698,44 @@ async function chonHoaDonCho(invoice: HoaDonChoTomTat) {
   }
 }
 
+async function handleApplyCoupon() {
+  if (!coTheApDungPhieu.value) {
+    return;
+  }
+
+  applyingCoupon.value = true;
+  pageError.value = "";
+  successMessage.value = "";
+
+  try {
+    const coupon = await apDungPhieuGiamGiaTaiQuay({
+      hoaDonId: activePendingInvoice.value?.id ?? null,
+      khachHangId: layKhachHangIdHienTai(),
+      maPhieuGiamGia: couponCode.value.trim(),
+      items: taoDanhSachSanPhamThanhToan(),
+    });
+    appliedCoupon.value = coupon;
+    couponCode.value = coupon.ma;
+    couponResults.value = [];
+    showCouponDropdown.value = false;
+    capNhatTienKhachThanhToan();
+    successMessage.value = `Đã áp dụng mã ${coupon.ma}`;
+  } catch (error) {
+    appliedCoupon.value = null;
+    pageError.value = error instanceof Error ? error.message : "Không thể áp dụng phiếu giảm giá";
+  } finally {
+    applyingCoupon.value = false;
+  }
+}
+
+function handleRemoveCoupon() {
+  couponCode.value = "";
+  appliedCoupon.value = null;
+  couponResults.value = [];
+  capNhatTienKhachThanhToan();
+  clearFeedback();
+}
+
 async function handleCreatePendingInvoice() {
   if (!canCreatePendingInvoice.value) {
     return;
@@ -469,30 +747,31 @@ async function handleCreatePendingInvoice() {
 
   try {
     const createdInvoice = await taoHoaDonCho({
-      khachHangId: selectedCustomer.value?.id ?? null,
-      tenKhachHang:
-        selectedCustomer.value?.hoTen ||
-        (customerKeyword === "Khách vãng lai" ? "Khách vãng lai" : "Khách vãng lai"),
-      soDienThoai: selectedCustomer.value?.sdt ?? "",
-      items: cartItems.value.map((item) => ({
-        chiTietId: item.chiTietId,
-        soLuong: item.soLuong,
-      })),
+      khachHangId: layKhachHangIdHienTai(),
+      tenKhachHang: tenKhachHangHienThi.value,
+      soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
+      maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
+      items: taoDanhSachSanPhamThanhToan(),
     });
 
-    successMessage.value = `Đã tạo hóa đơn chờ ${createdInvoice.ma}`;
+    successMessage.value = `\u0110\u00e3 t\u1ea1o h\u00f3a \u0111\u01a1n ch\u1edd ${createdInvoice.ma}`;
     await fetchPendingInvoices();
     const matchedInvoice = pendingInvoices.value.find((invoice) => invoice.id === createdInvoice.id) ?? null;
     activePendingInvoice.value = matchedInvoice;
     mapInvoiceToDraft(createdInvoice);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể tạo hóa đơn chờ";
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u1ea1o h\u00f3a \u0111\u01a1n ch\u1edd";
   } finally {
     savingPendingInvoice.value = false;
   }
 }
 
 function formatCurrencyInput() {
+  if (paymentMethod.value !== 1) {
+    amountPaid.value = dinhDangSo(khachCanTra.value);
+    return;
+  }
+
   const digits = amountPaid.value.replace(/[^\d]/g, "");
   amountPaid.value = digits ? new Intl.NumberFormat("vi-VN").format(Number(digits)) : "";
 }
@@ -509,29 +788,21 @@ async function handlePayNow() {
   try {
     const response = await thanhToanTaiQuay({
       hoaDonId: activePendingInvoice.value?.id ?? null,
-      khachHangId: selectedCustomer.value?.id ?? null,
-      tenKhachHang:
-        selectedCustomer.value?.hoTen ||
-        activePendingInvoice?.tenKhachHang ||
-        (customerKeyword === "Khách vãng lai" ? "Khách vãng lai" : "Khách vãng lai"),
-      soDienThoai:
-        selectedCustomer.value?.sdt ||
-        activePendingInvoice?.soDienThoai ||
-        (customerKeyword === "Khách vãng lai" ? "" : ""),
+      khachHangId: layKhachHangIdHienTai(),
+      tenKhachHang: tenKhachHangHienThi.value,
+      soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
+      maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
       hinhThucThanhToan: paymentMethod.value,
       tienKhachDua: paymentMethod.value === 1 ? tienKhachThanhToan.value : khachCanTra.value,
       ghiChu: paymentNote.value,
-      items: cartItems.value.map((item) => ({
-        chiTietId: item.chiTietId,
-        soLuong: item.soLuong,
-      })),
+      items: taoDanhSachSanPhamThanhToan(),
     });
 
-    successMessage.value = `Đã thanh toán ${response.maHoaDon}`;
+    successMessage.value = `\u0110\u00e3 thanh to\u00e1n ${response.maHoaDon}`;
     await fetchPendingInvoices();
     resetDraft();
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 thanh to\u00e1n tr\u1ef1c ti\u1ebfp";
   } finally {
     payingInvoice.value = false;
   }
@@ -548,11 +819,11 @@ async function handleCancelPendingInvoice() {
 
   try {
     await huyHoaDonCho(activePendingInvoice.value.id);
-    successMessage.value = `Đã hủy hóa đơn chờ ${activePendingInvoice.value.ma}`;
+    successMessage.value = `\u0110\u00e3 h\u1ee7y h\u00f3a \u0111\u01a1n ch\u1edd ${activePendingInvoice.value.ma}`;
     await fetchPendingInvoices();
     resetDraft();
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể hủy hóa đơn chờ";
+    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 h\u1ee7y h\u00f3a \u0111\u01a1n ch\u1edd";
   } finally {
     cancelingPendingInvoice.value = false;
   }
@@ -560,7 +831,7 @@ async function handleCancelPendingInvoice() {
 
 async function moDanhSachKhachHang() {
   const keyword = customerKeyword.value.trim();
-  if (keyword && keyword.toLowerCase() !== "khách vãng lai") {
+  if (keyword && keyword.toLowerCase() !== GUEST_LABEL.toLowerCase()) {
     showCustomerDropdown.value = true;
     await fetchCustomers(customerKeyword.value);
     return;
@@ -596,25 +867,25 @@ onMounted(async () => {
   <div class="p-6">
     <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">Bán hàng tại quầy</h1>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900">B&#225;n h&#224;ng t&#7841;i qu&#7847;y</h1>
       </div>
       <button
         type="button"
         class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:text-red-500"
         @click="resetDraft"
       >
-        Tạo phiếu mới
+        T&#7841;o phi&#7871;u m&#7899;i
       </button>
     </div>
 
     <section class="mb-6 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur">
       <div class="mb-4 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold text-slate-900">Hóa đơn chờ</h2>
-          <p class="text-sm text-slate-500">Chọn nhanh để xem lại hóa đơn đang chờ xử lý.</p>
+          <h2 class="text-lg font-bold text-slate-900">H&#243;a &#273;&#417;n ch&#7901;</h2>
+          <p class="text-sm text-slate-500">Ch&#7885;n nhanh &#273;&#7875; xem l&#7841;i h&#243;a &#273;&#417;n &#273;ang ch&#7901; x&#7917; l&#253;.</p>
         </div>
         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-          {{ loadingPendingInvoices ? "Đang tải..." : `${pendingInvoices.length} hóa đơn` }}
+          {{ loadingPendingInvoices ? "\u0110ang t\u1ea3i..." : `${pendingInvoices.length} h\u00f3a \u0111\u01a1n` }}
         </span>
       </div>
 
@@ -647,7 +918,7 @@ onMounted(async () => {
           v-if="!loadingPendingInvoices && !pendingInvoices.length"
           class="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500"
         >
-          Chưa có hóa đơn chờ nào.
+          Ch&#432;a c&#243; h&#243;a &#273;&#417;n ch&#7901; n&#224;o.
         </div>
       </div>
     </section>
@@ -656,12 +927,12 @@ onMounted(async () => {
       <section class="space-y-6 rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
         <div class="grid gap-4 lg:grid-cols-2">
           <div class="relative">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Tìm khách hàng theo tên hoặc số điện thoại</label>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">T&#236;m kh&#225;ch h&#224;ng theo t&#234;n ho&#7863;c s&#7889; &#273;i&#7879;n tho&#7841;i</label>
             <div class="flex gap-3">
               <input
                 v-model="customerKeyword"
                 type="text"
-                placeholder="Nhập tên hoặc số điện thoại khách hàng"
+                placeholder="Nh&#7853;p t&#234;n ho&#7863;c s&#7889; &#273;i&#7879;n tho&#7841;i kh&#225;ch h&#224;ng"
                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
                 @focus="moDanhSachKhachHang"
                 @blur="dongDanhSachKhachHang"
@@ -671,12 +942,12 @@ onMounted(async () => {
                 class="shrink-0 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:text-red-500"
                 @click="chonKhachVangLai"
               >
-                Khách vãng lai
+                Kh&#225;ch v&#227;ng lai
               </button>
             </div>
 
             <div v-if="loadingCustomers" class="absolute right-4 top-[46px] text-xs font-semibold text-slate-400">
-              Đang tìm...
+              &#272;ang t&#236;m...
             </div>
 
             <div
@@ -688,11 +959,11 @@ onMounted(async () => {
                 class="mb-1 w-full rounded-2xl border border-dashed border-slate-200 px-3 py-3 text-left transition hover:border-red-200 hover:bg-red-50"
                 @click="chonKhachVangLai"
               >
-                <p class="text-sm font-semibold text-slate-900">Khách vãng lai</p>
-                <p class="mt-1 text-xs text-slate-500">Không lưu số điện thoại hoặc thông tin cá nhân</p>
+                <p class="text-sm font-semibold text-slate-900">Kh&#225;ch v&#227;ng lai</p>
+                <p class="mt-1 text-xs text-slate-500">Kh&#244;ng l&#432;u s&#7889; &#273;i&#7879;n tho&#7841;i ho&#7863;c th&#244;ng tin c&#225; nh&#226;n</p>
               </button>
               <div v-if="!loadingCustomers && !customerResults.length" class="rounded-2xl px-3 py-3 text-sm text-slate-500">
-                Không tìm thấy khách hàng phù hợp.
+                Kh&#244;ng t&#236;m th&#7845;y kh&#225;ch h&#224;ng ph&#249; h&#7907;p.
               </div>
               <button
                 v-for="customer in customerResults"
@@ -711,23 +982,11 @@ onMounted(async () => {
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Khách được chọn</p>
-                <p class="mt-2 text-lg font-bold text-slate-900">
-                  {{
-                    selectedCustomer?.hoTen ||
-                    activePendingInvoice?.tenKhachHang ||
-                    (customerKeyword === "Khách vãng lai" ? "Khách vãng lai" : "Khách vãng lai")
-                  }}
-                </p>
-                <p class="mt-1 text-sm text-slate-500">
-                  {{
-                    selectedCustomer?.sdt ||
-                    activePendingInvoice?.soDienThoai ||
-                    (customerKeyword === "Khách vãng lai" ? "Ẩn thông tin khách hàng" : "Ẩn thông tin khách hàng")
-                  }}
-                </p>
+                <p class="mt-2 text-lg font-bold text-slate-900">{{ tenKhachHangHienThi }}</p>
+                <p class="mt-1 text-sm text-slate-500">{{ soDienThoaiKhachHangHienThi }}</p>
               </div>
               <button
-                v-if="selectedCustomer || customerKeyword === 'Khách vãng lai'"
+                v-if="selectedCustomer || isGuestCustomer"
                 type="button"
                 class="text-sm font-semibold text-slate-400 transition hover:text-red-500"
                 @click="boChonKhachHang"
@@ -739,18 +998,18 @@ onMounted(async () => {
         </div>
 
         <div class="relative">
-          <label class="mb-2 block text-sm font-semibold text-slate-700">Tìm sản phẩm</label>
+          <label class="mb-2 block text-sm font-semibold text-slate-700">T&#236;m s&#7843;n ph&#7849;m</label>
           <input
             v-model="productKeyword"
             type="text"
-            placeholder="Nhập mã, tên sản phẩm, SKU..."
+            placeholder="Nh&#7853;p m&#227;, t&#234;n s&#7843;n ph&#7849;m, SKU..."
             class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
             @focus="moDanhSachSanPham"
             @blur="dongDanhSachSanPham"
           />
 
           <div v-if="loadingProducts" class="absolute right-4 top-[46px] text-xs font-semibold text-slate-400">
-            Đang tìm...
+            &#272;ang t&#236;m...
           </div>
 
           <div
@@ -758,7 +1017,7 @@ onMounted(async () => {
             class="absolute z-20 mt-2 w-full rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_50px_rgba(15,23,42,0.12)]"
           >
             <div v-if="!loadingProducts && !productResults.length" class="rounded-2xl px-3 py-3 text-sm text-slate-500">
-              Không tìm thấy sản phẩm phù hợp.
+              Kh&#244;ng t&#236;m th&#7845;y s&#7843;n ph&#7849;m ph&#249; h&#7907;p.
             </div>
             <button
               v-for="product in productResults"
@@ -770,12 +1029,12 @@ onMounted(async () => {
               <div>
                 <p class="text-sm font-bold text-slate-900">{{ product.tenSanPham }}</p>
                 <p class="mt-1 text-xs text-slate-500">
-                  Mã: {{ product.maSanPham }} | SKU: {{ product.sku }} | Biến thể: {{ product.maBienThe }}
+                  M&#227;: {{ product.maSanPham }} | SKU: {{ product.sku }} | Bi&#7871;n th&#7875;: {{ product.maBienThe }}
                 </p>
               </div>
               <div class="text-right">
                 <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
-                <p class="mt-1 text-xs text-slate-500">Tồn: {{ product.soLuongTon }}</p>
+                <p class="mt-1 text-xs text-slate-500">T&#7891;n: {{ product.soLuongTon }}</p>
               </div>
             </button>
           </div>
@@ -787,7 +1046,7 @@ onMounted(async () => {
               <p class="text-sm font-semibold text-slate-800">{{ productSearchLabel }}</p>
             </div>
             <div class="rounded-2xl bg-white px-4 py-3 text-xs font-semibold text-slate-500 shadow-sm">
-              {{ loadingProducts ? "Đang tải sản phẩm..." : `${productResults.length} sản phẩm` }}
+              {{ loadingProducts ? "Đang tải sản phẩm..." : productResults.length + " sản phẩm" }}
             </div>
           </div>
 
@@ -914,15 +1173,15 @@ onMounted(async () => {
               <div class="mb-5 flex items-center justify-between rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-4">
                 <div>
                   <p class="text-sm text-slate-500">SKU</p>
-                  <p class="mt-1 text-base font-semibold text-slate-900">{{ (selectedVariant || selectedProductDetail).sku }}</p>
+                  <p class="mt-1 text-base font-semibold text-slate-900">{{ chiTietDangChon?.sku }}</p>
                 </div>
                 <div class="text-right">
-                  <p class="text-sm text-slate-500">Tồn kho</p>
-                  <p class="mt-1 text-base font-semibold text-slate-900">{{ (selectedVariant || selectedProductDetail).soLuongTon }}</p>
+                  <p class="text-sm text-slate-500">Tồn kho còn lại</p>
+                  <p class="mt-1 text-base font-semibold text-slate-900">{{ soLuongTonSauKhiChon }}</p>
                 </div>
                 <div class="text-right">
                   <p class="text-sm text-slate-500">Giá bán</p>
-                  <p class="mt-1 text-base font-bold text-red-500">{{ dinhDangTien((selectedVariant || selectedProductDetail).giaBan) }}</p>
+                  <p class="mt-1 text-base font-bold text-red-500">{{ dinhDangTien(chiTietDangChon?.giaBan || 0) }}</p>
                 </div>
               </div>
 
@@ -980,7 +1239,8 @@ onMounted(async () => {
                   <div class="inline-flex w-fit items-center rounded-xl border border-slate-200 bg-white">
                     <button
                       type="button"
-                      class="px-4 py-3 text-lg font-bold text-slate-400 transition hover:text-red-500"
+                      class="px-4 py-3 text-lg font-bold transition disabled:cursor-not-allowed disabled:text-slate-300"
+                      :disabled="selectedQuantity <= 1"
                       @click="giamSoLuongChiTiet"
                     >
                       -
@@ -990,14 +1250,15 @@ onMounted(async () => {
                     </span>
                     <button
                       type="button"
-                      class="px-4 py-3 text-lg font-bold text-slate-500 transition hover:text-red-500"
+                      class="px-4 py-3 text-lg font-bold transition disabled:cursor-not-allowed disabled:text-slate-300"
+                      :disabled="selectedQuantity >= soLuongTonKhaDungChiTiet"
                       @click="tangSoLuongChiTiet"
                     >
                       +
                     </button>
                   </div>
                   <p class="text-sm font-semibold uppercase text-emerald-600">
-                    {{ (selectedVariant || selectedProductDetail).soLuongTon > 0 ? 'Còn hàng' : 'Hết hàng' }}
+                    {{ soLuongTonKhaDungChiTiet > 0 ? 'Còn hàng' : 'Hết hàng' }}
                   </p>
                 </div>
               </div>
@@ -1016,7 +1277,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <aside class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+            <aside class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
         <div class="rounded-[28px] bg-[linear-gradient(180deg,#fff7f4_0%,#ffffff_100%)] p-5">
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-red-400">Tổng quan</p>
           <h2 class="mt-3 text-2xl font-bold text-slate-900">
@@ -1035,54 +1296,154 @@ onMounted(async () => {
               <span class="text-sm text-slate-500">Tổng tiền hàng</span>
               <span class="text-lg font-bold text-slate-900">{{ dinhDangTien(tongTien) }}</span>
             </div>
+
+            <div class="rounded-3xl border border-amber-100 bg-white p-4 shadow-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <div class="rounded-2xl bg-rose-50 p-2.5 text-red-500">
+                    <BadgePercent class="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">Mã phiếu giảm giá</p>
+                    <p class="mt-1 text-xs text-slate-500">Tìm theo mã hoặc tên, hoặc chọn nhanh trong danh sách gợi ý.</p>
+                  </div>
+                </div>
+                <span
+                  v-if="appliedCoupon"
+                  class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
+                >
+                  Đã áp dụng
+                </span>
+              </div>
+
+              <div class="mt-3" @focusin="handleCouponFocus" @focusout="handleCouponBlur">
+                <div class="flex gap-2">
+                  <div class="relative flex-1">
+                    <Search class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      v-model="couponCode"
+                      type="text"
+                      placeholder="Tìm mã hoặc tên phiếu"
+                      class="w-full rounded-2xl border border-slate-200 bg-white py-3 pr-4 pl-11 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="shrink-0 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    :disabled="!coTheApDungPhieu"
+                    @click="handleApplyCoupon"
+                  >
+                    <span class="flex items-center gap-2">
+                      <Search class="h-4 w-4" />
+                      {{ applyingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
+                    </span>
+                  </button>
+                </div>
+
+                <div v-if="showCouponDropdown" class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                  <div v-if="!coTheTimPhieu" class="px-3 py-3 text-sm text-slate-500">
+                    Thêm sản phẩm vào hóa đơn để xem phiếu phù hợp.
+                  </div>
+                  <div v-else-if="loadingCoupons" class="px-3 py-3 text-sm text-slate-500">
+                    Đang tìm phiếu giảm giá phù hợp...
+                  </div>
+                  <div v-else-if="!couponResults.length" class="px-3 py-3 text-sm text-slate-500">
+                    {{ couponCode.trim() ? "Không tìm thấy phiếu giảm giá phù hợp." : "Chưa có phiếu giảm giá phù hợp cho hóa đơn này." }}
+                  </div>
+                  <div v-else class="space-y-2">
+                    <button
+                      v-for="coupon in couponResults"
+                      :key="coupon.id"
+                      type="button"
+                      class="w-full rounded-2xl bg-white px-3 py-3 text-left transition hover:border-red-200 hover:bg-red-50"
+                      @mousedown.prevent
+                      @click="chonPhieuGiamGia(coupon)"
+                    >
+                      <div class="flex items-start gap-3">
+                        <div class="rounded-xl bg-rose-50 p-2 text-red-500">
+                          <BadgePercent class="h-4 w-4" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                              <p class="truncate text-sm font-semibold text-slate-800">{{ coupon.ma }}</p>
+                              <p class="mt-1 text-xs text-slate-500">{{ coupon.ten }}</p>
+                            </div>
+                            <div class="text-right">
+                              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Giảm</p>
+                              <p class="text-sm font-bold text-emerald-600">{{ dinhDangTien(coupon.soTienGiam) }}</p>
+                            </div>
+                          </div>
+                          <p class="mt-2 text-xs text-slate-400">
+                            {{ coupon.giaTriToiThieu ? `Đơn tối thiểu ${dinhDangTien(coupon.giaTriToiThieu)}` : "Áp dụng ngay cho hóa đơn hiện tại" }}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <p v-if="maPhieuChuaApDung" class="mt-2 text-xs font-medium text-amber-600">
+                Mã phiếu đang thay đổi. Vui lòng áp dụng lại trước khi lưu hoặc thanh toán.
+              </p>
+
+              <div
+                v-if="appliedCoupon"
+                class="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-emerald-700">{{ appliedCoupon.ma }}</p>
+                    <p class="mt-1 text-xs text-emerald-600">{{ appliedCoupon.ten }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="text-xs font-semibold text-emerald-700 transition hover:text-emerald-900"
+                    @click="handleRemoveCoupon"
+                  >
+                    Bỏ mã
+                  </button>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-sm">
+                  <span class="text-emerald-700">Tiền giảm</span>
+                  <span class="font-bold text-emerald-700">{{ dinhDangTien(tienGiam) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+              <span class="text-sm text-slate-500">Tiền giảm</span>
+              <span class="text-lg font-bold text-emerald-600">{{ dinhDangTien(tienGiam) }}</span>
+            </div>
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Khách cần trả</span>
               <span class="text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Khách hàng</span>
-              <span class="text-right text-sm font-semibold text-slate-700">
-                {{
-                  selectedCustomer?.hoTen ||
-                  activePendingInvoice?.tenKhachHang ||
-                  (customerKeyword === "Khách vãng lai" ? "Khách vãng lai" : "Khách vãng lai")
-                }}
-              </span>
+              <span class="text-right text-sm font-semibold text-slate-700">{{ tenKhachHangHienThi }}</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Số điện thoại</span>
-              <span class="text-right text-sm font-semibold text-slate-700">
-                {{
-                  selectedCustomer?.sdt ||
-                  activePendingInvoice?.soDienThoai ||
-                  (customerKeyword === "Khách vãng lai" ? "Ẩn thông tin" : "Ẩn thông tin")
-                }}
-              </span>
+              <span class="text-right text-sm font-semibold text-slate-700">{{ soDienThoaiKhachHangHienThi }}</span>
             </div>
             <div>
               <p class="mb-2 text-sm text-slate-500">Hình thức thanh toán</p>
               <div class="grid grid-cols-2 gap-x-6 gap-y-3">
-                <label
-                  class="flex cursor-pointer items-center gap-3 text-sm text-slate-700"
-                >
+                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
                   <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="1" />
                   <span>Tiền mặt</span>
                 </label>
-                <label
-                  class="flex cursor-pointer items-center gap-3 text-sm text-slate-700"
-                >
+                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
                   <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="2" />
                   <span>Chuyển khoản</span>
                 </label>
-                <label
-                  class="flex cursor-pointer items-center gap-3 text-sm text-slate-700"
-                >
+                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
                   <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="4" />
                   <span>Thẻ</span>
                 </label>
-                <label
-                  class="flex cursor-pointer items-center gap-3 text-sm text-slate-700"
-                >
+                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
                   <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="3" />
                   <span>Ví</span>
                 </label>
@@ -1093,8 +1454,9 @@ onMounted(async () => {
               <input
                 v-model="amountPaid"
                 type="text"
-                placeholder="Nhập số tiền khách đưa"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                :disabled="paymentMethod !== 1"
+                :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 @input="formatCurrencyInput"
               />
             </div>
@@ -1145,3 +1507,5 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+

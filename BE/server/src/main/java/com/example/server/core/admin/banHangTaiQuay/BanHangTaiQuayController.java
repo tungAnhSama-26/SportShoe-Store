@@ -1,8 +1,9 @@
 package com.example.server.core.admin.banHangTaiQuay;
-
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +44,19 @@ public class BanHangTaiQuayController {
         ));
     }
 
+    @GetMapping("/phieu-giam-gia")
+    public ResponseEntity<ApiResponse<List<PhieuGiamGiaTaiQuayResponse>>> timPhieuGiamGia(
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "hoaDonId", required = false) Integer hoaDonId,
+            @RequestParam(name = "khachHangId", required = false) UUID khachHangId,
+            @RequestParam(name = "tongTienHang", required = false) BigDecimal tongTienHang
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tim kiem phieu giam gia thanh cong",
+                banHangTaiQuayService.timPhieuGiamGia(keyword, hoaDonId, khachHangId, tongTienHang)
+        ));
+    }
+
     @GetMapping("/hoa-don-cho")
     public ResponseEntity<ApiResponse<List<HoaDonChoTomTatResponse>>> layDanhSachHoaDonCho() {
         return ResponseEntity.ok(ApiResponse.success(
@@ -58,6 +72,16 @@ public class BanHangTaiQuayController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay chi tiet hoa don cho thanh cong",
                 banHangTaiQuayService.layChiTietHoaDonCho(hoaDonId)
+        ));
+    }
+
+    @PostMapping("/phieu-giam-gia/ap-dung")
+    public ResponseEntity<ApiResponse<PhieuGiamGiaTaiQuayResponse>> apDungPhieuGiamGia(
+            @Valid @RequestBody ApDungPhieuGiamGiaRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Ap dung phieu giam gia thanh cong",
+                banHangTaiQuayService.apDungPhieuGiamGia(request)
         ));
     }
 
