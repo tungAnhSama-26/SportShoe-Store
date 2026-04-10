@@ -1,0 +1,156 @@
+package com.example.server.core.admin.banHangTaiQuay;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+record KhachHangTaiQuayResponse(
+        UUID id,
+        String hoTen,
+        String sdt,
+        String email
+) {
+}
+
+record SanPhamTaiQuayResponse(
+        Integer chiTietId,
+        String maSanPham,
+        String tenSanPham,
+        String sku,
+        String maBienThe,
+        Integer soLuongTon,
+        BigDecimal giaBan,
+        String loaiGiay,
+        String thuongHieu,
+        String deGiay,
+        String coGiay,
+        String congNgheDem,
+        String mauSac,
+        String kichCo,
+        String trongLuong
+) {
+}
+
+record TaoHoaDonChoRequest(
+        UUID khachHangId,
+        String tenKhachHang,
+        String soDienThoai,
+        String maPhieuGiamGia,
+        @NotEmpty(message = "Danh sach san pham khong duoc de trong")
+        List<TaoHoaDonChoItemRequest> items
+) {
+}
+
+record TaoHoaDonChoItemRequest(
+        @NotNull(message = "Chi tiet san pham khong duoc de trong")
+        Integer chiTietId,
+        @NotNull(message = "So luong khong duoc de trong")
+        @Min(value = 1, message = "So luong phai lon hon 0")
+        Integer soLuong
+) {
+}
+
+record ApDungPhieuGiamGiaRequest(
+        Integer hoaDonId,
+        UUID khachHangId,
+        String maPhieuGiamGia,
+        @NotEmpty(message = "Danh sach san pham khong duoc de trong")
+        List<TaoHoaDonChoItemRequest> items
+) {
+}
+
+record PhieuGiamGiaTaiQuayResponse(
+        Integer id,
+        String ma,
+        String ten,
+        Integer loai,
+        BigDecimal giaTri,
+        BigDecimal giaTriToiThieu,
+        BigDecimal giamToiDa,
+        BigDecimal soTienGiam,
+        BigDecimal tongTienHang,
+        BigDecimal tongTienSauGiam
+) {
+}
+
+record ThongTinPhieuGiamGiaHoaDonResponse(
+        String ma,
+        String ten,
+        BigDecimal soTienGiam
+) {
+}
+
+record HoaDonChoTomTatResponse(
+        Integer id,
+        String ma,
+        UUID khachHangId,
+        String tenKhachHang,
+        String soDienThoai,
+        Integer tongSanPham,
+        BigDecimal tongTienHang,
+        BigDecimal tienGiam,
+        BigDecimal tongTien,
+        ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
+        Instant ngayTao
+) {
+}
+
+record HoaDonChoChiTietResponse(
+        Integer id,
+        String ma,
+        UUID khachHangId,
+        String tenKhachHang,
+        String soDienThoai,
+        BigDecimal tongTienHang,
+        BigDecimal tienGiam,
+        BigDecimal tongTien,
+        ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
+        Instant ngayTao,
+        List<HoaDonChoDongSanPhamResponse> items
+) {
+}
+
+record HoaDonChoDongSanPhamResponse(
+        Integer chiTietId,
+        String maSanPham,
+        String tenSanPham,
+        Integer soLuong,
+        BigDecimal giaBan,
+        BigDecimal thanhTien
+) {
+}
+
+record ThanhToanTaiQuayRequest(
+        Integer hoaDonId,
+        UUID khachHangId,
+        String tenKhachHang,
+        String soDienThoai,
+        String maPhieuGiamGia,
+        @NotNull(message = "Hinh thuc thanh toan khong duoc de trong")
+        Integer hinhThucThanhToan,
+        BigDecimal tienKhachDua,
+        String ghiChu,
+        List<TaoHoaDonChoItemRequest> items
+) {
+}
+
+record ThanhToanTaiQuayResponse(
+        Integer hoaDonId,
+        String maHoaDon,
+        UUID khachHangId,
+        BigDecimal tongTienHang,
+        BigDecimal tienGiam,
+        BigDecimal tongTien,
+        BigDecimal tienKhachDua,
+        BigDecimal tienThua,
+        Integer hinhThucThanhToan,
+        String tenKhachHang,
+        String soDienThoai,
+        ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
+        Instant ngayThanhToan
+) {
+}

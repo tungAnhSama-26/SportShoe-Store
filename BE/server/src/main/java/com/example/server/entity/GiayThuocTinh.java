@@ -35,6 +35,10 @@ public class GiayThuocTinh {
     private CoGiay coGiay;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trong_luong_id")
+    private TrongLuong trongLuong;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cong_nghe_dem_id")
     private CongNgheDem congNgheDem;
 

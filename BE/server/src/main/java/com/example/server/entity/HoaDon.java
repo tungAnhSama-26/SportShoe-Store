@@ -36,6 +36,10 @@ public class HoaDon {
     @JoinColumn(name = "khach_hang_id")
     private KhachHang khachHang;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "phieu_giam_gia_id")
+    private PhieuGiamGia phieuGiamGia;
+
     @Size(max = 100)
     @NotNull
     @Nationalized

@@ -21,6 +21,11 @@ public class HoaDonChiTiet {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "hoa_don_id", nullable = false)
+    private HoaDon hoaDon;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "giay_chi_tiet_id", nullable = false)
     private GiayChiTiet giayChiTiet;
 

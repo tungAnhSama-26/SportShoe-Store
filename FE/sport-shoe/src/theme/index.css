@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss" source(none);
 @source "../**/*.{vue,js,ts}";
 
@@ -22,7 +23,10 @@
       radial-gradient(circle at top center, rgba(207, 16, 24, 0.1), transparent 24%),
       linear-gradient(180deg, #fff8f4 0%, #ffffff 34%, #fff6ef 100%);
     color: #1f2937;
-    font-family: Arial, sans-serif;
+    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     transition: background 0.3s, color 0.3s;
   }
 

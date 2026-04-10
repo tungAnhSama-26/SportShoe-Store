@@ -20,6 +20,16 @@ public class Giay {
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "thuong_hieu_id", nullable = false)
+    private ThuongHieu thuongHieu;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "loai_giay_id", nullable = false)
+    private LoaiGiay loaiGiay;
+
     @Size(max = 100)
     @NotNull
     @Nationalized
@@ -57,6 +67,9 @@ public class Giay {
 
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
+
+    @OneToOne(mappedBy = "giay", fetch = FetchType.LAZY)
+    private GiayThuocTinh giayThuocTinh;
 
 
 }

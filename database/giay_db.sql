@@ -1175,3 +1175,113 @@ SELECT
     so_luong_tra, gia_ban, thanh_tien, trang_thai, ghi_chu, ngay_tao
 FROM phieu_tra_hang_chi_tiet;
 GO
+
+-- ==================== THÊM DANH MỤC MỚI ====================
+
+-- Thêm Kích cỡ mới
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai)
+VALUES 
+('36', N'Size nữ rất nhỏ', 1),
+('37', N'Size nữ nhỏ', 1),
+('45', N'Size nam lớn', 1);
+
+-- Thêm Màu sắc mới
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai)
+VALUES 
+('MS008', N'Xanh Dương', '#1E90FF', 1),
+('MS009', N'Cam', '#FF7F00', 1),
+('MS010', N'Tím', '#8A2BE2', 1),
+('MS011', N'Vàng', '#FFD700', 1),
+('MS012', N'Nâu', '#8B4513', 1);
+
+-- Thêm Đế giày mới
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai)
+VALUES 
+('DG008', N'Air Max', N'Đế khí lớn Nike Air Max', 1),
+('DG009', N'React Foam', N'Đệm React siêu nhẹ và êm', 1);
+
+-- Thêm Cổ giày mới
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai)
+VALUES 
+('CG008', N'Mid-top', N'Cổ trung cao', 1),
+('CG009', N'Flyknit', N'Cổ dệt Flyknit ôm chân', 1);
+
+-- Thêm Trọng lượng mới
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai)
+VALUES 
+('TL008', 260, N'Rất nhẹ Air Max', 1),
+('TL009', 290, N'Nhẹ trung bình', 1);
+
+
+-- Thêm Loại giày mới (nếu muốn)
+INSERT INTO loai_giay (ma, ten, mo_ta, trang_thai)
+VALUES 
+('LG008', N'Running Cushion', N'Giày chạy bộ có đệm tối đa', 1);
+
+-- ==================== THÊM SẢN PHẨM MỚI ====================
+
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai)
+VALUES 
+('G008', N'Nike Air Max 270', 1, 1, 3, N'Flyknit + Da tổng hợp', 
+ N'Giày chạy bộ và lifestyle với đệm Air Max lớn, mang lại cảm giác êm ái và phong cách nổi bật.', 1);
+
+ -- ==================== THÊM BIẾN THỂ (giay_chi_tiet) ====================
+
+INSERT INTO giay_chi_tiet 
+(giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat)
+VALUES
+
+-- Màu Trắng (MS001)
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-WH-40', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS001'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '40'), 45, 3200000, 2890000, 'AM270WH40', 1),
+
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-WH-41', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS001'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '41'), 50, 3200000, 2890000, 'AM270WH41', 1),
+
+-- Màu Đen (MS002)
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-BK-40', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS002'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '40'), 30, 3200000, 2890000, 'AM270BK40', 1),
+
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-BK-42', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS002'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '42'), 35, 3200000, 2890000, 'AM270BK42', 1),
+
+-- Màu Xanh Dương (MS008)
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-BL-39', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS008'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '39'), 25, 3200000, 2890000, 'AM270BL39', 1),
+
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-BL-41', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS008'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '41'), 40, 3200000, 2890000, 'AM270BL41', 1),
+
+-- Màu Cam (MS009)
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-OR-40', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS009'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '40'), 20, 3200000, 2890000, 'AM270OR40', 1),
+
+-- Màu Hồng (MS007) - size nữ
+((SELECT id FROM giay WHERE ma = 'G008'), 'AM270-PK-37', 
+ (SELECT id FROM mau_sac WHERE ma = 'MS007'), 
+ (SELECT id FROM kich_co WHERE gia_tri = '37'), 15, 3200000, 2890000, 'AM270PK37', 1);
+
+ -- Thêm hình ảnh (chỉ ví dụ cho vài biến thể)
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, loai_hinh, url, mo_ta, la_hinh_chinh, trang_thai)
+VALUES
+-- Biến thể AM270-WH-40
+((SELECT id FROM giay_chi_tiet WHERE ma_bien_the = 'AM270-WH-40'), 1, 
+ 'https://example.com/airmax270-white-main.jpg', N'Ảnh chính Nike Air Max 270 Trắng', 1, 1),
+
+((SELECT id FROM giay_chi_tiet WHERE ma_bien_the = 'AM270-WH-40'), 2, 
+ 'https://example.com/airmax270-white-side.jpg', N'Ảnh ngang', 0, 1),
+
+-- Biến thể AM270-BK-40
+((SELECT id FROM giay_chi_tiet WHERE ma_bien_the = 'AM270-BK-40'), 1, 
+ 'https://example.com/airmax270-black-main.jpg', N'Ảnh chính Nike Air Max 270 Đen', 1, 1),
+
+-- Biến thể AM270-BL-41
+((SELECT id FROM giay_chi_tiet WHERE ma_bien_the = 'AM270-BL-41'), 1, 
+ 'https://example.com/airmax270-blue-main.jpg', N'Ảnh chính Nike Air Max 270 Xanh Dương', 1, 1);
