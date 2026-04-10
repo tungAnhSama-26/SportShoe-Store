@@ -29,6 +29,16 @@ public class GiayChiTiet {
     @JoinColumn(name = "giay_id", nullable = false)
     private Giay giay;
 
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "mau_sac_id", nullable = false)
+    private MauSac mauSac;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "kich_co_id", nullable = false)
+    private KichCo kichCo;
+
     @Size(max = 150)
     @NotNull
     @Nationalized
