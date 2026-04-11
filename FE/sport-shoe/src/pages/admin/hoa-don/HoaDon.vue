@@ -2,19 +2,19 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { CalendarDays, ChevronLeft, ChevronRight, Eye, FileText, Filter, QrCode, RefreshCw, Search } from "lucide-vue-next";
-import { layDanhSachHoaDon, type HoaDonItem } from "../../../services/hoa-don";
+import { layDanhSachHoaDon } from "../../../services/hoa-don";
 
-type TrangThaiLoc = "Tất cả" | HoaDonItem["trangThai"];
+type TrangThaiLoc = "Tất cả" | "Chờ xác nhận" | "Đã xác nhận" | "Chờ vận chuyển" | "Vận chuyển" | "Đã hoàn thành" | "Hủy";
 
 const router = useRouter();
-const danhSach = ref<HoaDonItem[]>([]);
+const danhSach = ref([]);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const boLoc = ref({ keyword: "", tuNgay: "", denNgay: "", loaiDon: "" });
 const trangThaiDangChon = ref<TrangThaiLoc>("Tất cả");
 const dsTrangThai: TrangThaiLoc[] = ["Tất cả", "Chờ xác nhận", "Đã xác nhận", "Chờ vận chuyển", "Vận chuyển", "Đã hoàn thành", "Hủy"];
 
-const mauTrangThai: Record<HoaDonItem["trangThai"], string> = {
+const mauTrangThai = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
   "Đã xác nhận": "bg-blue-50 text-blue-600",
   "Chờ vận chuyển": "bg-violet-50 text-violet-600",
@@ -53,6 +53,9 @@ const danhSachPhanTrang = computed(() => {
 });
 
 watch(danhSachHienThi, () => {
+  trangHienTai.value = 1;
+});
+watch(soPhanTuMotTrang, () => {
   trangHienTai.value = 1;
 });
 
@@ -101,7 +104,6 @@ onMounted(taiDanhSach);
   <div class="space-y-5">
     <section>
       <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý hóa đơn</h1>
-      <p class="mt-2 text-sm text-slate-400">Theo dõi đơn hàng, trạng thái thanh toán và tra cứu chi tiết hóa đơn.</p>
     </section>
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
@@ -115,28 +117,28 @@ onMounted(taiDanhSach);
 
       <div class="grid gap-4 xl:grid-cols-[1.3fr_1fr_1fr_1fr_auto]">
         <label class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tìm kiếm</span>
+          <span class="mb-1 text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
           <div class="relative">
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="boLoc.keyword" type="text" placeholder="Tìm theo mã hóa đơn, tên khách hàng, tên nhân viên" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           </div>
         </label>
         <label class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ngày bắt đầu</span>
+          <span class="mb-1 text-[13px] font-semibold text-slate-500">Ngày bắt đầu</span>
           <div class="relative">
             <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           </div>
         </label>
         <label class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ngày kết thúc</span>
+          <span class="mb-1 text-[13px] font-semibold text-slate-500">Ngày kết thúc</span>
           <div class="relative">
             <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           </div>
         </label>
         <label class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Loại đơn</span>
+          <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại đơn</span>
           <select v-model="boLoc.loaiDon" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">Tất cả loại đơn</option>
             <option value="Tại cửa hàng">Tại cửa hàng</option>
@@ -202,7 +204,17 @@ onMounted(taiDanhSach);
         </table>
       </div>
 
-      <div class="mt-5 flex items-center justify-end text-sm">
+      <div class="mt-5 flex items-center justify-between gap-2 text-sm">
+        <div class="flex items-center gap-2 text-slate-500">
+          Xem
+          <select v-model.number="soPhanTuMotTrang" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
+            <option :value="5">5</option>
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+          </select>
+          hóa đơn
+        </div>
         <div class="flex items-center gap-2">
           <button type="button" @click="taiDanhSach" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition" title="Làm mới"><RefreshCw class="h-4 w-4" /></button>
           

@@ -69,6 +69,10 @@ public class NhanVien {
     @Column(name = "ngay_tao", nullable = false)
     private Instant ngayTao;
 
+    @Size(max = 500)
+    @Column(name = "hinh_anh", length = 500)
+    private String hinhAnh;
+
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
