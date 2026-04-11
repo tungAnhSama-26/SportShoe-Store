@@ -7,7 +7,6 @@ import GioiThieu from '../pages/GioiThieu.vue';
 import AdminLayout from '../layouts/admin/AdminLayout.vue';
 import ThongKe from '../pages/admin/thong-ke/ThongKe.vue';
 import PhieuGiamGia from '../pages/admin/khuyen-mai/PhieuGiamGia.vue';
-import QuanLyDonHang from '../pages/admin/don-hang/QuanLyDonHang.vue';
 import HoaDon from '../pages/admin/hoa-don/HoaDon.vue';
 import BanHangTaiQuay from '../pages/admin/ban-hang/BanHangTaiQuay.vue';
 import QuanLySanPham from '../pages/admin/san-pham/QuanLySanPham.vue';
@@ -78,11 +77,6 @@ const router = createRouter({
           path: 'phieu-giam-gia',
           name: 'admin-phieu-giam-gia',
           component: PhieuGiamGia
-        },
-        {
-          path: 'don-hang',
-          name: 'admin-don-hang',
-          component: QuanLyDonHang
         },
         {
           path: 'hoa-don',
