@@ -1,11 +1,12 @@
-<script setup lang="ts">
-import type { GiaTriNoiBat } from "../../types/trang-chu";
+<script setup>
+defineProps({
+  danhSach: {
+    type: Array,
+    required: true,
+  },
+});
 
-defineProps<{
-  danhSach: GiaTriNoiBat[];
-}>();
-
-function laySvg(loai: GiaTriNoiBat["bieuTuong"]) {
+function laySvg(loai) {
   if (loai === "giao-hang") return "M3 7h11l4 4m0 0 3-3m-3 3v7m7-11h3l3 3v8a2 2 0 0 1-2 2h-1m-13 0H6a2 2 0 0 1-2-2V7m2 13a2 2 0 1 0 4 0m8 0a2 2 0 1 0 4 0";
   if (loai === "thanh-toan") return "M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z";
   if (loai === "doi-tra") return "M3 12a9 9 0 1 0 3-6.7M3 4v5h5M21 12a9 9 0 1 1-3 6.7M21 20v-5h-5";

@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import HeaderAdmin from '../../../layouts/admin/HeaderAdmin.vue';
+<script setup>
+import HeaderAdmin from "../../../layouts/admin/HeaderAdmin.vue";
 </script>
 
 <template>
