@@ -1,18 +1,15 @@
-<script setup lang="ts">
-import { computed } from 'vue';
-import { Calendar, Edit, Eye, Filter, Plus, RotateCcw, Search, Trash2 } from 'lucide-vue-next';
-import AppPagination from '../../../components/common/AppPagination.vue';
-import { usePagination } from '../../../composable/usePagination';
-
+<script setup>
+import { computed } from "vue";
+import { Calendar, Edit, Eye, Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-vue-next";
+import AppPagination from "../../../components/common/AppPagination.vue";
+import { usePagination } from "../../../composable/usePagination";
 const coupons = [];
-
-const getStatusClass = (status: string) => {
-  if (status === 'Đang áp dụng') return 'bg-[#10b981] text-white';
-  if (status === 'Hết hạn' || status === 'Hết số lượng') return 'bg-[#ff3b30] text-white';
-  if (status === 'Chưa áp dụng') return 'bg-[#fbbf24] text-white';
-  return 'bg-gray-500 text-white';
+const getStatusClass = (status) => {
+  if (status === "\u0110ang \xE1p d\u1EE5ng") return "bg-[#10b981] text-white";
+  if (status === "H\u1EBFt h\u1EA1n" || status === "H\u1EBFt s\u1ED1 l\u01B0\u1EE3ng") return "bg-[#ff3b30] text-white";
+  if (status === "Ch\u01B0a \xE1p d\u1EE5ng") return "bg-[#fbbf24] text-white";
+  return "bg-gray-500 text-white";
 };
-
 const { currentPage, pageSize, totalItems, paginatedItems } = usePagination(coupons, 5);
 const startIndex = computed(() => (currentPage.value - 1) * pageSize.value);
 </script>

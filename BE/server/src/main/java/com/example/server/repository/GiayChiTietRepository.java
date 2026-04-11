@@ -33,4 +33,14 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             order by g.ten asc, gct.sku asc
             """)
     List<GiayChiTiet> searchForCounterSale(@Param("keyword") String keyword);
+
+    @Query("""
+            from GiayChiTiet gct
+            join fetch gct.giay g
+            join fetch g.thuongHieu th
+            where gct.kichHoat = 1
+              and g.trangThai = 1
+            order by g.ten asc
+            """)
+    List<GiayChiTiet> findAllForThongKe();
 }

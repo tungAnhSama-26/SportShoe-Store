@@ -1,20 +1,19 @@
-﻿<script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import logoChinh from '../../assets/logo/delete-background-logo.png';
+<script setup>
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import logoChinh from "../../assets/logo/delete-background-logo.png";
 import {
   isDesktopSidebar,
   isSidebarCollapsed,
   isSidebarOpen,
-  toggleSidebar,
-} from '../../composable/useSidebar';
+  toggleSidebar
+} from "../../composable/useSidebar";
 import {
   Award,
   BadgePercent,
   Box,
   ChevronDown,
   ChevronsLeft,
-  ClipboardList,
   Feather,
   Footprints,
   Layers,
@@ -29,89 +28,77 @@ import {
   TrendingUp,
   UserRoundCog,
   Users,
-  Weight,
-} from 'lucide-vue-next';
-
+  Weight
+} from "lucide-vue-next";
 const route = useRoute();
-
-const isActive = (path: string) => route.path.startsWith(path);
-
-const checkDanhMucActive = (newPath: string) => {
+const isActive = (path) => route.path.startsWith(path);
+const checkDanhMucActive = (newPath) => {
   const routes = [
-    '/admin/loai-giay',
-    '/admin/co-giay',
-    '/admin/de-giay',
-    '/admin/thuong-hieu',
-    '/admin/cong-nghe-dem',
-    '/admin/mau-sac',
-    '/admin/kich-co',
-    '/admin/trong-luong',
+    "/admin/loai-giay",
+    "/admin/co-giay",
+    "/admin/de-giay",
+    "/admin/thuong-hieu",
+    "/admin/cong-nghe-dem",
+    "/admin/mau-sac",
+    "/admin/kich-co",
+    "/admin/trong-luong"
   ];
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
 };
-
+const checkKhuyenMaiActive = (newPath) => {
+  const routes = ["/admin/phieu-giam-gia", "/admin/dot-giam-gia"];
+  return routes.some((currentRoute) => newPath.startsWith(currentRoute));
+};
 const compactMode = computed(() => isDesktopSidebar.value && isSidebarCollapsed.value);
+const isDanhMucActive = computed(() => checkDanhMucActive(route.path));
+const isKhuyenMaiActive = computed(() => checkKhuyenMaiActive(route.path));
 const openDanhMuc = ref(checkDanhMucActive(route.path));
-const openKhuyenMai = ref(isActive('/admin/phieu-giam-gia') || isActive('/admin/dot-giam-gia'));
-
+const openKhuyenMai = ref(checkKhuyenMaiActive(route.path));
 watch(
   () => route.path,
   (newPath) => {
     if (checkDanhMucActive(newPath)) {
       openDanhMuc.value = true;
     }
-    if (newPath.startsWith('/admin/phieu-giam-gia') || newPath.startsWith('/admin/dot-giam-gia')) {
+    if (newPath.startsWith("/admin/phieu-giam-gia") || newPath.startsWith("/admin/dot-giam-gia")) {
       openKhuyenMai.value = true;
     }
-  },
+  }
 );
-
 function toggleDanhMuc() {
   if (compactMode.value) {
     isSidebarCollapsed.value = false;
     openDanhMuc.value = true;
     return;
   }
-
   openDanhMuc.value = !openDanhMuc.value;
 }
-
 function toggleKhuyenMai() {
   if (compactMode.value) {
     isSidebarCollapsed.value = false;
     openKhuyenMai.value = true;
     return;
   }
-
   openKhuyenMai.value = !openKhuyenMai.value;
 }
-
-function navItemClass(active: boolean) {
+function navItemClass(active) {
   return [
-    'flex items-center rounded-xl px-4 py-3 transition-colors group',
-    compactMode.value ? 'justify-center px-3' : '',
-    active
-      ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold'
-      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
+    "flex items-center rounded-xl px-4 py-3 transition-colors group",
+    compactMode.value ? "justify-center px-3" : "",
+    active ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold" : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
   ];
 }
-
-function navIconClass(active: boolean) {
+function navIconClass(active) {
   return [
-    'h-5 w-5 shrink-0',
-    compactMode.value ? '' : 'mr-3',
-    active
-      ? 'text-red-500'
-      : 'text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300',
+    "h-5 w-5 shrink-0",
+    compactMode.value ? "" : "mr-3",
+    active ? "text-red-500" : "text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300"
   ];
 }
-
-function subItemClass(active: boolean) {
+function subItemClass(active) {
   return [
-    'flex items-center rounded-xl border border-transparent px-4 py-2.5 text-[13px] font-medium transition-colors',
-    active
-      ? 'bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm'
-      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50',
+    "flex items-center rounded-xl border border-transparent px-4 py-2.5 text-[13px] font-medium transition-colors",
+    active ? "bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
   ];
 }
 </script>
@@ -158,10 +145,6 @@ function subItemClass(active: boolean) {
         <span v-if="!compactMode" class="text-sm">Qu&#7843;n l&#253; h&#243;a &#273;&#417;n</span>
       </router-link>
 
-      <router-link to="/admin/don-hang" :title="compactMode ? 'Qu\u1ea3n l\u00fd \u0111\u01a1n h\u00e0ng' : undefined" :class="navItemClass(isActive('/admin/don-hang'))">
-        <ClipboardList :class="navIconClass(isActive('/admin/don-hang'))" />
-        <span v-if="!compactMode" class="text-sm">Qu&#7843;n l&#253; &#273;&#417;n h&#224;ng</span>
-      </router-link>
 
       <router-link to="/admin/ban-hang" :title="compactMode ? 'B\u00e1n h\u00e0ng t\u1ea1i qu\u1ea7y' : undefined" :class="navItemClass(isActive('/admin/ban-hang'))">
         <Store :class="navIconClass(isActive('/admin/ban-hang'))" />
@@ -180,14 +163,14 @@ function subItemClass(active: boolean) {
           class="group flex w-full items-center rounded-xl px-4 py-3 transition-colors"
           :class="[
             compactMode ? 'justify-center px-3' : 'justify-between',
-            checkDanhMucActive(route.path) || openDanhMuc
+            isDanhMucActive
               ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold'
               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
           ]"
           @click="toggleDanhMuc"
         >
           <div class="flex items-center">
-            <Layers :class="navIconClass(checkDanhMucActive(route.path) || openDanhMuc)" />
+            <Layers :class="navIconClass(isDanhMucActive)" />
             <span v-if="!compactMode" class="text-sm font-medium">Qu&#7843;n l&#253; danh m&#7909;c</span>
           </div>
           <ChevronDown
@@ -239,14 +222,14 @@ function subItemClass(active: boolean) {
           class="group flex w-full items-center rounded-xl px-4 py-3 transition-colors"
           :class="[
             compactMode ? 'justify-center px-3' : 'justify-between',
-            isActive('/admin/phieu-giam-gia') || isActive('/admin/dot-giam-gia') || openKhuyenMai
+            isKhuyenMaiActive
               ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold'
               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
           ]"
           @click="toggleKhuyenMai"
         >
           <div class="flex items-center">
-            <BadgePercent :class="navIconClass(isActive('/admin/phieu-giam-gia') || isActive('/admin/dot-giam-gia') || openKhuyenMai)" />
+            <BadgePercent :class="navIconClass(isKhuyenMaiActive)" />
             <span v-if="!compactMode" class="text-sm font-medium">Qu&#7843;n l&#253; khuy&#7871;n m&#227;i</span>
           </div>
           <ChevronDown

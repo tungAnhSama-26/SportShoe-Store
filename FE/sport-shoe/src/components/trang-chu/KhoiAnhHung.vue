@@ -1,9 +1,10 @@
-<script setup lang="ts">
-import type { ThongKeTrangChu } from "../../types/trang-chu";
-
-defineProps<{
-  thongKe: ThongKeTrangChu[];
-}>();
+<script setup>
+defineProps({
+  thongKe: {
+    type: Array,
+    required: true,
+  },
+});
 </script>
 
 <template>

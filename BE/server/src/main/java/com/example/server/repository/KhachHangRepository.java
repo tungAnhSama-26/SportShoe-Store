@@ -1,8 +1,9 @@
 package com.example.server.repository;
 
 import com.example.server.entity.KhachHang;
-import java.util.UUID;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +22,15 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, UUID> {
             order by kh.ngayTao desc
             """)
     List<KhachHang> searchByKeyword(@Param("keyword") String keyword);
+
+    @Query("""
+            select count(kh)
+            from KhachHang kh
+            where kh.trangThai = 1
+              and (:fromDate is null or kh.ngayTao >= :fromDate)
+              and (:toDate is null or kh.ngayTao < :toDate)
+            """)
+    long countNewCustomers(@Param("fromDate") Instant fromDate, @Param("toDate") Instant toDate);
+
+    List<KhachHang> findByTrangThai(Integer trangThai);
 }
