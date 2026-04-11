@@ -14,7 +14,7 @@
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-vue": "^5.1.4",
     "tailwindcss": "4.1.12",
-    "vite": "6.3.5"
+    "vite": "^6.3.5"
   },
   "scripts": {
     "dev": "vite",

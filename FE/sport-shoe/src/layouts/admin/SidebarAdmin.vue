@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import logoChinh from '../../assets/logo/delete-background-logo.png';
@@ -14,7 +14,6 @@ import {
   Box,
   ChevronDown,
   ChevronsLeft,
-  ClipboardList,
   Feather,
   Footprints,
   Layers,
@@ -158,10 +157,6 @@ function subItemClass(active: boolean) {
         <span v-if="!compactMode" class="text-sm">Qu&#7843;n l&#253; h&#243;a &#273;&#417;n</span>
       </router-link>
 
-      <router-link to="/admin/don-hang" :title="compactMode ? 'Qu\u1ea3n l\u00fd \u0111\u01a1n h\u00e0ng' : undefined" :class="navItemClass(isActive('/admin/don-hang'))">
-        <ClipboardList :class="navIconClass(isActive('/admin/don-hang'))" />
-        <span v-if="!compactMode" class="text-sm">Qu&#7843;n l&#253; &#273;&#417;n h&#224;ng</span>
-      </router-link>
 
       <router-link to="/admin/ban-hang" :title="compactMode ? 'B\u00e1n h\u00e0ng t\u1ea1i qu\u1ea7y' : undefined" :class="navItemClass(isActive('/admin/ban-hang'))">
         <Store :class="navIconClass(isActive('/admin/ban-hang'))" />
