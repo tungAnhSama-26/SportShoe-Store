@@ -2,14 +2,12 @@
 import { computed, onMounted, ref, watch } from "vue";
 import {
   Award,
-  BadgePercent,
   Box,
   Feather,
   Footprints,
   MoveVertical,
   Palette,
   Ruler,
-  Search,
   Weight
 } from "lucide-vue-next";
 import {
@@ -25,6 +23,8 @@ import {
 } from "../../../services/ban-hang-tai-quay";
 const GUEST_LABEL = "Kh\xE1ch v\xE3ng lai";
 const HIDDEN_INFO_LABEL = "\u1EA8n th\xF4ng tin";
+const NO_CUSTOMER_LABEL = "Chưa chọn khách hàng";
+const NO_CUSTOMER_PHONE_LABEL = "Chọn khách hoặc Khách vãng lai";
 const MAX_PENDING_INVOICES = 5;
 const MAX_PAYMENT_DIGITS = 15;
 const customerKeyword = ref("");
@@ -70,6 +70,7 @@ const tongTien = computed(
   () => cartItems.value.reduce((total, item) => total + item.soLuong * item.giaBan, 0)
 );
 const tienGiam = computed(() => appliedCoupon.value?.soTienGiam ?? 0);
+const tongTienSauGiamHienThi = computed(() => Math.max(tongTien.value - tienGiam.value, 0));
 const productSearchLabel = computed(
   () => productKeyword.value.trim() ? "K\u1EBFt qu\u1EA3 t\xECm ki\u1EBFm s\u1EA3n ph\u1EA9m" : "S\u1EA3n ph\u1EA9m t\u1EA1i qu\u1EA7y"
 );
@@ -83,7 +84,7 @@ const tenKhachHangHienThi = computed(() => {
   if (isGuestCustomer.value) {
     return GUEST_LABEL;
   }
-  return customerKeyword.value.trim() || activePendingInvoice.value?.tenKhachHang || GUEST_LABEL;
+  return activePendingInvoice.value?.tenKhachHang || NO_CUSTOMER_LABEL;
 });
 const soDienThoaiKhachHangHienThi = computed(() => {
   if (selectedCustomer.value) {
@@ -92,7 +93,7 @@ const soDienThoaiKhachHangHienThi = computed(() => {
   if (isGuestCustomer.value) {
     return HIDDEN_INFO_LABEL;
   }
-  return activePendingInvoice.value?.soDienThoai || HIDDEN_INFO_LABEL;
+  return activePendingInvoice.value?.soDienThoai || NO_CUSTOMER_PHONE_LABEL;
 });
 const maPhieuChuaApDung = computed(() => Boolean(couponCode.value.trim()) && !appliedCoupon.value);
 const daChonKhach = computed(
@@ -100,8 +101,30 @@ const daChonKhach = computed(
 );
 const khachCanTra = computed(() => appliedCoupon.value?.tongTienSauGiam ?? tongTien.value);
 const coTheTimPhieu = computed(() => cartItems.value.length > 0 && tongTien.value > 0);
+const phieuGiamGiaHopLeDangNhap = computed(() => {
+  const keyword = couponCode.value.trim().toLowerCase();
+  if (!keyword) {
+    return null;
+  }
+
+  const trungKhopChinhXac = couponResults.value.find((coupon) => {
+    const ma = coupon.ma?.trim().toLowerCase() ?? "";
+    const ten = coupon.ten?.trim().toLowerCase() ?? "";
+    return ma === keyword || ten === keyword;
+  });
+
+  if (trungKhopChinhXac) {
+    return trungKhopChinhXac;
+  }
+
+  if (couponResults.value.length === 1) {
+    return couponResults.value[0];
+  }
+
+  return null;
+});
 const coTheApDungPhieu = computed(
-  () => Boolean(couponCode.value.trim()) && cartItems.value.length > 0 && !applyingCoupon.value && (!appliedCoupon.value || appliedCoupon.value.ma.toLowerCase() !== couponCode.value.trim().toLowerCase())
+  () => Boolean(phieuGiamGiaHopLeDangNhap.value) && cartItems.value.length > 0 && !applyingCoupon.value && (!appliedCoupon.value || appliedCoupon.value.ma.toLowerCase() !== phieuGiamGiaHopLeDangNhap.value.ma.toLowerCase())
 );
 const pendingInvoiceLimitReached = computed(() => pendingInvoices.value.length >= MAX_PENDING_INVOICES);
 const tienKhachThanhToan = computed(() => {
@@ -335,6 +358,14 @@ watch(customerKeyword, (value) => {
     window.clearTimeout(customerTimer);
   }
   const keyword = value.trim().toLowerCase();
+  if (selectedCustomer.value) {
+    const tenKhachDangChon = selectedCustomer.value.hoTen?.trim().toLowerCase() ?? "";
+    const soDienThoaiDangChon = selectedCustomer.value.sdt?.trim().toLowerCase() ?? "";
+    if (keyword !== tenKhachDangChon && keyword !== soDienThoaiDangChon) {
+      selectedCustomer.value = null;
+      danhDauCanApDungLaiPhieu();
+    }
+  }
   showCustomerDropdown.value = value.trim().length > 0 && keyword !== GUEST_LABEL.toLowerCase();
   customerTimer = window.setTimeout(() => {
     void fetchCustomers(value);
@@ -343,6 +374,10 @@ watch(customerKeyword, (value) => {
 watch(productKeyword, (value) => {
   if (productTimer) {
     window.clearTimeout(productTimer);
+  }
+  if (!daChonKhach.value) {
+    showProductDropdown.value = false;
+    return;
   }
   showProductDropdown.value = value.trim().length > 0;
   productTimer = window.setTimeout(() => {
@@ -366,9 +401,6 @@ watch(couponCode, (value) => {
   if (appliedCoupon.value && appliedCoupon.value.ma.toLowerCase() !== trimmed.toLowerCase()) {
     appliedCoupon.value = null;
   }
-  if (!showCouponDropdown.value) {
-    return;
-  }
   couponTimer = window.setTimeout(() => {
     void fetchCoupons(value);
   }, 250);
@@ -382,7 +414,7 @@ watch([coTheTimPhieu, tongTien, selectedCustomer, activePendingInvoice], ([coThe
     showCouponDropdown.value = false;
     return;
   }
-  if (!showCouponDropdown.value) {
+  if (!couponCode.value.trim() && !showCouponDropdown.value) {
     return;
   }
   void fetchCoupons(couponCode.value);
@@ -421,10 +453,48 @@ function chonPhieuGiamGia(coupon) {
     window.clearTimeout(couponDropdownTimer);
   }
   couponCode.value = coupon.ma;
-  appliedCoupon.value = coupon;
   showCouponDropdown.value = false;
-  capNhatTienKhachThanhToan();
   clearFeedback();
+}
+async function timPhieuPhuHopDeApDung() {
+  const keyword = couponCode.value.trim();
+  if (!keyword || !coTheTimPhieu.value) {
+    return null;
+  }
+
+  const keywordDaChuanHoa = keyword.toLowerCase();
+  let ketQua = couponResults.value;
+
+  if (!ketQua.length) {
+    try {
+      ketQua = await timPhieuGiamGiaTaiQuay({
+        keyword,
+        hoaDonId: activePendingInvoice.value?.id ?? null,
+        khachHangId: layKhachHangIdHienTai(),
+        tongTienHang: tongTien.value
+      });
+      couponResults.value = ketQua;
+    } catch (error) {
+      pageError.value = error instanceof Error ? error.message : "Khong the tim phieu giam gia";
+      return null;
+    }
+  }
+
+  const trungKhopChinhXac = ketQua.find((coupon) => {
+    const ma = coupon.ma?.trim().toLowerCase() ?? "";
+    const ten = coupon.ten?.trim().toLowerCase() ?? "";
+    return ma === keywordDaChuanHoa || ten === keywordDaChuanHoa;
+  });
+
+  if (trungKhopChinhXac) {
+    return trungKhopChinhXac;
+  }
+
+  if (ketQua.length === 1) {
+    return ketQua[0];
+  }
+
+  return null;
 }
 function chonKhachHang(customer) {
   selectedCustomer.value = customer;
@@ -436,10 +506,11 @@ function chonKhachHang(customer) {
 }
 function boChonKhachHang() {
   selectedCustomer.value = null;
-  customerKeyword.value = GUEST_LABEL;
+  customerKeyword.value = "";
   customerResults.value = [];
   showCustomerDropdown.value = false;
   danhDauCanApDungLaiPhieu();
+  clearFeedback();
 }
 function chonKhachVangLai() {
   selectedCustomer.value = null;
@@ -607,8 +678,26 @@ async function chonHoaDonCho(invoice) {
 }
 async function handleApplyCoupon() {
   if (!coTheApDungPhieu.value) {
+    if (couponCode.value.trim()) {
+      showCouponDropdown.value = true;
+      pageError.value = "Phiếu giảm giá này chưa đủ điều kiện áp dụng cho hóa đơn hiện tại";
+    }
     return;
   }
+
+  const couponDaTimThay = phieuGiamGiaHopLeDangNhap.value ?? await timPhieuPhuHopDeApDung();
+  const maPhieuDeApDung = couponDaTimThay?.ma ?? couponCode.value.trim();
+
+  if (couponDaTimThay) {
+    couponCode.value = couponDaTimThay.ma;
+  }
+
+  if (!couponDaTimThay && couponResults.value.length > 1) {
+    showCouponDropdown.value = true;
+    pageError.value = "Vui lòng chọn đúng phiếu giảm giá trong danh sách gợi ý";
+    return;
+  }
+
   applyingCoupon.value = true;
   pageError.value = "";
   successMessage.value = "";
@@ -616,7 +705,7 @@ async function handleApplyCoupon() {
     const coupon = await apDungPhieuGiamGiaTaiQuay({
       hoaDonId: activePendingInvoice.value?.id ?? null,
       khachHangId: layKhachHangIdHienTai(),
-      maPhieuGiamGia: couponCode.value.trim(),
+      maPhieuGiamGia: maPhieuDeApDung,
       items: taoDanhSachSanPhamThanhToan()
     });
     appliedCoupon.value = coupon;
@@ -732,6 +821,11 @@ async function moDanhSachKhachHang() {
   showCustomerDropdown.value = false;
 }
 async function moDanhSachSanPham() {
+  if (!daChonKhach.value) {
+    showProductDropdown.value = false;
+    pageError.value = "Vui long chon khach hang hoac Khach vang lai truoc khi them san pham";
+    return;
+  }
   showProductDropdown.value = true;
   await fetchProducts(productKeyword.value);
 }
@@ -1183,60 +1277,44 @@ onMounted(async () => {
               <span class="text-sm text-slate-500">Tổng sản phẩm</span>
               <span class="text-lg font-bold text-slate-900">{{ tongSoLuong }}</span>
             </div>
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Tổng tiền hàng</span>
-              <span class="text-lg font-bold text-slate-900">{{ dinhDangTien(tongTien) }}</span>
+              <div class="text-right">
+                <p class="text-lg font-bold text-slate-900">{{ dinhDangTien(tongTienSauGiamHienThi) }}</p>
+                <p v-if="tienGiam > 0" class="mt-1 text-xs text-slate-400 line-through">
+                  {{ dinhDangTien(tongTien) }}
+                </p>
+              </div>
             </div>
 
-            <div class="rounded-3xl border border-amber-100 bg-white p-4 shadow-sm">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <div class="rounded-2xl bg-rose-50 p-2.5 text-red-500">
-                    <BadgePercent class="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-semibold text-slate-800">Mã phiếu giảm giá</p>
-                    <p class="mt-1 text-xs text-slate-500">Tìm theo mã hoặc tên, hoặc chọn nhanh trong danh sách gợi ý.</p>
-                  </div>
-                </div>
-                <span
-                  v-if="appliedCoupon"
-                  class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
-                >
-                  Đã áp dụng
-                </span>
-              </div>
+            <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <label class="block text-sm font-semibold text-slate-800">Áp phiếu giảm giá</label>
 
               <div class="mt-3" @focusin="handleCouponFocus" @focusout="handleCouponBlur">
-                <div class="flex gap-2">
-                  <div class="relative flex-1">
-                    <Search class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      v-model="couponCode"
-                      type="text"
-                      placeholder="Tìm mã hoặc tên phiếu"
-                      class="w-full rounded-2xl border border-slate-200 bg-white py-3 pr-4 pl-11 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                    />
-                  </div>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    v-model="couponCode"
+                    type="text"
+                    placeholder="Nhập mã hoặc tên phiếu"
+                    class="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                    @keyup.enter="handleApplyCoupon"
+                  />
                   <button
                     type="button"
-                    class="shrink-0 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                     :disabled="!coTheApDungPhieu"
                     @click="handleApplyCoupon"
                   >
-                    <span class="flex items-center gap-2">
-                      <Search class="h-4 w-4" />
-                      {{ applyingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
-                    </span>
+                    {{ applyingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
                   </button>
                 </div>
 
-                <div v-if="showCouponDropdown" class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                <div v-if="showCouponDropdown" class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
                   <div v-if="!coTheTimPhieu" class="px-3 py-3 text-sm text-slate-500">
                     Thêm sản phẩm vào hóa đơn để xem phiếu phù hợp.
                   </div>
                   <div v-else-if="loadingCoupons" class="px-3 py-3 text-sm text-slate-500">
-                    Đang tìm phiếu giảm giá phù hợp...
+                    Đang tìm phiếu giảm giá...
                   </div>
                   <div v-else-if="!couponResults.length" class="px-3 py-3 text-sm text-slate-500">
                     {{ couponCode.trim() ? "Không tìm thấy phiếu giảm giá phù hợp." : "Chưa có phiếu giảm giá phù hợp cho hóa đơn này." }}
@@ -1246,28 +1324,18 @@ onMounted(async () => {
                       v-for="coupon in couponResults"
                       :key="coupon.id"
                       type="button"
-                      class="w-full rounded-2xl bg-white px-3 py-3 text-left transition hover:border-red-200 hover:bg-red-50"
+                      class="w-full rounded-2xl border border-transparent bg-white px-3 py-3 text-left transition hover:border-red-200 hover:bg-red-50"
                       @mousedown.prevent
                       @click="chonPhieuGiamGia(coupon)"
                     >
-                      <div class="flex items-start gap-3">
-                        <div class="rounded-xl bg-rose-50 p-2 text-red-500">
-                          <BadgePercent class="h-4 w-4" />
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-semibold text-slate-800">{{ coupon.ma }}</p>
+                          <p class="mt-1 text-xs text-slate-500">{{ coupon.ten }}</p>
                         </div>
-                        <div class="min-w-0 flex-1">
-                          <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                              <p class="truncate text-sm font-semibold text-slate-800">{{ coupon.ma }}</p>
-                              <p class="mt-1 text-xs text-slate-500">{{ coupon.ten }}</p>
-                            </div>
-                            <div class="text-right">
-                              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Giảm</p>
-                              <p class="text-sm font-bold text-emerald-600">{{ dinhDangTien(coupon.soTienGiam) }}</p>
-                            </div>
-                          </div>
-                          <p class="mt-2 text-xs text-slate-400">
-                            {{ coupon.giaTriToiThieu ? `Đơn tối thiểu ${dinhDangTien(coupon.giaTriToiThieu)}` : "Áp dụng ngay cho hóa đơn hiện tại" }}
-                          </p>
+                        <div class="text-right">
+                          <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Giảm</p>
+                          <p class="text-sm font-bold text-emerald-600">{{ dinhDangTien(coupon.soTienGiam) }}</p>
                         </div>
                       </div>
                     </button>
@@ -1349,7 +1417,7 @@ onMounted(async () => {
                 autocomplete="off"
                 :disabled="paymentMethod !== 1"
                 :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-sm font-semibold text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 @input="formatCurrencyInput"
               />
             </div>
