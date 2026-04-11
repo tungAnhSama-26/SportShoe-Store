@@ -13,7 +13,8 @@ import QuanLySanPham from "../pages/admin/san-pham/QuanLySanPham.vue";
 import DotGiamGia from "../pages/admin/khuyen-mai/DotGiamGia.vue";
 import QuanLyNhanVien from "../pages/admin/nhan-vien/QuanLyNhanVien.vue";
 import ChiTietNhanVien from "../pages/admin/nhan-vien/ChiTietNhanVien.vue";
-import QuanLyKhachHang from "../pages/admin/tai-khoan/QuanLyKhachHang.vue";
+import QuanLyKhachHang from "../pages/admin/khach-hang/QuanLyKhachHang.vue";
+import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
 import DeGiay from "../pages/admin/danh-muc/DeGiay.vue";
@@ -125,6 +126,16 @@ const router = createRouter({
           path: "khach-hang",
           name: "admin-khach-hang",
           component: QuanLyKhachHang
+        },
+        {
+          path: "khach-hang/them",
+          name: "admin-khach-hang-them",
+          component: ChiTietKhachHang
+        },
+        {
+          path: "khach-hang/:id",
+          name: "admin-khach-hang-chi-tiet",
+          component: ChiTietKhachHang
         }
       ]
     }
