@@ -30,6 +30,7 @@ CREATE TABLE nhan_vien (
     ma            VARCHAR(20)      NOT NULL,
     ho_ten        NVARCHAR(100)    NOT NULL,
     email         VARCHAR(100)     NOT NULL,
+    hinh_anh NVARCHAR(500) NULL,
     mat_khau      VARCHAR(255)     NOT NULL,
     sdt           VARCHAR(20)      NULL,
     dia_chi       NVARCHAR(200)    NULL,
@@ -56,6 +57,7 @@ CREATE TABLE khach_hang (
     email         VARCHAR(100)     NULL,
     sdt           VARCHAR(20)      NULL,
     ngay_sinh     DATE             NULL,
+    hinh_anh NVARCHAR(500) NULL,
     mat_khau      VARCHAR(255)     NOT NULL,
     trang_thai    INT              NOT NULL CONSTRAINT df_khach_hang_trang_thai DEFAULT 1,
     -- 0 = Khóa   |  1 = Hoạt động
