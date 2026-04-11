@@ -2,12 +2,12 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Banknote, CircleX, History, Package, Plus, Search, ShoppingCart, Star, Trash2, Truck } from "lucide-vue-next";
-import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, type HoaDonDetail, type HoaDonHistory } from "../../../services/hoa-don";
+import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon } from "../../../services/hoa-don";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 
 const route = useRoute();
 const router = useRouter();
-const hoaDon = ref<HoaDonDetail | null>(null);
+const hoaDon = ref(null);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const dangCapNhat = ref(false);
@@ -18,7 +18,7 @@ const hienModalXacNhan = ref(false);
 const hienModalLichSu = ref(false);
 const hienModalSanPham = ref(false);
 
-const trangThaiMoiXacNhan = ref<HoaDonDetail["trangThai"] | null>(null);
+const trangThaiMoiXacNhan = ref(null);
 const ghiChuXacNhan = ref("");
 
 // Product update state
@@ -68,7 +68,7 @@ async function taiChiTiet() {
   }
 }
 
-function openModalXacNhan(trangThai: HoaDonDetail["trangThai"]) {
+function openModalXacNhan(trangThai) {
   trangThaiMoiXacNhan.value = trangThai;
   ghiChuXacNhan.value = "";
   hienModalXacNhan.value = true;
