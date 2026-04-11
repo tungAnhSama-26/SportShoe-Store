@@ -1,10 +1,12 @@
-<script setup lang="ts">
-import type { SanPhamNoiBat } from "../../types/trang-chu";
+<script setup>
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
 
-defineProps<{
-  sanPham: SanPhamNoiBat[];
-}>();
+defineProps({
+  sanPham: {
+    type: Array,
+    required: true,
+  },
+});
 </script>
 
 <template>

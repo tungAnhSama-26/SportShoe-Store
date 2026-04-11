@@ -1,9 +1,10 @@
-<script setup lang="ts">
-import type { DanhMucGiay } from "../../types/trang-chu";
-
-defineProps<{
-  danhMuc: DanhMucGiay[];
-}>();
+<script setup>
+defineProps({
+  danhMuc: {
+    type: Array,
+    required: true,
+  },
+});
 </script>
 
 <template>

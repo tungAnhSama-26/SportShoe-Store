@@ -1,27 +1,33 @@
-<script setup lang="ts">
-import { computed } from 'vue';
+<script setup>
+import { computed } from "vue";
 
-type PaginationItem = number | 'ellipsis';
-
-const props = withDefaults(defineProps<{
-  modelValue: number;
-  totalItems: number;
-  pageSize: number;
-  siblingCount?: number;
-}>(), {
-  siblingCount: 1,
+const props = defineProps({
+  modelValue: {
+    type: Number,
+    required: true,
+  },
+  totalItems: {
+    type: Number,
+    required: true,
+  },
+  pageSize: {
+    type: Number,
+    required: true,
+  },
+  siblingCount: {
+    type: Number,
+    default: 1,
+  },
 });
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number];
-}>();
+const emit = defineEmits(["update:modelValue"]);
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.totalItems / props.pageSize)));
 const currentPage = computed(() => Math.min(Math.max(props.modelValue, 1), totalPages.value));
-const startItem = computed(() => props.totalItems === 0 ? 0 : (currentPage.value - 1) * props.pageSize + 1);
+const startItem = computed(() => (props.totalItems === 0 ? 0 : (currentPage.value - 1) * props.pageSize + 1));
 const endItem = computed(() => Math.min(currentPage.value * props.pageSize, props.totalItems));
 
-const pageItems = computed<PaginationItem[]>(() => {
+const pageItems = computed(() => {
   const pages = totalPages.value;
   const page = currentPage.value;
   const siblingCount = props.siblingCount;
@@ -30,12 +36,12 @@ const pageItems = computed<PaginationItem[]>(() => {
     return Array.from({ length: pages }, (_, index) => index + 1);
   }
 
-  const items: PaginationItem[] = [1];
+  const items = [1];
   const left = Math.max(2, page - siblingCount);
   const right = Math.min(pages - 1, page + siblingCount);
 
   if (left > 2) {
-    items.push('ellipsis');
+    items.push("ellipsis");
   }
 
   for (let value = left; value <= right; value += 1) {
@@ -43,21 +49,21 @@ const pageItems = computed<PaginationItem[]>(() => {
   }
 
   if (right < pages - 1) {
-    items.push('ellipsis');
+    items.push("ellipsis");
   }
 
   items.push(pages);
   return items;
 });
 
-const changePage = (page: number) => {
+const changePage = (page) => {
   const nextPage = Math.min(Math.max(page, 1), totalPages.value);
   if (nextPage !== currentPage.value) {
-    emit('update:modelValue', nextPage);
+    emit("update:modelValue", nextPage);
   }
 };
 
-const itemKey = (item: PaginationItem, index: number) => `${item}-${index}`;
+const itemKey = (item, index) => `${item}-${index}`;
 </script>
 
 <template>

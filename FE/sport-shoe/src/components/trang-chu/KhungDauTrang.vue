@@ -1,10 +1,13 @@
-<script setup lang="ts">
+<script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import logoChinh from "../../assets/logo/delete-background-logo.png";
 
-defineProps<{
-  thuongHieu: string;
-}>();
+defineProps({
+  thuongHieu: {
+    type: String,
+    required: true,
+  },
+});
 
 const dangCuon = ref(false);
 const menuMo = ref(false);

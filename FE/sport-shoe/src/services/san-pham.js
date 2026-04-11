@@ -1,5 +1,7 @@
 import { sanPhamNoiBat } from "../constants/trangChu";
-
-export function laySanPhamNoiBat() {
+function laySanPhamNoiBat() {
   return sanPhamNoiBat;
 }
+export {
+  laySanPhamNoiBat
+};
