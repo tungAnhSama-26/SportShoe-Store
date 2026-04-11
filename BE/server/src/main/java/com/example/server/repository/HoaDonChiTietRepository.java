@@ -20,6 +20,8 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
             """)
     List<HoaDonChiTiet> findByHoaDonIdWithProduct(@Param("hoaDonId") Integer hoaDonId);
 
+    List<HoaDonChiTiet> findByHoaDonId(Integer hoaDonId);
+
     @Query("""
             from HoaDonChiTiet hdct
             join fetch hdct.hoaDon hd
