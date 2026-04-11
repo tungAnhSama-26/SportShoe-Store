@@ -9,6 +9,7 @@ import ThongKe from '../pages/admin/thong-ke/ThongKe.vue';
 import PhieuGiamGia from '../pages/admin/khuyen-mai/PhieuGiamGia.vue';
 import QuanLyDonHang from '../pages/admin/don-hang/QuanLyDonHang.vue';
 import HoaDon from '../pages/admin/hoa-don/HoaDon.vue';
+import ChiTietHoaDon from '../pages/admin/hoa-don/ChiTietHoaDon.vue';
 import BanHangTaiQuay from '../pages/admin/ban-hang/BanHangTaiQuay.vue';
 import QuanLySanPham from '../pages/admin/san-pham/QuanLySanPham.vue';
 import DotGiamGia from '../pages/admin/khuyen-mai/DotGiamGia.vue';
@@ -88,6 +89,11 @@ const router = createRouter({
           path: 'hoa-don',
           name: 'admin-hoa-don',
           component: HoaDon
+        },
+        {
+          path: 'hoa-don/:id',
+          name: 'admin-hoa-don-chi-tiet',
+          component: ChiTietHoaDon
         },
         {
           path: 'ban-hang',
