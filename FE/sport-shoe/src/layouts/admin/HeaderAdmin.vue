@@ -1,8 +1,7 @@
-<script setup lang="ts">
-import { Bell, Sun, Moon, Settings, Menu } from 'lucide-vue-next';
-import { toggleSidebar } from '../../composable/useSidebar';
-import { useDarkMode } from '../../composable/useDarkMode';
-
+<script setup>
+import { Bell, Sun, Moon, Settings, Menu } from "lucide-vue-next";
+import { toggleSidebar } from "../../composable/useSidebar";
+import { useDarkMode } from "../../composable/useDarkMode";
 const { isDark, toggleDark } = useDarkMode();
 </script>
 

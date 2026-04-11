@@ -94,6 +94,7 @@ watch(() => boLoc.value, () => {
 }, { deep: true });
 
 onMounted(taiDanhSach);
+
 </script>
 
 <template>

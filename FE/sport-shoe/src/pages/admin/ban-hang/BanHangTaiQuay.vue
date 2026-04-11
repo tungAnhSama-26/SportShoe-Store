@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿<script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import {
   Award,
@@ -10,7 +10,7 @@ import {
   Palette,
   Ruler,
   Search,
-  Weight,
+  Weight
 } from "lucide-vue-next";
 import {
   apDungPhieuGiamGiaTaiQuay,
@@ -21,41 +21,26 @@ import {
   taoHoaDonCho,
   timKhachHangTheoSoDienThoai,
   timPhieuGiamGiaTaiQuay,
-  timSanPhamTaiQuay,
-  type HoaDonChoChiTiet,
-  type HoaDonChoTomTat,
-  type KhachHangTaiQuay,
-  type PhieuGiamGiaTaiQuay,
-  type SanPhamTaiQuay,
+  timSanPhamTaiQuay
 } from "../../../services/ban-hang-tai-quay";
-
-const GUEST_LABEL = "Kh\u00e1ch v\u00e3ng lai";
-const HIDDEN_INFO_LABEL = "\u1ea8n th\u00f4ng tin";
-
-interface GioHangItem {
-  chiTietId: number;
-  maSanPham: string;
-  tenSanPham: string;
-  soLuong: number;
-  giaBan: number;
-  soLuongTon: number;
-}
-
+const GUEST_LABEL = "Kh\xE1ch v\xE3ng lai";
+const HIDDEN_INFO_LABEL = "\u1EA8n th\xF4ng tin";
+const MAX_PENDING_INVOICES = 5;
+const MAX_PAYMENT_DIGITS = 15;
 const customerKeyword = ref("");
 const productKeyword = ref("");
 const couponCode = ref("");
-const customerResults = ref<KhachHangTaiQuay[]>([]);
-const productResults = ref<SanPhamTaiQuay[]>([]);
-const selectedProductDetail = ref<SanPhamTaiQuay | null>(null);
+const customerResults = ref([]);
+const productResults = ref([]);
+const selectedProductDetail = ref(null);
 const selectedColor = ref("");
 const selectedSize = ref("");
 const selectedQuantity = ref(1);
-const selectedCustomer = ref<KhachHangTaiQuay | null>(null);
-const cartItems = ref<GioHangItem[]>([]);
-const pendingInvoices = ref<HoaDonChoTomTat[]>([]);
-const activePendingInvoice = ref<HoaDonChoTomTat | null>(null);
-const appliedCoupon = ref<PhieuGiamGiaTaiQuay | null>(null);
-
+const selectedCustomer = ref(null);
+const cartItems = ref([]);
+const pendingInvoices = ref([]);
+const activePendingInvoice = ref(null);
+const appliedCoupon = ref(null);
 const loadingCustomers = ref(false);
 const loadingProducts = ref(false);
 const loadingPendingInvoices = ref(false);
@@ -66,7 +51,7 @@ const invoiceLoading = ref(false);
 const applyingCoupon = ref(false);
 const showCustomerDropdown = ref(false);
 const showProductDropdown = ref(false);
-const couponResults = ref<PhieuGiamGiaTaiQuay[]>([]);
+const couponResults = ref([]);
 const loadingCoupons = ref(false);
 const showCouponDropdown = ref(false);
 const pageError = ref("");
@@ -74,24 +59,22 @@ const successMessage = ref("");
 const paymentMethod = ref(1);
 const amountPaid = ref("");
 const paymentNote = ref("");
-
-let customerTimer: number | undefined;
-let productTimer: number | undefined;
-let couponTimer: number | undefined;
-let couponDropdownTimer: number | undefined;
-
-const tongSoLuong = computed(() =>
-  cartItems.value.reduce((total, item) => total + item.soLuong, 0),
+let customerTimer;
+let productTimer;
+let couponTimer;
+let couponDropdownTimer;
+const tongSoLuong = computed(
+  () => cartItems.value.reduce((total, item) => total + item.soLuong, 0)
 );
-const tongTien = computed(() =>
-  cartItems.value.reduce((total, item) => total + item.soLuong * item.giaBan, 0),
+const tongTien = computed(
+  () => cartItems.value.reduce((total, item) => total + item.soLuong * item.giaBan, 0)
 );
 const tienGiam = computed(() => appliedCoupon.value?.soTienGiam ?? 0);
-const productSearchLabel = computed(() =>
-  productKeyword.value.trim() ? "K\u1ebft qu\u1ea3 t\u00ecm ki\u1ebfm s\u1ea3n ph\u1ea9m" : "S\u1ea3n ph\u1ea9m t\u1ea1i qu\u1ea7y",
+const productSearchLabel = computed(
+  () => productKeyword.value.trim() ? "K\u1EBFt qu\u1EA3 t\xECm ki\u1EBFm s\u1EA3n ph\u1EA9m" : "S\u1EA3n ph\u1EA9m t\u1EA1i qu\u1EA7y"
 );
 const isGuestCustomer = computed(
-  () => customerKeyword.value.trim().toLowerCase() === GUEST_LABEL.toLowerCase(),
+  () => customerKeyword.value.trim().toLowerCase() === GUEST_LABEL.toLowerCase()
 );
 const tenKhachHangHienThi = computed(() => {
   if (selectedCustomer.value) {
@@ -113,18 +96,16 @@ const soDienThoaiKhachHangHienThi = computed(() => {
 });
 const maPhieuChuaApDung = computed(() => Boolean(couponCode.value.trim()) && !appliedCoupon.value);
 const daChonKhach = computed(
-  () => Boolean(selectedCustomer.value) || Boolean(activePendingInvoice.value) || isGuestCustomer.value,
+  () => Boolean(selectedCustomer.value) || Boolean(activePendingInvoice.value) || isGuestCustomer.value
 );
 const khachCanTra = computed(() => appliedCoupon.value?.tongTienSauGiam ?? tongTien.value);
 const coTheTimPhieu = computed(() => cartItems.value.length > 0 && tongTien.value > 0);
-const coTheApDungPhieu = computed(() =>
-  Boolean(couponCode.value.trim()) &&
-  cartItems.value.length > 0 &&
-  !applyingCoupon.value &&
-  (!appliedCoupon.value || appliedCoupon.value.ma.toLowerCase() !== couponCode.value.trim().toLowerCase()),
+const coTheApDungPhieu = computed(
+  () => Boolean(couponCode.value.trim()) && cartItems.value.length > 0 && !applyingCoupon.value && (!appliedCoupon.value || appliedCoupon.value.ma.toLowerCase() !== couponCode.value.trim().toLowerCase())
 );
+const pendingInvoiceLimitReached = computed(() => pendingInvoices.value.length >= MAX_PENDING_INVOICES);
 const tienKhachThanhToan = computed(() => {
-  const parsed = Number(amountPaid.value.replace(/[^\d]/g, ""));
+  const parsed = Number(layChuSoTien(amountPaid.value));
   return Number.isFinite(parsed) ? parsed : 0;
 });
 const tienThua = computed(() => {
@@ -134,7 +115,7 @@ const tienThua = computed(() => {
   return Math.max(tienKhachThanhToan.value - khachCanTra.value, 0);
 });
 const canCreatePendingInvoice = computed(
-  () => cartItems.value.length > 0 && !savingPendingInvoice.value && !maPhieuChuaApDung.value,
+  () => cartItems.value.length > 0 && !savingPendingInvoice.value && !maPhieuChuaApDung.value && !pendingInvoiceLimitReached.value
 );
 const canPay = computed(() => {
   if (!cartItems.value.length || payingInvoice.value || maPhieuChuaApDung.value) {
@@ -145,33 +126,35 @@ const canPay = computed(() => {
   }
   return true;
 });
-
-function dinhDangTien(value: number) {
+function dinhDangTien(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(value || 0);
 }
-
-function dinhDangSo(value: number) {
+function dinhDangSo(value) {
   return new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(value || 0);
 }
-
+function layChuSoTien(value) {
+  return value.replace(/[^\d]/g, "").slice(0, MAX_PAYMENT_DIGITS);
+}
+function dinhDangTienNhap(value) {
+  const digits = layChuSoTien(value);
+  return digits ? dinhDangSo(Number(digits)) : "";
+}
 function clearFeedback() {
   pageError.value = "";
   successMessage.value = "";
 }
-
 function taoDanhSachSanPhamThanhToan() {
   return cartItems.value.map((item) => ({
     chiTietId: item.chiTietId,
-    soLuong: item.soLuong,
+    soLuong: item.soLuong
   }));
 }
-
 function layKhachHangIdHienTai() {
   if (selectedCustomer.value) {
     return selectedCustomer.value.id;
@@ -181,116 +164,94 @@ function layKhachHangIdHienTai() {
   }
   return activePendingInvoice.value?.khachHangId ?? null;
 }
-
 function capNhatTienKhachThanhToan(force = false) {
   if (!cartItems.value.length) {
     amountPaid.value = "";
     return;
   }
-
   if (paymentMethod.value !== 1 || force) {
     amountPaid.value = dinhDangSo(khachCanTra.value);
     return;
   }
-
   if (!amountPaid.value.trim()) {
     amountPaid.value = dinhDangSo(khachCanTra.value);
   }
 }
-
 function danhDauCanApDungLaiPhieu() {
   if (!couponCode.value.trim()) {
     appliedCoupon.value = null;
     return;
   }
-
   appliedCoupon.value = null;
 }
-
-function soLuongDaChon(chiTietId: number) {
+function soLuongDaChon(chiTietId) {
   return cartItems.value.find((item) => item.chiTietId === chiTietId)?.soLuong ?? 0;
 }
-
-function soLuongConLai(chiTietId: number, soLuongTon: number) {
+function soLuongConLai(chiTietId, soLuongTon) {
   return Math.max(soLuongTon - soLuongDaChon(chiTietId), 0);
 }
-
-function laySoLuongTonHienTai(chiTietId: number, fallback: number) {
+function laySoLuongTonHienTai(chiTietId, fallback) {
   return productResults.value.find((product) => product.chiTietId === chiTietId)?.soLuongTon ?? fallback;
 }
-
 const productDetailFields = computed(() => {
   if (!selectedProductDetail.value) {
     return [];
   }
-
   return [
-    { label: "Lo\u1ea1i gi\u00e0y", value: selectedProductDetail.value.loaiGiay || "--", icon: Box },
-    { label: "Th\u01b0\u01a1ng hi\u1ec7u", value: selectedProductDetail.value.thuongHieu || "--", icon: Award },
-    { label: "\u0110\u1ebf gi\u00e0y", value: selectedProductDetail.value.deGiay || "--", icon: Footprints },
-    { label: "C\u1ed5 gi\u00e0y", value: selectedProductDetail.value.coGiay || "--", icon: MoveVertical },
-    { label: "C\u00f4ng ngh\u1ec7 \u0111\u1ec7m", value: selectedProductDetail.value.congNgheDem || "--", icon: Feather },
-    { label: "M\u00e0u s\u1eafc", value: selectedProductDetail.value.mauSac || "--", icon: Palette },
-    { label: "K\u00edch c\u1ee1", value: selectedProductDetail.value.kichCo || "--", icon: Ruler },
-    { label: "Tr\u1ecdng l\u01b0\u1ee3ng", value: selectedProductDetail.value.trongLuong || "--", icon: Weight },
+    { label: "Lo\u1EA1i gi\xE0y", value: selectedProductDetail.value.loaiGiay || "--", icon: Box },
+    { label: "Th\u01B0\u01A1ng hi\u1EC7u", value: selectedProductDetail.value.thuongHieu || "--", icon: Award },
+    { label: "\u0110\u1EBF gi\xE0y", value: selectedProductDetail.value.deGiay || "--", icon: Footprints },
+    { label: "C\u1ED5 gi\xE0y", value: selectedProductDetail.value.coGiay || "--", icon: MoveVertical },
+    { label: "C\xF4ng ngh\u1EC7 \u0111\u1EC7m", value: selectedProductDetail.value.congNgheDem || "--", icon: Feather },
+    { label: "M\xE0u s\u1EAFc", value: selectedProductDetail.value.mauSac || "--", icon: Palette },
+    { label: "K\xEDch c\u1EE1", value: selectedProductDetail.value.kichCo || "--", icon: Ruler },
+    { label: "Tr\u1ECDng l\u01B0\u1EE3ng", value: selectedProductDetail.value.trongLuong || "--", icon: Weight }
   ];
 });
 const relatedVariants = computed(() => {
   if (!selectedProductDetail.value) {
     return [];
   }
-
   return productResults.value.filter(
-    (product) =>
-      product.maSanPham === selectedProductDetail.value?.maSanPham &&
-      product.tenSanPham === selectedProductDetail.value?.tenSanPham,
+    (product) => product.maSanPham === selectedProductDetail.value?.maSanPham && product.tenSanPham === selectedProductDetail.value?.tenSanPham
   );
 });
 const colorOptions = computed(() => {
-  const grouped = new Map<string, SanPhamTaiQuay>();
-
+  const grouped = /* @__PURE__ */ new Map();
   for (const variant of relatedVariants.value) {
     const key = variant.mauSac || variant.maBienThe;
     if (!grouped.has(key)) {
       grouped.set(key, variant);
     }
   }
-
   return Array.from(grouped.values());
 });
-const sizeOptions = computed(() =>
-  relatedVariants.value.filter((variant) => {
+const sizeOptions = computed(
+  () => relatedVariants.value.filter((variant) => {
     if (!selectedColor.value) {
       return true;
     }
     return (variant.mauSac || variant.maBienThe) === selectedColor.value;
-  }),
+  })
 );
 const selectedVariant = computed(() => {
   if (!selectedProductDetail.value) {
     return null;
   }
-
-  return (
-    relatedVariants.value.find(
-      (variant) =>
-        (selectedColor.value ? (variant.mauSac || variant.maBienThe) === selectedColor.value : true) &&
-        (selectedSize.value ? (variant.kichCo || "") === selectedSize.value : true),
-    ) || selectedProductDetail.value
-  );
+  return relatedVariants.value.find(
+    (variant) => (selectedColor.value ? (variant.mauSac || variant.maBienThe) === selectedColor.value : true) && (selectedSize.value ? (variant.kichCo || "") === selectedSize.value : true)
+  ) || selectedProductDetail.value;
 });
 const chiTietDangChon = computed(() => selectedVariant.value || selectedProductDetail.value);
 const soLuongTonKhaDungChiTiet = computed(() => {
   if (!chiTietDangChon.value) {
     return 0;
   }
-
   return soLuongConLai(chiTietDangChon.value.chiTietId, chiTietDangChon.value.soLuongTon);
 });
-const soLuongTonSauKhiChon = computed(() =>
-  Math.max(soLuongTonKhaDungChiTiet.value - selectedQuantity.value, 0),
+const soLuongTonSauKhiChon = computed(
+  () => Math.max(soLuongTonKhaDungChiTiet.value - selectedQuantity.value, 0)
 );
-
 function resetDraft() {
   selectedCustomer.value = null;
   customerKeyword.value = "";
@@ -315,67 +276,60 @@ function resetDraft() {
   clearFeedback();
   void fetchProducts("");
 }
-
 async function fetchPendingInvoices() {
   loadingPendingInvoices.value = true;
   try {
     pendingInvoices.value = await layDanhSachHoaDonCho();
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u1ea3i danh s\u00e1ch h\u00f3a \u0111\u01a1n ch\u1edd";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 t\u1EA3i danh s\xE1ch h\xF3a \u0111\u01A1n ch\u1EDD";
   } finally {
     loadingPendingInvoices.value = false;
   }
 }
-
-async function fetchCustomers(keyword: string) {
+async function fetchCustomers(keyword) {
   if (!keyword.trim() || keyword.trim().toLowerCase() === GUEST_LABEL.toLowerCase()) {
     customerResults.value = [];
     return;
   }
-
   loadingCustomers.value = true;
   try {
     customerResults.value = await timKhachHangTheoSoDienThoai(keyword);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u00ecm kh\u00e1ch h\u00e0ng";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 t\xECm kh\xE1ch h\xE0ng";
   } finally {
     loadingCustomers.value = false;
   }
 }
-
-async function fetchProducts(keyword: string) {
+async function fetchProducts(keyword) {
   loadingProducts.value = true;
   try {
     productResults.value = await timSanPhamTaiQuay(keyword);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u00ecm s\u1ea3n ph\u1ea9m";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 t\xECm s\u1EA3n ph\u1EA9m";
   } finally {
     loadingProducts.value = false;
   }
 }
-
-async function fetchCoupons(keyword: string) {
+async function fetchCoupons(keyword) {
   if (!coTheTimPhieu.value) {
     couponResults.value = [];
     return;
   }
-
   loadingCoupons.value = true;
   try {
     couponResults.value = await timPhieuGiamGiaTaiQuay({
       keyword,
       hoaDonId: activePendingInvoice.value?.id ?? null,
       khachHangId: layKhachHangIdHienTai(),
-      tongTienHang: tongTien.value,
+      tongTienHang: tongTien.value
     });
   } catch (error) {
     couponResults.value = [];
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u00ecm phi\u1ebfu gi\u1ea3m gi\u00e1";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 t\xECm phi\u1EBFu gi\u1EA3m gi\xE1";
   } finally {
     loadingCoupons.value = false;
   }
 }
-
 watch(customerKeyword, (value) => {
   if (customerTimer) {
     window.clearTimeout(customerTimer);
@@ -386,7 +340,6 @@ watch(customerKeyword, (value) => {
     void fetchCustomers(value);
   }, 250);
 });
-
 watch(productKeyword, (value) => {
   if (productTimer) {
     window.clearTimeout(productTimer);
@@ -396,12 +349,10 @@ watch(productKeyword, (value) => {
     void fetchProducts(value);
   }, 250);
 });
-
 watch(couponCode, (value) => {
   if (couponTimer) {
     window.clearTimeout(couponTimer);
   }
-
   const trimmed = value.trim();
   if (!trimmed) {
     appliedCoupon.value = null;
@@ -412,88 +363,70 @@ watch(couponCode, (value) => {
     }
     return;
   }
-
   if (appliedCoupon.value && appliedCoupon.value.ma.toLowerCase() !== trimmed.toLowerCase()) {
     appliedCoupon.value = null;
   }
-
   if (!showCouponDropdown.value) {
     return;
   }
-
   couponTimer = window.setTimeout(() => {
     void fetchCoupons(value);
   }, 250);
 });
-
 watch([paymentMethod, khachCanTra], () => {
   capNhatTienKhachThanhToan();
 });
-
 watch([coTheTimPhieu, tongTien, selectedCustomer, activePendingInvoice], ([coTheTim]) => {
   if (!coTheTim) {
     couponResults.value = [];
     showCouponDropdown.value = false;
     return;
   }
-
   if (!showCouponDropdown.value) {
     return;
   }
-
   void fetchCoupons(couponCode.value);
 });
-
 watch(pageError, (message) => {
   if (!message) {
     return;
   }
-
   window.alert(message);
   pageError.value = "";
 });
-
 watch(successMessage, (message) => {
   if (!message) {
     return;
   }
-
   window.alert(message);
   successMessage.value = "";
 });
-
 function handleCouponFocus() {
   if (couponDropdownTimer) {
     window.clearTimeout(couponDropdownTimer);
   }
-
   showCouponDropdown.value = true;
   void fetchCoupons(couponCode.value);
 }
-
 function handleCouponBlur() {
   if (couponDropdownTimer) {
     window.clearTimeout(couponDropdownTimer);
   }
-
   couponDropdownTimer = window.setTimeout(() => {
     showCouponDropdown.value = false;
   }, 150);
 }
-
-function chonPhieuGiamGia(coupon: PhieuGiamGiaTaiQuay) {
+function chonPhieuGiamGia(coupon) {
   if (couponDropdownTimer) {
     window.clearTimeout(couponDropdownTimer);
   }
-
   couponCode.value = coupon.ma;
   appliedCoupon.value = coupon;
   showCouponDropdown.value = false;
   capNhatTienKhachThanhToan();
   clearFeedback();
 }
-
-function chonKhachHang(customer: KhachHangTaiQuay) {
+function chonKhachHang(customer) {
   selectedCustomer.value = customer;
   customerKeyword.value = customer.hoTen;
   customerResults.value = [];
@@ -501,7 +434,6 @@ function chonKhachHang(customer: KhachHangTaiQuay) {
   danhDauCanApDungLaiPhieu();
   clearFeedback();
 }
-
 function boChonKhachHang() {
   selectedCustomer.value = null;
   customerKeyword.value = GUEST_LABEL;
@@ -509,7 +441,6 @@ function boChonKhachHang() {
   showCustomerDropdown.value = false;
   danhDauCanApDungLaiPhieu();
 }
-
 function chonKhachVangLai() {
   selectedCustomer.value = null;
   customerKeyword.value = GUEST_LABEL;
@@ -518,43 +449,38 @@ function chonKhachVangLai() {
   danhDauCanApDungLaiPhieu();
   clearFeedback();
 }
-
-function moChiTietSanPham(product: SanPhamTaiQuay) {
+function moChiTietSanPham(product) {
   if (!daChonKhach.value) {
-    pageError.value = "Vui l\u00f2ng ch\u1ecdn kh\u00e1ch h\u00e0ng ho\u1eb7c Kh\u00e1ch v\u00e3ng lai tr\u01b0\u1edbc khi th\u00eam s\u1ea3n ph\u1ea9m";
+    pageError.value = "Vui l\xF2ng ch\u1ECDn kh\xE1ch h\xE0ng ho\u1EB7c Kh\xE1ch v\xE3ng lai tr\u01B0\u1EDBc khi th\xEAm s\u1EA3n ph\u1EA9m";
     return;
   }
-
   selectedProductDetail.value = product;
   selectedColor.value = product.mauSac || product.maBienThe;
   selectedSize.value = product.kichCo || "";
   selectedQuantity.value = 1;
 }
-
 function dongChiTietSanPham() {
   selectedProductDetail.value = null;
   selectedColor.value = "";
   selectedSize.value = "";
   selectedQuantity.value = 1;
 }
-
-function themSanPham(product: SanPhamTaiQuay, quantity = 1) {
+function themSanPham(product, quantity = 1) {
   if (!daChonKhach.value) {
-    pageError.value = "Vui l\u00f2ng ch\u1ecdn kh\u00e1ch h\u00e0ng ho\u1eb7c Kh\u00e1ch v\u00e3ng lai tr\u01b0\u1edbc khi th\u00eam s\u1ea3n ph\u1ea9m";
+    pageError.value = "Vui l\xF2ng ch\u1ECDn kh\xE1ch h\xE0ng ho\u1EB7c Kh\xE1ch v\xE3ng lai tr\u01B0\u1EDBc khi th\xEAm s\u1EA3n ph\u1EA9m";
     return;
   }
-
   const soLuongCoTheThem = soLuongConLai(product.chiTietId, product.soLuongTon);
   const existing = cartItems.value.find((item) => item.chiTietId === product.chiTietId);
   if (existing) {
     if (quantity > soLuongCoTheThem) {
-      pageError.value = `S\u1ea3n ph\u1ea9m ${existing.tenSanPham} \u0111\u00e3 \u0111\u1ea1t gi\u1edbi h\u1ea1n t\u1ed3n kho`;
+      pageError.value = `S\u1EA3n ph\u1EA9m ${existing.tenSanPham} \u0111\xE3 \u0111\u1EA1t gi\u1EDBi h\u1EA1n t\u1ED3n kho`;
       return;
     }
     existing.soLuong += quantity;
   } else {
     if (quantity > soLuongCoTheThem) {
-      pageError.value = `S\u1ea3n ph\u1ea9m ${product.tenSanPham} \u0111\u00e3 v\u01b0\u1ee3t gi\u1edbi h\u1ea1n t\u1ed3n kho`;
+      pageError.value = `S\u1EA3n ph\u1EA9m ${product.tenSanPham} \u0111\xE3 v\u01B0\u1EE3t gi\u1EDBi h\u1EA1n t\u1ED3n kho`;
       return;
     }
     cartItems.value = [
@@ -565,11 +491,10 @@ function themSanPham(product: SanPhamTaiQuay, quantity = 1) {
         tenSanPham: product.tenSanPham,
         soLuong: quantity,
         giaBan: product.giaBan,
-        soLuongTon: product.soLuongTon,
-      },
+        soLuongTon: product.soLuongTon
+      }
     ];
   }
-
   productKeyword.value = "";
   productResults.value = [];
   selectedProductDetail.value = null;
@@ -581,41 +506,33 @@ function themSanPham(product: SanPhamTaiQuay, quantity = 1) {
   capNhatTienKhachThanhToan();
   clearFeedback();
 }
-
-function chonMauSac(value: string) {
+function chonMauSac(value) {
   selectedColor.value = value;
   selectedSize.value = sizeOptions.value[0]?.kichCo || "";
   selectedQuantity.value = 1;
 }
-
-function chonKichCo(value: string) {
+function chonKichCo(value) {
   selectedSize.value = value;
   selectedQuantity.value = 1;
 }
-
 function giamSoLuongChiTiet() {
   selectedQuantity.value = Math.max(selectedQuantity.value - 1, 1);
 }
-
 function tangSoLuongChiTiet() {
   if (!selectedVariant.value) {
     return;
   }
-
   const soLuongToiDa = soLuongConLai(selectedVariant.value.chiTietId, selectedVariant.value.soLuongTon);
   selectedQuantity.value = Math.min(selectedQuantity.value + 1, Math.max(soLuongToiDa, 1));
 }
-
 function themBienTheDangChon() {
   if (!selectedVariant.value) {
-    pageError.value = "Vui l\u00f2ng ch\u1ecdn m\u00e0u s\u1eafc v\u00e0 k\u00edch c\u1ee1 ph\u00f9 h\u1ee3p";
+    pageError.value = "Vui l\xF2ng ch\u1ECDn m\xE0u s\u1EAFc v\xE0 k\xEDch c\u1EE1 ph\xF9 h\u1EE3p";
     return;
   }
-
   themSanPham(selectedVariant.value, selectedQuantity.value);
 }
-
-function tangSoLuong(chiTietId: number) {
+function tangSoLuong(chiTietId) {
   let reachedLimit = "";
   cartItems.value = cartItems.value.map((item) => {
     if (item.chiTietId !== chiTietId) {
@@ -628,62 +545,53 @@ function tangSoLuong(chiTietId: number) {
     return { ...item, soLuong: item.soLuong + 1 };
   });
   if (reachedLimit) {
-    pageError.value = `S\u1ea3n ph\u1ea9m ${reachedLimit} \u0111\u00e3 v\u01b0\u1ee3t gi\u1edbi h\u1ea1n t\u1ed3n kho`;
+    pageError.value = `S\u1EA3n ph\u1EA9m ${reachedLimit} \u0111\xE3 v\u01B0\u1EE3t gi\u1EDBi h\u1EA1n t\u1ED3n kho`;
     return;
   }
   danhDauCanApDungLaiPhieu();
   capNhatTienKhachThanhToan();
 }
-
-function giamSoLuong(chiTietId: number) {
-  cartItems.value = cartItems.value
-    .map((item) =>
-      item.chiTietId === chiTietId ? { ...item, soLuong: item.soLuong - 1 } : item,
-    )
-    .filter((item) => item.soLuong > 0);
+function giamSoLuong(chiTietId) {
+  cartItems.value = cartItems.value.map(
+    (item) => item.chiTietId === chiTietId ? { ...item, soLuong: item.soLuong - 1 } : item
+  ).filter((item) => item.soLuong > 0);
   danhDauCanApDungLaiPhieu();
   capNhatTienKhachThanhToan();
 }
-
-function mapInvoiceToDraft(invoice: HoaDonChoChiTiet) {
+function mapInvoiceToDraft(invoice) {
   customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || GUEST_LABEL;
-  selectedCustomer.value = invoice.khachHangId
-    ? {
-        id: invoice.khachHangId,
-        hoTen: invoice.tenKhachHang,
-        sdt: invoice.soDienThoai,
-        email: null,
-      }
-    : null;
+  selectedCustomer.value = invoice.khachHangId ? {
+    id: invoice.khachHangId,
+    hoTen: invoice.tenKhachHang,
+    sdt: invoice.soDienThoai,
+    email: null
+  } : null;
   cartItems.value = invoice.items.map((item) => ({
     chiTietId: item.chiTietId,
     maSanPham: item.maSanPham,
     tenSanPham: item.tenSanPham,
     soLuong: item.soLuong,
     giaBan: item.giaBan,
-    soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong),
+    soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
   }));
   couponCode.value = invoice.phieuGiamGia?.ma ?? "";
-  appliedCoupon.value = invoice.phieuGiamGia
-    ? {
-        id: 0,
-        ma: invoice.phieuGiamGia.ma,
-        ten: invoice.phieuGiamGia.ten,
-        loai: 0,
-        giaTri: 0,
-        giaTriToiThieu: null,
-        giamToiDa: null,
-        soTienGiam: invoice.tienGiam || invoice.phieuGiamGia.soTienGiam,
-        tongTienHang: invoice.tongTienHang || 0,
-        tongTienSauGiam: invoice.tongTien || 0,
-      }
-    : null;
+  appliedCoupon.value = invoice.phieuGiamGia ? {
+    id: 0,
+    ma: invoice.phieuGiamGia.ma,
+    ten: invoice.phieuGiamGia.ten,
+    loai: 0,
+    giaTri: 0,
+    giaTriToiThieu: null,
+    giamToiDa: null,
+    soTienGiam: invoice.tienGiam || invoice.phieuGiamGia.soTienGiam,
+    tongTienHang: invoice.tongTienHang || 0,
+    tongTienSauGiam: invoice.tongTien || 0
+  } : null;
   couponResults.value = [];
   showCouponDropdown.value = false;
   capNhatTienKhachThanhToan(true);
 }
-
-async function chonHoaDonCho(invoice: HoaDonChoTomTat) {
+async function chonHoaDonCho(invoice) {
   invoiceLoading.value = true;
   pageError.value = "";
   try {
@@ -692,42 +600,38 @@ async function chonHoaDonCho(invoice: HoaDonChoTomTat) {
     activePendingInvoice.value = invoice;
     mapInvoiceToDraft(detail);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Không thể tải hóa đơn chờ";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 t\u1EA3i h\xF3a \u0111\u01A1n ch\u1EDD";
   } finally {
     invoiceLoading.value = false;
   }
 }
-
 async function handleApplyCoupon() {
   if (!coTheApDungPhieu.value) {
     return;
   }
-
   applyingCoupon.value = true;
   pageError.value = "";
   successMessage.value = "";
-
   try {
     const coupon = await apDungPhieuGiamGiaTaiQuay({
       hoaDonId: activePendingInvoice.value?.id ?? null,
       khachHangId: layKhachHangIdHienTai(),
       maPhieuGiamGia: couponCode.value.trim(),
-      items: taoDanhSachSanPhamThanhToan(),
+      items: taoDanhSachSanPhamThanhToan()
     });
     appliedCoupon.value = coupon;
     couponCode.value = coupon.ma;
     couponResults.value = [];
     showCouponDropdown.value = false;
     capNhatTienKhachThanhToan();
-    successMessage.value = `Đã áp dụng mã ${coupon.ma}`;
+    successMessage.value = `\u0110\xE3 \xE1p d\u1EE5ng m\xE3 ${coupon.ma}`;
   } catch (error) {
     appliedCoupon.value = null;
-    pageError.value = error instanceof Error ? error.message : "Không thể áp dụng phiếu giảm giá";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 \xE1p d\u1EE5ng phi\u1EBFu gi\u1EA3m gi\xE1";
   } finally {
     applyingCoupon.value = false;
   }
 }
-
 function handleRemoveCoupon() {
   couponCode.value = "";
   appliedCoupon.value = null;
@@ -735,56 +639,50 @@ function handleRemoveCoupon() {
   capNhatTienKhachThanhToan();
   clearFeedback();
 }
-
 async function handleCreatePendingInvoice() {
+  if (pendingInvoiceLimitReached.value) {
+    pageError.value = `Chỉ được tạo tối đa ${MAX_PENDING_INVOICES} hóa đơn chờ.`;
+    return;
+  }
   if (!canCreatePendingInvoice.value) {
     return;
   }
-
   savingPendingInvoice.value = true;
   pageError.value = "";
   successMessage.value = "";
-
   try {
     const createdInvoice = await taoHoaDonCho({
       khachHangId: layKhachHangIdHienTai(),
       tenKhachHang: tenKhachHangHienThi.value,
       soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
       maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
-      items: taoDanhSachSanPhamThanhToan(),
+      items: taoDanhSachSanPhamThanhToan()
     });
-
-    successMessage.value = `\u0110\u00e3 t\u1ea1o h\u00f3a \u0111\u01a1n ch\u1edd ${createdInvoice.ma}`;
+    successMessage.value = `\u0110\xE3 t\u1EA1o h\xF3a \u0111\u01A1n ch\u1EDD ${createdInvoice.ma}`;
     await fetchPendingInvoices();
     const matchedInvoice = pendingInvoices.value.find((invoice) => invoice.id === createdInvoice.id) ?? null;
     activePendingInvoice.value = matchedInvoice;
     mapInvoiceToDraft(createdInvoice);
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 t\u1ea1o h\u00f3a \u0111\u01a1n ch\u1edd";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 t\u1EA1o h\xF3a \u0111\u01A1n ch\u1EDD";
   } finally {
     savingPendingInvoice.value = false;
   }
 }
-
 function formatCurrencyInput() {
   if (paymentMethod.value !== 1) {
     amountPaid.value = dinhDangSo(khachCanTra.value);
     return;
   }
-
-  const digits = amountPaid.value.replace(/[^\d]/g, "");
-  amountPaid.value = digits ? new Intl.NumberFormat("vi-VN").format(Number(digits)) : "";
+  amountPaid.value = dinhDangTienNhap(amountPaid.value);
 }
-
 async function handlePayNow() {
   if (!canPay.value) {
     return;
   }
-
   payingInvoice.value = true;
   pageError.value = "";
   successMessage.value = "";
-
   try {
     const response = await thanhToanTaiQuay({
       hoaDonId: activePendingInvoice.value?.id ?? null,
@@ -795,40 +693,35 @@ async function handlePayNow() {
       hinhThucThanhToan: paymentMethod.value,
       tienKhachDua: paymentMethod.value === 1 ? tienKhachThanhToan.value : khachCanTra.value,
       ghiChu: paymentNote.value,
-      items: taoDanhSachSanPhamThanhToan(),
+      items: taoDanhSachSanPhamThanhToan()
     });
-
-    successMessage.value = `\u0110\u00e3 thanh to\u00e1n ${response.maHoaDon}`;
+    successMessage.value = `\u0110\xE3 thanh to\xE1n ${response.maHoaDon}`;
     await fetchPendingInvoices();
     resetDraft();
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 thanh to\u00e1n tr\u1ef1c ti\u1ebfp";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 thanh to\xE1n tr\u1EF1c ti\u1EBFp";
   } finally {
     payingInvoice.value = false;
   }
 }
-
 async function handleCancelPendingInvoice() {
   if (!activePendingInvoice.value || cancelingPendingInvoice.value) {
     return;
   }
-
   cancelingPendingInvoice.value = true;
   pageError.value = "";
   successMessage.value = "";
-
   try {
     await huyHoaDonCho(activePendingInvoice.value.id);
-    successMessage.value = `\u0110\u00e3 h\u1ee7y h\u00f3a \u0111\u01a1n ch\u1edd ${activePendingInvoice.value.ma}`;
+    successMessage.value = `\u0110\xE3 h\u1EE7y h\xF3a \u0111\u01A1n ch\u1EDD ${activePendingInvoice.value.ma}`;
     await fetchPendingInvoices();
     resetDraft();
   } catch (error) {
-    pageError.value = error instanceof Error ? error.message : "Kh\u00f4ng th\u1ec3 h\u1ee7y h\u00f3a \u0111\u01a1n ch\u1edd";
+    pageError.value = error instanceof Error ? error.message : "Kh\xF4ng th\u1EC3 h\u1EE7y h\xF3a \u0111\u01A1n ch\u1EDD";
   } finally {
     cancelingPendingInvoice.value = false;
   }
 }
-
 async function moDanhSachKhachHang() {
   const keyword = customerKeyword.value.trim();
   if (keyword && keyword.toLowerCase() !== GUEST_LABEL.toLowerCase()) {
@@ -836,27 +729,22 @@ async function moDanhSachKhachHang() {
     await fetchCustomers(customerKeyword.value);
     return;
   }
-
   showCustomerDropdown.value = false;
 }
-
 async function moDanhSachSanPham() {
   showProductDropdown.value = true;
   await fetchProducts(productKeyword.value);
 }
-
 function dongDanhSachKhachHang() {
   window.setTimeout(() => {
     showCustomerDropdown.value = false;
   }, 150);
 }
-
 function dongDanhSachSanPham() {
   window.setTimeout(() => {
     showProductDropdown.value = false;
   }, 150);
 }
-
 onMounted(async () => {
   await fetchProducts("");
   await fetchPendingInvoices();
@@ -885,9 +773,12 @@ onMounted(async () => {
           <p class="text-sm text-slate-500">Ch&#7885;n nhanh &#273;&#7875; xem l&#7841;i h&#243;a &#273;&#417;n &#273;ang ch&#7901; x&#7917; l&#253;.</p>
         </div>
         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-          {{ loadingPendingInvoices ? "\u0110ang t\u1ea3i..." : `${pendingInvoices.length} h\u00f3a \u0111\u01a1n` }}
+          {{ loadingPendingInvoices ? "\u0110ang t\u1ea3i..." : `${pendingInvoices.length}/${MAX_PENDING_INVOICES} h\u00f3a \u0111\u01a1n` }}
         </span>
       </div>
+      <p v-if="pendingInvoiceLimitReached" class="mb-4 text-xs font-medium text-amber-600">
+        Đã đạt giới hạn tối đa 5 hóa đơn chờ.
+      </p>
 
       <div class="flex flex-wrap gap-3">
         <button
@@ -1034,7 +925,7 @@ onMounted(async () => {
               </div>
               <div class="text-right">
                 <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
-                <p class="mt-1 text-xs text-slate-500">T&#7891;n: {{ product.soLuongTon }}</p>
+                <p class="mt-1 text-xs text-slate-500">T&#7891;n: {{ soLuongConLai(product.chiTietId, product.soLuongTon) }}</p>
               </div>
             </button>
           </div>
@@ -1074,7 +965,7 @@ onMounted(async () => {
                   <p class="mt-1 truncate text-xs text-slate-500">
                     Mã: {{ product.maSanPham }} | SKU: {{ product.sku }} | Biến thể: {{ product.maBienThe }}
                   </p>
-                  <p class="mt-2 text-sm font-semibold text-slate-700">Tồn kho: x{{ product.soLuongTon }}</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-700">Tồn khả dụng: {{ soLuongConLai(product.chiTietId, product.soLuongTon) }}</p>
                 </div>
               </div>
 
@@ -1130,7 +1021,7 @@ onMounted(async () => {
                       +
                     </button>
                   </div>
-                  <p class="mt-2 text-xs text-slate-400">Tồn kho: {{ item.soLuongTon }}</p>
+                  <p class="mt-2 text-xs text-slate-400">Tồn còn lại: {{ soLuongConLai(item.chiTietId, item.soLuongTon) }}</p>
                 </td>
               </tr>
               <tr v-if="!cartItems.length">
@@ -1405,20 +1296,20 @@ onMounted(async () => {
                     Bỏ mã
                   </button>
                 </div>
-                <div class="mt-3 flex items-center justify-between text-sm">
+                <div class="mt-3 flex items-start justify-between gap-3 text-sm">
                   <span class="text-emerald-700">Tiền giảm</span>
-                  <span class="font-bold text-emerald-700">{{ dinhDangTien(tienGiam) }}</span>
+                  <span class="max-w-[65%] break-all text-right font-bold text-emerald-700">{{ dinhDangTien(tienGiam) }}</span>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Tiền giảm</span>
-              <span class="text-lg font-bold text-emerald-600">{{ dinhDangTien(tienGiam) }}</span>
+              <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">{{ dinhDangTien(tienGiam) }}</span>
             </div>
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Khách cần trả</span>
-              <span class="text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
+              <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
             </div>
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Khách hàng</span>
@@ -1454,15 +1345,17 @@ onMounted(async () => {
               <input
                 v-model="amountPaid"
                 type="text"
+                inputmode="numeric"
+                autocomplete="off"
                 :disabled="paymentMethod !== 1"
                 :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-sm font-semibold text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 @input="formatCurrencyInput"
               />
             </div>
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
               <span class="text-sm text-slate-500">Tiền thừa trả khách</span>
-              <span class="text-lg font-bold text-slate-900">{{ dinhDangTien(tienThua) }}</span>
+              <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(tienThua) }}</span>
             </div>
             <div>
               <label class="mb-2 block text-sm text-slate-500">Ghi chú thanh toán</label>
@@ -1482,7 +1375,7 @@ onMounted(async () => {
               :disabled="!canCreatePendingInvoice"
               @click="handleCreatePendingInvoice"
             >
-              {{ savingPendingInvoice ? "Đang tạo..." : "Tạo hóa đơn chờ" }}
+              {{ savingPendingInvoice ? "Đang tạo..." : pendingInvoiceLimitReached ? "Đã đủ 5 hóa đơn chờ" : "Tạo hóa đơn chờ" }}
             </button>
             <button
               type="button"
@@ -1507,5 +1400,3 @@ onMounted(async () => {
     </div>
   </div>
 </template>
-
-

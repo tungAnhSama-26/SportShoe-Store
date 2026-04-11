@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import logoChinh from "../assets/logo/delete-background-logo.png";
 import KhungDauTrang from "../components/trang-chu/KhungDauTrang.vue";
 import { cuaHangUngDung } from "../stores/ung-dung";

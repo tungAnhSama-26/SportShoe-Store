@@ -1,16 +1,14 @@
-<script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue';
-import SidebarAdmin from './SidebarAdmin.vue';
-import HeaderAdmin from './HeaderAdmin.vue';
-import { isDesktopSidebar, isSidebarOpen, syncSidebarWithViewport } from '../../composable/useSidebar';
-
+<script setup>
+import { onBeforeUnmount, onMounted } from "vue";
+import SidebarAdmin from "./SidebarAdmin.vue";
+import HeaderAdmin from "./HeaderAdmin.vue";
+import { isDesktopSidebar, isSidebarOpen, syncSidebarWithViewport } from "../../composable/useSidebar";
 onMounted(() => {
   syncSidebarWithViewport();
-  window.addEventListener('resize', syncSidebarWithViewport);
+  window.addEventListener("resize", syncSidebarWithViewport);
 });
-
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', syncSidebarWithViewport);
+  window.removeEventListener("resize", syncSidebarWithViewport);
 });
 </script>
 
