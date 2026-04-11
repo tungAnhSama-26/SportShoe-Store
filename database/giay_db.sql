@@ -496,6 +496,21 @@ CREATE TABLE hoa_don (
 GO
 
 -- ============================================================
+-- [20.1] lich_su_hoa_don
+-- ============================================================
+CREATE TABLE lich_su_hoa_don (
+    id            INT           NOT NULL CONSTRAINT pk_lich_su_hd PRIMARY KEY IDENTITY(1,1),
+    hoa_don_id    INT           NOT NULL,
+    nhan_vien_id  UNIQUEIDENTIFIER NULL,
+    trang_thai    NVARCHAR(100) NOT NULL,
+    ghi_chu       NVARCHAR(1000) NULL,
+    ngay_tao      DATETIME2     NOT NULL CONSTRAINT df_ls_hd_ngay_tao DEFAULT SYSDATETIME(),
+    CONSTRAINT fk_lich_su_hd_hoa_don   FOREIGN KEY (hoa_don_id)   REFERENCES hoa_don(id) ON DELETE CASCADE,
+    CONSTRAINT fk_lich_su_hd_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id)
+);
+GO
+
+-- ============================================================
 -- [21] hoa_don_chi_tiet
 --   trang_thai: 0 = Đã hủy dòng | 1 = Hợp lệ
 -- ============================================================
@@ -651,6 +666,7 @@ CREATE INDEX ix_hdct_hoa_don_id           ON hoa_don_chi_tiet(hoa_don_id);
 CREATE INDEX ix_vc_hoa_don_id             ON van_chuyen(hoa_don_id);
 CREATE INDEX ix_tt_hoa_don_id             ON thanh_toan(hoa_don_id);
 CREATE INDEX ix_pth_hoa_don_id            ON phieu_tra_hang(hoa_don_id);
+CREATE INDEX ix_ls_hd_hoa_don_id          ON lich_su_hoa_don(hoa_don_id);
 GO
 
 -- =============================================

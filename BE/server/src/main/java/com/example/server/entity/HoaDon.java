@@ -37,6 +37,10 @@ public class HoaDon {
     private KhachHang khachHang;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nhan_vien_id")
+    private NhanVien nhanVien;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "phieu_giam_gia_id")
     private PhieuGiamGia phieuGiamGia;
 

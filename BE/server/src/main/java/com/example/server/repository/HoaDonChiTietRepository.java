@@ -17,4 +17,6 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
             order by hdct.id asc
             """)
     List<HoaDonChiTiet> findByHoaDonIdWithProduct(@Param("hoaDonId") Integer hoaDonId);
+
+    List<HoaDonChiTiet> findByHoaDonId(Integer hoaDonId);
 }
