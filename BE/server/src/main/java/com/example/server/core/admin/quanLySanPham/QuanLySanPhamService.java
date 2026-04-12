@@ -1,0 +1,390 @@
+package com.example.server.core.admin.quanLySanPham;
+
+import com.example.server.entity.*;
+import com.example.server.infrastructure.api.PageResponse;
+import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.repository.*;
+import com.example.server.utils.GiaySpecifications;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class QuanLySanPhamService {
+
+    private final GiayRepository giayRepository;
+    private final GiayChiTietRepository giayChiTietRepository;
+    private final GiayThuocTinhRepository giayThuocTinhRepository;
+    private final HinhAnhGiayRepository hinhAnhGiayRepository;
+    private final ThuongHieuRepository thuongHieuRepository;
+    private final LoaiGiayRepository loaiGiayRepository;
+    private final MauSacRepository mauSacRepository;
+    private final KichCoRepository kichCoRepository;
+    private final DeGiayRepository deGiayRepository;
+    private final CoGiayRepository coGiayRepository;
+    private final TrongLuongRepository trongLuongRepository;
+    private final CongNgheDemRepository congNgheDemRepository;
+
+    public QuanLySanPhamService(
+            GiayRepository giayRepository,
+            GiayChiTietRepository giayChiTietRepository,
+            GiayThuocTinhRepository giayThuocTinhRepository,
+            HinhAnhGiayRepository hinhAnhGiayRepository,
+            ThuongHieuRepository thuongHieuRepository,
+            LoaiGiayRepository loaiGiayRepository,
+            MauSacRepository mauSacRepository,
+            KichCoRepository kichCoRepository,
+            DeGiayRepository deGiayRepository,
+            CoGiayRepository coGiayRepository,
+            TrongLuongRepository trongLuongRepository,
+            CongNgheDemRepository congNgheDemRepository
+    ) {
+        this.giayRepository = giayRepository;
+        this.giayChiTietRepository = giayChiTietRepository;
+        this.giayThuocTinhRepository = giayThuocTinhRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
+        this.thuongHieuRepository = thuongHieuRepository;
+        this.loaiGiayRepository = loaiGiayRepository;
+        this.mauSacRepository = mauSacRepository;
+        this.kichCoRepository = kichCoRepository;
+        this.deGiayRepository = deGiayRepository;
+        this.coGiayRepository = coGiayRepository;
+        this.trongLuongRepository = trongLuongRepository;
+        this.congNgheDemRepository = congNgheDemRepository;
+    }
+
+    // ─── Danh mục ────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public DanhMucSanPhamResponse layDanhMuc() {
+        var loaiGiay = loaiGiayRepository.findAll().stream()
+                .filter(l -> l.getTrangThai() == 1)
+                .map(l -> new LoaiGiayOption(l.getId(), l.getTen())).toList();
+        var thuongHieu = thuongHieuRepository.findAll().stream()
+                .filter(t -> t.getTrangThai() == 1)
+                .map(t -> new ThuongHieuOption(t.getId(), t.getTen(), t.getLogoUrl())).toList();
+        var mauSac = mauSacRepository.findAll().stream()
+                .filter(m -> m.getTrangThai() == 1)
+                .map(m -> new MauSacOption(m.getId(), m.getTen(), m.getMaMauHex())).toList();
+        var kichCo = kichCoRepository.findAll().stream()
+                .filter(k -> k.getTrangThai() == 1)
+                .map(k -> new KichCoOption(k.getId(), k.getGiaTri())).toList();
+        var deGiay = deGiayRepository.findAll().stream()
+                .filter(d -> d.getTrangThai() == 1)
+                .map(d -> new DeGiayOption(d.getId(), d.getTen())).toList();
+        var coGiay = coGiayRepository.findAll().stream()
+                .filter(c -> c.getTrangThai() == 1)
+                .map(c -> new CoGiayOption(c.getId(), c.getTen())).toList();
+        var trongLuong = trongLuongRepository.findAll().stream()
+                .filter(t -> t.getTrangThai() == 1)
+                .map(t -> new TrongLuongOption(t.getId(), t.getMa(), t.getGiaTri())).toList();
+        var congNgheDem = congNgheDemRepository.findAll().stream()
+                .filter(c -> c.getTrangThai() == 1)
+                .map(c -> new CongNgheDemOption(c.getId(), c.getTen())).toList();
+        return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, trongLuong, congNgheDem);
+    }
+
+    // ─── Danh sách giày ──────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PageResponse<GiayListItemResponse> danhSachGiay(
+            String keyword, Integer thuongHieuId, Integer loaiGiayId,
+            Integer trangThai, BigDecimal minPrice, BigDecimal maxPrice,
+            Pageable pageable
+    ) {
+        String kw = hasText(keyword) ? keyword.trim() : null;
+        var spec = GiaySpecifications.filterAdmin(kw, thuongHieuId, loaiGiayId, trangThai, minPrice, maxPrice);
+        var page = giayRepository.findAll(spec, pageable);
+
+        if (page.isEmpty()) {
+            return PageResponse.from(page.map(g -> null));
+        }
+
+        List<Integer> ids = page.map(Giay::getId).getContent();
+        Map<Integer, Object[]> aggMap = buildAggregateMap(ids);
+        Map<Integer, String> imgMap = buildImageMap(ids);
+
+        return PageResponse.from(page.map(g -> toListItem(g, aggMap, imgMap)));
+    }
+
+    private Map<Integer, Object[]> buildAggregateMap(Collection<Integer> ids) {
+        Map<Integer, Object[]> map = new HashMap<>();
+        for (Object[] row : giayChiTietRepository.aggregateByGiayIds(ids)) {
+            map.put((Integer) row[0], row);
+        }
+        return map;
+    }
+
+    private Map<Integer, String> buildImageMap(Collection<Integer> ids) {
+        Map<Integer, String> map = new HashMap<>();
+        for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayIds(ids)) {
+            map.putIfAbsent((Integer) row[0], (String) row[1]);
+        }
+        return map;
+    }
+
+    private GiayListItemResponse toListItem(Giay g, Map<Integer, Object[]> aggMap, Map<Integer, String> imgMap) {
+        Object[] agg = aggMap.get(g.getId());
+        BigDecimal giaMin = agg != null ? (BigDecimal) agg[1] : null;
+        Long tongBienThe = agg != null ? (Long) agg[2] : 0L;
+        Long tongSoLuong = agg != null ? (Long) agg[3] : 0L;
+        BigDecimal giaMax = agg != null ? (BigDecimal) agg[4] : null;
+        return new GiayListItemResponse(
+                g.getId(), g.getMa(), g.getTen(),
+                g.getLoaiGiay().getTen(), g.getThuongHieu().getTen(),
+                g.getGioiTinh(), g.getTrangThai(),
+                imgMap.get(g.getId()),
+                giaMin, giaMax, tongBienThe, tongSoLuong,
+                g.getNgayTao()
+        );
+    }
+
+    // ─── Chi tiết giày ───────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public GiayDetailResponse chiTietGiay(Integer id) {
+        Giay g = giayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
+        GiayThuocTinh gtt = giayThuocTinhRepository.findByGiayId(id).orElse(null);
+        ThuocTinhResponse thuocTinh = gtt == null ? null : new ThuocTinhResponse(
+                gtt.getId(),
+                gtt.getDeGiay() != null ? gtt.getDeGiay().getId() : null,
+                gtt.getDeGiay() != null ? gtt.getDeGiay().getTen() : null,
+                gtt.getCoGiay() != null ? gtt.getCoGiay().getId() : null,
+                gtt.getCoGiay() != null ? gtt.getCoGiay().getTen() : null,
+                gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getId() : null,
+                gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getTen() : null,
+                gtt.getTrongLuong() != null ? gtt.getTrongLuong().getId() : null,
+                gtt.getTrongLuong() != null ? gtt.getTrongLuong().getMa() : null
+        );
+        return new GiayDetailResponse(
+                g.getId(), g.getMa(), g.getTen(), g.getGioiTinh(),
+                g.getThuongHieu().getId(), g.getThuongHieu().getTen(),
+                g.getLoaiGiay().getId(), g.getLoaiGiay().getTen(),
+                g.getChatLieu(), g.getMoTa(), g.getTrangThai(),
+                thuocTinh, g.getNgayTao(), g.getNgayCapNhat()
+        );
+    }
+
+    // ─── Tạo / Cập nhật / Xóa giày ──────────────────────────────────────────
+
+    @Transactional
+    public GiayDetailResponse taoGiay(TaoGiayRequest req) {
+        if (giayRepository.existsByMaIgnoreCase(req.ma().trim())) {
+            throw new BusinessException("Mã giày '" + req.ma().trim().toUpperCase() + "' đã tồn tại");
+        }
+        var thuongHieu = thuongHieuRepository.findById(req.thuongHieuId())
+                .orElseThrow(() -> new ResourceNotFoundException("Thương hiệu không tồn tại"));
+        var loaiGiay = loaiGiayRepository.findById(req.loaiGiayId())
+                .orElseThrow(() -> new ResourceNotFoundException("Loại giày không tồn tại"));
+
+        var giay = new Giay();
+        giay.setMa(req.ma().trim().toUpperCase());
+        giay.setTen(req.ten().trim());
+        giay.setThuongHieu(thuongHieu);
+        giay.setLoaiGiay(loaiGiay);
+        giay.setGioiTinh(req.gioiTinh());
+        giay.setChatLieu(req.chatLieu());
+        giay.setMoTa(req.moTa());
+        giay.setTrangThai(1);
+        giay.setNgayTao(Instant.now());
+        giay = giayRepository.save(giay);
+
+        var gtt = new GiayThuocTinh();
+        gtt.setGiay(giay);
+        gtt.setDeGiay(req.deGiayId() != null ? deGiayRepository.findById(req.deGiayId()).orElse(null) : null);
+        gtt.setCoGiay(req.coGiayId() != null ? coGiayRepository.findById(req.coGiayId()).orElse(null) : null);
+        gtt.setCongNgheDem(req.congNgheDemId() != null ? congNgheDemRepository.findById(req.congNgheDemId()).orElse(null) : null);
+        gtt.setTrongLuong(req.trongLuongId() != null ? trongLuongRepository.findById(req.trongLuongId()).orElse(null) : null);
+        gtt.setTrangThai(1);
+        gtt.setNgayTao(Instant.now());
+        giayThuocTinhRepository.save(gtt);
+
+        return chiTietGiay(giay.getId());
+    }
+
+    @Transactional
+    public GiayDetailResponse capNhatGiay(Integer id, CapNhatGiayRequest req) {
+        var giay = giayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
+        var thuongHieu = thuongHieuRepository.findById(req.thuongHieuId())
+                .orElseThrow(() -> new ResourceNotFoundException("Thương hiệu không tồn tại"));
+        var loaiGiay = loaiGiayRepository.findById(req.loaiGiayId())
+                .orElseThrow(() -> new ResourceNotFoundException("Loại giày không tồn tại"));
+
+        giay.setTen(req.ten().trim());
+        giay.setThuongHieu(thuongHieu);
+        giay.setLoaiGiay(loaiGiay);
+        giay.setGioiTinh(req.gioiTinh());
+        giay.setChatLieu(req.chatLieu());
+        giay.setMoTa(req.moTa());
+        giay.setNgayCapNhat(Instant.now());
+
+        var gtt = giayThuocTinhRepository.findByGiayId(id).orElseGet(() -> {
+            var newGtt = new GiayThuocTinh();
+            newGtt.setGiay(giay);
+            newGtt.setTrangThai(1);
+            newGtt.setNgayTao(Instant.now());
+            return newGtt;
+        });
+        gtt.setDeGiay(req.deGiayId() != null ? deGiayRepository.findById(req.deGiayId()).orElse(null) : null);
+        gtt.setCoGiay(req.coGiayId() != null ? coGiayRepository.findById(req.coGiayId()).orElse(null) : null);
+        gtt.setCongNgheDem(req.congNgheDemId() != null ? congNgheDemRepository.findById(req.congNgheDemId()).orElse(null) : null);
+        gtt.setTrongLuong(req.trongLuongId() != null ? trongLuongRepository.findById(req.trongLuongId()).orElse(null) : null);
+        gtt.setNgayCapNhat(Instant.now());
+        giayThuocTinhRepository.save(gtt);
+
+        return chiTietGiay(id);
+    }
+
+    @Transactional
+    public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
+        var giay = giayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
+        giay.setTrangThai(req.trangThai());
+        giay.setNgayCapNhat(Instant.now());
+    }
+
+    @Transactional
+    public void xoaGiay(Integer id) {
+        if (!giayRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Giày #" + id + " không tồn tại");
+        }
+        giayRepository.deleteById(id);
+    }
+
+    // ─── Biến thể ────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<BienTheResponse> danhSachBienThe(Integer giayId) {
+        if (!giayRepository.existsById(giayId)) {
+            throw new ResourceNotFoundException("Giày #" + giayId + " không tồn tại");
+        }
+        return giayChiTietRepository.findByGiayIdEager(giayId).stream()
+                .map(this::toBienThe).toList();
+    }
+
+    @Transactional
+    public BienTheResponse taoBienThe(Integer giayId, TaoBienTheRequest req) {
+        var giay = giayRepository.findById(giayId)
+                .orElseThrow(() -> new ResourceNotFoundException("Giày #" + giayId + " không tồn tại"));
+        var mauSac = mauSacRepository.findById(req.mauSacId())
+                .orElseThrow(() -> new ResourceNotFoundException("Màu sắc không tồn tại"));
+        var kichCo = kichCoRepository.findById(req.kichCoId())
+                .orElseThrow(() -> new ResourceNotFoundException("Kích cỡ không tồn tại"));
+
+        var gct = new GiayChiTiet();
+        gct.setGiay(giay);
+        gct.setMauSac(mauSac);
+        gct.setKichCo(kichCo);
+        gct.setSoLuong(req.soLuong());
+        gct.setGiaGoc(req.giaGoc());
+        gct.setGiaBan(req.giaBan());
+
+        String maBienThe = giay.getMa() + "-" + mauSac.getMa() + "-" + kichCo.getGiaTri();
+        gct.setMaBienThe(maBienThe);
+        gct.setSku(maBienThe + "-" + System.currentTimeMillis() % 10000);
+        gct.setKichHoat(1);
+        gct.setNgayTao(Instant.now());
+
+        return toBienThe(giayChiTietRepository.save(gct));
+    }
+
+    @Transactional
+    public BienTheResponse capNhatBienThe(Integer id, CapNhatBienTheRequest req) {
+        var gct = giayChiTietRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
+        gct.setSoLuong(req.soLuong());
+        gct.setGiaGoc(req.giaGoc());
+        gct.setGiaBan(req.giaBan());
+        gct.setKichHoat(req.kichHoat());
+        gct.setNgayCapNhat(Instant.now());
+        return toBienThe(gct);
+    }
+
+    @Transactional
+    public void xoaBienThe(Integer id) {
+        if (!giayChiTietRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Biến thể #" + id + " không tồn tại");
+        }
+        giayChiTietRepository.deleteById(id);
+    }
+
+    private BienTheResponse toBienThe(GiayChiTiet gct) {
+        return new BienTheResponse(
+                gct.getId(), gct.getMaBienThe(), gct.getSku(),
+                gct.getSoLuong(), gct.getGiaGoc(), gct.getGiaBan(), gct.getKichHoat(),
+                gct.getMauSac().getId(), gct.getMauSac().getTen(), gct.getMauSac().getMaMauHex(),
+                gct.getKichCo().getId(), gct.getKichCo().getGiaTri(),
+                gct.getNgayTao(), gct.getNgayCapNhat()
+        );
+    }
+
+    // ─── Hình ảnh ────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<HinhAnhGiayResponse> layHinhAnh(Integer chiTietId) {
+        if (!giayChiTietRepository.existsById(chiTietId)) {
+            throw new ResourceNotFoundException("Biến thể #" + chiTietId + " không tồn tại");
+        }
+        return hinhAnhGiayRepository
+                .findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(chiTietId, 1)
+                .stream().map(this::toHinhAnh).toList();
+    }
+
+    @Transactional
+    public HinhAnhGiayResponse themHinhAnh(Integer chiTietId, ThemHinhAnhRequest req) {
+        var chiTiet = giayChiTietRepository.findById(chiTietId)
+                .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + chiTietId + " không tồn tại"));
+        var hinh = new HinhAnhGiay();
+        hinh.setGiayChiTiet(chiTiet);
+        hinh.setUrl(req.url().trim());
+        hinh.setLoaiHinh(req.loaiHinh() != null ? req.loaiHinh() : 2);
+        hinh.setMoTa(req.moTa());
+        hinh.setLaHinhChinh(false);
+        hinh.setTrangThai(1);
+        hinh.setNgayTao(Instant.now());
+        return toHinhAnh(hinhAnhGiayRepository.save(hinh));
+    }
+
+    @Transactional
+    public void xoaHinhAnh(Integer id) {
+        if (!hinhAnhGiayRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Hình ảnh #" + id + " không tồn tại");
+        }
+        hinhAnhGiayRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void datHinhChinh(Integer id) {
+        var hinh = hinhAnhGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hình ảnh #" + id + " không tồn tại"));
+        Integer chiTietId = hinh.getGiayChiTiet().getId();
+        hinhAnhGiayRepository
+                .findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(chiTietId, 1)
+                .forEach(h -> {
+                    h.setLaHinhChinh(h.getId().equals(id));
+                    h.setNgayCapNhat(Instant.now());
+                });
+    }
+
+    private HinhAnhGiayResponse toHinhAnh(HinhAnhGiay h) {
+        return new HinhAnhGiayResponse(
+                h.getId(), h.getLoaiHinh(), h.getUrl(), h.getMoTa(),
+                h.getLaHinhChinh(), h.getTrangThai(), h.getNgayTao()
+        );
+    }
+
+    // ─── Utils ───────────────────────────────────────────────────────────────
+
+    private static boolean hasText(String s) {
+        return s != null && !s.isBlank();
+    }
+}
