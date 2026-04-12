@@ -1,6 +1,7 @@
 package com.example.server.repository;
 
 import com.example.server.entity.GiayChiTiet;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -43,4 +44,21 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             order by g.ten asc
             """)
     List<GiayChiTiet> findAllForThongKe();
+
+    @Query("""
+            select gct from GiayChiTiet gct
+            join fetch gct.mauSac
+            join fetch gct.kichCo
+            where gct.giay.id = :giayId
+            order by gct.id asc
+            """)
+    List<GiayChiTiet> findByGiayIdEager(@Param("giayId") Integer giayId);
+
+    @Query("""
+            select gct.giay.id, min(gct.giaBan), count(gct), sum(gct.soLuong), max(gct.giaBan)
+            from GiayChiTiet gct
+            where gct.giay.id in :ids and gct.kichHoat = 1
+            group by gct.giay.id
+            """)
+    List<Object[]> aggregateByGiayIds(@Param("ids") Collection<Integer> ids);
 }
