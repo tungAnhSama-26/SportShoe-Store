@@ -2,7 +2,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import {
   Search, Plus, Pencil, Trash2, Eye, ChevronDown, Check,
-  X, ChevronLeft, ChevronRight, Layers, Images, ImageOff
+  X, ChevronLeft, ChevronRight, Layers, Images, ImageOff,
+  Zap, Package, Box, Image, Info, Truck, CheckCircle2, AlertCircle
 } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 
@@ -77,11 +78,15 @@ function gioiTinhLabel(v) {
 
 // ─── Trạng thái badge ─────────────────────────────────────────────────────────
 function trangThaiClass(v) {
-  return v === 1
-    ? 'bg-green-100 text-green-700'
-    : 'bg-red-100 text-red-700'
+  if (v === 1) return 'bg-green-100 text-green-700'
+  if (v === 2) return 'bg-amber-100 text-amber-700'
+  return 'bg-red-100 text-red-700'
 }
-function trangThaiLabel(v) { return v === 1 ? 'Hoạt động' : 'Dừng bán' }
+function trangThaiLabel(v) { 
+  if (v === 1) return 'Đang bán'
+  if (v === 2) return 'Hết hàng'
+  return 'Ngưng bán'
+}
 
 // ─── Dropdown helpers ─────────────────────────────────────────────────────────
 function toggleDropdown(name) { openDropdown.value = openDropdown.value === name ? null : name }
@@ -119,33 +124,43 @@ function clearForm() {
 }
 
 function openAdd() { clearForm(); modalMode.value = 'add'; showModal.value = true }
-function openEdit(g) {
-  clearForm()
-  Object.assign(form, {
-    ma: g.ma, ten: g.ten, thuongHieuId: g.thuongHieuId, loaiGiayId: g.loaiGiayId,
-    gioiTinh: g.gioiTinh, chatLieu: g.chatLieu || '', moTa: g.moTa || '',
-    deGiayId: g.thuocTinh?.deGiayId || null, coGiayId: g.thuocTinh?.coGiayId || null,
-    congNgheDemId: g.thuocTinh?.congNgheDemId || null, trongLuongId: g.thuocTinh?.trongLuongId || null
-  })
-  selectedGiay.value = g
-  modalMode.value = 'edit'
-  showModal.value = true
-}
-async function openView(g) {
+async function openEdit(g) {
   try {
-    const detail = await api.chiTietGiay(g.id)
+    const res = await api.chiTietGiay(g.id)
     clearForm()
     Object.assign(form, {
-      ma: detail.ma, ten: detail.ten, thuongHieuId: detail.thuongHieuId, loaiGiayId: detail.loaiGiayId,
-      gioiTinh: detail.gioiTinh, chatLieu: detail.chatLieu || '', moTa: detail.moTa || '',
-      deGiayId: detail.thuocTinh?.deGiayId || null, coGiayId: detail.thuocTinh?.coGiayId || null,
-      congNgheDemId: detail.thuocTinh?.congNgheDemId || null, trongLuongId: detail.thuocTinh?.trongLuongId || null
+      ma: res.ma, ten: res.ten, thuongHieuId: res.thuongHieuId, loaiGiayId: res.loaiGiayId,
+      gioiTinh: res.gioiTinh, chatLieu: res.chatLieu || '', moTa: res.moTa || '',
+      deGiayId: res.thuocTinh?.deGiayId || null, coGiayId: res.thuocTinh?.coGiayId || null,
+      congNgheDemId: res.thuocTinh?.congNgheDemId || null, trongLuongId: res.thuocTinh?.trongLuongId || null
     })
-    selectedGiay.value = detail
+    selectedGiay.value = res
+    modalMode.value = 'edit'
+    showModal.value = true
+  } catch (e) { showToast(e.message || 'Lỗi tải chi tiết', 'error') }
+}
+function isItemDiscounted(item) {
+  return item?.coGiamGia === true
+}
+const activeHinhAnh = ref(null)
+
+async function openView(g) {
+  try {
+    const res = await api.chiTietGiay(g.id)
+    clearForm()
+    Object.assign(form, {
+      ma: res.ma, ten: res.ten, thuongHieuId: res.thuongHieuId, loaiGiayId: res.loaiGiayId,
+      gioiTinh: res.gioiTinh, chatLieu: res.chatLieu || '', moTa: res.moTa || '',
+      deGiayId: res.thuocTinh?.deGiayId || null, coGiayId: res.thuocTinh?.coGiayId || null,
+      congNgheDemId: res.thuocTinh?.congNgheDemId || null, trongLuongId: res.thuocTinh?.trongLuongId || null
+    })
+    selectedGiay.value = res
+    activeHinhAnh.value = (res.hinhAnhs && res.hinhAnhs.length > 0) ? res.hinhAnhs[0].url : null
     modalMode.value = 'view'
     showModal.value = true
   } catch (e) { showToast(e.message || 'Lỗi tải chi tiết', 'error') }
 }
+
 
 function validateForm() {
   Object.keys(errors).forEach(k => delete errors[k])
@@ -177,12 +192,14 @@ async function handleSave() {
 }
 
 async function handleDelete(g) {
-  if (!confirm(`Xóa giày "${g.ten}"?`)) return
+  const isStopped = g.trangThai === 0
+  const action = isStopped ? 'Kích hoạt lại' : 'Ngưng bán'
+  if (!confirm(`${action} sản phẩm "${g.ten}"?`)) return
   try {
     await api.xoaGiay(g.id)
-    showToast('Xóa thành công')
+    showToast(`${action} thành công`)
     loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Lỗi xóa', 'error') }
+  } catch (e) { showToast(e.message || `Lỗi ${action.toLowerCase()}`, 'error') }
 }
 
 async function handleToggleTrangThai(g) {
@@ -450,7 +467,7 @@ async function handleDatHinhChinh(id) {
           <button @click="toggleDropdown('trangThai')"
             class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 min-w-[130px] justify-between"
             :class="filterTrangThai !== null ? 'border-rose-400 text-rose-600' : 'text-gray-600'">
-            <span>{{ filterTrangThai === 1 ? 'Hoạt động' : filterTrangThai === 0 ? 'Dừng bán' : 'Trạng thái' }}</span>
+            <span>{{ filterTrangThai === 1 ? 'Đang bán' : filterTrangThai === 2 ? 'Hết hàng' : filterTrangThai === 0 ? 'Ngưng bán' : 'Trạng thái' }}</span>
             <ChevronDown :size="14" />
           </button>
           <div v-if="openDropdown === 'trangThai'" class="absolute top-full left-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
@@ -462,12 +479,17 @@ async function handleDatHinhChinh(id) {
             <button @click="filterTrangThai = 1; openDropdown = null; doSearch()"
               class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
               :class="filterTrangThai === 1 ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Hoạt động <Check v-if="filterTrangThai === 1" :size="14" />
+              Đang bán <Check v-if="filterTrangThai === 1" :size="14" />
+            </button>
+            <button @click="filterTrangThai = 2; openDropdown = null; doSearch()"
+              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
+              :class="filterTrangThai === 2 ? 'text-rose-600 font-medium' : 'text-gray-700'">
+              Hết hàng <Check v-if="filterTrangThai === 2" :size="14" />
             </button>
             <button @click="filterTrangThai = 0; openDropdown = null; doSearch()"
               class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
               :class="filterTrangThai === 0 ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Dừng bán <Check v-if="filterTrangThai === 0" :size="14" />
+              Ngưng bán <Check v-if="filterTrangThai === 0" :size="14" />
             </button>
           </div>
         </div>
@@ -484,13 +506,13 @@ async function handleDatHinhChinh(id) {
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">STT</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">Ảnh</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sản phẩm</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Loại / Thương hiệu</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">Giới tính</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Trạng thái</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Thao tác</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 tracking-wider w-12">STT</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 tracking-wider w-16">Ảnh</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 tracking-wider">Sản phẩm</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 tracking-wider">Loại / Thương hiệu</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 tracking-wider w-24">Giới tính</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 tracking-wider w-28">Trạng thái</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 tracking-wider w-32">Thao tác</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -514,13 +536,22 @@ async function handleDatHinhChinh(id) {
               <tr v-for="(item, idx) in items" :key="item.id" class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-3 text-gray-500">{{ currentPage * pageSize + idx + 1 }}</td>
                 <td class="px-4 py-3">
-                  <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-10 w-10 object-cover rounded-lg border border-gray-100" />
-                  <div v-else class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <ImageOff :size="16" class="text-gray-400" />
+                  <div class="h-10 w-10 relative">
+                    <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" 
+                         class="h-10 w-10 object-cover rounded-lg border border-gray-100" 
+                         @error="(e) => e.target.classList.add('hidden')" />
+                    <div class="absolute inset-0 h-10 w-10 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 -z-10">
+                      <Image :size="16" class="text-gray-300" />
+                    </div>
                   </div>
                 </td>
                 <td class="px-4 py-3">
-                  <div class="font-medium text-gray-800">{{ item.ten }}</div>
+                  <div class="flex items-center gap-2">
+                    <div class="font-medium text-gray-800">{{ item.ten }}</div>
+                    <span v-if="item.coGiamGia" class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded flex items-center gap-0.5 uppercase tracking-tight">
+                      <Zap :size="10" /> Giảm giá
+                    </span>
+                  </div>
                   <div class="text-xs text-gray-400">{{ item.ma }}</div>
                   <div class="text-xs text-gray-400 mt-0.5">
                     {{ item.tongBienThe ?? 0 }} biến thể · {{ item.tongSoLuong ?? 0 }} sản phẩm
@@ -589,13 +620,119 @@ async function handleDatHinhChinh(id) {
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" @click.self="showModal = false">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h2 class="text-lg font-semibold text-gray-800">
-              {{ modalMode === 'add' ? 'Thêm sản phẩm' : modalMode === 'edit' ? 'Cập nhật sản phẩm' : 'Chi tiết sản phẩm' }}
-            </h2>
-            <button @click="showModal = false" class="p-1.5 rounded-lg hover:bg-gray-100"><X :size="18" /></button>
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-rose-50 rounded-lg text-rose-600">
+                <Box :size="20" />
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-gray-800">{{ modalMode === 'view' ? 'Chi tiết sản phẩm' : modalMode === 'add' ? 'Thêm sản phẩm' : 'Cập nhật sản phẩm' }}</h2>
+                <p v-if="modalMode !== 'add'" class="text-xs text-gray-400">Mã: {{ form.ma || selectedGiay?.ma }}</p>
+              </div>
+            </div>
+            <button @click="showModal = false" class="p-2 rounded-xl h-10 w-10 flex items-center justify-center hover:bg-gray-100 text-gray-400 transition-colors">
+              <X :size="20" />
+            </button>
           </div>
-          <div class="overflow-y-auto flex-1 p-6 space-y-4">
+
+          <!-- Body (View Mode) -->
+          <div v-if="modalMode === 'view' && selectedGiay" class="p-6 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Left: Image Gallery -->
+              <div class="space-y-4">
+                <div class="aspect-square rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center group relative shadow-inner">
+                  <img v-if="selectedGiay.hinhAnhs && selectedGiay.hinhAnhs.length > 0" 
+                       :src="activeHinhAnh || selectedGiay.hinhAnhs[0].url" 
+                       class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div v-else class="flex flex-col items-center gap-2 text-gray-300">
+                    <Images :size="48" />
+                    <span class="text-sm">Chưa có ảnh</span>
+                  </div>
+                  <div v-if="isItemDiscounted(selectedGiay)" class="absolute top-4 left-4">
+                    <span class="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded shadow-sm uppercase">Sale</span>
+                  </div>
+                  <div v-if="selectedGiay.hinhAnhs?.find(h => h.url === (activeHinhAnh || selectedGiay.hinhAnhs[0].url))?.laHinhChinh" 
+                       class="absolute top-4 right-4 animate-in fade-in zoom-in duration-300">
+                    <span class="px-2 py-1 bg-amber-400 text-amber-900 text-[10px] font-bold rounded shadow-sm flex items-center gap-1">
+                      <Zap :size="10" fill="currentColor" />
+                    </span>
+                  </div>
+                </div>
+
+                <div v-if="selectedGiay.hinhAnhs && selectedGiay.hinhAnhs.length > 1" class="grid grid-cols-5 gap-2">
+                  <div v-for="h in selectedGiay.hinhAnhs" :key="h.id" 
+                       @click="activeHinhAnh = h.url"
+                       class="aspect-square rounded-lg border-2 cursor-pointer overflow-hidden transition-all relative bg-gray-50"
+                       :class="activeHinhAnh === h.url ? 'border-rose-500 ring-4 ring-rose-50' : 'border-gray-100 hover:border-rose-200'">
+                    <img :src="h.url" class="active-img w-full h-full object-cover" 
+                         @error="(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }" />
+                    <div class="hidden absolute inset-0 items-center justify-center text-gray-300">
+                      <ImageOff :size="12" />
+                    </div>
+                    <div v-if="h.laHinhChinh" class="absolute top-0.5 right-0.5 p-0.5 bg-amber-400 rounded-bl-md text-amber-900 shadow-sm">
+                      <Zap :size="8" fill="currentColor" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Info -->
+              <div class="space-y-6">
+                <div>
+                  <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ selectedGiay.ten }}</h1>
+                  <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg border border-gray-200">{{ selectedGiay.thuongHieu }}</span>
+                    <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg border border-gray-200">{{ selectedGiay.loaiGiay }}</span>
+                    <span class="px-2.5 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg border border-rose-100">{{ selectedGiay.gioiTinh === 1 ? 'Nam' : selectedGiay.gioiTinh === 2 ? 'Nữ' : 'Unisex' }}</span>
+                  </div>
+                  <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 line-clamp-1">
+                      <Info :size="12" /> Mô tả sản phẩm
+                    </p>
+                    <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ selectedGiay.moTa || 'Không có mô tả cho sản phẩm này.' }}</p>
+                  </div>
+                </div>
+
+                <!-- Attributes Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Đế giày</p>
+                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.deGiay || '—' }}</p>
+                  </div>
+                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Cổ giày</p>
+                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.coGiay || '—' }}</p>
+                  </div>
+                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Công nghệ đệm</p>
+                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.congNgheDem || '—' }}</p>
+                  </div>
+                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Trọng lượng</p>
+                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.trongLuong || '—' }}</p>
+                  </div>
+                </div>
+
+                <div class="p-4 bg-rose-600 rounded-2xl text-white shadow-lg space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs text-rose-100 flex items-center gap-1.5"><Truck :size="12" /> Chất liệu</span>
+                    <span class="text-xs font-bold">{{ selectedGiay.chatLieu || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between pt-2 border-t border-rose-500">
+                    <span class="text-xs text-rose-100 flex items-center gap-1.5"><CheckCircle2 :size="12" /> Trạng thái bán</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold"
+                          :class="selectedGiay.trangThai === 1 ? 'bg-white text-rose-600' : 'bg-rose-200 text-rose-800'">
+                      {{ selectedGiay.trangThai === 1 ? 'Đang bán' : 'Ngưng bán' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Body (Add/Edit Mode) -->
+          <div v-else class="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar">
             <div class="grid grid-cols-2 gap-4">
               <!-- Mã -->
               <div v-if="modalMode === 'add'">
@@ -750,7 +887,15 @@ async function handleDatHinhChinh(id) {
                       </td>
                       <td class="px-3 py-2.5">{{ bt.kichCo }}</td>
                       <td class="px-3 py-2.5 text-right">{{ bt.soLuong }}</td>
-                      <td class="px-3 py-2.5 text-right">{{ formatPrice(bt.giaBan) }}đ</td>
+                      <td class="px-3 py-2.5 text-right">
+                        <div v-if="bt.giaBan < bt.giaGoc" class="flex flex-col items-end">
+                          <span class="text-xs text-gray-400 line-through">{{ formatPrice(bt.giaGoc) }}đ</span>
+                          <span class="text-rose-600 font-medium">{{ formatPrice(bt.giaBan) }}đ</span>
+                        </div>
+                        <div v-else>
+                          {{ formatPrice(bt.giaBan) }}đ
+                        </div>
+                      </td>
                       <td class="px-3 py-2.5 text-center">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium"
                           :class="bt.kichHoat === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">

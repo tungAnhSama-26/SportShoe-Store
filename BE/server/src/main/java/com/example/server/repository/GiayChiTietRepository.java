@@ -55,10 +55,14 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
     List<GiayChiTiet> findByGiayIdEager(@Param("giayId") Integer giayId);
 
     @Query("""
-            select gct.giay.id, min(gct.giaBan), count(gct), sum(gct.soLuong), max(gct.giaBan)
+            select gct.giay.id, min(gct.giaBan), count(gct), sum(gct.soLuong), max(gct.giaBan),
+                   sum(case when gct.giaBan < gct.giaGoc then 1 else 0 end)
             from GiayChiTiet gct
-            where gct.giay.id in :ids and gct.kichHoat = 1
+            where gct.giay.id in :ids and (gct.kichHoat = 1 or gct.kichHoat = 2)
             group by gct.giay.id
             """)
     List<Object[]> aggregateByGiayIds(@Param("ids") Collection<Integer> ids);
+
+    @Query("select sum(gct.soLuong) from GiayChiTiet gct where gct.giay.id = :giayId and (gct.kichHoat = 1 or gct.kichHoat = 2)")
+    Long sumSoLuongByGiayId(@Param("giayId") Integer giayId);
 }
