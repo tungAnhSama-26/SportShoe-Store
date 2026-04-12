@@ -20,12 +20,12 @@ public interface HinhAnhGiayRepository extends JpaRepository<HinhAnhGiay, Intege
     );
 
     @Query("""
-            SELECT gct.giay.id, h.url
+            SELECT h.giayChiTiet.giay.id, h.url
             FROM HinhAnhGiay h
-            JOIN h.giayChiTiet gct
-            WHERE gct.giay.id IN :ids
-              AND h.laHinhChinh = true
+            WHERE h.giayChiTiet.giay.id IN :ids
               AND h.trangThai = 1
+              AND h.url IS NOT NULL AND h.url <> ''
+            ORDER BY h.laHinhChinh DESC, h.id DESC
             """)
     List<Object[]> findMainImageUrlsByGiayIds(@Param("ids") Collection<Integer> ids);
 }

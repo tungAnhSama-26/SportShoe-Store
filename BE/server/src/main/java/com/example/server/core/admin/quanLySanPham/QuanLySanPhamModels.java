@@ -44,7 +44,8 @@ record GiayListItemResponse(
         BigDecimal giaMax,
         Long tongBienThe,
         Long tongSoLuong,
-        Instant ngayTao
+        Instant ngayTao,
+        Boolean coGiamGia
 ) {}
 
 record ThuocTinhResponse(
@@ -72,6 +73,7 @@ record GiayDetailResponse(
         String moTa,
         Integer trangThai,
         ThuocTinhResponse thuocTinh,
+        java.util.List<HinhAnhGiayResponse> hinhAnhs,
         Instant ngayTao,
         Instant ngayCapNhat
 ) {}
