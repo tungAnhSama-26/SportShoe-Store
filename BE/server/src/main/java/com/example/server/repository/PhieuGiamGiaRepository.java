@@ -1,8 +1,11 @@
 package com.example.server.repository;
 
+import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse;
 import com.example.server.entity.PhieuGiamGia;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +27,57 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             order by p.ngayTao desc
             """)
     List<PhieuGiamGia> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+    SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
+    phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
+    )
+    FROM PhieuGiamGia phieuGG 
+""")
+    List<QuanLyPhieuGiamGiaResponse> hienThiPhieuGiamGia();
+
+    @Query("""
+    SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
+    phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
+    )
+    FROM PhieuGiamGia phieuGG
+    WHERE phieuGG.id = ?1 
+""")
+    QuanLyPhieuGiamGiaResponse DetailPhieuGiamGia(Integer id);
+
+    @Query("""
+    SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
+    phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
+    )
+    FROM PhieuGiamGia phieuGG 
+""")
+    Page<QuanLyPhieuGiamGiaResponse> phantrangThaiPhieuGiamGia(Pageable pageable);
+
+    @Query("""
+    SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
+    phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
+    )
+    FROM PhieuGiamGia phieuGG 
+    WHERE (:keyword IS NULL OR LOWER(phieuGG.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(phieuGG.ten) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    AND (:trangThai IS NULL OR phieuGG.trangThai = :trangThai)
+    AND (:loai IS NULL OR phieuGG.loai = :loai)
+    AND (CAST(:tuNgay AS timestamp) IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
+    AND (CAST(:denNgay AS timestamp) IS NULL OR phieuGG.ngayKetThuc <= :denNgay)
+    ORDER BY phieuGG.ngayTao DESC
+""")
+    Page<QuanLyPhieuGiamGiaResponse> timKiemVaPhanTrang(
+            @Param("keyword") String keyword, 
+            @Param("trangThai") Integer trangThai, 
+            @Param("loai") Integer loai, 
+            @Param("tuNgay") java.time.Instant tuNgay, 
+            @Param("denNgay") java.time.Instant denNgay, 
+            Pageable pageable);
 }

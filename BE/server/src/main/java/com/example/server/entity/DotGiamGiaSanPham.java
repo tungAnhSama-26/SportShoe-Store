@@ -9,6 +9,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -39,7 +40,7 @@ public class DotGiamGiaSanPham {
     @NotNull
     @ColumnDefault("sysdatetime()")
     @Column(name = "ngay_tao", nullable = false)
-    private Instant ngayTao;
+    private LocalDate ngayTao;
 
 
 }
