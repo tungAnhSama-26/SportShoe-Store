@@ -11,6 +11,8 @@ public final class GiaySpecifications {
     private GiaySpecifications() {
     }
 
+    private static final Specification<Giay> ALWAYS_TRUE = (root, query, cb) -> cb.conjunction();
+
     public static Specification<Giay> filter(
             String keyword,
             Integer gioiTinh,
@@ -25,13 +27,29 @@ public final class GiaySpecifications {
                 .and(priceTo(maxPrice));
     }
 
+    public static Specification<Giay> filterAdmin(
+            String keyword,
+            Integer thuongHieuId,
+            Integer loaiGiayId,
+            Integer trangThai,
+            BigDecimal minPrice,
+            BigDecimal maxPrice
+    ) {
+        return Specification.where(keywordContains(keyword))
+                .and(hasThuongHieu(thuongHieuId))
+                .and(hasLoaiGiay(loaiGiayId))
+                .and(hasStatus(trangThai))
+                .and(priceFrom(minPrice))
+                .and(priceTo(maxPrice));
+    }
+
     public static Specification<Giay> activeProducts() {
         return hasStatus(1);
     }
 
     private static Specification<Giay> keywordContains(String keyword) {
         if (!SpecificationUtils.hasText(keyword)) {
-            return null;
+            return ALWAYS_TRUE;
         }
 
         String normalized = SpecificationUtils.containsPattern(keyword);
@@ -42,17 +60,29 @@ public final class GiaySpecifications {
         );
     }
 
+    private static Specification<Giay> hasThuongHieu(Integer thuongHieuId) {
+        return thuongHieuId == null ? ALWAYS_TRUE :
+                (root, query, cb) -> cb.equal(root.get("thuongHieu").get("id"), thuongHieuId);
+    }
+
+    private static Specification<Giay> hasLoaiGiay(Integer loaiGiayId) {
+        return loaiGiayId == null ? ALWAYS_TRUE :
+                (root, query, cb) -> cb.equal(root.get("loaiGiay").get("id"), loaiGiayId);
+    }
+
     private static Specification<Giay> hasGender(Integer gioiTinh) {
-        return gioiTinh == null ? null : (root, query, cb) -> cb.equal(root.get("gioiTinh"), gioiTinh);
+        return gioiTinh == null ? ALWAYS_TRUE :
+                (root, query, cb) -> cb.equal(root.get("gioiTinh"), gioiTinh);
     }
 
     private static Specification<Giay> hasStatus(Integer trangThai) {
-        return trangThai == null ? null : (root, query, cb) -> cb.equal(root.get("trangThai"), trangThai);
+        return trangThai == null ? ALWAYS_TRUE :
+                (root, query, cb) -> cb.equal(root.get("trangThai"), trangThai);
     }
 
     private static Specification<Giay> priceFrom(BigDecimal minPrice) {
         if (minPrice == null) {
-            return null;
+            return ALWAYS_TRUE;
         }
 
         return (root, query, cb) -> {
@@ -69,7 +99,7 @@ public final class GiaySpecifications {
 
     private static Specification<Giay> priceTo(BigDecimal maxPrice) {
         if (maxPrice == null) {
-            return null;
+            return ALWAYS_TRUE;
         }
 
         return (root, query, cb) -> {
