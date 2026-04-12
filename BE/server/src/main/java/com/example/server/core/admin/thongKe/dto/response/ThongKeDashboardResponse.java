@@ -8,6 +8,7 @@ public record ThongKeDashboardResponse(
         List<ThuongHieuThongKeFilterResponse> thuongHieus,
         List<ThongKeGiaTriTheoKyResponse> bieuDoBanHang,
         List<ThongKeThuongHieuResponse> bieuDoThuongHieu,
-        List<ThongKeSanPhamResponse> sanPhams
+        List<ThongKeSanPhamResponse> sanPhams,
+        List<ThongKeNhanVienResponse> nhanViens
 ) {
 }

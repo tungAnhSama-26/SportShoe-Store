@@ -4,6 +4,7 @@ import com.example.server.core.admin.thongKe.dto.request.ThongKeDashboardRequest
 import com.example.server.core.admin.thongKe.dto.response.ThongKeBoLocDaApDungResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThongKeDashboardResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThongKeGiaTriTheoKyResponse;
+import com.example.server.core.admin.thongKe.dto.response.ThongKeNhanVienResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThongKeSanPhamResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThongKeThuongHieuResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThongKeTongQuanResponse;
@@ -26,9 +27,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +41,7 @@ public class ThongKeService {
 
     private static final int TRANG_THAI_HOAT_DONG = 1;
     private static final List<Integer> TRANG_THAI_HOA_DON_HOP_LE = List.of(2, 3, 4);
+    private static final String NHAN_VIEN_MAC_DINH = "Chưa gán nhân viên";
     private static final ZoneId MUI_GIO_HE_THONG = ZoneId.of("Asia/Bangkok");
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DINH_DANG_THANG = DateTimeFormatter.ofPattern("MM/yyyy");
@@ -97,7 +102,8 @@ public class ThongKeService {
                 layThuongHieuBoLoc(),
                 taoBieuDoBanHang(dongBanHangTheoBoLoc, boLoc),
                 taoBieuDoThuongHieu(sanPhamTheoBoLoc),
-                taoThongKeSanPham(dongBanHangTheoBoLoc, sanPhamTheoBoLoc)
+                taoThongKeSanPham(dongBanHangTheoBoLoc, sanPhamTheoBoLoc),
+                taoThongKeNhanVien(dongBanHangTheoBoLoc)
         );
     }
 
@@ -254,6 +260,53 @@ public class ThongKeService {
                     sanPham.daBan(),
                     sanPham.doanhThu(),
                     sanPham.tonKho()
+            ));
+        }
+
+        return ketQua;
+    }
+
+    private List<ThongKeNhanVienResponse> taoThongKeNhanVien(List<HoaDonChiTiet> dongBanHang) {
+        Map<String, NhanVienThongKe> thongKeNhanVienMap = new LinkedHashMap<>();
+
+        for (HoaDonChiTiet dong : dongBanHang) {
+            HoaDon hoaDon = dong.getHoaDon();
+            if (hoaDon == null || hoaDon.getId() == null) {
+                continue;
+            }
+
+            UUID nhanVienId = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getId() : null;
+            String maNhanVien = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getMa() : null;
+            String tenNhanVien = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getHoTen() : NHAN_VIEN_MAC_DINH;
+            String key = nhanVienId != null ? nhanVienId.toString() : NHAN_VIEN_MAC_DINH;
+
+            NhanVienThongKe thongKe = thongKeNhanVienMap.computeIfAbsent(
+                    key,
+                    ignored -> new NhanVienThongKe(nhanVienId, maNhanVien, tenNhanVien)
+            );
+            thongKe.ghiNhanHoaDon(hoaDon.getId());
+            thongKe.congSanPhamDaBan(safeLong(dong.getSoLuong()));
+            thongKe.congDoanhThu(dong.getThanhTien());
+        }
+
+        List<NhanVienThongKe> danhSachSapXep = new ArrayList<>(thongKeNhanVienMap.values());
+        danhSachSapXep.sort(Comparator
+                .comparing(NhanVienThongKe::doanhThu, Comparator.reverseOrder())
+                .thenComparing(Comparator.comparingLong(NhanVienThongKe::tongDonHang).reversed())
+                .thenComparing(Comparator.comparingLong(NhanVienThongKe::sanPhamDaBan).reversed())
+                .thenComparing(NhanVienThongKe::tenNhanVien, Comparator.nullsLast(String::compareToIgnoreCase)));
+
+        List<ThongKeNhanVienResponse> ketQua = new ArrayList<>();
+        for (int index = 0; index < danhSachSapXep.size(); index++) {
+            NhanVienThongKe nhanVien = danhSachSapXep.get(index);
+            ketQua.add(new ThongKeNhanVienResponse(
+                    index + 1,
+                    nhanVien.nhanVienId(),
+                    nhanVien.maNhanVien(),
+                    nhanVien.tenNhanVien(),
+                    nhanVien.tongDonHang(),
+                    nhanVien.sanPhamDaBan(),
+                    nhanVien.doanhThu()
             ));
         }
 
@@ -504,6 +557,63 @@ public class ThongKeService {
 
         private long tonKho() {
             return tonKho;
+        }
+    }
+
+    private static final class NhanVienThongKe {
+        private final UUID nhanVienId;
+        private final String maNhanVien;
+        private final String tenNhanVien;
+        private final Set<Integer> hoaDonIds = new LinkedHashSet<>();
+        private long sanPhamDaBan;
+        private BigDecimal doanhThu = BigDecimal.ZERO;
+
+        private NhanVienThongKe(
+                UUID nhanVienId,
+                String maNhanVien,
+                String tenNhanVien
+        ) {
+            this.nhanVienId = nhanVienId;
+            this.maNhanVien = maNhanVien;
+            this.tenNhanVien = tenNhanVien;
+        }
+
+        private void ghiNhanHoaDon(Integer hoaDonId) {
+            if (hoaDonId != null) {
+                hoaDonIds.add(hoaDonId);
+            }
+        }
+
+        private void congSanPhamDaBan(long soLuong) {
+            this.sanPhamDaBan += soLuong;
+        }
+
+        private void congDoanhThu(BigDecimal doanhThu) {
+            this.doanhThu = this.doanhThu.add(doanhThu == null ? BigDecimal.ZERO : doanhThu);
+        }
+
+        private UUID nhanVienId() {
+            return nhanVienId;
+        }
+
+        private String maNhanVien() {
+            return maNhanVien;
+        }
+
+        private String tenNhanVien() {
+            return tenNhanVien;
+        }
+
+        private long tongDonHang() {
+            return hoaDonIds.size();
+        }
+
+        private long sanPhamDaBan() {
+            return sanPhamDaBan;
+        }
+
+        private BigDecimal doanhThu() {
+            return doanhThu;
         }
     }
 }

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import {
   BarChart3,
   Calendar,
@@ -61,6 +61,13 @@ const PRODUCT_SORT_OPTIONS = [
   { value: "NAME_ASC", label: "Tên A - Z" }
 ];
 
+const EMPLOYEE_SORT_OPTIONS = [
+  { value: "REVENUE_DESC", label: "Doanh thu cao nhất" },
+  { value: "ORDER_DESC", label: "Nhiều đơn nhất" },
+  { value: "QUANTITY_DESC", label: "Bán nhiều sản phẩm nhất" },
+  { value: "NAME_ASC", label: "Tên A - Z" }
+];
+
 const PRODUCT_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 const EMPTY_DASHBOARD = () => ({
@@ -80,20 +87,23 @@ const EMPTY_DASHBOARD = () => ({
   thuongHieus: [],
   bieuDoBanHang: [],
   bieuDoThuongHieu: [],
-  sanPhams: []
+  sanPhams: [],
+  nhanViens: []
 });
 
 const dashboard = ref(EMPTY_DASHBOARD());
 const isLoading = ref(false);
 const errorMessage = ref("");
 const filters = reactive(createDefaultFilters());
-const dateInputs = reactive({
-  fromDate: formatDateForDisplay(filters.fromDate),
-  toDate: formatDateForDisplay(filters.toDate)
-});
+const fromDatePickerRef = ref(null);
+const toDatePickerRef = ref(null);
 const productFilters = reactive(createDefaultProductFilters());
 const productCurrentPage = ref(1);
+const employeeFilters = reactive(createDefaultEmployeeFilters());
+const employeeCurrentPage = ref(1);
 let dashboardFilterTimer;
+let dashboardRequestController;
+let latestDashboardRequestId = 0;
 
 const periodLabel = computed(() => {
   switch (filters.periodType) {
@@ -137,8 +147,10 @@ const summaryCards = computed(() => [
   }
 ]);
 
+const salesLabels = computed(() => dashboard.value.bieuDoBanHang.map((item) => item.nhan));
+
 const salesChartData = computed(() => ({
-  labels: dashboard.value.bieuDoBanHang.map((item) => item.nhan),
+  labels: salesLabels.value,
   datasets: [
     {
       label: "Sản phẩm bán được",
@@ -181,13 +193,18 @@ const salesChartOptions = computed(() => ({
       }
     },
     x: {
+      offset: true,
       grid: {
         display: false
       },
       ticks: {
         color: "#64748b",
         maxRotation: 0,
-        autoSkip: true
+        autoSkip: false,
+        padding: 8,
+        callback(value, index) {
+          return shouldShowSalesTick(index, salesLabels.value.length) ? salesLabels.value[index] : "";
+        }
       }
     }
   }
@@ -278,12 +295,45 @@ const productCountLabel = computed(() => {
   return `${formatNumber(filteredProducts.value.length)}/${formatNumber(dashboard.value.sanPhams.length)} sản phẩm`;
 });
 
+const filteredEmployees = computed(() => {
+  const keyword = employeeFilters.keyword.trim().toLowerCase();
+
+  const matchedEmployees = dashboard.value.nhanViens.filter((employee) => {
+    if (!keyword) {
+      return true;
+    }
+
+    const searchableValue = [employee.maNhanVien, employee.tenNhanVien]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableValue.includes(keyword);
+  });
+
+  return [...matchedEmployees].sort((left, right) => sortEmployees(left, right, employeeFilters.sortBy));
+});
+const employeeTotalPages = computed(() => Math.max(1, Math.ceil(filteredEmployees.value.length / employeeFilters.pageSize)));
+const paginatedEmployees = computed(() => {
+  const start = (employeeCurrentPage.value - 1) * employeeFilters.pageSize;
+  return filteredEmployees.value.slice(start, start + employeeFilters.pageSize);
+});
+const employeeCountLabel = computed(() => {
+  if (filteredEmployees.value.length === dashboard.value.nhanViens.length) {
+    return `${formatNumber(filteredEmployees.value.length)} nhân viên`;
+  }
+
+  return `${formatNumber(filteredEmployees.value.length)}/${formatNumber(dashboard.value.nhanViens.length)} nhân viên`;
+});
 async function fetchDashboard() {
   if (dashboardFilterTimer) {
     window.clearTimeout(dashboardFilterTimer);
     dashboardFilterTimer = undefined;
   }
 
+  dashboardRequestController?.abort();
+  const requestId = ++latestDashboardRequestId;
+  dashboardRequestController = new AbortController();
   isLoading.value = true;
   errorMessage.value = "";
 
@@ -294,15 +344,27 @@ async function fetchDashboard() {
       brandId: filters.brandId,
       keyword: filters.keyword,
       periodType: filters.periodType
+    }, {
+      signal: dashboardRequestController.signal
     });
+
+    if (requestId !== latestDashboardRequestId) {
+      return;
+    }
 
     dashboard.value = normalizeDashboard(data);
     syncFiltersFromServer(data.boLoc);
   } catch (error) {
+    if (error?.name === "AbortError" || requestId !== latestDashboardRequestId) {
+      return;
+    }
     dashboard.value = EMPTY_DASHBOARD();
     errorMessage.value = error.message || "Không thể tải dữ liệu thống kê.";
   } finally {
-    isLoading.value = false;
+    if (requestId === latestDashboardRequestId) {
+      isLoading.value = false;
+      dashboardRequestController = undefined;
+    }
   }
 }
 
@@ -312,8 +374,8 @@ function onApplyFilters() {
 
 function onResetFilters() {
   Object.assign(filters, createDefaultFilters());
-  syncDateInputs();
   resetProductFilters();
+  resetEmployeeFilters();
   fetchDashboard();
 }
 
@@ -321,50 +383,26 @@ function onPeriodTypeChange() {
   const nextDefaults = createDefaultFilters(filters.periodType);
   filters.fromDate = nextDefaults.fromDate;
   filters.toDate = nextDefaults.toDate;
-  syncDateInputs();
   scheduleDashboardFetch();
 }
 
-function handleDateInput(field, value) {
-  dateInputs[field] = formatDateInputValue(value);
-
-  if (dateInputs[field].length === 10) {
-    commitDateInput(field);
+function openDatePicker(field) {
+  const input = field === "fromDate" ? fromDatePickerRef.value : toDatePickerRef.value;
+  if (!input) {
+    return;
   }
+
+  if (typeof input.showPicker === "function") {
+    input.showPicker();
+    return;
+  }
+
+  input.click();
 }
 
-function commitDateInput(field) {
-  const rawValue = dateInputs[field].trim();
-  const invalidDateMessage = "Vui lòng nhập ngày theo định dạng dd/mm/yyyy.";
-
-  if (!rawValue) {
-    if (errorMessage.value === invalidDateMessage) {
-      errorMessage.value = "";
-    }
-    if (filters[field]) {
-      filters[field] = "";
-      scheduleDashboardFetch();
-    }
-    return;
-  }
-
-  const parsedValue = parseDisplayDate(rawValue);
-  if (!parsedValue) {
-    errorMessage.value = invalidDateMessage;
-    syncDateInputs();
-    return;
-  }
-
-  if (errorMessage.value === invalidDateMessage) {
-    errorMessage.value = "";
-  }
-
-  if (filters[field] !== parsedValue) {
-    filters[field] = parsedValue;
-    scheduleDashboardFetch();
-  }
-
-  dateInputs[field] = formatDateForDisplay(filters[field]);
+function handleDateChange() {
+  errorMessage.value = "";
+  scheduleDashboardFetch();
 }
 
 function syncFiltersFromServer(serverFilters) {
@@ -377,7 +415,6 @@ function syncFiltersFromServer(serverFilters) {
   filters.toDate = serverFilters.denNgay || filters.toDate;
   filters.brandId = serverFilters.thuongHieuId ?? null;
   filters.keyword = serverFilters.keyword ?? filters.keyword;
-  syncDateInputs();
 }
 
 function normalizeDashboard(data) {
@@ -392,7 +429,8 @@ function normalizeDashboard(data) {
     thuongHieus: Array.isArray(data?.thuongHieus) ? data.thuongHieus : [],
     bieuDoBanHang: Array.isArray(data?.bieuDoBanHang) ? data.bieuDoBanHang : [],
     bieuDoThuongHieu: Array.isArray(data?.bieuDoThuongHieu) ? data.bieuDoThuongHieu : [],
-    sanPhams: Array.isArray(data?.sanPhams) ? data.sanPhams : []
+    sanPhams: Array.isArray(data?.sanPhams) ? data.sanPhams : [],
+    nhanViens: Array.isArray(data?.nhanViens) ? data.nhanViens : []
   };
 }
 
@@ -419,9 +457,22 @@ function createDefaultProductFilters() {
   };
 }
 
+function createDefaultEmployeeFilters() {
+  return {
+    keyword: "",
+    sortBy: "REVENUE_DESC",
+    pageSize: 10
+  };
+}
+
 function resetProductFilters() {
   Object.assign(productFilters, createDefaultProductFilters());
   productCurrentPage.value = 1;
+}
+
+function resetEmployeeFilters() {
+  Object.assign(employeeFilters, createDefaultEmployeeFilters());
+  employeeCurrentPage.value = 1;
 }
 
 function scheduleDashboardFetch() {
@@ -460,45 +511,6 @@ function formatDateForDisplay(value) {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-function formatDateInputValue(value) {
-  const digits = String(value ?? "").replace(/\D/g, "").slice(0, 8);
-
-  if (digits.length <= 2) {
-    return digits;
-  }
-
-  if (digits.length <= 4) {
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
-
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-}
-
-function parseDisplayDate(value) {
-  const match = String(value ?? "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) {
-    return null;
-  }
-
-  const [, day, month, year] = match;
-  const parsedDate = new Date(Number(year), Number(month) - 1, Number(day));
-
-  if (
-    parsedDate.getFullYear() !== Number(year)
-    || parsedDate.getMonth() !== Number(month) - 1
-    || parsedDate.getDate() !== Number(day)
-  ) {
-    return null;
-  }
-
-  return `${year}-${month}-${day}`;
-}
-
-function syncDateInputs() {
-  dateInputs.fromDate = formatDateForDisplay(filters.fromDate);
-  dateInputs.toDate = formatDateForDisplay(filters.toDate);
-}
-
 function formatDateForInput(date) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -520,6 +532,25 @@ function formatNumber(value) {
   return new Intl.NumberFormat("vi-VN").format(amount);
 }
 
+function shouldShowSalesTick(index, total) {
+  if (index == null || total <= 0) {
+    return false;
+  }
+
+  if (total <= 6) {
+    return true;
+  }
+
+  const maxVisibleTicks = 6;
+  const visibleIndexes = new Set([0, total - 1]);
+
+  for (let step = 1; step < maxVisibleTicks - 1; step += 1) {
+    visibleIndexes.add(Math.round((step * (total - 1)) / (maxVisibleTicks - 1)));
+  }
+
+  return visibleIndexes.has(index);
+}
+
 function sortProducts(left, right, sortBy) {
   switch (sortBy) {
     case "REVENUE_DESC":
@@ -537,6 +568,29 @@ function sortProducts(left, right, sortBy) {
       return Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
         || Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
         || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
+  }
+}
+
+function sortEmployees(left, right, sortBy) {
+  switch (sortBy) {
+    case "ORDER_DESC":
+      return Number(right.tongDonHang ?? 0) - Number(left.tongDonHang ?? 0)
+        || Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.sanPhamDaBan ?? 0) - Number(left.sanPhamDaBan ?? 0)
+        || String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi");
+    case "QUANTITY_DESC":
+      return Number(right.sanPhamDaBan ?? 0) - Number(left.sanPhamDaBan ?? 0)
+        || Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.tongDonHang ?? 0) - Number(left.tongDonHang ?? 0)
+        || String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi");
+    case "NAME_ASC":
+      return String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi")
+        || String(left.maNhanVien ?? "").localeCompare(String(right.maNhanVien ?? ""), "vi");
+    default:
+      return Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.tongDonHang ?? 0) - Number(left.tongDonHang ?? 0)
+        || Number(right.sanPhamDaBan ?? 0) - Number(left.sanPhamDaBan ?? 0)
+        || String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi");
   }
 }
 
@@ -562,9 +616,26 @@ watch(
   }
 );
 
+watch(
+  [
+    () => employeeFilters.keyword,
+    () => employeeFilters.sortBy,
+    () => employeeFilters.pageSize
+  ],
+  () => {
+    employeeCurrentPage.value = 1;
+  }
+);
+
 watch(productTotalPages, (nextTotalPages) => {
   if (productCurrentPage.value > nextTotalPages) {
     productCurrentPage.value = nextTotalPages;
+  }
+}, { immediate: true });
+
+watch(employeeTotalPages, (nextTotalPages) => {
+  if (employeeCurrentPage.value > nextTotalPages) {
+    employeeCurrentPage.value = nextTotalPages;
   }
 }, { immediate: true });
 
@@ -572,8 +643,19 @@ watch(() => dashboard.value.sanPhams, () => {
   productCurrentPage.value = 1;
 });
 
+watch(() => dashboard.value.nhanViens, () => {
+  employeeCurrentPage.value = 1;
+});
+
 onMounted(() => {
   fetchDashboard();
+});
+
+onBeforeUnmount(() => {
+  if (dashboardFilterTimer) {
+    window.clearTimeout(dashboardFilterTimer);
+  }
+  dashboardRequestController?.abort();
 });
 </script>
 
@@ -595,43 +677,59 @@ onMounted(() => {
         <div class="space-y-2">
           <label class="text-xs font-medium text-slate-500">Từ ngày</label>
           <div class="relative">
-            <Calendar class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              :value="dateInputs.fromDate"
-              type="text"
-              inputmode="numeric"
-              maxlength="10"
-              autocomplete="off"
-              placeholder="dd/mm/yyyy"
-              class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
-              @input="handleDateInput('fromDate', $event.target.value)"
-              @blur="commitDateInput('fromDate')"
-              @keyup.enter="commitDateInput('fromDate')"
+              ref="fromDatePickerRef"
+              v-model="filters.fromDate"
+              type="date"
+              class="pointer-events-none absolute inset-0 opacity-0"
+              :max="filters.toDate || undefined"
+              tabindex="-1"
+              @change="handleDateChange"
             >
+            <button
+              type="button"
+              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+              @click="openDatePicker('fromDate')"
+            >
+              <span class="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                <Calendar class="h-4 w-4" />
+              </span>
+              <span class="text-sm font-medium">
+                {{ formatDateForDisplay(filters.fromDate) || "Chọn ngày" }}
+              </span>
+            </button>
           </div>
         </div>
 
         <div class="space-y-2">
           <label class="text-xs font-medium text-slate-500">Đến ngày</label>
           <div class="relative">
-            <Calendar class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              :value="dateInputs.toDate"
-              type="text"
-              inputmode="numeric"
-              maxlength="10"
-              autocomplete="off"
-              placeholder="dd/mm/yyyy"
-              class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
-              @input="handleDateInput('toDate', $event.target.value)"
-              @blur="commitDateInput('toDate')"
-              @keyup.enter="commitDateInput('toDate')"
+              ref="toDatePickerRef"
+              v-model="filters.toDate"
+              type="date"
+              class="pointer-events-none absolute inset-0 opacity-0"
+              :min="filters.fromDate || undefined"
+              tabindex="-1"
+              @change="handleDateChange"
             >
+            <button
+              type="button"
+              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+              @click="openDatePicker('toDate')"
+            >
+              <span class="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                <Calendar class="h-4 w-4" />
+              </span>
+              <span class="text-sm font-medium">
+                {{ formatDateForDisplay(filters.toDate) || "Chọn ngày" }}
+              </span>
+            </button>
           </div>
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Kiểu thống kê</label>
+          <label class="text-xs font-medium text-slate-500">Thống kê</label>
           <div class="relative">
             <BarChart3 class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <select
@@ -671,6 +769,7 @@ onMounted(() => {
               type="text"
               placeholder="Mã hoặc tên sản phẩm"
               class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              @input="scheduleDashboardFetch"
               @keyup.enter="onApplyFilters"
             >
           </div>
@@ -731,7 +830,6 @@ onMounted(() => {
               <BarChart3 class="h-4 w-4 text-rose-500" />
               Sản phẩm bán được theo {{ periodLabel }}
             </div>
-            <p class="mt-1 text-sm text-slate-500">Số lượng sản phẩm bán ra theo từng mốc thời gian.</p>
           </div>
           <div v-if="isLoading" class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
             Đang tải...
@@ -789,6 +887,148 @@ onMounted(() => {
           Chưa có dữ liệu thương hiệu phù hợp.
         </div>
       </div>
+    </div>
+
+    <div class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
+      <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <Users class="h-4 w-4 text-rose-500" />
+            Thống kê doanh thu nhân viên
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="rounded-full bg-slate-50 px-4 py-2 text-sm font-medium text-slate-500">
+            {{ employeeCountLabel }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_240px]">
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Tìm nhân viên</label>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="employeeFilters.keyword"
+              type="text"
+              placeholder="Mã hoặc tên nhân viên"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Sắp xếp</label>
+          <select
+            v-model="employeeFilters.sortBy"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+          >
+            <option
+              v-for="option in EMPLOYEE_SORT_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Hiển thị</label>
+          <div class="flex gap-2">
+            <select
+              v-model="employeeFilters.pageSize"
+              class="h-11 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+              <option
+                v-for="size in PRODUCT_PAGE_SIZE_OPTIONS"
+                :key="size"
+                :value="size"
+              >
+                {{ size }} dòng
+              </option>
+            </select>
+            <button
+              type="button"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              @click="resetEmployeeFilters"
+            >
+              <RefreshCw class="h-4 w-4" />
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-[860px] w-full border-separate border-spacing-y-3 text-left">
+          <thead>
+            <tr class="text-xs uppercase tracking-[0.18em] text-slate-400">
+              <th class="px-4 py-2">STT</th>
+              <th class="px-4 py-2">Mã nhân viên</th>
+              <th class="px-4 py-2">Nhân viên</th>
+              <th class="px-4 py-2 text-right">Đơn hàng</th>
+              <th class="px-4 py-2 text-right">Sản phẩm bán</th>
+              <th class="px-4 py-2 text-right">Doanh thu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(employee, index) in paginatedEmployees"
+              :key="employee.nhanVienId || `unassigned-${index}`"
+              class="rounded-[20px] bg-slate-50 text-sm text-slate-700"
+            >
+              <td class="rounded-l-[20px] px-4 py-4 font-semibold text-slate-500">
+                {{ (employeeCurrentPage - 1) * employeeFilters.pageSize + index + 1 }}
+              </td>
+              <td class="px-4 py-4">
+                <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                  {{ employee.maNhanVien || "Chưa có mã" }}
+                </span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
+                    <Users class="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div class="font-semibold text-slate-800">
+                      {{ employee.tenNhanVien }}
+                    </div>
+                    <div class="text-xs text-slate-500">
+                      {{ employee.nhanVienId ? "Nhân viên bán hàng" : "Đơn chưa gán nhân viên" }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-right font-semibold text-slate-800">
+                {{ formatNumber(employee.tongDonHang) }}
+              </td>
+              <td class="px-4 py-4 text-right font-semibold text-slate-800">
+                {{ formatNumber(employee.sanPhamDaBan) }}
+              </td>
+              <td class="rounded-r-[20px] px-4 py-4 text-right font-semibold text-slate-800">
+                {{ formatCurrency(employee.doanhThu) }}
+              </td>
+            </tr>
+
+            <tr v-if="filteredEmployees.length === 0">
+              <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">
+                Không có nhân viên phát sinh doanh thu trong bộ lọc hiện tại.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <AppPagination
+        v-if="filteredEmployees.length > 0"
+        v-model="employeeCurrentPage"
+        class="mt-4"
+        :total-items="filteredEmployees.length"
+        :page-size="employeeFilters.pageSize"
+      />
     </div>
 
     <div class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">

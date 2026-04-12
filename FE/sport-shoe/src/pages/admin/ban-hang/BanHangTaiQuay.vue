@@ -1,16 +1,6 @@
 ﻿<script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import {
-  Award,
-  Box,
-  Feather,
-  Footprints,
-  MoveVertical,
-  Palette,
-  Ruler,
-  Weight
-} from "lucide-vue-next";
-import {
   apDungPhieuGiamGiaTaiQuay,
   huyHoaDonCho,
   layChiTietHoaDonCho,
@@ -21,6 +11,7 @@ import {
   timPhieuGiamGiaTaiQuay,
   timSanPhamTaiQuay
 } from "../../../services/ban-hang-tai-quay";
+import BanHangTaiQuayWorkspace from "../../../components/admin/ban-hang/BanHangTaiQuayWorkspace.vue";
 const GUEST_LABEL = "Kh\xE1ch v\xE3ng lai";
 const HIDDEN_INFO_LABEL = "\u1EA8n th\xF4ng tin";
 const NO_CUSTOMER_LABEL = "Chưa chọn khách hàng";
@@ -216,21 +207,6 @@ function soLuongConLai(chiTietId, soLuongTon) {
 function laySoLuongTonHienTai(chiTietId, fallback) {
   return productResults.value.find((product) => product.chiTietId === chiTietId)?.soLuongTon ?? fallback;
 }
-const productDetailFields = computed(() => {
-  if (!selectedProductDetail.value) {
-    return [];
-  }
-  return [
-    { label: "Lo\u1EA1i gi\xE0y", value: selectedProductDetail.value.loaiGiay || "--", icon: Box },
-    { label: "Th\u01B0\u01A1ng hi\u1EC7u", value: selectedProductDetail.value.thuongHieu || "--", icon: Award },
-    { label: "\u0110\u1EBF gi\xE0y", value: selectedProductDetail.value.deGiay || "--", icon: Footprints },
-    { label: "C\u1ED5 gi\xE0y", value: selectedProductDetail.value.coGiay || "--", icon: MoveVertical },
-    { label: "C\xF4ng ngh\u1EC7 \u0111\u1EC7m", value: selectedProductDetail.value.congNgheDem || "--", icon: Feather },
-    { label: "M\xE0u s\u1EAFc", value: selectedProductDetail.value.mauSac || "--", icon: Palette },
-    { label: "K\xEDch c\u1EE1", value: selectedProductDetail.value.kichCo || "--", icon: Ruler },
-    { label: "Tr\u1ECDng l\u01B0\u1EE3ng", value: selectedProductDetail.value.trongLuong || "--", icon: Weight }
-  ];
-});
 const relatedVariants = computed(() => {
   if (!selectedProductDetail.value) {
     return [];
@@ -765,6 +741,10 @@ function formatCurrencyInput() {
   }
   amountPaid.value = dinhDangTienNhap(amountPaid.value);
 }
+function handleAmountPaidInput(value) {
+  amountPaid.value = value;
+  formatCurrencyInput();
+}
 async function handlePayNow() {
   if (!canPay.value) {
     return;
@@ -846,625 +826,92 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">B&#225;n h&#224;ng t&#7841;i qu&#7847;y</h1>
-      </div>
-      <button
-        type="button"
-        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:text-red-500"
-        @click="resetDraft"
-      >
-        T&#7841;o phi&#7871;u m&#7899;i
-      </button>
-    </div>
-
-    <section class="mb-6 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-      <div class="mb-4 flex items-center justify-between">
-        <div>
-          <h2 class="text-lg font-bold text-slate-900">H&#243;a &#273;&#417;n ch&#7901;</h2>
-          <p class="text-sm text-slate-500">Ch&#7885;n nhanh &#273;&#7875; xem l&#7841;i h&#243;a &#273;&#417;n &#273;ang ch&#7901; x&#7917; l&#253;.</p>
-        </div>
-        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-          {{ loadingPendingInvoices ? "\u0110ang t\u1ea3i..." : `${pendingInvoices.length}/${MAX_PENDING_INVOICES} h\u00f3a \u0111\u01a1n` }}
-        </span>
-      </div>
-      <p v-if="pendingInvoiceLimitReached" class="mb-4 text-xs font-medium text-amber-600">
-        Đã đạt giới hạn tối đa 5 hóa đơn chờ.
-      </p>
-
-      <div class="flex flex-wrap gap-3">
-        <button
-          v-for="invoice in pendingInvoices"
-          :key="invoice.id"
-          type="button"
-          class="min-w-[220px] rounded-2xl border px-4 py-3 text-left transition"
-          :class="
-            activePendingInvoice?.id === invoice.id
-              ? 'border-red-500 bg-red-50 shadow-[0_16px_30px_rgba(239,68,68,0.15)]'
-              : 'border-slate-200 bg-slate-50 hover:border-red-200 hover:bg-white'
-          "
-          @click="chonHoaDonCho(invoice)"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm font-bold text-slate-900">{{ invoice.ma }}</p>
-              <p class="mt-1 text-sm text-slate-600">{{ invoice.tenKhachHang }}</p>
-            </div>
-            <span class="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-500">
-              {{ invoice.tongSanPham }} SP
-            </span>
-          </div>
-          <p class="mt-3 text-sm font-semibold text-red-500">{{ dinhDangTien(invoice.tongTien) }}</p>
-        </button>
-
-        <div
-          v-if="!loadingPendingInvoices && !pendingInvoices.length"
-          class="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500"
-        >
-          Ch&#432;a c&#243; h&#243;a &#273;&#417;n ch&#7901; n&#224;o.
-        </div>
-      </div>
-    </section>
-
-    <div class="grid gap-6 xl:grid-cols-[1.5fr_0.8fr]">
-      <section class="space-y-6 rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-        <div class="grid gap-4 lg:grid-cols-2">
-          <div class="relative">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">T&#236;m kh&#225;ch h&#224;ng theo t&#234;n ho&#7863;c s&#7889; &#273;i&#7879;n tho&#7841;i</label>
-            <div class="flex gap-3">
-              <input
-                v-model="customerKeyword"
-                type="text"
-                placeholder="Nh&#7853;p t&#234;n ho&#7863;c s&#7889; &#273;i&#7879;n tho&#7841;i kh&#225;ch h&#224;ng"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
-                @focus="moDanhSachKhachHang"
-                @blur="dongDanhSachKhachHang"
-              />
-              <button
-                type="button"
-                class="shrink-0 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:text-red-500"
-                @click="chonKhachVangLai"
-              >
-                Kh&#225;ch v&#227;ng lai
-              </button>
-            </div>
-
-            <div v-if="loadingCustomers" class="absolute right-4 top-[46px] text-xs font-semibold text-slate-400">
-              &#272;ang t&#236;m...
-            </div>
-
-            <div
-              v-if="showCustomerDropdown"
-              class="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_24px_50px_rgba(15,23,42,0.12)]"
-            >
-              <button v-if="false"
-                type="button"
-                class="mb-1 w-full rounded-2xl border border-dashed border-slate-200 px-3 py-3 text-left transition hover:border-red-200 hover:bg-red-50"
-                @click="chonKhachVangLai"
-              >
-                <p class="text-sm font-semibold text-slate-900">Kh&#225;ch v&#227;ng lai</p>
-                <p class="mt-1 text-xs text-slate-500">Kh&#244;ng l&#432;u s&#7889; &#273;i&#7879;n tho&#7841;i ho&#7863;c th&#244;ng tin c&#225; nh&#226;n</p>
-              </button>
-              <div v-if="!loadingCustomers && !customerResults.length" class="rounded-2xl px-3 py-3 text-sm text-slate-500">
-                Kh&#244;ng t&#236;m th&#7845;y kh&#225;ch h&#224;ng ph&#249; h&#7907;p.
-              </div>
-              <button
-                v-for="customer in customerResults"
-                :key="customer.id"
-                type="button"
-                class="w-full rounded-2xl px-3 py-3 text-left transition hover:bg-red-50"
-                @click="chonKhachHang(customer)"
-              >
-                <p class="text-sm font-semibold text-slate-900">{{ customer.hoTen }}</p>
-                <p class="mt-1 text-xs text-slate-500">{{ customer.sdt }} <span v-if="customer.email">- {{ customer.email }}</span></p>
-              </button>
-            </div>
-          </div>
-
-          <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Khách được chọn</p>
-                <p class="mt-2 text-lg font-bold text-slate-900">{{ tenKhachHangHienThi }}</p>
-                <p class="mt-1 text-sm text-slate-500">{{ soDienThoaiKhachHangHienThi }}</p>
-              </div>
-              <button
-                v-if="selectedCustomer || isGuestCustomer"
-                type="button"
-                class="text-sm font-semibold text-slate-400 transition hover:text-red-500"
-                @click="boChonKhachHang"
-              >
-                Bỏ chọn
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="relative">
-          <label class="mb-2 block text-sm font-semibold text-slate-700">T&#236;m s&#7843;n ph&#7849;m</label>
-          <input
-            v-model="productKeyword"
-            type="text"
-            placeholder="Nh&#7853;p m&#227;, t&#234;n s&#7843;n ph&#7849;m, SKU..."
-            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
-            @focus="moDanhSachSanPham"
-            @blur="dongDanhSachSanPham"
-          />
-
-          <div v-if="loadingProducts" class="absolute right-4 top-[46px] text-xs font-semibold text-slate-400">
-            &#272;ang t&#236;m...
-          </div>
-
-          <div
-            v-if="showProductDropdown"
-            class="absolute z-20 mt-2 w-full rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_50px_rgba(15,23,42,0.12)]"
-          >
-            <div v-if="!loadingProducts && !productResults.length" class="rounded-2xl px-3 py-3 text-sm text-slate-500">
-              Kh&#244;ng t&#236;m th&#7845;y s&#7843;n ph&#7849;m ph&#249; h&#7907;p.
-            </div>
-            <button
-              v-for="product in productResults"
-              :key="product.chiTietId"
-              type="button"
-              class="flex w-full items-start justify-between gap-4 rounded-2xl px-3 py-3 text-left transition hover:bg-red-50"
-              @click="moChiTietSanPham(product)"
-            >
-              <div>
-                <p class="text-sm font-bold text-slate-900">{{ product.tenSanPham }}</p>
-                <p class="mt-1 text-xs text-slate-500">
-                  M&#227;: {{ product.maSanPham }} | SKU: {{ product.sku }} | Bi&#7871;n th&#7875;: {{ product.maBienThe }}
-                </p>
-              </div>
-              <div class="text-right">
-                <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
-                <p class="mt-1 text-xs text-slate-500">T&#7891;n: {{ soLuongConLai(product.chiTietId, product.soLuongTon) }}</p>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div class="rounded-[28px] border border-slate-100 bg-[linear-gradient(180deg,#fff8f5_0%,#ffffff_100%)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-          <div class="flex flex-col gap-3 border-b border-slate-100 pb-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p class="text-sm font-semibold text-slate-800">{{ productSearchLabel }}</p>
-            </div>
-            <div class="rounded-2xl bg-white px-4 py-3 text-xs font-semibold text-slate-500 shadow-sm">
-              {{ loadingProducts ? "Đang tải sản phẩm..." : productResults.length + " sản phẩm" }}
-            </div>
-          </div>
-
-          <div class="mt-4 max-h-[360px] space-y-3 overflow-y-auto pr-1">
-            <div
-              v-if="!loadingProducts && !productResults.length"
-              class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500"
-            >
-              Không tìm thấy sản phẩm phù hợp.
-            </div>
-
-            <button
-              v-for="product in productResults"
-              :key="`panel-${product.chiTietId}`"
-              type="button"
-              class="flex w-full items-center justify-between gap-4 rounded-[24px] border border-white bg-white px-4 py-4 text-left shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50"
-              @click="moChiTietSanPham(product)"
-            >
-              <div class="flex min-w-0 items-center gap-4">
-                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-lg font-bold text-red-400">
-                  {{ product.tenSanPham.slice(0, 1) }}
-                </div>
-                <div class="min-w-0">
-                  <p class="truncate text-base font-bold text-slate-900">{{ product.tenSanPham }}</p>
-                  <p class="mt-1 truncate text-xs text-slate-500">
-                    Mã: {{ product.maSanPham }} | SKU: {{ product.sku }} | Biến thể: {{ product.maBienThe }}
-                  </p>
-                  <p class="mt-2 text-sm font-semibold text-slate-700">Tồn khả dụng: {{ soLuongConLai(product.chiTietId, product.soLuongTon) }}</p>
-                </div>
-              </div>
-
-              <div class="shrink-0 text-right">
-                <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
-                <span class="mt-2 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Xem chi tiết
-                </span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div class="overflow-hidden rounded-[28px] border border-slate-100">
-          <table class="min-w-full border-collapse">
-            <thead class="bg-slate-100 text-left text-sm text-slate-600">
-              <tr>
-                <th class="px-5 py-4 font-semibold">STT</th>
-                <th class="px-5 py-4 font-semibold">Mã sản phẩm</th>
-                <th class="px-5 py-4 font-semibold">Tên sản phẩm</th>
-                <th class="px-5 py-4 font-semibold">Đơn giá</th>
-                <th class="px-5 py-4 font-semibold">Số lượng</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white text-sm text-slate-700">
-              <tr v-for="(item, index) in cartItems" :key="item.chiTietId" class="border-t border-slate-100">
-                <td class="px-5 py-4 font-semibold text-slate-900">{{ index + 1 }}</td>
-                <td class="px-5 py-4 font-semibold text-slate-600">{{ item.maSanPham }}</td>
-                <td class="px-5 py-4">
-                  <p class="font-semibold text-slate-900">{{ item.tenSanPham }}</p>
-                </td>
-                <td class="px-5 py-4 font-semibold text-slate-700">{{ dinhDangTien(item.giaBan) }}</td>
-                <td class="px-5 py-4">
-                  <div class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50">
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-base font-bold text-slate-500 transition hover:text-red-500"
-                      @click="giamSoLuong(item.chiTietId)"
-                    >
-                      -
-                    </button>
-                    <span class="min-w-10 px-2 text-center font-semibold text-slate-900">{{ item.soLuong }}</span>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-base font-bold transition"
-                      :class="
-                        soLuongConLai(item.chiTietId, item.soLuongTon) <= 0
-                          ? 'cursor-not-allowed text-slate-300'
-                          : 'text-slate-500 hover:text-red-500'
-                      "
-                      @click="tangSoLuong(item.chiTietId)"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <p class="mt-2 text-xs text-slate-400">Tồn còn lại: {{ soLuongConLai(item.chiTietId, item.soLuongTon) }}</p>
-                </td>
-              </tr>
-              <tr v-if="!cartItems.length">
-                <td colspan="5" class="px-5 py-14 text-center text-sm text-slate-400">
-                  Chọn sản phẩm từ ô tìm kiếm để đưa vào hóa đơn.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div
-          v-if="selectedProductDetail"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6"
-          @click.self="dongChiTietSanPham"
-        >
-          <div class="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-[32px] bg-white shadow-[0_30px_80px_rgba(15,23,42,0.25)]">
-            <div class="flex items-start justify-between border-b border-slate-100 px-6 py-5">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-400">Sản phẩm chi tiết</p>
-                <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ selectedProductDetail.tenSanPham }}</h3>
-                <p class="mt-1 text-sm text-slate-500">
-                  Mã: {{ selectedProductDetail.maSanPham }} | Biến thể: {{ selectedProductDetail.maBienThe }}
-                </p>
-              </div>
-              <button
-                type="button"
-                class="rounded-full bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
-                @click="dongChiTietSanPham"
-              >
-                Đóng
-              </button>
-            </div>
-
-            <div class="max-h-[calc(85vh-110px)] overflow-y-auto px-6 py-5">
-              <div class="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                Chọn màu sắc, kích cỡ và số lượng trước khi thêm vào hóa đơn.
-              </div>
-
-              <div class="mb-5 flex items-center justify-between rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-4">
-                <div>
-                  <p class="text-sm text-slate-500">SKU</p>
-                  <p class="mt-1 text-base font-semibold text-slate-900">{{ chiTietDangChon?.sku }}</p>
-                </div>
-                <div class="text-right">
-                  <p class="text-sm text-slate-500">Tồn kho còn lại</p>
-                  <p class="mt-1 text-base font-semibold text-slate-900">{{ soLuongTonSauKhiChon }}</p>
-                </div>
-                <div class="text-right">
-                  <p class="text-sm text-slate-500">Giá bán</p>
-                  <p class="mt-1 text-base font-bold text-red-500">{{ dinhDangTien(chiTietDangChon?.giaBan || 0) }}</p>
-                </div>
-              </div>
-
-              <div class="mt-6 grid gap-6">
-                <div class="grid gap-3 md:grid-cols-[84px_1fr] md:items-start">
-                  <p class="text-base font-medium text-slate-700">Màu sắc</p>
-                  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <button
-                      v-for="option in colorOptions"
-                      :key="`color-${option.mauSac || option.maBienThe}`"
-                      type="button"
-                      class="flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition"
-                      :class="
-                        selectedColor === (option.mauSac || option.maBienThe)
-                          ? 'border-red-400 bg-red-50 text-red-600'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:bg-red-50'
-                      "
-                      @click="chonMauSac(option.mauSac || option.maBienThe)"
-                    >
-                      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
-                        {{ (option.mauSac || "?").slice(0, 1) }}
-                      </div>
-                      <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold">{{ option.mauSac || option.maBienThe }}</p>
-                        <p class="truncate text-xs text-slate-500">{{ option.maBienThe }}</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="grid gap-3 md:grid-cols-[84px_1fr] md:items-start">
-                  <p class="text-base font-medium text-slate-700">Size</p>
-                  <div class="flex flex-wrap gap-3">
-                    <button
-                      v-for="option in sizeOptions"
-                      :key="`size-${option.chiTietId}`"
-                      type="button"
-                      class="min-w-20 rounded-xl border px-5 py-3 text-center text-sm font-semibold transition"
-                      :class="
-                        selectedSize === (option.kichCo || '')
-                          ? 'border-red-400 bg-red-50 text-red-600'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:bg-red-50'
-                      "
-                      @click="chonKichCo(option.kichCo || '')"
-                    >
-                      {{ option.kichCo || '--' }}
-                    </button>
-                  </div>
-                </div>
-
-                <div class="text-sm font-medium text-blue-600">Bảng Quy Đổi Kích Cỡ</div>
-
-                <div class="grid gap-3 md:grid-cols-[84px_1fr_120px] md:items-center">
-                  <p class="text-base font-medium text-slate-700">Số lượng</p>
-                  <div class="inline-flex w-fit items-center rounded-xl border border-slate-200 bg-white">
-                    <button
-                      type="button"
-                      class="px-4 py-3 text-lg font-bold transition disabled:cursor-not-allowed disabled:text-slate-300"
-                      :disabled="selectedQuantity <= 1"
-                      @click="giamSoLuongChiTiet"
-                    >
-                      -
-                    </button>
-                    <span class="min-w-14 border-x border-slate-200 px-4 py-3 text-center text-base font-semibold text-slate-900">
-                      {{ selectedQuantity }}
-                    </span>
-                    <button
-                      type="button"
-                      class="px-4 py-3 text-lg font-bold transition disabled:cursor-not-allowed disabled:text-slate-300"
-                      :disabled="selectedQuantity >= soLuongTonKhaDungChiTiet"
-                      @click="tangSoLuongChiTiet"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <p class="text-sm font-semibold uppercase text-emerald-600">
-                    {{ soLuongTonKhaDungChiTiet > 0 ? 'Còn hàng' : 'Hết hàng' }}
-                  </p>
-                </div>
-              </div>
-
-              <div class="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  class="rounded-2xl bg-red-500 px-5 py-3 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.25)] transition hover:bg-red-600"
-                  @click="themBienTheDangChon"
-                >
-                  Thêm vào hóa đơn
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-            <aside class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-        <div class="rounded-[28px] bg-[linear-gradient(180deg,#fff7f4_0%,#ffffff_100%)] p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-red-400">Tổng quan</p>
-          <h2 class="mt-3 text-2xl font-bold text-slate-900">
-            {{ activePendingInvoice?.ma || "Hóa đơn mới" }}
-          </h2>
-          <p class="mt-2 text-sm text-slate-500">
-            {{ invoiceLoading ? "Đang tải chi tiết hóa đơn..." : "Hóa đơn bán hàng tại quầy đang thao tác." }}
-          </p>
-
-          <div class="mt-6 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Tổng sản phẩm</span>
-              <span class="text-lg font-bold text-slate-900">{{ tongSoLuong }}</span>
-            </div>
-            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Tổng tiền hàng</span>
-              <div class="text-right">
-                <p class="text-lg font-bold text-slate-900">{{ dinhDangTien(tongTienSauGiamHienThi) }}</p>
-                <p v-if="tienGiam > 0" class="mt-1 text-xs text-slate-400 line-through">
-                  {{ dinhDangTien(tongTien) }}
-                </p>
-              </div>
-            </div>
-
-            <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <label class="block text-sm font-semibold text-slate-800">Áp phiếu giảm giá</label>
-
-              <div class="mt-3" @focusin="handleCouponFocus" @focusout="handleCouponBlur">
-                <div class="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    v-model="couponCode"
-                    type="text"
-                    placeholder="Nhập mã hoặc tên phiếu"
-                    class="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                    @keyup.enter="handleApplyCoupon"
-                  />
-                  <button
-                    type="button"
-                    class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                    :disabled="!coTheApDungPhieu"
-                    @click="handleApplyCoupon"
-                  >
-                    {{ applyingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
-                  </button>
-                </div>
-
-                <div v-if="showCouponDropdown" class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
-                  <div v-if="!coTheTimPhieu" class="px-3 py-3 text-sm text-slate-500">
-                    Thêm sản phẩm vào hóa đơn để xem phiếu phù hợp.
-                  </div>
-                  <div v-else-if="loadingCoupons" class="px-3 py-3 text-sm text-slate-500">
-                    Đang tìm phiếu giảm giá...
-                  </div>
-                  <div v-else-if="!couponResults.length" class="px-3 py-3 text-sm text-slate-500">
-                    {{ couponCode.trim() ? "Không tìm thấy phiếu giảm giá phù hợp." : "Chưa có phiếu giảm giá phù hợp cho hóa đơn này." }}
-                  </div>
-                  <div v-else class="space-y-2">
-                    <button
-                      v-for="coupon in couponResults"
-                      :key="coupon.id"
-                      type="button"
-                      class="w-full rounded-2xl border border-transparent bg-white px-3 py-3 text-left transition hover:border-red-200 hover:bg-red-50"
-                      @mousedown.prevent
-                      @click="chonPhieuGiamGia(coupon)"
-                    >
-                      <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                          <p class="truncate text-sm font-semibold text-slate-800">{{ coupon.ma }}</p>
-                          <p class="mt-1 text-xs text-slate-500">{{ coupon.ten }}</p>
-                        </div>
-                        <div class="text-right">
-                          <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Giảm</p>
-                          <p class="text-sm font-bold text-emerald-600">{{ dinhDangTien(coupon.soTienGiam) }}</p>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <p v-if="maPhieuChuaApDung" class="mt-2 text-xs font-medium text-amber-600">
-                Mã phiếu đang thay đổi. Vui lòng áp dụng lại trước khi lưu hoặc thanh toán.
-              </p>
-
-              <div
-                v-if="appliedCoupon"
-                class="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-semibold text-emerald-700">{{ appliedCoupon.ma }}</p>
-                    <p class="mt-1 text-xs text-emerald-600">{{ appliedCoupon.ten }}</p>
-                  </div>
-                  <button
-                    type="button"
-                    class="text-xs font-semibold text-emerald-700 transition hover:text-emerald-900"
-                    @click="handleRemoveCoupon"
-                  >
-                    Bỏ mã
-                  </button>
-                </div>
-                <div class="mt-3 flex items-start justify-between gap-3 text-sm">
-                  <span class="text-emerald-700">Tiền giảm</span>
-                  <span class="max-w-[65%] break-all text-right font-bold text-emerald-700">{{ dinhDangTien(tienGiam) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Tiền giảm</span>
-              <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">{{ dinhDangTien(tienGiam) }}</span>
-            </div>
-            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Khách cần trả</span>
-              <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Khách hàng</span>
-              <span class="text-right text-sm font-semibold text-slate-700">{{ tenKhachHangHienThi }}</span>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Số điện thoại</span>
-              <span class="text-right text-sm font-semibold text-slate-700">{{ soDienThoaiKhachHangHienThi }}</span>
-            </div>
-            <div>
-              <p class="mb-2 text-sm text-slate-500">Hình thức thanh toán</p>
-              <div class="grid grid-cols-2 gap-x-6 gap-y-3">
-                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
-                  <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="1" />
-                  <span>Tiền mặt</span>
-                </label>
-                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
-                  <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="2" />
-                  <span>Chuyển khoản</span>
-                </label>
-                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
-                  <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="4" />
-                  <span>Thẻ</span>
-                </label>
-                <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
-                  <input v-model="paymentMethod" type="radio" class="h-4 w-4 accent-red-500" :value="3" />
-                  <span>Ví</span>
-                </label>
-              </div>
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-slate-500">Khách thanh toán</label>
-              <input
-                v-model="amountPaid"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                :disabled="paymentMethod !== 1"
-                :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
-                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                @input="formatCurrencyInput"
-              />
-            </div>
-            <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
-              <span class="text-sm text-slate-500">Tiền thừa trả khách</span>
-              <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(tienThua) }}</span>
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-slate-500">Ghi chú thanh toán</label>
-              <textarea
-                v-model="paymentNote"
-                rows="3"
-                placeholder="Ghi chú thêm nếu cần"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-              />
-            </div>
-          </div>
-
-          <div class="mt-8 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              class="rounded-2xl bg-slate-200 px-4 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              :disabled="!canCreatePendingInvoice"
-              @click="handleCreatePendingInvoice"
-            >
-              {{ savingPendingInvoice ? "Đang tạo..." : pendingInvoiceLimitReached ? "Đã đủ 5 hóa đơn chờ" : "Tạo hóa đơn chờ" }}
-            </button>
-            <button
-              type="button"
-              class="rounded-2xl bg-red-500 px-4 py-4 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.35)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-              :disabled="!canPay"
-              @click="handlePayNow"
-            >
-              {{ payingInvoice ? "Đang thanh toán..." : "Thanh toán" }}
-            </button>
-          </div>
-          <button
-            v-if="activePendingInvoice"
-            type="button"
-            class="mt-3 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
-            :disabled="cancelingPendingInvoice"
-            @click="handleCancelPendingInvoice"
-          >
-            {{ cancelingPendingInvoice ? "Đang hủy hóa đơn chờ..." : "Hủy hóa đơn chờ" }}
-          </button>
-        </div>
-      </aside>
-    </div>
-  </div>
+  <BanHangTaiQuayWorkspace
+    :pending-invoices="pendingInvoices"
+    :loading-pending-invoices="loadingPendingInvoices"
+    :max-pending-invoices="MAX_PENDING_INVOICES"
+    :pending-invoice-limit-reached="pendingInvoiceLimitReached"
+    :active-pending-invoice="activePendingInvoice"
+    :customer-keyword="customerKeyword"
+    :loading-customers="loadingCustomers"
+    :show-customer-dropdown="showCustomerDropdown"
+    :customer-results="customerResults"
+    :ten-khach-hang-hien-thi="tenKhachHangHienThi"
+    :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
+    :selected-customer="selectedCustomer"
+    :is-guest-customer="isGuestCustomer"
+    :product-keyword="productKeyword"
+    :loading-products="loadingProducts"
+    :show-product-dropdown="showProductDropdown"
+    :product-results="productResults"
+    :product-search-label="productSearchLabel"
+    :cart-items="cartItems"
+    :selected-product-detail="selectedProductDetail"
+    :chi-tiet-dang-chon="chiTietDangChon"
+    :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
+    :color-options="colorOptions"
+    :size-options="sizeOptions"
+    :selected-color="selectedColor"
+    :selected-size="selectedSize"
+    :selected-quantity="selectedQuantity"
+    :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
+    :invoice-loading="invoiceLoading"
+    :tong-so-luong="tongSoLuong"
+    :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
+    :tien-giam="tienGiam"
+    :tong-tien="tongTien"
+    :coupon-code="couponCode"
+    :co-the-ap-dung-phieu="coTheApDungPhieu"
+    :applying-coupon="applyingCoupon"
+    :show-coupon-dropdown="showCouponDropdown"
+    :co-the-tim-phieu="coTheTimPhieu"
+    :loading-coupons="loadingCoupons"
+    :coupon-results="couponResults"
+    :applied-coupon="appliedCoupon"
+    :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
+    :khach-can-tra="khachCanTra"
+    :payment-method="paymentMethod"
+    :amount-paid="amountPaid"
+    :tien-thua="tienThua"
+    :payment-note="paymentNote"
+    :can-create-pending-invoice="canCreatePendingInvoice"
+    :saving-pending-invoice="savingPendingInvoice"
+    :can-pay="canPay"
+    :paying-invoice="payingInvoice"
+    :canceling-pending-invoice="cancelingPendingInvoice"
+    :dinh-dang-tien="dinhDangTien"
+    :so-luong-con-lai="soLuongConLai"
+    @reset-draft="resetDraft"
+    @select-invoice="chonHoaDonCho"
+    @update:customer-keyword="customerKeyword = $event"
+    @focus-customer="moDanhSachKhachHang"
+    @blur-customer="dongDanhSachKhachHang"
+    @select-customer="chonKhachHang"
+    @select-guest="chonKhachVangLai"
+    @clear-customer="boChonKhachHang"
+    @update:product-keyword="productKeyword = $event"
+    @focus-product="moDanhSachSanPham"
+    @blur-product="dongDanhSachSanPham"
+    @open-product="moChiTietSanPham"
+    @increase-item="tangSoLuong"
+    @decrease-item="giamSoLuong"
+    @close-product-detail="dongChiTietSanPham"
+    @select-color="chonMauSac"
+    @select-size="chonKichCo"
+    @decrease-quantity="giamSoLuongChiTiet"
+    @increase-quantity="tangSoLuongChiTiet"
+    @add-selected-variant="themBienTheDangChon"
+    @update:coupon-code="couponCode = $event"
+    @focus-coupon="handleCouponFocus"
+    @blur-coupon="handleCouponBlur"
+    @apply-coupon="handleApplyCoupon"
+    @select-coupon="chonPhieuGiamGia"
+    @remove-coupon="handleRemoveCoupon"
+    @update:payment-method="paymentMethod = $event"
+    @amount-input="handleAmountPaidInput"
+    @update:payment-note="paymentNote = $event"
+    @create-pending-invoice="handleCreatePendingInvoice"
+    @pay-now="handlePayNow"
+    @cancel-pending-invoice="handleCancelPendingInvoice"
+  />
 </template>
