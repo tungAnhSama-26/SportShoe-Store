@@ -10,6 +10,7 @@ import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -47,10 +48,10 @@ public class DotGiamGia {
     private BigDecimal giaTriGiam;
 
     @Column(name = "ngay_bat_dau")
-    private Instant ngayBatDau;
+    private LocalDate ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private Instant ngayKetThuc;
+    private LocalDate ngayKetThuc;
 
     @NotNull
     @ColumnDefault("1")
@@ -60,10 +61,10 @@ public class DotGiamGia {
     @NotNull
     @ColumnDefault("sysdatetime()")
     @Column(name = "ngay_tao", nullable = false)
-    private Instant ngayTao;
+    private LocalDate ngayTao;
 
     @Column(name = "ngay_cap_nhat")
-    private Instant ngayCapNhat;
+    private LocalDate ngayCapNhat;
 
 
 }
