@@ -12,10 +12,10 @@ import {
   getDotGiamGiaList,
   getDotGiamGiaSanPhamDetail,
   getDotGiamGiaSanPhamList, 
-  searchSanPhamTaiQuay,
   updateDotGiamGia,
   updateDotGiamGiaSanPham
 } from "../../../services/khuyen-mai";
+import { layDanhSachGiay } from "../../../services/san-pham-api";
 
 const tabs = [
   { key: "dot", label: "Đợt giảm giá" },
@@ -80,8 +80,16 @@ const dotSanPhamForm = reactive({
 
 const productSearch = ref("");
 const productHints = ref([]);
+const selectedGiay = ref(null);
 const loadingProductHints = ref(false);
 const formErrors = reactive({});
+
+function chonGiay(item) {
+  dotSanPhamForm.giayId = String(item.id);
+  selectedGiay.value = item;
+  productSearch.value = item.ten;
+  productHints.value = [];
+}
 
 function mauTrangThai(trangThai) {
   return Number(trangThai) === 1 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600";
@@ -184,6 +192,8 @@ function openCreateModal(target) {
   } else {
     Object.assign(dotSanPhamForm, { id: null, dotGiamGiaId: "", giayId: "", trangThai: "1" });
     productSearch.value = "";
+    selectedGiay.value = null;
+    productHints.value = [];
   }
 }
 
@@ -208,6 +218,8 @@ async function openEditModal(target, item) {
       giayId: detail.giayId ? String(detail.giayId) : "", trangThai: String(detail.trangThai ?? 1)
     });
     productSearch.value = detail.tenGiay ?? "";
+    selectedGiay.value = { id: detail.giayId, ten: detail.tenGiay };
+    productHints.value = [];
   }
 }
 
@@ -226,10 +238,12 @@ async function removeItem(target, item) {
 
 watch(productSearch, async (val) => {
   if (modalTarget.value !== "san-pham" || modalMode.value === "detail") return;
+  if (selectedGiay.value && selectedGiay.value.ten === val) { productHints.value = []; return; }
   if ((val||"").trim().length < 2) { productHints.value = []; return; }
   loadingProductHints.value = true;
   try {
-    productHints.value = await searchSanPhamTaiQuay(val.trim());
+    const res = await layDanhSachGiay({ keyword: val.trim(), size: 10 });
+    productHints.value = res?.items || [];
   } catch(e) { productHints.value = []; } finally { loadingProductHints.value = false; }
 });
 
@@ -556,7 +570,7 @@ onMounted(taiDanhSach);
 
         <div v-else class="space-y-4 px-6 py-6">
           <div class="grid gap-4 md:grid-cols-2">
-            <div>
+            <div class="md:col-span-2">
               <label class="mb-1 block text-sm font-semibold text-slate-700">Đợt giảm giá</label>
               <select v-model="dotSanPhamForm.dotGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
                 <option value="">Chọn đợt giảm giá</option>
@@ -564,25 +578,23 @@ onMounted(taiDanhSach);
               </select>
               <p v-if="formErrors.dotGiamGiaId" class="mt-1 text-xs text-rose-500">{{ formErrors.dotGiamGiaId }}</p>
             </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Giày ID</label>
-              <input v-model="dotSanPhamForm.giayId" type="number" min="1" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.giayId" class="mt-1 text-xs text-rose-500">{{ formErrors.giayId }}</p>
-            </div>
-            <div class="md:col-span-2">
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Tra cứu ID Giày theo tên</label>
+            <div class="md:col-span-2 relative">
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Giày ID (Tìm & Chọn)</label>
               <div class="relative">
                 <PackageSearch class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input v-model="productSearch" type="text" placeholder="Gõ tên giày để tìm ID..." class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+                <input v-model="productSearch" type="text" placeholder="Nhập mã hoặc tên giày..." class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
               </div>
-              <div v-if="productHints.length" class="mt-2 flex flex-col gap-1 rounded-2xl bg-slate-50 p-2">
-                <div v-for="item in productHints.slice(0, 5)" :key="item.chiTietId" class="flex justify-between rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-slate-100">
-                  <span class="font-medium text-slate-700">{{ item.tenSanPham }}</span>
-                  <span class="text-xs text-slate-400">ID: {{ item.chiTietId }}</span>
+              <p v-if="formErrors.giayId" class="mt-1 text-xs text-rose-500">{{ formErrors.giayId }}</p>
+              
+              <div v-if="productHints.length" class="absolute z-10 mt-1 flex max-h-48 w-full flex-col gap-1 overflow-y-auto rounded-2xl bg-white p-2 shadow-lg ring-1 ring-slate-200">
+                <div v-for="item in productHints" :key="item.id" @click="chonGiay(item)" class="cursor-pointer flex justify-between items-center rounded-xl hover:bg-slate-50 px-3 py-2 text-sm transition group">
+                  <span class="font-medium text-slate-700">{{ item.ten }} <span class="text-xs text-slate-400 font-normal">({{ item.ma }})</span></span>
+                  <span class="text-xs text-emerald-600 font-semibold" v-if="dotSanPhamForm.giayId === String(item.id)">Đã chọn</span>
+                  <span class="text-xs text-slate-400 group-hover:text-rose-500" v-else>Chọn (ID: {{ item.id }})</span>
                 </div>
               </div>
             </div>
-            <div>
+            <div class="md:col-span-2">
               <label class="mb-1 block text-sm font-semibold text-slate-700">Trạng thái</label>
               <select v-model="dotSanPhamForm.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
                 <option value="1">Kích hoạt</option>
