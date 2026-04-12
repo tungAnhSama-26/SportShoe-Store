@@ -113,13 +113,13 @@ async function handleToggleStatus(item) {
       <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-16">Màu</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên màu sắc</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã HEX</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 w-12">Stt</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 w-16">Màu</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Mã</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Tên màu sắc</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Mã Hex</th>
+            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-28">Trạng thái</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 w-28">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">

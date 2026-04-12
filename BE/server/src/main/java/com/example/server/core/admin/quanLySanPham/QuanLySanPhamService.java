@@ -125,7 +125,10 @@ public class QuanLySanPhamService {
     private Map<Integer, String> buildImageMap(Collection<Integer> ids) {
         Map<Integer, String> map = new HashMap<>();
         for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayIds(ids)) {
-            map.putIfAbsent((Integer) row[0], (String) row[1]);
+            if (row[0] != null && row[1] != null) {
+                Integer giayId = ((Number) row[0]).intValue();
+                map.putIfAbsent(giayId, (String) row[1]);
+            }
         }
         return map;
     }
@@ -136,13 +139,15 @@ public class QuanLySanPhamService {
         Long tongBienThe = agg != null ? (Long) agg[2] : 0L;
         Long tongSoLuong = agg != null ? (Long) agg[3] : 0L;
         BigDecimal giaMax = agg != null ? (BigDecimal) agg[4] : null;
+        Long countGiamGia = agg != null ? (Long) agg[5] : 0L;
         return new GiayListItemResponse(
                 g.getId(), g.getMa(), g.getTen(),
                 g.getLoaiGiay().getTen(), g.getThuongHieu().getTen(),
                 g.getGioiTinh(), g.getTrangThai(),
                 imgMap.get(g.getId()),
                 giaMin, giaMax, tongBienThe, tongSoLuong,
-                g.getNgayTao()
+                g.getNgayTao(),
+                countGiamGia > 0
         );
     }
 
@@ -164,12 +169,21 @@ public class QuanLySanPhamService {
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getId() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getMa() : null
         );
+
+        List<Integer> chiTietIds = giayChiTietRepository.findByGiayIdEager(id).stream()
+                .map(GiayChiTiet::getId).toList();
+        List<HinhAnhGiayResponse> hinhAnhs = hinhAnhGiayRepository.findByGiayChiTietIdInAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(chiTietIds, 1)
+                .stream().map(h -> new HinhAnhGiayResponse(
+                        h.getId(), h.getLoaiHinh(), h.getUrl(), h.getMoTa(),
+                        h.getLaHinhChinh(), h.getTrangThai(), h.getNgayTao()
+                )).toList();
+
         return new GiayDetailResponse(
                 g.getId(), g.getMa(), g.getTen(), g.getGioiTinh(),
                 g.getThuongHieu().getId(), g.getThuongHieu().getTen(),
                 g.getLoaiGiay().getId(), g.getLoaiGiay().getTen(),
                 g.getChatLieu(), g.getMoTa(), g.getTrangThai(),
-                thuocTinh, g.getNgayTao(), g.getNgayCapNhat()
+                thuocTinh, hinhAnhs, g.getNgayTao(), g.getNgayCapNhat()
         );
     }
 
@@ -196,6 +210,9 @@ public class QuanLySanPhamService {
         giay.setTrangThai(1);
         giay.setNgayTao(Instant.now());
         giay = giayRepository.save(giay);
+
+        updateTrangThaiTuSoLuong(giay.getId());
+        giay = giayRepository.findById(giay.getId()).orElse(giay); // Refresh after status update
 
         var gtt = new GiayThuocTinh();
         gtt.setGiay(giay);
@@ -241,23 +258,41 @@ public class QuanLySanPhamService {
         gtt.setNgayCapNhat(Instant.now());
         giayThuocTinhRepository.save(gtt);
 
+        updateTrangThaiTuSoLuong(id);
         return chiTietGiay(id);
     }
 
     @Transactional
     public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
+        System.out.println(">>> DOI TRANG THAI GIAY #" + id + " -> " + req.trangThai());
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
         giay.setTrangThai(req.trangThai());
         giay.setNgayCapNhat(Instant.now());
+        if (req.trangThai() != 0) {
+            updateTrangThaiTuSoLuong(id);
+        }
     }
 
     @Transactional
     public void xoaGiay(Integer id) {
-        if (!giayRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Giày #" + id + " không tồn tại");
+        System.out.println(">>> TOGGLE TRANG THAI GIAY #" + id);
+        try {
+            var giay = giayRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
+            
+            if (giay.getTrangThai() == 0) {
+                giay.setTrangThai(1); 
+                updateTrangThaiTuSoLuong(id);
+            } else {
+                giay.setTrangThai(0);
+            }
+            giay.setNgayCapNhat(Instant.now());
+        } catch (Exception e) {
+            System.err.println("!!! LOI XOA GIAY: " + e.getMessage());
+            e.printStackTrace();
+            throw new BusinessException("Lỗi xử lý trạng thái: " + e.getMessage());
         }
-        giayRepository.deleteById(id);
     }
 
     // ─── Biến thể ────────────────────────────────────────────────────────────
@@ -291,10 +326,12 @@ public class QuanLySanPhamService {
         String maBienThe = giay.getMa() + "-" + mauSac.getMa() + "-" + kichCo.getGiaTri();
         gct.setMaBienThe(maBienThe);
         gct.setSku(maBienThe + "-" + System.currentTimeMillis() % 10000);
-        gct.setKichHoat(1);
+        gct.setKichHoat(req.soLuong() > 0 ? 1 : 2);
         gct.setNgayTao(Instant.now());
 
-        return toBienThe(giayChiTietRepository.save(gct));
+        var saved = giayChiTietRepository.save(gct);
+        updateTrangThaiTuSoLuong(giayId);
+        return toBienThe(saved);
     }
 
     @Transactional
@@ -305,16 +342,24 @@ public class QuanLySanPhamService {
         gct.setGiaGoc(req.giaGoc());
         gct.setGiaBan(req.giaBan());
         gct.setKichHoat(req.kichHoat());
+        if (req.kichHoat() == 1 && req.soLuong() <= 0) {
+            gct.setKichHoat(2);
+        } else if (req.kichHoat() == 2 && req.soLuong() > 0) {
+            gct.setKichHoat(1);
+        }
         gct.setNgayCapNhat(Instant.now());
-        return toBienThe(gct);
+        var saved = giayChiTietRepository.save(gct);
+        updateTrangThaiTuSoLuong(saved.getGiay().getId());
+        return toBienThe(saved);
     }
 
     @Transactional
     public void xoaBienThe(Integer id) {
-        if (!giayChiTietRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Biến thể #" + id + " không tồn tại");
-        }
+        var gct = giayChiTietRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
+        Integer giayId = gct.getGiay().getId();
         giayChiTietRepository.deleteById(id);
+        updateTrangThaiTuSoLuong(giayId);
     }
 
     private BienTheResponse toBienThe(GiayChiTiet gct) {
@@ -383,6 +428,19 @@ public class QuanLySanPhamService {
     }
 
     // ─── Utils ───────────────────────────────────────────────────────────────
+
+    private void updateTrangThaiTuSoLuong(Integer giayId) {
+        var giay = giayRepository.findById(giayId).orElse(null);
+        if (giay == null || giay.getTrangThai() == 0) return;
+
+        Long totalQty = giayChiTietRepository.sumSoLuongByGiayId(giayId);
+        int newStatus = (totalQty != null && totalQty > 0) ? 1 : 2;
+
+        if (giay.getTrangThai() != newStatus) {
+            giay.setTrangThai(newStatus);
+            giay.setNgayCapNhat(Instant.now());
+        }
+    }
 
     private static boolean hasText(String s) {
         return s != null && !s.isBlank();
