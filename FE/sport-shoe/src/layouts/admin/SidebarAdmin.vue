@@ -47,8 +47,7 @@ const checkThuocTinhActive = (newPath) => {
 };
 const checkSanPhamActive = (newPath) =>
   newPath.startsWith("/admin/san-pham")
-  || newPath.startsWith("/admin/bien-the-san-pham")
-  || checkThuocTinhActive(newPath);
+  || newPath.startsWith("/admin/bien-the-san-pham");
 const checkKhuyenMaiActive = (newPath) => {
   const routes = ["/admin/phieu-giam-gia", "/admin/dot-giam-gia"];
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
@@ -85,7 +84,6 @@ function toggleSanPham() {
 function toggleThuocTinh() {
   if (compactMode.value) {
     isSidebarCollapsed.value = false;
-    openSanPham.value = true;
     openThuocTinh.value = true;
     return;
   }
@@ -199,55 +197,65 @@ function subItemClass(active) {
             <Layers class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/bien-the-san-pham') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
             <span class="leading-tight">Bi&#7871;n th&#7875; s&#7843;n ph&#7849;m</span>
           </router-link>
-          <button
-            type="button"
-            class="flex w-full items-center justify-between rounded-xl border border-transparent px-4 py-2.5 text-[13px] font-normal transition-colors"
-            :class="isThuocTinhActive ? 'bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'"
-            @click="toggleThuocTinh"
-          >
-            <div class="flex items-center">
-              <Box class="mr-3 h-4 w-4 shrink-0" :class="isThuocTinhActive ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              Danh s&#225;ch thu&#7897;c t&#237;nh
-            </div>
-            <ChevronDown
-              class="h-4 w-4 transition-transform duration-200"
-              :class="[openThuocTinh ? 'rotate-180 text-red-500' : 'text-gray-400']"
-            />
-          </button>
-          <div v-show="openThuocTinh" class="space-y-1 overflow-hidden pl-4 transition-all duration-300">
-            <router-link to="/admin/loai-giay" :class="subItemClass(isActive('/admin/loai-giay'))">
-              <Box class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/loai-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">Lo&#7841;i gi&#224;y</span>
-            </router-link>
-            <router-link to="/admin/thuong-hieu" :class="subItemClass(isActive('/admin/thuong-hieu'))">
-              <Award class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/thuong-hieu') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">Th&#432;&#417;ng hi&#7879;u</span>
-            </router-link>
-            <router-link to="/admin/de-giay" :class="subItemClass(isActive('/admin/de-giay'))">
-              <Footprints class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/de-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">&#272;&#7871; gi&#224;y</span>
-            </router-link>
-            <router-link to="/admin/co-giay" :class="subItemClass(isActive('/admin/co-giay'))">
-              <MoveVertical class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/co-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">C&#7893; gi&#224;y</span>
-            </router-link>
-            <router-link to="/admin/cong-nghe-dem" :class="subItemClass(isActive('/admin/cong-nghe-dem'))">
-              <Feather class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/cong-nghe-dem') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">C&#244;ng ngh&#7879; &#273;&#7879;m</span>
-            </router-link>
-            <router-link to="/admin/mau-sac" :class="subItemClass(isActive('/admin/mau-sac'))">
-              <Palette class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/mau-sac') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">M&#224;u s&#7855;c</span>
-            </router-link>
-            <router-link to="/admin/kich-co" :class="subItemClass(isActive('/admin/kich-co'))">
-              <Ruler class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/kich-co') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">K&#237;ch c&#7905;</span>
-            </router-link>
-            <router-link to="/admin/trong-luong" :class="subItemClass(isActive('/admin/trong-luong'))">
-              <Weight class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/trong-luong') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-              <span class="leading-tight">Tr&#7885;ng l&#432;&#7907;ng</span>
-            </router-link>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <button
+          type="button"
+          :title="compactMode ? 'Danh s\u00e1ch thu\u1ed9c t\u00ednh' : undefined"
+          class="group flex w-full items-center rounded-xl px-4 py-3 transition-colors"
+          :class="[
+            compactMode ? 'justify-center px-3' : 'justify-between',
+            isThuocTinhActive
+              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
+          ]"
+          @click="toggleThuocTinh"
+        >
+          <div class="flex items-center">
+            <Box :class="navIconClass(isThuocTinhActive)" />
+            <span v-if="!compactMode" class="text-sm font-medium">Danh s&#225;ch thu&#7897;c t&#237;nh</span>
           </div>
+          <ChevronDown
+            v-if="!compactMode"
+            class="h-4 w-4 transition-transform duration-200"
+            :class="[openThuocTinh ? 'rotate-180 text-red-500' : 'text-gray-400']"
+          />
+        </button>
+        <div v-show="openThuocTinh && !compactMode" class="space-y-1 overflow-hidden pr-4 pl-[36px] transition-all duration-300">
+          <router-link to="/admin/loai-giay" :class="subItemClass(isActive('/admin/loai-giay'))">
+            <Box class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/loai-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">Lo&#7841;i gi&#224;y</span>
+          </router-link>
+          <router-link to="/admin/thuong-hieu" :class="subItemClass(isActive('/admin/thuong-hieu'))">
+            <Award class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/thuong-hieu') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">Th&#432;&#417;ng hi&#7879;u</span>
+          </router-link>
+          <router-link to="/admin/de-giay" :class="subItemClass(isActive('/admin/de-giay'))">
+            <Footprints class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/de-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">&#272;&#7871; gi&#224;y</span>
+          </router-link>
+          <router-link to="/admin/co-giay" :class="subItemClass(isActive('/admin/co-giay'))">
+            <MoveVertical class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/co-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">C&#7893; gi&#224;y</span>
+          </router-link>
+          <router-link to="/admin/cong-nghe-dem" :class="subItemClass(isActive('/admin/cong-nghe-dem'))">
+            <Feather class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/cong-nghe-dem') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">C&#244;ng ngh&#7879; &#273;&#7879;m</span>
+          </router-link>
+          <router-link to="/admin/mau-sac" :class="subItemClass(isActive('/admin/mau-sac'))">
+            <Palette class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/mau-sac') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">M&#224;u s&#7855;c</span>
+          </router-link>
+          <router-link to="/admin/kich-co" :class="subItemClass(isActive('/admin/kich-co'))">
+            <Ruler class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/kich-co') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">K&#237;ch c&#7905;</span>
+          </router-link>
+          <router-link to="/admin/trong-luong" :class="subItemClass(isActive('/admin/trong-luong'))">
+            <Weight class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/trong-luong') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">Tr&#7885;ng l&#432;&#7907;ng</span>
+          </router-link>
         </div>
       </div>
 

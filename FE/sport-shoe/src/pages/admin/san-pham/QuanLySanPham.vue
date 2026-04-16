@@ -1,18 +1,20 @@
-<script setup>
+﻿<script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  Search, Plus, Pencil, Trash2, Eye, ChevronDown, Check,
-  X, ChevronLeft, ChevronRight, Layers, Images, ImageOff
+  Search, Plus, Trash2, Eye, ChevronDown, Check,
+  X, Filter, Layers, Layers3, Images, ImageOff, FileSpreadsheet, RotateCcw
 } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
+import { exportRowsToExcel } from '../../../utils/export-excel'
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const items = ref([])
 const totalItems = ref(0)
 const totalPages = ref(0)
 const currentPage = ref(0)
-const pageSize = ref(10)
+const pageSize = ref(5)
 const loading = ref(false)
 const danhMuc = ref(null)
 
@@ -78,21 +80,63 @@ onMounted(() => { loadDanhMuc(); loadData() })
 // ─── Pagination ───────────────────────────────────────────────────────────────
 function goPage(p) { if (p >= 0 && p < totalPages.value) loadData(p) }
 
-const visiblePages = computed(() => {
-  const pages = []
-  const start = Math.max(0, currentPage.value - 2)
-  const end = Math.min(totalPages.value - 1, start + 4)
-  for (let i = start; i <= end; i++) pages.push(i)
-  return pages
-})
-const pageSizeOptions = [10, 20, 50]
+const pageSizeOptions = [5, 10, 20, 50]
 
 function formatCount(v) {
   return Number(v || 0).toLocaleString('vi-VN')
 }
 
-function handlePageSizeChange() {
+function handlePageSizeChange(size) {
+  pageSize.value = size
   loadData(0)
+}
+
+function resetFilters() {
+  keyword.value = ''
+  filterThuongHieu.value = null
+  filterLoaiGiay.value = null
+  filterTrangThai.value = null
+  openDropdown.value = null
+  loadData(0)
+}
+
+async function xuatExcel() {
+  if (!totalItems.value) {
+    showToast('Không có dữ liệu để xuất Excel', 'error')
+    return
+  }
+
+  try {
+    const res = await api.layDanhSachGiay({
+      keyword: keyword.value || undefined,
+      thuongHieuId: filterThuongHieu.value,
+      loaiGiayId: filterLoaiGiay.value,
+      trangThai: filterTrangThai.value,
+      page: 0,
+      size: Math.max(totalItems.value, pageSize.value)
+    })
+
+    const exported = exportRowsToExcel({
+      filename: isBienThePage.value ? 'quan-ly-bien-the-san-pham' : 'quan-ly-san-pham',
+      sheetName: isBienThePage.value ? 'BienTheSanPham' : 'SanPham',
+      columns: [
+        { label: 'STT', value: (_, index) => index + 1 },
+        { label: 'Mã sản phẩm', key: 'ma' },
+        { label: 'Tên sản phẩm', key: 'ten' },
+        { label: 'Thương hiệu', value: (row) => row.thuongHieu || '—' },
+        { label: 'Loại giày', value: (row) => row.loaiGiay || '—' },
+        { label: 'Giới tính', value: (row) => gioiTinhLabel(row.gioiTinh) },
+        { label: 'Tổng biến thể', value: (row) => row.tongBienThe ?? 0 },
+        { label: 'Tổng số lượng', value: (row) => row.tongSoLuong ?? 0 },
+        { label: 'Trạng thái', value: (row) => trangThaiLabel(row.trangThai) }
+      ],
+      rows: res.items || []
+    })
+
+    showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
+  } catch (e) {
+    showToast(e.message || 'Lỗi xuất Excel', 'error')
+  }
 }
 
 // ─── Giới tính helper ─────────────────────────────────────────────────────────
@@ -103,26 +147,22 @@ function gioiTinhLabel(v) {
 // ─── Trạng thái badge ─────────────────────────────────────────────────────────
 function trangThaiClass(v) {
   return v === 1
-    ? 'bg-green-100 text-green-700'
-    : 'bg-red-100 text-red-700'
+    ? 'bg-emerald-50 text-emerald-600'
+    : 'bg-rose-50 text-rose-500'
 }
-function trangThaiLabel(v) { 
-  if (v === 1) return 'Đang bán'
-  if (v === 2) return 'Hết hàng'
-  return 'Ngưng bán'
-}
+function trangThaiLabel(v) { return v === 1 ? 'Hoạt động' : 'Dừng bán' }
 
 // ─── Dropdown helpers ─────────────────────────────────────────────────────────
 function toggleDropdown(name) { openDropdown.value = openDropdown.value === name ? null : name }
 function closeAll() { openDropdown.value = null }
 
 function thuongHieuName(id) {
-  if (!id || !danhMuc.value) return 'Thương hiệu'
-  return danhMuc.value.thuongHieu.find(t => t.id === id)?.ten || 'Thương hiệu'
+  if (!id || !danhMuc.value) return 'Tất cả'
+  return danhMuc.value.thuongHieu.find(t => t.id === id)?.ten || 'Tất cả'
 }
 function loaiGiayName(id) {
-  if (!id || !danhMuc.value) return 'Loại giày'
-  return danhMuc.value.loaiGiay.find(l => l.id === id)?.ten || 'Loại giày'
+  if (!id || !danhMuc.value) return 'Tất cả'
+  return danhMuc.value.loaiGiay.find(l => l.id === id)?.ten || 'Tất cả'
 }
 
 // ─── Giày modal ──────────────────────────────────────────────────────────────
@@ -148,42 +188,24 @@ function clearForm() {
 }
 
 function openAdd() { clearForm(); modalMode.value = 'add'; showModal.value = true }
-async function openEdit(g) {
-  try {
-    const res = await api.chiTietGiay(g.id)
-    clearForm()
-    Object.assign(form, {
-      ma: res.ma, ten: res.ten, thuongHieuId: res.thuongHieuId, loaiGiayId: res.loaiGiayId,
-      gioiTinh: res.gioiTinh, chatLieu: res.chatLieu || '', moTa: res.moTa || '',
-      deGiayId: res.thuocTinh?.deGiayId || null, coGiayId: res.thuocTinh?.coGiayId || null,
-      congNgheDemId: res.thuocTinh?.congNgheDemId || null, trongLuongId: res.thuocTinh?.trongLuongId || null
-    })
-    selectedGiay.value = res
-    modalMode.value = 'edit'
-    showModal.value = true
-  } catch (e) { showToast(e.message || 'Lỗi tải chi tiết', 'error') }
+function openEdit(g) {
+  clearForm()
+  Object.assign(form, {
+    ma: g.ma, ten: g.ten, thuongHieuId: g.thuongHieuId, loaiGiayId: g.loaiGiayId,
+    gioiTinh: g.gioiTinh, chatLieu: g.chatLieu || '', moTa: g.moTa || '',
+    deGiayId: g.thuocTinh?.deGiayId || null, coGiayId: g.thuocTinh?.coGiayId || null,
+    congNgheDemId: g.thuocTinh?.congNgheDemId || null, trongLuongId: g.thuocTinh?.trongLuongId || null
+  })
+  selectedGiay.value = g
+  modalMode.value = 'edit'
+  showModal.value = true
 }
-function isItemDiscounted(item) {
-  return item?.coGiamGia === true
-}
-const activeHinhAnh = ref(null)
-
 async function openView(g) {
   try {
     const detail = await api.chiTietGiay(g.id)
-    clearForm()
-    Object.assign(form, {
-      ma: detail.ma, ten: detail.ten, thuongHieuId: detail.thuongHieuId, loaiGiayId: detail.loaiGiayId,
-      gioiTinh: detail.gioiTinh, chatLieu: detail.chatLieu || '', moTa: detail.moTa || '',
-      deGiayId: detail.thuocTinh?.deGiayId || null, coGiayId: detail.thuocTinh?.coGiayId || null,
-      congNgheDemId: detail.thuocTinh?.congNgheDemId || null, trongLuongId: detail.thuocTinh?.trongLuongId || null
-    })
-    selectedGiay.value = detail
-    modalMode.value = 'view'
-    showModal.value = true
+    openEdit(detail)
   } catch (e) { showToast(e.message || 'Lỗi tải chi tiết', 'error') }
 }
-
 
 function validateForm() {
   Object.keys(errors).forEach(k => delete errors[k])
@@ -215,14 +237,12 @@ async function handleSave() {
 }
 
 async function handleDelete(g) {
-  const isStopped = g.trangThai === 0
-  const action = isStopped ? 'Kích hoạt lại' : 'Ngưng bán'
-  if (!confirm(`${action} sản phẩm "${g.ten}"?`)) return
+  if (!confirm(`Xóa giày "${g.ten}"?`)) return
   try {
     await api.xoaGiay(g.id)
-    showToast(`${action} thành công`)
+    showToast('Xóa thành công')
     loadData(currentPage.value)
-  } catch (e) { showToast(e.message || `Lỗi ${action.toLowerCase()}`, 'error') }
+  } catch (e) { showToast(e.message || 'Lỗi xóa', 'error') }
 }
 
 async function handleToggleTrangThai(g) {
@@ -451,123 +471,124 @@ async function handleDatHinhChinh(id) {
     </Transition>
 
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-[30px] font-bold tracking-tight text-slate-800">{{ pageTitle }}</h1>
-      </div>
-      <button v-if="!isBienThePage" @click="openAdd" class="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-        <Plus :size="16" /> Thêm sản phẩm
-      </button>
+    <div class="mb-6">
+      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">{{ pageTitle }}</h1>
     </div>
 
     <!-- Filters -->
-    <section class="admin-section-card">
-      <div class="admin-section-header">
-        <div class="admin-section-icon admin-section-icon--slate">
-          <Filter class="h-5 w-5" />
+    <section class="admin-section-card !p-4">
+      <div class="mb-4 flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+          <Filter class="h-4 w-4" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+          <h2 class="text-sm font-bold text-slate-800">Bộ lọc</h2>
         </div>
       </div>
 
-      <div class="flex flex-wrap gap-3 items-center">
-        <div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-600">
-          <span>Hiển thị</span>
-          <select v-model.number="pageSize" @change="handlePageSizeChange"
-            class="bg-transparent font-medium text-slate-700 outline-none">
-            <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}/trang</option>
-          </select>
-        </div>
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div class="min-w-0 flex-1">
+            <div class="relative max-w-[680px]">
+              <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" :size="15" />
+              <input v-model="keyword" @keyup.enter="doSearch" type="text" :placeholder="searchPlaceholder"
+                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+            </div>
+          </div>
 
-        <!-- Keyword -->
-        <div class="relative flex-1 min-w-[200px]">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" :size="16" />
-          <input v-model="keyword" @keyup.enter="doSearch" type="text" :placeholder="searchPlaceholder"
-            class="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" />
-        </div>
-
-        <!-- Thương hiệu dropdown -->
-        <div class="relative" @click.stop>
-          <button @click="toggleDropdown('thuongHieu')"
-            class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 min-w-[140px] justify-between"
-            :class="filterThuongHieu ? 'border-rose-400 text-rose-600' : 'text-gray-600'">
-            <span>{{ thuongHieuName(filterThuongHieu) }}</span>
-            <ChevronDown :size="14" />
-          </button>
-          <div v-if="openDropdown === 'thuongHieu'" class="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1 max-h-52 overflow-y-auto">
-            <button @click="filterThuongHieu = null; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterThuongHieu === null ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Tất cả <Check v-if="filterThuongHieu === null" :size="14" />
+          <div class="flex flex-wrap items-center gap-2.5 xl:justify-end">
+            <button @click="resetFilters" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-700">
+              <RotateCcw :size="15" />
+              Đặt lại bộ lọc
             </button>
-            <button v-for="t in danhMuc?.thuongHieu" :key="t.id"
-              @click="filterThuongHieu = t.id; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterThuongHieu === t.id ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              {{ t.ten }} <Check v-if="filterThuongHieu === t.id" :size="14" />
+            <button @click="doSearch" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700">
+              <Search :size="15" />
+              Tìm kiếm
+            </button>
+            <button @click="xuatExcel" class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700">
+              <FileSpreadsheet :size="15" />
+              Xuất Excel
+            </button>
+            <button v-if="!isBienThePage" @click="openAdd" class="inline-flex h-10 items-center gap-2 rounded-xl bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600">
+              <Plus :size="15" /> Thêm sản phẩm
             </button>
           </div>
         </div>
 
-        <!-- Loại giày dropdown -->
-        <div class="relative" @click.stop>
-          <button @click="toggleDropdown('loaiGiay')"
-            class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 min-w-[130px] justify-between"
-            :class="filterLoaiGiay ? 'border-rose-400 text-rose-600' : 'text-gray-600'">
-            <span>{{ loaiGiayName(filterLoaiGiay) }}</span>
-            <ChevronDown :size="14" />
-          </button>
-          <div v-if="openDropdown === 'loaiGiay'" class="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1 max-h-52 overflow-y-auto">
-            <button @click="filterLoaiGiay = null; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterLoaiGiay === null ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Tất cả <Check v-if="filterLoaiGiay === null" :size="14" />
+        <div class="flex flex-wrap items-start gap-3">
+          <div class="relative w-full sm:w-[220px] md:w-[240px]" @click.stop>
+            <label class="mb-1 block text-[10px] font-normal uppercase tracking-wide text-slate-500">Thương hiệu</label>
+            <button @click="toggleDropdown('thuongHieu')"
+              class="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
+              :class="filterThuongHieu ? 'border-rose-300 text-rose-600' : 'text-slate-600'">
+              <span class="truncate">{{ thuongHieuName(filterThuongHieu) }}</span>
+              <ChevronDown :size="14" />
             </button>
-            <button v-for="l in danhMuc?.loaiGiay" :key="l.id"
-              @click="filterLoaiGiay = l.id; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterLoaiGiay === l.id ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              {{ l.ten }} <Check v-if="filterLoaiGiay === l.id" :size="14" />
+            <div v-if="openDropdown === 'thuongHieu'" class="absolute top-full left-0 z-20 mt-1 max-h-52 w-full min-w-[220px] overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
+              <button @click="filterThuongHieu = null; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterThuongHieu === null ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                Tất cả <Check v-if="filterThuongHieu === null" :size="14" />
+              </button>
+              <button v-for="t in danhMuc?.thuongHieu" :key="t.id"
+                @click="filterThuongHieu = t.id; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterThuongHieu === t.id ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                {{ t.ten }} <Check v-if="filterThuongHieu === t.id" :size="14" />
+              </button>
+            </div>
+          </div>
+
+          <div class="relative w-full sm:w-[220px] md:w-[240px]" @click.stop>
+            <label class="mb-1 block text-[10px] font-normal uppercase tracking-wide text-slate-500">Loại giày</label>
+            <button @click="toggleDropdown('loaiGiay')"
+              class="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
+              :class="filterLoaiGiay ? 'border-rose-300 text-rose-600' : 'text-slate-600'">
+              <span class="truncate">{{ loaiGiayName(filterLoaiGiay) }}</span>
+              <ChevronDown :size="14" />
             </button>
+            <div v-if="openDropdown === 'loaiGiay'" class="absolute top-full left-0 z-20 mt-1 max-h-52 w-full min-w-[220px] overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
+              <button @click="filterLoaiGiay = null; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterLoaiGiay === null ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                Tất cả <Check v-if="filterLoaiGiay === null" :size="14" />
+              </button>
+              <button v-for="l in danhMuc?.loaiGiay" :key="l.id"
+                @click="filterLoaiGiay = l.id; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterLoaiGiay === l.id ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                {{ l.ten }} <Check v-if="filterLoaiGiay === l.id" :size="14" />
+              </button>
+            </div>
+          </div>
+
+          <div class="relative w-full sm:w-[170px] md:w-[185px]" @click.stop>
+            <label class="mb-1 block text-[10px] font-normal uppercase tracking-wide text-slate-500">Trạng thái</label>
+            <button @click="toggleDropdown('trangThai')"
+              class="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
+              :class="filterTrangThai !== null ? 'border-rose-300 text-rose-600' : 'text-slate-600'">
+              <span class="truncate">{{ filterTrangThai === 1 ? 'Hoạt động' : filterTrangThai === 0 ? 'Dừng bán' : 'Tất cả' }}</span>
+              <ChevronDown :size="14" />
+            </button>
+            <div v-if="openDropdown === 'trangThai'" class="absolute top-full left-0 z-20 mt-1 w-full min-w-[220px] rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
+              <button @click="filterTrangThai = null; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterTrangThai === null ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                Tất cả <Check v-if="filterTrangThai === null" :size="14" />
+              </button>
+              <button @click="filterTrangThai = 1; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterTrangThai === 1 ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                Hoạt động <Check v-if="filterTrangThai === 1" :size="14" />
+              </button>
+              <button @click="filterTrangThai = 0; openDropdown = null; doSearch()"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                :class="filterTrangThai === 0 ? 'text-rose-600 font-medium' : 'text-gray-700'">
+                Dừng bán <Check v-if="filterTrangThai === 0" :size="14" />
+              </button>
+            </div>
           </div>
         </div>
-
-        <!-- Trạng thái dropdown -->
-        <div class="relative" @click.stop>
-          <button @click="toggleDropdown('trangThai')"
-            class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 min-w-[130px] justify-between"
-            :class="filterTrangThai !== null ? 'border-rose-400 text-rose-600' : 'text-gray-600'">
-            <span>{{ filterTrangThai === 1 ? 'Đang bán' : filterTrangThai === 2 ? 'Hết hàng' : filterTrangThai === 0 ? 'Ngưng bán' : 'Trạng thái' }}</span>
-            <ChevronDown :size="14" />
-          </button>
-          <div v-if="openDropdown === 'trangThai'" class="absolute top-full left-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-            <button @click="filterTrangThai = null; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterTrangThai === null ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Tất cả <Check v-if="filterTrangThai === null" :size="14" />
-            </button>
-            <button @click="filterTrangThai = 1; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterTrangThai === 1 ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Đang bán <Check v-if="filterTrangThai === 1" :size="14" />
-            </button>
-            <button @click="filterTrangThai = 2; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterTrangThai === 2 ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Hết hàng <Check v-if="filterTrangThai === 2" :size="14" />
-            </button>
-            <button @click="filterTrangThai = 0; openDropdown = null; doSearch()"
-              class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between"
-              :class="filterTrangThai === 0 ? 'text-rose-600 font-medium' : 'text-gray-700'">
-              Ngưng bán <Check v-if="filterTrangThai === 0" :size="14" />
-            </button>
-          </div>
-        </div>
-
-        <button @click="doSearch" class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm rounded-lg transition-colors">
-          Tìm kiếm
-        </button>
       </div>
     </section>
 
@@ -578,7 +599,7 @@ async function handleDatHinhChinh(id) {
           <Layers3 class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">{{ isBienThePage ? 'Danh sách sản phẩm có biến thể' : 'Danh sách sản phẩm' }}</h2>
+          <h2 class="text-base font-bold text-slate-800">{{ isBienThePage ? 'Biến thể sản phẩm' : 'Danh sách sản phẩm' }}</h2>
         </div>
       </div>
 
@@ -591,8 +612,8 @@ async function handleDatHinhChinh(id) {
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sản phẩm</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Loại / Thương hiệu</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">Giới tính</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Trạng thái</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Thao tác</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider" :class="isBienThePage ? 'w-32' : 'w-28'">Trạng thái</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider" :class="isBienThePage ? 'w-40' : 'w-32'">Thao tác</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -617,18 +638,16 @@ async function handleDatHinhChinh(id) {
                 :class="isBienThePage && bienTheGiay?.id === item.id ? '!bg-violet-50 hover:!bg-violet-50' : 'hover:bg-gray-50'">
                 <td class="px-4 py-3 text-gray-500">{{ currentPage * pageSize + idx + 1 }}</td>
                 <td class="px-4 py-3">
-                  <div class="h-10 w-10 relative">
-                    <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" 
-                         class="h-10 w-10 object-cover rounded-lg border border-gray-100" 
-                         @error="(e) => e.target.classList.add('hidden')" />
-                    <div class="absolute inset-0 h-10 w-10 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 -z-10">
-                      <Image :size="16" class="text-gray-300" />
-                    </div>
+                  <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-10 w-10 object-cover rounded-lg border border-gray-100" />
+                  <div v-else class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <ImageOff :size="16" class="text-gray-400" />
                   </div>
                 </td>
                 <td class="px-4 py-3">
                   <div class="font-medium text-gray-800">{{ item.ten }}</div>
-                  <div class="text-xs text-gray-400">{{ item.ma }}</div>
+                  <div class="mt-1 text-xs font-semibold text-slate-800">
+                    {{ item.ma }}
+                  </div>
                   <div class="text-xs text-gray-400 mt-0.5">
                     {{ item.tongBienThe ?? 0 }} biến thể · {{ item.tongSoLuong ?? 0 }} sản phẩm
                   </div>
@@ -672,143 +691,32 @@ async function handleDatHinhChinh(id) {
         </table>
       </div>
 
-      <!-- Pagination -->
-      <div v-if="totalPages > 0" class="mt-5 flex items-center justify-end gap-1 text-sm text-slate-500">
-        <div class="flex items-center gap-1">
-          <button @click="goPage(currentPage - 1)" :disabled="currentPage === 0"
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed">
-            <ChevronLeft :size="16" />
-          </button>
-          <button v-for="p in visiblePages" :key="p" @click="goPage(p)"
-            class="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-medium transition"
-            :class="p === currentPage ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">
-            {{ p + 1 }}
-          </button>
-          <button @click="goPage(currentPage + 1)" :disabled="currentPage >= totalPages - 1"
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed">
-            <ChevronRight :size="16" />
-          </button>
-        </div>
-      </div>
+      <AdminTableFooter
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-size-options="pageSizeOptions"
+        :total-items="totalItems"
+        :total-pages="totalPages"
+        compact
+        show-refresh
+        zero-based
+        @refresh="loadData(currentPage)"
+        @update:current-page="goPage"
+        @update:page-size="handlePageSizeChange"
+      />
     </section>
 
     <!-- ─── Giày Modal ─────────────────────────────────────────────────────── -->
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" @click.self="showModal = false">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-          <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-rose-50 rounded-lg text-rose-600">
-                <Box :size="20" />
-              </div>
-              <div>
-                <h2 class="text-lg font-bold text-gray-800">{{ modalMode === 'view' ? 'Chi tiết sản phẩm' : modalMode === 'add' ? 'Thêm sản phẩm' : 'Cập nhật sản phẩm' }}</h2>
-                <p v-if="modalMode !== 'add'" class="text-xs text-gray-400">Mã: {{ form.ma || selectedGiay?.ma }}</p>
-              </div>
-            </div>
-            <button @click="showModal = false" class="p-2 rounded-xl h-10 w-10 flex items-center justify-center hover:bg-gray-100 text-gray-400 transition-colors">
-              <X :size="20" />
-            </button>
+            <h2 class="text-lg font-semibold text-gray-800">
+              {{ modalMode === 'add' ? 'Thêm sản phẩm' : modalMode === 'edit' ? 'Cập nhật sản phẩm' : 'Chi tiết sản phẩm' }}
+            </h2>
+            <button @click="showModal = false" class="p-1.5 rounded-lg hover:bg-gray-100"><X :size="18" /></button>
           </div>
-
-          <!-- Body (View Mode) -->
-          <div v-if="modalMode === 'view' && selectedGiay" class="p-6 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <!-- Left: Image Gallery -->
-              <div class="space-y-4">
-                <div class="aspect-square rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center group relative shadow-inner">
-                  <img v-if="selectedGiay.hinhAnhs && selectedGiay.hinhAnhs.length > 0" 
-                       :src="activeHinhAnh || selectedGiay.hinhAnhs[0].url" 
-                       class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div v-else class="flex flex-col items-center gap-2 text-gray-300">
-                    <Images :size="48" />
-                    <span class="text-sm">Chưa có ảnh</span>
-                  </div>
-                  <div v-if="isItemDiscounted(selectedGiay)" class="absolute top-4 left-4">
-                    <span class="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded shadow-sm uppercase">Sale</span>
-                  </div>
-                  <div v-if="selectedGiay.hinhAnhs?.find(h => h.url === (activeHinhAnh || selectedGiay.hinhAnhs[0].url))?.laHinhChinh" 
-                       class="absolute top-4 right-4 animate-in fade-in zoom-in duration-300">
-                    <span class="px-2 py-1 bg-amber-400 text-amber-900 text-[10px] font-bold rounded shadow-sm flex items-center gap-1">
-                      <Zap :size="10" fill="currentColor" />
-                    </span>
-                  </div>
-                </div>
-
-                <div v-if="selectedGiay.hinhAnhs && selectedGiay.hinhAnhs.length > 1" class="grid grid-cols-5 gap-2">
-                  <div v-for="h in selectedGiay.hinhAnhs" :key="h.id" 
-                       @click="activeHinhAnh = h.url"
-                       class="aspect-square rounded-lg border-2 cursor-pointer overflow-hidden transition-all relative bg-gray-50"
-                       :class="activeHinhAnh === h.url ? 'border-rose-500 ring-4 ring-rose-50' : 'border-gray-100 hover:border-rose-200'">
-                    <img :src="h.url" class="active-img w-full h-full object-cover" 
-                         @error="(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex' }" />
-                    <div class="hidden absolute inset-0 items-center justify-center text-gray-300">
-                      <ImageOff :size="12" />
-                    </div>
-                    <div v-if="h.laHinhChinh" class="absolute top-0.5 right-0.5 p-0.5 bg-amber-400 rounded-bl-md text-amber-900 shadow-sm">
-                      <Zap :size="8" fill="currentColor" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right: Info -->
-              <div class="space-y-6">
-                <div>
-                  <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ selectedGiay.ten }}</h1>
-                  <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg border border-gray-200">{{ selectedGiay.thuongHieu }}</span>
-                    <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg border border-gray-200">{{ selectedGiay.loaiGiay }}</span>
-                    <span class="px-2.5 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg border border-rose-100">{{ selectedGiay.gioiTinh === 1 ? 'Nam' : selectedGiay.gioiTinh === 2 ? 'Nữ' : 'Unisex' }}</span>
-                  </div>
-                  <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 line-clamp-1">
-                      <Info :size="12" /> Mô tả sản phẩm
-                    </p>
-                    <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ selectedGiay.moTa || 'Không có mô tả cho sản phẩm này.' }}</p>
-                  </div>
-                </div>
-
-                <!-- Attributes Grid -->
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Đế giày</p>
-                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.deGiay || '—' }}</p>
-                  </div>
-                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Cổ giày</p>
-                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.coGiay || '—' }}</p>
-                  </div>
-                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Công nghệ đệm</p>
-                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.congNgheDem || '—' }}</p>
-                  </div>
-                  <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Trọng lượng</p>
-                    <p class="text-sm font-bold text-gray-700">{{ selectedGiay.thuocTinh?.trongLuong || '—' }}</p>
-                  </div>
-                </div>
-
-                <div class="p-4 bg-rose-600 rounded-2xl text-white shadow-lg space-y-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs text-rose-100 flex items-center gap-1.5"><Truck :size="12" /> Chất liệu</span>
-                    <span class="text-xs font-bold">{{ selectedGiay.chatLieu || '—' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between pt-2 border-t border-rose-500">
-                    <span class="text-xs text-rose-100 flex items-center gap-1.5"><CheckCircle2 :size="12" /> Trạng thái bán</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold"
-                          :class="selectedGiay.trangThai === 1 ? 'bg-white text-rose-600' : 'bg-rose-200 text-rose-800'">
-                      {{ selectedGiay.trangThai === 1 ? 'Đang bán' : 'Ngưng bán' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Body (Add/Edit Mode) -->
-          <div v-else class="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar">
+          <div class="overflow-y-auto flex-1 p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <!-- Mã -->
               <div v-if="modalMode === 'add'">
@@ -969,9 +877,9 @@ async function handleDatHinhChinh(id) {
                           <span class="truncate font-medium text-slate-700">{{ bt.mauSac }}</span>
                         </div>
                       </td>
-                      <td class="px-3 py-2.5">{{ bt.kichCo }}</td>
-                      <td class="px-3 py-2.5 text-right">{{ bt.soLuong }}</td>
-                      <td class="px-3 py-2.5 text-right">{{ formatPrice(bt.giaBan) }}đ</td>
+                      <td class="px-3 py-2.5 text-center font-medium text-slate-700">{{ bt.kichCo }}</td>
+                      <td class="px-3 py-2.5 text-center font-medium tabular-nums text-slate-700">{{ bt.soLuong }}</td>
+                      <td class="px-3 py-2.5 text-center font-semibold tabular-nums text-slate-700">{{ formatPrice(bt.giaBan) }}đ</td>
                       <td class="px-3 py-2.5 text-center">
                         <div class="flex justify-center">
                           <span class="admin-status-chip whitespace-nowrap"

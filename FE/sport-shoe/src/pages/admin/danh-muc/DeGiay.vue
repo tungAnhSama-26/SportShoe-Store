@@ -3,12 +3,13 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, Plus, Trash2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { deGiayApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
+import { exportRowsToExcel } from '../../../utils/export-excel'
 
 const items = ref([])
 const totalItems = ref(0)
 const totalPages = ref(0)
 const currentPage = ref(0)
-const pageSize = ref(10)
+const pageSize = ref(5)
 const loading = ref(false)
 const keyword = ref('')
 
@@ -31,7 +32,7 @@ const visiblePages = computed(() => {
   const pages = []; const start = Math.max(0, currentPage.value - 2); const end = Math.min(totalPages.value - 1, start + 4)
   for (let i = start; i <= end; i++) pages.push(i); return pages
 })
-const pageSizeOptions = [10, 20, 50]
+const pageSizeOptions = [5, 10, 20, 50]
 
 function handlePageSizeChange(size) {
   pageSize.value = size
@@ -80,6 +81,33 @@ async function handleToggleStatus(item) {
   try { await deGiayApi.toggleStatus(item.id, item.trangThai === 1 ? 0 : 1); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value) }
   catch (e) { showToast(e.message || 'Lỗi cập nhật', 'error') }
 }
+
+async function xuatExcel() {
+  if (!totalItems.value) {
+    showToast('Không có dữ liệu để xuất Excel', 'error')
+    return
+  }
+
+  try {
+    const res = await deGiayApi.list(keyword.value || undefined, 0, Math.max(totalItems.value, pageSize.value))
+    const exported = exportRowsToExcel({
+      filename: 'quan-ly-de-giay',
+      sheetName: 'DeGiay',
+      columns: [
+        { label: 'STT', value: (_, index) => index + 1 },
+        { label: 'Mã', key: 'ma' },
+        { label: 'Tên đế giày', key: 'ten' },
+        { label: 'Mô tả', value: (row) => row.moTa || '—' },
+        { label: 'Trạng thái', value: (row) => row.trangThai === 1 ? 'Hoạt động' : 'Dừng' }
+      ],
+      rows: res.items || []
+    })
+
+    showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
+  } catch (e) {
+    showToast(e.message || 'Lỗi xuất Excel', 'error')
+  }
+}
 </script>
 
 <template>
@@ -99,6 +127,7 @@ async function handleToggleStatus(item) {
     @add="openAdd"
     @go-page="loadData"
     @search="doSearch"
+    @export="xuatExcel"
     @change-page-size="handlePageSizeChange"
     @update:keyword="keyword = $event"
   >
@@ -164,5 +193,6 @@ async function handleToggleStatus(item) {
     </template>
   </DanhMucPageShell>
 </template>
+
 
 
