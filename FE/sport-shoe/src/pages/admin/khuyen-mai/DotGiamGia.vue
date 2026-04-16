@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import {
-  ChevronLeft, ChevronRight, Eye, Filter, Plus, RefreshCw, Search, Tag, Edit, Trash2, PackageSearch
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, Edit, Trash2, PackageSearch
 } from "lucide-vue-next";
 import {
   createDotGiamGia,
@@ -15,7 +15,12 @@ import {
   updateDotGiamGia,
   updateDotGiamGiaSanPham
 } from "../../../services/khuyen-mai";
+<<<<<<< HEAD
 import { layDanhSachGiay } from "../../../services/san-pham-api";
+=======
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import { exportRowsToExcel } from "../../../utils/export-excel";
+>>>>>>> f1e0c68 (cap nhat cac man hinh quan ly)
 
 const tabs = [
   { key: "dot", label: "Đợt giảm giá" },
@@ -71,11 +76,11 @@ const modalMode = ref("create");
 const modalTarget = ref("dot");
 
 const dotForm = reactive({
-  id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "", ngayBatDau: "", ngayKetThuc: "", kichHoat: "1"
+  id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "", ngayBatDau: "", ngayKetThuc: "", kichHoat: "1", ngayTao: ""
 });
 
 const dotSanPhamForm = reactive({
-  id: null, dotGiamGiaId: "", giayId: "", trangThai: "1"
+  id: null, dotGiamGiaId: "", giayId: "", trangThai: "1", ngayTao: ""
 });
 
 const productSearch = ref("");
@@ -106,6 +111,11 @@ function toDisplayDate(value) {
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeDateInput(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
 }
 
 function resetErrors() {
@@ -181,6 +191,67 @@ function lamMoiBoLoc() {
   }
 }
 
+async function xuatExcel() {
+  try {
+    if (activeTab.value === "dot") {
+      const data = await getDotGiamGiaList({
+        keyword: boLoc.value.keyword || undefined,
+        trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
+        loaiGiam: boLoc.value.loaiGiam !== "" ? Number(boLoc.value.loaiGiam) : undefined,
+        tuNgay: boLoc.value.tuNgay || undefined,
+        denNgay: boLoc.value.denNgay || undefined,
+        pageNo: 0,
+        pageSize: Math.max(totalItems.value || 0, soPhanTuMotTrang.value, 1),
+      });
+
+      const rows = data?.content || [];
+      if (!rows.length) {
+        window.alert("Không có dữ liệu để xuất Excel.");
+        return;
+      }
+
+      exportRowsToExcel({
+        filename: "quan-ly-dot-giam-gia",
+        sheetName: "DotGiamGia",
+        columns: [
+          { label: "STT", value: (_, index) => index + 1 },
+          { label: "Mã", key: "ma" },
+          { label: "Tên", key: "ten" },
+          { label: "Mô tả", value: (row) => row.moTa || "—" },
+          { label: "Loại giảm", value: (row) => Number(row.loaiGiam) === 1 ? "Phần trăm" : "Tiền mặt" },
+          { label: "Giá trị", key: "giaTriGiam" },
+          { label: "Ngày bắt đầu", value: (row) => toDisplayDate(row.ngayBatDau) },
+          { label: "Ngày kết thúc", value: (row) => toDisplayDate(row.ngayKetThuc) },
+          { label: "Trạng thái", value: (row) => statusText(row.kichHoat) },
+        ],
+        rows,
+      });
+      return;
+    }
+
+    const rows = filteredDanhSachSp.value;
+    if (!rows.length) {
+      window.alert("Không có dữ liệu để xuất Excel.");
+      return;
+    }
+
+    exportRowsToExcel({
+      filename: "quan-ly-dot-giam-gia-san-pham",
+      sheetName: "DotGiamGiaSanPham",
+      columns: [
+        { label: "STT", value: (_, index) => index + 1 },
+        { label: "Đợt giảm giá", key: "tenDotGiamGia" },
+        { label: "Sản phẩm", key: "tenGiay" },
+        { label: "Ngày tạo", value: (row) => toDisplayDate(row.ngayTao) },
+        { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+      ],
+      rows,
+    });
+  } catch (error) {
+    window.alert(error?.message || "Xuất Excel thất bại.");
+  }
+}
+
 
 function openCreateModal(target) {
   modalOpen.value = true;
@@ -188,9 +259,9 @@ function openCreateModal(target) {
   modalTarget.value = target;
   resetErrors();
   if (target === "dot") {
-    Object.assign(dotForm, { id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "", ngayBatDau: "", ngayKetThuc: "", kichHoat: "1" });
+    Object.assign(dotForm, { id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "", ngayBatDau: "", ngayKetThuc: "", kichHoat: "1", ngayTao: getToday() });
   } else {
-    Object.assign(dotSanPhamForm, { id: null, dotGiamGiaId: "", giayId: "", trangThai: "1" });
+    Object.assign(dotSanPhamForm, { id: null, dotGiamGiaId: "", giayId: "", trangThai: "1", ngayTao: getToday() });
     productSearch.value = "";
     selectedGiay.value = null;
     productHints.value = [];
@@ -208,14 +279,16 @@ async function openEditModal(target, item) {
     Object.assign(dotForm, {
       id: detail.id, ma: detail.ma ?? "", ten: detail.ten ?? "", moTa: detail.moTa ?? "",
       loaiGiam: String(detail.loaiGiam ?? 1), giaTriGiam: detail.giaTriGiam ?? "",
-      ngayBatDau: detail.ngayBatDau ?? "", ngayKetThuc: detail.ngayKetThuc ?? "",
-      kichHoat: String(detail.kichHoat ?? 1)
+      ngayBatDau: normalizeDateInput(detail.ngayBatDau), ngayKetThuc: normalizeDateInput(detail.ngayKetThuc),
+      kichHoat: String(detail.kichHoat ?? 1),
+      ngayTao: normalizeDateInput(detail.ngayTao) || getToday()
     });
   } else {
     const detail = await getDotGiamGiaSanPhamDetail(item.id);
     Object.assign(dotSanPhamForm, {
       id: detail.id, dotGiamGiaId: detail.dotGiamGiaId ? String(detail.dotGiamGiaId) : "",
-      giayId: detail.giayId ? String(detail.giayId) : "", trangThai: String(detail.trangThai ?? 1)
+      giayId: detail.giayId ? String(detail.giayId) : "", trangThai: String(detail.trangThai ?? 1),
+      ngayTao: normalizeDateInput(detail.ngayTao) || getToday()
     });
     productSearch.value = detail.tenGiay ?? "";
     selectedGiay.value = { id: detail.giayId, ten: detail.tenGiay };
@@ -269,7 +342,7 @@ async function submitForm() {
         loaiGiam: Number(dotForm.loaiGiam), giaTriGiam: Number(dotForm.giaTriGiam),
         ngayBatDau: dotForm.ngayBatDau, ngayKetThuc: dotForm.ngayKetThuc,
         kichHoat: Number(dotForm.kichHoat),
-        ngayTao: modalMode.value === "create" ? getToday() : undefined,
+        ngayTao: dotForm.ngayTao || getToday(),
         ngayCapNhat: modalMode.value === "edit" ? getToday() : undefined
       };
       if (modalMode.value === "create") await createDotGiamGia(payload);
@@ -277,7 +350,7 @@ async function submitForm() {
     } else {
       const payload = {
         dotGiamGiaId: Number(dotSanPhamForm.dotGiamGiaId), giayId: Number(dotSanPhamForm.giayId),
-        trangThai: Number(dotSanPhamForm.trangThai), ngayTao: getToday()
+        trangThai: Number(dotSanPhamForm.trangThai), ngayTao: dotSanPhamForm.ngayTao || getToday()
       };
       if (modalMode.value === "create") await createDotGiamGiaSanPham(payload);
       else await updateDotGiamGiaSanPham(dotSanPhamForm.id, payload);
@@ -315,53 +388,63 @@ onMounted(taiDanhSach);
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2">
-        <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
-          <div class="relative">
-            <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              v-model="(activeTab === 'dot' ? boLoc : boLocSp).keyword"
-              type="text"
-              :placeholder="activeTab === 'dot' ? 'Nhập mã hoặc tên đợt...' : 'Nhập tên đợt, giày...'"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-            />
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div class="min-w-0 flex-1">
+            <div class="relative max-w-3xl">
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                v-model="(activeTab === 'dot' ? boLoc : boLocSp).keyword"
+                type="text"
+                :placeholder="activeTab === 'dot' ? 'Nhập mã hoặc tên đợt...' : 'Nhập tên đợt, giày...'"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              />
+            </div>
           </div>
-        </label>
 
-        <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
-          <select v-model="(activeTab === 'dot' ? boLoc : boLocSp).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-            <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
-          </select>
-        </label>
-        
-        <template v-if="activeTab === 'dot'">
+          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
+            </button>
+            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+            </button>
+            <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
+              <Plus class="h-4 w-4" /> Thêm mới
+            </button>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-4">
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
-            <select v-model="boLoc.loaiGiam" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-              <option value="">Tất cả</option>
-              <option value="1">Phần trăm</option>
-              <option value="2">Tiền mặt</option>
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+            <select v-model="(activeTab === 'dot' ? boLoc : boLocSp).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
             </select>
           </label>
+          
+          <template v-if="activeTab === 'dot'">
+            <label class="space-y-2">
+              <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
+              <select v-model="boLoc.loaiGiam" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+                <option value="">Tất cả</option>
+                <option value="1">Phần trăm</option>
+                <option value="2">Tiền mặt</option>
+              </select>
+            </label>
 
-          <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Từ ngày</span>
-            <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-          </label>
+            <div class="grid gap-4 md:col-span-2 md:grid-cols-2 xl:col-span-2">
+              <label class="space-y-2">
+                <span class="mb-1 text-[13px] font-semibold text-slate-500">Từ ngày</span>
+                <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              </label>
 
-          <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Đến ngày</span>
-            <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-          </label>
-        </template>
-
-        <div class="col-span-full flex items-end justify-end gap-3 pt-2">
-          <button @click="lamMoiBoLoc" class="h-11 rounded-2xl bg-slate-400 px-5 text-sm font-semibold text-white transition hover:bg-slate-500">Làm mới</button>
-          <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
-            <Plus class="h-4 w-4" /> Thêm mới
-          </button>
+              <label class="space-y-2">
+                <span class="mb-1 text-[13px] font-semibold text-slate-500">Đến ngày</span>
+                <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              </label>
+            </div>
+          </template>
         </div>
       </div>
     </section>
@@ -466,47 +549,32 @@ onMounted(taiDanhSach);
         </table>
       </div>
 
-      <!-- Phân trang -->
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <div class="flex items-center gap-2 text-slate-500">
-          Xem
-          <select v-if="activeTab === 'dot'" v-model.number="soPhanTuMotTrang" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
-          <select v-else v-model.number="soPhanTuMotTrangSp" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
-          bản ghi
-        </div>
-        <div class="flex items-center gap-2">
-          <button @click="activeTab === 'dot' ? taiDanhSach() : taiDanhSachSp()" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200" title="Làm mới">
-            <RefreshCw class="h-4 w-4" />
-          </button>
-          <div class="flex items-center gap-1 ml-2">
-            <button
-              @click="activeTab === 'dot' ? (trangHienTai = Math.max(1, trangHienTai - 1)) : (trangHienTaiSp = Math.max(1, trangHienTaiSp - 1))"
-              :disabled="(activeTab === 'dot' ? trangHienTai : trangHienTaiSp) === 1"
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40"
-            ><ChevronLeft class="h-4 w-4" /></button>
-            <button
-              v-for="page in (activeTab === 'dot' ? tongSoTrang : tongSoTrangSp)"
-              :key="page"
-              @click="activeTab === 'dot' ? (trangHienTai = page) : (trangHienTaiSp = page)"
-              class="flex h-8 w-8 items-center justify-center rounded-lg transition"
-              :class="(activeTab === 'dot' ? trangHienTai : trangHienTaiSp) === page ? 'border border-rose-200 bg-rose-50 text-rose-600 font-bold' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
-            >{{ page }}</button>
-            <button
-              @click="activeTab === 'dot' ? (trangHienTai = Math.min(tongSoTrang, trangHienTai + 1)) : (trangHienTaiSp = Math.min(tongSoTrangSp, trangHienTaiSp + 1))"
-              :disabled="(activeTab === 'dot' ? trangHienTai : trangHienTaiSp) === (activeTab === 'dot' ? tongSoTrang : tongSoTrangSp)"
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40"
-            ><ChevronRight class="h-4 w-4" /></button>
-          </div>
-        </div>
-      </div>
+      <AdminTableFooter
+        v-if="activeTab === 'dot'"
+        :current-page="trangHienTai"
+        :page-size="soPhanTuMotTrang"
+        :page-size-options="[5, 10, 20]"
+        :total-items="totalItems"
+        :total-pages="tongSoTrang"
+        compact
+        show-refresh
+        @refresh="taiDanhSach"
+        @update:current-page="trangHienTai = $event"
+        @update:page-size="soPhanTuMotTrang = $event"
+      />
+      <AdminTableFooter
+        v-else
+        :current-page="trangHienTaiSp"
+        :page-size="soPhanTuMotTrangSp"
+        :page-size-options="[5, 10, 20]"
+        :total-items="filteredDanhSachSp.length"
+        :total-pages="tongSoTrangSp"
+        compact
+        show-refresh
+        @refresh="taiDanhSachSp"
+        @update:current-page="trangHienTaiSp = $event"
+        @update:page-size="soPhanTuMotTrangSp = $event"
+      />
     </section>
 
     <!-- Modal Form Thêm/Sửa -->
