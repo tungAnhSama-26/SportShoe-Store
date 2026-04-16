@@ -95,7 +95,6 @@ onMounted(taiDanhSach);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
-          <p class="text-sm text-slate-400">Lọc theo từ khóa và trạng thái.</p>
         </div>
       </div>
 
@@ -137,7 +136,6 @@ onMounted(taiDanhSach);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Danh sách khách hàng</h2>
-          <p class="text-sm text-slate-400">{{ danhSach.length }} khách hàng trong phạm vi bộ lọc hiện tại.</p>
         </div>
       </div>
 
@@ -207,14 +205,12 @@ onMounted(taiDanhSach);
 
       <!-- Phân trang -->
       <div class="mt-5 flex items-center justify-between gap-2 text-sm">
-        <div class="flex items-center gap-2 text-slate-500">
-          Xem
+        <div class="flex items-center text-slate-500">
           <select v-model.number="soPhanTuMotTrang" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
             <option :value="5">5</option>
             <option :value="10">10</option>
             <option :value="20">20</option>
           </select>
-          khách hàng
         </div>
         <div class="flex items-center gap-2">
           <button @click="taiDanhSach" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200" title="Làm mới">

@@ -101,6 +101,11 @@ const router = createRouter({
           name: "admin-san-pham",
           component: QuanLySanPham
         },
+        {
+          path: "bien-the-san-pham",
+          name: "admin-bien-the-san-pham",
+          component: QuanLySanPham
+        },
         { path: "loai-giay", name: "admin-loai-giay", component: LoaiGiay },
         { path: "co-giay", name: "admin-co-giay", component: CoGiay },
         { path: "de-giay", name: "admin-de-giay", component: DeGiay },
