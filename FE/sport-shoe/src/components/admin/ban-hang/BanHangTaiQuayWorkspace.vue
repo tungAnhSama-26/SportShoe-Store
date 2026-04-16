@@ -1,10 +1,9 @@
 <script setup>
 import BanHangCartTable from "./BanHangCartTable.vue";
-import BanHangCheckoutSidebar from "./BanHangCheckoutSidebar.vue";
-import BanHangCustomerSection from "./BanHangCustomerSection.vue";
+import BanHangCustomerProductSection from "./BanHangCustomerProductSection.vue";
 import BanHangPendingInvoicesSection from "./BanHangPendingInvoicesSection.vue";
+import BanHangPaymentSection from "./BanHangPaymentSection.vue";
 import BanHangProductDetailModal from "./BanHangProductDetailModal.vue";
-import BanHangProductSection from "./BanHangProductSection.vue";
 
 defineProps({
   pendingInvoices: {
@@ -288,7 +287,7 @@ const emit = defineEmits([
 
     <div class="grid gap-6 xl:grid-cols-[1.5fr_0.8fr]">
       <section class="space-y-6 rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-        <BanHangCustomerSection
+        <BanHangCustomerProductSection
           :customer-keyword="customerKeyword"
           :loading-customers="loadingCustomers"
           :show-customer-dropdown="showCustomerDropdown"
@@ -297,15 +296,6 @@ const emit = defineEmits([
           :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
           :selected-customer="selectedCustomer"
           :is-guest-customer="isGuestCustomer"
-          @update:customer-keyword="emit('update:customerKeyword', $event)"
-          @focus-customer="emit('focus-customer')"
-          @blur-customer="emit('blur-customer')"
-          @select-customer="emit('select-customer', $event)"
-          @select-guest="emit('select-guest')"
-          @clear-customer="emit('clear-customer')"
-        />
-
-        <BanHangProductSection
           :product-keyword="productKeyword"
           :loading-products="loadingProducts"
           :show-product-dropdown="showProductDropdown"
@@ -313,6 +303,12 @@ const emit = defineEmits([
           :product-search-label="productSearchLabel"
           :dinh-dang-tien="dinhDangTien"
           :so-luong-con-lai="soLuongConLai"
+          @update:customer-keyword="emit('update:customerKeyword', $event)"
+          @focus-customer="emit('focus-customer')"
+          @blur-customer="emit('blur-customer')"
+          @select-customer="emit('select-customer', $event)"
+          @select-guest="emit('select-guest')"
+          @clear-customer="emit('clear-customer')"
           @update:product-keyword="emit('update:productKeyword', $event)"
           @focus-product="emit('focus-product')"
           @blur-product="emit('blur-product')"
@@ -347,7 +343,7 @@ const emit = defineEmits([
         />
       </section>
 
-      <BanHangCheckoutSidebar
+      <BanHangPaymentSection
         :active-pending-invoice="activePendingInvoice"
         :invoice-loading="invoiceLoading"
         :tong-so-luong="tongSoLuong"

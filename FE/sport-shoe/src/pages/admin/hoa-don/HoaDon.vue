@@ -10,9 +10,9 @@ const router = useRouter();
 const danhSach = ref([]);
 const dangTai = ref(false);
 const loiTrang = ref("");
-const boLoc = ref({ keyword: "", tuNgay: "", denNgay: "", loaiDon: "" });
 const trangThaiDangChon = ref<TrangThaiLoc>("Tất cả");
 const dsTrangThai: TrangThaiLoc[] = ["Tất cả", "Chờ xác nhận", "Đã xác nhận", "Chờ vận chuyển", "Vận chuyển", "Đã hoàn thành", "Hủy"];
+const boLoc = ref(taoBoLocMacDinh());
 
 const mauTrangThai = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
@@ -29,6 +29,24 @@ function dinhDangTien(value: number) {
 
 function dinhDangNgay(ngay: string) {
   return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(ngay));
+}
+
+function layNgayHomNay() {
+  const homNay = new Date();
+  const nam = homNay.getFullYear();
+  const thang = `${homNay.getMonth() + 1}`.padStart(2, "0");
+  const ngay = `${homNay.getDate()}`.padStart(2, "0");
+  return `${nam}-${thang}-${ngay}`;
+}
+
+function taoBoLocMacDinh() {
+  const homNay = layNgayHomNay();
+  return {
+    keyword: "",
+    tuNgay: homNay,
+    denNgay: homNay,
+    loaiDon: "",
+  };
 }
 
 const tongTheoTrangThai = computed(() => dsTrangThai.map((trangThai) => ({
@@ -79,7 +97,7 @@ async function taiDanhSach() {
 }
 
 function lamMoiBoLoc() {
-  boLoc.value = { keyword: "", tuNgay: "", denNgay: "", loaiDon: "" };
+  boLoc.value = taoBoLocMacDinh();
   trangThaiDangChon.value = "Tất cả";
 }
 
@@ -103,42 +121,41 @@ onMounted(taiDanhSach);
 <template>
   <div class="space-y-5">
     <section>
-      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý hóa đơn</h1>
+      <h1 class="text-[30px] text-slate-800">Quản lý hóa đơn</h1>
     </section>
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"><Filter class="h-5 w-5" /></div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
-          <p class="text-sm text-slate-400">Lọc theo từ khóa, thời gian tạo và loại đơn.</p>
+          <h2 class="text-base text-slate-800">Bộ lọc</h2>
         </div>
       </div>
 
       <div class="grid gap-4 xl:grid-cols-[1.3fr_1fr_1fr_1fr_auto]">
         <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
+          <span class="mb-1 text-[13px] font-medium text-slate-500">Tìm kiếm</span>
           <div class="relative">
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input v-model="boLoc.keyword" type="text" placeholder="Tìm theo mã hóa đơn, tên khách hàng, tên nhân viên" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+            <input v-model="boLoc.keyword" type="text" placeholder="Tìm theo mã hóa đơn, tên nhân viên, tên khách hàng" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           </div>
         </label>
         <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Ngày bắt đầu</span>
+          <span class="mb-1 text-[13px] font-medium text-slate-500">Ngày bắt đầu</span>
           <div class="relative">
             <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           </div>
         </label>
         <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Ngày kết thúc</span>
+          <span class="mb-1 text-[13px] font-medium text-slate-500">Ngày kết thúc</span>
           <div class="relative">
             <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           </div>
         </label>
         <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại đơn</span>
+          <span class="mb-1 text-[13px] font-medium text-slate-500">Loại đơn</span>
           <select v-model="boLoc.loaiDon" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">Tất cả loại đơn</option>
             <option value="Tại cửa hàng">Tại cửa hàng</option>
@@ -146,9 +163,9 @@ onMounted(taiDanhSach);
           </select>
         </label>
         <div class="grid gap-3 sm:grid-cols-2 xl:flex xl:items-end">
-          <button type="button" @click="lamMoiBoLoc" class="h-11 rounded-2xl bg-slate-400 px-5 text-sm font-semibold text-white transition hover:bg-slate-500">Làm mới</button>
-          <button type="button" class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">Xuất file</button>
-          <button type="button" class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600"><span class="inline-flex items-center gap-2"><QrCode class="h-4 w-4" />Scan QR</span></button>
+          <button type="button" @click="lamMoiBoLoc" class="h-11 rounded-2xl bg-slate-400 px-5 text-sm font-medium text-white transition hover:bg-slate-500">Làm mới</button>
+          <button type="button" class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white transition hover:bg-rose-600">Xuất file</button>
+          <button type="button" class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white transition hover:bg-rose-600"><span class="inline-flex items-center gap-2"><QrCode class="h-4 w-4" />Scan QR</span></button>
         </div>
       </div>
     </section>
@@ -157,13 +174,12 @@ onMounted(taiDanhSach);
       <div class="mb-5 flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"><FileText class="h-5 w-5" /></div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Danh sách hóa đơn</h2>
-          <p class="text-sm text-slate-400">{{ danhSachHienThi.length }} hóa đơn trong phạm vi bộ lọc hiện tại.</p>
+          <h2 class="text-base text-slate-800">Danh sách hóa đơn</h2>
         </div>
       </div>
 
       <div class="mb-4 flex flex-wrap gap-2">
-        <button v-for="item in tongTheoTrangThai" :key="item.ten" type="button" @click="trangThaiDangChon = item.ten" class="rounded-2xl px-4 py-2 text-sm font-semibold transition" :class="trangThaiDangChon === item.ten ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'">
+        <button v-for="item in tongTheoTrangThai" :key="item.ten" type="button" @click="trangThaiDangChon = item.ten" class="rounded-2xl px-4 py-2 text-sm font-medium transition" :class="trangThaiDangChon === item.ten ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'">
           {{ item.ten }}
           <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{{ item.tong }}</span>
         </button>
@@ -174,11 +190,11 @@ onMounted(taiDanhSach);
       <div class="overflow-x-auto">
         <table class="min-w-[1080px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm text-slate-500">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã hóa đơn</th>
-              <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
               <th class="bg-slate-100 px-4 py-3">Nhân viên</th>
+              <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
               <th class="bg-slate-100 px-4 py-3">Tổng tiền</th>
               <th class="bg-slate-100 px-4 py-3">Ngày tạo</th>
               <th class="bg-slate-100 px-4 py-3">Loại đơn</th>
@@ -190,14 +206,14 @@ onMounted(taiDanhSach);
             <tr v-if="dangTai"><td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu hóa đơn...</td></tr>
             <tr v-else-if="!danhSachPhanTrang.length"><td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có hóa đơn phù hợp.</td></tr>
             <tr v-for="(hoaDon, index) in danhSachPhanTrang" :key="hoaDon.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
-              <td class="rounded-l-2xl px-4 py-4 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
-              <td class="px-4 py-4">{{ hoaDon.tenKhachHang }}</td>
+              <td class="rounded-l-2xl px-4 py-4 font-medium">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
+              <td class="px-4 py-4 font-medium text-slate-800">{{ hoaDon.maHoaDon }}</td>
               <td class="px-4 py-4">{{ hoaDon.tenNhanVien }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
+              <td class="px-4 py-4">{{ hoaDon.tenKhachHang }}</td>
+              <td class="px-4 py-4 font-medium text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
               <td class="px-4 py-4">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
               <td class="px-4 py-4">{{ hoaDon.loaiDon }}</td>
-              <td class="px-4 py-4"><span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai[hoaDon.trangThai]">{{ hoaDon.trangThai }}</span></td>
+              <td class="px-4 py-4"><span class="inline-flex rounded-full px-3 py-1 text-xs font-medium" :class="mauTrangThai[hoaDon.trangThai]">{{ hoaDon.trangThai }}</span></td>
               <td class="rounded-r-2xl px-4 py-4 text-center"><button type="button" @click="xemChiTiet(hoaDon.id)" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"><Eye class="h-4 w-4" /></button></td>
             </tr>
           </tbody>
@@ -205,15 +221,13 @@ onMounted(taiDanhSach);
       </div>
 
       <div class="mt-5 flex items-center justify-between gap-2 text-sm">
-        <div class="flex items-center gap-2 text-slate-500">
-          Xem
+        <div class="flex items-center text-slate-500">
           <select v-model.number="soPhanTuMotTrang" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
             <option :value="5">5</option>
             <option :value="10">10</option>
             <option :value="20">20</option>
             <option :value="50">50</option>
           </select>
-          hóa đơn
         </div>
         <div class="flex items-center gap-2">
           <button type="button" @click="taiDanhSach" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition" title="Làm mới"><RefreshCw class="h-4 w-4" /></button>
@@ -221,7 +235,7 @@ onMounted(taiDanhSach);
           <div class="flex items-center gap-1 ml-2">
             <button @click="trangHienTai = Math.max(1, trangHienTai - 1)" :disabled="trangHienTai === 1" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-50 disabled:hover:bg-slate-100"><ChevronLeft class="h-4 w-4" /></button>
             
-            <button v-for="page in tongSoTrang" :key="page" @click="trangHienTai = page" class="flex h-8 w-8 items-center justify-center rounded-lg transition" :class="trangHienTai === page ? 'border border-violet-200 bg-violet-50 text-violet-600 font-bold' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">{{ page }}</button>
+            <button v-for="page in tongSoTrang" :key="page" @click="trangHienTai = page" class="flex h-8 w-8 items-center justify-center rounded-lg transition" :class="trangHienTai === page ? 'border border-violet-200 bg-violet-50 text-violet-600 font-medium' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">{{ page }}</button>
             
             <button @click="trangHienTai = Math.min(tongSoTrang, trangHienTai + 1)" :disabled="trangHienTai === tongSoTrang" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-50 disabled:hover:bg-slate-100"><ChevronRight class="h-4 w-4" /></button>
           </div>

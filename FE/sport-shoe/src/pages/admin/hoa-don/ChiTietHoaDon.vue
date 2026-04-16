@@ -163,11 +163,11 @@ onMounted(taiChiTiet);
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <button type="button" @click="router.push({ name: 'admin-hoa-don' })" class="mb-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:text-rose-500">
+        <button type="button" @click="router.push({ name: 'admin-hoa-don' })" class="mb-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:text-rose-500">
           <ArrowLeft class="h-3.5 w-3.5" />
-          QUAY LẠI
+          Quay lại
         </button>
-        <h1 class="text-2xl font-bold text-slate-800">Chi tiết hóa đơn</h1>
+        <h1 class="text-2xl text-slate-800">Chi tiết hóa đơn</h1>
       </div>
     </div>
 
@@ -258,34 +258,36 @@ onMounted(taiChiTiet);
 
         <!-- Sidebar Info (Thông tin đơn hàng) -->
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="mb-5 text-lg font-bold text-slate-800">Thông tin đơn hàng</h2>
+          <h2 class="mb-5 text-lg text-slate-800">Thông tin đơn hàng</h2>
           <div class="space-y-2 text-sm">
             <div class="flex">
-              <span class="font-bold text-slate-800 w-32">Mã đơn hàng:</span>
+              <span class="w-32 font-semibold text-slate-800">Mã đơn hàng:</span>
               <span class="text-slate-600 w-64">{{ hoaDon.maHoaDon }}</span>
-              <span class="font-bold text-slate-800 w-40">Tên khách hàng:</span>
-              <span class="font-bold text-sky-600">{{ hoaDon.tenKhachHang }}</span>
+              <span class="w-40 font-semibold text-slate-800">Nhân viên:</span>
+              <span class="font-medium text-sky-600">{{ hoaDon.tenNhanVien || "Chưa gán" }}</span>
             </div>
             <div class="flex items-center">
-              <span class="font-bold text-slate-800 w-32">Trạng thái <span class="text-slate-400">:</span></span>
-              <span class="font-bold text-rose-500 w-64">{{ hoaDon.trangThai }}</span>
-              <span class="font-bold text-slate-800 w-40">Số điện thoại:</span>
+              <span class="w-32 font-semibold text-slate-800">Trạng thái <span class="text-slate-400">:</span></span>
+              <span class="w-64 font-medium text-rose-500">{{ hoaDon.trangThai }}</span>
+              <span class="w-40 font-semibold text-slate-800">Khách hàng:</span>
+              <span class="font-medium text-sky-600">{{ hoaDon.tenKhachHang }}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-32 font-semibold text-slate-800">Loại <span class="text-slate-400">:</span></span>
+              <span class="w-64 font-medium text-emerald-500">{{ hoaDon.loaiDon }}</span>
+              <span class="w-40 font-semibold text-slate-800">Số điện thoại:</span>
               <span class="text-sky-600">{{ hoaDon.soDienThoai }}</span>
             </div>
-            <div class="flex items-center">
-              <span class="font-bold text-slate-800 w-32">Loại <span class="text-slate-400">:</span></span>
-              <span class="font-bold text-emerald-500">{{ hoaDon.loaiDon }}</span>
+            <div class="flex mt-1">
+              <span class="w-32 font-semibold text-slate-800">Email</span>
+              <span class="ml-2 font-medium text-slate-800">{{ hoaDon.email }}</span>
             </div>
             <div class="flex mt-1">
-              <span class="font-bold text-slate-800 w-32">Email</span>
-              <span class="text-slate-800 font-bold ml-2">{{ hoaDon.email }}</span>
+              <span class="w-32 font-semibold text-slate-800">Địa chỉ:</span>
+              <span class="ml-2 w-full max-w-2xl font-medium text-slate-800">{{ hoaDon.diaChi }}</span>
             </div>
             <div class="flex mt-1">
-              <span class="font-bold text-slate-800 w-32">Địa chỉ:</span>
-              <span class="font-bold text-slate-800 ml-2 w-full max-w-2xl">{{ hoaDon.diaChi }}</span>
-            </div>
-            <div class="flex mt-1">
-              <span class="font-bold text-slate-800 w-32">Ghi chú</span>
+              <span class="w-32 font-semibold text-slate-800">Ghi chú</span>
               <span class="text-slate-600 ml-2">{{ hoaDon.ghiChu || '' }}</span>
             </div>
           </div>
