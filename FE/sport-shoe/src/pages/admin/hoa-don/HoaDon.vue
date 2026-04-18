@@ -8,7 +8,7 @@ import {
   FileSpreadsheet,
   FileText,
   Filter,
-  QrCode,
+
   RotateCcw,
   Search,
 } from "lucide-vue-next";
@@ -20,11 +20,13 @@ import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 type TrangThaiLoc =
   | "Tất cả"
   | "Chờ xác nhận"
-  | "Đã xác nhận"
-  | "Chờ vận chuyển"
-  | "Vận chuyển"
-  | "Đã hoàn thành"
-  | "Hủy";
+  | "Chờ giao hàng"
+  | "Đang vận chuyển"
+  | "Đã giao hàng"
+  | "Hoàn thành"
+  | "Hủy"
+  | "Yêu cầu hủy"
+  | "Cần hoàn tiền";
 
 type HoaDonItem = {
   id: number;
@@ -46,21 +48,25 @@ const trangThaiDangChon = ref<TrangThaiLoc>("Tất cả");
 const dsTrangThai: TrangThaiLoc[] = [
   "Tất cả",
   "Chờ xác nhận",
-  "Đã xác nhận",
-  "Chờ vận chuyển",
-  "Vận chuyển",
-  "Đã hoàn thành",
+  "Chờ giao hàng",
+  "Đang vận chuyển",
+  "Đã giao hàng",
+  "Hoàn thành",
   "Hủy",
+  "Yêu cầu hủy",
+  "Cần hoàn tiền",
 ];
 const boLoc = ref(taoBoLocMacDinh());
 
 const mauTrangThai: Record<string, string> = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
-  "Đã xác nhận": "bg-blue-50 text-blue-600",
-  "Chờ vận chuyển": "bg-violet-50 text-violet-600",
-  "Vận chuyển": "bg-cyan-50 text-cyan-600",
-  "Đã hoàn thành": "bg-emerald-50 text-emerald-600",
-  Hủy: "bg-rose-50 text-rose-600",
+  "Chờ giao hàng": "bg-blue-50 text-blue-600",
+  "Đang vận chuyển": "bg-violet-50 text-violet-600",
+  "Đã giao hàng": "bg-cyan-50 text-cyan-600",
+  "Hoàn thành": "bg-emerald-50 text-emerald-600",
+  Hủy: "bg-stone-100 text-stone-600",
+  "Yêu cầu hủy": "bg-[#B82220]/5 text-[#B82220]",
+  "Cần hoàn tiền": "bg-[#B82220]/5 text-[#B82220]",
 };
 
 function dinhDangTien(value: number) {
@@ -81,20 +87,11 @@ function dinhDangNgay(ngay: string) {
   }).format(new Date(ngay));
 }
 
-function layNgayHomNay() {
-  const homNay = new Date();
-  const nam = homNay.getFullYear();
-  const thang = `${homNay.getMonth() + 1}`.padStart(2, "0");
-  const ngay = `${homNay.getDate()}`.padStart(2, "0");
-  return `${nam}-${thang}-${ngay}`;
-}
-
 function taoBoLocMacDinh() {
-  const homNay = layNgayHomNay();
   return {
     keyword: "",
-    tuNgay: homNay,
-    denNgay: homNay,
+    tuNgay: "",
+    denNgay: "",
     loaiDon: "",
   };
 }
@@ -190,6 +187,12 @@ function xuatExcel() {
 async function xuatHoaDonPdf(id: number) {
   if (dangXuatPdfId.value) return;
 
+  // Mở cửa sổ trống ngay lập tức để tránh bị trình duyệt chặn (Browser Popup Blocker)
+  const popup = window.open("", "_blank", "width=1100,height=800");
+  if (popup) {
+    popup.document.write("<html><body style='font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><h3>Đang chuẩn bị hóa đơn...</h3></body></html>");
+  }
+
   dangXuatPdfId.value = id;
   try {
     const chiTiet = await layChiTietHoaDon(id);
@@ -198,8 +201,10 @@ async function xuatHoaDonPdf(id: number) {
       filename: `hoa-don-${chiTiet?.maHoaDon || id}`,
       formatCurrency: dinhDangTien,
       formatDate: dinhDangNgay,
+      targetWindow: popup,
     });
   } catch (error) {
+    if (popup) popup.close();
     window.alert(error instanceof Error ? error.message : "Không thể xuất PDF hóa đơn.");
   } finally {
     dangXuatPdfId.value = null;
@@ -237,87 +242,78 @@ onMounted(taiDanhSach);
         </div>
       </div>
 
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div class="grid min-w-0 flex-1 gap-4 xl:max-w-5xl xl:grid-cols-[1.3fr_1fr_1fr_1fr]">
-            <label class="space-y-2 xl:col-span-4">
-              <span class="mb-1 text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
-              <div class="relative">
-                <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  v-model="boLoc.keyword"
-                  type="text"
-                  placeholder="Tìm theo mã hóa đơn, tên nhân viên, tên khách hàng"
-                  class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-                />
-              </div>
-            </label>
-            <div class="grid gap-4 md:grid-cols-2 xl:col-span-2">
-              <label class="space-y-2">
-                <span class="mb-1 text-[13px] font-semibold text-slate-500">Ngày bắt đầu</span>
-                <div class="relative">
-                  <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    v-model="boLoc.tuNgay"
-                    type="date"
-                    class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-                  />
-                </div>
-              </label>
-              <label class="space-y-2">
-                <span class="mb-1 text-[13px] font-semibold text-slate-500">Ngày kết thúc</span>
-                <div class="relative">
-                  <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    v-model="boLoc.denNgay"
-                    type="date"
-                    class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-                  />
-                </div>
-              </label>
-            </div>
-            <label class="space-y-2">
-              <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại đơn</span>
-              <select
-                v-model="boLoc.loaiDon"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              >
-                <option value="">Tất cả loại đơn</option>
-                <option value="Tại cửa hàng">Tại cửa hàng</option>
-                <option value="Online">Online</option>
-              </select>
-            </label>
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="min-w-[160px] flex-1 space-y-2">
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
+          <div class="relative">
+            <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="boLoc.keyword"
+              type="text"
+              placeholder="Tìm theo mã hóa đơn, tên nhân viên, khách hàng..."
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-[#B82220]/40 focus:bg-white"
+            />
           </div>
+        </label>
 
-          <div class="flex flex-wrap items-center gap-3 xl:justify-end xl:pt-7">
-            <button
-              type="button"
-              @click="lamMoiBoLoc"
-              class="admin-btn-soft"
-            >
-              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-            </button>
-            <button
-              type="button"
-              @click="xuatExcel"
-              class="admin-btn-soft"
-            >
-              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-            </button>
-            <button
-              type="button"
-              class="admin-btn-primary"
-            >
-              <QrCode class="h-4 w-4" /> Scan QR
-            </button>
+        <label class="min-w-[160px] flex-1 space-y-2">
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Ngày bắt đầu</span>
+          <div class="relative">
+            <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="boLoc.tuNgay"
+              type="date"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
           </div>
+        </label>
+
+        <label class="min-w-[160px] flex-1 space-y-2">
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Ngày kết thúc</span>
+          <div class="relative">
+            <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="boLoc.denNgay"
+              type="date"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+          </div>
+        </label>
+
+        <label class="min-w-[160px] flex-1 space-y-2">
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Loại đơn</span>
+          <select
+            v-model="boLoc.loaiDon"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+          >
+            <option value="">Tất cả loại đơn</option>
+            <option value="Tại cửa hàng">Tại cửa hàng</option>
+            <option value="Online">Online</option>
+          </select>
+        </label>
+
+        <div class="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            @click="lamMoiBoLoc"
+            class="admin-btn-soft flex h-11 items-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
+          >
+            <RotateCcw class="h-4 w-4" /> Đặt lại
+          </button>
+          <button
+            type="button"
+            @click="xuatExcel"
+            class="admin-btn-soft flex h-11 items-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
+          >
+            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+          </button>
         </div>
       </div>
     </section>
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
           <FileText class="h-5 w-5" />
         </div>
         <div>
@@ -401,7 +397,7 @@ onMounted(taiDanhSach);
                   <button
                     type="button"
                     @click="xemChiTiet(hoaDon.id)"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-[#B82220]/10 hover:text-[#B82220]"
                     title="Xem chi tiết"
                   >
                     <Eye class="h-4 w-4" />
