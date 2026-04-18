@@ -15,12 +15,9 @@ import {
   updateDotGiamGia,
   updateDotGiamGiaSanPham
 } from "../../../services/khuyen-mai";
-<<<<<<< HEAD
 import { layDanhSachGiay } from "../../../services/san-pham-api";
-=======
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
->>>>>>> f1e0c68 (cap nhat cac man hinh quan ly)
 
 const tabs = [
   { key: "dot", label: "Đợt giảm giá" },
