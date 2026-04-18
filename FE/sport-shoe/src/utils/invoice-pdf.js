@@ -21,10 +21,11 @@ export function printInvoiceToPdf({
   formatCurrency,
   formatDate,
   filename = "hoa-don",
+  targetWindow = null,
 }) {
   if (!invoice) return false;
 
-  const popup = window.open("", "_blank", "noopener,noreferrer,width=1100,height=800");
+  const popup = targetWindow || window.open("", "_blank", "width=1100,height=800");
   if (!popup) {
     throw new Error("Trình duyệt đang chặn cửa sổ in PDF.");
   }
