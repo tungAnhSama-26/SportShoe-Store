@@ -50,9 +50,44 @@ public class QuanLySanPhamController {
         return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết giày thành công", service.chiTietGiay(id)));
     }
 
+    @GetMapping("/chi-tiet")
+    public ResponseEntity<ApiResponse<PageResponse<ChiTietSanPhamListItemResponse>>> danhSachChiTietSanPham(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer giayId,
+            @RequestParam(required = false) Integer mauSacId,
+            @RequestParam(required = false) Integer kichCoId,
+            @RequestParam(required = false) Integer trangThai,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy danh sách chi tiết sản phẩm thành công",
+                service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)
+        ));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<GiayDetailResponse>> taoGiay(@Valid @RequestBody TaoGiayRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Tạo giày thành công", service.taoGiay(req)));
+    }
+
+    @PostMapping("/chi-tiet")
+    public ResponseEntity<ApiResponse<TaoChiTietSanPhamResponse>> taoChiTietSanPham(
+            @Valid @RequestBody TaoChiTietSanPhamRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tạo sản phẩm và chi tiết sản phẩm thành công",
+                service.taoChiTietSanPham(req)
+        ));
+    }
+
+    @PostMapping("/chi-tiet-hang-loat")
+    public ResponseEntity<ApiResponse<TaoChiTietSanPhamHangLoatResponse>> taoChiTietSanPhamHangLoat(
+            @Valid @RequestBody TaoChiTietSanPhamHangLoatRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tạo sản phẩm và danh sách chi tiết sản phẩm thành công",
+                service.taoChiTietSanPhamHangLoat(req)
+        ));
     }
 
     @PutMapping("/{id}")

@@ -143,21 +143,12 @@ async function xuatExcel() {
         </colgroup>
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-<<<<<<< HEAD
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 w-12">STT</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Mã</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Tên cổ giày</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Mô tả</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 w-28">Thao tác</th>
-=======
             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã</th>
             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên cổ giày</th>
             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mô tả</th>
             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
->>>>>>> b79f226 (sua lai dong bo cac man hinh va man quan ly san pham)
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">

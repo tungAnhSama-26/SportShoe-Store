@@ -47,7 +47,8 @@ const checkThuocTinhActive = (newPath) => {
 };
 const checkSanPhamActive = (newPath) =>
   newPath.startsWith("/admin/san-pham")
-  || newPath.startsWith("/admin/bien-the-san-pham");
+  || newPath.startsWith("/admin/bien-the-san-pham")
+  || newPath.startsWith("/admin/chi-tiet-san-pham");
 const checkKhuyenMaiActive = (newPath) => {
   const routes = ["/admin/phieu-giam-gia", "/admin/dot-giam-gia"];
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
