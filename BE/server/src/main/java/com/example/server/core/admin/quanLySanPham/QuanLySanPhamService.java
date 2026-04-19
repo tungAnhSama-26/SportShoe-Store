@@ -8,10 +8,14 @@ import com.example.server.repository.*;
 import com.example.server.utils.GiaySpecifications;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,8 +114,9 @@ public class QuanLySanPhamService {
         List<Integer> ids = page.map(Giay::getId).getContent();
         Map<Integer, Object[]> aggMap = buildAggregateMap(ids);
         Map<Integer, String> imgMap = buildImageMap(ids);
+        Map<Integer, GiayThuocTinh> thuocTinhMap = buildThuocTinhMap(ids);
 
-        return PageResponse.from(page.map(g -> toListItem(g, aggMap, imgMap)));
+        return PageResponse.from(page.map(g -> toListItem(g, aggMap, imgMap, thuocTinhMap)));
     }
 
     private Map<Integer, Object[]> buildAggregateMap(Collection<Integer> ids) {
@@ -133,8 +138,22 @@ public class QuanLySanPhamService {
         return map;
     }
 
-    private GiayListItemResponse toListItem(Giay g, Map<Integer, Object[]> aggMap, Map<Integer, String> imgMap) {
+    private Map<Integer, GiayThuocTinh> buildThuocTinhMap(Collection<Integer> ids) {
+        Map<Integer, GiayThuocTinh> map = new HashMap<>();
+        for (GiayThuocTinh item : giayThuocTinhRepository.findByGiayIdInWithRefs(ids)) {
+            map.put(item.getGiay().getId(), item);
+        }
+        return map;
+    }
+
+    private GiayListItemResponse toListItem(
+            Giay g,
+            Map<Integer, Object[]> aggMap,
+            Map<Integer, String> imgMap,
+            Map<Integer, GiayThuocTinh> thuocTinhMap
+    ) {
         Object[] agg = aggMap.get(g.getId());
+        GiayThuocTinh gtt = thuocTinhMap.get(g.getId());
         BigDecimal giaMin = agg != null ? (BigDecimal) agg[1] : null;
         Long tongBienThe = agg != null ? (Long) agg[2] : 0L;
         Long tongSoLuong = agg != null ? (Long) agg[3] : 0L;
@@ -143,11 +162,93 @@ public class QuanLySanPhamService {
         return new GiayListItemResponse(
                 g.getId(), g.getMa(), g.getTen(),
                 g.getLoaiGiay().getTen(), g.getThuongHieu().getTen(),
+                g.getChatLieu(),
+                gtt != null && gtt.getDeGiay() != null ? gtt.getDeGiay().getTen() : null,
+                gtt != null && gtt.getCoGiay() != null ? gtt.getCoGiay().getTen() : null,
+                gtt != null && gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getTen() : null,
+                toTrongLuongLabel(gtt),
                 g.getGioiTinh(), g.getTrangThai(),
                 imgMap.get(g.getId()),
                 giaMin, giaMax, tongBienThe, tongSoLuong,
                 g.getNgayTao(),
                 countGiamGia > 0
+        );
+    }
+
+    private String toTrongLuongLabel(GiayThuocTinh gtt) {
+        if (gtt == null || gtt.getTrongLuong() == null) {
+            return null;
+        }
+        TrongLuong trongLuong = gtt.getTrongLuong();
+        if (trongLuong.getMa() == null && trongLuong.getGiaTri() == null) {
+            return null;
+        }
+        if (trongLuong.getMa() == null) {
+            return trongLuong.getGiaTri() + "g";
+        }
+        if (trongLuong.getGiaTri() == null) {
+            return trongLuong.getMa();
+        }
+        return trongLuong.getMa() + " - " + trongLuong.getGiaTri() + "g";
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ChiTietSanPhamListItemResponse> danhSachChiTietSanPham(
+            String keyword,
+            Integer giayId,
+            Integer mauSacId,
+            Integer kichCoId,
+            Integer trangThai,
+            Pageable pageable
+    ) {
+        String kw = hasText(keyword) ? keyword.trim() : null;
+        var page = giayChiTietRepository.findAdminChiTietPage(kw, giayId, mauSacId, kichCoId, trangThai, pageable);
+
+        if (page.isEmpty()) {
+            return PageResponse.from(page.map(item -> null));
+        }
+
+        List<Integer> chiTietIds = page.map(GiayChiTiet::getId).getContent();
+        Map<Integer, String> imageMap = buildChiTietImageMap(chiTietIds);
+        return PageResponse.from(page.map(item -> toChiTietListItem(item, imageMap)));
+    }
+
+    private Map<Integer, String> buildChiTietImageMap(Collection<Integer> ids) {
+        Map<Integer, String> map = new HashMap<>();
+        for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(ids)) {
+            if (row[0] != null && row[1] != null) {
+                Integer chiTietId = ((Number) row[0]).intValue();
+                map.putIfAbsent(chiTietId, (String) row[1]);
+            }
+        }
+        return map;
+    }
+
+    private ChiTietSanPhamListItemResponse toChiTietListItem(GiayChiTiet gct, Map<Integer, String> imageMap) {
+        Giay giay = gct.getGiay();
+        return new ChiTietSanPhamListItemResponse(
+                gct.getId(),
+                giay.getId(),
+                giay.getMa(),
+                gct.getMaBienThe(),
+                gct.getSku(),
+                giay.getTen(),
+                giay.getThuongHieu().getTen(),
+                giay.getLoaiGiay().getTen(),
+                giay.getChatLieu(),
+                giay.getGioiTinh(),
+                gct.getMauSac().getId(),
+                gct.getMauSac().getTen(),
+                gct.getMauSac().getMaMauHex(),
+                gct.getKichCo().getId(),
+                gct.getKichCo().getGiaTri(),
+                gct.getSoLuong(),
+                gct.getGiaGoc(),
+                gct.getGiaBan(),
+                gct.getKichHoat(),
+                imageMap.get(gct.getId()),
+                gct.getNgayTao(),
+                gct.getNgayCapNhat()
         );
     }
 
@@ -191,8 +292,9 @@ public class QuanLySanPhamService {
 
     @Transactional
     public GiayDetailResponse taoGiay(TaoGiayRequest req) {
-        if (giayRepository.existsByMaIgnoreCase(req.ma().trim())) {
-            throw new BusinessException("Mã giày '" + req.ma().trim().toUpperCase() + "' đã tồn tại");
+        String maGiay = hasText(req.ma()) ? req.ma().trim().toUpperCase() : taoMaGiayTuDong();
+        if (giayRepository.existsByMaIgnoreCase(maGiay)) {
+            throw new BusinessException("Mã giày '" + maGiay + "' đã tồn tại");
         }
         var thuongHieu = thuongHieuRepository.findById(req.thuongHieuId())
                 .orElseThrow(() -> new ResourceNotFoundException("Thương hiệu không tồn tại"));
@@ -200,7 +302,7 @@ public class QuanLySanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Loại giày không tồn tại"));
 
         var giay = new Giay();
-        giay.setMa(req.ma().trim().toUpperCase());
+        giay.setMa(maGiay);
         giay.setTen(req.ten().trim());
         giay.setThuongHieu(thuongHieu);
         giay.setLoaiGiay(loaiGiay);
@@ -225,6 +327,111 @@ public class QuanLySanPhamService {
         giayThuocTinhRepository.save(gtt);
 
         return chiTietGiay(giay.getId());
+    }
+
+    @Transactional
+    public TaoChiTietSanPhamResponse taoChiTietSanPham(TaoChiTietSanPhamRequest req) {
+        boolean taoMoiSanPham = req.giayId() == null;
+
+        GiayDetailResponse giayDetail;
+        if (taoMoiSanPham) {
+            if (!hasText(req.ten())) {
+                throw new BusinessException("Tên sản phẩm không được để trống");
+            }
+            if (req.thuongHieuId() == null) {
+                throw new BusinessException("Chọn thương hiệu cho sản phẩm");
+            }
+            if (req.loaiGiayId() == null) {
+                throw new BusinessException("Chọn loại giày cho sản phẩm");
+            }
+
+            giayDetail = taoGiay(new TaoGiayRequest(
+                    taoMaGiayTuDong(),
+                    req.ten().trim(),
+                    req.thuongHieuId(),
+                    req.loaiGiayId(),
+                    req.gioiTinh(),
+                    req.chatLieu(),
+                    req.moTa(),
+                    req.deGiayId(),
+                    req.coGiayId(),
+                    req.congNgheDemId(),
+                    req.trongLuongId()
+            ));
+        } else {
+            giayDetail = chiTietGiay(req.giayId());
+        }
+
+        BienTheResponse bienThe = taoBienThe(giayDetail.id(), new TaoBienTheRequest(
+                req.mauSacId(),
+                req.kichCoId(),
+                req.soLuong(),
+                req.giaGoc(),
+                req.giaBan()
+        ));
+
+        return new TaoChiTietSanPhamResponse(
+                chiTietGiay(giayDetail.id()),
+                bienThe,
+                taoMoiSanPham
+        );
+    }
+
+    @Transactional
+    public TaoChiTietSanPhamHangLoatResponse taoChiTietSanPhamHangLoat(TaoChiTietSanPhamHangLoatRequest req) {
+        boolean taoMoiSanPham = req.giayId() == null;
+
+        GiayDetailResponse giayDetail;
+        if (taoMoiSanPham) {
+            if (!hasText(req.ten())) {
+                throw new BusinessException("Tên sản phẩm không được để trống");
+            }
+            if (req.thuongHieuId() == null) {
+                throw new BusinessException("Chọn thương hiệu cho sản phẩm");
+            }
+            if (req.loaiGiayId() == null) {
+                throw new BusinessException("Chọn loại giày cho sản phẩm");
+            }
+
+            giayDetail = taoGiay(new TaoGiayRequest(
+                    taoMaGiayTuDong(),
+                    req.ten().trim(),
+                    req.thuongHieuId(),
+                    req.loaiGiayId(),
+                    req.gioiTinh(),
+                    req.chatLieu(),
+                    req.moTa(),
+                    req.deGiayId(),
+                    req.coGiayId(),
+                    req.congNgheDemId(),
+                    req.trongLuongId()
+            ));
+        } else {
+            giayDetail = chiTietGiay(req.giayId());
+        }
+
+        Set<String> seenCombinations = new HashSet<>();
+        List<BienTheResponse> createdVariants = new ArrayList<>();
+        for (TaoChiTietSanPhamHangLoatItemRequest item : req.bienThes()) {
+            String combinationKey = item.mauSacId() + "-" + item.kichCoId();
+            if (!seenCombinations.add(combinationKey)) {
+                throw new BusinessException("Danh sách CTSP đang bị trùng màu sắc và kích cỡ");
+            }
+
+            createdVariants.add(taoBienThe(giayDetail.id(), new TaoBienTheRequest(
+                    item.mauSacId(),
+                    item.kichCoId(),
+                    item.soLuong(),
+                    item.giaGoc(),
+                    item.giaBan()
+            )));
+        }
+
+        return new TaoChiTietSanPhamHangLoatResponse(
+                chiTietGiay(giayDetail.id()),
+                createdVariants,
+                taoMoiSanPham
+        );
     }
 
     @Transactional
@@ -315,6 +522,10 @@ public class QuanLySanPhamService {
         var kichCo = kichCoRepository.findById(req.kichCoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Kích cỡ không tồn tại"));
 
+        if (giayChiTietRepository.existsByGiayIdAndMauSacIdAndKichCoId(giayId, req.mauSacId(), req.kichCoId())) {
+            throw new BusinessException("Biến thể " + mauSac.getTen() + " / " + kichCo.getGiaTri() + " đã tồn tại");
+        }
+
         var gct = new GiayChiTiet();
         gct.setGiay(giay);
         gct.setMauSac(mauSac);
@@ -388,15 +599,29 @@ public class QuanLySanPhamService {
     public HinhAnhGiayResponse themHinhAnh(Integer chiTietId, ThemHinhAnhRequest req) {
         var chiTiet = giayChiTietRepository.findById(chiTietId)
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + chiTietId + " không tồn tại"));
+        var existingImages = hinhAnhGiayRepository
+                .findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(chiTietId, 1);
+        boolean datLamHinhChinh = (req.loaiHinh() != null && req.loaiHinh() == 1) || existingImages.isEmpty();
         var hinh = new HinhAnhGiay();
         hinh.setGiayChiTiet(chiTiet);
         hinh.setUrl(req.url().trim());
         hinh.setLoaiHinh(req.loaiHinh() != null ? req.loaiHinh() : 2);
         hinh.setMoTa(req.moTa());
-        hinh.setLaHinhChinh(false);
+        hinh.setLaHinhChinh(datLamHinhChinh);
         hinh.setTrangThai(1);
         hinh.setNgayTao(Instant.now());
-        return toHinhAnh(hinhAnhGiayRepository.save(hinh));
+        var saved = hinhAnhGiayRepository.save(hinh);
+
+        if (datLamHinhChinh) {
+            existingImages.forEach(item -> {
+                if (!item.getId().equals(saved.getId()) && Boolean.TRUE.equals(item.getLaHinhChinh())) {
+                    item.setLaHinhChinh(false);
+                    item.setNgayCapNhat(Instant.now());
+                }
+            });
+        }
+
+        return toHinhAnh(saved);
     }
 
     @Transactional
@@ -444,5 +669,13 @@ public class QuanLySanPhamService {
 
     private static boolean hasText(String s) {
         return s != null && !s.isBlank();
+    }
+
+    private String taoMaGiayTuDong() {
+        String ma;
+        do {
+            ma = "G" + String.format("%05d", ThreadLocalRandom.current().nextInt(100000));
+        } while (giayRepository.existsByMaIgnoreCase(ma));
+        return ma;
     }
 }

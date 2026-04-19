@@ -1,0 +1,376 @@
+<script setup>
+import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { Eye, FileSpreadsheet, Filter, Package, Plus, RotateCcw, Search } from 'lucide-vue-next'
+import * as api from '../../../services/san-pham-api'
+import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
+import { exportRowsToExcel } from '../../../utils/export-excel'
+
+const router = useRouter()
+
+const loading = ref(false)
+const items = ref([])
+const danhMuc = ref(null)
+const currentPage = ref(0)
+const pageSize = ref(10)
+const totalItems = ref(0)
+const totalPages = ref(0)
+
+const filters = reactive({
+  keyword: '',
+  thuongHieuId: null,
+  loaiGiayId: null,
+  trangThai: null
+})
+
+const toast = reactive({
+  show: false,
+  message: '',
+  type: 'success'
+})
+
+const pageSizeOptions = [5, 10, 20, 50]
+
+function showToast(message, type = 'success') {
+  toast.message = message
+  toast.type = type
+  toast.show = true
+  setTimeout(() => {
+    toast.show = false
+  }, 3000)
+}
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('vi-VN')
+}
+
+function giaHienThi(item) {
+  if (item.giaMin == null && item.giaMax == null) return 'Chưa có giá'
+  if (item.giaMin === item.giaMax || item.giaMax == null) return `${formatCurrency(item.giaMin)} đ`
+  return `${formatCurrency(item.giaMin)} đ - ${formatCurrency(item.giaMax)} đ`
+}
+
+function trangThaiLabel(value) {
+  if (value === 1) return 'Kinh doanh'
+  if (value === 2) return 'Hết hàng'
+  return 'Ngừng kinh doanh'
+}
+
+function trangThaiClass(value) {
+  if (value === 1) return 'bg-emerald-50 text-emerald-600'
+  if (value === 2) return 'bg-amber-50 text-amber-600'
+  return 'bg-rose-50 text-rose-600'
+}
+
+async function loadDanhMuc() {
+  try {
+    danhMuc.value = await api.layDanhMuc()
+  } catch (error) {
+    showToast(error.message || 'Không tải được danh mục', 'error')
+  }
+}
+
+async function loadData(page = 0) {
+  loading.value = true
+  try {
+    const response = await api.layDanhSachGiay({
+      keyword: filters.keyword.trim() || undefined,
+      thuongHieuId: filters.thuongHieuId,
+      loaiGiayId: filters.loaiGiayId,
+      trangThai: filters.trangThai,
+      page,
+      size: pageSize.value
+    })
+    items.value = response.items || []
+    totalItems.value = response.totalItems
+    totalPages.value = response.totalPages
+    currentPage.value = response.page
+  } catch (error) {
+    showToast(error.message || 'Không tải được danh sách sản phẩm', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+function resetFilters() {
+  filters.keyword = ''
+  filters.thuongHieuId = null
+  filters.loaiGiayId = null
+  filters.trangThai = null
+  loadData(0)
+}
+
+function goToForm() {
+  router.push({ name: 'admin-chi-tiet-san-pham-new' })
+}
+
+function goToChiTietList(item) {
+  router.push({
+    name: 'admin-bien-the-san-pham',
+    query: { giayId: String(item.id) }
+  })
+}
+
+function handlePageSizeChange(size) {
+  pageSize.value = size
+  loadData(0)
+}
+
+async function xuatExcel() {
+  if (!totalItems.value) {
+    showToast('Không có dữ liệu để xuất Excel', 'error')
+    return
+  }
+
+  try {
+    const response = await api.layDanhSachGiay({
+      keyword: filters.keyword.trim() || undefined,
+      thuongHieuId: filters.thuongHieuId,
+      loaiGiayId: filters.loaiGiayId,
+      trangThai: filters.trangThai,
+      page: 0,
+      size: Math.max(totalItems.value, pageSize.value)
+    })
+
+    const exported = exportRowsToExcel({
+      filename: 'danh-sach-san-pham',
+      sheetName: 'SanPham',
+      columns: [
+        { label: 'STT', value: (_, index) => index + 1 },
+        { label: 'Mã sản phẩm', key: 'ma' },
+        { label: 'Tên sản phẩm', key: 'ten' },
+        { label: 'Thương hiệu', key: 'thuongHieu' },
+        { label: 'Loại giày', key: 'loaiGiay' },
+        { label: 'Chất liệu', value: (row) => row.chatLieu || '—' },
+        { label: 'Tổng tồn', value: (row) => row.tongSoLuong || 0 },
+        { label: 'Khoảng giá', value: (row) => giaHienThi(row) },
+        { label: 'Trạng thái', value: (row) => trangThaiLabel(row.trangThai) }
+      ],
+      rows: response.items || []
+    })
+
+    showToast(
+      exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel',
+      exported ? 'success' : 'error'
+    )
+  } catch (error) {
+    showToast(error.message || 'Xuất Excel thất bại', 'error')
+  }
+}
+
+function applyStatusFilter(value) {
+  filters.trangThai = value
+  loadData(0)
+}
+
+onMounted(async () => {
+  await loadDanhMuc()
+  await loadData(0)
+})
+</script>
+
+<template>
+  <div class="space-y-5">
+    <section>
+      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý sản phẩm</h1>
+    </section>
+
+    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-5 flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+          <Filter class="h-5 w-5" />
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <label class="min-w-0 flex-1 space-y-2">
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
+            <div class="relative max-w-3xl">
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                v-model="filters.keyword"
+                type="text"
+                placeholder="Tìm theo mã / tên sản phẩm..."
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                @keyup.enter="loadData(0)"
+              />
+            </div>
+          </label>
+
+          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+            <button type="button" class="admin-btn-soft" @click="resetFilters">
+              <RotateCcw class="h-4 w-4" />
+              Đặt lại
+            </button>
+            <button type="button" class="admin-btn-soft" @click="xuatExcel">
+              <FileSpreadsheet class="h-4 w-4" />
+              Xuất Excel
+            </button>
+            <button type="button" class="admin-btn-primary" @click="goToForm">
+              <Plus class="h-4 w-4" />
+              Thêm sản phẩm chi tiết
+            </button>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-3">
+          <label class="space-y-2">
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Thương hiệu</span>
+            <select
+              v-model.number="filters.thuongHieuId"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              @change="loadData(0)"
+            >
+              <option :value="null">Tất cả thương hiệu</option>
+              <option v-for="item in danhMuc?.thuongHieu || []" :key="item.id" :value="item.id">
+                {{ item.ten }}
+              </option>
+            </select>
+          </label>
+
+          <label class="space-y-2">
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giày</span>
+            <select
+              v-model.number="filters.loaiGiayId"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              @change="loadData(0)"
+            >
+              <option :value="null">Tất cả loại giày</option>
+              <option v-for="item in danhMuc?.loaiGiay || []" :key="item.id" :value="item.id">
+                {{ item.ten }}
+              </option>
+            </select>
+          </label>
+          <label class="space-y-2">
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+            <select
+              v-model.number="filters.trangThai"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              @change="loadData(0)"
+            >
+              <option :value="null">Tất cả trạng thái</option>
+              <option :value="1">Kinh doanh</option>
+              <option :value="2">Hết hàng</option>
+              <option :value="0">Ngừng kinh doanh</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-5 flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
+          <Package class="h-5 w-5" />
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Danh sách sản phẩm</h2>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-[980px] w-full border-separate border-spacing-y-2 text-sm">
+          <thead>
+            <tr class="text-left text-sm font-bold text-slate-500">
+              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
+              <th class="bg-slate-100 px-4 py-3">Mã sản phẩm</th>
+              <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>
+              <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
+              <th class="bg-slate-100 px-4 py-3">Loại giày</th>
+              <th class="bg-slate-100 px-4 py-3">Số lượng tồn</th>
+              <th class="bg-slate-100 px-4 py-3">Khoảng giá</th>
+              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="loading">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+            </tr>
+            <tr v-else-if="!items.length">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Chưa có sản phẩm nào</td>
+            </tr>
+            <tr
+              v-for="(item, index) in items"
+              :key="item.id"
+              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
+            >
+              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500">
+                {{ currentPage * pageSize + index + 1 }}
+              </td>
+              <td class="px-4 py-4 font-semibold text-slate-800">{{ item.ma }}</td>
+              <td class="px-4 py-4">
+                <p class="font-semibold text-slate-800">{{ item.ten }}</p>
+                <p class="mt-1 text-xs text-slate-400">{{ item.chatLieu || 'Chưa có chất liệu' }}</p>
+              </td>
+              <td class="px-4 py-4 text-slate-600">{{ item.thuongHieu || '—' }}</td>
+              <td class="px-4 py-4 text-slate-600">{{ item.loaiGiay || '—' }}</td>
+              <td class="px-4 py-4 font-semibold text-slate-700">
+                {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
+              </td>
+              <td class="px-4 py-4 font-semibold text-slate-800">{{ giaHienThi(item) }}</td>
+              <td class="px-4 py-4">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
+                  {{ trangThaiLabel(item.trangThai) }}
+                </span>
+              </td>
+              <td class="rounded-r-2xl px-4 py-4 text-center">
+                <button
+                  type="button"
+                  class="admin-table-action text-slate-600 hover:text-rose-500"
+                  title="Xem chi tiết sản phẩm"
+                  @click="goToChiTietList(item)"
+                >
+                  <Eye class="h-4 w-4" />
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <AdminTableFooter
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-size-options="pageSizeOptions"
+        :total-items="totalItems"
+        :total-pages="totalPages"
+        zero-based
+        compact
+        show-refresh
+        @refresh="loadData(currentPage)"
+        @update:current-page="loadData"
+        @update:page-size="handlePageSizeChange"
+      />
+    </section>
+
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="toast.show"
+          class="fixed right-5 top-5 z-[90] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
+          :class="toast.type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'"
+        >
+          {{ toast.message }}
+        </div>
+      </Transition>
+    </Teleport>
+  </div>
+</template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>

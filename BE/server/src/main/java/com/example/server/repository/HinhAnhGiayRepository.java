@@ -28,4 +28,14 @@ public interface HinhAnhGiayRepository extends JpaRepository<HinhAnhGiay, Intege
             ORDER BY h.laHinhChinh DESC, h.id DESC
             """)
     List<Object[]> findMainImageUrlsByGiayIds(@Param("ids") Collection<Integer> ids);
+
+    @Query("""
+            SELECT h.giayChiTiet.id, h.url
+            FROM HinhAnhGiay h
+            WHERE h.giayChiTiet.id IN :ids
+              AND h.trangThai = 1
+              AND h.url IS NOT NULL AND h.url <> ''
+            ORDER BY h.laHinhChinh DESC, h.id DESC
+            """)
+    List<Object[]> findMainImageUrlsByGiayChiTietIds(@Param("ids") Collection<Integer> ids);
 }

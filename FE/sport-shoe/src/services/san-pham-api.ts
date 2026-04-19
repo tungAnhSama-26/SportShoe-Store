@@ -36,6 +36,11 @@ export interface GiayListItem {
   ten: string
   loaiGiay: string
   thuongHieu: string
+  chatLieu?: string
+  deGiay?: string
+  coGiay?: string
+  congNgheDem?: string
+  trongLuong?: string
   gioiTinh?: number
   trangThai: number
   hinhAnh?: string
@@ -44,6 +49,7 @@ export interface GiayListItem {
   tongBienThe?: number
   tongSoLuong?: number
   ngayTao: string
+  coGiamGia?: boolean
 }
 
 export interface GiayDetail {
@@ -59,6 +65,44 @@ export interface GiayDetail {
   moTa?: string
   trangThai: number
   thuocTinh?: ThuocTinhResponse
+  hinhAnhs?: HinhAnhGiay[]
+  ngayTao: string
+  ngayCapNhat?: string
+}
+
+export interface TaoChiTietSanPhamResponse {
+  giay: GiayDetail
+  bienThe: BienThe
+  taoMoiSanPham: boolean
+}
+
+export interface TaoChiTietSanPhamHangLoatResponse {
+  giay: GiayDetail
+  bienThes: BienThe[]
+  taoMoiSanPham: boolean
+}
+
+export interface ChiTietSanPhamListItem {
+  id: number
+  giayId: number
+  maSanPham: string
+  maChiTietSanPham: string
+  sku: string
+  tenSanPham: string
+  thuongHieu: string
+  loaiGiay: string
+  chatLieu?: string
+  gioiTinh?: number
+  mauSacId: number
+  mauSac: string
+  maMauHex?: string
+  kichCoId: number
+  kichCo: string
+  soLuong: number
+  giaGoc: number
+  giaBan: number
+  kichHoat: number
+  hinhAnh?: string
   ngayTao: string
   ngayCapNhat?: string
 }
@@ -111,8 +155,18 @@ export interface GiayListFilters {
   size?: number
 }
 
+export interface ChiTietSanPhamFilters {
+  keyword?: string
+  giayId?: number | null
+  mauSacId?: number | null
+  kichCoId?: number | null
+  trangThai?: number | null
+  page?: number
+  size?: number
+}
+
 export interface TaoGiayRequest {
-  ma: string
+  ma?: string
   ten: string
   thuongHieuId: number
   loaiGiayId: number
@@ -136,6 +190,48 @@ export interface CapNhatGiayRequest {
   coGiayId?: number
   congNgheDemId?: number
   trongLuongId?: number
+}
+
+export interface TaoChiTietSanPhamRequest {
+  giayId?: number
+  ten?: string
+  thuongHieuId?: number
+  loaiGiayId?: number
+  gioiTinh?: number
+  chatLieu?: string
+  moTa?: string
+  deGiayId?: number
+  coGiayId?: number
+  congNgheDemId?: number
+  trongLuongId?: number
+  mauSacId: number
+  kichCoId: number
+  soLuong: number
+  giaGoc: number
+  giaBan: number
+}
+
+export interface TaoChiTietSanPhamHangLoatItemRequest {
+  mauSacId: number
+  kichCoId: number
+  soLuong: number
+  giaGoc: number
+  giaBan: number
+}
+
+export interface TaoChiTietSanPhamHangLoatRequest {
+  giayId?: number
+  ten?: string
+  thuongHieuId?: number
+  loaiGiayId?: number
+  gioiTinh?: number
+  chatLieu?: string
+  moTa?: string
+  deGiayId?: number
+  coGiayId?: number
+  congNgheDemId?: number
+  trongLuongId?: number
+  bienThes: TaoChiTietSanPhamHangLoatItemRequest[]
 }
 
 export interface DoiTrangThaiRequest { trangThai: number }
@@ -197,8 +293,35 @@ export function chiTietGiay(id: number): Promise<GiayDetail> {
   return request<GiayDetail>(`/admin/san-pham/${id}`)
 }
 
+export function layDanhSachChiTietSanPham(
+  filters: ChiTietSanPhamFilters = {}
+): Promise<PageResponse<ChiTietSanPhamListItem>> {
+  const params = new URLSearchParams()
+  if (filters.keyword) params.set('keyword', filters.keyword)
+  if (filters.giayId != null) params.set('giayId', String(filters.giayId))
+  if (filters.mauSacId != null) params.set('mauSacId', String(filters.mauSacId))
+  if (filters.kichCoId != null) params.set('kichCoId', String(filters.kichCoId))
+  if (filters.trangThai != null) params.set('trangThai', String(filters.trangThai))
+  params.set('page', String(filters.page ?? 0))
+  params.set('size', String(filters.size ?? 10))
+  return request<PageResponse<ChiTietSanPhamListItem>>(`/admin/san-pham/chi-tiet?${params}`)
+}
+
 export function taoGiay(body: TaoGiayRequest): Promise<GiayDetail> {
   return request<GiayDetail>('/admin/san-pham', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function taoChiTietSanPham(body: TaoChiTietSanPhamRequest): Promise<TaoChiTietSanPhamResponse> {
+  return request<TaoChiTietSanPhamResponse>('/admin/san-pham/chi-tiet', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function taoChiTietSanPhamHangLoat(
+  body: TaoChiTietSanPhamHangLoatRequest
+): Promise<TaoChiTietSanPhamHangLoatResponse> {
+  return request<TaoChiTietSanPhamHangLoatResponse>(
+    '/admin/san-pham/chi-tiet-hang-loat',
+    { method: 'POST', body: JSON.stringify(body) }
+  )
 }
 
 export function capNhatGiay(id: number, body: CapNhatGiayRequest): Promise<GiayDetail> {
@@ -245,4 +368,25 @@ export function xoaHinhAnh(id: number): Promise<void> {
 
 export function datHinhChinh(id: number): Promise<void> {
   return request<void>(`/admin/san-pham/hinh-anh/${id}/chinh`, { method: 'PATCH' })
+}
+
+export async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    body: formData
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(payload.message || 'Tải ảnh thất bại')
+  }
+
+  if (!payload.data?.url) {
+    throw new Error('Không nhận được URL ảnh sau khi upload')
+  }
+
+  return payload.data.url
 }
