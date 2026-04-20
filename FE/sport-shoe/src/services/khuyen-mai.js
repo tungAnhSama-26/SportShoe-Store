@@ -13,7 +13,9 @@ async function request(path, init) {
   const payload = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    throw new Error(payload?.message || "Khong the ket noi den may chu");
+    const error = new Error(payload?.message || "Không thể kết nối đến máy chủ");
+    error.errors = payload?.errors;
+    throw error;
   }
 
   return payload?.data ?? payload;

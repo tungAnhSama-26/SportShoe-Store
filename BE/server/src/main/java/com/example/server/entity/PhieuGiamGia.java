@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "phieu_giam_gia")
+@DynamicInsert
 public class PhieuGiamGia {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,7 +62,7 @@ public class PhieuGiamGia {
     @NotNull
     @ColumnDefault("0")
     @Column(name = "so_luong_da_dung", nullable = false)
-    private Integer soLuongDaDung;
+    private Integer soLuongDaDung = 0;
 
     @NotNull
     @ColumnDefault("1")
