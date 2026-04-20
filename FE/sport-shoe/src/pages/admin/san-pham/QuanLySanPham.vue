@@ -2,11 +2,15 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  Search, Plus, Trash2, Eye, ChevronDown, Check, X, Filter, Layers, Layers3,
-  Images, ImageOff, FileSpreadsheet, RotateCcw, Pencil, Upload
+  Search, Plus, Eye, ChevronDown, Check, Filter, Layers3,
+  ImageOff, FileSpreadsheet, RotateCcw, Pencil
 } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
+import QuanLySanPhamProductModal from '../../../components/admin/san-pham/QuanLySanPhamProductModal.vue'
+import QuanLySanPhamBienTheModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheModal.vue'
+import QuanLySanPhamBienTheFormModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheFormModal.vue'
+import QuanLySanPhamHinhAnhModal from '../../../components/admin/san-pham/QuanLySanPhamHinhAnhModal.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 
 const route = useRoute()
@@ -259,15 +263,6 @@ const productForm = reactive({
   trongLuongId: null
 })
 const productErrors = reactive({})
-const createDetailErrors = reactive({})
-const createDetailVariantForm = reactive({
-  mauSacIds: [],
-  kichCoIds: [],
-  soLuong: 0,
-  giaGoc: 0,
-  giaBan: 0
-})
-const createDetailGeneratedVariants = ref([])
 
 const productModalTitle = computed(() =>
   productModalMode.value === 'add' ? 'Thêm sản phẩm' : 'Cập nhật sản phẩm'
@@ -284,22 +279,6 @@ const productModalMainImage = computed(() => {
 
 function resetProductErrors() {
   Object.keys(productErrors).forEach((key) => delete productErrors[key])
-}
-
-function resetCreateDetailErrors() {
-  Object.keys(createDetailErrors).forEach((key) => delete createDetailErrors[key])
-}
-
-function clearCreateDetailVariantForm() {
-  Object.assign(createDetailVariantForm, {
-    mauSacIds: [],
-    kichCoIds: [],
-    soLuong: 0,
-    giaGoc: 0,
-    giaBan: 0
-  })
-  createDetailGeneratedVariants.value = []
-  resetCreateDetailErrors()
 }
 
 function clearProductForm() {
@@ -349,113 +328,6 @@ function validateProductForm() {
   return Object.keys(productErrors).length === 0
 }
 
-function validateCreateDetailVariantForm() {
-  resetCreateDetailErrors()
-  if (!createDetailVariantForm.mauSacIds.length) createDetailErrors.mauSacIds = 'Chọn ít nhất 1 màu sắc'
-  if (!createDetailVariantForm.kichCoIds.length) createDetailErrors.kichCoIds = 'Chọn ít nhất 1 kích cỡ'
-  if (Number(createDetailVariantForm.giaBan) <= 0) createDetailErrors.giaBan = 'Giá bán phải lớn hơn 0'
-  if (Number(createDetailVariantForm.giaGoc) < 0) createDetailErrors.giaGoc = 'Giá gốc không được âm'
-  if (Number(createDetailVariantForm.soLuong) < 0) createDetailErrors.soLuong = 'Số lượng không được âm'
-  return Object.keys(createDetailErrors).length === 0
-}
-
-function buildCreateProductPayload() {
-  return {
-    ma: productForm.ma?.trim() || undefined,
-    ten: productForm.ten.trim(),
-    thuongHieuId: Number(productForm.thuongHieuId),
-    loaiGiayId: Number(productForm.loaiGiayId),
-    gioiTinh: normalizeNullableNumber(productForm.gioiTinh),
-    chatLieuGiayId: normalizeNullableNumber(productForm.chatLieuGiayId),
-    moTa: productForm.moTa.trim() || undefined,
-    deGiayId: normalizeNullableNumber(productForm.deGiayId),
-    coGiayId: normalizeNullableNumber(productForm.coGiayId),
-    congNgheDemId: normalizeNullableNumber(productForm.congNgheDemId),
-    trongLuongId: normalizeNullableNumber(productForm.trongLuongId)
-  }
-}
-
-function mauSacLabel(id) {
-  return danhMuc.value?.mauSac?.find((item) => item.id === Number(id))?.ten || `Màu #${id}`
-}
-
-function kichCoLabel(id) {
-  return danhMuc.value?.kichCo?.find((item) => item.id === Number(id))?.giaTri || `Size #${id}`
-}
-
-function generateCreateDetailVariants() {
-  if (!validateCreateDetailVariantForm()) return
-
-  const existingMap = new Map(
-    createDetailGeneratedVariants.value.map((item) => [`${item.mauSacId}-${item.kichCoId}`, item])
-  )
-
-  createDetailGeneratedVariants.value = createDetailVariantForm.mauSacIds.flatMap((mauSacId) =>
-    createDetailVariantForm.kichCoIds.map((kichCoId) => {
-      const key = `${mauSacId}-${kichCoId}`
-      return existingMap.get(key) || {
-        key,
-        mauSacId: Number(mauSacId),
-        mauSac: mauSacLabel(mauSacId),
-        kichCoId: Number(kichCoId),
-        kichCo: kichCoLabel(kichCoId),
-        soLuong: Number(createDetailVariantForm.soLuong),
-        giaGoc: Number(createDetailVariantForm.giaGoc),
-        giaBan: Number(createDetailVariantForm.giaBan)
-      }
-    })
-  )
-
-  delete createDetailErrors.generatedVariants
-  showToast(`Đã tạo ${createDetailGeneratedVariants.value.length} CTSP nháp`)
-}
-
-function removeGeneratedVariant(key) {
-  createDetailGeneratedVariants.value = createDetailGeneratedVariants.value.filter((item) => item.key !== key)
-}
-
-function validateGeneratedCreateDetailVariants() {
-  delete createDetailErrors.generatedVariants
-
-  if (!createDetailGeneratedVariants.value.length) {
-    createDetailErrors.generatedVariants = 'Hãy bấm "Tạo CTSP tự động" để sinh danh sách biến thể'
-    return false
-  }
-
-  const hasInvalidRow = createDetailGeneratedVariants.value.some((item) =>
-    Number(item.soLuong) < 0 || Number(item.giaGoc) < 0 || Number(item.giaBan) <= 0
-  )
-
-  if (hasInvalidRow) {
-    createDetailErrors.generatedVariants = 'Vui lòng kiểm tra lại số lượng và giá trên danh sách CTSP'
-    return false
-  }
-
-  return true
-}
-
-function buildCreateDetailPayload() {
-  return {
-    ten: productForm.ten.trim(),
-    thuongHieuId: Number(productForm.thuongHieuId),
-    loaiGiayId: Number(productForm.loaiGiayId),
-    gioiTinh: normalizeNullableNumber(productForm.gioiTinh),
-    chatLieuGiayId: normalizeNullableNumber(productForm.chatLieuGiayId),
-    moTa: productForm.moTa.trim() || undefined,
-    deGiayId: normalizeNullableNumber(productForm.deGiayId),
-    coGiayId: normalizeNullableNumber(productForm.coGiayId),
-    congNgheDemId: normalizeNullableNumber(productForm.congNgheDemId),
-    trongLuongId: normalizeNullableNumber(productForm.trongLuongId),
-    bienThes: createDetailGeneratedVariants.value.map((item) => ({
-      mauSacId: Number(item.mauSacId),
-      kichCoId: Number(item.kichCoId),
-      soLuong: Number(item.soLuong),
-      giaGoc: Number(item.giaGoc),
-      giaBan: Number(item.giaBan)
-    }))
-  }
-}
-
 function buildUpdateProductPayload() {
   return {
     ten: productForm.ten.trim(),
@@ -476,12 +348,10 @@ function closeProductModal() {
   loadingProductDetail.value = false
   selectedProductForModal.value = null
   clearProductForm()
-  clearCreateDetailVariantForm()
 }
 
 function openAdd() {
   clearProductForm()
-  clearCreateDetailVariantForm()
   selectedProductForModal.value = null
   productModalMode.value = 'add'
   showProductModal.value = true
@@ -489,7 +359,6 @@ function openAdd() {
 
 async function openEdit(item) {
   clearProductForm()
-  clearCreateDetailVariantForm()
   productModalMode.value = 'edit'
   showProductModal.value = true
   loadingProductDetail.value = true
@@ -820,122 +689,27 @@ async function handleDeleteBienThe(id) {
 
 const showHinhAnhModal = ref(false)
 const hinhAnhBienThe = ref(null)
-const hinhAnhList = ref([])
-const loadingHinhAnh = ref(false)
-const showAddHinhAnhForm = ref(false)
-const savingHinhAnh = ref(false)
-const settingHinhChinhId = ref(null)
-const deletingHinhAnhId = ref(null)
-const uploadingHinhAnhFile = ref(false)
-
-const hinhAnhForm = reactive({
-  url: '',
-  loaiHinh: 2,
-  moTa: ''
-})
-const hinhAnhErrors = reactive({})
 
 function closeHinhAnhModal() {
   showHinhAnhModal.value = false
   hinhAnhBienThe.value = null
-  hinhAnhList.value = []
-  showAddHinhAnhForm.value = false
-  Object.assign(hinhAnhForm, { url: '', loaiHinh: 2, moTa: '' })
-  Object.keys(hinhAnhErrors).forEach((key) => delete hinhAnhErrors[key])
 }
 
 async function openHinhAnh(item) {
+  if (!item?.id) return
   hinhAnhBienThe.value = item
   showHinhAnhModal.value = true
-  showAddHinhAnhForm.value = false
-  loadingHinhAnh.value = true
-  try {
-    hinhAnhList.value = await api.layHinhAnh(item.id)
-  } catch (error) {
-    showToast(error.message || 'Lỗi tải hình ảnh', 'error')
-  } finally {
-    loadingHinhAnh.value = false
-  }
 }
 
-function openAddHinhAnhForm() {
-  Object.assign(hinhAnhForm, { url: '', loaiHinh: 2, moTa: '' })
-  Object.keys(hinhAnhErrors).forEach((key) => delete hinhAnhErrors[key])
-  showAddHinhAnhForm.value = true
+async function handleHinhAnhUpdated() {
+  await Promise.all([
+    syncSelectedGiayContext(selectedGiay.value?.id),
+    loadData(currentPage.value)
+  ])
 }
 
-async function handleUploadHinhAnhFile(event) {
-  const target = event.target
-  if (!target.files?.length) return
-
-  uploadingHinhAnhFile.value = true
-  try {
-    const url = await api.uploadFile(target.files[0])
-    hinhAnhForm.url = url
-    showToast('Tải ảnh lên thành công')
-  } catch (error) {
-    showToast(error.message || 'Lỗi tải ảnh lên', 'error')
-  } finally {
-    uploadingHinhAnhFile.value = false
-    target.value = ''
-  }
-}
-
-async function handleSaveHinhAnh() {
-  Object.keys(hinhAnhErrors).forEach((key) => delete hinhAnhErrors[key])
-  if (!hinhAnhForm.url.trim()) {
-    hinhAnhErrors.url = 'Vui lòng chọn ảnh hoặc nhập URL ảnh'
-    return
-  }
-
-  savingHinhAnh.value = true
-  try {
-    const created = await api.themHinhAnh(hinhAnhBienThe.value.id, {
-      url: hinhAnhForm.url.trim(),
-      loaiHinh: Number(hinhAnhForm.loaiHinh),
-      moTa: hinhAnhForm.moTa || undefined
-    })
-    if (Number(hinhAnhForm.loaiHinh) === 1) {
-      await api.datHinhChinh(created.id)
-    }
-    showToast('Thêm hình ảnh thành công')
-    showAddHinhAnhForm.value = false
-    hinhAnhList.value = await api.layHinhAnh(hinhAnhBienThe.value.id)
-    await loadData(currentPage.value)
-  } catch (error) {
-    showToast(error.message || 'Lỗi thêm hình ảnh', 'error')
-  } finally {
-    savingHinhAnh.value = false
-  }
-}
-
-async function handleDeleteHinhAnh(id) {
-  if (!confirm('Xóa hình ảnh này?')) return
-  deletingHinhAnhId.value = id
-  try {
-    await api.xoaHinhAnh(id)
-    showToast('Xóa hình ảnh thành công')
-    hinhAnhList.value = await api.layHinhAnh(hinhAnhBienThe.value.id)
-    await loadData(currentPage.value)
-  } catch (error) {
-    showToast(error.message || 'Lỗi xóa hình ảnh', 'error')
-  } finally {
-    deletingHinhAnhId.value = null
-  }
-}
-
-async function handleDatHinhChinh(id) {
-  settingHinhChinhId.value = id
-  try {
-    await api.datHinhChinh(id)
-    showToast('Đặt ảnh chính thành công')
-    hinhAnhList.value = await api.layHinhAnh(hinhAnhBienThe.value.id)
-    await loadData(currentPage.value)
-  } catch (error) {
-    showToast(error.message || 'Lỗi đặt ảnh chính', 'error')
-  } finally {
-    settingHinhChinhId.value = null
-  }
+function handleHinhAnhError(message) {
+  showToast(message || 'L?i x? l? h?nh ?nh', 'error')
 }
 
 const selectedGiayMainImage = computed(() => {
@@ -1318,901 +1092,76 @@ onMounted(async () => {
       />
     </section>
 
-    <Teleport to="body">
-      <div
-        v-if="showBienTheModal"
-        class="fixed inset-0 z-[52] flex items-center justify-center bg-black/55 p-4"
-        @click.self="closeBienTheModal"
-      >
-        <div class="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-          <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <div>
-              <h2 class="text-xl font-bold text-slate-800">Quản lý biến thể sản phẩm</h2>
-              <p class="mt-1 text-sm text-slate-500">
-                {{ selectedGiay ? `Đang quản lý CTSP cho ${selectedGiay.ten}.` : 'Xem, thêm và cập nhật CTSP trong popup này.' }}
-              </p>
-            </div>
-            <button
-              @click="closeBienTheModal"
-              class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-            >
-              <X :size="18" />
-            </button>
-          </div>
+    <QuanLySanPhamBienTheModal
+      :open="showBienTheModal"
+      :loading="loadingBienThe"
+      :selected-giay="selectedGiay"
+      :selected-giay-main-image="selectedGiayMainImage"
+      :bien-the-list="bienTheList"
+      :updating-bien-the-status-id="updatingBienTheStatusId"
+      :trang-thai-class="trangThaiClass"
+      :trang-thai-label="trangThaiLabel"
+      :gioi-tinh-label="gioiTinhLabel"
+      :selected-attribute-list="selectedAttributeList"
+      :bien-the-trang-thai-class="bienTheTrangThaiClass"
+      :bien-the-trang-thai-label="bienTheTrangThaiLabel"
+      :format-count="formatCount"
+      :format-currency="formatCurrency"
+      @close="closeBienTheModal"
+      @edit-product="openEdit"
+      @open-add-bienthe="openAddBienTheForm"
+      @edit-bienthe="openEditBienThe"
+      @toggle-bienthe-status="handleToggleBienTheStatus"
+      @delete-bienthe="handleDeleteBienThe"
+      @open-images="openHinhAnh"
+    />
 
-          <div class="flex-1 overflow-y-auto px-6 py-6">
-            <div v-if="loadingBienThe" class="rounded-2xl border border-slate-100 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
-              Đang tải CTSP...
-            </div>
+    <QuanLySanPhamProductModal
+      :open="showProductModal"
+      :mode="productModalMode"
+      :title="productModalTitle"
+      :description="productModalDescription"
+      :loading="loadingProductDetail"
+      :saving="productSaving"
+      :danh-muc="danhMuc"
+      :product-form="productForm"
+      :product-errors="productErrors"
+      :selected-product="selectedProductForModal"
+      :main-image="productModalMainImage"
+      :thuong-hieu-name="thuongHieuName"
+      :loai-giay-name="loaiGiayName"
+      :gioi-tinh-label="gioiTinhLabel"
+      :trang-thai-class="trangThaiClass"
+      :trang-thai-label="trangThaiLabel"
+      :selected-attribute-list="selectedAttributeList"
+      @close="closeProductModal"
+      @save="handleSaveProduct"
+    />
 
-            <template v-else-if="selectedGiay">
-              <div class="mb-5 grid gap-4 xl:grid-cols-[1fr_220px]">
-                <div class="rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="min-w-0">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-xl font-bold text-slate-800">{{ selectedGiay.ten }}</h3>
-                        <span class="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
-                          {{ selectedGiay.ma }}
-                        </span>
-                        <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(selectedGiay.trangThai)">
-                          {{ trangThaiLabel(selectedGiay.trangThai) }}
-                        </span>
-                      </div>
-                      <p class="mt-2 text-sm text-slate-500">
-                        {{ selectedGiay.thuongHieu }} · {{ selectedGiay.loaiGiay }} · {{ gioiTinhLabel(selectedGiay.gioiTinh) }}
-                      </p>
-                      <div class="mt-3 flex flex-wrap gap-1.5">
-                        <span
-                          v-for="attribute in selectedAttributeList(selectedGiay)"
-                          :key="attribute"
-                          class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
-                        >
-                          {{ attribute }}
-                        </span>
-                        <span v-if="selectedAttributeList(selectedGiay).length === 0" class="text-sm text-slate-400">
-                          Chưa có thuộc tính kỹ thuật
-                        </span>
-                      </div>
-                      <p v-if="selectedGiay.moTa" class="mt-3 text-sm leading-6 text-slate-500">
-                        {{ selectedGiay.moTa }}
-                      </p>
-                    </div>
+    <QuanLySanPhamBienTheFormModal
+      :open="showAddBienTheForm"
+      :editing-bien-the="editingBienThe"
+      :selected-giay="selectedGiay"
+      :danh-muc="danhMuc"
+      :bien-the-form="bienTheForm"
+      :bien-the-errors="bienTheErrors"
+      :bulk-bien-the-form="bulkBienTheForm"
+      :bulk-bien-the-errors="bulkBienTheErrors"
+      :generated-bulk-bien-thes="generatedBulkBienThes"
+      :saving-bien-the="savingBienThe"
+      @close="closeBienTheForm"
+      @save="handleSaveBienThe"
+      @generate-bulk="generateBulkBienThes"
+      @remove-generated-bulk="removeGeneratedBulkBienThe"
+    />
 
-                    <div class="flex flex-wrap gap-2">
-                      <button
-                        @click="openEdit(selectedGiay)"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                      >
-                        <Pencil :size="15" />
-                        Sửa sản phẩm
-                      </button>
-                      <button
-                        @click="clearSelectedProduct"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                      >
-                        <X :size="15" />
-                        Đóng
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                  <div class="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                    <img
-                      v-if="selectedGiayMainImage"
-                      :src="selectedGiayMainImage.url"
-                      alt=""
-                      class="h-full w-full object-cover"
-                    />
-                    <div v-else class="flex h-full items-center justify-center text-slate-400">
-                      <ImageOff class="h-8 w-8" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-sm font-bold text-slate-800">Danh sách CTSP</h3>
-                  <p class="text-xs text-slate-400">
-                    {{ bienTheList.length ? `${bienTheList.length} biến thể đang có.` : 'Sản phẩm này chưa có biến thể nào.' }}
-                  </p>
-                </div>
-
-                <button
-                  @click="openAddBienTheForm"
-                  class="inline-flex h-10 items-center gap-2 rounded-xl bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600"
-                >
-                  <Plus :size="15" />
-                  Thêm CTSP
-                </button>
-              </div>
-
-              <div class="overflow-x-auto">
-                <table class="admin-table admin-table--compact min-w-[940px]">
-                  <thead class="border-b border-gray-100 bg-gray-50">
-                    <tr>
-                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Biến thể</th>
-                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Thuộc tính</th>
-                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Kho / giá</th>
-                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Trạng thái</th>
-                      <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Ảnh</th>
-                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-50">
-                    <tr v-if="bienTheList.length === 0">
-                      <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-400">
-                        Chưa có CTSP nào. Hãy thêm CTSP đầu tiên để bắt đầu gắn ảnh và số lượng.
-                      </td>
-                    </tr>
-                    <tr v-for="item in bienTheList" :key="item.id" class="hover:bg-gray-50">
-                      <td class="px-4 py-4 align-top">
-                        <div class="font-semibold text-slate-800">{{ item.maBienThe }}</div>
-                        <div class="mt-1 text-xs text-slate-400">SKU: {{ item.sku }}</div>
-                      </td>
-                      <td class="px-4 py-4 align-top">
-                        <div class="flex items-center gap-2 text-slate-700">
-                          <span
-                            v-if="item.maMauHex"
-                            class="h-4 w-4 rounded-full border border-gray-200"
-                            :style="`background:${item.maMauHex}`"
-                          ></span>
-                          <span>{{ item.mauSac }}</span>
-                        </div>
-                        <div class="mt-1 text-xs text-slate-400">Size {{ item.kichCo }}</div>
-                      </td>
-                      <td class="px-4 py-4 align-top">
-                        <div class="font-semibold text-slate-700">{{ formatCount(item.soLuong) }} sản phẩm</div>
-                        <div class="mt-1 text-xs text-slate-400">Giá gốc: {{ formatCurrency(item.giaGoc) }}đ</div>
-                        <div class="text-xs text-slate-400">Giá bán: {{ formatCurrency(item.giaBan) }}đ</div>
-                      </td>
-                      <td class="px-4 py-4 align-top">
-                        <div class="flex flex-col items-start gap-2">
-                          <span class="admin-status-chip whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
-                            {{ bienTheTrangThaiLabel(item) }}
-                          </span>
-                          <button
-                            @click="handleToggleBienTheStatus(item)"
-                            :disabled="updatingBienTheStatusId === item.id"
-                            class="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {{ updatingBienTheStatusId === item.id ? 'Đang cập nhật...' : (Number(item.kichHoat) === 1 ? 'Tắt nhanh' : 'Kích hoạt nhanh') }}
-                          </button>
-                        </div>
-                      </td>
-                      <td class="px-4 py-4 text-center align-top">
-                        <button
-                          @click="openHinhAnh(item)"
-                          class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
-                        >
-                          <Images :size="13" />
-                          Quản lý ảnh
-                        </button>
-                      </td>
-                      <td class="px-4 py-4 align-top">
-                        <div class="flex items-center justify-end gap-1.5">
-                          <button
-                            @click="openEditBienThe(item)"
-                            title="Sửa CTSP"
-                            class="admin-table-action text-slate-600 hover:text-rose-500"
-                          >
-                            <Pencil :size="14" />
-                          </button>
-                          <button
-                            @click="handleDeleteBienThe(item.id)"
-                            title="Xóa CTSP"
-                            class="admin-table-action text-red-500 hover:text-red-600"
-                          >
-                            <Trash2 :size="14" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </template>
-
-            <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
-              Không thể tải dữ liệu biến thể cho sản phẩm này.
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
-      <div
-        v-if="showProductModal"
-        class="fixed inset-0 z-[55] flex items-center justify-center bg-black/55 p-4"
-        @click.self="closeProductModal"
-      >
-        <div class="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-          <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <div>
-              <h2 class="text-xl font-bold text-slate-800">{{ productModalTitle }}</h2>
-              <p class="mt-1 text-sm text-slate-500">{{ productModalDescription }}</p>
-            </div>
-            <button
-              @click="closeProductModal"
-              class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-            >
-              <X :size="18" />
-            </button>
-          </div>
-
-          <div v-if="loadingProductDetail" class="px-6 py-16 text-center text-sm text-slate-400">
-            Đang tải chi tiết sản phẩm...
-          </div>
-
-          <div v-else class="flex-1 overflow-y-auto px-6 py-6">
-            <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-              <section class="rounded-[24px] border border-slate-100 bg-white p-5">
-                <div class="mb-5">
-                  <h3 class="text-base font-bold text-slate-800">Thông tin cơ bản</h3>
-                  <p class="mt-1 text-xs text-slate-400">
-                    {{
-                      productModalMode === 'add'
-                        ? 'Nhập thông tin sản phẩm rồi sinh danh sách CTSP ngay trong popup này.'
-                        : 'Cập nhật thông tin sản phẩm. CTSP và ảnh vẫn được quản lý riêng.'
-                    }}
-                  </p>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2">
-                  <div v-if="productModalMode === 'add'">
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Mã sản phẩm</label>
-                    <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                      Tự sinh khi lưu
-                    </div>
-                  </div>
-
-                  <div :class="productModalMode === 'add' ? '' : 'md:col-span-2'">
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Tên sản phẩm *</label>
-                    <select
-                      v-model="productForm.ten"
-                      class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      :class="productErrors.ten ? 'border-red-400' : 'border-gray-200'"
-                      placeholder="Tên sản phẩm"
-                    />
-                    <p v-if="productErrors.ten" class="mt-1 text-xs text-red-500">{{ productErrors.ten }}</p>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Thương hiệu *</label>
-                    <select
-                      v-model="productForm.thuongHieuId"
-                      class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      :class="productErrors.thuongHieuId ? 'border-red-400' : 'border-gray-200'"
-                    >
-                      <option :value="null">-- Chọn thương hiệu --</option>
-                      <option v-for="item in danhMuc?.thuongHieu" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                    </select>
-                    <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-red-500">{{ productErrors.thuongHieuId }}</p>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Loại giày *</label>
-                    <select
-                      v-model="productForm.loaiGiayId"
-                      class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      :class="productErrors.loaiGiayId ? 'border-red-400' : 'border-gray-200'"
-                    >
-                      <option :value="null">-- Chọn loại giày --</option>
-                      <option v-for="item in danhMuc?.loaiGiay" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                    </select>
-                    <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-red-500">{{ productErrors.loaiGiayId }}</p>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Giới tính</label>
-                    <select
-                      v-model="productForm.gioiTinh"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="null">-- Tất cả --</option>
-                      <option :value="1">Nam</option>
-                      <option :value="2">Nữ</option>
-                      <option :value="3">Unisex</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Chất liệu</label>
-                    <select
-                      v-model.number="productForm.chatLieuGiayId"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="null">-- Chọn chất liệu giày --</option>
-                      <option v-for="item in danhMuc?.chatLieuGiay || []" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <div class="mb-4">
-                    <h3 class="text-sm font-bold text-slate-700">Thuộc tính kỹ thuật</h3>
-                    <p class="mt-1 text-xs text-slate-400">
-                      Các thuộc tính này sẽ hiển thị trực tiếp ở danh sách sản phẩm.
-                    </p>
-                  </div>
-
-                  <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label class="mb-1 block text-xs font-medium text-gray-700">Đế giày</label>
-                      <select
-                        v-model="productForm.deGiayId"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      >
-                        <option :value="null">-- Không có --</option>
-                        <option v-for="item in danhMuc?.deGiay" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="mb-1 block text-xs font-medium text-gray-700">Cổ giày</label>
-                      <select
-                        v-model="productForm.coGiayId"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      >
-                        <option :value="null">-- Không có --</option>
-                        <option v-for="item in danhMuc?.coGiay" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="mb-1 block text-xs font-medium text-gray-700">Công nghệ đệm</label>
-                      <select
-                        v-model="productForm.congNgheDemId"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      >
-                        <option :value="null">-- Không có --</option>
-                        <option v-for="item in danhMuc?.congNgheDem" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="mb-1 block text-xs font-medium text-gray-700">Trọng lượng</label>
-                      <select
-                        v-model="productForm.trongLuongId"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      >
-                        <option :value="null">-- Không có --</option>
-                        <option v-for="item in danhMuc?.trongLuong" :key="item.id" :value="item.id">
-                          {{ item.ma }} - {{ item.giaTri }}
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mt-5">
-                  <label class="mb-1 block text-xs font-medium text-gray-700">Mô tả</label>
-                  <textarea
-                    v-model="productForm.moTa"
-                    rows="5"
-                    class="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    placeholder="Mô tả ngắn về sản phẩm..."
-                  ></textarea>
-                </div>
-
-              </section>
-
-              <aside class="space-y-5">
-                <section class="rounded-[24px] border border-slate-100 bg-white p-5">
-                  <div class="mb-4">
-                    <h3 class="text-base font-bold text-slate-800">
-                      {{ productModalMode === 'add' ? 'Thông tin nhanh' : 'Tóm tắt' }}
-                    </h3>
-                    <p class="mt-1 text-xs text-slate-400">
-                      {{
-                        productModalMode === 'add'
-                          ? 'Lưu xong sẽ mở popup biến thể để bạn thêm CTSP cho sản phẩm này.'
-                          : 'Theo dõi nhanh trạng thái hiện tại của sản phẩm.'
-                      }}
-                    </p>
-                  </div>
-
-                  <div v-if="productModalMode === 'edit'" class="space-y-4">
-                    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
-                      <div class="aspect-square">
-                        <img
-                          v-if="productModalMainImage"
-                          :src="productModalMainImage.url"
-                          alt=""
-                          class="h-full w-full object-cover"
-                        />
-                        <div v-else class="flex h-full items-center justify-center text-slate-400">
-                          <ImageOff class="h-8 w-8" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="space-y-2 text-sm text-slate-600">
-                      <div class="flex items-center justify-between gap-3">
-                        <span class="text-slate-400">Mã sản phẩm</span>
-                        <span class="font-semibold text-slate-700">{{ selectedProductForModal?.ma }}</span>
-                      </div>
-                      <div class="flex items-center justify-between gap-3">
-                        <span class="text-slate-400">Trạng thái</span>
-                        <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(selectedProductForModal?.trangThai)">
-                          {{ trangThaiLabel(selectedProductForModal?.trangThai) }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                      <span
-                        v-for="attribute in selectedAttributeList(selectedProductForModal)"
-                        :key="attribute"
-                        class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
-                      >
-                        {{ attribute }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div v-else class="space-y-4">
-                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <div class="space-y-2 text-sm text-slate-600">
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-400">Mã sản phẩm</span>
-                          <span class="font-semibold text-slate-700">Tự sinh khi lưu</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-400">CTSP</span>
-                          <span class="font-semibold text-slate-700">Thêm ở popup biến thể</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-400">Ảnh</span>
-                          <span class="font-semibold text-slate-700">Theo từng CTSP</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                      <span v-if="productForm.thuongHieuId" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
-                        {{ thuongHieuName(productForm.thuongHieuId) }}
-                      </span>
-                      <span v-if="productForm.loaiGiayId" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
-                        {{ loaiGiayName(productForm.loaiGiayId) }}
-                      </span>
-                      <span v-if="productForm.gioiTinh" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
-                        {{ gioiTinhLabel(productForm.gioiTinh) }}
-                      </span>
-                    </div>
-                  </div>
-                </section>
-              </aside>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-            <button
-              @click="closeProductModal"
-              class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              Hủy
-            </button>
-            <button
-              @click="handleSaveProduct"
-              :disabled="productSaving || loadingProductDetail"
-              class="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {{ productSaving ? 'Đang lưu...' : (productModalMode === 'add' ? 'Lưu sản phẩm' : 'Lưu thay đổi') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
-      <div
-        v-if="showAddBienTheForm"
-        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4"
-        @click.self="closeBienTheForm"
-      >
-        <div
-          class="flex max-h-[90vh] w-full flex-col rounded-2xl bg-white shadow-2xl"
-          :class="editingBienThe ? 'max-w-xl' : 'max-w-5xl'"
-        >
-          <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-            <h2 class="text-lg font-semibold text-gray-800">
-              {{ editingBienThe ? 'Cập nhật CTSP' : 'Thêm CTSP mới' }}
-            </h2>
-            <button @click="closeBienTheForm" class="rounded-lg p-1.5 hover:bg-gray-100">
-              <X :size="18" />
-            </button>
-          </div>
-
-          <div class="overflow-y-auto p-6">
-            <div class="mb-4 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-700">
-              {{ selectedGiay?.ten }} · {{ selectedGiay?.ma }}
-            </div>
-
-            <div v-if="editingBienThe" class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Số lượng</label>
-                <input
-                  v-model.number="bienTheForm.soLuong"
-                  type="number"
-                  min="0"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                />
-                <p v-if="bienTheErrors.soLuong" class="mt-1 text-xs text-red-500">{{ bienTheErrors.soLuong }}</p>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Giá gốc</label>
-                <input
-                  v-model.number="bienTheForm.giaGoc"
-                  type="number"
-                  min="0"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                />
-                <p v-if="bienTheErrors.giaGoc" class="mt-1 text-xs text-red-500">{{ bienTheErrors.giaGoc }}</p>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Giá bán *</label>
-                <input
-                  v-model.number="bienTheForm.giaBan"
-                  type="number"
-                  min="1"
-                  class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="bienTheErrors.giaBan ? 'border-red-400' : 'border-gray-200'"
-                />
-                <p v-if="bienTheErrors.giaBan" class="mt-1 text-xs text-red-500">{{ bienTheErrors.giaBan }}</p>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Trạng thái</label>
-                <select
-                  v-model.number="bienTheForm.kichHoat"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                >
-                  <option :value="1">Kích hoạt</option>
-                  <option :value="2">Tạm dừng</option>
-                </select>
-              </div>
-            </div>
-
-            <div v-else class="space-y-5">
-              <div class="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-                <section class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <div class="mb-4">
-                    <h3 class="text-sm font-bold text-slate-800">Sinh CTSP tự động</h3>
-                    <p class="mt-1 text-xs text-slate-400">Chọn màu sắc, kích cỡ và giá trị mặc định để tạo danh sách CTSP.</p>
-                  </div>
-
-                  <div class="space-y-4">
-                    <div>
-                      <label class="mb-2 block text-xs font-medium text-gray-700">Màu sắc *</label>
-                      <div class="flex flex-wrap gap-2">
-                        <label
-                          v-for="item in danhMuc?.mauSac"
-                          :key="item.id"
-                          class="inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition"
-                          :class="bulkBienTheForm.mauSacIds.includes(item.id) ? 'border-rose-300 bg-rose-50 text-rose-600' : 'border-slate-200 bg-white text-slate-600'"
-                        >
-                          <input v-model="bulkBienTheForm.mauSacIds" type="checkbox" class="hidden" :value="item.id" />
-                          <span
-                            class="h-2.5 w-2.5 rounded-full border border-black/5"
-                            :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
-                          ></span>
-                          {{ item.ten }}
-                        </label>
-                      </div>
-                      <p v-if="bulkBienTheErrors.mauSacIds" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.mauSacIds }}</p>
-                    </div>
-
-                    <div>
-                      <label class="mb-2 block text-xs font-medium text-gray-700">Kích cỡ *</label>
-                      <div class="flex flex-wrap gap-2">
-                        <label
-                          v-for="item in danhMuc?.kichCo"
-                          :key="item.id"
-                          class="inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition"
-                          :class="bulkBienTheForm.kichCoIds.includes(item.id) ? 'border-rose-300 bg-rose-50 text-rose-600' : 'border-slate-200 bg-white text-slate-600'"
-                        >
-                          <input v-model="bulkBienTheForm.kichCoIds" type="checkbox" class="hidden" :value="item.id" />
-                          Size {{ item.giaTri }}
-                        </label>
-                      </div>
-                      <p v-if="bulkBienTheErrors.kichCoIds" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.kichCoIds }}</p>
-                    </div>
-
-                    <div class="grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-700">Số lượng mặc định</label>
-                        <input
-                          v-model.number="bulkBienTheForm.soLuong"
-                          type="number"
-                          min="0"
-                          class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                          :class="bulkBienTheErrors.soLuong ? 'border-red-400' : 'border-gray-200'"
-                        />
-                        <p v-if="bulkBienTheErrors.soLuong" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.soLuong }}</p>
-                      </div>
-
-                      <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-700">Giá gốc mặc định</label>
-                        <input
-                          v-model.number="bulkBienTheForm.giaGoc"
-                          type="number"
-                          min="0"
-                          class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                          :class="bulkBienTheErrors.giaGoc ? 'border-red-400' : 'border-gray-200'"
-                        />
-                        <p v-if="bulkBienTheErrors.giaGoc" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.giaGoc }}</p>
-                      </div>
-
-                      <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-700">Giá bán mặc định *</label>
-                        <input
-                          v-model.number="bulkBienTheForm.giaBan"
-                          type="number"
-                          min="1"
-                          class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                          :class="bulkBienTheErrors.giaBan ? 'border-red-400' : 'border-gray-200'"
-                        />
-                        <p v-if="bulkBienTheErrors.giaBan" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.giaBan }}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      @click="generateBulkBienThes"
-                      class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      Tạo CTSP tự động
-                    </button>
-                  </div>
-                </section>
-
-                <section class="rounded-2xl border border-slate-100 bg-white p-4">
-                  <div class="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <h3 class="text-sm font-bold text-slate-800">Danh sách CTSP sẽ tạo</h3>
-                      <p class="mt-1 text-xs text-slate-400">Bạn có thể chỉnh từng dòng trước khi lưu.</p>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                      {{ generatedBulkBienThes.length }} CTSP
-                    </span>
-                  </div>
-
-                  <p v-if="bulkBienTheErrors.generated" class="mb-3 text-xs text-red-500">
-                    {{ bulkBienTheErrors.generated }}
-                  </p>
-
-                  <div v-if="generatedBulkBienThes.length" class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-                    <table class="min-w-full text-sm">
-                      <thead class="bg-slate-50 text-slate-500">
-                        <tr>
-                          <th class="px-3 py-2 text-left font-semibold">Màu sắc</th>
-                          <th class="px-3 py-2 text-left font-semibold">Kích cỡ</th>
-                          <th class="px-3 py-2 text-left font-semibold">Số lượng</th>
-                          <th class="px-3 py-2 text-left font-semibold">Giá gốc</th>
-                          <th class="px-3 py-2 text-left font-semibold">Giá bán</th>
-                          <th class="px-3 py-2 text-center font-semibold">Xóa</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr
-                          v-for="item in generatedBulkBienThes"
-                          :key="item.key"
-                          class="border-t border-slate-100"
-                        >
-                          <td class="px-3 py-2 text-slate-700">{{ item.mauSac }}</td>
-                          <td class="px-3 py-2 text-slate-700">Size {{ item.kichCo }}</td>
-                          <td class="px-3 py-2">
-                            <input
-                              v-model.number="item.soLuong"
-                              type="number"
-                              min="0"
-                              class="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                            />
-                          </td>
-                          <td class="px-3 py-2">
-                            <input
-                              v-model.number="item.giaGoc"
-                              type="number"
-                              min="0"
-                              class="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                            />
-                          </td>
-                          <td class="px-3 py-2">
-                            <input
-                              v-model.number="item.giaBan"
-                              type="number"
-                              min="1"
-                              class="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                            />
-                          </td>
-                          <td class="px-3 py-2 text-center">
-                            <button
-                              type="button"
-                              @click="removeGeneratedBulkBienThe(item.key)"
-                              class="inline-flex rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
-                            >
-                              <Trash2 :size="14" />
-                            </button>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div
-                    v-else
-                    class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400"
-                  >
-                    Chọn màu sắc, kích cỡ rồi bấm "Tạo CTSP tự động" để sinh danh sách biến thể.
-                  </div>
-                </section>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-            <button @click="closeBienTheForm" class="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50">
-              Hủy
-            </button>
-            <button
-              @click="handleSaveBienThe"
-              :disabled="savingBienThe"
-              class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:opacity-60"
-            >
-              {{ savingBienThe ? 'Đang lưu...' : (editingBienThe ? 'Lưu CTSP' : 'Lưu danh sách CTSP') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
-      <div
-        v-if="showHinhAnhModal"
-        class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
-        @click.self="closeHinhAnhModal"
-      >
-        <div class="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl">
-          <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-            <h2 class="text-lg font-semibold text-gray-800">
-              Ảnh biến thể - {{ hinhAnhBienThe?.mauSac }} / {{ hinhAnhBienThe?.kichCo }}
-            </h2>
-            <button @click="closeHinhAnhModal" class="rounded-lg p-1.5 hover:bg-gray-100">
-              <X :size="18" />
-            </button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto p-6">
-            <div v-if="loadingHinhAnh" class="py-8 text-center text-gray-400">Đang tải hình ảnh...</div>
-            <div v-else>
-              <div v-if="hinhAnhList.length > 0" class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div
-                  v-for="item in hinhAnhList"
-                  :key="item.id"
-                  class="group relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50"
-                >
-                  <div class="aspect-square">
-                    <img :src="item.url" :alt="item.moTa || ''" class="h-full w-full object-cover" />
-                  </div>
-                  <div
-                    v-if="item.laHinhChinh"
-                    class="absolute left-2 top-2 rounded bg-yellow-400 px-2 py-0.5 text-xs font-medium text-yellow-900"
-                  >
-                    Ảnh chính
-                  </div>
-                  <div class="absolute inset-0 flex items-end justify-center gap-1 bg-black/0 pb-2 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
-                    <button
-                      v-if="!item.laHinhChinh"
-                      @click="handleDatHinhChinh(item.id)"
-                      :disabled="settingHinhChinhId === item.id"
-                      class="rounded bg-yellow-400 px-2 py-1 text-xs font-medium text-yellow-900 disabled:opacity-60"
-                    >
-                      {{ settingHinhChinhId === item.id ? '...' : 'Đặt chính' }}
-                    </button>
-                    <button
-                      @click="handleDeleteHinhAnh(item.id)"
-                      :disabled="deletingHinhAnhId === item.id"
-                      class="rounded bg-red-500 p-1 text-white disabled:opacity-60"
-                    >
-                      <Trash2 :size="12" />
-                    </button>
-                  </div>
-                  <p v-if="item.moTa" class="truncate border-t border-gray-100 px-2 py-1 text-xs text-gray-500">
-                    {{ item.moTa }}
-                  </p>
-                </div>
-              </div>
-              <p v-else class="py-6 text-center text-sm text-gray-400">Chưa có hình ảnh nào</p>
-
-              <div v-if="showAddHinhAnhForm" class="rounded-xl border border-rose-100 bg-rose-50 p-4">
-                <p class="mb-3 text-sm font-semibold text-rose-700">Thêm hình ảnh</p>
-                <div class="space-y-3">
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Tải ảnh từ máy</label>
-                    <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-rose-200 bg-white px-4 py-3 text-sm font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50">
-                      <Upload :size="15" />
-                      {{ uploadingHinhAnhFile ? 'Đang tải ảnh...' : 'Chọn ảnh để upload' }}
-                      <input type="file" accept="image/*" class="hidden" @change="handleUploadHinhAnhFile" />
-                    </label>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">URL ảnh *</label>
-                    <input
-                      v-model="hinhAnhForm.url"
-                      type="url"
-                      placeholder="https://..."
-                      class="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      :class="hinhAnhErrors.url ? 'border-red-400' : 'border-gray-200'"
-                    />
-                    <p v-if="hinhAnhErrors.url" class="mt-1 text-xs text-red-500">{{ hinhAnhErrors.url }}</p>
-                  </div>
-
-                  <div v-if="hinhAnhForm.url" class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                    <div class="aspect-[4/3]">
-                      <img :src="hinhAnhForm.url" alt="" class="h-full w-full object-cover" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Loại hình</label>
-                    <select
-                      v-model.number="hinhAnhForm.loaiHinh"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="1">Đặt làm ảnh chính</option>
-                      <option :value="2">Ảnh phụ</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-700">Mô tả</label>
-                    <input
-                      v-model="hinhAnhForm.moTa"
-                      type="text"
-                      placeholder="Mô tả hình ảnh..."
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    />
-                  </div>
-                </div>
-
-                <div class="mt-3 flex gap-2">
-                  <button
-                    @click="showAddHinhAnhForm = false"
-                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    @click="handleSaveHinhAnh"
-                    :disabled="savingHinhAnh"
-                    class="rounded-lg bg-rose-500 px-3 py-1.5 text-sm text-white hover:bg-rose-600 disabled:opacity-60"
-                  >
-                    {{ savingHinhAnh ? 'Đang lưu...' : 'Thêm ảnh' }}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                v-if="!showAddHinhAnhForm"
-                @click="openAddHinhAnhForm"
-                class="mt-2 flex items-center gap-1.5 text-sm font-medium text-rose-600 hover:text-rose-700"
-              >
-                <Plus :size="14" />
-                Thêm hình ảnh
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <QuanLySanPhamHinhAnhModal
+      :open="showHinhAnhModal"
+      :variant="hinhAnhBienThe"
+      @close="closeHinhAnhModal"
+      @updated="handleHinhAnhUpdated"
+      @error="handleHinhAnhError"
+    />
   </div>
 </template>
 
