@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  ChevronLeft, ChevronRight, Edit, Filter, Plus, RefreshCw, Search, Ticket, Trash2, UserSearch
+  Edit, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2, UserSearch
 } from "lucide-vue-next";
 import {
   createPhieuGiamGia,
@@ -17,6 +17,9 @@ import {
   deletePhieuGiamGiaKhachHang,
   getEmailSuggestions
 } from "../../../services/khuyen-mai";
+import { layChiTietKhachHang } from "../../../services/khach-hang";
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import { exportRowsToExcel } from "../../../utils/export-excel";
 
 const tabs = [
   { key: "phieu", label: "Phiếu giảm giá" },
@@ -54,7 +57,7 @@ const phieuOptions = ref([]);
 const emailOptions = ref([]);
 
 const khForm = reactive({
-  id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1"
+  id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1", ngayTao: ""
 });
 
 const formErrors = reactive({});
@@ -82,6 +85,11 @@ function toDisplayDate(value) {
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeDateInput(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
 }
 
 function resetErrors() {
@@ -174,6 +182,76 @@ function lamMoiBoLoc() {
     boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" };
   } else {
     boLocKh.value = { keyword: "", trangThai: "" };
+  }
+}
+
+async function xuatExcel() {
+  try {
+    if (activeTab.value === "phieu") {
+      const data = await getPhieuGiamGiaList({
+        keyword: boLoc.value.keyword || undefined,
+        trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
+        loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+        tuNgay: boLoc.value.tuNgay || undefined,
+        denNgay: boLoc.value.denNgay || undefined,
+        pageNo: 0,
+        pageSize: Math.max(totalItems.value || 0, soPhanTuMotTrang.value, 1),
+      });
+
+      const rows = data?.content || [];
+      if (!rows.length) {
+        window.alert("Không có dữ liệu để xuất Excel.");
+        return;
+      }
+
+      exportRowsToExcel({
+        filename: "quan-ly-phieu-giam-gia",
+        sheetName: "PhieuGiamGia",
+        columns: [
+          { label: "STT", value: (_, index) => index + 1 },
+          { label: "Mã", key: "ma" },
+          { label: "Tên", key: "ten" },
+          { label: "Loại giảm", value: (row) => Number(row.loai) === 1 ? "Phần trăm" : "Tiền mặt" },
+          { label: "Giá trị", key: "giaTri" },
+          { label: "Số lượng", key: "soLuong" },
+          { label: "Ngày bắt đầu", value: (row) => toDisplayDate(row.ngayBatDau) },
+          { label: "Ngày kết thúc", value: (row) => toDisplayDate(row.ngayKetThuc) },
+          { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+        ],
+        rows,
+      });
+      return;
+    }
+
+    const data = await getPhieuGiamGiaKhachHangList({
+      keyword: boLocKh.value.keyword || undefined,
+      trangThai: boLocKh.value.trangThai !== "" ? Number(boLocKh.value.trangThai) : undefined,
+      pageNo: 0,
+      pageSize: Math.max(totalItemsKh.value || 0, soPhanTuMotTrangKh.value, 1),
+    });
+
+    const rows = data?.content || [];
+    if (!rows.length) {
+      window.alert("Không có dữ liệu để xuất Excel.");
+      return;
+    }
+
+    exportRowsToExcel({
+      filename: "quan-ly-phieu-khach-hang",
+      sheetName: "PhieuKhachHang",
+      columns: [
+        { label: "STT", value: (_, index) => index + 1 },
+        { label: "Mã phiếu", key: "maPhieuGiamGia" },
+        { label: "Tên phiếu", key: "tenPhieuGiamGia" },
+        { label: "Khách hàng", value: (row) => row.tenKhachHang || "—" },
+        { label: "Ngày tạo", value: (row) => toDisplayDate(row.ngayTao) },
+        { label: "Ngày sử dụng", value: (row) => row.ngaySuDung ? toDisplayDate(row.ngaySuDung) : "—" },
+        { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+      ],
+      rows,
+    });
+  } catch (error) {
+    window.alert(error?.message || "Xuất Excel thất bại.");
   }
 }
 
@@ -277,53 +355,63 @@ onMounted(taiDanhSach);
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2">
-        <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
-          <div class="relative">
-            <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              v-model="(activeTab === 'phieu' ? boLoc : boLocKh).keyword"
-              type="text"
-              :placeholder="activeTab === 'phieu' ? 'Nhập mã hoặc tên phiếu...' : 'Mã phiếu, tên KH...'"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-            />
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div class="min-w-0 flex-1">
+            <div class="relative max-w-3xl">
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                v-model="(activeTab === 'phieu' ? boLoc : boLocKh).keyword"
+                type="text"
+                :placeholder="activeTab === 'phieu' ? 'Nhập mã hoặc tên phiếu...' : 'Mã phiếu, tên KH...'"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              />
+            </div>
           </div>
-        </label>
 
-        <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
-          <select v-model="(activeTab === 'phieu' ? boLoc : boLocKh).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-            <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
-          </select>
-        </label>
+          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
+            </button>
+            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+            </button>
+            <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
+              <Plus class="h-4 w-4" /> Thêm mới
+            </button>
+          </div>
+        </div>
 
-        <template v-if="activeTab === 'phieu'">
+        <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-4">
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
-            <select v-model="boLoc.loai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-              <option value="">Tất cả</option>
-              <option value="1">Phần trăm</option>
-              <option value="2">Tiền mặt</option>
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+            <select v-model="(activeTab === 'phieu' ? boLoc : boLocKh).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
             </select>
           </label>
 
-          <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Từ ngày</span>
-            <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-          </label>
+          <template v-if="activeTab === 'phieu'">
+            <label class="space-y-2">
+              <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
+              <select v-model="boLoc.loai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+                <option value="">Tất cả</option>
+                <option value="1">Phần trăm</option>
+                <option value="2">Tiền mặt</option>
+              </select>
+            </label>
 
-          <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Đến ngày</span>
-            <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-          </label>
-        </template>
+            <div class="grid gap-4 md:col-span-2 md:grid-cols-2 xl:col-span-2">
+              <label class="space-y-2">
+                <span class="mb-1 text-[13px] font-semibold text-slate-500">Từ ngày</span>
+                <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              </label>
 
-        <div class="col-span-full flex items-end justify-end gap-3 pt-2">
-          <button @click="lamMoiBoLoc" class="h-11 rounded-2xl bg-slate-400 px-5 text-sm font-semibold text-white transition hover:bg-slate-500">Làm mới</button>
-          <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
-            <Plus class="h-4 w-4" /> Thêm mới
-          </button>
+              <label class="space-y-2">
+                <span class="mb-1 text-[13px] font-semibold text-slate-500">Đến ngày</span>
+                <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              </label>
+            </div>
+          </template>
         </div>
       </div>
     </section>
@@ -438,47 +526,32 @@ onMounted(taiDanhSach);
         </table>
       </div>
 
-      <!-- Phân trang -->
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <div class="flex items-center gap-2 text-slate-500">
-          Xem
-          <select v-if="activeTab === 'phieu'" v-model.number="soPhanTuMotTrang" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
-          <select v-else v-model.number="soPhanTuMotTrangKh" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
-          bản ghi
-        </div>
-        <div class="flex items-center gap-2">
-          <button @click="activeTab === 'phieu' ? taiDanhSach() : taiDanhSachKh()" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200" title="Làm mới">
-            <RefreshCw class="h-4 w-4" />
-          </button>
-          <div class="flex items-center gap-1 ml-2">
-            <button
-              @click="activeTab === 'phieu' ? (trangHienTai = Math.max(1, trangHienTai - 1)) : (trangHienTaiKh = Math.max(1, trangHienTaiKh - 1))"
-              :disabled="(activeTab === 'phieu' ? trangHienTai : trangHienTaiKh) === 1"
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40"
-            ><ChevronLeft class="h-4 w-4" /></button>
-            <button
-              v-for="page in (activeTab === 'phieu' ? tongSoTrang : tongSoTrangKh)"
-              :key="page"
-              @click="activeTab === 'phieu' ? (trangHienTai = page) : (trangHienTaiKh = page)"
-              class="flex h-8 w-8 items-center justify-center rounded-lg transition"
-              :class="(activeTab === 'phieu' ? trangHienTai : trangHienTaiKh) === page ? 'border border-rose-200 bg-rose-50 text-rose-600 font-bold' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
-            >{{ page }}</button>
-            <button
-              @click="activeTab === 'phieu' ? (trangHienTai = Math.min(tongSoTrang, trangHienTai + 1)) : (trangHienTaiKh = Math.min(tongSoTrangKh, trangHienTaiKh + 1))"
-              :disabled="(activeTab === 'phieu' ? trangHienTai : trangHienTaiKh) === (activeTab === 'phieu' ? tongSoTrang : tongSoTrangKh)"
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40"
-            ><ChevronRight class="h-4 w-4" /></button>
-          </div>
-        </div>
-      </div>
+      <AdminTableFooter
+        v-if="activeTab === 'phieu'"
+        :current-page="trangHienTai"
+        :page-size="soPhanTuMotTrang"
+        :page-size-options="[5, 10, 20]"
+        :total-items="totalItems"
+        :total-pages="tongSoTrang"
+        compact
+        show-refresh
+        @refresh="taiDanhSach"
+        @update:current-page="trangHienTai = $event"
+        @update:page-size="soPhanTuMotTrang = $event"
+      />
+      <AdminTableFooter
+        v-else
+        :current-page="trangHienTaiKh"
+        :page-size="soPhanTuMotTrangKh"
+        :page-size-options="[5, 10, 20]"
+        :total-items="totalItemsKh"
+        :total-pages="tongSoTrangKh"
+        compact
+        show-refresh
+        @refresh="taiDanhSachKh"
+        @update:current-page="trangHienTaiKh = $event"
+        @update:page-size="soPhanTuMotTrangKh = $event"
+      />
     </section>
 
     <!-- Modal Form Thêm/Sửa -->

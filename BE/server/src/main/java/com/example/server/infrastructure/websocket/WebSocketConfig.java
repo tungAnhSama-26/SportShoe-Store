@@ -29,19 +29,26 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        String[] allowedOrigins = resolveAllowedOrigins();
+        String[] allowedOriginPatterns = resolveAllowedOriginPatterns();
         registry.addEndpoint(appProperties.websocket().endpoint())
-                .setAllowedOrigins(allowedOrigins);
+                .setAllowedOriginPatterns(allowedOriginPatterns);
         registry.addEndpoint(appProperties.websocket().endpoint())
-                .setAllowedOrigins(allowedOrigins)
+                .setAllowedOriginPatterns(allowedOriginPatterns)
                 .withSockJS();
     }
 
-    private String[] resolveAllowedOrigins() {
+    private String[] resolveAllowedOriginPatterns() {
         List<String> websocketOrigins = appProperties.websocket().allowedOrigins();
         if (websocketOrigins != null && !websocketOrigins.isEmpty()) {
             return websocketOrigins.toArray(String[]::new);
         }
-        return appProperties.cors().allowedOrigins().toArray(String[]::new);
+        List<String> corsOrigins = appProperties.cors().allowedOrigins();
+        if (corsOrigins != null && !corsOrigins.isEmpty()) {
+            return corsOrigins.toArray(String[]::new);
+        }
+        return new String[]{
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+        };
     }
 }

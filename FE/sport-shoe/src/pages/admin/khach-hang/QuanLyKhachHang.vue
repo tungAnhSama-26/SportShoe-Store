@@ -2,9 +2,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  ChevronLeft, ChevronRight, Eye, Filter, Plus, RefreshCw, Search, Users
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Users
 } from "lucide-vue-next";
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import { exportRowsToExcel } from "../../../utils/export-excel";
 
 const router = useRouter();
 
@@ -33,6 +35,7 @@ function dinhDangNgay(ngay: string) {
 // Phân trang
 const soPhanTuMotTrang = ref(5);
 const trangHienTai = ref(1);
+const pageSizeOptions = [5, 10, 20];
 const tongSoTrang = computed(() => Math.ceil(danhSach.value.length / soPhanTuMotTrang.value) || 1);
 const danhSachPhanTrang = computed(() => {
   const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
@@ -70,6 +73,29 @@ function themMoi() {
   router.push({ name: "admin-khach-hang-them" });
 }
 
+function xuatExcel() {
+  if (!danhSach.value.length) {
+    window.alert("Không có dữ liệu để xuất Excel.");
+    return;
+  }
+
+  exportRowsToExcel({
+    filename: "quan-ly-khach-hang",
+    sheetName: "KhachHang",
+    columns: [
+      { label: "STT", value: (_, index) => index + 1 },
+      { label: "Tên đăng nhập", key: "tenDangNhap" },
+      { label: "Họ tên", key: "hoTen" },
+      { label: "Email", value: (row) => row.email || "—" },
+      { label: "Số điện thoại", value: (row) => row.sdt || "—" },
+      { label: "Ngày sinh", value: (row) => row.ngaySinh || "—" },
+      { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
+      { label: "Trạng thái", value: (row) => row.tenTrangThai || "—" },
+    ],
+    rows: danhSach.value,
+  });
+}
+
 // Debounce search
 let timer: ReturnType<typeof setTimeout>;
 watch(() => boLoc.value, () => {
@@ -95,36 +121,43 @@ onMounted(taiDanhSach);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
-          <p class="text-sm text-slate-400">Lọc theo từ khóa và trạng thái.</p>
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[2fr_1fr_auto]">
-        <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
-          <div class="relative">
-            <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              v-model="boLoc.keyword"
-              type="text"
-              placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-            />
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div class="min-w-0 flex-1">
+            <div class="relative max-w-3xl">
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                v-model="boLoc.keyword"
+                type="text"
+                placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              />
+            </div>
           </div>
-        </label>
 
-        <label class="space-y-2">
-          <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
-          <select v-model="boLoc.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-            <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
-          </select>
-        </label>
+          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+            <button @click="lamMoiBoLoc" class="admin-btn-soft">
+              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
+            </button>
+            <button @click="xuatExcel" class="admin-btn-soft">
+              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+            </button>
+            <button @click="themMoi" class="admin-btn-primary">
+              <Plus class="h-4 w-4" /> Thêm khách hàng
+            </button>
+          </div>
+        </div>
 
-        <div class="flex items-end gap-3">
-          <button @click="lamMoiBoLoc" class="h-11 rounded-2xl bg-slate-400 px-5 text-sm font-semibold text-white transition hover:bg-slate-500">Làm mới</button>
-          <button @click="themMoi" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
-            <Plus class="h-4 w-4" /> Thêm khách hàng
-          </button>
+        <div class="grid gap-4 md:max-w-sm">
+          <label class="space-y-2">
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+            <select v-model="boLoc.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
+            </select>
+          </label>
         </div>
       </div>
     </section>
@@ -137,7 +170,6 @@ onMounted(taiDanhSach);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Danh sách khách hàng</h2>
-          <p class="text-sm text-slate-400">{{ danhSach.length }} khách hàng trong phạm vi bộ lọc hiện tại.</p>
         </div>
       </div>
 
@@ -205,46 +237,18 @@ onMounted(taiDanhSach);
         </table>
       </div>
 
-      <!-- Phân trang -->
-      <div class="mt-5 flex items-center justify-between gap-2 text-sm">
-        <div class="flex items-center gap-2 text-slate-500">
-          Xem
-          <select v-model.number="soPhanTuMotTrang" class="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 outline-none focus:border-rose-300 transition">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
-          khách hàng
-        </div>
-        <div class="flex items-center gap-2">
-          <button @click="taiDanhSach" class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200" title="Làm mới">
-            <RefreshCw class="h-4 w-4" />
-          </button>
-          <div class="flex items-center gap-1 ml-2">
-            <button
-              @click="trangHienTai = Math.max(1, trangHienTai - 1)"
-              :disabled="trangHienTai === 1"
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40"
-            >
-              <ChevronLeft class="h-4 w-4" />
-            </button>
-            <button
-              v-for="page in tongSoTrang"
-              :key="page"
-              @click="trangHienTai = page"
-              class="flex h-8 w-8 items-center justify-center rounded-lg transition"
-              :class="trangHienTai === page ? 'border border-violet-200 bg-violet-50 text-violet-600 font-bold' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
-            >{{ page }}</button>
-            <button
-              @click="trangHienTai = Math.min(tongSoTrang, trangHienTai + 1)"
-              :disabled="trangHienTai === tongSoTrang"
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-40"
-            >
-              <ChevronRight class="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <AdminTableFooter
+        :current-page="trangHienTai"
+        :page-size="soPhanTuMotTrang"
+        :page-size-options="pageSizeOptions"
+        :total-items="danhSach.length"
+        :total-pages="tongSoTrang"
+        compact
+        show-refresh
+        @refresh="taiDanhSach"
+        @update:current-page="trangHienTai = $event"
+        @update:page-size="soPhanTuMotTrang = $event"
+      />
     </section>
   </div>
 </template>

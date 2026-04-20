@@ -8,8 +8,11 @@ import AdminLayout from "../layouts/admin/AdminLayout.vue";
 import ThongKe from "../pages/admin/thong-ke/ThongKe.vue";
 import PhieuGiamGia from "../pages/admin/khuyen-mai/PhieuGiamGia.vue";
 import HoaDon from "../pages/admin/hoa-don/HoaDon.vue";
+import ChiTietHoaDon from "../pages/admin/hoa-don/ChiTietHoaDon.vue";
 import BanHangTaiQuay from "../pages/admin/ban-hang/BanHangTaiQuay.vue";
-import QuanLySanPham from "../pages/admin/san-pham/QuanLySanPham.vue";
+import DanhSachSanPham from "../pages/admin/san-pham/DanhSachSanPham.vue";
+import DanhSachChiTietSanPham from "../pages/admin/san-pham/DanhSachChiTietSanPham.vue";
+import ChiTietSanPhamForm from "../pages/admin/san-pham/ChiTietSanPhamForm.vue";
 import DotGiamGia from "../pages/admin/khuyen-mai/DotGiamGia.vue";
 import QuanLyNhanVien from "../pages/admin/nhan-vien/QuanLyNhanVien.vue";
 import ChiTietNhanVien from "../pages/admin/nhan-vien/ChiTietNhanVien.vue";
@@ -98,6 +101,11 @@ const router = createRouter({
           component: HoaDon
         },
         {
+          path: "hoa-don/:id",
+          name: "admin-hoa-don-chi-tiet",
+          component: ChiTietHoaDon
+        },
+        {
           path: "ban-hang",
           name: "admin-ban-hang",
           component: BanHangTaiQuay
@@ -105,7 +113,17 @@ const router = createRouter({
         {
           path: "san-pham",
           name: "admin-san-pham",
-          component: QuanLySanPham
+          component: DanhSachSanPham
+        },
+        {
+          path: "bien-the-san-pham",
+          name: "admin-bien-the-san-pham",
+          component: DanhSachChiTietSanPham
+        },
+        {
+          path: "chi-tiet-san-pham/new",
+          name: "admin-chi-tiet-san-pham-new",
+          component: ChiTietSanPhamForm
         },
         { path: "loai-giay", name: "admin-loai-giay", component: LoaiGiay },
         { path: "co-giay", name: "admin-co-giay", component: CoGiay },
