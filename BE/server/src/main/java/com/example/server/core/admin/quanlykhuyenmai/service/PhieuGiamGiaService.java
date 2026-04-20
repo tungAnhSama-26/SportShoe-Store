@@ -66,9 +66,15 @@ public class PhieuGiamGiaService {
         phieuGiamGia.setNgayBatDau(toInstant(request.getNgayBatDau()));
         phieuGiamGia.setNgayKetThuc(toInstant(request.getNgayKetThuc()));
         phieuGiamGia.setSoLuong(request.getSoLuong());
-        phieuGiamGia.setSoLuongDaDung(request.getSoLuongDaDung());
-        phieuGiamGia.setTrangThai(request.getTrangThai());
-        phieuGiamGia.setNgayTao(toInstant(request.getNgayTao()));
+        
+        // Handle defaults for NotNull fields to prevent validation errors
+        phieuGiamGia.setSoLuongDaDung(request.getSoLuongDaDung() == null ? 0 : request.getSoLuongDaDung());
+        phieuGiamGia.setTrangThai(request.getTrangThai() == null ? 1 : request.getTrangThai());
+        
+        if (phieuGiamGia.getNgayTao() == null) {
+            phieuGiamGia.setNgayTao(request.getNgayTao() == null ? Instant.now() : toInstant(request.getNgayTao()));
+        }
+        
         phieuGiamGia.setNgayCapNhat(toInstant(request.getNgayCapNhat()));
     }
 
