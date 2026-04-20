@@ -40,4 +40,10 @@ public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSan
     JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
 """)
     Page<QuanLyDotGiamGiaSanPhamResponse> phanTrangQuanLyDotGiamGiaSanPham(Pageable pageable);
+
+    @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia WHERE d.giay.id = ?1 AND d.trangThai = 1 AND d.dotGiamGia.kichHoat = 1")
+    List<DotGiamGiaSanPham> findActiveByGiayId(Integer giayId);
+
+    @Query("SELECT d FROM DotGiamGiaSanPham d WHERE d.dotGiamGia.id = ?1")
+    List<DotGiamGiaSanPham> findByDotGiamGiaId(Integer dotGiamGiaId);
 }

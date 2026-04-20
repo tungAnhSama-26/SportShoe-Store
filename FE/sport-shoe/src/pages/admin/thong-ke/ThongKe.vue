@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import {
   BarChart3,
   Calendar,
@@ -23,6 +23,7 @@ import {
   Tooltip
 } from "chart.js";
 import { Bar, Pie } from "vue-chartjs";
+import AppPagination from "../../../components/common/AppPagination.vue";
 import { layDashboardThongKe } from "../../../services/thong-ke";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
@@ -46,6 +47,29 @@ const PIE_COLORS = [
   "#14b8a6"
 ];
 
+const PRODUCT_STOCK_OPTIONS = [
+  { value: "ALL", label: "Tất cả tồn kho" },
+  { value: "IN_STOCK", label: "Còn hàng" },
+  { value: "LOW_STOCK", label: "Sắp hết" },
+  { value: "OUT_OF_STOCK", label: "Hết hàng" }
+];
+
+const PRODUCT_SORT_OPTIONS = [
+  { value: "BEST_SELLER", label: "Bán chạy nhất" },
+  { value: "REVENUE_DESC", label: "Doanh thu cao nhất" },
+  { value: "STOCK_ASC", label: "Tồn kho thấp nhất" },
+  { value: "NAME_ASC", label: "Tên A - Z" }
+];
+
+const EMPLOYEE_SORT_OPTIONS = [
+  { value: "REVENUE_DESC", label: "Doanh thu cao nhất" },
+  { value: "ORDER_DESC", label: "Nhiều đơn nhất" },
+  { value: "QUANTITY_DESC", label: "Bán nhiều sản phẩm nhất" },
+  { value: "NAME_ASC", label: "Tên A - Z" }
+];
+
+const PRODUCT_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+
 const EMPTY_DASHBOARD = () => ({
   boLoc: {
     kyThongKe: "DAY",
@@ -63,13 +87,23 @@ const EMPTY_DASHBOARD = () => ({
   thuongHieus: [],
   bieuDoBanHang: [],
   bieuDoThuongHieu: [],
-  sanPhams: []
+  sanPhams: [],
+  nhanViens: []
 });
 
 const dashboard = ref(EMPTY_DASHBOARD());
 const isLoading = ref(false);
 const errorMessage = ref("");
 const filters = reactive(createDefaultFilters());
+const fromDatePickerRef = ref(null);
+const toDatePickerRef = ref(null);
+const productFilters = reactive(createDefaultProductFilters());
+const productCurrentPage = ref(1);
+const employeeFilters = reactive(createDefaultEmployeeFilters());
+const employeeCurrentPage = ref(1);
+let dashboardFilterTimer;
+let dashboardRequestController;
+let latestDashboardRequestId = 0;
 
 const periodLabel = computed(() => {
   switch (filters.periodType) {
@@ -113,8 +147,10 @@ const summaryCards = computed(() => [
   }
 ]);
 
+const salesLabels = computed(() => dashboard.value.bieuDoBanHang.map((item) => item.nhan));
+
 const salesChartData = computed(() => ({
-  labels: dashboard.value.bieuDoBanHang.map((item) => item.nhan),
+  labels: salesLabels.value,
   datasets: [
     {
       label: "Sản phẩm bán được",
@@ -157,13 +193,18 @@ const salesChartOptions = computed(() => ({
       }
     },
     x: {
+      offset: true,
       grid: {
         display: false
       },
       ticks: {
         color: "#64748b",
         maxRotation: 0,
-        autoSkip: true
+        autoSkip: false,
+        padding: 8,
+        callback(value, index) {
+          return shouldShowSalesTick(index, salesLabels.value.length) ? salesLabels.value[index] : "";
+        }
       }
     }
   }
@@ -211,8 +252,88 @@ const brandChartOptions = computed(() => ({
 const topBrands = computed(() => dashboard.value.bieuDoThuongHieu.slice(0, 5));
 const hasSalesData = computed(() => dashboard.value.bieuDoBanHang.some((item) => (item.soLuongBan ?? 0) > 0));
 const hasBrandData = computed(() => dashboard.value.bieuDoThuongHieu.length > 0);
+const filteredProducts = computed(() => {
+  const keyword = productFilters.keyword.trim().toLowerCase();
 
+  const matchedProducts = dashboard.value.sanPhams.filter((product) => {
+    if (keyword) {
+      const searchableValue = [product.maSanPham, product.tenSanPham, product.thuongHieu]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (!searchableValue.includes(keyword)) {
+        return false;
+      }
+    }
+
+    const tonKho = Number(product.tonKho ?? 0);
+    switch (productFilters.stockStatus) {
+      case "OUT_OF_STOCK":
+        return tonKho <= 0;
+      case "LOW_STOCK":
+        return tonKho > 0 && tonKho <= 10;
+      case "IN_STOCK":
+        return tonKho > 0;
+      default:
+        return true;
+    }
+  });
+
+  return [...matchedProducts].sort((left, right) => sortProducts(left, right, productFilters.sortBy));
+});
+const productTotalPages = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / productFilters.pageSize)));
+const paginatedProducts = computed(() => {
+  const start = (productCurrentPage.value - 1) * productFilters.pageSize;
+  return filteredProducts.value.slice(start, start + productFilters.pageSize);
+});
+const productCountLabel = computed(() => {
+  if (filteredProducts.value.length === dashboard.value.sanPhams.length) {
+    return `${formatNumber(filteredProducts.value.length)} sản phẩm`;
+  }
+
+  return `${formatNumber(filteredProducts.value.length)}/${formatNumber(dashboard.value.sanPhams.length)} sản phẩm`;
+});
+
+const filteredEmployees = computed(() => {
+  const keyword = employeeFilters.keyword.trim().toLowerCase();
+
+  const matchedEmployees = dashboard.value.nhanViens.filter((employee) => {
+    if (!keyword) {
+      return true;
+    }
+
+    const searchableValue = [employee.maNhanVien, employee.tenNhanVien]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableValue.includes(keyword);
+  });
+
+  return [...matchedEmployees].sort((left, right) => sortEmployees(left, right, employeeFilters.sortBy));
+});
+const employeeTotalPages = computed(() => Math.max(1, Math.ceil(filteredEmployees.value.length / employeeFilters.pageSize)));
+const paginatedEmployees = computed(() => {
+  const start = (employeeCurrentPage.value - 1) * employeeFilters.pageSize;
+  return filteredEmployees.value.slice(start, start + employeeFilters.pageSize);
+});
+const employeeCountLabel = computed(() => {
+  if (filteredEmployees.value.length === dashboard.value.nhanViens.length) {
+    return `${formatNumber(filteredEmployees.value.length)} nhân viên`;
+  }
+
+  return `${formatNumber(filteredEmployees.value.length)}/${formatNumber(dashboard.value.nhanViens.length)} nhân viên`;
+});
 async function fetchDashboard() {
+  if (dashboardFilterTimer) {
+    window.clearTimeout(dashboardFilterTimer);
+    dashboardFilterTimer = undefined;
+  }
+
+  dashboardRequestController?.abort();
+  const requestId = ++latestDashboardRequestId;
+  dashboardRequestController = new AbortController();
   isLoading.value = true;
   errorMessage.value = "";
 
@@ -223,15 +344,27 @@ async function fetchDashboard() {
       brandId: filters.brandId,
       keyword: filters.keyword,
       periodType: filters.periodType
+    }, {
+      signal: dashboardRequestController.signal
     });
+
+    if (requestId !== latestDashboardRequestId) {
+      return;
+    }
 
     dashboard.value = normalizeDashboard(data);
     syncFiltersFromServer(data.boLoc);
   } catch (error) {
+    if (error?.name === "AbortError" || requestId !== latestDashboardRequestId) {
+      return;
+    }
     dashboard.value = EMPTY_DASHBOARD();
     errorMessage.value = error.message || "Không thể tải dữ liệu thống kê.";
   } finally {
-    isLoading.value = false;
+    if (requestId === latestDashboardRequestId) {
+      isLoading.value = false;
+      dashboardRequestController = undefined;
+    }
   }
 }
 
@@ -241,6 +374,8 @@ function onApplyFilters() {
 
 function onResetFilters() {
   Object.assign(filters, createDefaultFilters());
+  resetProductFilters();
+  resetEmployeeFilters();
   fetchDashboard();
 }
 
@@ -248,6 +383,26 @@ function onPeriodTypeChange() {
   const nextDefaults = createDefaultFilters(filters.periodType);
   filters.fromDate = nextDefaults.fromDate;
   filters.toDate = nextDefaults.toDate;
+  scheduleDashboardFetch();
+}
+
+function openDatePicker(field) {
+  const input = field === "fromDate" ? fromDatePickerRef.value : toDatePickerRef.value;
+  if (!input) {
+    return;
+  }
+
+  if (typeof input.showPicker === "function") {
+    input.showPicker();
+    return;
+  }
+
+  input.click();
+}
+
+function handleDateChange() {
+  errorMessage.value = "";
+  scheduleDashboardFetch();
 }
 
 function syncFiltersFromServer(serverFilters) {
@@ -274,7 +429,8 @@ function normalizeDashboard(data) {
     thuongHieus: Array.isArray(data?.thuongHieus) ? data.thuongHieus : [],
     bieuDoBanHang: Array.isArray(data?.bieuDoBanHang) ? data.bieuDoBanHang : [],
     bieuDoThuongHieu: Array.isArray(data?.bieuDoThuongHieu) ? data.bieuDoThuongHieu : [],
-    sanPhams: Array.isArray(data?.sanPhams) ? data.sanPhams : []
+    sanPhams: Array.isArray(data?.sanPhams) ? data.sanPhams : [],
+    nhanViens: Array.isArray(data?.nhanViens) ? data.nhanViens : []
   };
 }
 
@@ -292,6 +448,43 @@ function createDefaultFilters(periodType = "DAY") {
   };
 }
 
+function createDefaultProductFilters() {
+  return {
+    keyword: "",
+    stockStatus: "ALL",
+    sortBy: "BEST_SELLER",
+    pageSize: 10
+  };
+}
+
+function createDefaultEmployeeFilters() {
+  return {
+    keyword: "",
+    sortBy: "REVENUE_DESC",
+    pageSize: 10
+  };
+}
+
+function resetProductFilters() {
+  Object.assign(productFilters, createDefaultProductFilters());
+  productCurrentPage.value = 1;
+}
+
+function resetEmployeeFilters() {
+  Object.assign(employeeFilters, createDefaultEmployeeFilters());
+  employeeCurrentPage.value = 1;
+}
+
+function scheduleDashboardFetch() {
+  if (dashboardFilterTimer) {
+    window.clearTimeout(dashboardFilterTimer);
+  }
+
+  dashboardFilterTimer = window.setTimeout(() => {
+    fetchDashboard();
+  }, 250);
+}
+
 function resolveDefaultFromDate(today, periodType) {
   const fromDate = new Date(today);
 
@@ -307,6 +500,15 @@ function resolveDefaultFromDate(today, periodType) {
 
   fromDate.setDate(1);
   return formatDateForInput(fromDate);
+}
+
+function formatDateForDisplay(value) {
+  const match = String(value ?? "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return "";
+  }
+
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
 function formatDateForInput(date) {
@@ -330,6 +532,68 @@ function formatNumber(value) {
   return new Intl.NumberFormat("vi-VN").format(amount);
 }
 
+function shouldShowSalesTick(index, total) {
+  if (index == null || total <= 0) {
+    return false;
+  }
+
+  if (total <= 6) {
+    return true;
+  }
+
+  const maxVisibleTicks = 6;
+  const visibleIndexes = new Set([0, total - 1]);
+
+  for (let step = 1; step < maxVisibleTicks - 1; step += 1) {
+    visibleIndexes.add(Math.round((step * (total - 1)) / (maxVisibleTicks - 1)));
+  }
+
+  return visibleIndexes.has(index);
+}
+
+function sortProducts(left, right, sortBy) {
+  switch (sortBy) {
+    case "REVENUE_DESC":
+      return Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
+        || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
+    case "STOCK_ASC":
+      return Number(left.tonKho ?? 0) - Number(right.tonKho ?? 0)
+        || Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
+        || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
+    case "NAME_ASC":
+      return String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi")
+        || String(left.maSanPham ?? "").localeCompare(String(right.maSanPham ?? ""), "vi");
+    default:
+      return Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
+        || Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
+  }
+}
+
+function sortEmployees(left, right, sortBy) {
+  switch (sortBy) {
+    case "ORDER_DESC":
+      return Number(right.tongDonHang ?? 0) - Number(left.tongDonHang ?? 0)
+        || Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.sanPhamDaBan ?? 0) - Number(left.sanPhamDaBan ?? 0)
+        || String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi");
+    case "QUANTITY_DESC":
+      return Number(right.sanPhamDaBan ?? 0) - Number(left.sanPhamDaBan ?? 0)
+        || Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.tongDonHang ?? 0) - Number(left.tongDonHang ?? 0)
+        || String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi");
+    case "NAME_ASC":
+      return String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi")
+        || String(left.maNhanVien ?? "").localeCompare(String(right.maNhanVien ?? ""), "vi");
+    default:
+      return Number(right.doanhThu ?? 0) - Number(left.doanhThu ?? 0)
+        || Number(right.tongDonHang ?? 0) - Number(left.tongDonHang ?? 0)
+        || Number(right.sanPhamDaBan ?? 0) - Number(left.sanPhamDaBan ?? 0)
+        || String(left.tenNhanVien ?? "").localeCompare(String(right.tenNhanVien ?? ""), "vi");
+  }
+}
+
 function rowBadgeClass(stock) {
   if (stock <= 0) {
     return "bg-red-50 text-red-600 border-red-100";
@@ -340,8 +604,58 @@ function rowBadgeClass(stock) {
   return "bg-emerald-50 text-emerald-700 border-emerald-100";
 }
 
+watch(
+  [
+    () => productFilters.keyword,
+    () => productFilters.stockStatus,
+    () => productFilters.sortBy,
+    () => productFilters.pageSize
+  ],
+  () => {
+    productCurrentPage.value = 1;
+  }
+);
+
+watch(
+  [
+    () => employeeFilters.keyword,
+    () => employeeFilters.sortBy,
+    () => employeeFilters.pageSize
+  ],
+  () => {
+    employeeCurrentPage.value = 1;
+  }
+);
+
+watch(productTotalPages, (nextTotalPages) => {
+  if (productCurrentPage.value > nextTotalPages) {
+    productCurrentPage.value = nextTotalPages;
+  }
+}, { immediate: true });
+
+watch(employeeTotalPages, (nextTotalPages) => {
+  if (employeeCurrentPage.value > nextTotalPages) {
+    employeeCurrentPage.value = nextTotalPages;
+  }
+}, { immediate: true });
+
+watch(() => dashboard.value.sanPhams, () => {
+  productCurrentPage.value = 1;
+});
+
+watch(() => dashboard.value.nhanViens, () => {
+  employeeCurrentPage.value = 1;
+});
+
 onMounted(() => {
   fetchDashboard();
+});
+
+onBeforeUnmount(() => {
+  if (dashboardFilterTimer) {
+    window.clearTimeout(dashboardFilterTimer);
+  }
+  dashboardRequestController?.abort();
 });
 </script>
 
@@ -363,29 +677,59 @@ onMounted(() => {
         <div class="space-y-2">
           <label class="text-xs font-medium text-slate-500">Từ ngày</label>
           <div class="relative">
-            <Calendar class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              ref="fromDatePickerRef"
               v-model="filters.fromDate"
               type="date"
-              class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              class="pointer-events-none absolute inset-0 opacity-0"
+              :max="filters.toDate || undefined"
+              tabindex="-1"
+              @change="handleDateChange"
             >
+            <button
+              type="button"
+              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+              @click="openDatePicker('fromDate')"
+            >
+              <span class="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                <Calendar class="h-4 w-4" />
+              </span>
+              <span class="text-sm font-medium">
+                {{ formatDateForDisplay(filters.fromDate) || "Chọn ngày" }}
+              </span>
+            </button>
           </div>
         </div>
 
         <div class="space-y-2">
           <label class="text-xs font-medium text-slate-500">Đến ngày</label>
           <div class="relative">
-            <Calendar class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              ref="toDatePickerRef"
               v-model="filters.toDate"
               type="date"
-              class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              class="pointer-events-none absolute inset-0 opacity-0"
+              :min="filters.fromDate || undefined"
+              tabindex="-1"
+              @change="handleDateChange"
             >
+            <button
+              type="button"
+              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+              @click="openDatePicker('toDate')"
+            >
+              <span class="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                <Calendar class="h-4 w-4" />
+              </span>
+              <span class="text-sm font-medium">
+                {{ formatDateForDisplay(filters.toDate) || "Chọn ngày" }}
+              </span>
+            </button>
           </div>
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Kiểu thống kê</label>
+          <label class="text-xs font-medium text-slate-500">Thống kê</label>
           <div class="relative">
             <BarChart3 class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <select
@@ -425,6 +769,7 @@ onMounted(() => {
               type="text"
               placeholder="Mã hoặc tên sản phẩm"
               class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              @input="scheduleDashboardFetch"
               @keyup.enter="onApplyFilters"
             >
           </div>
@@ -485,7 +830,6 @@ onMounted(() => {
               <BarChart3 class="h-4 w-4 text-rose-500" />
               Sản phẩm bán được theo {{ periodLabel }}
             </div>
-            <p class="mt-1 text-sm text-slate-500">Số lượng sản phẩm bán ra theo từng mốc thời gian.</p>
           </div>
           <div v-if="isLoading" class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
             Đang tải...
@@ -549,12 +893,227 @@ onMounted(() => {
       <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <Users class="h-4 w-4 text-rose-500" />
+            Thống kê doanh thu nhân viên
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="rounded-full bg-slate-50 px-4 py-2 text-sm font-medium text-slate-500">
+            {{ employeeCountLabel }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_240px]">
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Tìm nhân viên</label>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="employeeFilters.keyword"
+              type="text"
+              placeholder="Mã hoặc tên nhân viên"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Sắp xếp</label>
+          <select
+            v-model="employeeFilters.sortBy"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+          >
+            <option
+              v-for="option in EMPLOYEE_SORT_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Hiển thị</label>
+          <div class="flex gap-2">
+            <select
+              v-model="employeeFilters.pageSize"
+              class="h-11 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+              <option
+                v-for="size in PRODUCT_PAGE_SIZE_OPTIONS"
+                :key="size"
+                :value="size"
+              >
+                {{ size }} dòng
+              </option>
+            </select>
+            <button
+              type="button"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              @click="resetEmployeeFilters"
+            >
+              <RefreshCw class="h-4 w-4" />
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-[860px] w-full border-separate border-spacing-y-3 text-left">
+          <thead>
+            <tr class="text-xs uppercase tracking-[0.18em] text-slate-400">
+              <th class="px-4 py-2">STT</th>
+              <th class="px-4 py-2">Mã nhân viên</th>
+              <th class="px-4 py-2">Nhân viên</th>
+              <th class="px-4 py-2 text-right">Đơn hàng</th>
+              <th class="px-4 py-2 text-right">Sản phẩm bán</th>
+              <th class="px-4 py-2 text-right">Doanh thu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(employee, index) in paginatedEmployees"
+              :key="employee.nhanVienId || `unassigned-${index}`"
+              class="rounded-[20px] bg-slate-50 text-sm text-slate-700"
+            >
+              <td class="rounded-l-[20px] px-4 py-4 font-semibold text-slate-500">
+                {{ (employeeCurrentPage - 1) * employeeFilters.pageSize + index + 1 }}
+              </td>
+              <td class="px-4 py-4">
+                <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                  {{ employee.maNhanVien || "Chưa có mã" }}
+                </span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
+                    <Users class="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div class="font-semibold text-slate-800">
+                      {{ employee.tenNhanVien }}
+                    </div>
+                    <div class="text-xs text-slate-500">
+                      {{ employee.nhanVienId ? "Nhân viên bán hàng" : "Đơn chưa gán nhân viên" }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-right font-semibold text-slate-800">
+                {{ formatNumber(employee.tongDonHang) }}
+              </td>
+              <td class="px-4 py-4 text-right font-semibold text-slate-800">
+                {{ formatNumber(employee.sanPhamDaBan) }}
+              </td>
+              <td class="rounded-r-[20px] px-4 py-4 text-right font-semibold text-slate-800">
+                {{ formatCurrency(employee.doanhThu) }}
+              </td>
+            </tr>
+
+            <tr v-if="filteredEmployees.length === 0">
+              <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">
+                Không có nhân viên phát sinh doanh thu trong bộ lọc hiện tại.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <AppPagination
+        v-if="filteredEmployees.length > 0"
+        v-model="employeeCurrentPage"
+        class="mt-4"
+        :total-items="filteredEmployees.length"
+        :page-size="employeeFilters.pageSize"
+      />
+    </div>
+
+    <div class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
+      <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Package class="h-4 w-4 text-rose-500" />
             Thống kê sản phẩm
           </div>
         </div>
         <div class="rounded-full bg-slate-50 px-4 py-2 text-sm font-medium text-slate-500">
-          {{ formatNumber(dashboard.sanPhams.length) }} sản phẩm
+          {{ productCountLabel }}
+        </div>
+      </div>
+
+      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_240px]">
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Lọc trong bảng</label>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="productFilters.keyword"
+              type="text"
+              placeholder="Mã, tên hoặc thương hiệu"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Tồn kho</label>
+          <select
+            v-model="productFilters.stockStatus"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+          >
+            <option
+              v-for="option in PRODUCT_STOCK_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Sắp xếp</label>
+          <select
+            v-model="productFilters.sortBy"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+          >
+            <option
+              v-for="option in PRODUCT_SORT_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slate-500">Hiển thị</label>
+          <div class="flex gap-2">
+            <select
+              v-model="productFilters.pageSize"
+              class="h-11 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+              <option
+                v-for="size in PRODUCT_PAGE_SIZE_OPTIONS"
+                :key="size"
+                :value="size"
+              >
+                {{ size }} dòng
+              </option>
+            </select>
+            <button
+              type="button"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              @click="resetProductFilters"
+            >
+              <RefreshCw class="h-4 w-4" />
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
@@ -573,12 +1132,12 @@ onMounted(() => {
           </thead>
           <tbody>
             <tr
-              v-for="product in dashboard.sanPhams"
+              v-for="(product, index) in paginatedProducts"
               :key="product.sanPhamId"
               class="rounded-[20px] bg-slate-50 text-sm text-slate-700"
             >
               <td class="rounded-l-[20px] px-4 py-4 font-semibold text-slate-500">
-                {{ product.stt }}
+                {{ (productCurrentPage - 1) * productFilters.pageSize + index + 1 }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">
                 {{ product.maSanPham }}
@@ -622,14 +1181,22 @@ onMounted(() => {
               </td>
             </tr>
 
-            <tr v-if="dashboard.sanPhams.length === 0">
+            <tr v-if="filteredProducts.length === 0">
               <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">
-                Hiện chưa có dữ liệu sản phẩm để hiển thị.
+                Không có sản phẩm phù hợp với bộ lọc hiện tại.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <AppPagination
+        v-if="filteredProducts.length > 0"
+        v-model="productCurrentPage"
+        class="mt-4"
+        :total-items="filteredProducts.length"
+        :page-size="productFilters.pageSize"
+      />
     </div>
   </div>
 </template>
