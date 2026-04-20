@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/hoa-don")
+@RequestMapping("/api/v1/admin/hoa-don")
 public class QuanLyHoaDonController {
 
     private final QuanLyHoaDonService quanLyHoaDonService;

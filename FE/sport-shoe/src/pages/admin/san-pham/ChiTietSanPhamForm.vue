@@ -26,7 +26,7 @@ const productForm = reactive({
   thuongHieuId: null,
   loaiGiayId: null,
   gioiTinh: null,
-  chatLieu: '',
+  chatLieuGiayId: null,
   moTa: '',
   deGiayId: null,
   coGiayId: null,
@@ -97,7 +97,7 @@ function resetProductForm() {
   productForm.thuongHieuId = null
   productForm.loaiGiayId = null
   productForm.gioiTinh = null
-  productForm.chatLieu = ''
+  productForm.chatLieuGiayId = null
   productForm.moTa = ''
   productForm.deGiayId = null
   productForm.coGiayId = null
@@ -106,12 +106,18 @@ function resetProductForm() {
   clearProductErrors()
 }
 
+function findChatLieuGiayIdByName(name) {
+  if (!name || !danhMuc.value?.chatLieuGiay?.length) return null
+  const normalized = String(name).trim().toLowerCase()
+  return danhMuc.value.chatLieuGiay.find((item) => item.ten?.trim().toLowerCase() === normalized)?.id || null
+}
+
 function hydrateProductForm(detail) {
   productForm.ten = detail.ten || ''
   productForm.thuongHieuId = detail.thuongHieuId || null
   productForm.loaiGiayId = detail.loaiGiayId || null
   productForm.gioiTinh = detail.gioiTinh ?? null
-  productForm.chatLieu = detail.chatLieu || ''
+  productForm.chatLieuGiayId = detail.thuocTinh?.chatLieuGiayId || findChatLieuGiayIdByName(detail.chatLieu)
   productForm.moTa = detail.moTa || ''
   productForm.deGiayId = detail.thuocTinh?.deGiayId || null
   productForm.coGiayId = detail.thuocTinh?.coGiayId || null
@@ -202,7 +208,7 @@ function buildCreateProductPayload() {
     thuongHieuId: Number(productForm.thuongHieuId),
     loaiGiayId: Number(productForm.loaiGiayId),
     gioiTinh: normalizeNullableNumber(productForm.gioiTinh),
-    chatLieu: productForm.chatLieu.trim() || undefined,
+    chatLieuGiayId: normalizeNullableNumber(productForm.chatLieuGiayId),
     moTa: productForm.moTa.trim() || undefined,
     deGiayId: normalizeNullableNumber(productForm.deGiayId),
     coGiayId: normalizeNullableNumber(productForm.coGiayId),
@@ -414,12 +420,15 @@ onMounted(async () => {
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Chất liệu</span>
-              <input
-                v-model="productForm.chatLieu"
-                type="text"
-                placeholder="Ví dụ: Da tổng hợp"
+              <select
+                v-model.number="productForm.chatLieuGiayId"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              />
+              >
+                <option :value="null">Chọn chất liệu giày...</option>
+                <option v-for="item in danhMuc?.chatLieuGiay || []" :key="item.id" :value="item.id">
+                  {{ item.ten }}
+                </option>
+              </select>
             </label>
 
             <label class="block">

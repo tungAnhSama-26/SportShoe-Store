@@ -15,6 +15,7 @@ public class QuanLyDanhMucService {
 
     private final LoaiGiayRepository loaiGiayRepository;
     private final ThuongHieuRepository thuongHieuRepository;
+    private final ChatLieuGiayRepository chatLieuGiayRepository;
     private final DeGiayRepository deGiayRepository;
     private final CoGiayRepository coGiayRepository;
     private final CongNgheDemRepository congNgheDemRepository;
@@ -25,6 +26,7 @@ public class QuanLyDanhMucService {
     public QuanLyDanhMucService(
             LoaiGiayRepository loaiGiayRepository,
             ThuongHieuRepository thuongHieuRepository,
+            ChatLieuGiayRepository chatLieuGiayRepository,
             DeGiayRepository deGiayRepository,
             CoGiayRepository coGiayRepository,
             CongNgheDemRepository congNgheDemRepository,
@@ -34,6 +36,7 @@ public class QuanLyDanhMucService {
     ) {
         this.loaiGiayRepository = loaiGiayRepository;
         this.thuongHieuRepository = thuongHieuRepository;
+        this.chatLieuGiayRepository = chatLieuGiayRepository;
         this.deGiayRepository = deGiayRepository;
         this.coGiayRepository = coGiayRepository;
         this.congNgheDemRepository = congNgheDemRepository;
@@ -157,6 +160,68 @@ public class QuanLyDanhMucService {
     }
 
     // ─── Đế Giày ─────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PageResponse<ChatLieuGiayResponse> danhSachChatLieuGiay(String keyword, Pageable pageable) {
+        String kw = hasText(keyword) ? keyword.trim() : null;
+        return PageResponse.from(chatLieuGiayRepository.search(kw, pageable).map(this::toChatLieuGiay));
+    }
+
+    @Transactional(readOnly = true)
+    public ChatLieuGiayResponse chiTietChatLieuGiay(Integer id) {
+        return toChatLieuGiay(chatLieuGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i")));
+    }
+
+    @Transactional
+    public ChatLieuGiayResponse taoChatLieuGiay(ChatLieuGiayRequest req) {
+        String ma = req.ma().trim().toUpperCase();
+        if (chatLieuGiayRepository.existsByMaIgnoreCase(ma)) {
+            throw new BusinessException("MÃ£ cháº¥t liá»‡u giÃ y '" + ma + "' Ä‘Ã£ tá»“n táº¡i");
+        }
+        var e = new ChatLieuGiay();
+        e.setMa(ma);
+        e.setTen(req.ten().trim());
+        e.setMoTa(req.moTa());
+        e.setTrangThai(1);
+        e.setNgayTao(Instant.now());
+        return toChatLieuGiay(chatLieuGiayRepository.save(e));
+    }
+
+    @Transactional
+    public ChatLieuGiayResponse capNhatChatLieuGiay(Integer id, ChatLieuGiayRequest req) {
+        var e = chatLieuGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i"));
+        String ma = req.ma().trim().toUpperCase();
+        if (chatLieuGiayRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
+            throw new BusinessException("MÃ£ cháº¥t liá»‡u giÃ y '" + ma + "' Ä‘Ã£ tá»“n táº¡i");
+        }
+        e.setMa(ma);
+        e.setTen(req.ten().trim());
+        e.setMoTa(req.moTa());
+        e.setNgayCapNhat(Instant.now());
+        return toChatLieuGiay(e);
+    }
+
+    @Transactional
+    public void doiTrangThaiChatLieuGiay(Integer id, DoiTrangThaiDanhMucRequest req) {
+        var e = chatLieuGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i"));
+        e.setTrangThai(req.trangThai());
+        e.setNgayCapNhat(Instant.now());
+    }
+
+    @Transactional
+    public void xoaChatLieuGiay(Integer id) {
+        if (!chatLieuGiayRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i");
+        }
+        chatLieuGiayRepository.deleteById(id);
+    }
+
+    private ChatLieuGiayResponse toChatLieuGiay(ChatLieuGiay e) {
+        return new ChatLieuGiayResponse(e.getId(), e.getMa(), e.getTen(), e.getMoTa(), e.getTrangThai(), e.getNgayTao(), e.getNgayCapNhat());
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<DeGiayResponse> danhSachDeGiay(String keyword, Pageable pageable) {

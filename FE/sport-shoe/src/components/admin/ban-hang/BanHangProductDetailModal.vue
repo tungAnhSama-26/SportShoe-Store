@@ -64,7 +64,7 @@ const emit = defineEmits([
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-400">Sản phẩm chi tiết</p>
           <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ selectedProductDetail.tenSanPham }}</h3>
           <p class="mt-1 text-sm text-slate-500">
-            Mã: {{ selectedProductDetail.maSanPham }} | Biến thể: {{ selectedProductDetail.maBienThe }}
+            Mã: {{ selectedProductDetail.maSanPham }} | Chọn biến thể bên dưới
           </p>
         </div>
         <button

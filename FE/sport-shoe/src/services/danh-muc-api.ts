@@ -1,4 +1,5 @@
-const BASE = 'http://localhost:8080/api/v1/admin/danh-muc'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
+const BASE = `${API_BASE_URL}/admin/danh-muc`
 
 export interface PageResponse<T> {
   items: T[]
@@ -22,6 +23,10 @@ export interface ThuongHieuItem {
   trangThai: number; ngayTao: string; ngayCapNhat?: string
 }
 export interface DeGiayItem {
+  id: number; ma: string; ten: string; moTa?: string
+  trangThai: number; ngayTao: string; ngayCapNhat?: string
+}
+export interface ChatLieuGiayItem {
   id: number; ma: string; ten: string; moTa?: string
   trangThai: number; ngayTao: string; ngayCapNhat?: string
 }
@@ -97,6 +102,16 @@ export const deGiayApi = {
   toggleStatus: (id: number, trangThai: number) =>
     req<void>(`/de-giay/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
   delete: (id: number) => req<void>(`/de-giay/${id}`, { method: 'DELETE' }),
+}
+
+export const chatLieuGiayApi = {
+  list: (kw?: string, page = 0, size = 10) =>
+    req<PageResponse<ChatLieuGiayItem>>(buildListUrl('/chat-lieu-giay', kw, page, size)),
+  create: (body: object) => req<ChatLieuGiayItem>('/chat-lieu-giay', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: number, body: object) => req<ChatLieuGiayItem>(`/chat-lieu-giay/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  toggleStatus: (id: number, trangThai: number) =>
+    req<void>(`/chat-lieu-giay/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
+  delete: (id: number) => req<void>(`/chat-lieu-giay/${id}`, { method: 'DELETE' }),
 }
 
 export const coGiayApi = {

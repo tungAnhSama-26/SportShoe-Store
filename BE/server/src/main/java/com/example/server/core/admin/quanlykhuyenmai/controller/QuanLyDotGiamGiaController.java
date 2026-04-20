@@ -11,7 +11,7 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/dot-giam-gia")
+@RequestMapping("/api/v1/admin/dot-giam-gia")
 public class QuanLyDotGiamGiaController {
 
     @Autowired

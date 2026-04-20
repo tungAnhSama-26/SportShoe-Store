@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:8080/api/v1'
+const BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -8,6 +8,7 @@ export interface MauSacOption { id: number; ten: string; maMauHex?: string }
 export interface KichCoOption { id: number; giaTri: string }
 export interface DeGiayOption { id: number; ten: string }
 export interface CoGiayOption { id: number; ten: string }
+export interface ChatLieuGiayOption { id: number; ten: string }
 export interface TrongLuongOption { id: number; ma: string; giaTri: number }
 export interface CongNgheDemOption { id: number; ten: string }
 
@@ -18,6 +19,7 @@ export interface DanhMucSanPhamResponse {
   kichCo: KichCoOption[]
   deGiay: DeGiayOption[]
   coGiay: CoGiayOption[]
+  chatLieuGiay: ChatLieuGiayOption[]
   trongLuong: TrongLuongOption[]
   congNgheDem: CongNgheDemOption[]
 }
@@ -27,6 +29,7 @@ export interface ThuocTinhResponse {
   deGiayId?: number; deGiay?: string
   coGiayId?: number; coGiay?: string
   congNgheDemId?: number; congNgheDem?: string
+  chatLieuGiayId?: number; chatLieuGiay?: string
   trongLuongId?: number; trongLuong?: string
 }
 
@@ -172,6 +175,7 @@ export interface TaoGiayRequest {
   loaiGiayId: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -185,6 +189,7 @@ export interface CapNhatGiayRequest {
   loaiGiayId: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -199,6 +204,7 @@ export interface TaoChiTietSanPhamRequest {
   loaiGiayId?: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -226,6 +232,7 @@ export interface TaoChiTietSanPhamHangLoatRequest {
   loaiGiayId?: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
