@@ -214,6 +214,24 @@ CREATE TABLE co_giay (
 GO
 
 -- ============================================================
+-- [09A] chat_lieu_giay
+--   trang_thai: 0 = Ngừng dùng | 1 = Đang dùng
+-- ============================================================
+CREATE TABLE chat_lieu_giay (
+    id            INT           NOT NULL CONSTRAINT pk_chat_lieu_giay PRIMARY KEY IDENTITY(1,1),
+    ma            NVARCHAR(50)  NOT NULL,
+    ten           NVARCHAR(100) NOT NULL,
+    mo_ta         NVARCHAR(300) NULL,
+    trang_thai    INT           NOT NULL CONSTRAINT df_chat_lieu_giay_trang_thai DEFAULT 1,
+    ngay_tao      DATETIME2     NOT NULL CONSTRAINT df_chat_lieu_giay_ngay_tao DEFAULT SYSDATETIME(),
+    ngay_cap_nhat DATETIME2     NULL,
+    CONSTRAINT uq_chat_lieu_giay_ma UNIQUE (ma),
+    CONSTRAINT uq_chat_lieu_giay_ten UNIQUE (ten),
+    CONSTRAINT ck_chat_lieu_giay_trang_thai CHECK (trang_thai IN (0, 1))
+);
+GO
+
+-- ============================================================
 -- [10] trong_luong
 --   trang_thai: 0 = Ngừng dùng | 1 = Đang dùng
 -- ============================================================
@@ -319,6 +337,7 @@ CREATE TABLE giay_thuoc_tinh (
     giay_id          INT       NOT NULL,
     de_giay_id       INT       NULL,
     co_giay_id       INT       NULL,
+    chat_lieu_giay_id INT      NULL,
     trong_luong_id   INT       NULL,
     cong_nghe_dem_id INT       NULL,
     trang_thai       INT       NOT NULL CONSTRAINT df_giay_tt_trang_thai DEFAULT 1,
@@ -330,6 +349,7 @@ CREATE TABLE giay_thuoc_tinh (
     CONSTRAINT fk_giay_thuoc_tinh_giay      FOREIGN KEY (giay_id)          REFERENCES giay(id)          ON DELETE CASCADE,
     CONSTRAINT fk_giay_tt_de_giay           FOREIGN KEY (de_giay_id)       REFERENCES de_giay(id),
     CONSTRAINT fk_giay_tt_co_giay           FOREIGN KEY (co_giay_id)       REFERENCES co_giay(id),
+    CONSTRAINT fk_giay_tt_chat_lieu_giay    FOREIGN KEY (chat_lieu_giay_id) REFERENCES chat_lieu_giay(id),
     CONSTRAINT fk_giay_tt_trong_luong       FOREIGN KEY (trong_luong_id)   REFERENCES trong_luong(id),
     CONSTRAINT fk_giay_tt_cong_nghe_dem     FOREIGN KEY (cong_nghe_dem_id) REFERENCES cong_nghe_dem(id)
 );
@@ -487,7 +507,7 @@ CREATE TABLE hoa_don (
     ngay_cap_nhat        DATETIME2        NULL,
     CONSTRAINT uq_hoa_don_ma          UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban    CHECK  (kenh_ban IN (1, 2)),
-    CONSTRAINT ck_hoa_don_trang_thai  CHECK  (trang_thai IN (1, 2, 3, 4, 5)),
+    CONSTRAINT ck_hoa_don_trang_thai  CHECK  (trang_thai IN (1, 2, 3, 4, 5, 6, 7, 8)),
     CONSTRAINT ck_hoa_don_tong_tien   CHECK  (
         tong_tien_hang >= 0 AND tien_giam >= 0 AND tong_tien_thanh_toan >= 0
     ),
@@ -654,6 +674,7 @@ CREATE INDEX ix_giay_loai_giay_id         ON giay(loai_giay_id);
 CREATE INDEX ix_giay_thuoc_tinh_giay_id   ON giay_thuoc_tinh(giay_id);
 CREATE INDEX ix_giay_tt_de_giay_id        ON giay_thuoc_tinh(de_giay_id);
 CREATE INDEX ix_giay_tt_co_giay_id        ON giay_thuoc_tinh(co_giay_id);
+CREATE INDEX ix_giay_tt_chat_lieu_giay_id ON giay_thuoc_tinh(chat_lieu_giay_id);
 CREATE INDEX ix_giay_tt_trong_luong_id    ON giay_thuoc_tinh(trong_luong_id);
 CREATE INDEX ix_giay_tt_cong_nghe_dem_id  ON giay_thuoc_tinh(cong_nghe_dem_id);
 CREATE INDEX ix_dgg_sp_dgg_id             ON dot_giam_gia_san_pham(dot_giam_gia_id);
@@ -803,6 +824,20 @@ VALUES
 GO
 
 -- =============================================
+-- [09A] chat_lieu_giay
+-- =============================================
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai)
+VALUES
+('CLG001', N'Da tổng hợp', N'Chất liệu da tổng hợp bền và dễ vệ sinh', 1),
+('CLG002', N'Da lộn + Cao su', N'Phối da lộn với bề mặt cao su', 1),
+('CLG003', N'Mesh + Da', N'Lưới thoáng khí kết hợp các mảng da', 1),
+('CLG004', N'Mesh', N'Vải lưới thoáng khí nhẹ chân', 1),
+('CLG005', N'FlyteFoam', N'Chất liệu foam nhẹ dùng cho giày chạy bộ', 1),
+('CLG006', N'Canvas', N'Vải canvas bền cho giày lifestyle', 1),
+('CLG007', N'Flyknit + Da tổng hợp', N'Vải dệt kết hợp da tổng hợp', 1);
+GO
+
+-- =============================================
 -- [10] trong_luong 
 -- =============================================
 INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai)
@@ -861,15 +896,15 @@ GO
 -- =============================================
 -- [14] giay_thuoc_tinh 
 -- =============================================
-INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai)
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai)
 VALUES 
-(1, 5, 1, 2, 1, 1),   -- Nike AF1
-(2, 2, 1, 3, 2, 1),   -- Adidas Samba
-(3, 3, 1, 1, 3, 1),   -- NB 530
-(4, 1, 2, 4, 5, 1),   -- Puma
-(5, 6, 1, 2, 4, 1),   -- Asics
-(6, 2, 1, 5, 7, 1),   -- Vans
-(7, 2, 3, 3, 7, 1);   -- Converse
+(1, 5, 1, 1, 2, 1, 1),   -- Nike AF1
+(2, 2, 1, 2, 3, 2, 1),   -- Adidas Samba
+(3, 3, 1, 3, 1, 3, 1),   -- NB 530
+(4, 1, 2, 4, 4, 5, 1),   -- Puma
+(5, 6, 1, 5, 2, 4, 1),   -- Asics
+(6, 2, 1, 6, 5, 7, 1),   -- Vans
+(7, 2, 3, 6, 3, 7, 1);   -- Converse
 GO
 
 -- =============================================
@@ -1107,7 +1142,7 @@ GO
 
 -- [14] giay_thuoc_tinh
 SELECT 
-    id, giay_id, de_giay_id, co_giay_id, trong_luong_id, 
+    id, giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, 
     cong_nghe_dem_id, trang_thai, ngay_tao, ngay_cap_nhat
 FROM giay_thuoc_tinh;
 GO

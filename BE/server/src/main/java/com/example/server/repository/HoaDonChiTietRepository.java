@@ -25,6 +25,7 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
     @Query("""
             from HoaDonChiTiet hdct
             join fetch hdct.hoaDon hd
+            left join fetch hd.nhanVien nv
             join fetch hdct.giayChiTiet gct
             join fetch gct.giay g
             join fetch g.thuongHieu th
