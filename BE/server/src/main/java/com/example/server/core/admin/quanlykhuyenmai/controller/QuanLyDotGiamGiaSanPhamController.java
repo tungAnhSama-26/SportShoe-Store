@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/dot-giam-gia-san-pham")
+@RequestMapping("/api/v1/admin/dot-giam-gia-san-pham")
 public class QuanLyDotGiamGiaSanPhamController {
 
     @Autowired

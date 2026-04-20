@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, X } from 'lucide-vue-next'
+import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
@@ -44,6 +44,12 @@ const selectedGiayId = computed(() => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 })
 
+const toastTitle = computed(() => {
+  if (toast.type === 'error') return 'Có lỗi xảy ra'
+  if (toast.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
+  return 'Thao tác thành công'
+})
+
 function showToast(message, type = 'success') {
   if (toastTimer) clearTimeout(toastTimer)
   toast.message = message
@@ -51,7 +57,16 @@ function showToast(message, type = 'success') {
   toast.show = true
   toastTimer = setTimeout(() => {
     toast.show = false
+    toastTimer = null
   }, 3000)
+}
+
+function closeToast() {
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+    toastTimer = null
+  }
+  toast.show = false
 }
 
 function formatCurrency(value) {
@@ -457,16 +472,35 @@ onMounted(async () => {
       <Transition name="fade">
         <div
           v-if="toast.show"
-          class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
-          :class="
-            toast.type === 'error'
-              ? 'bg-rose-500'
-              : toast.type === 'info'
-                ? 'bg-slate-900'
-                : 'bg-emerald-500'
-          "
+          class="fixed right-4 top-[88px] z-[100] w-[min(92vw,380px)] rounded-3xl border bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)]"
+          :class="toast.type === 'error' ? 'border-rose-100' : 'border-emerald-100'"
         >
-          {{ toast.message }}
+          <div class="flex items-start gap-3">
+            <div
+              class="mt-0.5 rounded-2xl p-2"
+              :class="toast.type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'"
+            >
+              <TriangleAlert v-if="toast.type === 'error'" class="h-5 w-5" />
+              <CircleCheckBig v-else class="h-5 w-5" />
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-slate-800">
+                {{ toastTitle }}
+              </p>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ toast.message }}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              @click="closeToast"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </Transition>
     </Teleport>

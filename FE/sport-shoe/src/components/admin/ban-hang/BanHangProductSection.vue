@@ -73,12 +73,12 @@ const emit = defineEmits([
           <div>
             <p class="text-sm font-bold text-slate-900">{{ product.tenSanPham }}</p>
             <p class="mt-1 text-xs text-slate-500">
-              Mã: {{ product.maSanPham }} | SKU: {{ product.sku }} | Biến thể: {{ product.maBienThe }}
+              Mã: {{ product.maSanPham }} | {{ product.tongBienThe || 1 }} biến thể
             </p>
           </div>
           <div class="text-right">
             <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
-            <p class="mt-1 text-xs text-slate-500">Tồn: {{ soLuongConLai(product.chiTietId, product.soLuongTon) }}</p>
+            <p class="mt-1 text-xs text-slate-500">Tồn: {{ product.soLuongTon }}</p>
           </div>
         </button>
       </div>
@@ -116,9 +116,9 @@ const emit = defineEmits([
             <div class="min-w-0">
               <p class="truncate text-base font-bold text-slate-900">{{ product.tenSanPham }}</p>
               <p class="mt-1 truncate text-xs text-slate-500">
-                Mã: {{ product.maSanPham }} | SKU: {{ product.sku }} | Biến thể: {{ product.maBienThe }}
+                Mã: {{ product.maSanPham }} | {{ product.tongBienThe || 1 }} biến thể
               </p>
-              <p class="mt-2 text-sm font-semibold text-slate-700">Tồn khả dụng: {{ soLuongConLai(product.chiTietId, product.soLuongTon) }}</p>
+              <p class="mt-2 text-sm font-semibold text-slate-700">Tồn khả dụng: {{ product.soLuongTon }}</p>
             </div>
           </div>
 

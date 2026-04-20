@@ -23,7 +23,7 @@ function useBanHangTaiQuay() {
   const productKeyword = ref("");
   const couponCode = ref("");
   const customerResults = ref([]);
-  const productResults = ref([]);
+  const productVariantResults = ref([]);
   const selectedProductDetail = ref(null);
   const selectedColor = ref("");
   const selectedSize = ref("");
@@ -156,6 +156,28 @@ function useBanHangTaiQuay() {
     }
     return true;
   });
+  const productResults = computed(() => {
+    const grouped = new Map();
+
+    for (const product of productVariantResults.value) {
+      const key = `${product.maSanPham}::${product.tenSanPham}`;
+      const soLuongKhaDung = soLuongConLai(product.chiTietId, product.soLuongTon);
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          ...product,
+          soLuongTon: 0,
+          tongBienThe: 0
+        });
+      }
+
+      const groupedProduct = grouped.get(key);
+      groupedProduct.soLuongTon += soLuongKhaDung;
+      groupedProduct.tongBienThe += 1;
+    }
+
+    return Array.from(grouped.values());
+  });
 
   function dinhDangTien(value) {
     return new Intl.NumberFormat("vi-VN", {
@@ -233,14 +255,14 @@ function useBanHangTaiQuay() {
   }
 
   function laySoLuongTonHienTai(chiTietId, fallback) {
-    return productResults.value.find((product) => product.chiTietId === chiTietId)?.soLuongTon ?? fallback;
+    return productVariantResults.value.find((product) => product.chiTietId === chiTietId)?.soLuongTon ?? fallback;
   }
 
   const relatedVariants = computed(() => {
     if (!selectedProductDetail.value) {
       return [];
     }
-    return productResults.value.filter(
+    return productVariantResults.value.filter(
       (product) => product.maSanPham === selectedProductDetail.value?.maSanPham &&
         product.tenSanPham === selectedProductDetail.value?.tenSanPham
     );
@@ -296,7 +318,7 @@ function useBanHangTaiQuay() {
     productKeyword.value = "";
     couponCode.value = "";
     customerResults.value = [];
-    productResults.value = [];
+    productVariantResults.value = [];
     couponResults.value = [];
     selectedProductDetail.value = null;
     selectedColor.value = "";
@@ -346,7 +368,7 @@ function useBanHangTaiQuay() {
   async function fetchProducts(keyword) {
     loadingProducts.value = true;
     try {
-      productResults.value = await timSanPhamTaiQuay(keyword);
+      productVariantResults.value = await timSanPhamTaiQuay(keyword);
     } catch (error) {
       pageError.value = error instanceof Error ? error.message : "Không thể tìm sản phẩm";
     } finally {
@@ -605,7 +627,7 @@ function useBanHangTaiQuay() {
       ];
     }
     productKeyword.value = "";
-    productResults.value = [];
+    productVariantResults.value = [];
     selectedProductDetail.value = null;
     selectedColor.value = "";
     selectedSize.value = "";

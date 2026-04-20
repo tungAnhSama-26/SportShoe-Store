@@ -37,6 +37,7 @@ const checkThuocTinhActive = (newPath) => {
     "/admin/loai-giay",
     "/admin/co-giay",
     "/admin/de-giay",
+    "/admin/chat-lieu-giay",
     "/admin/thuong-hieu",
     "/admin/cong-nghe-dem",
     "/admin/mau-sac",
@@ -232,6 +233,10 @@ function subItemClass(active) {
           <router-link to="/admin/thuong-hieu" :class="subItemClass(isActive('/admin/thuong-hieu'))">
             <Award class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/thuong-hieu') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
             <span class="leading-tight">Th&#432;&#417;ng hi&#7879;u</span>
+          </router-link>
+          <router-link to="/admin/chat-lieu-giay" :class="subItemClass(isActive('/admin/chat-lieu-giay'))">
+            <Layers class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/chat-lieu-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
+            <span class="leading-tight">Ch&#7845;t li&#7879;u gi&#224;y</span>
           </router-link>
           <router-link to="/admin/de-giay" :class="subItemClass(isActive('/admin/de-giay'))">
             <Footprints class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/de-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />

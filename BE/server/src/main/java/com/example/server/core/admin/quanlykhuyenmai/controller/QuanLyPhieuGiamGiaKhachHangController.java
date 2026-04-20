@@ -12,7 +12,7 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/phieu-giam-gia-khach-hang")
+@RequestMapping("/api/v1/admin/phieu-giam-gia-khach-hang")
 public class QuanLyPhieuGiamGiaKhachHangController {
 
     @Autowired

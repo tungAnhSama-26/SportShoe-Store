@@ -17,6 +17,7 @@ record MauSacOption(Integer id, String ten, String maMauHex) {}
 record KichCoOption(Integer id, String giaTri) {}
 record DeGiayOption(Integer id, String ten) {}
 record CoGiayOption(Integer id, String ten) {}
+record ChatLieuGiayOption(Integer id, String ten) {}
 record TrongLuongOption(Integer id, String ma, Integer giaTri) {}
 record CongNgheDemOption(Integer id, String ten) {}
 
@@ -27,6 +28,7 @@ record DanhMucSanPhamResponse(
         java.util.List<KichCoOption> kichCo,
         java.util.List<DeGiayOption> deGiay,
         java.util.List<CoGiayOption> coGiay,
+        java.util.List<ChatLieuGiayOption> chatLieuGiay,
         java.util.List<TrongLuongOption> trongLuong,
         java.util.List<CongNgheDemOption> congNgheDem
 ) {}
@@ -63,6 +65,8 @@ record ThuocTinhResponse(
         String coGiay,
         Integer congNgheDemId,
         String congNgheDem,
+        Integer chatLieuGiayId,
+        String chatLieuGiay,
         Integer trongLuongId,
         String trongLuong
 ) {}
@@ -162,6 +166,7 @@ record TaoGiayRequest(
         @NotNull Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -175,6 +180,7 @@ record CapNhatGiayRequest(
         @NotNull Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -189,6 +195,7 @@ record TaoChiTietSanPhamRequest(
         Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -216,6 +223,7 @@ record TaoChiTietSanPhamHangLoatRequest(
         Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,

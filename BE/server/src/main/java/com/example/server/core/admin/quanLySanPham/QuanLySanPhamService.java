@@ -33,6 +33,7 @@ public class QuanLySanPhamService {
     private final KichCoRepository kichCoRepository;
     private final DeGiayRepository deGiayRepository;
     private final CoGiayRepository coGiayRepository;
+    private final ChatLieuGiayRepository chatLieuGiayRepository;
     private final TrongLuongRepository trongLuongRepository;
     private final CongNgheDemRepository congNgheDemRepository;
 
@@ -47,6 +48,7 @@ public class QuanLySanPhamService {
             KichCoRepository kichCoRepository,
             DeGiayRepository deGiayRepository,
             CoGiayRepository coGiayRepository,
+            ChatLieuGiayRepository chatLieuGiayRepository,
             TrongLuongRepository trongLuongRepository,
             CongNgheDemRepository congNgheDemRepository
     ) {
@@ -60,6 +62,7 @@ public class QuanLySanPhamService {
         this.kichCoRepository = kichCoRepository;
         this.deGiayRepository = deGiayRepository;
         this.coGiayRepository = coGiayRepository;
+        this.chatLieuGiayRepository = chatLieuGiayRepository;
         this.trongLuongRepository = trongLuongRepository;
         this.congNgheDemRepository = congNgheDemRepository;
     }
@@ -86,13 +89,16 @@ public class QuanLySanPhamService {
         var coGiay = coGiayRepository.findAll().stream()
                 .filter(c -> c.getTrangThai() == 1)
                 .map(c -> new CoGiayOption(c.getId(), c.getTen())).toList();
+        var chatLieuGiay = chatLieuGiayRepository.findAll().stream()
+                .filter(c -> c.getTrangThai() == 1)
+                .map(c -> new ChatLieuGiayOption(c.getId(), c.getTen())).toList();
         var trongLuong = trongLuongRepository.findAll().stream()
                 .filter(t -> t.getTrangThai() == 1)
                 .map(t -> new TrongLuongOption(t.getId(), t.getMa(), t.getGiaTri())).toList();
         var congNgheDem = congNgheDemRepository.findAll().stream()
                 .filter(c -> c.getTrangThai() == 1)
                 .map(c -> new CongNgheDemOption(c.getId(), c.getTen())).toList();
-        return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, trongLuong, congNgheDem);
+        return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, chatLieuGiay, trongLuong, congNgheDem);
     }
 
     // ─── Danh sách giày ──────────────────────────────────────────────────────
@@ -267,6 +273,8 @@ public class QuanLySanPhamService {
                 gtt.getCoGiay() != null ? gtt.getCoGiay().getTen() : null,
                 gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getId() : null,
                 gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getTen() : null,
+                gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getId() : null,
+                gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getTen() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getId() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getMa() : null
         );
@@ -307,7 +315,7 @@ public class QuanLySanPhamService {
         giay.setThuongHieu(thuongHieu);
         giay.setLoaiGiay(loaiGiay);
         giay.setGioiTinh(req.gioiTinh());
-        giay.setChatLieu(req.chatLieu());
+        giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
         giay.setMoTa(req.moTa());
         giay.setTrangThai(1);
         giay.setNgayTao(Instant.now());
@@ -321,6 +329,7 @@ public class QuanLySanPhamService {
         gtt.setDeGiay(req.deGiayId() != null ? deGiayRepository.findById(req.deGiayId()).orElse(null) : null);
         gtt.setCoGiay(req.coGiayId() != null ? coGiayRepository.findById(req.coGiayId()).orElse(null) : null);
         gtt.setCongNgheDem(req.congNgheDemId() != null ? congNgheDemRepository.findById(req.congNgheDemId()).orElse(null) : null);
+        gtt.setChatLieuGiay(req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null);
         gtt.setTrongLuong(req.trongLuongId() != null ? trongLuongRepository.findById(req.trongLuongId()).orElse(null) : null);
         gtt.setTrangThai(1);
         gtt.setNgayTao(Instant.now());
@@ -352,6 +361,7 @@ public class QuanLySanPhamService {
                     req.loaiGiayId(),
                     req.gioiTinh(),
                     req.chatLieu(),
+                    req.chatLieuGiayId(),
                     req.moTa(),
                     req.deGiayId(),
                     req.coGiayId(),
@@ -400,6 +410,7 @@ public class QuanLySanPhamService {
                     req.loaiGiayId(),
                     req.gioiTinh(),
                     req.chatLieu(),
+                    req.chatLieuGiayId(),
                     req.moTa(),
                     req.deGiayId(),
                     req.coGiayId(),
@@ -447,7 +458,7 @@ public class QuanLySanPhamService {
         giay.setThuongHieu(thuongHieu);
         giay.setLoaiGiay(loaiGiay);
         giay.setGioiTinh(req.gioiTinh());
-        giay.setChatLieu(req.chatLieu());
+        giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
         giay.setMoTa(req.moTa());
         giay.setNgayCapNhat(Instant.now());
 
@@ -461,6 +472,7 @@ public class QuanLySanPhamService {
         gtt.setDeGiay(req.deGiayId() != null ? deGiayRepository.findById(req.deGiayId()).orElse(null) : null);
         gtt.setCoGiay(req.coGiayId() != null ? coGiayRepository.findById(req.coGiayId()).orElse(null) : null);
         gtt.setCongNgheDem(req.congNgheDemId() != null ? congNgheDemRepository.findById(req.congNgheDemId()).orElse(null) : null);
+        gtt.setChatLieuGiay(req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null);
         gtt.setTrongLuong(req.trongLuongId() != null ? trongLuongRepository.findById(req.trongLuongId()).orElse(null) : null);
         gtt.setNgayCapNhat(Instant.now());
         giayThuocTinhRepository.save(gtt);
@@ -665,6 +677,13 @@ public class QuanLySanPhamService {
             giay.setTrangThai(newStatus);
             giay.setNgayCapNhat(Instant.now());
         }
+    }
+
+    private String resolveChatLieuText(String rawChatLieu, ChatLieuGiay chatLieuGiay) {
+        if (chatLieuGiay != null) {
+            return chatLieuGiay.getTen();
+        }
+        return hasText(rawChatLieu) ? rawChatLieu.trim() : null;
     }
 
     private static boolean hasText(String s) {

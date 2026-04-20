@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/san-pham")
+@RequestMapping("/api/v1/admin/san-pham")
 public class QuanLySanPhamController {
 
     private final QuanLySanPhamService service;

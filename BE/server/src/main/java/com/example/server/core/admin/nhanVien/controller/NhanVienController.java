@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/nhan-vien")
+@RequestMapping("/api/v1/admin/nhan-vien")
 public class NhanVienController {
 
     private final NhanVienService nhanVienService;

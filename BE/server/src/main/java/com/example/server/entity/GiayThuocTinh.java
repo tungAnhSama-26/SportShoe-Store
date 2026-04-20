@@ -42,6 +42,10 @@ public class GiayThuocTinh {
     @JoinColumn(name = "cong_nghe_dem_id")
     private CongNgheDem congNgheDem;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_lieu_giay_id")
+    private ChatLieuGiay chatLieuGiay;
+
     @NotNull
     @ColumnDefault("1")
     @Column(name = "trang_thai", nullable = false)

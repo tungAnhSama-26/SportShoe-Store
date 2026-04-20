@@ -24,6 +24,7 @@ import ChiTietDotGiamGia from "../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue";
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
 import DeGiay from "../pages/admin/danh-muc/DeGiay.vue";
+import ChatLieuGiay from "../pages/admin/danh-muc/ChatLieuGiay.vue";
 import ThuongHieu from "../pages/admin/danh-muc/ThuongHieu.vue";
 import CongNgheDem from "../pages/admin/danh-muc/CongNgheDem.vue";
 import MauSac from "../pages/admin/danh-muc/MauSac.vue";
@@ -128,6 +129,7 @@ const router = createRouter({
         { path: "loai-giay", name: "admin-loai-giay", component: LoaiGiay },
         { path: "co-giay", name: "admin-co-giay", component: CoGiay },
         { path: "de-giay", name: "admin-de-giay", component: DeGiay },
+        { path: "chat-lieu-giay", name: "admin-chat-lieu-giay", component: ChatLieuGiay },
         { path: "thuong-hieu", name: "admin-thuong-hieu", component: ThuongHieu },
         { path: "cong-nghe-dem", name: "admin-cong-nghe-dem", component: CongNgheDem },
         { path: "mau-sac", name: "admin-mau-sac", component: MauSac },

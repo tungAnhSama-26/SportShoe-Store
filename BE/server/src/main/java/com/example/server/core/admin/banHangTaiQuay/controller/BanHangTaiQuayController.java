@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/ban-hang-tai-quay")
+@RequestMapping("/api/v1/admin/ban-hang-tai-quay")
 public class BanHangTaiQuayController {
 
     private final BanHangTaiQuayService banHangTaiQuayService;

@@ -16,6 +16,7 @@ import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
+import com.example.server.entity.LichSuHoaDon;
 import com.example.server.entity.PhieuGiamGia;
 import com.example.server.entity.PhieuGiamGiaKhachHang;
 import com.example.server.entity.ThanhToan;
@@ -25,6 +26,7 @@ import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.KhachHangRepository;
+import com.example.server.repository.LichSuHoaDonRepository;
 import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaRepository;
 import com.example.server.repository.ThanhToanRepository;
@@ -42,10 +44,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BanHangTaiQuayService {
 
+    private static final int SO_SAN_PHAM_TIM_TOI_DA = 50;
     private static final int KENH_BAN_TAI_QUAY = 1;
-    private static final int TRANG_THAI_HOA_DON_CHO = 1;
-    private static final int TRANG_THAI_DA_THANH_TOAN = 2;
-    private static final int TRANG_THAI_DA_HUY = 5;
+    private static final int TRANG_THAI_HOA_DON_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_HOA_DON_HOAN_THANH = 5;
+    private static final int TRANG_THAI_HOA_DON_HUY = 6;
     private static final int HINH_THUC_TIEN_MAT = 1;
     private static final int HINH_THUC_CHUYEN_KHOAN = 2;
     private static final int HINH_THUC_VI = 3;
@@ -62,6 +65,7 @@ public class BanHangTaiQuayService {
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
+    private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
 
@@ -71,6 +75,7 @@ public class BanHangTaiQuayService {
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             ThanhToanRepository thanhToanRepository,
+            LichSuHoaDonRepository lichSuHoaDonRepository,
             PhieuGiamGiaRepository phieuGiamGiaRepository,
             PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository
     ) {
@@ -79,6 +84,7 @@ public class BanHangTaiQuayService {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
+        this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.phieuGiamGiaRepository = phieuGiamGiaRepository;
         this.phieuGiamGiaKhachHangRepository = phieuGiamGiaKhachHangRepository;
     }
@@ -101,7 +107,7 @@ public class BanHangTaiQuayService {
     public List<SanPhamTaiQuayResponse> timSanPham(String keyword) {
         return giayChiTietRepository.searchForCounterSale(chuanHoaTuKhoa(keyword))
                 .stream()
-                .limit(10)
+                .limit(SO_SAN_PHAM_TIM_TOI_DA)
                 .map(chiTiet -> new SanPhamTaiQuayResponse(
                         chiTiet.getId(),
                         chiTiet.getGiay().getMa(),
@@ -191,9 +197,10 @@ public class BanHangTaiQuayService {
                 request.soDienThoai(),
                 request.maPhieuGiamGia(),
                 request.items(),
-                TRANG_THAI_HOA_DON_CHO,
+                TRANG_THAI_HOA_DON_CHO_XAC_NHAN,
                 "Hoa don cho tao tu man hinh ban hang tai quay"
         );
+        luuLichSuHoaDon(savedHoaDon, TRANG_THAI_HOA_DON_CHO_XAC_NHAN, savedHoaDon.getGhiChu());
         List<HoaDonChiTiet> savedItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(savedHoaDon.getId());
 
         return mapHoaDonChiTiet(savedHoaDon, savedItems);
@@ -229,10 +236,11 @@ public class BanHangTaiQuayService {
             hoaDon.setTongTienThanhToan(hoaDon.getTongTienHang());
         }
 
-        hoaDon.setTrangThai(TRANG_THAI_DA_HUY);
+        hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HUY);
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDon.setGhiChu("Hoa don cho da bi huy");
         hoaDonRepository.save(hoaDon);
+        luuLichSuHoaDon(hoaDon, TRANG_THAI_HOA_DON_HUY, hoaDon.getGhiChu());
     }
 
     @Transactional
@@ -244,7 +252,7 @@ public class BanHangTaiQuayService {
                 request.soDienThoai(),
                 request.maPhieuGiamGia(),
                 request.items(),
-                TRANG_THAI_DA_THANH_TOAN,
+                TRANG_THAI_HOA_DON_HOAN_THANH,
                 request.ghiChu()
         )
                 : thanhToanHoaDonCho(request);
@@ -265,10 +273,11 @@ public class BanHangTaiQuayService {
         thanhToan.setNgayTao(Instant.now());
         thanhToanRepository.save(thanhToan);
 
-        hoaDon.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
+        hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HOAN_THANH);
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hoaDon);
+        luuLichSuHoaDon(hoaDon, TRANG_THAI_HOA_DON_HOAN_THANH, request.ghiChu());
 
         return new ThanhToanTaiQuayResponse(
                 hoaDon.getId(),
@@ -289,7 +298,10 @@ public class BanHangTaiQuayService {
 
     @Transactional(readOnly = true)
     public List<HoaDonChoTomTatResponse> layDanhSachHoaDonCho() {
-        return hoaDonRepository.findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO)
+        return hoaDonRepository.findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(
+                        KENH_BAN_TAI_QUAY,
+                        TRANG_THAI_HOA_DON_CHO_XAC_NHAN
+                )
                 .stream()
                 .map(hoaDon -> {
                     List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
@@ -669,7 +681,30 @@ public class BanHangTaiQuayService {
     }
 
     private boolean trangThaiHoaDonCho(Integer trangThai) {
-        return trangThai != null && trangThai == TRANG_THAI_HOA_DON_CHO;
+        return trangThai != null && trangThai == TRANG_THAI_HOA_DON_CHO_XAC_NHAN;
+    }
+
+    private void luuLichSuHoaDon(HoaDon hoaDon, Integer trangThai, String ghiChu) {
+        if (hoaDon == null || trangThai == null) {
+            return;
+        }
+
+        LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+        lichSuHoaDon.setHoaDon(hoaDon);
+        lichSuHoaDon.setNhanVien(hoaDon.getNhanVien());
+        lichSuHoaDon.setTrangThai(labelTrangThaiHoaDon(trangThai));
+        lichSuHoaDon.setGhiChu(ghiChu);
+        lichSuHoaDon.setNgayTao(Instant.now());
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+    }
+
+    private String labelTrangThaiHoaDon(Integer trangThai) {
+        return switch (trangThai) {
+            case TRANG_THAI_HOA_DON_CHO_XAC_NHAN -> "Ch\u1edd x\u00e1c nh\u1eadn";
+            case TRANG_THAI_HOA_DON_HOAN_THANH -> "Ho\u00e0n th\u00e0nh";
+            case TRANG_THAI_HOA_DON_HUY -> "H\u1ee7y";
+            default -> "Ch\u1edd x\u00e1c nh\u1eadn";
+        };
     }
 
     private BigDecimal xacDinhTienKhachDua(Integer hinhThuc, BigDecimal tienKhachDua, BigDecimal tongTien) {
