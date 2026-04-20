@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import {
   Edit, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2, UserSearch
 } from "lucide-vue-next";
@@ -26,6 +27,7 @@ const tabs = [
 ];
 
 const activeTab = ref("phieu");
+const router = useRouter();
 const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
@@ -54,15 +56,6 @@ const dsTrangThai = [
 const phieuOptions = ref([]);
 const emailOptions = ref([]);
 
-const modalOpen = ref(false);
-const modalMode = ref("create");
-const modalTarget = ref("phieu");
-
-const form = reactive({
-  id: null, ma: "", ten: "", loai: "1", giaTri: "", giaTriToiThieu: "0",
-  giamToiDa: "0", ngayBatDau: "", ngayKetThuc: "", soLuong: "", soLuongDaDung: 0, trangThai: "1", ngayTao: ""
-});
-
 const khForm = reactive({
   id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1", ngayTao: ""
 });
@@ -75,6 +68,14 @@ function mauTrangThai(trangThai) {
 
 function statusText(value) {
   return Number(value) === 1 ? "Kích hoạt" : "Tắt";
+}
+
+function mauLoaiGiam(loai) {
+  return Number(loai) === 1 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600";
+}
+
+function loaiGiamText(loai) {
+  return Number(loai) === 1 ? "Phần trăm" : "Tiền mặt";
 }
 
 function toDisplayDate(value) {
@@ -255,55 +256,34 @@ async function xuatExcel() {
 }
 
 function openCreateModal(target) {
+  if (target === "phieu") {
+    router.push({ name: "admin-phieu-giam-gia-them" });
+    return;
+  }
   modalOpen.value = true;
   modalMode.value = "create";
   modalTarget.value = target;
   resetErrors();
-  if (target === "phieu") {
-    Object.assign(form, {
-      id: null, ma: "", ten: "", loai: "1", giaTri: "", giaTriToiThieu: "0",
-      giamToiDa: "0", ngayBatDau: "", ngayKetThuc: "", soLuong: "", soLuongDaDung: 0, trangThai: "1", ngayTao: getToday()
-    });
-  } else {
-    Object.assign(khForm, { id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1", ngayTao: getToday() });
-  }
+  Object.assign(khForm, { id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1" });
 }
 
 async function openEditModal(target, item) {
+  if (target === "phieu") {
+    router.push({ name: "admin-phieu-giam-gia-chi-tiet", params: { id: item.id } });
+    return;
+  }
   modalOpen.value = true;
   modalMode.value = "edit";
   modalTarget.value = target;
   resetErrors();
-  if (target === "phieu") {
-    const detail = await getPhieuGiamGiaDetail(item.id);
-    Object.assign(form, {
-      id: detail.id, ma: detail.ma ?? "", ten: detail.ten ?? "", loai: String(detail.loai ?? 1),
-      giaTri: detail.giaTri ?? "", giaTriToiThieu: detail.giaTriToiThieu ?? "0",
-      giamToiDa: detail.giamToiDa ?? "0", ngayBatDau: normalizeDateInput(detail.ngayBatDau),
-      ngayKetThuc: normalizeDateInput(detail.ngayKetThuc), soLuong: detail.soLuong ?? "",
-      soLuongDaDung: detail.soLuongDaDung ?? 0,
-      trangThai: String(detail.trangThai ?? 1),
-      ngayTao: normalizeDateInput(detail.ngayTao) || getToday()
-    });
-  } else {
-    const detail = await getPhieuGiamGiaKhachHangDetail(item.id);
-    let email = "";
-    const khachHangId = item?.khachHangId || detail?.khachHangId;
-    if (khachHangId) {
-      try {
-        const khachHang = await layChiTietKhachHang(khachHangId);
-        email = khachHang?.email || "";
-      } catch {}
-    }
-    Object.assign(khForm, {
-      id: detail.id, 
-      phieuGiamGiaId: detail.phieuGiamGiaId ? String(detail.phieuGiamGiaId) : "",
-      email,
-      ngaySuDung: normalizeDateInput(detail.ngaySuDung),
-      trangThai: String(detail.trangThai ?? 1),
-      ngayTao: normalizeDateInput(detail.ngayTao) || getToday()
-    });
-  }
+  const detail = await getPhieuGiamGiaKhachHangDetail(item.id);
+  Object.assign(khForm, {
+    id: detail.id, 
+    phieuGiamGiaId: detail.phieuGiamGiaId ? String(detail.phieuGiamGiaId) : "",
+    email: "", 
+    ngaySuDung: detail.ngaySuDung ?? "",
+    trangThai: String(detail.trangThai ?? 1)
+  });
 }
 
 async function removeItem(target, item) {
@@ -325,51 +305,27 @@ async function removeItem(target, item) {
 async function submitForm() {
   resetErrors();
   let isValid = true;
-  if (modalTarget.value === "phieu") {
-    if (!form.ma.trim()) { formErrors.ma = "Mã trống"; isValid = false; }
-    if (!form.ten.trim()) { formErrors.ten = "Tên trống"; isValid = false; }
-    if (!form.giaTri || Number(form.giaTri) <= 0) { formErrors.giaTri = "Giá trị ko hợp lệ"; isValid = false; }
-    if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng ko hợp lệ"; isValid = false; }
-    if (!form.ngayBatDau || !form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày"; isValid = false; }
-  } else {
-    if (!khForm.phieuGiamGiaId) { formErrors.phieuGiamGiaId = "Chọn phiếu"; isValid = false; }
-    if (!khForm.email || !khForm.email.includes('@')) { formErrors.email = "Email không hợp lệ"; isValid = false; }
-  }
+  if (!khForm.phieuGiamGiaId) { formErrors.phieuGiamGiaId = "Chọn phiếu"; isValid = false; }
+  if (!khForm.email || !khForm.email.includes('@')) { formErrors.email = "Email không hợp lệ"; isValid = false; }
 
   if (!isValid) return;
 
   saving.value = true;
   try {
-    if (modalTarget.value === "phieu") {
-      const payload = {
-        ma: form.ma.trim(), ten: form.ten.trim(), loai: Number(form.loai),
-        giaTri: Number(form.giaTri), giaTriToiThieu: Number(form.giaTriToiThieu),
-        giamToiDa: Number(form.giamToiDa), ngayBatDau: form.ngayBatDau,
-        ngayKetThuc: form.ngayKetThuc, soLuong: Number(form.soLuong),
-        soLuongDaDung: Number(form.soLuongDaDung ?? 0), trangThai: Number(form.trangThai),
-        ngayTao: form.ngayTao || getToday(),
-        ngayCapNhat: modalMode.value === "edit" ? getToday() : undefined
-      };
+    const payload = {
+      phieuGiamGiaId: Number(khForm.phieuGiamGiaId),
+      email: khForm.email.trim(),
+      ngaySuDung: khForm.ngaySuDung,
+      trangThai: Number(khForm.trangThai),
+      ngayTao: modalMode.value === "create" ? getToday() : undefined
+    };
 
-      if (modalMode.value === "create") await createPhieuGiamGia(payload);
-      else await updatePhieuGiamGia(form.id, payload);
-    } else {
-      const payload = {
-        phieuGiamGiaId: Number(khForm.phieuGiamGiaId),
-        email: khForm.email.trim(),
-        ngaySuDung: khForm.ngaySuDung,
-        trangThai: Number(khForm.trangThai),
-        ngayTao: khForm.ngayTao || getToday()
-      };
-
-      if (modalMode.value === "create") await createPhieuGiamGiaKhachHang(payload);
-      else await updatePhieuGiamGiaKhachHang(khForm.id, payload);
-    }
+    if (modalMode.value === "create") await createPhieuGiamGiaKhachHang(payload);
+    else await updatePhieuGiamGiaKhachHang(khForm.id, payload);
 
     modalOpen.value = false;
     alert("Lưu thành công");
-    if (modalTarget.value === "phieu") taiDanhSach();
-    else taiDanhSachKh();
+    taiDanhSachKh();
   } catch (error) {
     alert(error.message || "Lưu thất bại");
   } finally {
@@ -502,7 +458,11 @@ onMounted(taiDanhSach);
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ma }}</td>
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ten }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ Number(item.loai) === 1 ? 'Phần trăm' : 'Tiền mặt' }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiGiam(item.loai)">
+                  {{ loaiGiamText(item.loai) }}
+                </span>
+              </td>
               <td class="px-4 py-3 text-slate-600">{{ item.giaTri }}</td>
               <td class="px-4 py-3 text-slate-600">{{ item.soLuong }}</td>
               <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}<br/>{{ toDisplayDate(item.ngayKetThuc) }}</td>
@@ -596,73 +556,17 @@ onMounted(taiDanhSach);
 
     <!-- Modal Form Thêm/Sửa -->
     <div v-if="modalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
-      <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
           <div>
             <h2 class="text-xl font-bold text-slate-800">
-              {{ modalMode === "create" ? (modalTarget === "phieu" ? "Thêm phiếu giảm giá" : "Tặng phiếu khách hàng") : "Cập nhật dữ liệu" }}
+              {{ modalMode === "create" ? "Tặng phiếu khách hàng" : "Cập nhật dữ liệu" }}
             </h2>
           </div>
           <button class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" @click="modalOpen = false">✕</button>
         </div>
 
-        <div v-if="modalTarget === 'phieu'" class="space-y-4 px-6 py-6">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Mã phiếu</label>
-              <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.ma" class="mt-1 text-xs text-rose-500">{{ formErrors.ma }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Tên phiếu</label>
-              <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.ten" class="mt-1 text-xs text-rose-500">{{ formErrors.ten }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Loại giảm</label>
-              <select v-model="form.loai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Phần trăm</option>
-                <option value="2">Tiền mặt</option>
-              </select>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Giá trị giảm</label>
-              <input v-model="form.giaTri" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTri }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Giá trị đơn tổi thiểu</label>
-              <input v-model="form.giaTriToiThieu" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Giảm tối đa</label>
-              <input v-model="form.giamToiDa" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Số lượng</label>
-              <input v-model="form.soLuong" type="number" min="1" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.soLuong" class="mt-1 text-xs text-rose-500">{{ formErrors.soLuong }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Trạng thái</label>
-              <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Kích hoạt</option>
-                <option value="0">Tắt</option>
-              </select>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Ngày bắt đầu</label>
-              <input v-model="form.ngayBatDau" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Ngày kết thúc</label>
-              <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayKetThuc }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div v-else class="space-y-4 px-6 py-6">
+        <div class="space-y-4 px-6 py-6">
           <div class="grid gap-4 md:grid-cols-2">
             <div>
               <label class="mb-1 block text-sm font-semibold text-slate-700">Chọn Phiếu</label>
