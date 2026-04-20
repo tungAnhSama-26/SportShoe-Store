@@ -2,6 +2,10 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
+  ChevronLeft, ChevronRight, Eye, FileSpreadsheet, Filter, Plus, RefreshCw, RotateCcw, Search, ToggleLeft, ToggleRight, Users
+} from "lucide-vue-next";
+import { doiTrangThaiNhanVien, layDanhSachNhanVien } from "../../../services/nhan-vien";
+import { useAdminSession } from "../../../composable/useAdminSession";
   Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Users
 } from "lucide-vue-next";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
@@ -9,6 +13,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 
 const router = useRouter();
+const { adminSession } = useAdminSession();
 
 const danhSach = ref([]);
 const dangTai = ref(false);
@@ -114,6 +119,33 @@ watch(() => boLoc.value, () => {
   clearTimeout(timer);
   timer = setTimeout(taiDanhSach, 300);
 }, { deep: true });
+
+async function capNhatTrangThai(nv: any) {
+  // Kiểm tra quyền: Chỉ Admin mới được đổi trạng thái
+  if (adminSession.value.vaiTro !== "Quản trị viên") {
+    window.alert("Chỉ có Quản trị viên mới có quyền thực hiện hành động này.");
+    return;
+  }
+
+  // Không cho phép khóa tài khoản Admin khác
+  if (nv.tenVaiTro === "Admin") {
+    window.alert("Không thể thay đổi trạng thái của tài khoản Quản trị viên.");
+    return;
+  }
+
+  const message = nv.trangThai === 1
+    ? `Bạn có chắc muốn cho nhân viên "${nv.hoTen}" nghỉ làm?`
+    : `Bạn có chắc muốn kích hoạt lại nhân viên "${nv.hoTen}"?`;
+
+  if (!window.confirm(message)) return;
+
+  try {
+    await doiTrangThaiNhanVien(nv.id, nv.trangThai === 1 ? 0 : 1);
+    await taiDanhSach();
+  } catch (e) {
+    window.alert(e instanceof Error ? e.message : "Không thể cập nhật trạng thái");
+  }
+}
 
 onMounted(taiDanhSach);
 </script>
@@ -246,14 +278,30 @@ onMounted(taiDanhSach);
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
-                <button
-                  type="button"
-                  @click="xemChiTiet(nv.id)"
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
-                  title="Xem chi tiết"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
+                <div class="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    @click="xemChiTiet(nv.id)"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
+                    title="Xem chi tiết"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </button>
+                  <button
+                    v-if="adminSession.vaiTro === 'Quản trị viên'"
+                    :disabled="nv.tenVaiTro === 'Admin'"
+                    type="button"
+                    @click="capNhatTrangThai(nv)"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition"
+                    :class="[
+                      nv.trangThai === 1 ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-rose-50 text-rose-600 hover:bg-rose-100',
+                      nv.tenVaiTro === 'Admin' ? 'opacity-40 cursor-not-allowed' : ''
+                    ]"
+                    :title="nv.tenVaiTro === 'Admin' ? 'Không thể đổi trạng thái Admin' : (nv.trangThai === 1 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên')"
+                  >
+                    <component :is="nv.trangThai === 1 ? ToggleRight : ToggleLeft" class="h-5 w-5" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
