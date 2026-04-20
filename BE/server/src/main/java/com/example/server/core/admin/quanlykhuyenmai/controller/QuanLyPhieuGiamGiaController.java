@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanlykhuyenmai.controller;
 import com.example.server.core.admin.quanlykhuyenmai.dto.request.PhieuGiamGiaRequest;
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse;
 import com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,12 +46,12 @@ public class QuanLyPhieuGiamGiaController {
     }
 
     @PostMapping("add")
-    public void add(@RequestBody PhieuGiamGiaRequest request) {
+    public void add(@Valid @RequestBody PhieuGiamGiaRequest request) {
         phieuGiamGiaService.add(request);
     }
 
     @PutMapping("update")
-    public void update(@RequestParam("id") Integer id, @RequestBody PhieuGiamGiaRequest request) {
+    public void update(@RequestParam("id") Integer id, @Valid @RequestBody PhieuGiamGiaRequest request) {
         phieuGiamGiaService.update(id, request);
     }
 }

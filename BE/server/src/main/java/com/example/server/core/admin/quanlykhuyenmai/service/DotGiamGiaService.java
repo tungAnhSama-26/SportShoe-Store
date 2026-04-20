@@ -39,7 +39,7 @@ public class DotGiamGiaService {
 
     public DotGiamGia add(DotGiamGiaRequest request) {
         DotGiamGia dotGiamGia = new DotGiamGia();
-        BeanUtils.copyProperties(request, dotGiamGia);
+        mapRequestToEntity(request, dotGiamGia);
         return dotGiamGiaRepository.save(dotGiamGia);
     }
 
@@ -47,6 +47,12 @@ public class DotGiamGiaService {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
 
+        mapRequestToEntity(request, dotGiamGia);
+
+        return dotGiamGiaRepository.save(dotGiamGia);
+    }
+
+    private void mapRequestToEntity(DotGiamGiaRequest request, DotGiamGia dotGiamGia) {
         dotGiamGia.setMa(request.getMa());
         dotGiamGia.setTen(request.getTen());
         dotGiamGia.setMoTa(request.getMoTa());
@@ -54,10 +60,14 @@ public class DotGiamGiaService {
         dotGiamGia.setGiaTriGiam(request.getGiaTriGiam());
         dotGiamGia.setNgayBatDau(request.getNgayBatDau());
         dotGiamGia.setNgayKetThuc(request.getNgayKetThuc());
-        dotGiamGia.setKichHoat(request.getKichHoat());
-        dotGiamGia.setNgayTao(request.getNgayTao());
+        
+        // Handle defaults for NotNull fields
+        dotGiamGia.setKichHoat(request.getKichHoat() == null ? 1 : request.getKichHoat());
+        
+        if (dotGiamGia.getNgayTao() == null) {
+            dotGiamGia.setNgayTao(request.getNgayTao() == null ? java.time.LocalDate.now() : request.getNgayTao());
+        }
+        
         dotGiamGia.setNgayCapNhat(request.getNgayCapNhat());
-
-        return dotGiamGiaRepository.save(dotGiamGia);
     }
 }

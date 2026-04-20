@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import {
   ChevronLeft, ChevronRight, Eye, Filter, Plus, RefreshCw, Search, Tag, Edit, Trash2, PackageSearch
 } from "lucide-vue-next";
@@ -23,6 +24,7 @@ const tabs = [
 ];
 
 const activeTab = ref("dot");
+const router = useRouter();
 const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
@@ -66,14 +68,6 @@ const dsTrangThai = [
 
 const dotOptions = ref([]);
 
-const modalOpen = ref(false);
-const modalMode = ref("create");
-const modalTarget = ref("dot");
-
-const dotForm = reactive({
-  id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "", ngayBatDau: "", ngayKetThuc: "", kichHoat: "1"
-});
-
 const dotSanPhamForm = reactive({
   id: null, dotGiamGiaId: "", giayId: "", trangThai: "1"
 });
@@ -89,6 +83,14 @@ function mauTrangThai(trangThai) {
 
 function statusText(value) {
   return Number(value) === 1 ? "Kích hoạt" : "Tắt";
+}
+
+function mauLoaiGiam(loai) {
+  return Number(loai) === 1 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600";
+}
+
+function loaiGiamText(loai) {
+  return Number(loai) === 1 ? "Phần trăm" : "Tiền mặt";
 }
 
 function toDisplayDate(value) {
@@ -175,40 +177,33 @@ function lamMoiBoLoc() {
 
 
 function openCreateModal(target) {
+  if (target === "dot") {
+    router.push({ name: "admin-dot-giam-gia-them" });
+    return;
+  }
   modalOpen.value = true;
   modalMode.value = "create";
   modalTarget.value = target;
   resetErrors();
-  if (target === "dot") {
-    Object.assign(dotForm, { id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "", ngayBatDau: "", ngayKetThuc: "", kichHoat: "1" });
-  } else {
-    Object.assign(dotSanPhamForm, { id: null, dotGiamGiaId: "", giayId: "", trangThai: "1" });
-    productSearch.value = "";
-  }
+  Object.assign(dotSanPhamForm, { id: null, dotGiamGiaId: "", giayId: "", trangThai: "1" });
+  productSearch.value = "";
 }
 
 async function openEditModal(target, item) {
+  if (target === "dot") {
+    router.push({ name: "admin-dot-giam-gia-chi-tiet", params: { id: item.id } });
+    return;
+  }
   modalOpen.value = true;
   modalMode.value = "edit";
   modalTarget.value = target;
   resetErrors();
-  
-  if (target === "dot") {
-    const detail = await getDotGiamGiaDetail(item.id);
-    Object.assign(dotForm, {
-      id: detail.id, ma: detail.ma ?? "", ten: detail.ten ?? "", moTa: detail.moTa ?? "",
-      loaiGiam: String(detail.loaiGiam ?? 1), giaTriGiam: detail.giaTriGiam ?? "",
-      ngayBatDau: detail.ngayBatDau ?? "", ngayKetThuc: detail.ngayKetThuc ?? "",
-      kichHoat: String(detail.kichHoat ?? 1)
-    });
-  } else {
-    const detail = await getDotGiamGiaSanPhamDetail(item.id);
-    Object.assign(dotSanPhamForm, {
-      id: detail.id, dotGiamGiaId: detail.dotGiamGiaId ? String(detail.dotGiamGiaId) : "",
-      giayId: detail.giayId ? String(detail.giayId) : "", trangThai: String(detail.trangThai ?? 1)
-    });
-    productSearch.value = detail.tenGiay ?? "";
-  }
+  const detail = await getDotGiamGiaSanPhamDetail(item.id);
+  Object.assign(dotSanPhamForm, {
+    id: detail.id, dotGiamGiaId: detail.dotGiamGiaId ? String(detail.dotGiamGiaId) : "",
+    giayId: detail.giayId ? String(detail.giayId) : "", trangThai: String(detail.trangThai ?? 1)
+  });
+  productSearch.value = detail.tenGiay ?? "";
 }
 
 async function removeItem(target, item) {
@@ -236,42 +231,22 @@ watch(productSearch, async (val) => {
 async function submitForm() {
   resetErrors();
   let isValid = true;
-  if (modalTarget.value === "dot") {
-    if (!dotForm.ma.trim()) { formErrors.ma = "Mã trống"; isValid = false; }
-    if (!dotForm.ten.trim()) { formErrors.ten = "Tên trống"; isValid = false; }
-    if (!dotForm.giaTriGiam || Number(dotForm.giaTriGiam) <= 0) { formErrors.giaTriGiam = "Giá trị ko hợp lệ"; isValid = false; }
-    if (!dotForm.ngayBatDau || !dotForm.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày"; isValid = false; }
-  } else {
-    if (!dotSanPhamForm.dotGiamGiaId) { formErrors.dotGiamGiaId = "Chọn đợt"; isValid = false; }
-    if (!dotSanPhamForm.giayId || Number(dotSanPhamForm.giayId) <= 0) { formErrors.giayId = "ID giày không hợp lệ"; isValid = false; }
-  }
+  if (!dotSanPhamForm.dotGiamGiaId) { formErrors.dotGiamGiaId = "Chọn đợt"; isValid = false; }
+  if (!dotSanPhamForm.giayId || Number(dotSanPhamForm.giayId) <= 0) { formErrors.giayId = "ID giày không hợp lệ"; isValid = false; }
   if (!isValid) return;
 
   saving.value = true;
   try {
-    if (modalTarget.value === "dot") {
-      const payload = {
-        ma: dotForm.ma.trim(), ten: dotForm.ten.trim(), moTa: dotForm.moTa.trim(),
-        loaiGiam: Number(dotForm.loaiGiam), giaTriGiam: Number(dotForm.giaTriGiam),
-        ngayBatDau: dotForm.ngayBatDau, ngayKetThuc: dotForm.ngayKetThuc,
-        kichHoat: Number(dotForm.kichHoat),
-        ngayTao: modalMode.value === "create" ? getToday() : undefined,
-        ngayCapNhat: modalMode.value === "edit" ? getToday() : undefined
-      };
-      if (modalMode.value === "create") await createDotGiamGia(payload);
-      else await updateDotGiamGia(dotForm.id, payload);
-    } else {
-      const payload = {
-        dotGiamGiaId: Number(dotSanPhamForm.dotGiamGiaId), giayId: Number(dotSanPhamForm.giayId),
-        trangThai: Number(dotSanPhamForm.trangThai), ngayTao: getToday()
-      };
-      if (modalMode.value === "create") await createDotGiamGiaSanPham(payload);
-      else await updateDotGiamGiaSanPham(dotSanPhamForm.id, payload);
-    }
+    const payload = {
+      dotGiamGiaId: Number(dotSanPhamForm.dotGiamGiaId), giayId: Number(dotSanPhamForm.giayId),
+      trangThai: Number(dotSanPhamForm.trangThai), ngayTao: getToday()
+    };
+    if (modalMode.value === "create") await createDotGiamGiaSanPham(payload);
+    else await updateDotGiamGiaSanPham(dotSanPhamForm.id, payload);
+    
     modalOpen.value = false;
     alert("Lưu thành công");
-    if (modalTarget.value === "dot") taiDanhSach();
-    else taiDanhSachSp();
+    taiDanhSachSp();
   } catch (error) {
     alert(error.message || "Lưu thất bại");
   } finally {
@@ -395,7 +370,11 @@ onMounted(taiDanhSach);
                 <div>{{ item.ten }}</div>
                 <div class="font-normal text-xs text-slate-500">{{ item.moTa || '—' }}</div>
               </td>
-              <td class="px-4 py-3 text-slate-600">{{ Number(item.loaiGiam) === 1 ? 'Phần trăm' : 'Tiền mặt' }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiGiam(item.loaiGiam)">
+                  {{ loaiGiamText(item.loaiGiam) }}
+                </span>
+              </td>
               <td class="px-4 py-3 text-slate-600">{{ item.giaTriGiam }}</td>
               <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }} - {{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
@@ -497,64 +476,17 @@ onMounted(taiDanhSach);
 
     <!-- Modal Form Thêm/Sửa -->
     <div v-if="modalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
-      <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
           <div>
             <h2 class="text-xl font-bold text-slate-800">
-              {{ modalMode === "create" ? (modalTarget === "dot" ? "Thêm đợt giảm giá" : "Thêm sản phẩm") : "Cập nhật dữ liệu" }}
+              {{ modalMode === "create" ? "Thêm sản phẩm áp dụng" : "Cập nhật dữ liệu" }}
             </h2>
           </div>
           <button class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" @click="modalOpen = false">✕</button>
         </div>
 
-        <div v-if="modalTarget === 'dot'" class="space-y-4 px-6 py-6">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Mã</label>
-              <input v-model="dotForm.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.ma" class="mt-1 text-xs text-rose-500">{{ formErrors.ma }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Tên đợt</label>
-              <input v-model="dotForm.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.ten" class="mt-1 text-xs text-rose-500">{{ formErrors.ten }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Loại giảm</label>
-              <select v-model="dotForm.loaiGiam" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Phần trăm</option>
-                <option value="2">Tiền mặt</option>
-              </select>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Giá trị giảm</label>
-              <input v-model="dotForm.giaTriGiam" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.giaTriGiam" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTriGiam }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Ngày bắt đầu</label>
-              <input v-model="dotForm.ngayBatDau" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Ngày kết thúc</label>
-              <input v-model="dotForm.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayKetThuc }}</p>
-            </div>
-            <div class="md:col-span-2">
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Mô tả</label>
-              <textarea v-model="dotForm.moTa" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"></textarea>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Kích hoạt</label>
-              <select v-model="dotForm.kichHoat" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Kích hoạt</option>
-                <option value="0">Tắt</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div v-else class="space-y-4 px-6 py-6">
+        <div class="space-y-4 px-6 py-6">
           <div class="grid gap-4 md:grid-cols-2">
             <div>
               <label class="mb-1 block text-sm font-semibold text-slate-700">Đợt giảm giá</label>
