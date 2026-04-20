@@ -2,9 +2,9 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Users
+  Eye, FileSpreadsheet, Filter, Lock, Plus, RotateCcw, Search, Unlock, Users
 } from "lucide-vue-next";
-import { layDanhSachKhachHang } from "../../../services/khach-hang";
+import { doiTrangThaiKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 
@@ -67,6 +67,24 @@ function lamMoiBoLoc() {
 
 function xemChiTiet(id: string) {
   router.push({ name: "admin-khach-hang-chi-tiet", params: { id } });
+}
+
+const dangDoiTrangThai = ref<string | null>(null);
+
+async function toggleTrangThai(kh: any) {
+  if (dangDoiTrangThai.value) return;
+  dangDoiTrangThai.value = kh.id;
+  try {
+    const trangThaiMoi = kh.trangThai === 1 ? 0 : 1;
+    await doiTrangThaiKhachHang(kh.id, trangThaiMoi);
+    kh.trangThai = trangThaiMoi;
+    kh.tenTrangThai = trangThaiMoi === 1 ? "Hoạt động" : "Khóa";
+  } catch (e) {
+    loiTrang.value = e instanceof Error ? e.message : "Không thể đổi trạng thái";
+    setTimeout(() => (loiTrang.value = ""), 3000);
+  } finally {
+    dangDoiTrangThai.value = null;
+  }
 }
 
 function themMoi() {
@@ -223,14 +241,31 @@ onMounted(taiDanhSach);
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
-                <button
-                  type="button"
-                  @click="xemChiTiet(kh.id)"
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
-                  title="Xem chi tiết"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
+                <div class="inline-flex items-center gap-2">
+                  <button
+                    type="button"
+                    @click="xemChiTiet(kh.id)"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
+                    title="Xem chi tiết"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    @click="toggleTrangThai(kh)"
+                    :disabled="dangDoiTrangThai === kh.id"
+                    :title="kh.trangThai === 1 ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'"
+                    :class="[
+                      'inline-flex h-10 w-10 items-center justify-center rounded-full transition disabled:opacity-50',
+                      kh.trangThai === 1
+                        ? 'bg-emerald-50 text-emerald-600 hover:bg-rose-50 hover:text-rose-500'
+                        : 'bg-rose-50 text-rose-500 hover:bg-emerald-50 hover:text-emerald-600'
+                    ]"
+                  >
+                    <Unlock v-if="kh.trangThai === 1" class="h-4 w-4" />
+                    <Lock v-else class="h-4 w-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
