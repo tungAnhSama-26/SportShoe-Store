@@ -1,136 +1,609 @@
 <script setup>
-import { computed } from "vue";
-import { Calendar, Edit, Eye, Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-vue-next";
-import AppPagination from "../../../components/common/AppPagination.vue";
-import { usePagination } from "../../../composable/usePagination";
-const coupons = [];
-const getStatusClass = (status) => {
-  if (status === "\u0110ang \xE1p d\u1EE5ng") return "bg-[#10b981] text-white";
-  if (status === "H\u1EBFt h\u1EA1n" || status === "H\u1EBFt s\u1ED1 l\u01B0\u1EE3ng") return "bg-[#ff3b30] text-white";
-  if (status === "Ch\u01B0a \xE1p d\u1EE5ng") return "bg-[#fbbf24] text-white";
-  return "bg-gray-500 text-white";
-};
-const { currentPage, pageSize, totalItems, paginatedItems } = usePagination(coupons, 5);
-const startIndex = computed(() => (currentPage.value - 1) * pageSize.value);
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import {
+  Edit, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2, UserSearch
+} from "lucide-vue-next";
+import {
+  createPhieuGiamGia,
+  deletePhieuGiamGia,
+  getPhieuGiamGiaDetail,
+  getPhieuGiamGiaList,
+  updatePhieuGiamGia,
+  getPhieuGiamGiaKhachHangList,
+  getPhieuGiamGiaKhachHangDetail,
+  createPhieuGiamGiaKhachHang,
+  updatePhieuGiamGiaKhachHang,
+  deletePhieuGiamGiaKhachHang,
+  getEmailSuggestions
+} from "../../../services/khuyen-mai";
+import { layChiTietKhachHang } from "../../../services/khach-hang";
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import { exportRowsToExcel } from "../../../utils/export-excel";
+
+const tabs = [
+  { key: "phieu", label: "Phiếu giảm giá" },
+  { key: "khach-hang", label: "Phiếu khách hàng" }
+];
+
+const activeTab = ref("phieu");
+const router = useRouter();
+const dangTai = ref(false);
+const saving = ref(false);
+const loiTrang = ref("");
+
+const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" });
+const boLocKh = ref({ keyword: "", trangThai: "" });
+
+const danhSach = ref([]);
+const tongSoTrang = ref(1);
+const soPhanTuMotTrang = ref(5);
+const trangHienTai = ref(1);
+const totalItems = ref(0);
+
+const danhSachKh = ref([]);
+const tongSoTrangKh = ref(1);
+const soPhanTuMotTrangKh = ref(5);
+const trangHienTaiKh = ref(1);
+const totalItemsKh = ref(0);
+
+const dsTrangThai = [
+  { label: "Tất cả", value: "" },
+  { label: "Kích hoạt", value: "1" },
+  { label: "Tắt", value: "0" },
+];
+
+const phieuOptions = ref([]);
+const emailOptions = ref([]);
+
+const khForm = reactive({
+  id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1", ngayTao: ""
+});
+
+const formErrors = reactive({});
+
+function mauTrangThai(trangThai) {
+  return Number(trangThai) === 1 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600";
+}
+
+function statusText(value) {
+  return Number(value) === 1 ? "Kích hoạt" : "Tắt";
+}
+
+function mauLoaiGiam(loai) {
+  return Number(loai) === 1 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600";
+}
+
+function loaiGiamText(loai) {
+  return Number(loai) === 1 ? "Phần trăm" : "Tiền mặt";
+}
+
+function toDisplayDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("vi-VN");
+}
+
+function getToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeDateInput(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+function resetErrors() {
+  Object.keys(formErrors).forEach((key) => delete formErrors[key]);
+}
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'phieu') {
+    trangHienTai.value = 1;
+    taiDanhSach();
+  } else {
+    trangHienTaiKh.value = 1;
+    taiDanhSachKh();
+  }
+});
+
+watch(soPhanTuMotTrang, () => { trangHienTai.value = 1; taiDanhSach(); });
+watch(trangHienTai, taiDanhSach);
+
+watch(soPhanTuMotTrangKh, () => { trangHienTaiKh.value = 1; taiDanhSachKh(); });
+watch(trangHienTaiKh, taiDanhSachKh);
+
+let timer;
+watch(() => boLoc.value, () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { trangHienTai.value = 1; taiDanhSach(); }, 300);
+}, { deep: true });
+
+let timerKh;
+watch(() => boLocKh.value, () => {
+  clearTimeout(timerKh);
+  timerKh = setTimeout(() => { trangHienTaiKh.value = 1; taiDanhSachKh(); }, 300);
+}, { deep: true });
+
+async function taiDanhSach() {
+  dangTai.value = true;
+  loiTrang.value = "";
+  try {
+    const data = await getPhieuGiamGiaList({
+      keyword: boLoc.value.keyword || undefined,
+      trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
+      loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+      tuNgay: boLoc.value.tuNgay || undefined,
+      denNgay: boLoc.value.denNgay || undefined,
+      pageNo: trangHienTai.value - 1,
+      pageSize: soPhanTuMotTrang.value
+    });
+    danhSach.value = data?.content || [];
+    tongSoTrang.value = data?.totalPages || 1;
+    totalItems.value = data?.totalElements || 0;
+  } catch (e) {
+    loiTrang.value = e.message || "Lỗi tải phiếu giảm giá";
+  } finally {
+    dangTai.value = false;
+  }
+}
+
+async function taiDanhSachKh() {
+  dangTai.value = true;
+  loiTrang.value = "";
+  try {
+    const data = await getPhieuGiamGiaKhachHangList({
+      keyword: boLocKh.value.keyword || undefined,
+      trangThai: boLocKh.value.trangThai !== "" ? Number(boLocKh.value.trangThai) : undefined,
+      pageNo: trangHienTaiKh.value - 1,
+      pageSize: soPhanTuMotTrangKh.value
+    });
+    danhSachKh.value = data?.content || [];
+    tongSoTrangKh.value = data?.totalPages || 1;
+    totalItemsKh.value = data?.totalElements || 0;
+
+    // Fetch optional options in background
+    getPhieuGiamGiaList({ pageNo: 0, pageSize: 1000, trangThai: 1 })
+      .then(res => phieuOptions.value = res?.content || [])
+      .catch(err => console.error("Error loading phieu options:", err));
+
+    getEmailSuggestions()
+      .then(res => emailOptions.value = Array.isArray(res) ? res : [])
+      .catch(err => console.error("Error loading email suggestions:", err));
+
+  } catch (e) {
+    loiTrang.value = e.message || "Lỗi tải phiếu khách hàng";
+  } finally {
+    dangTai.value = false;
+  }
+}
+
+function lamMoiBoLoc() {
+  if (activeTab.value === 'phieu') {
+    boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" };
+  } else {
+    boLocKh.value = { keyword: "", trangThai: "" };
+  }
+}
+
+async function xuatExcel() {
+  try {
+    if (activeTab.value === "phieu") {
+      const data = await getPhieuGiamGiaList({
+        keyword: boLoc.value.keyword || undefined,
+        trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
+        loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+        tuNgay: boLoc.value.tuNgay || undefined,
+        denNgay: boLoc.value.denNgay || undefined,
+        pageNo: 0,
+        pageSize: Math.max(totalItems.value || 0, soPhanTuMotTrang.value, 1),
+      });
+
+      const rows = data?.content || [];
+      if (!rows.length) {
+        window.alert("Không có dữ liệu để xuất Excel.");
+        return;
+      }
+
+      exportRowsToExcel({
+        filename: "quan-ly-phieu-giam-gia",
+        sheetName: "PhieuGiamGia",
+        columns: [
+          { label: "STT", value: (_, index) => index + 1 },
+          { label: "Mã", key: "ma" },
+          { label: "Tên", key: "ten" },
+          { label: "Loại giảm", value: (row) => Number(row.loai) === 1 ? "Phần trăm" : "Tiền mặt" },
+          { label: "Giá trị", key: "giaTri" },
+          { label: "Số lượng", key: "soLuong" },
+          { label: "Ngày bắt đầu", value: (row) => toDisplayDate(row.ngayBatDau) },
+          { label: "Ngày kết thúc", value: (row) => toDisplayDate(row.ngayKetThuc) },
+          { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+        ],
+        rows,
+      });
+      return;
+    }
+
+    const data = await getPhieuGiamGiaKhachHangList({
+      keyword: boLocKh.value.keyword || undefined,
+      trangThai: boLocKh.value.trangThai !== "" ? Number(boLocKh.value.trangThai) : undefined,
+      pageNo: 0,
+      pageSize: Math.max(totalItemsKh.value || 0, soPhanTuMotTrangKh.value, 1),
+    });
+
+    const rows = data?.content || [];
+    if (!rows.length) {
+      window.alert("Không có dữ liệu để xuất Excel.");
+      return;
+    }
+
+    exportRowsToExcel({
+      filename: "quan-ly-phieu-khach-hang",
+      sheetName: "PhieuKhachHang",
+      columns: [
+        { label: "STT", value: (_, index) => index + 1 },
+        { label: "Mã phiếu", key: "maPhieuGiamGia" },
+        { label: "Tên phiếu", key: "tenPhieuGiamGia" },
+        { label: "Khách hàng", value: (row) => row.tenKhachHang || "—" },
+        { label: "Ngày tạo", value: (row) => toDisplayDate(row.ngayTao) },
+        { label: "Ngày sử dụng", value: (row) => row.ngaySuDung ? toDisplayDate(row.ngaySuDung) : "—" },
+        { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+      ],
+      rows,
+    });
+  } catch (error) {
+    window.alert(error?.message || "Xuất Excel thất bại.");
+  }
+}
+
+function openCreateModal(target) {
+  if (target === "phieu") {
+    router.push({ name: "admin-phieu-giam-gia-them" });
+    return;
+  }
+  modalOpen.value = true;
+  modalMode.value = "create";
+  modalTarget.value = target;
+  resetErrors();
+  Object.assign(khForm, { id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1" });
+}
+
+async function openEditModal(target, item) {
+  if (target === "phieu") {
+    router.push({ name: "admin-phieu-giam-gia-chi-tiet", params: { id: item.id } });
+    return;
+  }
+  modalOpen.value = true;
+  modalMode.value = "edit";
+  modalTarget.value = target;
+  resetErrors();
+  const detail = await getPhieuGiamGiaKhachHangDetail(item.id);
+  Object.assign(khForm, {
+    id: detail.id, 
+    phieuGiamGiaId: detail.phieuGiamGiaId ? String(detail.phieuGiamGiaId) : "",
+    email: "", 
+    ngaySuDung: detail.ngaySuDung ?? "",
+    trangThai: String(detail.trangThai ?? 1)
+  });
+}
+
+async function removeItem(target, item) {
+  if (!confirm(`Bạn có chắc muốn xóa phiếu này?`)) return;
+  try {
+    if (target === "phieu") {
+      await deletePhieuGiamGia(item.id);
+      taiDanhSach();
+    } else {
+      await deletePhieuGiamGiaKhachHang(item.id);
+      taiDanhSachKh();
+    }
+    alert("Xóa thành công.");
+  } catch (error) {
+    alert(error.message || "Xóa thất bại");
+  }
+}
+
+async function submitForm() {
+  resetErrors();
+  let isValid = true;
+  if (!khForm.phieuGiamGiaId) { formErrors.phieuGiamGiaId = "Chọn phiếu"; isValid = false; }
+  if (!khForm.email || !khForm.email.includes('@')) { formErrors.email = "Email không hợp lệ"; isValid = false; }
+
+  if (!isValid) return;
+
+  saving.value = true;
+  try {
+    const payload = {
+      phieuGiamGiaId: Number(khForm.phieuGiamGiaId),
+      email: khForm.email.trim(),
+      ngaySuDung: khForm.ngaySuDung,
+      trangThai: Number(khForm.trangThai),
+      ngayTao: modalMode.value === "create" ? getToday() : undefined
+    };
+
+    if (modalMode.value === "create") await createPhieuGiamGiaKhachHang(payload);
+    else await updatePhieuGiamGiaKhachHang(khForm.id, payload);
+
+    modalOpen.value = false;
+    alert("Lưu thành công");
+    taiDanhSachKh();
+  } catch (error) {
+    alert(error.message || "Lưu thất bại");
+  } finally {
+    saving.value = false;
+  }
+}
+
+onMounted(taiDanhSach);
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div class="mt-2 mb-4 flex items-center justify-between">
-      <h2 class="text-[22px] font-bold text-gray-800">Quản lý phiếu giảm giá</h2>
-    </div>
+  <div class="space-y-5">
+    <!-- Header -->
+    <section class="flex items-end justify-between">
+      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý phiếu giảm giá</h1>
+    </section>
 
-    <div class="relative flex w-full flex-col rounded-[20px] bg-white p-6 pb-8 shadow-sm">
-      <div class="mb-6 flex items-center text-[15px] font-bold text-gray-800">
-        <Filter class="mr-3 h-5 w-5 fill-gray-500 text-gray-500" />
-        Bộ lọc
+    <!-- Bộ lọc -->
+    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-5 flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+          <Filter class="h-5 w-5" />
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+          <p class="text-sm text-slate-400">Tra cứu nhanh dữ liệu.</p>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 items-end gap-6 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr]">
-        <div class="flex flex-col gap-2.5">
-          <label class="ml-1 text-[13px] font-bold text-gray-700">Tìm kiếm</label>
-          <div class="relative">
-            <Search class="absolute top-2.5 left-4 h-[18px] w-[18px] text-gray-400" />
-            <input type="text" placeholder="Nhập mã phiếu" class="w-full rounded-full border border-gray-200 bg-white py-2 pr-5 pl-10 text-sm text-gray-700 outline-none focus:border-red-300">
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div class="min-w-0 flex-1">
+            <div class="relative max-w-3xl">
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                v-model="(activeTab === 'phieu' ? boLoc : boLocKh).keyword"
+                type="text"
+                :placeholder="activeTab === 'phieu' ? 'Nhập mã hoặc tên phiếu...' : 'Mã phiếu, tên KH...'"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
+            </button>
+            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+            </button>
+            <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
+              <Plus class="h-4 w-4" /> Thêm mới
+            </button>
           </div>
         </div>
 
-        <div class="flex flex-col gap-2.5">
-          <label class="ml-1 text-[13px] font-bold text-gray-700">Ngày bắt đầu</label>
-          <div class="relative">
-            <input type="text" value="28/03/2026" class="w-full rounded-full border border-gray-200 bg-white py-2 pr-10 pl-5 text-sm text-gray-700 outline-none focus:border-red-300">
-            <Calendar class="absolute top-2.5 right-4 h-[18px] w-[18px] text-gray-500" />
-          </div>
-        </div>
+        <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-4">
+          <label class="space-y-2">
+            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+            <select v-model="(activeTab === 'phieu' ? boLoc : boLocKh).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
+            </select>
+          </label>
 
-        <div class="flex flex-col gap-2.5">
-          <label class="ml-1 text-[13px] font-bold text-gray-700">Ngày kết thúc</label>
-          <div class="relative">
-            <input type="text" placeholder="dd/mm/yy" class="w-full rounded-full border border-gray-200 bg-white py-2 pr-10 pl-5 text-sm text-gray-700 outline-none focus:border-red-300">
-            <Calendar class="absolute top-2.5 right-4 h-[18px] w-[18px] text-gray-500" />
-          </div>
-        </div>
+          <template v-if="activeTab === 'phieu'">
+            <label class="space-y-2">
+              <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
+              <select v-model="boLoc.loai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+                <option value="">Tất cả</option>
+                <option value="1">Phần trăm</option>
+                <option value="2">Tiền mặt</option>
+              </select>
+            </label>
 
-        <div class="flex flex-col gap-2.5">
-          <label class="ml-1 text-[13px] font-bold text-gray-700">Trạng thái</label>
-          <select class="w-full cursor-pointer appearance-none rounded-full border border-gray-200 bg-white px-5 py-2 text-sm text-gray-700 outline-none focus:border-red-300">
-            <option>Tất cả trạng thái</option>
-            <option>Đang áp dụng</option>
-            <option>Hết hạn</option>
-            <option>Hết số lượng</option>
-            <option>Chưa áp dụng</option>
-          </select>
+            <div class="grid gap-4 md:col-span-2 md:grid-cols-2 xl:col-span-2">
+              <label class="space-y-2">
+                <span class="mb-1 text-[13px] font-semibold text-slate-500">Từ ngày</span>
+                <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              </label>
+
+              <label class="space-y-2">
+                <span class="mb-1 text-[13px] font-semibold text-slate-500">Đến ngày</span>
+                <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              </label>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- Danh sách -->
+    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-5 flex items-center justify-between">
+        <div class="inline-flex rounded-2xl bg-slate-100 p-1">
+          <button v-for="tab in tabs" :key="tab.key" class="rounded-2xl px-5 py-2 text-sm font-semibold transition" :class="activeTab === tab.key ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'" @click="activeTab = tab.key">
+            {{ tab.label }}
+          </button>
+        </div>
+        <div>
+          <p class="text-sm text-slate-400 font-medium">{{ activeTab === 'phieu' ? totalItems : totalItemsKh }} bản ghi hiển thị.</p>
         </div>
       </div>
 
-      <div class="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-6">
-        <button class="flex h-10 w-10 items-center justify-center rounded-full bg-[#ff5a5f] text-white shadow-sm shadow-red-200 transition-colors hover:bg-[#e0484d]" title="Tìm kiếm">
-          <Search class="h-4 w-4" stroke-width="2.5" />
-        </button>
-        <button class="flex h-10 w-10 items-center justify-center rounded-full bg-[#9ca3af] text-white shadow-sm transition-colors hover:bg-gray-500" title="Làm mới">
-          <RotateCcw class="h-4 w-4" stroke-width="2.5" />
-        </button>
-      </div>
-    </div>
+      <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
-    <div class="rounded-[24px] border border-gray-50 border-t-2 border-t-gray-800 bg-white p-4 shadow-sm lg:p-6">
-      <div class="mb-6 flex items-center justify-between">
-        <h3 class="text-xl font-bold text-gray-800">Danh sách phiếu giảm giá</h3>
-        <button class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-gray-800 transition-colors hover:bg-gray-50 lg:h-12">
-          <Plus class="h-5 w-5 text-gray-800 lg:h-6 lg:w-6" stroke-width="2.5" />
-        </button>
-      </div>
-
-      <div class="hide-scrollbar overflow-x-auto">
-        <table class="min-w-[1000px] w-full text-left">
+      <div class="overflow-x-auto">
+        <!-- Bảng Phiếu giảm giá chung -->
+        <table v-if="activeTab === 'phieu'" class="min-w-[900px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="bg-[#e2e2e2] text-[13px] font-bold text-gray-800">
-              <th class="w-12 rounded-l-lg px-4 py-3.5 text-center">STT</th>
-              <th class="w-20 px-4 py-3.5 text-center">Mã</th>
-              <th class="px-4 py-3.5 text-center">Tên</th>
-              <th class="px-4 py-3.5 text-center">Loại</th>
-              <th class="px-4 py-3.5 text-center">Giá trị</th>
-              <th class="px-4 py-3.5 text-center">Ngày bắt đầu</th>
-              <th class="px-4 py-3.5 text-center">Ngày kết thúc</th>
-              <th class="px-4 py-3.5 text-center">Số lượng</th>
-              <th class="w-36 px-4 py-3.5 text-center">Trạng thái</th>
-              <th class="w-32 rounded-r-lg px-4 py-3.5 text-center">Hành động</th>
+            <tr class="text-left text-sm font-bold text-slate-500">
+              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
+              <th class="bg-slate-100 px-4 py-3">Mã</th>
+              <th class="bg-slate-100 px-4 py-3">Tên</th>
+              <th class="bg-slate-100 px-4 py-3">Loại giảm</th>
+              <th class="bg-slate-100 px-4 py-3">Giá trị</th>
+              <th class="bg-slate-100 px-4 py-3">SL</th>
+              <th class="bg-slate-100 px-4 py-3">Thời gian</th>
+              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
           </thead>
-
-          <tbody class="text-[13px] font-bold text-gray-800">
-            <tr v-for="(coupon, index) in paginatedItems" :key="coupon.id" class="border-b border-gray-100 transition-colors hover:bg-gray-50/50">
-              <td class="px-4 py-5 text-center">{{ startIndex + index + 1 }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.code }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.name }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.type }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.value }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.startDate }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.endDate }}</td>
-              <td class="px-4 py-5 text-center">{{ coupon.quantity }}</td>
-              <td class="px-4 py-5 text-center">
-                <span class="rounded-[8px] px-3.5 py-1.5 text-[12px] font-bold tracking-wide" :class="getStatusClass(coupon.status)">
-                  {{ coupon.status }}
+          <tbody>
+            <tr v-if="dangTai">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+            </tr>
+            <tr v-else-if="!danhSach.length">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
+            </tr>
+            <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
+              <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ma }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ten }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiGiam(item.loai)">
+                  {{ loaiGiamText(item.loai) }}
                 </span>
               </td>
-              <td class="px-4 py-5 text-center">
-                <div class="flex items-center justify-center gap-3">
-                  <button class="rounded text-gray-600 transition-colors hover:text-black">
-                    <Edit class="h-[18px] w-[18px]" stroke-width="2.5" />
-                  </button>
-                  <button class="rounded text-gray-600 transition-colors hover:text-black">
-                    <Eye class="h-[18px] w-[18px]" stroke-width="2.5" />
-                  </button>
-                  <button class="rounded text-gray-600 transition-colors hover:text-red-600">
-                    <Trash2 class="h-[18px] w-[18px]" stroke-width="2.5" />
-                  </button>
+              <td class="px-4 py-3 text-slate-600">{{ item.giaTri }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ item.soLuong }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}<br/>{{ toDisplayDate(item.ngayKetThuc) }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">
+                  {{ statusText(item.trangThai) }}
+                </span>
+              </td>
+              <td class="rounded-r-2xl px-4 py-3 text-center">
+                <div class="flex justify-center gap-2">
+                  <button @click="openEditModal('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Edit class="h-4 w-4" /></button>
+                  <button @click="removeItem('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
 
-        <AppPagination v-model="currentPage" class="mt-6" :total-items="totalItems" :page-size="pageSize" />
+        <!-- Bảng Phiếu giảm giá khách hàng -->
+        <table v-else class="min-w-[900px] w-full border-separate border-spacing-y-2 text-sm">
+          <thead>
+            <tr class="text-left text-sm font-bold text-slate-500">
+              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
+              <th class="bg-slate-100 px-4 py-3">Mã phiếu</th>
+              <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
+              <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày Tặng/Dùng</th>
+              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="dangTai">
+              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+            </tr>
+            <tr v-else-if="!danhSachKh.length">
+              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
+            </tr>
+            <tr v-for="(item, index) in danhSachKh" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
+              <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTaiKh - 1) * soPhanTuMotTrangKh + index + 1 }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-800">{{ item.maPhieuGiamGia }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ item.tenPhieuGiamGia }}</td>
+              <td class="px-4 py-3 font-semibold text-rose-600">{{ item.tenKhachHang }}</td>
+              <td class="px-4 py-3 text-slate-500">
+                <div class="text-[11px] text-slate-400">Tạo: {{ toDisplayDate(item.ngayTao) }}</div>
+                <div v-if="item.ngaySuDung" class="font-medium text-slate-700">Dùng: {{ toDisplayDate(item.ngaySuDung) }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">
+                  {{ statusText(item.trangThai) }}
+                </span>
+              </td>
+              <td class="rounded-r-2xl px-4 py-3 text-center">
+                <div class="flex justify-center gap-2">
+                  <button @click="openEditModal('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Edit class="h-4 w-4" /></button>
+                  <button @click="removeItem('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <AdminTableFooter
+        v-if="activeTab === 'phieu'"
+        :current-page="trangHienTai"
+        :page-size="soPhanTuMotTrang"
+        :page-size-options="[5, 10, 20]"
+        :total-items="totalItems"
+        :total-pages="tongSoTrang"
+        compact
+        show-refresh
+        @refresh="taiDanhSach"
+        @update:current-page="trangHienTai = $event"
+        @update:page-size="soPhanTuMotTrang = $event"
+      />
+      <AdminTableFooter
+        v-else
+        :current-page="trangHienTaiKh"
+        :page-size="soPhanTuMotTrangKh"
+        :page-size-options="[5, 10, 20]"
+        :total-items="totalItemsKh"
+        :total-pages="tongSoTrangKh"
+        compact
+        show-refresh
+        @refresh="taiDanhSachKh"
+        @update:current-page="trangHienTaiKh = $event"
+        @update:page-size="soPhanTuMotTrangKh = $event"
+      />
+    </section>
+
+    <!-- Modal Form Thêm/Sửa -->
+    <div v-if="modalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">
+              {{ modalMode === "create" ? "Tặng phiếu khách hàng" : "Cập nhật dữ liệu" }}
+            </h2>
+          </div>
+          <button class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" @click="modalOpen = false">✕</button>
+        </div>
+
+        <div class="space-y-4 px-6 py-6">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Chọn Phiếu</label>
+              <select v-model="khForm.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+                <option value="">-- Chọn một phiếu giảm giá --</option>
+                <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
+              </select>
+              <p v-if="formErrors.phieuGiamGiaId" class="mt-1 text-xs text-rose-500">{{ formErrors.phieuGiamGiaId }}</p>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Email Khách hàng</label>
+              <input v-model="khForm.email" type="email" list="email-suggestions" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: anv@gmail.com" />
+              <datalist id="email-suggestions">
+                <option v-for="em in emailOptions" :key="em" :value="em"></option>
+              </datalist>
+              <p v-if="formErrors.email" class="mt-1 text-xs text-rose-500">{{ formErrors.email }}</p>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Ngày sử dụng</label>
+              <input v-model="khForm.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Trạng thái</label>
+              <select v-model="khForm.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+                <option value="1">Kích hoạt</option>
+                <option value="0">Tắt</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
+          <button class="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200" @click="modalOpen = false">Hủy bỏ</button>
+          <button class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50" :disabled="saving" @click="submitForm">
+            {{ saving ? "Đang lưu..." : "Lưu thay đổi" }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

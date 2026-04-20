@@ -44,9 +44,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
     private static final int KENH_BAN_TAI_QUAY = 1;
-    private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
-    private static final int TRANG_THAI_DA_XAC_NHAN = 2;
-    private static final int TRANG_THAI_DA_HUY = 5;
+        private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_CHO_GIAO_HANG = 2;
+    private static final int TRANG_THAI_DANG_VAN_CHUYEN = 3;
+    private static final int TRANG_THAI_DA_GIAO_HANG = 4;
+    private static final int TRANG_THAI_HOAN_THANH = 5;
+    private static final int TRANG_THAI_HUY = 6;
+    private static final int TRANG_THAI_YEU_CAU_HUY = 7;
+    private static final int TRANG_THAI_CAN_HOAN_TIEN = 8;
+    
     private static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
     private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
     private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
@@ -148,35 +154,40 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         switch (trangThai) {
             case "Chờ xác nhận" -> hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
-            case "Đã xác nhận" -> {
-                hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
-                if (vanChuyen != null && vanChuyen.getTrangThai() != null && vanChuyen.getTrangThai() < TRANG_THAI_VAN_CHUYEN_CHO_XU_LY) {
-                    vanChuyen.setTrangThai(TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
-                }
-            }
-            case "Chờ vận chuyển" -> {
-                hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
+            case "Chờ giao hàng" -> {
+                hoaDon.setTrangThai(TRANG_THAI_CHO_GIAO_HANG);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
             }
-            case "Vận chuyển" -> {
-                hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
+            case "Đang vận chuyển" -> {
+                hoaDon.setTrangThai(TRANG_THAI_DANG_VAN_CHUYEN);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_DANG_GIAO);
                 if (vanChuyen.getNgayGui() == null) {
                     vanChuyen.setNgayGui(Instant.now());
                 }
             }
-            case "Đã hoàn thành" -> {
-                hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
+            case "Đã giao hàng" -> {
+                hoaDon.setTrangThai(TRANG_THAI_DA_GIAO_HANG);
+                vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_HOAN_THANH);
+                if (vanChuyen.getNgayGiaoThat() == null) {
+                    vanChuyen.setNgayGiaoThat(Instant.now());
+                }
+            }
+            case "Hoàn thành" -> {
+                hoaDon.setTrangThai(TRANG_THAI_HOAN_THANH);
                 hoaDon.setNgayThanhToan(hoaDon.getNgayThanhToan() == null ? Instant.now() : hoaDon.getNgayThanhToan());
                 if (!isTaiQuay(hoaDon) || vanChuyen != null) {
                     vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_HOAN_THANH);
-                    vanChuyen.setNgayGiaoThat(Instant.now());
+                    if (vanChuyen.getNgayGiaoThat() == null) {
+                        vanChuyen.setNgayGiaoThat(Instant.now());
+                    }
                     if (vanChuyen.getNgayGui() == null) {
                         vanChuyen.setNgayGui(Instant.now());
                     }
                 }
             }
-            case "Hủy" -> hoaDon.setTrangThai(TRANG_THAI_DA_HUY);
+            case "Hủy" -> hoaDon.setTrangThai(TRANG_THAI_HUY);
+            case "Yêu cầu hủy" -> hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
+            case "Cần hoàn tiền" -> hoaDon.setTrangThai(TRANG_THAI_CAN_HOAN_TIEN);
             default -> throw new BusinessException("Trang thai hoa don khong hop le");
         }
 
@@ -321,6 +332,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private HoaDonHistoryResponse mapLichSu(LichSuHoaDon lichSu) {
         return new HoaDonHistoryResponse(
                 lichSu.getId(),
+                lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : "Hệ thống",
                 lichSu.getNhanVien() != null ? lichSu.getNhanVien().getHoTen() : "Hệ thống",
                 lichSu.getTrangThai(),
                 lichSu.getNgayTao(),
@@ -389,25 +401,20 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private String resolveTrangThaiHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == TRANG_THAI_DA_HUY) {
-            return "Hủy";
-        }
-        if (vanChuyen != null) {
-            if (vanChuyen.getTrangThai() != null && vanChuyen.getTrangThai() == TRANG_THAI_VAN_CHUYEN_DANG_GIAO) {
-                return "Vận chuyển";
+        if (hoaDon.getTrangThai() != null) {
+            switch (hoaDon.getTrangThai()) {
+                case TRANG_THAI_CHO_XAC_NHAN: return "Chờ xác nhận";
+                case TRANG_THAI_CHO_GIAO_HANG: return "Chờ giao hàng";
+                case TRANG_THAI_DANG_VAN_CHUYEN: return "Đang vận chuyển";
+                case TRANG_THAI_DA_GIAO_HANG: return "Đã giao hàng";
+                case TRANG_THAI_HOAN_THANH: return "Hoàn thành";
+                case TRANG_THAI_HUY: return "Hủy";
+                case TRANG_THAI_YEU_CAU_HUY: return "Yêu cầu hủy";
+                case TRANG_THAI_CAN_HOAN_TIEN: return "Cần hoàn tiền";
+                default: return "Chờ xác nhận";
             }
-            if (vanChuyen.getTrangThai() != null && vanChuyen.getTrangThai() == TRANG_THAI_VAN_CHUYEN_HOAN_THANH) {
-                return "Đã hoàn thành";
-            }
-            return "Chờ vận chuyển";
         }
-        if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == TRANG_THAI_CHO_XAC_NHAN) {
-            return "Chờ xác nhận";
-        }
-        if (isTaiQuay(hoaDon) && hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == TRANG_THAI_DA_XAC_NHAN) {
-            return "Đã hoàn thành";
-        }
-        return "Đã xác nhận";
+        return "Chờ xác nhận";
     }
 
     private boolean matchDerivedStatus(String trangThaiFilter, HoaDon hoaDon, VanChuyen vanChuyen) {
@@ -451,8 +458,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         String normalized = normalizeLabel(trangThai);
         return switch (normalized) {
             case "Chờ xác nhận" -> TRANG_THAI_CHO_XAC_NHAN;
-            case "Hủy" -> TRANG_THAI_DA_HUY;
-            case "Đã xác nhận", "Chờ vận chuyển", "Vận chuyển", "Đã hoàn thành" -> TRANG_THAI_DA_XAC_NHAN;
+            case "Chờ giao hàng" -> TRANG_THAI_CHO_GIAO_HANG;
+            case "Đang vận chuyển" -> TRANG_THAI_DANG_VAN_CHUYEN;
+            case "Đã giao hàng" -> TRANG_THAI_DA_GIAO_HANG;
+            case "Hoàn thành" -> TRANG_THAI_HOAN_THANH;
+            case "Hủy" -> TRANG_THAI_HUY;
+            case "Yêu cầu hủy" -> TRANG_THAI_YEU_CAU_HUY;
+            case "Cần hoàn tiền" -> TRANG_THAI_CAN_HOAN_TIEN;
             default -> null;
         };
     }

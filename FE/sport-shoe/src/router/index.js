@@ -8,16 +8,23 @@ import AdminLayout from "../layouts/admin/AdminLayout.vue";
 import ThongKe from "../pages/admin/thong-ke/ThongKe.vue";
 import PhieuGiamGia from "../pages/admin/khuyen-mai/PhieuGiamGia.vue";
 import HoaDon from "../pages/admin/hoa-don/HoaDon.vue";
+import ChiTietHoaDon from "../pages/admin/hoa-don/ChiTietHoaDon.vue";
 import BanHangTaiQuay from "../pages/admin/ban-hang/BanHangTaiQuay.vue";
-import QuanLySanPham from "../pages/admin/san-pham/QuanLySanPham.vue";
+import DanhSachSanPham from "../pages/admin/san-pham/DanhSachSanPham.vue";
+import DanhSachChiTietSanPham from "../pages/admin/san-pham/DanhSachChiTietSanPham.vue";
+import ChiTietSanPhamForm from "../pages/admin/san-pham/ChiTietSanPhamForm.vue";
 import DotGiamGia from "../pages/admin/khuyen-mai/DotGiamGia.vue";
 import QuanLyNhanVien from "../pages/admin/nhan-vien/QuanLyNhanVien.vue";
 import ChiTietNhanVien from "../pages/admin/nhan-vien/ChiTietNhanVien.vue";
 import QuanLyKhachHang from "../pages/admin/khach-hang/QuanLyKhachHang.vue";
 import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
+import ChiTietPhieuGiamGia from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue";
+import ChiTietDotGiamGia from "../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue";
+
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
 import DeGiay from "../pages/admin/danh-muc/DeGiay.vue";
+import ChatLieuGiay from "../pages/admin/danh-muc/ChatLieuGiay.vue";
 import ThuongHieu from "../pages/admin/danh-muc/ThuongHieu.vue";
 import CongNgheDem from "../pages/admin/danh-muc/CongNgheDem.vue";
 import MauSac from "../pages/admin/danh-muc/MauSac.vue";
@@ -80,9 +87,24 @@ const router = createRouter({
           component: PhieuGiamGia
         },
         {
+          path: "phieu-giam-gia/them",
+          name: "admin-phieu-giam-gia-them",
+          component: ChiTietPhieuGiamGia
+        },
+        {
+          path: "phieu-giam-gia/:id",
+          name: "admin-phieu-giam-gia-chi-tiet",
+          component: ChiTietPhieuGiamGia
+        },
+        {
           path: "hoa-don",
           name: "admin-hoa-don",
           component: HoaDon
+        },
+        {
+          path: "hoa-don/:id",
+          name: "admin-hoa-don-chi-tiet",
+          component: ChiTietHoaDon
         },
         {
           path: "ban-hang",
@@ -92,11 +114,22 @@ const router = createRouter({
         {
           path: "san-pham",
           name: "admin-san-pham",
-          component: QuanLySanPham
+          component: DanhSachSanPham
+        },
+        {
+          path: "bien-the-san-pham",
+          name: "admin-bien-the-san-pham",
+          component: DanhSachChiTietSanPham
+        },
+        {
+          path: "chi-tiet-san-pham/new",
+          name: "admin-chi-tiet-san-pham-new",
+          component: ChiTietSanPhamForm
         },
         { path: "loai-giay", name: "admin-loai-giay", component: LoaiGiay },
         { path: "co-giay", name: "admin-co-giay", component: CoGiay },
         { path: "de-giay", name: "admin-de-giay", component: DeGiay },
+        { path: "chat-lieu-giay", name: "admin-chat-lieu-giay", component: ChatLieuGiay },
         { path: "thuong-hieu", name: "admin-thuong-hieu", component: ThuongHieu },
         { path: "cong-nghe-dem", name: "admin-cong-nghe-dem", component: CongNgheDem },
         { path: "mau-sac", name: "admin-mau-sac", component: MauSac },
@@ -106,6 +139,16 @@ const router = createRouter({
           path: "dot-giam-gia",
           name: "admin-dot-giam-gia",
           component: DotGiamGia
+        },
+        {
+          path: "dot-giam-gia/them",
+          name: "admin-dot-giam-gia-them",
+          component: ChiTietDotGiamGia
+        },
+        {
+          path: "dot-giam-gia/:id",
+          name: "admin-dot-giam-gia-chi-tiet",
+          component: ChiTietDotGiamGia
         },
         {
           path: "nhan-vien",

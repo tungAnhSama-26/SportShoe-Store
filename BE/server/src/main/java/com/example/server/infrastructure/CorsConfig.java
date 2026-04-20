@@ -17,9 +17,9 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        String[] allowedOrigins = resolveAllowedOrigins(appProperties.cors().allowedOrigins());
+        String[] allowedOriginPatterns = resolveAllowedOriginPatterns(appProperties.cors().allowedOrigins());
         registry.addMapping(appProperties.apiBasePath() + "/**")
-                .allowedOrigins(allowedOrigins)
+                .allowedOriginPatterns(allowedOriginPatterns)
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
@@ -31,9 +31,12 @@ public class CorsConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:uploads/");
     }
 
-    private String[] resolveAllowedOrigins(List<String> configuredOrigins) {
+    private String[] resolveAllowedOriginPatterns(List<String> configuredOrigins) {
         if (configuredOrigins == null || configuredOrigins.isEmpty()) {
-            return new String[]{"http://localhost:5173", "http://127.0.0.1:5173"};
+            return new String[]{
+                    "http://localhost:*",
+                    "http://127.0.0.1:*"
+            };
         }
         return configuredOrigins.toArray(String[]::new);
     }

@@ -35,6 +35,7 @@ public final class QuanLyHoaDonResponses {
 
     public record HoaDonHistoryResponse(
             Integer id,
+            String maNhanVien,
             String tenNhanVien,
             String trangThai,
             Instant ngayTao,
