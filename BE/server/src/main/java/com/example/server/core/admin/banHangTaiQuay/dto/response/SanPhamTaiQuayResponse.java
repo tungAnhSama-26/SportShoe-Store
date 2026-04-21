@@ -10,6 +10,7 @@ public record SanPhamTaiQuayResponse(
         String maBienThe,
         Integer soLuongTon,
         BigDecimal giaBan,
+        String hinhAnh,
         String loaiGiay,
         String thuongHieu,
         String deGiay,

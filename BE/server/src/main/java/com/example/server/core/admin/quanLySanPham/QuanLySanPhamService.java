@@ -577,6 +577,26 @@ public class QuanLySanPhamService {
     }
 
     @Transactional
+    public BienTheResponse doiTrangThaiBienThe(Integer id, DoiTrangThaiBienTheRequest req) {
+        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
+            throw new BusinessException("Trang thai CTSP khong hop le");
+        }
+
+        var gct = giayChiTietRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Bien the #" + id + " khong ton tai"));
+
+        if (req.kichHoat() == 1 && (gct.getSoLuong() == null || gct.getSoLuong() <= 0)) {
+            throw new BusinessException("Khong the kich hoat CTSP khi so luong ton bang 0");
+        }
+
+        gct.setKichHoat(req.kichHoat());
+        gct.setNgayCapNhat(Instant.now());
+        var saved = giayChiTietRepository.save(gct);
+        updateTrangThaiTuSoLuong(saved.getGiay().getId());
+        return toBienThe(saved);
+    }
+
+    @Transactional
     public void xoaBienThe(Integer id) {
         var gct = giayChiTietRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));

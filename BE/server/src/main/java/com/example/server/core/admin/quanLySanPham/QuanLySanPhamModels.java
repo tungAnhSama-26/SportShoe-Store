@@ -234,6 +234,8 @@ record TaoChiTietSanPhamHangLoatRequest(
 
 record DoiTrangThaiRequest(@NotNull Integer trangThai) {}
 
+record DoiTrangThaiBienTheRequest(@NotNull Integer kichHoat) {}
+
 record TaoBienTheRequest(
         @NotNull Integer mauSacId,
         @NotNull Integer kichCoId,

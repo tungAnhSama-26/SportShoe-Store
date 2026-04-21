@@ -23,6 +23,7 @@ import com.example.server.entity.ThanhToan;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.GiayChiTietRepository;
+import com.example.server.repository.HinhAnhGiayRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.KhachHangRepository;
@@ -34,8 +35,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -62,6 +65,7 @@ public class BanHangTaiQuayService {
 
     private final KhachHangRepository khachHangRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
@@ -72,6 +76,7 @@ public class BanHangTaiQuayService {
     public BanHangTaiQuayService(
             KhachHangRepository khachHangRepository,
             GiayChiTietRepository giayChiTietRepository,
+            HinhAnhGiayRepository hinhAnhGiayRepository,
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             ThanhToanRepository thanhToanRepository,
@@ -81,6 +86,7 @@ public class BanHangTaiQuayService {
     ) {
         this.khachHangRepository = khachHangRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
@@ -105,9 +111,13 @@ public class BanHangTaiQuayService {
 
     @Transactional(readOnly = true)
     public List<SanPhamTaiQuayResponse> timSanPham(String keyword) {
-        return giayChiTietRepository.searchForCounterSale(chuanHoaTuKhoa(keyword))
+        List<GiayChiTiet> danhSachChiTiet = giayChiTietRepository.searchForCounterSale(chuanHoaTuKhoa(keyword))
                 .stream()
                 .limit(SO_SAN_PHAM_TIM_TOI_DA)
+                .toList();
+        Map<Integer, String> hinhAnhMap = buildImageMap(danhSachChiTiet);
+
+        return danhSachChiTiet.stream()
                 .map(chiTiet -> new SanPhamTaiQuayResponse(
                         chiTiet.getId(),
                         chiTiet.getGiay().getMa(),
@@ -116,6 +126,7 @@ public class BanHangTaiQuayService {
                         chiTiet.getMaBienThe(),
                         chiTiet.getSoLuong(),
                         chiTiet.getGiaBan(),
+                        hinhAnhMap.get(chiTiet.getId()),
                         chiTiet.getGiay().getLoaiGiay() != null ? chiTiet.getGiay().getLoaiGiay().getTen() : null,
                         chiTiet.getGiay().getThuongHieu() != null ? chiTiet.getGiay().getThuongHieu().getTen() : null,
                         chiTiet.getGiay().getGiayThuocTinh() != null && chiTiet.getGiay().getGiayThuocTinh().getDeGiay() != null
@@ -130,6 +141,25 @@ public class BanHangTaiQuayService {
                                 ? chiTiet.getGiay().getGiayThuocTinh().getTrongLuong().getGiaTri() + " gram" : null
                 ))
                 .toList();
+    }
+
+    private Map<Integer, String> buildImageMap(List<GiayChiTiet> danhSachChiTiet) {
+        Map<Integer, String> imageMap = new HashMap<>();
+        if (danhSachChiTiet.isEmpty()) {
+            return imageMap;
+        }
+
+        List<Integer> chiTietIds = danhSachChiTiet.stream()
+                .map(GiayChiTiet::getId)
+                .toList();
+
+        for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(chiTietIds)) {
+            if (row[0] != null && row[1] != null) {
+                Integer chiTietId = ((Number) row[0]).intValue();
+                imageMap.putIfAbsent(chiTietId, (String) row[1]);
+            }
+        }
+        return imageMap;
     }
 
     @Transactional(readOnly = true)

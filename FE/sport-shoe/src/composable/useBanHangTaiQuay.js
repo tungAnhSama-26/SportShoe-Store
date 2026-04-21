@@ -174,6 +174,9 @@ function useBanHangTaiQuay() {
       const groupedProduct = grouped.get(key);
       groupedProduct.soLuongTon += soLuongKhaDung;
       groupedProduct.tongBienThe += 1;
+      if (!groupedProduct.hinhAnh && product.hinhAnh) {
+        groupedProduct.hinhAnh = product.hinhAnh;
+      }
     }
 
     return Array.from(grouped.values());
@@ -302,6 +305,9 @@ function useBanHangTaiQuay() {
     ) || selectedProductDetail.value;
   });
   const chiTietDangChon = computed(() => selectedVariant.value || selectedProductDetail.value);
+  const hinhAnhDangChon = computed(
+    () => chiTietDangChon.value?.hinhAnh || selectedProductDetail.value?.hinhAnh || ""
+  );
   const soLuongTonKhaDungChiTiet = computed(() => {
     if (!chiTietDangChon.value) {
       return 0;
@@ -620,6 +626,10 @@ function useBanHangTaiQuay() {
           chiTietId: product.chiTietId,
           maSanPham: product.maSanPham,
           tenSanPham: product.tenSanPham,
+          sku: product.sku,
+          mauSac: product.mauSac,
+          kichCo: product.kichCo,
+          hinhAnh: product.hinhAnh || "",
           soLuong: quantity,
           giaBan: product.giaBan,
           soLuongTon: product.soLuongTon
@@ -698,6 +708,10 @@ function useBanHangTaiQuay() {
   }
 
   function mapInvoiceToDraft(invoice) {
+    const thongTinTheoChiTietId = new Map(
+      productVariantResults.value.map((product) => [product.chiTietId, product])
+    );
+
     customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || GUEST_LABEL;
     selectedCustomer.value = invoice.khachHangId
       ? {
@@ -707,14 +721,21 @@ function useBanHangTaiQuay() {
         email: null
       }
       : null;
-    cartItems.value = invoice.items.map((item) => ({
-      chiTietId: item.chiTietId,
-      maSanPham: item.maSanPham,
-      tenSanPham: item.tenSanPham,
-      soLuong: item.soLuong,
-      giaBan: item.giaBan,
-      soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
-    }));
+    cartItems.value = invoice.items.map((item) => {
+      const thongTinSanPham = thongTinTheoChiTietId.get(item.chiTietId);
+      return {
+        chiTietId: item.chiTietId,
+        maSanPham: item.maSanPham,
+        tenSanPham: item.tenSanPham,
+        sku: thongTinSanPham?.sku || "",
+        mauSac: thongTinSanPham?.mauSac || "",
+        kichCo: thongTinSanPham?.kichCo || "",
+        hinhAnh: thongTinSanPham?.hinhAnh || "",
+        soLuong: item.soLuong,
+        giaBan: item.giaBan,
+        soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
+      };
+    });
     couponCode.value = invoice.phieuGiamGia?.ma ?? "";
     appliedCoupon.value = invoice.phieuGiamGia
       ? {
@@ -974,6 +995,7 @@ function useBanHangTaiQuay() {
     cartItems,
     selectedProductDetail,
     chiTietDangChon,
+    hinhAnhDangChon,
     soLuongTonSauKhiChon,
     colorOptions,
     sizeOptions,

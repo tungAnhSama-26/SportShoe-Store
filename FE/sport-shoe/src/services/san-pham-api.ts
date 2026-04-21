@@ -242,6 +242,7 @@ export interface TaoChiTietSanPhamHangLoatRequest {
 }
 
 export interface DoiTrangThaiRequest { trangThai: number }
+export interface DoiTrangThaiBienTheRequest { kichHoat: number }
 
 export interface TaoBienTheRequest {
   mauSacId: number
@@ -354,6 +355,13 @@ export function taoBienThe(giayId: number, body: TaoBienTheRequest): Promise<Bie
 
 export function capNhatBienThe(id: number, body: CapNhatBienTheRequest): Promise<BienThe> {
   return request<BienThe>(`/admin/san-pham/bien-the/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+}
+
+export function doiTrangThaiBienThe(id: number, kichHoat: number): Promise<BienThe> {
+  return request<BienThe>(`/admin/san-pham/bien-the/${id}/trang-thai`, {
+    method: 'PATCH',
+    body: JSON.stringify({ kichHoat })
+  })
 }
 
 export function xoaBienThe(id: number): Promise<void> {

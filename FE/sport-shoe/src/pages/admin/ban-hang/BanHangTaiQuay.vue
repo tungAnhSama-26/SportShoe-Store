@@ -24,6 +24,7 @@ const {
   cartItems,
   selectedProductDetail,
   chiTietDangChon,
+  hinhAnhDangChon,
   soLuongTonSauKhiChon,
   colorOptions,
   sizeOptions,
@@ -110,6 +111,7 @@ const {
     :cart-items="cartItems"
     :selected-product-detail="selectedProductDetail"
     :chi-tiet-dang-chon="chiTietDangChon"
+    :hinh-anh-dang-chon="hinhAnhDangChon"
     :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
     :color-options="colorOptions"
     :size-options="sizeOptions"
