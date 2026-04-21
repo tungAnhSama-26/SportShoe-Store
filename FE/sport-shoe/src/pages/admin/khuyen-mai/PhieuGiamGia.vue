@@ -258,32 +258,17 @@ async function xuatExcel() {
 function openCreateModal(target) {
   if (target === "phieu") {
     router.push({ name: "admin-phieu-giam-gia-them" });
-    return;
+  } else {
+    router.push({ name: "admin-phieu-giam-gia-khach-hang-them" });
   }
-  modalOpen.value = true;
-  modalMode.value = "create";
-  modalTarget.value = target;
-  resetErrors();
-  Object.assign(khForm, { id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1" });
 }
 
 async function openEditModal(target, item) {
   if (target === "phieu") {
     router.push({ name: "admin-phieu-giam-gia-chi-tiet", params: { id: item.id } });
-    return;
+  } else {
+    router.push({ name: "admin-phieu-giam-gia-khach-hang-chi-tiet", params: { id: item.id } });
   }
-  modalOpen.value = true;
-  modalMode.value = "edit";
-  modalTarget.value = target;
-  resetErrors();
-  const detail = await getPhieuGiamGiaKhachHangDetail(item.id);
-  Object.assign(khForm, {
-    id: detail.id, 
-    phieuGiamGiaId: detail.phieuGiamGiaId ? String(detail.phieuGiamGiaId) : "",
-    email: "", 
-    ngaySuDung: detail.ngaySuDung ?? "",
-    trangThai: String(detail.trangThai ?? 1)
-  });
 }
 
 async function removeItem(target, item) {
@@ -554,57 +539,5 @@ onMounted(taiDanhSach);
       />
     </section>
 
-    <!-- Modal Form Thêm/Sửa -->
-    <div v-if="modalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
-      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-          <div>
-            <h2 class="text-xl font-bold text-slate-800">
-              {{ modalMode === "create" ? "Tặng phiếu khách hàng" : "Cập nhật dữ liệu" }}
-            </h2>
-          </div>
-          <button class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" @click="modalOpen = false">✕</button>
-        </div>
-
-        <div class="space-y-4 px-6 py-6">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Chọn Phiếu</label>
-              <select v-model="khForm.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="">-- Chọn một phiếu giảm giá --</option>
-                <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
-              </select>
-              <p v-if="formErrors.phieuGiamGiaId" class="mt-1 text-xs text-rose-500">{{ formErrors.phieuGiamGiaId }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Email Khách hàng</label>
-              <input v-model="khForm.email" type="email" list="email-suggestions" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: anv@gmail.com" />
-              <datalist id="email-suggestions">
-                <option v-for="em in emailOptions" :key="em" :value="em"></option>
-              </datalist>
-              <p v-if="formErrors.email" class="mt-1 text-xs text-rose-500">{{ formErrors.email }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Ngày sử dụng</label>
-              <input v-model="khForm.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Trạng thái</label>
-              <select v-model="khForm.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Kích hoạt</option>
-                <option value="0">Tắt</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
-          <button class="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200" @click="modalOpen = false">Hủy bỏ</button>
-          <button class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50" :disabled="saving" @click="submitForm">
-            {{ saving ? "Đang lưu..." : "Lưu thay đổi" }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>

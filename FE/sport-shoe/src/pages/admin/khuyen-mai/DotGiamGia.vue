@@ -255,31 +255,17 @@ async function xuatExcel() {
 function openCreateModal(target) {
   if (target === "dot") {
     router.push({ name: "admin-dot-giam-gia-them" });
-    return;
+  } else {
+    router.push({ name: "admin-dot-giam-gia-san-pham-them" });
   }
-  modalOpen.value = true;
-  modalMode.value = "create";
-  modalTarget.value = target;
-  resetErrors();
-  Object.assign(dotSanPhamForm, { id: null, dotGiamGiaId: "", giayId: "", trangThai: "1" });
-  productSearch.value = "";
 }
 
 async function openEditModal(target, item) {
   if (target === "dot") {
     router.push({ name: "admin-dot-giam-gia-chi-tiet", params: { id: item.id } });
-    return;
+  } else {
+    router.push({ name: "admin-dot-giam-gia-san-pham-chi-tiet", params: { id: item.id } });
   }
-  modalOpen.value = true;
-  modalMode.value = "edit";
-  modalTarget.value = target;
-  resetErrors();
-  const detail = await getDotGiamGiaSanPhamDetail(item.id);
-  Object.assign(dotSanPhamForm, {
-    id: detail.id, dotGiamGiaId: detail.dotGiamGiaId ? String(detail.dotGiamGiaId) : "",
-    giayId: detail.giayId ? String(detail.giayId) : "", trangThai: String(detail.trangThai ?? 1)
-  });
-  productSearch.value = detail.tenGiay ?? "";
 }
 
 async function removeItem(target, item) {
@@ -395,7 +381,6 @@ onMounted(taiDanhSach);
               <select v-model="boLoc.loaiGiam" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
                 <option value="">Tất cả</option>
                 <option value="1">Phần trăm</option>
-                <option value="2">Tiền mặt</option>
               </select>
             </label>
 
@@ -547,61 +532,5 @@ onMounted(taiDanhSach);
       />
     </section>
 
-    <!-- Modal Form Thêm/Sửa -->
-    <div v-if="modalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
-      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-          <div>
-            <h2 class="text-xl font-bold text-slate-800">
-              {{ modalMode === "create" ? "Thêm sản phẩm áp dụng" : "Cập nhật dữ liệu" }}
-            </h2>
-          </div>
-          <button class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" @click="modalOpen = false">✕</button>
-        </div>
-
-        <div class="space-y-4 px-6 py-6">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="md:col-span-2">
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Đợt giảm giá</label>
-              <select v-model="dotSanPhamForm.dotGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="">Chọn đợt giảm giá</option>
-                <option v-for="item in dotOptions" :key="item.id" :value="String(item.id)">{{ item.ten }}</option>
-              </select>
-              <p v-if="formErrors.dotGiamGiaId" class="mt-1 text-xs text-rose-500">{{ formErrors.dotGiamGiaId }}</p>
-            </div>
-            <div class="md:col-span-2 relative">
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Giày ID (Tìm & Chọn)</label>
-              <div class="relative">
-                <PackageSearch class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input v-model="productSearch" type="text" placeholder="Nhập mã hoặc tên giày..." class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-              </div>
-              <p v-if="formErrors.giayId" class="mt-1 text-xs text-rose-500">{{ formErrors.giayId }}</p>
-              
-              <div v-if="productHints.length" class="absolute z-10 mt-1 flex max-h-48 w-full flex-col gap-1 overflow-y-auto rounded-2xl bg-white p-2 shadow-lg ring-1 ring-slate-200">
-                <div v-for="item in productHints" :key="item.id" @click="chonGiay(item)" class="cursor-pointer flex justify-between items-center rounded-xl hover:bg-slate-50 px-3 py-2 text-sm transition group">
-                  <span class="font-medium text-slate-700">{{ item.ten }} <span class="text-xs text-slate-400 font-normal">({{ item.ma }})</span></span>
-                  <span class="text-xs text-emerald-600 font-semibold" v-if="dotSanPhamForm.giayId === String(item.id)">Đã chọn</span>
-                  <span class="text-xs text-slate-400 group-hover:text-rose-500" v-else>Chọn (ID: {{ item.id }})</span>
-                </div>
-              </div>
-            </div>
-            <div class="md:col-span-2">
-              <label class="mb-1 block text-sm font-semibold text-slate-700">Trạng thái</label>
-              <select v-model="dotSanPhamForm.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Kích hoạt</option>
-                <option value="0">Tắt</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
-          <button class="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200" @click="modalOpen = false">Hủy bỏ</button>
-          <button class="h-11 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50" :disabled="saving" @click="submitForm">
-            {{ saving ? "Đang lưu..." : "Lưu thay đổi" }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
