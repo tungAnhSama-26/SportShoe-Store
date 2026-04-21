@@ -1,7 +1,9 @@
 <script setup>
+import { computed } from 'vue'
 import { ImageOff, X } from 'lucide-vue-next'
+import AdminSearchableSelect from '../../common/AdminSearchableSelect.vue'
 
-defineProps({
+const props = defineProps({
   open: {
     type: Boolean,
     default: false
@@ -73,6 +75,61 @@ defineProps({
 })
 
 const emit = defineEmits(['close', 'save'])
+
+const genderOptions = [
+  { value: 1, label: 'Nam' },
+  { value: 2, label: 'Nữ' },
+  { value: 3, label: 'Unisex' }
+]
+
+const thuongHieuOptions = computed(() =>
+  (props.danhMuc?.thuongHieu || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const loaiGiayOptions = computed(() =>
+  (props.danhMuc?.loaiGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const chatLieuOptions = computed(() =>
+  (props.danhMuc?.chatLieuGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const deGiayOptions = computed(() =>
+  (props.danhMuc?.deGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const coGiayOptions = computed(() =>
+  (props.danhMuc?.coGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const congNgheDemOptions = computed(() =>
+  (props.danhMuc?.congNgheDem || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const trongLuongOptions = computed(() =>
+  (props.danhMuc?.trongLuong || []).map((item) => ({
+    value: item.id,
+    label: `${item.ma || 'TL'} - ${Number(item.giaTri || 0).toLocaleString('vi-VN')}`
+  }))
+)
 </script>
 
 <template>
@@ -108,8 +165,8 @@ const emit = defineEmits(['close', 'save'])
                 <p class="mt-1 text-xs text-slate-400">
                   {{
                     mode === 'add'
-                      ? 'Nhập thông tin sản phẩm rồi quản lý CTSP ở popup biến thể.'
-                      : 'Cập nhật thông tin nền của sản phẩm. CTSP và ảnh vẫn quản lý riêng.'
+                      ? 'Nhập thông tin sản phẩm rồi quản lý biến thể ở popup riêng.'
+                      : 'Cập nhật nhanh thông tin nền và tìm thuộc tính ngay trong dropdown.'
                   }}
                 </p>
               </div>
@@ -136,52 +193,50 @@ const emit = defineEmits(['close', 'save'])
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Thương hiệu *</label>
-                  <select
-                    v-model="productForm.thuongHieuId"
-                    class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    :class="productErrors.thuongHieuId ? 'border-red-400' : 'border-gray-200'"
-                  >
-                    <option :value="null">-- Chọn thương hiệu --</option>
-                    <option v-for="item in danhMuc?.thuongHieu" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                  </select>
+                  <AdminSearchableSelect
+                    :model-value="productForm.thuongHieuId"
+                    :options="thuongHieuOptions"
+                    placeholder="Chọn thương hiệu"
+                    search-placeholder="Tìm thương hiệu..."
+                    :error="Boolean(productErrors.thuongHieuId)"
+                    @update:model-value="productForm.thuongHieuId = $event"
+                  />
                   <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-red-500">{{ productErrors.thuongHieuId }}</p>
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Loại giày *</label>
-                  <select
-                    v-model="productForm.loaiGiayId"
-                    class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    :class="productErrors.loaiGiayId ? 'border-red-400' : 'border-gray-200'"
-                  >
-                    <option :value="null">-- Chọn loại giày --</option>
-                    <option v-for="item in danhMuc?.loaiGiay" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                  </select>
+                  <AdminSearchableSelect
+                    :model-value="productForm.loaiGiayId"
+                    :options="loaiGiayOptions"
+                    placeholder="Chọn loại giày"
+                    search-placeholder="Tìm loại giày..."
+                    :error="Boolean(productErrors.loaiGiayId)"
+                    @update:model-value="productForm.loaiGiayId = $event"
+                  />
                   <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-red-500">{{ productErrors.loaiGiayId }}</p>
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Giới tính</label>
-                  <select
-                    v-model="productForm.gioiTinh"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  >
-                    <option :value="null">-- Tất cả --</option>
-                    <option :value="1">Nam</option>
-                    <option :value="2">Nữ</option>
-                    <option :value="3">Unisex</option>
-                  </select>
+                  <AdminSearchableSelect
+                    :model-value="productForm.gioiTinh"
+                    :options="genderOptions"
+                    placeholder="Tất cả"
+                    search-placeholder="Tìm giới tính..."
+                    @update:model-value="productForm.gioiTinh = $event"
+                  />
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Chất liệu</label>
-                  <select
-                    v-model.number="productForm.chatLieuGiayId"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  >
-                    <option :value="null">-- Chọn chất liệu giày --</option>
-                    <option v-for="item in danhMuc?.chatLieuGiay || []" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                  </select>
+                  <AdminSearchableSelect
+                    :model-value="productForm.chatLieuGiayId"
+                    :options="chatLieuOptions"
+                    placeholder="Chọn chất liệu giày"
+                    search-placeholder="Tìm chất liệu..."
+                    @update:model-value="productForm.chatLieuGiayId = $event"
+                  />
                 </div>
               </div>
 
@@ -189,55 +244,53 @@ const emit = defineEmits(['close', 'save'])
                 <div class="mb-4">
                   <h3 class="text-sm font-bold text-slate-700">Thuộc tính kỹ thuật</h3>
                   <p class="mt-1 text-xs text-slate-400">
-                    Các thuộc tính này sẽ hiển thị trực tiếp ở danh sách sản phẩm.
+                    Có thể gõ để tìm nhanh rồi chọn ngay trong từng thuộc tính.
                   </p>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2">
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Đế giày</label>
-                    <select
-                      v-model="productForm.deGiayId"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="null">-- Không có --</option>
-                      <option v-for="item in danhMuc?.deGiay" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                    </select>
+                    <AdminSearchableSelect
+                      :model-value="productForm.deGiayId"
+                      :options="deGiayOptions"
+                      placeholder="Không có"
+                      search-placeholder="Tìm đế giày..."
+                      @update:model-value="productForm.deGiayId = $event"
+                    />
                   </div>
 
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Cổ giày</label>
-                    <select
-                      v-model="productForm.coGiayId"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="null">-- Không có --</option>
-                      <option v-for="item in danhMuc?.coGiay" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                    </select>
+                    <AdminSearchableSelect
+                      :model-value="productForm.coGiayId"
+                      :options="coGiayOptions"
+                      placeholder="Không có"
+                      search-placeholder="Tìm cổ giày..."
+                      @update:model-value="productForm.coGiayId = $event"
+                    />
                   </div>
 
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Công nghệ đệm</label>
-                    <select
-                      v-model="productForm.congNgheDemId"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="null">-- Không có --</option>
-                      <option v-for="item in danhMuc?.congNgheDem" :key="item.id" :value="item.id">{{ item.ten }}</option>
-                    </select>
+                    <AdminSearchableSelect
+                      :model-value="productForm.congNgheDemId"
+                      :options="congNgheDemOptions"
+                      placeholder="Không có"
+                      search-placeholder="Tìm công nghệ đệm..."
+                      @update:model-value="productForm.congNgheDemId = $event"
+                    />
                   </div>
 
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Trọng lượng</label>
-                    <select
-                      v-model="productForm.trongLuongId"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option :value="null">-- Không có --</option>
-                      <option v-for="item in danhMuc?.trongLuong" :key="item.id" :value="item.id">
-                        {{ item.ma }} - {{ item.giaTri }}
-                      </option>
-                    </select>
+                    <AdminSearchableSelect
+                      :model-value="productForm.trongLuongId"
+                      :options="trongLuongOptions"
+                      placeholder="Không có"
+                      search-placeholder="Tìm trọng lượng..."
+                      @update:model-value="productForm.trongLuongId = $event"
+                    />
                   </div>
                 </div>
               </div>
@@ -262,7 +315,7 @@ const emit = defineEmits(['close', 'save'])
                   <p class="mt-1 text-xs text-slate-400">
                     {{
                       mode === 'add'
-                        ? 'Lưu xong sẽ mở popup biến thể để bạn thêm CTSP.'
+                        ? 'Lưu xong sẽ mở popup biến thể để bạn thêm màu, size, giá và số lượng.'
                         : 'Theo dõi nhanh trạng thái hiện tại của sản phẩm.'
                     }}
                   </p>
@@ -315,24 +368,33 @@ const emit = defineEmits(['close', 'save'])
                         <span class="font-semibold text-slate-700">Tự sinh khi lưu</span>
                       </div>
                       <div class="flex items-center justify-between gap-3">
-                        <span class="text-slate-400">CTSP</span>
-                        <span class="font-semibold text-slate-700">Thêm ở popup biến thể</span>
+                        <span class="text-slate-400">Biến thể</span>
+                        <span class="font-semibold text-slate-700">Tạo sau khi lưu</span>
                       </div>
                       <div class="flex items-center justify-between gap-3">
-                        <span class="text-slate-400">Ảnh</span>
-                        <span class="font-semibold text-slate-700">Theo từng CTSP</span>
+                        <span class="text-slate-400">Màu / Size</span>
+                        <span class="font-semibold text-slate-700">Chọn trong modal</span>
                       </div>
                     </div>
                   </div>
 
                   <div class="flex flex-wrap gap-2">
-                    <span v-if="productForm.thuongHieuId" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
+                    <span
+                      v-if="productForm.thuongHieuId"
+                      class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
+                    >
                       {{ thuongHieuName(productForm.thuongHieuId) }}
                     </span>
-                    <span v-if="productForm.loaiGiayId" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
+                    <span
+                      v-if="productForm.loaiGiayId"
+                      class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
+                    >
                       {{ loaiGiayName(productForm.loaiGiayId) }}
                     </span>
-                    <span v-if="productForm.gioiTinh" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
+                    <span
+                      v-if="productForm.gioiTinh"
+                      class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
+                    >
                       {{ gioiTinhLabel(productForm.gioiTinh) }}
                     </span>
                   </div>

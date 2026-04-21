@@ -124,6 +124,14 @@ function nextBienTheStatus(item) {
   return Number(item.kichHoat) === 1 ? 2 : 1
 }
 
+function nextProductStatus(item) {
+  return Number(item.trangThai) === 0 ? 1 : 0
+}
+
+function productQuickToggleLabel(item) {
+  return Number(item.trangThai) === 0 ? 'Bật bán nhanh' : 'Dừng bán nhanh'
+}
+
 function closeAll() {
   openDropdown.value = null
 }
@@ -263,6 +271,7 @@ const productForm = reactive({
   trongLuongId: null
 })
 const productErrors = reactive({})
+const updatingProductStatusId = ref(null)
 
 const productModalTitle = computed(() =>
   productModalMode.value === 'add' ? 'Thêm sản phẩm' : 'Cập nhật sản phẩm'
@@ -318,6 +327,29 @@ function hydrateProductForm(detail) {
     congNgheDemId: detail.thuocTinh?.congNgheDemId || null,
     trongLuongId: detail.thuocTinh?.trongLuongId || null
   })
+}
+
+function mauSacLabel(id) {
+  return danhMuc.value?.mauSac?.find((item) => item.id === Number(id))?.ten || `Màu #${id}`
+}
+
+function kichCoLabel(id) {
+  return danhMuc.value?.kichCo?.find((item) => item.id === Number(id))?.giaTri || `Size #${id}`
+}
+
+function buildCreateProductPayload() {
+  return {
+    ten: productForm.ten.trim(),
+    thuongHieuId: Number(productForm.thuongHieuId),
+    loaiGiayId: Number(productForm.loaiGiayId),
+    gioiTinh: normalizeNullableNumber(productForm.gioiTinh),
+    chatLieuGiayId: normalizeNullableNumber(productForm.chatLieuGiayId),
+    moTa: productForm.moTa.trim() || undefined,
+    deGiayId: normalizeNullableNumber(productForm.deGiayId),
+    coGiayId: normalizeNullableNumber(productForm.coGiayId),
+    congNgheDemId: normalizeNullableNumber(productForm.congNgheDemId),
+    trongLuongId: normalizeNullableNumber(productForm.trongLuongId)
+  }
 }
 
 function validateProductForm() {
@@ -402,6 +434,24 @@ async function handleSaveProduct() {
     showToast(error.message || 'Có lỗi xảy ra khi lưu sản phẩm', 'error')
   } finally {
     productSaving.value = false
+  }
+}
+
+async function handleToggleProductStatus(item) {
+  updatingProductStatusId.value = item.id
+  try {
+    await api.doiTrangThai(item.id, nextProductStatus(item))
+    showToast('Cập nhật trạng thái sản phẩm thành công')
+    await Promise.all([
+      loadData(currentPage.value),
+      showBienTheModal.value && selectedGiay.value?.id === item.id
+        ? syncSelectedGiayContext(item.id)
+        : Promise.resolve()
+    ])
+  } catch (error) {
+    showToast(error.message || 'Lỗi cập nhật trạng thái sản phẩm', 'error')
+  } finally {
+    updatingProductStatusId.value = null
   }
 }
 
@@ -550,9 +600,7 @@ function validateBulkBienTheBuilder() {
   Object.keys(bulkBienTheErrors).forEach((key) => delete bulkBienTheErrors[key])
   if (!bulkBienTheForm.mauSacIds.length) bulkBienTheErrors.mauSacIds = 'Chọn ít nhất 1 màu sắc'
   if (!bulkBienTheForm.kichCoIds.length) bulkBienTheErrors.kichCoIds = 'Chọn ít nhất 1 kích cỡ'
-  if (Number(bulkBienTheForm.giaBan) <= 0) bulkBienTheErrors.giaBan = 'Giá bán phải lớn hơn 0'
   if (Number(bulkBienTheForm.giaGoc) < 0) bulkBienTheErrors.giaGoc = 'Giá gốc không được âm'
-  if (Number(bulkBienTheForm.soLuong) < 0) bulkBienTheErrors.soLuong = 'Số lượng không được âm'
   return Object.keys(bulkBienTheErrors).length === 0
 }
 
@@ -1049,10 +1097,19 @@ onMounted(async () => {
                   <div class="mt-1 text-xs text-slate-400">{{ thongTinTonKho(item) }}</div>
                 </td>
                 <td class="px-4 py-4 align-top">
-                  <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(item.trangThai)">
-                    {{ trangThaiLabel(item.trangThai) }}
-                  </span>
-                </td>
+  <div class="flex flex-col items-start gap-2">
+    <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(item.trangThai)">
+      {{ trangThaiLabel(item.trangThai) }}
+    </span>
+    <button
+      :disabled="updatingProductStatusId === item.id"
+      class="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+      @click="handleToggleProductStatus(item)"
+    >
+      {{ updatingProductStatusId === item.id ? 'Đang cập nhật...' : productQuickToggleLabel(item) }}
+    </button>
+  </div>
+</td>
                 <td class="px-4 py-4 align-top">
                   <div class="flex items-center justify-end gap-1.5">
                     <button

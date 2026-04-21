@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, Plus, Trash2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { loaiGiayApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
+import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 
 const items = ref([])
@@ -54,6 +55,7 @@ const saving = ref(false)
 const selectedItem = ref(null)
 const form = reactive({ ma: '', ten: '', moTa: '' })
 const errors = reactive({})
+const updatingStatusId = ref(null)
 
 function clearForm() { Object.assign(form, { ma: '', ten: '', moTa: '' }); Object.keys(errors).forEach(k => delete errors[k]) }
 function openAdd() { clearForm(); modalMode.value = 'add'; showModal.value = true }
@@ -87,8 +89,16 @@ async function handleDelete(item) {
 }
 
 async function handleToggleStatus(item) {
-  try { await loaiGiayApi.toggleStatus(item.id, item.trangThai === 1 ? 0 : 1); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value) }
+  const nextTrangThai = item.trangThai === 1 ? 0 : 1
+  const actionLabel = nextTrangThai === 1 ? 'bật' : 'dừng'
+  if (!confirm('Xác nhận ' + actionLabel + ' nhanh loại giày "' + item.ten + '"?')) return
+
+  updatingStatusId.value = item.id
+  try {
+    await loaiGiayApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
+  }
   catch (e) { showToast(e.message || 'Lỗi cập nhật trạng thái', 'error') }
+  finally { updatingStatusId.value = null }
 }
 
 async function xuatExcel() {
@@ -180,13 +190,14 @@ async function xuatExcel() {
             <td class="px-4 py-3 font-medium text-gray-800"><span class="block truncate">{{ item.ten }}</span></td>
             <td class="px-4 py-3 text-xs text-gray-500"><span class="block truncate">{{ item.moTa || '—' }}</span></td>
             <td class="px-4 py-3 text-center">
-              <div class="flex justify-center">
-                <button @click="handleToggleStatus(item)" class="admin-status-chip"
-                  :class="item.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'">
-                  {{ item.trangThai === 1 ? 'Hoạt động' : 'Dừng' }}
-                </button>
-              </div>
-            </td>
+  <div class="flex justify-center">
+    <DanhMucQuickStatusToggle
+      :trang-thai="item.trangThai"
+      :loading="updatingStatusId === item.id"
+      @toggle="handleToggleStatus(item)"
+    />
+  </div>
+</td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-center gap-1">
                 <button @click="openView(item)" title="Xem và sửa" class="admin-table-action text-slate-600 hover:text-rose-500"><Eye :size="14" /></button>
@@ -232,6 +243,9 @@ async function xuatExcel() {
     </template>
   </DanhMucPageShell>
 </template>
+
+
+
 
 
 

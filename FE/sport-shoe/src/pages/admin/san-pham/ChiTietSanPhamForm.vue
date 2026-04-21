@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, CheckCircle2, Package2, Save, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, Package2, Save, Search, Trash2, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
+import AdminFormattedNumberInput from '../../../components/common/AdminFormattedNumberInput.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,6 +47,11 @@ const variantBuilder = reactive({
 
 const variantErrors = reactive({})
 const generatedVariants = ref([])
+const openVariantDropdown = ref(null)
+const mauSacSearch = ref('')
+const kichCoSearch = ref('')
+const mauSacDropdownRef = ref(null)
+const kichCoDropdownRef = ref(null)
 
 const isExistingProduct = computed(() => Boolean(currentProductId.value))
 const productCode = computed(() => currentProduct.value?.ma || '(Tự sinh)')
@@ -59,6 +65,52 @@ function showToast(message, type = 'success') {
     toast.show = false
   }, 3000)
 }
+
+const selectedMauSacItems = computed(() =>
+  (danhMuc.value?.mauSac || []).filter((item) => variantBuilder.mauSacIds.includes(item.id))
+)
+
+const selectedKichCoItems = computed(() =>
+  (danhMuc.value?.kichCo || []).filter((item) => variantBuilder.kichCoIds.includes(item.id))
+)
+
+const filteredMauSacItems = computed(() => {
+  const keyword = mauSacSearch.value.trim().toLowerCase()
+  const items = danhMuc.value?.mauSac || []
+  if (!keyword) return items
+
+  return items.filter((item) =>
+    `${item.ten || ''} ${item.maMauHex || ''}`.toLowerCase().includes(keyword)
+  )
+})
+
+const filteredKichCoItems = computed(() => {
+  const keyword = kichCoSearch.value.trim().toLowerCase()
+  const items = danhMuc.value?.kichCo || []
+  if (!keyword) return items
+
+  return items.filter((item) =>
+    `${item.giaTri || ''} ${item.ghiChu || ''}`.toLowerCase().includes(keyword)
+  )
+})
+
+const mauSacSummary = computed(() => {
+  if (!selectedMauSacItems.value.length) return 'Chọn màu sắc'
+  if (selectedMauSacItems.value.length === 1) return selectedMauSacItems.value[0].ten
+  if (selectedMauSacItems.value.length === 2) {
+    return `${selectedMauSacItems.value[0].ten}, ${selectedMauSacItems.value[1].ten}`
+  }
+  return `${selectedMauSacItems.value[0].ten}, ${selectedMauSacItems.value[1].ten} +${selectedMauSacItems.value.length - 2}`
+})
+
+const kichCoSummary = computed(() => {
+  if (!selectedKichCoItems.value.length) return 'Chọn kích cỡ'
+  if (selectedKichCoItems.value.length === 1) return `Size ${selectedKichCoItems.value[0].giaTri}`
+  if (selectedKichCoItems.value.length === 2) {
+    return `Size ${selectedKichCoItems.value[0].giaTri}, Size ${selectedKichCoItems.value[1].giaTri}`
+  }
+  return `Size ${selectedKichCoItems.value[0].giaTri}, Size ${selectedKichCoItems.value[1].giaTri} +${selectedKichCoItems.value.length - 2}`
+})
 
 function parsePositiveNumber(value) {
   const normalized = Array.isArray(value) ? value[0] : value
@@ -89,6 +141,9 @@ function resetVariantBuilder() {
   variantBuilder.giaGoc = 0
   variantBuilder.giaBan = 0
   generatedVariants.value = []
+  openVariantDropdown.value = null
+  mauSacSearch.value = ''
+  kichCoSearch.value = ''
   clearVariantErrors()
 }
 
@@ -145,9 +200,6 @@ function validateVariantBuilder() {
   clearVariantErrors()
   if (!variantBuilder.mauSacIds.length) variantErrors.mauSacIds = 'Chọn ít nhất 1 màu sắc'
   if (!variantBuilder.kichCoIds.length) variantErrors.kichCoIds = 'Chọn ít nhất 1 kích cỡ'
-  if (Number(variantBuilder.giaBan) <= 0) variantErrors.giaBan = 'Giá bán phải lớn hơn 0'
-  if (Number(variantBuilder.giaGoc) < 0) variantErrors.giaGoc = 'Giá gốc không được âm'
-  if (Number(variantBuilder.soLuong) < 0) variantErrors.soLuong = 'Số lượng không được âm'
   return Object.keys(variantErrors).length === 0
 }
 
@@ -180,6 +232,52 @@ function generateVariants() {
 
 function removeGeneratedVariant(key) {
   generatedVariants.value = generatedVariants.value.filter((item) => item.key !== key)
+}
+
+function toggleVariantDropdown(type) {
+  openVariantDropdown.value = openVariantDropdown.value === type ? null : type
+}
+
+function closeVariantDropdown() {
+  openVariantDropdown.value = null
+}
+
+function handleDocumentClick(event) {
+  const target = event.target
+
+  if (mauSacDropdownRef.value?.contains(target) || kichCoDropdownRef.value?.contains(target)) {
+    return
+  }
+
+  closeVariantDropdown()
+}
+
+function toggleSelectedValue(field, id) {
+  const numericId = Number(id)
+  const currentValues = Array.isArray(variantBuilder[field]) ? variantBuilder[field] : []
+
+  if (currentValues.includes(numericId)) {
+    variantBuilder[field] = currentValues.filter((item) => item !== numericId)
+    return
+  }
+
+  variantBuilder[field] = [...currentValues, numericId]
+}
+
+function isSelected(field, id) {
+  return Array.isArray(variantBuilder[field]) && variantBuilder[field].includes(Number(id))
+}
+
+function clearSelectedValues(field) {
+  variantBuilder[field] = []
+}
+
+function applyGeneratedDefaults() {
+  generatedVariants.value.forEach((item) => {
+    item.soLuong = Number(variantBuilder.soLuong || 0)
+    item.giaGoc = Number(variantBuilder.giaGoc || 0)
+    item.giaBan = Number(variantBuilder.giaBan || 0)
+  })
 }
 
 function validateGeneratedVariants() {
@@ -330,7 +428,12 @@ watch(
 )
 
 onMounted(async () => {
+  document.addEventListener('mousedown', handleDocumentClick)
   await loadInitialData()
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleDocumentClick)
 })
 </script>
 
@@ -497,78 +600,144 @@ onMounted(async () => {
 
         <article class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
           <div class="space-y-4">
-            <div>
+            <div ref="mauSacDropdownRef" class="relative" @click.stop>
               <label class="mb-1 block text-[13px] font-semibold text-slate-500">Màu sắc *</label>
-              <div class="flex flex-wrap gap-2">
-                <label
-                  v-for="item in danhMuc?.mauSac || []"
-                  :key="item.id"
-                  class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm font-medium transition"
-                  :class="variantBuilder.mauSacIds.includes(item.id) ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'"
-                >
-                  <input v-model="variantBuilder.mauSacIds" type="checkbox" class="hidden" :value="item.id" />
-                  <span
-                    class="h-2.5 w-2.5 rounded-full border border-black/5"
-                    :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
-                  ></span>
-                  {{ item.ten }}
-                </label>
+              <button
+                type="button"
+                class="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm transition hover:bg-white"
+                :class="selectedMauSacItems.length ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
+                @click="toggleVariantDropdown('mauSac')"
+              >
+                <span class="truncate">{{ mauSacSummary }}</span>
+                <ChevronDown :size="16" />
+              </button>
+
+              <div
+                v-if="openVariantDropdown === 'mauSac'"
+                class="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-xl"
+              >
+                <div class="border-b border-slate-100 p-3">
+                  <div class="relative">
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      v-model="mauSacSearch"
+                      type="text"
+                      placeholder="Tìm màu sắc..."
+                      class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                      @keydown.stop
+                    />
+                  </div>
+                </div>
+
+                <div class="max-h-64 overflow-y-auto p-2">
+                  <button
+                    v-if="selectedMauSacItems.length"
+                    type="button"
+                    class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                    @click="clearSelectedValues('mauSacIds')"
+                  >
+                    <span>Bỏ chọn tất cả</span>
+                    <X :size="15" />
+                  </button>
+
+                  <button
+                    v-for="item in filteredMauSacItems"
+                    :key="item.id"
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
+                    :class="isSelected('mauSacIds', item.id) ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
+                    @click="toggleSelectedValue('mauSacIds', item.id)"
+                  >
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span
+                        class="h-3 w-3 shrink-0 rounded-full border border-black/5"
+                        :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
+                      ></span>
+                      <span class="truncate">{{ item.ten }}</span>
+                    </div>
+                    <Check v-if="isSelected('mauSacIds', item.id)" :size="15" class="shrink-0" />
+                  </button>
+
+                  <div
+                    v-if="!filteredMauSacItems.length"
+                    class="rounded-xl px-3 py-6 text-center text-sm text-slate-400"
+                  >
+                    Không tìm thấy màu sắc phù hợp.
+                  </div>
+                </div>
               </div>
+
+              <p class="mt-1 text-xs text-slate-400">
+                {{ selectedMauSacItems.length ? selectedMauSacItems.map((item) => item.ten).join(', ') : 'Chưa chọn màu sắc' }}
+              </p>
               <p v-if="variantErrors.mauSacIds" class="mt-1 text-xs text-rose-500">{{ variantErrors.mauSacIds }}</p>
             </div>
 
-            <div>
+            <div ref="kichCoDropdownRef" class="relative" @click.stop>
               <label class="mb-1 block text-[13px] font-semibold text-slate-500">Kích cỡ *</label>
-              <div class="flex flex-wrap gap-2">
-                <label
-                  v-for="item in danhMuc?.kichCo || []"
-                  :key="item.id"
-                  class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-sm font-medium transition"
-                  :class="variantBuilder.kichCoIds.includes(item.id) ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'"
-                >
-                  <input v-model="variantBuilder.kichCoIds" type="checkbox" class="hidden" :value="item.id" />
-                  Size {{ item.giaTri }}
-                </label>
+              <button
+                type="button"
+                class="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm transition hover:bg-white"
+                :class="selectedKichCoItems.length ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
+                @click="toggleVariantDropdown('kichCo')"
+              >
+                <span class="truncate">{{ kichCoSummary }}</span>
+                <ChevronDown :size="16" />
+              </button>
+
+              <div
+                v-if="openVariantDropdown === 'kichCo'"
+                class="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-xl"
+              >
+                <div class="border-b border-slate-100 p-3">
+                  <div class="relative">
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      v-model="kichCoSearch"
+                      type="text"
+                      placeholder="Tìm kích cỡ..."
+                      class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                      @keydown.stop
+                    />
+                  </div>
+                </div>
+
+                <div class="max-h-64 overflow-y-auto p-2">
+                  <button
+                    v-if="selectedKichCoItems.length"
+                    type="button"
+                    class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                    @click="clearSelectedValues('kichCoIds')"
+                  >
+                    <span>Bỏ chọn tất cả</span>
+                    <X :size="15" />
+                  </button>
+
+                  <button
+                    v-for="item in filteredKichCoItems"
+                    :key="item.id"
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
+                    :class="isSelected('kichCoIds', item.id) ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
+                    @click="toggleSelectedValue('kichCoIds', item.id)"
+                  >
+                    <span class="truncate">Size {{ item.giaTri }}</span>
+                    <Check v-if="isSelected('kichCoIds', item.id)" :size="15" class="shrink-0" />
+                  </button>
+
+                  <div
+                    v-if="!filteredKichCoItems.length"
+                    class="rounded-xl px-3 py-6 text-center text-sm text-slate-400"
+                  >
+                    Không tìm thấy kích cỡ phù hợp.
+                  </div>
+                </div>
               </div>
+
+              <p class="mt-1 text-xs text-slate-400">
+                {{ selectedKichCoItems.length ? selectedKichCoItems.map((item) => `Size ${item.giaTri}`).join(', ') : 'Chưa chọn kích cỡ' }}
+              </p>
               <p v-if="variantErrors.kichCoIds" class="mt-1 text-xs text-rose-500">{{ variantErrors.kichCoIds }}</p>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-3">
-              <label class="block">
-                <span class="mb-1 block text-[13px] font-semibold text-slate-500">Số lượng mặc định</span>
-                <input
-                  v-model.number="variantBuilder.soLuong"
-                  type="number"
-                  min="0"
-                  class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                  :class="variantErrors.soLuong ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
-                />
-                <p v-if="variantErrors.soLuong" class="mt-1 text-xs text-rose-500">{{ variantErrors.soLuong }}</p>
-              </label>
-
-              <label class="block">
-                <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giá gốc mặc định</span>
-                <input
-                  v-model.number="variantBuilder.giaGoc"
-                  type="number"
-                  min="0"
-                  class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                  :class="variantErrors.giaGoc ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
-                />
-                <p v-if="variantErrors.giaGoc" class="mt-1 text-xs text-rose-500">{{ variantErrors.giaGoc }}</p>
-              </label>
-
-              <label class="block">
-                <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giá bán mặc định *</span>
-                <input
-                  v-model.number="variantBuilder.giaBan"
-                  type="number"
-                  min="1"
-                  class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                  :class="variantErrors.giaBan ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
-                />
-                <p v-if="variantErrors.giaBan" class="mt-1 text-xs text-rose-500">{{ variantErrors.giaBan }}</p>
-              </label>
             </div>
 
             <button
@@ -584,6 +753,52 @@ onMounted(async () => {
 
       <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
         <p v-if="variantErrors.generated" class="text-sm text-rose-500">{{ variantErrors.generated }}</p>
+
+        <div
+          v-if="generatedVariants.length"
+          class="mb-4 grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto]"
+        >
+          <label class="block">
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Số lượng mặc định</span>
+            <AdminFormattedNumberInput
+              v-model="variantBuilder.soLuong"
+              :min="0"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giá gốc mặc định</span>
+            <AdminFormattedNumberInput
+              v-model="variantBuilder.giaGoc"
+              :min="0"
+              class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              :class="variantErrors.giaGoc ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
+            />
+            <p v-if="variantErrors.giaGoc" class="mt-1 text-xs text-rose-500">{{ variantErrors.giaGoc }}</p>
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giá bán mặc định *</span>
+            <AdminFormattedNumberInput
+              v-model="variantBuilder.giaBan"
+              :min="0"
+              class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              :class="variantErrors.giaBan ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
+            />
+            <p v-if="variantErrors.giaBan" class="mt-1 text-xs text-rose-500">{{ variantErrors.giaBan }}</p>
+          </label>
+
+          <div class="flex items-end">
+            <button
+              type="button"
+              class="admin-btn-soft h-11"
+              @click="applyGeneratedDefaults"
+            >
+              Áp dụng
+            </button>
+          </div>
+        </div>
 
         <div v-if="generatedVariants.length" class="overflow-x-auto">
           <table class="min-w-full border-separate border-spacing-y-2 text-sm">
@@ -603,26 +818,23 @@ onMounted(async () => {
                 <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-800">{{ item.mauSac }}</td>
                 <td class="px-4 py-4 font-semibold text-slate-700">Size {{ item.kichCo }}</td>
                 <td class="px-4 py-4">
-                  <input
-                    v-model.number="item.soLuong"
-                    type="number"
-                    min="0"
+                  <AdminFormattedNumberInput
+                    v-model="item.soLuong"
+                    :min="0"
                     class="h-10 w-28 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                   />
                 </td>
                 <td class="px-4 py-4">
-                  <input
-                    v-model.number="item.giaGoc"
-                    type="number"
-                    min="0"
+                  <AdminFormattedNumberInput
+                    v-model="item.giaGoc"
+                    :min="0"
                     class="h-10 w-36 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                   />
                 </td>
                 <td class="px-4 py-4">
-                  <input
-                    v-model.number="item.giaBan"
-                    type="number"
-                    min="1"
+                  <AdminFormattedNumberInput
+                    v-model="item.giaBan"
+                    :min="0"
                     class="h-10 w-36 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                   />
                 </td>
@@ -650,7 +862,7 @@ onMounted(async () => {
             <Package2 :size="24" />
           </div>
           <p class="mt-4 text-base font-semibold text-slate-700">Chưa có biến thể nháp</p>
-          <p class="mt-1 text-sm text-slate-400">Chọn màu sắc, kích cỡ rồi bấm “Tạo biến thể tự động”.</p>
+          <p class="mt-1 text-sm text-slate-400">Chọn màu sắc, kích cỡ trong bộ lọc rồi bấm “Tạo biến thể tự động”.</p>
         </div>
 
         <div class="mt-6 flex justify-end">
