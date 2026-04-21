@@ -34,7 +34,20 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
           <td class="px-5 py-4 font-semibold text-slate-900">{{ index + 1 }}</td>
           <td class="px-5 py-4 font-semibold text-slate-600">{{ item.maSanPham }}</td>
           <td class="px-5 py-4">
-            <p class="font-semibold text-slate-900">{{ item.tenSanPham }}</p>
+            <div class="flex items-center gap-3">
+              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-sm font-bold text-red-400">
+                <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
+                <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
+              </div>
+
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-900">{{ item.tenSanPham }}</p>
+                <p class="mt-1 text-xs text-slate-500">
+                  {{ item.mauSac || "--" }} / {{ item.kichCo || "--" }}
+                </p>
+                <p v-if="item.sku" class="mt-1 text-xs text-slate-400">SKU: {{ item.sku }}</p>
+              </div>
+            </div>
           </td>
           <td class="px-5 py-4 font-semibold text-slate-700">{{ dinhDangTien(item.giaBan) }}</td>
           <td class="px-5 py-4">

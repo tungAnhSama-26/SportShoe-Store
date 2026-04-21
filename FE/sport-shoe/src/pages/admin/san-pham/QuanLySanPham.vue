@@ -6,6 +6,7 @@ import {
   ImageOff, FileSpreadsheet, RotateCcw, Pencil
 } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import QuanLySanPhamProductModal from '../../../components/admin/san-pham/QuanLySanPhamProductModal.vue'
 import QuanLySanPhamBienTheModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheModal.vue'
@@ -74,9 +75,9 @@ function trangThaiClass(value) {
 }
 
 function trangThaiLabel(value) {
-  if (value === 1) return 'Hoạt động'
+  if (value === 1) return 'Đang bán'
   if (value === 2) return 'Hết hàng'
-  return 'Dừng bán'
+  return 'Ngừng bán'
 }
 
 function bienTheTrangThaiClass(item) {
@@ -86,7 +87,7 @@ function bienTheTrangThaiClass(item) {
 
 function bienTheTrangThaiLabel(item) {
   if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
-  return Number(item.kichHoat) === 1 ? 'Kích hoạt' : 'Tạm dừng'
+  return Number(item.kichHoat) === 1 ? 'Đang bán' : 'Ngừng bán'
 }
 
 function productAttributeList(item) {
@@ -129,7 +130,20 @@ function nextProductStatus(item) {
 }
 
 function productQuickToggleLabel(item) {
-  return Number(item.trangThai) === 0 ? 'Bật bán nhanh' : 'Dừng bán nhanh'
+  return Number(item.trangThai) === 0 ? 'Chuyển sang đang bán' : 'Chuyển sang ngừng bán'
+}
+
+function productQuickToggleIntent(item) {
+  return Number(item.trangThai) === 0 ? 'activate' : 'deactivate'
+}
+
+function productQuickToggleConfirmMessage(item) {
+  const action = Number(item.trangThai) === 0 ? 'đang bán' : 'ngừng bán'
+  return `Bạn có muốn chuyển sản phẩm "${item.ten}" sang ${action} không?`
+}
+
+function canToggleBienTheStatus(item) {
+  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
 }
 
 function closeAll() {
@@ -701,14 +715,14 @@ async function handleSaveBienThe() {
 }
 
 async function handleToggleBienTheStatus(item) {
+  if (!canToggleBienTheStatus(item)) {
+    showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
+    return
+  }
+
   updatingBienTheStatusId.value = item.id
   try {
-    await api.capNhatBienThe(item.id, {
-      soLuong: Number(item.soLuong),
-      giaGoc: Number(item.giaGoc),
-      giaBan: Number(item.giaBan),
-      kichHoat: nextBienTheStatus(item)
-    })
+    await api.doiTrangThaiBienThe(item.id, nextBienTheStatus(item))
     showToast('Cập nhật trạng thái CTSP thành công')
     await Promise.all([
       syncSelectedGiayContext(selectedGiay.value?.id),
@@ -955,11 +969,11 @@ onMounted(async () => {
               <span class="truncate">
                 {{
                   filterTrangThai === 1
-                    ? 'Hoạt động'
+                    ? 'Đang bán'
                     : filterTrangThai === 2
                       ? 'Hết hàng'
                       : filterTrangThai === 0
-                        ? 'Dừng bán'
+                        ? 'Ngừng bán'
                         : 'Tất cả'
                 }}
               </span>
@@ -982,7 +996,7 @@ onMounted(async () => {
                 class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
                 :class="filterTrangThai === 1 ? 'font-medium text-rose-600' : 'text-gray-700'"
               >
-                Hoạt động
+                Đang bán
                 <Check v-if="filterTrangThai === 1" :size="14" />
               </button>
               <button
@@ -998,7 +1012,7 @@ onMounted(async () => {
                 class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
                 :class="filterTrangThai === 0 ? 'font-medium text-rose-600' : 'text-gray-700'"
               >
-                Dừng bán
+                Ngừng bán
                 <Check v-if="filterTrangThai === 0" :size="14" />
               </button>
             </div>
@@ -1097,21 +1111,19 @@ onMounted(async () => {
                   <div class="mt-1 text-xs text-slate-400">{{ thongTinTonKho(item) }}</div>
                 </td>
                 <td class="px-4 py-4 align-top">
-  <div class="flex flex-col items-start gap-2">
-    <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(item.trangThai)">
-      {{ trangThaiLabel(item.trangThai) }}
-    </span>
-    <button
-      :disabled="updatingProductStatusId === item.id"
-      class="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-      @click="handleToggleProductStatus(item)"
-    >
-      {{ updatingProductStatusId === item.id ? 'Đang cập nhật...' : productQuickToggleLabel(item) }}
-    </button>
-  </div>
-</td>
+                  <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(item.trangThai)">
+                    {{ trangThaiLabel(item.trangThai) }}
+                  </span>
+                </td>
                 <td class="px-4 py-4 align-top">
-                  <div class="flex items-center justify-end gap-1.5">
+                  <div class="flex items-center justify-end gap-1">
+                    <AdminQuickStatusAction
+                      :loading="updatingProductStatusId === item.id"
+                      :action-label="productQuickToggleLabel(item)"
+                      :confirm-message="productQuickToggleConfirmMessage(item)"
+                      :intent="productQuickToggleIntent(item)"
+                      @toggle="handleToggleProductStatus(item)"
+                    />
                     <button
                       @click="openEdit(item)"
                       title="Chỉnh sửa sản phẩm"

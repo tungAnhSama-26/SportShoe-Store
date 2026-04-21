@@ -90,6 +90,10 @@ defineProps({
     type: Object,
     default: null
   },
+  hinhAnhDangChon: {
+    type: String,
+    default: ""
+  },
   soLuongTonSauKhiChon: {
     type: Number,
     default: 0
@@ -326,6 +330,7 @@ const emit = defineEmits([
         <BanHangProductDetailModal
           :selected-product-detail="selectedProductDetail"
           :chi-tiet-dang-chon="chiTietDangChon"
+          :current-product-image="hinhAnhDangChon"
           :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
           :color-options="colorOptions"
           :size-options="sizeOptions"

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
@@ -18,6 +19,7 @@ const pageSize = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
 const selectedProduct = ref(null)
+const updatingStatusId = ref(null)
 
 const filters = reactive({
   keyword: '',
@@ -75,12 +77,39 @@ function formatCurrency(value) {
 
 function bienTheTrangThaiLabel(item) {
   if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
-  return Number(item.kichHoat) === 1 ? 'Kinh doanh' : 'Tạm dừng'
+  return Number(item.kichHoat) === 1 ? 'Đang bán' : 'Ngừng bán'
 }
 
 function bienTheTrangThaiClass(item) {
   if (Number(item.soLuong || 0) <= 0) return 'bg-amber-50 text-amber-600'
   return Number(item.kichHoat) === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'
+}
+
+function nextBienTheStatus(item) {
+  return Number(item.kichHoat) === 1 ? 2 : 1
+}
+
+function quickToggleLabel(item) {
+  if (Number(item.kichHoat) === 1) return 'Chuyển sang ngừng bán'
+  return 'Chuyển sang đang bán'
+}
+
+function canToggleStatus(item) {
+  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
+}
+
+function quickToggleIntent(item) {
+  return Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'
+}
+
+function quickToggleDisabledTitle(item) {
+  return canToggleStatus(item) ? quickToggleLabel(item) : 'Hết hàng chưa thể chuyển sang đang bán'
+}
+
+function quickToggleConfirmMessage(item) {
+  const action = Number(item.kichHoat) === 1 ? 'ngừng bán' : 'đang bán'
+  const target = item.maChiTietSanPham || item.maBienThe || item.sku || `#${item.id}`
+  return `Bạn có muốn chuyển CTSP "${target}" sang ${action} không?`
 }
 
 async function loadDanhMuc() {
@@ -208,6 +237,27 @@ async function xuatExcel() {
   }
 }
 
+async function toggleBienTheStatus(item) {
+  if (!canToggleStatus(item)) {
+    showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
+    return
+  }
+
+  updatingStatusId.value = item.id
+  try {
+    await api.doiTrangThaiBienThe(item.id, nextBienTheStatus(item))
+    showToast('Cập nhật trạng thái CTSP thành công')
+    await Promise.all([
+      loadData(currentPage.value),
+      selectedGiayId.value === item.giayId ? syncSelectedProduct() : Promise.resolve()
+    ])
+  } catch (error) {
+    showToast(error.message || 'Không thể cập nhật trạng thái CTSP', 'error')
+  } finally {
+    updatingStatusId.value = null
+  }
+}
+
 function applyStatusFilter(value) {
   filters.trangThai = value
   loadData(0)
@@ -317,8 +367,8 @@ onMounted(async () => {
               @change="loadData(0)"
             >
               <option :value="null">Tất cả trạng thái</option>
-              <option :value="1">Kinh doanh</option>
-              <option :value="2">Tạm dừng / Hết hàng</option>
+              <option :value="1">Đang bán</option>
+              <option :value="2">Ngừng bán / Hết hàng</option>
             </select>
           </label>
         </div>
@@ -401,14 +451,25 @@ onMounted(async () => {
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-4 text-center">
-                <button
-                  type="button"
-                  class="admin-table-action text-slate-600 hover:text-rose-500"
-                  title="Quản lý ảnh"
-                  @click="openImageModal(item)"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
+                <div class="flex items-center justify-center gap-1">
+                  <AdminQuickStatusAction
+                    :loading="updatingStatusId === item.id"
+                    :disabled="updatingStatusId === item.id || !canToggleStatus(item)"
+                    :action-label="quickToggleLabel(item)"
+                    :disabled-title="quickToggleDisabledTitle(item)"
+                    :confirm-message="quickToggleConfirmMessage(item)"
+                    :intent="quickToggleIntent(item)"
+                    @toggle="toggleBienTheStatus(item)"
+                  />
+                  <button
+                    type="button"
+                    class="admin-table-action text-slate-600 hover:text-rose-500"
+                    title="Quản lý ảnh"
+                    @click="openImageModal(item)"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

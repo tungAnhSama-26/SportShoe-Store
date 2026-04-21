@@ -63,6 +63,7 @@ const emit = defineEmits([
         <div v-if="!loadingProducts && !productResults.length" class="rounded-2xl px-3 py-3 text-sm text-slate-500">
           Không tìm thấy sản phẩm phù hợp.
         </div>
+
         <button
           v-for="product in productResults"
           :key="product.chiTietId"
@@ -70,12 +71,20 @@ const emit = defineEmits([
           class="flex w-full items-start justify-between gap-4 rounded-2xl px-3 py-3 text-left transition hover:bg-red-50"
           @click="emit('open-product', product)"
         >
-          <div>
-            <p class="text-sm font-bold text-slate-900">{{ product.tenSanPham }}</p>
-            <p class="mt-1 text-xs text-slate-500">
-              Mã: {{ product.maSanPham }} | {{ product.tongBienThe || 1 }} biến thể
-            </p>
+          <div class="flex min-w-0 items-start gap-3">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-sm font-bold text-red-400">
+              <img v-if="product.hinhAnh" :src="product.hinhAnh" alt="" class="h-full w-full object-cover" />
+              <span v-else>{{ product.tenSanPham.slice(0, 1) }}</span>
+            </div>
+
+            <div class="min-w-0">
+              <p class="truncate text-sm font-bold text-slate-900">{{ product.tenSanPham }}</p>
+              <p class="mt-1 truncate text-xs text-slate-500">
+                Mã: {{ product.maSanPham }} | {{ product.tongBienThe || 1 }} biến thể
+              </p>
+            </div>
           </div>
+
           <div class="text-right">
             <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
             <p class="mt-1 text-xs text-slate-500">Tồn: {{ product.soLuongTon }}</p>
@@ -110,9 +119,11 @@ const emit = defineEmits([
           @click="emit('open-product', product)"
         >
           <div class="flex min-w-0 items-center gap-4">
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-lg font-bold text-red-400">
-              {{ product.tenSanPham.slice(0, 1) }}
+            <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-lg font-bold text-red-400">
+              <img v-if="product.hinhAnh" :src="product.hinhAnh" alt="" class="h-full w-full object-cover" />
+              <span v-else>{{ product.tenSanPham.slice(0, 1) }}</span>
             </div>
+
             <div class="min-w-0">
               <p class="truncate text-base font-bold text-slate-900">{{ product.tenSanPham }}</p>
               <p class="mt-1 truncate text-xs text-slate-500">

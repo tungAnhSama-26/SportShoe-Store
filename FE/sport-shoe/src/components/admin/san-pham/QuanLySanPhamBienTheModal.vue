@@ -1,5 +1,6 @@
 <script setup>
 import { ImageOff, Images, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
+import AdminQuickStatusAction from '../../common/AdminQuickStatusAction.vue'
 
 defineProps({
   open: {
@@ -69,6 +70,28 @@ const emit = defineEmits([
   'delete-bienthe',
   'open-images'
 ])
+
+function canToggleStatus(item) {
+  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
+}
+
+function quickToggleLabel(item) {
+  return Number(item.kichHoat) === 1 ? 'Chuyển sang ngừng bán' : 'Chuyển sang đang bán'
+}
+
+function quickToggleIntent(item) {
+  return Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'
+}
+
+function quickToggleDisabledTitle(item) {
+  return canToggleStatus(item) ? quickToggleLabel(item) : 'Hết hàng chưa thể chuyển sang đang bán'
+}
+
+function quickToggleConfirmMessage(item) {
+  const action = Number(item.kichHoat) === 1 ? 'ngừng bán' : 'đang bán'
+  const target = item.maBienThe || item.sku || `#${item.id}`
+  return `Bạn có muốn chuyển CTSP "${target}" sang ${action} không?`
+}
 </script>
 
 <template>
@@ -224,18 +247,9 @@ const emit = defineEmits([
                       <div class="text-xs text-slate-400">Giá bán: {{ formatCurrency(item.giaBan) }}đ</div>
                     </td>
                     <td class="px-4 py-4 align-top">
-                      <div class="flex flex-col items-start gap-2">
-                        <span class="admin-status-chip whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
-                          {{ bienTheTrangThaiLabel(item) }}
-                        </span>
-                        <button
-                          :disabled="updatingBienTheStatusId === item.id"
-                          class="text-xs font-semibold text-rose-600 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          @click="emit('toggle-bienthe-status', item)"
-                        >
-                          {{ updatingBienTheStatusId === item.id ? 'Đang cập nhật...' : (Number(item.kichHoat) === 1 ? 'Tắt nhanh' : 'Kích hoạt nhanh') }}
-                        </button>
-                      </div>
+                      <span class="admin-status-chip whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
+                        {{ bienTheTrangThaiLabel(item) }}
+                      </span>
                     </td>
                     <td class="px-4 py-4 text-center align-top">
                       <button
@@ -247,7 +261,16 @@ const emit = defineEmits([
                       </button>
                     </td>
                     <td class="px-4 py-4 align-top">
-                      <div class="flex items-center justify-end gap-1.5">
+                      <div class="flex items-center justify-end gap-1">
+                        <AdminQuickStatusAction
+                          :loading="updatingBienTheStatusId === item.id"
+                          :disabled="updatingBienTheStatusId === item.id || !canToggleStatus(item)"
+                          :action-label="quickToggleLabel(item)"
+                          :disabled-title="quickToggleDisabledTitle(item)"
+                          :confirm-message="quickToggleConfirmMessage(item)"
+                          :intent="quickToggleIntent(item)"
+                          @toggle="emit('toggle-bienthe-status', item)"
+                        />
                         <button
                           title="Sửa CTSP"
                           class="admin-table-action text-slate-600 hover:text-rose-500"

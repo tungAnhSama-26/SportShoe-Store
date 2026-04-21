@@ -1,6 +1,3 @@
--- Align old counter-sale invoice statuses with the shared 1-8 mapping.
--- Old mapping: 1 cho, 2 da thanh toan, 5 da huy.
--- New mapping: 1 cho xac nhan, 5 hoan thanh, 6 huy.
 
 if exists (
     select 1

@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="" />
+    <list default="true" id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../database/sua_trang_thai_hoa_don.sql" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -42,10 +44,10 @@
     "Spring Boot.ServerApplication.executor": "Run",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "deletionFromPopupRequiresConfirmation": "false",
-    "git-widget-placeholder": "bui-hiep",
+    "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "E:/DuAnTN/SportShoe-Store/BE",
+    "last_opened_file_path": "C:/Users/tunga/OneDrive/Desktop/SportShoe-Store/BE",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -66,8 +68,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-30f59d01ecdd-26cb7f24e5b0-intellij.indexing.shared.core-IU-253.29346.138" />
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.29346.138" />
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.32098.37" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.32098.37" />
       </set>
     </attachedChunks>
   </component>
@@ -83,6 +85,7 @@
       <workItem from="1775840223355" duration="19000" />
       <workItem from="1775840265730" duration="275000" />
       <workItem from="1776694343699" duration="489000" />
+      <workItem from="1776777784040" duration="30000" />
     </task>
     <servers />
   </component>
