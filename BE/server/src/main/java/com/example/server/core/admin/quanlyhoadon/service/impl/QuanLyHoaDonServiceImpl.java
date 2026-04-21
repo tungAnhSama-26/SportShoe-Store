@@ -2,11 +2,14 @@ package com.example.server.core.admin.quanlyhoadon.service.impl;
 
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonDetailResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonHistoryResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonPaymentHistoryResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonProductResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonSummaryResponse;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
+import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HinhAnhGiay;
@@ -66,6 +69,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final GhnShippingService ghnShippingService;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -74,7 +78,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             VanChuyenRepository vanChuyenRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
             LichSuHoaDonRepository lichSuHoaDonRepository,
-            GiayChiTietRepository giayChiTietRepository
+            GiayChiTietRepository giayChiTietRepository,
+            GhnShippingService ghnShippingService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -83,6 +88,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.ghnShippingService = ghnShippingService;
     }
 
     @Override
@@ -279,6 +285,46 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         lichSuHoaDonRepository.save(lichSu);
 
         return mapHoaDonDetail(findHoaDon(id));
+    }
+
+    @Override
+    @Transactional
+    public TinhPhiVanChuyenGhnResponse tinhVaCapNhatPhiVanChuyenGhn(Integer id, TinhPhiVanChuyenGhnRequest request) {
+        HoaDon hoaDon = findHoaDon(id);
+        if (isTaiQuay(hoaDon)) {
+            throw new BusinessException("Hoa don tai quay khong can tinh phi van chuyen GHN");
+        }
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
+        if (items.isEmpty()) {
+            throw new BusinessException("Hoa don chua co san pham de tinh phi van chuyen");
+        }
+
+        TinhPhiVanChuyenGhnResponse phiGhn = ghnShippingService.tinhPhi(hoaDon, items, request);
+        VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(id).orElseGet(() -> {
+            VanChuyen created = new VanChuyen();
+            created.setHoaDon(hoaDon);
+            created.setDonViVanChuyen("GHN");
+            created.setTrangThai(TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
+            created.setNgayTao(Instant.now());
+            return created;
+        });
+
+        vanChuyen.setDonViVanChuyen("GHN");
+        vanChuyen.setPhiVanChuyen(phiGhn.phiVanChuyen());
+        vanChuyen.setNgayCapNhat(Instant.now());
+        vanChuyenRepository.save(vanChuyen);
+
+        hoaDon.setTongTienThanhToan(
+                defaultMoney(hoaDon.getTongTienHang())
+                        .add(phiGhn.phiVanChuyen())
+                        .subtract(defaultMoney(hoaDon.getTienGiam()))
+                        .max(BigDecimal.ZERO)
+        );
+        hoaDon.setNgayCapNhat(Instant.now());
+        hoaDonRepository.save(hoaDon);
+
+        return phiGhn;
     }
 
     private HoaDonDetailResponse mapHoaDonDetail(HoaDon hoaDon) {
