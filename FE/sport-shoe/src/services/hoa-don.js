@@ -46,3 +46,10 @@ export function capNhatSanPhamHoaDon(id, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function tinhPhiVanChuyenGhn(id, payload) {
+  return request(`/admin/hoa-don/${id}/phi-van-chuyen/ghn`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
