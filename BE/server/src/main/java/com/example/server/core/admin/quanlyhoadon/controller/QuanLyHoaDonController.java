@@ -2,8 +2,10 @@ package com.example.server.core.admin.quanlyhoadon.controller;
 
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonDetailResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonSummaryResponse;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -71,6 +74,17 @@ public class QuanLyHoaDonController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Cap nhat san pham hoa don thanh cong",
                 quanLyHoaDonService.capNhatSanPhamHoaDon(id, request)
+        ));
+    }
+
+    @PostMapping("/{id}/phi-van-chuyen/ghn")
+    public ResponseEntity<ApiResponse<TinhPhiVanChuyenGhnResponse>> tinhPhiVanChuyenGhn(
+            @PathVariable Integer id,
+            @Valid @RequestBody TinhPhiVanChuyenGhnRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tinh phi van chuyen GHN thanh cong",
+                quanLyHoaDonService.tinhVaCapNhatPhiVanChuyenGhn(id, request)
         ));
     }
 }

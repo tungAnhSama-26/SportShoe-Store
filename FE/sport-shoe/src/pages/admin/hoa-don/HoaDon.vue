@@ -87,14 +87,54 @@ function dinhDangNgay(ngay: string) {
   }).format(new Date(ngay));
 }
 
+function layNgayHienTaiInput() {
+  const homNay = new Date();
+  const year = homNay.getFullYear();
+  const month = String(homNay.getMonth() + 1).padStart(2, "0");
+  const day = String(homNay.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dinhDangNgayLoc(value: string) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
+function chuyenNgayLocSangInput(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return "";
+  const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!match) return normalized;
+  const [, day, month, year] = match;
+  const fullYear = year.length === 2 ? `20${year}` : year;
+  return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
 function taoBoLocMacDinh() {
+  const homNay = layNgayHienTaiInput();
   return {
     keyword: "",
-    tuNgay: "",
-    denNgay: "",
+    tuNgay: homNay,
+    denNgay: homNay,
     loaiDon: "",
   };
 }
+
+const tuNgayHienThi = computed({
+  get: () => dinhDangNgayLoc(boLoc.value.tuNgay),
+  set: (value: string) => {
+    boLoc.value.tuNgay = chuyenNgayLocSangInput(value);
+  },
+});
+
+const denNgayHienThi = computed({
+  get: () => dinhDangNgayLoc(boLoc.value.denNgay),
+  set: (value: string) => {
+    boLoc.value.denNgay = chuyenNgayLocSangInput(value);
+  },
+});
 
 const tongTheoTrangThai = computed(() =>
   dsTrangThai.map((trangThai) => ({
@@ -261,8 +301,10 @@ onMounted(taiDanhSach);
           <div class="relative">
             <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              v-model="boLoc.tuNgay"
-              type="date"
+              v-model="tuNgayHienThi"
+              type="text"
+              inputmode="numeric"
+              placeholder="dd/mm/yyyy"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
           </div>
@@ -273,8 +315,10 @@ onMounted(taiDanhSach);
           <div class="relative">
             <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              v-model="boLoc.denNgay"
-              type="date"
+              v-model="denNgayHienThi"
+              type="text"
+              inputmode="numeric"
+              placeholder="dd/mm/yyyy"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
           </div>

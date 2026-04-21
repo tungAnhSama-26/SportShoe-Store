@@ -19,7 +19,7 @@ import {
   Truck,
   User,
 } from "lucide-vue-next";
-import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon } from "../../../services/hoa-don";
+import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn } from "../../../services/hoa-don";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 
@@ -45,6 +45,16 @@ const formThongTin = ref({
   diaChi: "",
   loaiDon: ""
 });
+const formGhn = ref({
+  toDistrictId: "",
+  toWardCode: "",
+  serviceTypeId: 2,
+  length: 30,
+  width: 20,
+  height: 12,
+  weight: 500,
+});
+const dangTinhPhiGhn = ref(false);
 
 const trangThaiMoiXacNhan = ref<string | null>(null);
 const ghiChuXacNhan = ref("");
@@ -336,6 +346,34 @@ async function handleLuuThongTin() {
     window.alert(error instanceof Error ? error.message : "Lỗi Cập Nhật Thông Tin");
   } finally {
     dangCapNhat.value = false;
+  }
+}
+
+async function handleTinhPhiGhn() {
+  if (!hoaDon.value || dangTinhPhiGhn.value) return;
+  if (!formGhn.value.toDistrictId || !formGhn.value.toWardCode.trim()) {
+    window.alert("Vui lòng nhập mã quận/huyện và mã phường/xã GHN.");
+    return;
+  }
+
+  dangTinhPhiGhn.value = true;
+  try {
+    const ketQua = await tinhPhiVanChuyenGhn(hoaDon.value.id, {
+      toDistrictId: Number(formGhn.value.toDistrictId),
+      toWardCode: formGhn.value.toWardCode.trim(),
+      serviceTypeId: Number(formGhn.value.serviceTypeId) || 2,
+      length: Number(formGhn.value.length) || 30,
+      width: Number(formGhn.value.width) || 20,
+      height: Number(formGhn.value.height) || 12,
+      weight: Number(formGhn.value.weight) || 500,
+      insuranceValue: Math.min(Number(tongTienHang.value) || 0, 5000000),
+    });
+    hoaDon.value = await layChiTietHoaDon(hoaDon.value.id);
+    thongBao.value = `Đã tính phí GHN: ${dinhDangTien(ketQua.phiVanChuyen || ketQua.total || 0)}.`;
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : "Không thể tính phí vận chuyển GHN.");
+  } finally {
+    dangTinhPhiGhn.value = false;
   }
 }
 
@@ -840,6 +878,59 @@ onMounted(taiChiTiet);
              <div>
                 <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Loại đơn</label>
                 <input type="text" readonly :value="formThongTin.loaiDon" class="w-full rounded-[8px] bg-slate-100 px-3 py-2.5 text-[14px] text-slate-600 outline-none" />
+             </div>
+             <div class="rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-[13px] font-semibold text-slate-700">Tính Phí Vận Chuyển GHN</p>
+                    <p class="mt-1 text-xs text-slate-500">Nhập mã địa chỉ GHN của người nhận để lấy phí từ API GHN.</p>
+                  </div>
+                  <button
+                    type="button"
+                    @click="handleTinhPhiGhn"
+                    :disabled="dangTinhPhiGhn || laDonTaiQuay"
+                    class="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {{ dangTinhPhiGhn ? "Đang Tính..." : "Tính Phí GHN" }}
+                  </button>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2">
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Mã Quận/Huyện GHN</span>
+                    <input v-model="formGhn.toDistrictId" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Mã Phường/Xã GHN</span>
+                    <input v-model="formGhn.toWardCode" type="text" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Loại Dịch Vụ</span>
+                    <select v-model.number="formGhn.serviceTypeId" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300">
+                      <option :value="2">Hàng Nhẹ</option>
+                      <option :value="5">Hàng Nặng</option>
+                    </select>
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Cân Nặng (gram)</span>
+                    <input v-model.number="formGhn.weight" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Dài (cm)</span>
+                    <input v-model.number="formGhn.length" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Rộng (cm)</span>
+                    <input v-model.number="formGhn.width" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Cao (cm)</span>
+                    <input v-model.number="formGhn.height" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <div class="flex items-end justify-between rounded-xl bg-white px-3 py-2 text-sm">
+                    <span class="text-slate-500">Phí Hiện Tại</span>
+                    <span class="font-semibold text-rose-500">{{ dinhDangTien(hoaDon.phiVanChuyen) }}</span>
+                  </div>
+                </div>
              </div>
           </div>
         </div>
