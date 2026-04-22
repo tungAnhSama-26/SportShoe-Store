@@ -8,6 +8,11 @@ public record TinhPhiVanChuyenGhnResponse(
         Integer serviceFee,
         Integer insuranceFee,
         Integer pickStationFee,
-        Integer couponValue
+        Integer couponValue,
+        Integer toDistrictId,
+        String toWardCode,
+        String matchedProvinceName,
+        String matchedDistrictName,
+        String matchedWardName
 ) {
 }
