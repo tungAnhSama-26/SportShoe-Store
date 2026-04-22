@@ -23,6 +23,11 @@ import java.time.LocalDate;
 import java.util.List;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.entity.GiayChiTiet;
+import com.example.server.core.admin.quanlykhuyenmai.dto.request.DotGiamGiaSanPhamBulkRequest;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,9 +55,9 @@ public class DotGiamGiaSanPhamService {
     public void remove(Integer id) {
         DotGiamGiaSanPham dgs = dotGiamGiaSanPhamRepository.findById(id).orElse(null);
         if (dgs != null) {
-            Integer giayId = dgs.getGiay().getId();
+            Integer giayChiTietId = dgs.getGiayChiTiet().getId();
             dotGiamGiaSanPhamRepository.deleteById(id);
-            updateGiaBanForGiay(giayId);
+            updateGiaBanForGiayChiTiet(giayChiTietId);
         }
     }
 
@@ -60,22 +65,22 @@ public class DotGiamGiaSanPhamService {
     public DotGiamGiaSanPham add(DotGiamGiaSanPhamRequest request) {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
-        Giay giay = giayRepository.findById(request.getGiayId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay giay"));
+        GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
 
-        List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayId(giay.getId());
+        List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
         if (!actives.isEmpty() && request.getTrangThai() == 1) {
-            throw new BusinessException("Sản phẩm này đang được áp dụng trong một đợt giảm giá khác. Tính năng chỉ cho phép 1 sản phẩm tham gia 1 đợt giảm giá kích hoạt.");
+            throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
         }
 
         DotGiamGiaSanPham dotGiamGiaSanPham = new DotGiamGiaSanPham();
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
-        dotGiamGiaSanPham.setGiay(giay);
+        dotGiamGiaSanPham.setGiayChiTiet(gct);
         dotGiamGiaSanPham.setTrangThai(request.getTrangThai());
         dotGiamGiaSanPham.setNgayTao(request.getNgayTao());
 
         DotGiamGiaSanPham saved = dotGiamGiaSanPhamRepository.save(dotGiamGiaSanPham);
-        updateGiaBanForGiay(giay.getId());
+        updateGiaBanForGiayChiTiet(gct.getId());
         return saved;
     }
 
@@ -86,69 +91,117 @@ public class DotGiamGiaSanPhamService {
 
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
-        Giay giay = giayRepository.findById(request.getGiayId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay giay"));
+        GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
 
         if (request.getTrangThai() == 1) {
-            List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayId(giay.getId());
+            List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
             for (DotGiamGiaSanPham active : actives) {
                 if (!active.getId().equals(id)) {
-                    throw new BusinessException("Sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
+                    throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
                 }
             }
         }
 
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
-        dotGiamGiaSanPham.setGiay(giay);
+        dotGiamGiaSanPham.setGiayChiTiet(gct);
         dotGiamGiaSanPham.setTrangThai(request.getTrangThai());
         dotGiamGiaSanPham.setNgayTao(request.getNgayTao());
 
         DotGiamGiaSanPham saved = dotGiamGiaSanPhamRepository.save(dotGiamGiaSanPham);
-        updateGiaBanForGiay(giay.getId());
+        updateGiaBanForGiayChiTiet(gct.getId());
         return saved;
     }
 
-    public void updateGiaBanForGiay(Integer giayId) {
-        List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findActiveByGiayId(giayId);
-        List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(giayId);
+    @Transactional
+    public void saveAll(DotGiamGiaSanPhamBulkRequest request) {
+        DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
+
+        // 1. Lấy danh sách ID đã có
+        List<DotGiamGiaSanPham> currentLinks = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(request.getDotGiamGiaId());
+        Set<Integer> currentVariantIds = currentLinks.stream()
+                .map(l -> l.getGiayChiTiet().getId())
+                .collect(Collectors.toSet());
+
+        Set<Integer> targetVariantIds = new HashSet<>(request.getGiayChiTietIds());
+
+        // 2. Xóa những cái không còn trong list mới
+        List<DotGiamGiaSanPham> toDelete = currentLinks.stream()
+                .filter(l -> !targetVariantIds.contains(l.getGiayChiTiet().getId()))
+                .toList();
         
-        LocalDate now = LocalDate.now();
-        for (GiayChiTiet gct : chiTiets) {
-            BigDecimal bestGiaBan = gct.getGiaGoc();
-            // Optional: If user already manually set a lower giaBan and there are no active discounts,
-            // we could revert it to giaGoc or keep it if it's lower.
-            // But realistically, an active discount is applied ON TOP of giaGoc.
-            if (activeDiscounts.isEmpty()) {
-                gct.setGiaBan(gct.getGiaGoc()); // reset to original price if no discounts exist
-                giayChiTietRepository.save(gct);
-                continue;
-            }
-            
-            for (DotGiamGiaSanPham dgs : activeDiscounts) {
-                DotGiamGia dg = dgs.getDotGiamGia();
-                if (dg.getKichHoat() == null || dg.getKichHoat() == 0) continue;
-                if (dg.getNgayBatDau() != null && now.isBefore(dg.getNgayBatDau())) continue;
-                if (dg.getNgayKetThuc() != null && now.isAfter(dg.getNgayKetThuc())) continue;
-                
-                BigDecimal expectedGiaBan = gct.getGiaGoc();
-                if (dg.getLoaiGiam() == 1) { // percent
-                    BigDecimal discountAmt = gct.getGiaGoc().multiply(dg.getGiaTriGiam()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-                    expectedGiaBan = gct.getGiaGoc().subtract(discountAmt);
-                } else if (dg.getLoaiGiam() == 2) { // cash
-                    expectedGiaBan = gct.getGiaGoc().subtract(dg.getGiaTriGiam());
-                }
-                
-                if (expectedGiaBan.compareTo(BigDecimal.ZERO) < 0) {
-                    expectedGiaBan = BigDecimal.ZERO;
-                }
-                
-                // Compare with bestGiaBan
-                if (expectedGiaBan.compareTo(bestGiaBan) < 0) {
-                    bestGiaBan = expectedGiaBan;
-                }
-            }
-            gct.setGiaBan(bestGiaBan);
-            giayChiTietRepository.save(gct);
+        if (!toDelete.isEmpty()) {
+            dotGiamGiaSanPhamRepository.deleteAll(toDelete);
         }
+
+        // 3. Thêm những cái mới
+        for (Integer vId : targetVariantIds) {
+            if (!currentVariantIds.contains(vId)) {
+                GiayChiTiet gct = giayChiTietRepository.findById(vId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the #" + vId));
+                
+                // Kiểm tra xem biến thể này có đang trong đợt khác không
+                List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(vId);
+                if (!actives.isEmpty()) {
+                    throw new BusinessException("Biến thể " + gct.getMaBienThe() + " đang tham gia đợt giảm giá khác.");
+                }
+
+                DotGiamGiaSanPham dgs = new DotGiamGiaSanPham();
+                dgs.setDotGiamGia(dotGiamGia);
+                dgs.setGiayChiTiet(gct);
+                dgs.setTrangThai(1);
+                dgs.setNgayTao(LocalDate.now());
+                dotGiamGiaSanPhamRepository.save(dgs);
+            }
+        }
+
+        // 4. Cập nhật lại giá cho tất cả biến thể liên quan (cũ và mới)
+        Set<Integer> allAffectedIds = new HashSet<>(currentVariantIds);
+        allAffectedIds.addAll(targetVariantIds);
+        
+        for (Integer vId : allAffectedIds) {
+            updateGiaBanForGiayChiTiet(vId);
+        }
+    }
+
+    public void updateGiaBanForGiayChiTiet(Integer giayChiTietId) {
+        List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(giayChiTietId);
+        GiayChiTiet gct = giayChiTietRepository.findById(giayChiTietId).orElse(null);
+        if (gct == null) return;
+
+        LocalDate now = LocalDate.now();
+        BigDecimal bestGiaBan = gct.getGiaGoc();
+
+        if (activeDiscounts.isEmpty()) {
+            gct.setGiaBan(gct.getGiaGoc());
+            giayChiTietRepository.save(gct);
+            return;
+        }
+
+        for (DotGiamGiaSanPham dgs : activeDiscounts) {
+            DotGiamGia dg = dgs.getDotGiamGia();
+            if (dg.getKichHoat() == null || dg.getKichHoat() == 0) continue;
+            if (dg.getNgayBatDau() != null && now.isBefore(dg.getNgayBatDau())) continue;
+            if (dg.getNgayKetThuc() != null && now.isAfter(dg.getNgayKetThuc())) continue;
+
+            BigDecimal expectedGiaBan = gct.getGiaGoc();
+            if (dg.getLoaiGiam() == 1) { // percent
+                BigDecimal discountAmt = gct.getGiaGoc().multiply(dg.getGiaTriGiam()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                expectedGiaBan = gct.getGiaGoc().subtract(discountAmt);
+            } else if (dg.getLoaiGiam() == 2) { // cash
+                expectedGiaBan = gct.getGiaGoc().subtract(dg.getGiaTriGiam());
+            }
+
+            if (expectedGiaBan.compareTo(BigDecimal.ZERO) < 0) {
+                expectedGiaBan = BigDecimal.ZERO;
+            }
+
+            if (expectedGiaBan.compareTo(bestGiaBan) < 0) {
+                bestGiaBan = expectedGiaBan;
+            }
+        }
+        gct.setGiaBan(bestGiaBan);
+        giayChiTietRepository.save(gct);
     }
 }

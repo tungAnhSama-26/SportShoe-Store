@@ -46,12 +46,12 @@ public class QuanLyPhieuGiamGiaController {
     }
 
     @PostMapping("add")
-    public void add(@Valid @RequestBody PhieuGiamGiaRequest request) {
-        phieuGiamGiaService.add(request);
+    public com.example.server.entity.PhieuGiamGia add(@Valid @RequestBody PhieuGiamGiaRequest request) {
+        return phieuGiamGiaService.add(request);
     }
 
     @PutMapping("update")
-    public void update(@RequestParam("id") Integer id, @Valid @RequestBody PhieuGiamGiaRequest request) {
-        phieuGiamGiaService.update(id, request);
+    public com.example.server.entity.PhieuGiamGia update(@RequestParam("id") Integer id, @Valid @RequestBody PhieuGiamGiaRequest request) {
+        return phieuGiamGiaService.update(id, request);
     }
 }

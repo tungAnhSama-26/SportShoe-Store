@@ -23,7 +23,7 @@ const form = reactive({
   id: null,
   ma: "",
   ten: "",
-  loai: "1", // Mặc định là phần trăm
+  loai: "1",
   loaiPhieu: "1",
   giaTri: "",
   giaTriToiThieu: "0",
@@ -72,7 +72,7 @@ async function taiChiTiet() {
       id: detail.id,
       ma: detail.ma ?? "",
       ten: detail.ten ?? "",
-      loai: "1", // Cố định phần trăm
+      loai: String(detail.loai ?? 1),
       loaiPhieu: String(detail.loaiPhieu ?? 1),
       giaTri: detail.giaTri ?? "",
       giaTriToiThieu: formatVndNumber(detail.giaTriToiThieu ?? "0"),
@@ -95,14 +95,20 @@ async function submitForm() {
 
   if (!form.ma.trim()) { formErrors.ma = "Mã phiếu không được để trống"; isValid = false; }
   if (!form.ten.trim()) { formErrors.ten = "Tên phiếu không được để trống"; isValid = false; }
-  if (!form.giaTri || Number(form.giaTri) <= 0) { 
-    formErrors.giaTri = "Giá trị giảm không hợp lệ"; 
+  if (!form.giaTri || parseVndNumber(form.giaTri) <= 0) { 
+    formErrors.giaTri = "Giá trị giảm phải lớn hơn 0"; 
     isValid = false; 
-  } else if (Number(form.giaTri) > 100) {
+  } else if (Number(form.loai) === 1 && parseVndNumber(form.giaTri) > 100) {
     formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
     isValid = false;
   }
-  if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng không hợp lệ"; isValid = false; }
+
+  if (form.giaTriToiThieu && parseVndNumber(form.giaTriToiThieu) < 1) {
+    formErrors.giaTriToiThieu = "Giá trị tối thiểu phải lớn hơn 0";
+    isValid = false;
+  }
+
+  if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng phải lớn hơn 0"; isValid = false; }
   if (!form.ngayBatDau) { formErrors.ngayBatDau = "Chọn ngày bắt đầu"; isValid = false; }
   if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày kết thúc"; isValid = false; }
   
@@ -119,9 +125,9 @@ async function submitForm() {
     const payload = {
       ma: form.ma.trim(),
       ten: form.ten.trim(),
-      loai: 1, // Luôn lưu là Phần trăm
+      loai: Number(form.loai),
       loaiPhieu: Number(form.loaiPhieu),
-      giaTri: Number(form.giaTri),
+      giaTri: Number(parseVndNumber(form.giaTri)),
       giaTriToiThieu: parseVndNumber(form.giaTriToiThieu),
       giamToiDa: parseVndNumber(form.giamToiDa),
       ngayBatDau: form.ngayBatDau,
@@ -225,23 +231,50 @@ onMounted(taiChiTiet);
         </div>
 
         <div class="space-y-2">
-           <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm (%) <span class="text-rose-500">*</span></label>
+          <label class="text-[13px] font-semibold text-slate-500">Loại giảm <span class="text-rose-500">*</span></label>
+          <div class="flex gap-6 pt-2">
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <div class="relative flex items-center justify-center">
+                <input type="radio" v-model="form.loai" value="1" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
+                <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+              </div>
+              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Phần trăm (%)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <div class="relative flex items-center justify-center">
+                <input type="radio" v-model="form.loai" value="2" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
+                <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+              </div>
+              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Tiền mặt (VNĐ)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+           <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
            <div class="relative">
-             <input v-model="form.giaTri" type="number" min="0" max="100" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-10 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="0" />
-             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+             <input 
+               :value="form.giaTri" 
+               :type="form.loai === '1' ? 'number' : 'text'"
+               class="h-11 w-full rounded-2xl border bg-slate-50 pl-4 pr-12 text-sm outline-none transition focus:ring-2 focus:ring-rose-500/20" 
+               :class="formErrors.giaTri ? 'border-rose-500 bg-rose-50 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300 focus:bg-white'"
+               :placeholder="form.loai === '1' ? '0' : '0'"
+               @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value"
+             />
+             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[11px]">{{ form.loai === '1' ? '%' : 'VNĐ' }}</span>
            </div>
            <p v-if="formErrors.giaTri" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTri }}</p>
         </div>
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Giá trị đơn tối thiểu (VNĐ)</label>
-          <input v-model="form.giaTriToiThieu" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
+          <input :value="form.giaTriToiThieu" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:ring-2 focus:ring-rose-500/20" :class="formErrors.giaTriToiThieu ? 'border-rose-500 bg-rose-50 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300 focus:bg-white'" @input="handleVndInput('giaTriToiThieu', $event)" />
           <p v-if="formErrors.giaTriToiThieu" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTriToiThieu }}</p>
         </div>
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Giảm tối đa (VNĐ)</label>
-          <input v-model="form.giamToiDa" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
+          <input :value="form.giamToiDa" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:ring-2 focus:ring-rose-500/20" :class="formErrors.giamToiDa ? 'border-rose-500 bg-rose-50 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300 focus:bg-white'" @input="handleVndInput('giamToiDa', $event)" />
           <p v-if="formErrors.giamToiDa" class="text-xs text-rose-500 mt-1">{{ formErrors.giamToiDa }}</p>
         </div>
 
