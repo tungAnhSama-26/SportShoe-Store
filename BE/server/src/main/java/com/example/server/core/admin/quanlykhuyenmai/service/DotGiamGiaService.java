@@ -5,8 +5,8 @@ import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamG
 import com.example.server.entity.DotGiamGia;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DotGiamGiaRepository;
+import com.example.server.repository.DotGiamGiaSanPhamRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +19,8 @@ import java.util.List;
 public class DotGiamGiaService {
 
     private final DotGiamGiaRepository dotGiamGiaRepository;
+    private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
+    private final DotGiamGiaSanPhamService dotGiamGiaSanPhamService;
 
     public List<QuanLyDotGiamGiaResponse> getAll() {
         return dotGiamGiaRepository.hienThiDotGiamGia();
@@ -34,7 +36,13 @@ public class DotGiamGiaService {
     }
 
     public void remove(Integer id) {
+        // Trước khi xóa, lấy các giayId liên quan để cập nhật lại giá sau này
+        List<com.example.server.entity.DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
         dotGiamGiaRepository.deleteById(id);
+        // Cập nhật lại giá cho các sản phẩm từng thuộc đợt này
+        for (com.example.server.entity.DotGiamGiaSanPham link : links) {
+            dotGiamGiaSanPhamService.updateGiaBanForGiay(link.getGiay().getId());
+        }
     }
 
     public DotGiamGia add(DotGiamGiaRequest request) {
@@ -48,8 +56,15 @@ public class DotGiamGiaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
 
         mapRequestToEntity(request, dotGiamGia);
+        DotGiamGia saved = dotGiamGiaRepository.save(dotGiamGia);
 
-        return dotGiamGiaRepository.save(dotGiamGia);
+        // Sau khi update thông tin (% giảm, ngày...), cần cập nhật lại gia_ban cho các sản phẩm liên kết
+        List<com.example.server.entity.DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
+        for (com.example.server.entity.DotGiamGiaSanPham link : links) {
+            dotGiamGiaSanPhamService.updateGiaBanForGiay(link.getGiay().getId());
+        }
+
+        return saved;
     }
 
     private void mapRequestToEntity(DotGiamGiaRequest request, DotGiamGia dotGiamGia) {

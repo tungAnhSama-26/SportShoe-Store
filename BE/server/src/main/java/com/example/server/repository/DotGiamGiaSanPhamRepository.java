@@ -46,4 +46,7 @@ public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSan
 
     @Query("SELECT d FROM DotGiamGiaSanPham d WHERE d.dotGiamGia.id = ?1")
     List<DotGiamGiaSanPham> findByDotGiamGiaId(Integer dotGiamGiaId);
+
+    @Query("SELECT DISTINCT d.giay.id FROM DotGiamGiaSanPham d")
+    List<Integer> findDistinctGiayIds();
 }
