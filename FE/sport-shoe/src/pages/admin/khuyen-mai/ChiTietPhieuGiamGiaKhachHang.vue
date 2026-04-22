@@ -113,10 +113,23 @@ async function submitForm() {
         ngayTao: getToday()
       };
 
+      let countSuccess = 0;
+      let countSkip = 0;
+      
       for (const email of dsEmailChon.value) {
-        await createPhieuGiamGiaKhachHang({ ...basePayload, email });
+        try {
+          await createPhieuGiamGiaKhachHang({ ...basePayload, email });
+          countSuccess++;
+        } catch (err) {
+          // Nếu lỗi là do đã tồn tại (Unique constraint)
+          if (err.message?.includes("Duplicate") || err.message?.includes("UNIQUE")) {
+            countSkip++;
+          } else {
+            throw err; // Các lỗi khác thì vẫn báo lỗi
+          }
+        }
       }
-      alert(`Đã tặng phiếu thành công cho ${dsEmailChon.value.length} khách hàng`);
+      alert(`Hoàn tất: Tặng thành công cho ${countSuccess} khách hàng.${countSkip > 0 ? ` (Bỏ qua ${countSkip} người đã có phiếu này)` : ""}`);
     } else {
       const payload = {
         phieuGiamGiaId: Number(form.phieuGiamGiaId),

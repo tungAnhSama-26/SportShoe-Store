@@ -23,12 +23,14 @@ public class PhieuGiamGiaRequest {
     @NotNull(message = "Loại giảm không được để trống")
     private Integer loai;
 
+    @NotNull(message = "Loại phiếu không được để trống")
     private Integer loaiPhieu;
 
     @NotNull(message = "Giá trị giảm không được để trống")
     @Min(value = 1, message = "Giá trị giảm phải lớn hơn 0")
     private BigDecimal giaTri;
 
+    @Min(value = 1, message = "Giá trị tối thiểu phải lớn hơn 0")
     private BigDecimal giaTriToiThieu;
 
     private BigDecimal giamToiDa;

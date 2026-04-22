@@ -355,23 +355,8 @@ CREATE TABLE giay_thuoc_tinh (
 );
 GO
 
--- ============================================================
--- [15] dot_giam_gia_san_pham  (nhiều-nhiều)
---   trang_thai: 0 = Đã hủy | 1 = Đang áp dụng
--- ============================================================
-CREATE TABLE dot_giam_gia_san_pham (
-    id              INT       NOT NULL CONSTRAINT pk_dgg_sp PRIMARY KEY IDENTITY(1,1),
-    dot_giam_gia_id INT       NOT NULL,
-    giay_id         INT       NOT NULL,
-    trang_thai      INT       NOT NULL CONSTRAINT df_dgg_sp_trang_thai DEFAULT 1,
-    -- 0 = Đã hủy  |  1 = Đang áp dụng
-    ngay_tao        DATETIME2 NOT NULL CONSTRAINT df_dgg_sp_ngay_tao   DEFAULT SYSDATETIME(),
-    CONSTRAINT uq_dgg_sp               UNIQUE (dot_giam_gia_id, giay_id),
-    CONSTRAINT ck_dgg_sp_trang_thai    CHECK  (trang_thai IN (0, 1)),
-    CONSTRAINT fk_dgg_sp_dot_giam_gia  FOREIGN KEY (dot_giam_gia_id) REFERENCES dot_giam_gia(id),
-    CONSTRAINT fk_dgg_sp_giay          FOREIGN KEY (giay_id)         REFERENCES giay(id) ON DELETE CASCADE
-);
 GO
+
 
 -- ============================================================
 -- [16] giay_chi_tiet
@@ -427,6 +412,24 @@ CREATE TABLE hinh_anh_giay (
 GO
 
 -- ============================================================
+-- [18] dot_giam_gia_san_pham  (nhiều-nhiều)
+--   trang_thai: 0 = Đã hủy | 1 = Đang áp dụng
+-- ============================================================
+CREATE TABLE dot_giam_gia_san_pham (
+    id                INT       NOT NULL CONSTRAINT pk_dgg_sp PRIMARY KEY IDENTITY(1,1),
+    dot_giam_gia_id   INT       NOT NULL,
+    giay_chi_tiet_id  INT       NOT NULL,
+    trang_thai        INT       NOT NULL CONSTRAINT df_dgg_sp_trang_thai DEFAULT 1,
+    -- 0 = Đã hủy  |  1 = Đang áp dụng
+    ngay_tao          DATETIME2 NOT NULL CONSTRAINT df_dgg_sp_ngay_tao   DEFAULT SYSDATETIME(),
+    CONSTRAINT uq_dgg_sp               UNIQUE (dot_giam_gia_id, giay_chi_tiet_id),
+    CONSTRAINT ck_dgg_sp_trang_thai    CHECK  (trang_thai IN (0, 1)),
+    CONSTRAINT fk_dgg_sp_dot_giam_gia  FOREIGN KEY (dot_giam_gia_id) REFERENCES dot_giam_gia(id),
+    CONSTRAINT fk_dgg_sp_giay_ct       FOREIGN KEY (giay_chi_tiet_id) REFERENCES giay_chi_tiet(id) ON DELETE CASCADE
+);
+GO
+
+-- ============================================================
 -- [18] phieu_giam_gia
 --   trang_thai: 0 = Ngừng | 1 = Hoạt động
 -- ============================================================
@@ -435,7 +438,7 @@ CREATE TABLE phieu_giam_gia (
     ma                NVARCHAR(100) NOT NULL,
     ten               NVARCHAR(200) NOT NULL,
     loai              INT           NOT NULL,
-    -- 1 = Phần trăm  |  2 = Số tiền cố định  |  3 = Miễn phí vận chuyển
+    -- 1 = Phần trăm  |  2 = Số tiền cố định
     gia_tri           DECIMAL(18,2) NOT NULL,
     gia_tri_toi_thieu DECIMAL(18,2) NULL,
     giam_toi_da       DECIMAL(18,2) NULL,
@@ -443,6 +446,8 @@ CREATE TABLE phieu_giam_gia (
     ngay_ket_thuc     DATETIME2     NULL,
     so_luong          INT           NOT NULL,
     so_luong_da_dung  INT           NOT NULL CONSTRAINT df_pgg_da_dung   DEFAULT 0,
+    loai_phieu        INT           NOT NULL CONSTRAINT df_pgg_loai_phieu DEFAULT 1,
+    -- 1 = Công khai  |  2 = Cá nhân
     trang_thai        INT           NOT NULL CONSTRAINT df_pgg_trang_thai DEFAULT 1,
     -- 0 = Ngừng  |  1 = Hoạt động
     ngay_tao          DATETIME2     NOT NULL CONSTRAINT df_pgg_ngay_tao   DEFAULT SYSDATETIME(),
@@ -453,6 +458,7 @@ CREATE TABLE phieu_giam_gia (
     CONSTRAINT ck_pgg_phan_tram    CHECK  (loai <> 1 OR (gia_tri > 0 AND gia_tri <= 100)),
     CONSTRAINT ck_pgg_so_luong     CHECK  (so_luong >= 0),
     CONSTRAINT ck_pgg_da_dung      CHECK  (so_luong_da_dung >= 0),
+    CONSTRAINT ck_pgg_loai_phieu   CHECK  (loai_phieu IN (1, 2)),
     CONSTRAINT ck_pgg_trang_thai   CHECK  (trang_thai IN (0, 1)),
     CONSTRAINT ck_pgg_thoi_gian    CHECK  (
         ngay_ket_thuc IS NULL OR ngay_bat_dau IS NULL OR ngay_ket_thuc >= ngay_bat_dau
@@ -678,7 +684,7 @@ CREATE INDEX ix_giay_tt_chat_lieu_giay_id ON giay_thuoc_tinh(chat_lieu_giay_id);
 CREATE INDEX ix_giay_tt_trong_luong_id    ON giay_thuoc_tinh(trong_luong_id);
 CREATE INDEX ix_giay_tt_cong_nghe_dem_id  ON giay_thuoc_tinh(cong_nghe_dem_id);
 CREATE INDEX ix_dgg_sp_dgg_id             ON dot_giam_gia_san_pham(dot_giam_gia_id);
-CREATE INDEX ix_dgg_sp_giay_id            ON dot_giam_gia_san_pham(giay_id);
+CREATE INDEX ix_dgg_sp_giay_ct_id         ON dot_giam_gia_san_pham(giay_chi_tiet_id);
 CREATE INDEX ix_gct_giay_id               ON giay_chi_tiet(giay_id);
 CREATE INDEX ix_gct_mau_sac_id            ON giay_chi_tiet(mau_sac_id);
 CREATE INDEX ix_gct_kich_co_id            ON giay_chi_tiet(kich_co_id);
@@ -907,13 +913,8 @@ VALUES
 (7, 2, 3, 6, 3, 7, 1);   -- Converse
 GO
 
--- =============================================
--- [15] dot_giam_gia_san_pham 
--- =============================================
-INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_id, trang_thai)
-VALUES 
-(1,1,1),(1,2,1),(2,1,1),(3,3,1),(4,2,1),(5,4,1),(6,5,1);
 GO
+
 
 -- =============================================
 -- [16] giay_chi_tiet 
@@ -927,6 +928,14 @@ VALUES
 (5, 'GEL-BL-43', 2, 7, 35, 4200000, 3890000, 'GELBL43', 1),
 (6, 'VANS-BK-40', 2, 4, 60, 1500000, 1390000, 'VANSBK40', 1),
 (7, 'CH70-WH-41', 1, 5, 45, 1700000, 1490000, 'CH70WH41', 1);
+GO
+
+-- =============================================
+-- [17] dot_giam_gia_san_pham (Biến thể)
+-- =============================================
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai)
+VALUES 
+(1, 1, 1), (1, 2, 1), (2, 3, 1), (3, 4, 1), (4, 5, 1), (5, 6, 1), (6, 7, 1);
 GO
 
 -- =============================================
@@ -1149,7 +1158,7 @@ GO
 
 -- [15] dot_giam_gia_san_pham
 SELECT 
-    id, dot_giam_gia_id, giay_id, trang_thai, ngay_tao
+    id, dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao
 FROM dot_giam_gia_san_pham;
 GO
 
