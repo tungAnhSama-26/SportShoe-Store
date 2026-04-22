@@ -175,6 +175,11 @@ async function doiMatKhau() {
 }
 
 async function doiTrangThai(trangThai: number) {
+  const hanhDong = trangThai === 1 ? "kích hoạt" : "khóa";
+  const tenKhachHang = form.value.hoTen || form.value.tenDangNhap || "khách hàng này";
+
+  if (!window.confirm(`Bạn có chắc muốn ${hanhDong} ${tenKhachHang} không?`)) return;
+
   try {
     const updated = await doiTrangThaiKhachHang(id!, trangThai);
     khachHang.value = updated;
