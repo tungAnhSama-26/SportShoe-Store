@@ -2,7 +2,8 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight,
+  CheckCircle2, CircleX, X
 } from "lucide-vue-next";
 import {
   createDotGiamGia,
@@ -24,6 +25,42 @@ const router = useRouter();
 const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer = null;
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  return CircleX;
+});
+
+function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+}
 
 // Modified BoLoc: tuNgay, denNgay, loaiGiam
 const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" });
@@ -188,16 +225,17 @@ async function removeItem(item) {
   if (!confirm(`Bạn có chắc muốn xóa đợt giảm giá này?`)) return;
   try {
     await deleteDotGiamGia(item.id);
-    alert("Xóa thành công.");
+    hienThiThongBao("success", "Xóa thành công");
     taiDanhSach();
   } catch (error) {
-    alert(error.message || "Xóa thất bại");
+    hienThiThongBao("error", "Xóa thất bại", error.message);
   }
 }
 
 // removed san-pham related modal logic from list view
 
 async function nhanhDoiTrangThai(item) {
+  if (!confirm("Bạn có chắc chắn muốn thay đổi trạng thái của đợt giảm giá này?")) return;
   try {
     const detail = await getDotGiamGiaDetail(item.id);
     detail.kichHoat = Number(detail.kichHoat) === 1 ? 0 : 1;
@@ -206,9 +244,10 @@ async function nhanhDoiTrangThai(item) {
     detail.kichHoat = Number(detail.kichHoat);
     
     await updateDotGiamGia(item.id, detail);
+    hienThiThongBao("success", "Đổi trạng thái thành công");
     await taiDanhSach();
   } catch (error) {
-    alert(error.message || "Đổi trạng thái thất bại");
+    hienThiThongBao("error", "Đổi trạng thái thất bại", error.message);
   }
 }
 
@@ -217,6 +256,35 @@ onMounted(taiDanhSach);
 
 <template>
   <div class="space-y-5">
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toastClass"
+      >
+        <div class="flex gap-3 p-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
+            <component :is="ToastIcon" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
+      </div>
+    </Transition>
     <!-- Header -->
     <section class="flex items-end justify-between">
       <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý đợt giảm giá</h1>
@@ -234,60 +302,59 @@ onMounted(taiDanhSach);
         </div>
       </div>
 
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div class="min-w-0 flex-1">
-            <div class="relative max-w-3xl">
+      <div class="flex flex-col gap-6">
+        <!-- Hàng 1: Các ô nhập liệu (4 cột) -->
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div class="space-y-2">
+            <label class="text-[13px] font-semibold text-slate-500">Tìm kiếm</label>
+            <div class="relative">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 v-model="boLoc.keyword"
                 type="text"
-                placeholder="Nhập mã hoặc tên đợt..."
+                placeholder="Tìm theo tên hoặc mã"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
-              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-            </button>
-            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
-              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-            </button>
-            <button @click="openCreateModal" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
-              <Plus class="h-4 w-4" /> Thêm mới
-            </button>
+          <div class="space-y-2">
+            <label class="text-[13px] font-semibold text-slate-500">Ngày bắt đầu</label>
+            <input 
+              v-model="boLoc.tuNgay" 
+              type="date" 
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" 
+            />
           </div>
-        </div>
 
-        <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-4">
-          <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+          <div class="space-y-2">
+            <label class="text-[13px] font-semibold text-slate-500">Ngày kết thúc</label>
+            <input 
+              v-model="boLoc.denNgay" 
+              type="date" 
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" 
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-[13px] font-semibold text-slate-500">Trạng thái</label>
             <select v-model="boLoc.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
               <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
             </select>
-          </label>
-          
-          <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
-            <select v-model="boLoc.loaiGiam" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-              <option value="">Tất cả</option>
-              <option value="1">Phần trăm</option>
-            </select>
-          </label>
-
-          <div class="grid gap-4 md:col-span-2 md:grid-cols-2 xl:col-span-2">
-            <label class="space-y-2">
-              <span class="mb-1 text-[13px] font-semibold text-slate-500">Từ ngày</span>
-              <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </label>
-
-            <label class="space-y-2">
-              <span class="mb-1 text-[13px] font-semibold text-slate-500">Đến ngày</span>
-              <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-            </label>
           </div>
+        </div>
+
+        <!-- Hàng 2: Các nút bấm (Căn phải) -->
+        <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
+            <RotateCcw class="h-4 w-4" /> Đặt lại
+          </button>
+          <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
+            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+          </button>
+          <button @click="openCreateModal" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-6 text-sm font-semibold text-white transition hover:bg-rose-600 shadow-lg shadow-rose-200">
+            <Plus class="h-4 w-4" /> Thêm đợt giảm giá
+          </button>
         </div>
       </div>
     </section>
