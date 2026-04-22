@@ -30,7 +30,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
-    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.loaiPhieu,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,1,phieuGG.giaTri,phieuGG.giaTriToiThieu,
     phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )
@@ -40,7 +40,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
-    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.loaiPhieu,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,1,phieuGG.giaTri,phieuGG.giaTriToiThieu,
     phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )
@@ -51,7 +51,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
-    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.loaiPhieu,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,1,phieuGG.giaTri,phieuGG.giaTriToiThieu,
     phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )
@@ -61,7 +61,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse(
-    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,phieuGG.loaiPhieu,phieuGG.giaTri,phieuGG.giaTriToiThieu,
+    phieuGG.id,phieuGG.ma,phieuGG.ten,phieuGG.loai,1,phieuGG.giaTri,phieuGG.giaTriToiThieu,
     phieuGG.giamToiDa,phieuGG.ngayBatDau,phieuGG.ngayKetThuc,phieuGG.soLuong,
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )

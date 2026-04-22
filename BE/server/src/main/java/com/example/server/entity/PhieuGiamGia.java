@@ -39,9 +39,7 @@ public class PhieuGiamGia {
     @Column(name = "loai", nullable = false)
     private Integer loai;
 
-    @NotNull
-    @ColumnDefault("1")
-    @Column(name = "loai_phieu", nullable = false)
+    @Transient
     private Integer loaiPhieu = 1;
 
     @NotNull
