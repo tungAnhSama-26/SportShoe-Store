@@ -13,8 +13,10 @@ import {
 import { layDanhSachGiay, layBienThe } from "../../../services/san-pham-api";
 import {
   ArrowLeft, Save, Tag, Search, Plus, Minus,
-  ChevronRight, ChevronDown, CheckSquare, Square, Package, X, RefreshCcw
+  ChevronRight, ChevronDown, CheckSquare, Square, Package, X, RefreshCcw,
+  CheckCircle2, CircleX
 } from "lucide-vue-next";
+import { computed } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -25,6 +27,42 @@ const laMoi = !id;
 const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer = null;
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  return CircleX;
+});
+
+function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+}
 const formErrors = reactive({});
 
 const form = reactive({
@@ -331,24 +369,16 @@ async function submitForm() {
       await updateDotGiamGia(id, payload);
     }
 
-    if (!savedId) throw new Error("Không xác định được ID của đợt giảm giá.");
-
-    // Xử lý liên kết biến thể sản phẩm (Đồng bộ hàng loạt - Bulk Sync)
     const currentVariantIds = selectedVariants.value.map(v => v.id);
-    
     await syncDotGiamGiaSanPham({
       dotGiamGiaId: Number(savedId),
       giayChiTietIds: currentVariantIds
     });
 
-    alert("Lưu đợt giảm giá thành công");
-    router.push({ name: "admin-dot-giam-gia" });
+    hienThiThongBao("success", laMoi ? "Thêm đợt giảm giá thành công" : "Cập nhật thành công");
+    setTimeout(() => { router.push({ name: "admin-dot-giam-gia" }); }, 1000);
   } catch (error) {
-    if (error.message.includes("uq_dot_giam_gia_ma") || error.message.includes("Duplicate entry")) {
-      loiTrang.value = "Mã đợt giảm giá này đã tồn tại, vui lòng chọn mã khác.";
-    } else {
-      loiTrang.value = error.message || "Lưu thất bại";
-    }
+    hienThiThongBao("error", "Lỗi lưu dữ liệu", error.message);
     if (error.errors) Object.assign(formErrors, error.errors);
   } finally {
     saving.value = false;
@@ -359,7 +389,37 @@ onMounted(taiChiTiet);
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 pb-10">
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toastClass"
+      >
+        <div class="flex gap-3 p-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
+            <component :is="ToastIcon" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
+      </div>
+    </Transition>
+
     <!-- Header -->
     <section class="flex items-center gap-4">
       <button @click="router.push({ name: 'admin-dot-giam-gia' })"
