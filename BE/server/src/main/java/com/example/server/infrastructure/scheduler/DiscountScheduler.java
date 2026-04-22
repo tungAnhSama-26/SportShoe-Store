@@ -26,22 +26,18 @@ public class DiscountScheduler {
         log.info("Bắt đầu quét và đồng bộ giá bán khuyến mãi...");
         
         try {
-            // Lấy danh sách tất cả các ID giày có tham gia bất kỳ đợt khuyến mãi nào (đã từng hoặc đang có)
-            List<Integer> giayIds = dotGiamGiaSanPhamRepository.findDistinctGiayIds();
+            // Lấy danh sách tất cả các ID biến thể giày có tham gia bất kỳ đợt khuyến mãi nào
+            List<Integer> giayChiTietIds = dotGiamGiaSanPhamRepository.findDistinctGiayChiTietIds();
             
-            if (giayIds.isEmpty()) {
+            if (giayChiTietIds.isEmpty()) {
                 log.info("Không có sản phẩm nào cần đồng bộ giá.");
                 return;
             }
 
-            log.info("Đang đồng bộ giá cho {} sản phẩm...", giayIds.size());
+            log.info("Đang đồng bộ giá cho {} biến thể sản phẩm...", giayChiTietIds.size());
             
-            for (Integer id : giayIds) {
-                // Hàm này trong DotGiamGiaSanPhamService đã có sẵn logic:
-                // - Lấy các đợt giảm giá đang ACTIVE (loại bỏ hết hạn, chưa tới ngày, hoặc bị tắt)
-                // - Tính toán mức giá rẻ nhất
-                // - Cập nhật vào gia_ban trong DB
-                dotGiamGiaSanPhamService.updateGiaBanForGiay(id);
+            for (Integer id : giayChiTietIds) {
+                dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(id);
             }
             
             log.info("Đồng bộ giá bán hoàn tất.");
