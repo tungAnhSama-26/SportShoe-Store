@@ -73,9 +73,14 @@ const dangDoiTrangThai = ref<string | null>(null);
 
 async function toggleTrangThai(kh: any) {
   if (dangDoiTrangThai.value) return;
+  const trangThaiMoi = kh.trangThai === 1 ? 0 : 1;
+  const hanhDong = trangThaiMoi === 1 ? "kích hoạt" : "khóa";
+  const tenKhachHang = kh.hoTen || kh.tenDangNhap || "khách hàng này";
+
+  if (!window.confirm(`Bạn có chắc muốn ${hanhDong} ${tenKhachHang} không?`)) return;
+
   dangDoiTrangThai.value = kh.id;
   try {
-    const trangThaiMoi = kh.trangThai === 1 ? 0 : 1;
     await doiTrangThaiKhachHang(kh.id, trangThaiMoi);
     kh.trangThai = trangThaiMoi;
     kh.tenTrangThai = trangThaiMoi === 1 ? "Hoạt động" : "Khóa";
