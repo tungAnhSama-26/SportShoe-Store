@@ -29,8 +29,8 @@ public class DotGiamGiaSanPham {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "giay_id", nullable = false)
-    private Giay giay;
+    @JoinColumn(name = "giay_chi_tiet_id", nullable = false)
+    private GiayChiTiet giayChiTiet;
 
     @NotNull
     @ColumnDefault("1")

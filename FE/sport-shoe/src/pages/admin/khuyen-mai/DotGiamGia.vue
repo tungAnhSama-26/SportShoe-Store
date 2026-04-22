@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, Edit, Trash2, PackageSearch
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight
 } from "lucide-vue-next";
 import {
   createDotGiamGia,
@@ -197,6 +197,21 @@ async function removeItem(item) {
 
 // removed san-pham related modal logic from list view
 
+async function nhanhDoiTrangThai(item) {
+  try {
+    const detail = await getDotGiamGiaDetail(item.id);
+    detail.kichHoat = Number(detail.kichHoat) === 1 ? 0 : 1;
+    detail.loaiGiam = Number(detail.loaiGiam);
+    detail.giaTriGiam = Number(detail.giaTriGiam);
+    detail.kichHoat = Number(detail.kichHoat);
+    
+    await updateDotGiamGia(item.id, detail);
+    await taiDanhSach();
+  } catch (error) {
+    alert(error.message || "Đổi trạng thái thất bại");
+  }
+}
+
 onMounted(taiDanhSach);
 </script>
 
@@ -296,17 +311,18 @@ onMounted(taiDanhSach);
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên</th>
               <th class="bg-slate-100 px-4 py-3">Giá trị (%)</th>
-              <th class="bg-slate-100 px-4 py-3">Thời gian</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!danhSach.length">
-              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
             </tr>
             <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
@@ -318,16 +334,21 @@ onMounted(taiDanhSach);
               <td class="px-4 py-3 text-slate-600 font-bold text-rose-500">
                 {{ item.giaTriGiam }}%
               </td>
-              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }} - {{ toDisplayDate(item.ngayKetThuc) }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
                 <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.kichHoat)">
                   {{ statusText(item.kichHoat) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex justify-center gap-2">
-                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-amber-600"><Edit class="h-4 w-4" /></button>
-                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
+                <div class="flex justify-center items-center gap-3">
+                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500" title="Xem chi tiết">
+                    <Eye class="h-5 w-5" />
+                  </button>
+                  <button @click="nhanhDoiTrangThai(item)" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none" :class="Number(item.kichHoat) === 1 ? 'bg-rose-500' : 'bg-slate-200'" :title="Number(item.kichHoat) === 1 ? 'Tắt' : 'Kích hoạt'">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200" :class="Number(item.kichHoat) === 1 ? 'translate-x-5' : 'translate-x-0'"></span>
+                  </button>
                 </div>
               </td>
             </tr>

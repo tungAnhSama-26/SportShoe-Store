@@ -39,9 +39,9 @@ public class DotGiamGiaService {
         // Trước khi xóa, lấy các giayId liên quan để cập nhật lại giá sau này
         List<com.example.server.entity.DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
         dotGiamGiaRepository.deleteById(id);
-        // Cập nhật lại giá cho các sản phẩm từng thuộc đợt này
+        // Cập nhật lại giá cho các biến thể sản phẩm từng thuộc đợt này
         for (com.example.server.entity.DotGiamGiaSanPham link : links) {
-            dotGiamGiaSanPhamService.updateGiaBanForGiay(link.getGiay().getId());
+            dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
         }
     }
 
@@ -58,10 +58,10 @@ public class DotGiamGiaService {
         mapRequestToEntity(request, dotGiamGia);
         DotGiamGia saved = dotGiamGiaRepository.save(dotGiamGia);
 
-        // Sau khi update thông tin (% giảm, ngày...), cần cập nhật lại gia_ban cho các sản phẩm liên kết
+        // Sau khi update thông tin (% giảm, ngày...), cần cập nhật lại gia_ban cho các biến thể liên kết
         List<com.example.server.entity.DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
         for (com.example.server.entity.DotGiamGiaSanPham link : links) {
-            dotGiamGiaSanPhamService.updateGiaBanForGiay(link.getGiay().getId());
+            dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
         }
 
         return saved;

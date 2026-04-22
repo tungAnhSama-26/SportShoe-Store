@@ -480,19 +480,21 @@ onMounted(taiDanhSach);
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên</th>
               <th class="bg-slate-100 px-4 py-3">Loại phiếu</th>
-              <th class="bg-slate-100 px-4 py-3">Giá trị (%)</th>
-              <th class="bg-slate-100 px-4 py-3">SL</th>
-              <th class="bg-slate-100 px-4 py-3">Thời gian</th>
+              <th class="bg-slate-100 px-4 py-3">Loại giảm</th>
+              <th class="bg-slate-100 px-4 py-3">Giá trị</th>
+              <th class="bg-slate-100 px-4 py-3">Số lượng</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!danhSach.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
             </tr>
             <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
@@ -506,9 +508,15 @@ onMounted(taiDanhSach);
                   {{ loaiPhieuText(item.loaiPhieu) }}
                 </span>
               </td>
-              <td class="px-4 py-3 font-semibold text-rose-600">{{ item.giaTri }}%</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiGiam(item.loai)">
+                  {{ loaiGiamText(item.loai) }}
+                </span>
+              </td>
+              <td class="px-4 py-3 font-semibold text-rose-600">{{ formatGiaTri(item.giaTri, item.loai) }}</td>
               <td class="px-4 py-3 text-slate-600">{{ item.soLuong }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}<br/>{{ toDisplayDate(item.ngayKetThuc) }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
                 <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">
                   {{ statusText(item.trangThai) }}
@@ -536,26 +544,28 @@ onMounted(taiDanhSach);
               <th class="bg-slate-100 px-4 py-3">Mã phiếu</th>
               <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
               <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày Tặng/Dùng</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày tặng</th>
+              <th class="bg-slate-100 px-4 py-3">Ngày dùng</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!danhSachKh.length">
-              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
             </tr>
             <tr v-for="(item, index) in danhSachKh" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTaiKh - 1) * soPhanTuMotTrangKh + index + 1 }}</td>
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.maPhieuGiamGia }}</td>
               <td class="px-4 py-3 text-slate-600">{{ item.tenPhieuGiamGia }}</td>
               <td class="px-4 py-3 font-semibold text-rose-600">{{ item.tenKhachHang }}</td>
-              <td class="px-4 py-3 text-slate-500">
-                <div class="text-[11px] text-slate-400">Tạo: {{ toDisplayDate(item.ngayTao) }}</div>
-                <div v-if="item.ngaySuDung" class="font-medium text-slate-700">Dùng: {{ toDisplayDate(item.ngaySuDung) }}</div>
+              <td class="px-4 py-3 text-slate-500 text-[12px]">{{ toDisplayDate(item.ngayTao) }}</td>
+              <td class="px-4 py-3 text-slate-500 text-[12px]">
+                <span v-if="item.ngaySuDung" class="font-medium text-emerald-600">{{ toDisplayDate(item.ngaySuDung) }}</span>
+                <span v-else class="text-slate-300 italic">Chưa dùng</span>
               </td>
               <td class="px-4 py-3">
                 <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">

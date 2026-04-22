@@ -97,6 +97,13 @@ function deleteDotGiamGiaSanPham(id) {
   });
 }
 
+function syncDotGiamGiaSanPham(payload) {
+  return request("/admin/dot-giam-gia-san-pham/bulk-sync", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 function getPhieuGiamGiaList(filters) {
   const params = new URLSearchParams();
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
@@ -195,6 +202,7 @@ export {
   getPhieuGiamGiaKhachHangList,
   getPhieuGiamGiaList,
   searchSanPhamTaiQuay,
+  syncDotGiamGiaSanPham,
   updateDotGiamGia,
   updateDotGiamGiaSanPham,
   updatePhieuGiamGia,
