@@ -60,6 +60,7 @@ public class PhieuGiamGiaService {
         phieuGiamGia.setMa(request.getMa());
         phieuGiamGia.setTen(request.getTen());
         phieuGiamGia.setLoai(request.getLoai());
+        phieuGiamGia.setLoaiPhieu(request.getLoaiPhieu() == null ? 1 : request.getLoaiPhieu());
         phieuGiamGia.setGiaTri(request.getGiaTri());
         phieuGiamGia.setGiaTriToiThieu(request.getGiaTriToiThieu());
         phieuGiamGia.setGiamToiDa(request.getGiamToiDa());

@@ -40,6 +40,11 @@ public class PhieuGiamGia {
     private Integer loai;
 
     @NotNull
+    @ColumnDefault("1")
+    @Column(name = "loai_phieu", nullable = false)
+    private Integer loaiPhieu = 1;
+
+    @NotNull
     @Column(name = "gia_tri", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaTri;
 
