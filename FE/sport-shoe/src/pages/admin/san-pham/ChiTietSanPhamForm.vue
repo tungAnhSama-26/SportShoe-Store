@@ -1,10 +1,22 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, Package2, Save, Search, Trash2, X } from 'lucide-vue-next'
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, Package2, Plus, Save, Search, Trash2, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import {
+  chatLieuGiayApi,
+  coGiayApi,
+  congNgheDemApi,
+  deGiayApi,
+  kichCoApi,
+  loaiGiayApi,
+  mauSacApi,
+  thuongHieuApi,
+  trongLuongApi
+} from '../../../services/danh-muc-api'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
 import AdminFormattedNumberInput from '../../../components/common/AdminFormattedNumberInput.vue'
+import AdminSearchableSelect from '../../../components/common/AdminSearchableSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,10 +64,468 @@ const mauSacSearch = ref('')
 const kichCoSearch = ref('')
 const mauSacDropdownRef = ref(null)
 const kichCoDropdownRef = ref(null)
+const quickCreateOpen = ref(false)
+const quickCreateType = ref(null)
+const quickCreateSaving = ref(false)
+const quickCreateErrors = reactive({})
+const quickCreateForm = reactive({
+  ma: '',
+  ten: '',
+  xuatXu: '',
+  maMauHex: '#000000',
+  giaTri: '',
+  ghiChu: ''
+})
+const inlineCreatingType = ref(null)
 
 const isExistingProduct = computed(() => Boolean(currentProductId.value))
 const productCode = computed(() => currentProduct.value?.ma || '(Tự sinh)')
 const pageTitle = computed(() => 'THÊM CHI TIẾT SẢN PHẨM')
+
+const genderSearchOptions = [
+  { value: 1, label: 'Nam' },
+  { value: 2, label: 'N\u1EEF' },
+  { value: 3, label: 'Unisex' }
+]
+
+const quickCreateDefinitions = {
+  thuongHieu: {
+    title: 'Thêm nhanh thương hiệu',
+    description: 'Tạo thương hiệu mới và gán luôn cho sản phẩm hiện tại.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: NIKE', uppercase: true },
+      { key: 'ten', label: 'Tên thương hiệu *', placeholder: 'Nhập tên thương hiệu...' },
+      { key: 'xuatXu', label: 'Xuất xứ', placeholder: 'VD: Việt Nam' }
+    ]
+  },
+  loaiGiay: {
+    title: 'Thêm nhanh loại giày',
+    description: 'Tạo loại giày mới mà không cần rời khỏi form.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: RUN', uppercase: true },
+      { key: 'ten', label: 'Tên loại giày *', placeholder: 'Nhập tên loại giày...' }
+    ]
+  },
+  chatLieuGiay: {
+    title: 'Thêm nhanh chất liệu',
+    description: 'Tạo chất liệu mới và chọn ngay cho sản phẩm.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: CLMESH', uppercase: true },
+      { key: 'ten', label: 'Tên chất liệu *', placeholder: 'Nhập tên chất liệu...' }
+    ]
+  },
+  deGiay: {
+    title: 'Thêm nhanh đế giày',
+    description: 'Tạo đế giày mới ngay trong form sản phẩm.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: DG01', uppercase: true },
+      { key: 'ten', label: 'Tên đế giày *', placeholder: 'Nhập tên đế giày...' }
+    ]
+  },
+  coGiay: {
+    title: 'Thêm nhanh cổ giày',
+    description: 'Tạo cổ giày mới và áp dụng luôn cho sản phẩm.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: CGLOW', uppercase: true },
+      { key: 'ten', label: 'Tên cổ giày *', placeholder: 'Nhập tên cổ giày...' }
+    ]
+  },
+  congNgheDem: {
+    title: 'Thêm nhanh công nghệ đệm',
+    description: 'Tạo công nghệ đệm mới mà không cần sang màn danh mục.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: AIRMAX', uppercase: true },
+      { key: 'ten', label: 'Tên công nghệ đệm *', placeholder: 'Nhập tên công nghệ...' }
+    ]
+  },
+  trongLuong: {
+    title: 'Thêm nhanh trọng lượng',
+    description: 'Tạo nhanh trọng lượng mới để gán ngay cho sản phẩm.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: TL250', uppercase: true },
+      { key: 'giaTri', label: 'Trọng lượng (gram) *', placeholder: 'VD: 250', type: 'number', min: 1 }
+    ]
+  },
+  mauSac: {
+    title: 'Thêm nhanh màu sắc',
+    description: 'Tạo màu sắc mới và thêm luôn vào bộ biến thể đang chọn.',
+    fields: [
+      { key: 'ma', label: 'Mã *', placeholder: 'VD: RED01', uppercase: true },
+      { key: 'ten', label: 'Tên màu sắc *', placeholder: 'Nhập tên màu sắc...' },
+      { key: 'maMauHex', label: 'Mã HEX *', type: 'color' }
+    ]
+  },
+  kichCo: {
+    title: 'Thêm nhanh kích cỡ',
+    description: 'Tạo kích cỡ mới và chọn luôn vào danh sách biến thể.',
+    fields: [
+      { key: 'giaTri', label: 'Kích cỡ *', placeholder: 'VD: 42' },
+      { key: 'ghiChu', label: 'Ghi chú', placeholder: 'Ghi chú thêm nếu cần...' }
+    ]
+  }
+}
+
+const quickCreateDefinition = computed(() =>
+  quickCreateType.value ? quickCreateDefinitions[quickCreateType.value] || null : null
+)
+
+const thuongHieuOptions = computed(() =>
+  (danhMuc.value?.thuongHieu || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const loaiGiayOptions = computed(() =>
+  (danhMuc.value?.loaiGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const chatLieuOptions = computed(() =>
+  (danhMuc.value?.chatLieuGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const deGiayOptions = computed(() =>
+  (danhMuc.value?.deGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const coGiayOptions = computed(() =>
+  (danhMuc.value?.coGiay || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const congNgheDemOptions = computed(() =>
+  (danhMuc.value?.congNgheDem || []).map((item) => ({
+    value: item.id,
+    label: item.ten
+  }))
+)
+
+const trongLuongOptions = computed(() =>
+  (danhMuc.value?.trongLuong || []).map((item) => ({
+    value: item.id,
+    label: `${item.ma || 'TL'} - ${Number(item.giaTri || 0).toLocaleString('vi-VN')}`,
+    searchText: `${item.ma || ''} ${item.giaTri || ''} ${item.moTa || ''}`,
+    createMatchText: String(item.giaTri || '')
+  }))
+)
+
+function trimToNull(value) {
+  const normalized = String(value ?? '').trim()
+  return normalized || null
+}
+
+function normalizeCodeValue(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, (char) => (char === 'đ' ? 'd' : 'D'))
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+}
+
+function generateInlineCode(prefix, value) {
+  const seed = normalizeCodeValue(value).slice(0, 6) || 'NEW'
+  const suffix = Date.now().toString(36).toUpperCase().slice(-4)
+  return `${prefix}${seed}${suffix}`
+}
+
+async function handleInlineCreateAttribute(type, rawValue) {
+  const value = trimToNull(rawValue)
+  if (!value || inlineCreatingType.value) return
+
+  inlineCreatingType.value = type
+  try {
+    let created = null
+
+    switch (type) {
+      case 'thuongHieu':
+        created = await thuongHieuApi.create({
+          ma: generateInlineCode('TH', value),
+          ten: value,
+          xuatXu: null,
+          logoUrl: null,
+          website: null,
+          moTa: null
+        })
+        break
+      case 'loaiGiay':
+        created = await loaiGiayApi.create({
+          ma: generateInlineCode('LG', value),
+          ten: value,
+          moTa: null
+        })
+        break
+      case 'chatLieuGiay':
+        created = await chatLieuGiayApi.create({
+          ma: generateInlineCode('CL', value),
+          ten: value,
+          moTa: null
+        })
+        break
+      case 'deGiay':
+        created = await deGiayApi.create({
+          ma: generateInlineCode('DG', value),
+          ten: value,
+          moTa: null
+        })
+        break
+      case 'coGiay':
+        created = await coGiayApi.create({
+          ma: generateInlineCode('CG', value),
+          ten: value,
+          moTa: null
+        })
+        break
+      case 'congNgheDem':
+        created = await congNgheDemApi.create({
+          ma: generateInlineCode('CND', value),
+          ten: value,
+          moTa: null
+        })
+        break
+      case 'trongLuong': {
+        const parsedWeight = Number.parseInt(String(value).replace(/[^\d]/g, ''), 10)
+        if (!Number.isInteger(parsedWeight) || parsedWeight < 1) {
+          throw new Error('Trọng lượng phải là số nguyên lớn hơn 0')
+        }
+
+        created = await trongLuongApi.create({
+          ma: generateInlineCode('TL', parsedWeight),
+          giaTri: parsedWeight,
+          moTa: null
+        })
+        break
+      }
+      default:
+        return
+    }
+
+    if (!created?.id) {
+      throw new Error('Không nhận được dữ liệu thuộc tính vừa tạo')
+    }
+
+    await loadDanhMuc()
+    assignQuickCreatedValue(type, created.id)
+    showToast('Đã thêm thuộc tính mới vào form')
+  } catch (error) {
+    showToast(error.message || 'Không thể thêm nhanh thuộc tính', 'error')
+  } finally {
+    inlineCreatingType.value = null
+  }
+}
+
+function clearQuickCreateErrors() {
+  Object.keys(quickCreateErrors).forEach((key) => delete quickCreateErrors[key])
+}
+
+function resetQuickCreateForm() {
+  Object.assign(quickCreateForm, {
+    ma: '',
+    ten: '',
+    xuatXu: '',
+    maMauHex: '#000000',
+    giaTri: '',
+    ghiChu: ''
+  })
+  clearQuickCreateErrors()
+}
+
+function openQuickCreate(type, presetValue = '') {
+  resetQuickCreateForm()
+  quickCreateType.value = type
+  quickCreateOpen.value = true
+  if (type === 'mauSac' || type === 'kichCo') {
+    closeVariantDropdown()
+  }
+
+  const preset = String(presetValue || '').trim()
+  if (!preset) return
+
+  if (type === 'kichCo' || type === 'trongLuong') {
+    quickCreateForm.giaTri = preset
+    return
+  }
+
+  quickCreateForm.ten = preset
+}
+
+function closeQuickCreate() {
+  quickCreateOpen.value = false
+  quickCreateType.value = null
+  quickCreateSaving.value = false
+  resetQuickCreateForm()
+}
+
+function assignQuickCreatedValue(type, id) {
+  const numericId = Number(id)
+
+  switch (type) {
+    case 'thuongHieu':
+      productForm.thuongHieuId = numericId
+      break
+    case 'loaiGiay':
+      productForm.loaiGiayId = numericId
+      break
+    case 'chatLieuGiay':
+      productForm.chatLieuGiayId = numericId
+      break
+    case 'deGiay':
+      productForm.deGiayId = numericId
+      break
+    case 'coGiay':
+      productForm.coGiayId = numericId
+      break
+    case 'congNgheDem':
+      productForm.congNgheDemId = numericId
+      break
+    case 'trongLuong':
+      productForm.trongLuongId = numericId
+      break
+    case 'mauSac':
+      variantBuilder.mauSacIds = [...new Set([...variantBuilder.mauSacIds, numericId])]
+      mauSacSearch.value = ''
+      break
+    case 'kichCo':
+      variantBuilder.kichCoIds = [...new Set([...variantBuilder.kichCoIds, numericId])]
+      kichCoSearch.value = ''
+      break
+  }
+}
+
+function validateQuickCreateForm() {
+  clearQuickCreateErrors()
+
+  switch (quickCreateType.value) {
+    case 'thuongHieu':
+    case 'loaiGiay':
+    case 'chatLieuGiay':
+    case 'deGiay':
+    case 'coGiay':
+    case 'congNgheDem':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Mã không được để trống'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Tên không được để trống'
+      break
+    case 'trongLuong':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Mã không được để trống'
+      if (!Number.isInteger(Number(quickCreateForm.giaTri)) || Number(quickCreateForm.giaTri) < 1) {
+        quickCreateErrors.giaTri = 'Trọng lượng phải lớn hơn hoặc bằng 1'
+      }
+      break
+    case 'mauSac':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Mã không được để trống'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Tên không được để trống'
+      if (!/^#[0-9A-Fa-f]{6}$/.test(String(quickCreateForm.maMauHex || ''))) {
+        quickCreateErrors.maMauHex = 'Mã HEX không hợp lệ'
+      }
+      break
+    case 'kichCo':
+      if (!trimToNull(quickCreateForm.giaTri)) quickCreateErrors.giaTri = 'Kích cỡ không được để trống'
+      break
+  }
+
+  return Object.keys(quickCreateErrors).length === 0
+}
+
+async function handleQuickCreateSave() {
+  if (!quickCreateType.value || !validateQuickCreateForm()) return
+
+  quickCreateSaving.value = true
+  try {
+    let created = null
+
+    switch (quickCreateType.value) {
+      case 'thuongHieu':
+        created = await thuongHieuApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          xuatXu: trimToNull(quickCreateForm.xuatXu),
+          logoUrl: null,
+          website: null,
+          moTa: null
+        })
+        break
+      case 'loaiGiay':
+        created = await loaiGiayApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          moTa: null
+        })
+        break
+      case 'chatLieuGiay':
+        created = await chatLieuGiayApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          moTa: null
+        })
+        break
+      case 'deGiay':
+        created = await deGiayApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          moTa: null
+        })
+        break
+      case 'coGiay':
+        created = await coGiayApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          moTa: null
+        })
+        break
+      case 'congNgheDem':
+        created = await congNgheDemApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          moTa: null
+        })
+        break
+      case 'trongLuong':
+        created = await trongLuongApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          giaTri: Number(quickCreateForm.giaTri),
+          moTa: null
+        })
+        break
+      case 'mauSac':
+        created = await mauSacApi.create({
+          ma: trimToNull(quickCreateForm.ma),
+          ten: trimToNull(quickCreateForm.ten),
+          maMauHex: String(quickCreateForm.maMauHex || '').toUpperCase()
+        })
+        break
+      case 'kichCo':
+        created = await kichCoApi.create({
+          giaTri: trimToNull(quickCreateForm.giaTri),
+          ghiChu: trimToNull(quickCreateForm.ghiChu)
+        })
+        break
+    }
+
+    if (!created?.id) {
+      throw new Error('Không nhận được dữ liệu thuộc tính vừa tạo')
+    }
+
+    await loadDanhMuc()
+    assignQuickCreatedValue(quickCreateType.value, created.id)
+    showToast('Đã thêm thuộc tính mới vào form')
+    closeQuickCreate()
+  } catch (error) {
+    showToast(error.message || 'Không thể thêm nhanh thuộc tính', 'error')
+  } finally {
+    quickCreateSaving.value = false
+  }
+}
 
 function showToast(message, type = 'success') {
   toast.message = message
@@ -480,110 +950,115 @@ onBeforeUnmount(() => {
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Thương hiệu *</span>
-              <select
-                v-model.number="productForm.thuongHieuId"
-                class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                :class="productErrors.thuongHieuId ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
-              >
-                <option :value="null">Chọn thương hiệu...</option>
-                <option v-for="item in danhMuc?.thuongHieu || []" :key="item.id" :value="item.id">
-                  {{ item.ten }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.thuongHieuId"
+                :options="thuongHieuOptions"
+                placeholder="Chọn thương hiệu..."
+                search-placeholder="Tìm thương hiệu..."
+                :error="Boolean(productErrors.thuongHieuId)"
+                allow-create
+                :creating="inlineCreatingType === 'thuongHieu'"
+                @create="handleInlineCreateAttribute('thuongHieu', $event)"
+                @update:model-value="productForm.thuongHieuId = $event"
+              />
               <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-rose-500">{{ productErrors.thuongHieuId }}</p>
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Loại giày *</span>
-              <select
-                v-model.number="productForm.loaiGiayId"
-                class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                :class="productErrors.loaiGiayId ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
-              >
-                <option :value="null">Chọn loại giày...</option>
-                <option v-for="item in danhMuc?.loaiGiay || []" :key="item.id" :value="item.id">
-                  {{ item.ten }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.loaiGiayId"
+                :options="loaiGiayOptions"
+                placeholder="Chọn loại giày..."
+                search-placeholder="Tìm loại giày..."
+                :error="Boolean(productErrors.loaiGiayId)"
+                allow-create
+                :creating="inlineCreatingType === 'loaiGiay'"
+                @create="handleInlineCreateAttribute('loaiGiay', $event)"
+                @update:model-value="productForm.loaiGiayId = $event"
+              />
               <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-rose-500">{{ productErrors.loaiGiayId }}</p>
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giới tính</span>
-              <select
-                v-model.number="productForm.gioiTinh"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              >
-                <option :value="null">Tất cả</option>
-                <option :value="1">Nam</option>
-                <option :value="2">Nữ</option>
-                <option :value="3">Unisex</option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.gioiTinh"
+                :options="genderSearchOptions"
+                placeholder="Tất cả"
+                search-placeholder="Tìm giới tính..."
+                @update:model-value="productForm.gioiTinh = $event"
+              />
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Chất liệu</span>
-              <select
-                v-model.number="productForm.chatLieuGiayId"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              >
-                <option :value="null">Chọn chất liệu giày...</option>
-                <option v-for="item in danhMuc?.chatLieuGiay || []" :key="item.id" :value="item.id">
-                  {{ item.ten }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.chatLieuGiayId"
+                :options="chatLieuOptions"
+                placeholder="Chọn chất liệu giày..."
+                search-placeholder="Tìm chất liệu..."
+                allow-create
+                :creating="inlineCreatingType === 'chatLieuGiay'"
+                @create="handleInlineCreateAttribute('chatLieuGiay', $event)"
+                @update:model-value="productForm.chatLieuGiayId = $event"
+              />
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Đế giày</span>
-              <select
-                v-model.number="productForm.deGiayId"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              >
-                <option :value="null">Chọn đế giày...</option>
-                <option v-for="item in danhMuc?.deGiay || []" :key="item.id" :value="item.id">
-                  {{ item.ten }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.deGiayId"
+                :options="deGiayOptions"
+                placeholder="Chọn đế giày..."
+                search-placeholder="Tìm đế giày..."
+                allow-create
+                :creating="inlineCreatingType === 'deGiay'"
+                @create="handleInlineCreateAttribute('deGiay', $event)"
+                @update:model-value="productForm.deGiayId = $event"
+              />
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Cổ giày</span>
-              <select
-                v-model.number="productForm.coGiayId"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              >
-                <option :value="null">Chọn cổ giày...</option>
-                <option v-for="item in danhMuc?.coGiay || []" :key="item.id" :value="item.id">
-                  {{ item.ten }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.coGiayId"
+                :options="coGiayOptions"
+                placeholder="Chọn cổ giày..."
+                search-placeholder="Tìm cổ giày..."
+                allow-create
+                :creating="inlineCreatingType === 'coGiay'"
+                @create="handleInlineCreateAttribute('coGiay', $event)"
+                @update:model-value="productForm.coGiayId = $event"
+              />
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Công nghệ đệm</span>
-              <select
-                v-model.number="productForm.congNgheDemId"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              >
-                <option :value="null">Chọn công nghệ đệm...</option>
-                <option v-for="item in danhMuc?.congNgheDem || []" :key="item.id" :value="item.id">
-                  {{ item.ten }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.congNgheDemId"
+                :options="congNgheDemOptions"
+                placeholder="Chọn công nghệ đệm..."
+                search-placeholder="Tìm công nghệ đệm..."
+                allow-create
+                :creating="inlineCreatingType === 'congNgheDem'"
+                @create="handleInlineCreateAttribute('congNgheDem', $event)"
+                @update:model-value="productForm.congNgheDemId = $event"
+              />
             </label>
 
             <label class="block">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500">Trọng lượng</span>
-              <select
-                v-model.number="productForm.trongLuongId"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-              >
-                <option :value="null">Chọn trọng lượng...</option>
-                <option v-for="item in danhMuc?.trongLuong || []" :key="item.id" :value="item.id">
-                  {{ item.ma || item.giaTri }}
-                </option>
-              </select>
+              <AdminSearchableSelect
+                :model-value="productForm.trongLuongId"
+                :options="trongLuongOptions"
+                placeholder="Chọn trọng lượng..."
+                search-placeholder="Tìm trọng lượng..."
+                allow-create
+                :creating="inlineCreatingType === 'trongLuong'"
+                @create="handleInlineCreateAttribute('trongLuong', $event)"
+                @update:model-value="productForm.trongLuongId = $event"
+              />
             </label>
 
             <label class="block md:col-span-2">
@@ -601,7 +1076,17 @@ onBeforeUnmount(() => {
         <article class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
           <div class="space-y-4">
             <div ref="mauSacDropdownRef" class="relative" @click.stop>
-              <label class="mb-1 block text-[13px] font-semibold text-slate-500">Màu sắc *</label>
+              <div class="mb-1 flex items-center justify-between gap-3">
+                <label class="block text-[13px] font-semibold text-slate-500">Màu sắc *</label>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100"
+                  @click.stop="openQuickCreate('mauSac', mauSacSearch)"
+                >
+                  <Plus :size="12" />
+                  Thêm nhanh
+                </button>
+              </div>
               <button
                 type="button"
                 class="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm transition hover:bg-white"
@@ -674,7 +1159,17 @@ onBeforeUnmount(() => {
             </div>
 
             <div ref="kichCoDropdownRef" class="relative" @click.stop>
-              <label class="mb-1 block text-[13px] font-semibold text-slate-500">Kích cỡ *</label>
+              <div class="mb-1 flex items-center justify-between gap-3">
+                <label class="block text-[13px] font-semibold text-slate-500">Kích cỡ *</label>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100"
+                  @click.stop="openQuickCreate('kichCo', kichCoSearch)"
+                >
+                  <Plus :size="12" />
+                  Thêm nhanh
+                </button>
+              </div>
               <button
                 type="button"
                 class="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm transition hover:bg-white"
@@ -915,6 +1410,103 @@ onBeforeUnmount(() => {
         </div>
       </section>
     </template>
+
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="quickCreateOpen && quickCreateDefinition"
+          class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-4"
+          @click.self="closeQuickCreate"
+        >
+          <div class="w-full max-w-xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+              <div>
+                <h2 class="text-xl font-black text-slate-900">{{ quickCreateDefinition.title }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ quickCreateDefinition.description }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+                @click="closeQuickCreate"
+              >
+                <X :size="16" />
+              </button>
+            </div>
+
+            <div class="p-6">
+              <div class="grid gap-4 md:grid-cols-2">
+                <div
+                  v-for="field in quickCreateDefinition.fields"
+                  :key="field.key"
+                  :class="field.type === 'color' ? 'md:col-span-2' : ''"
+                >
+                  <label class="mb-1 block text-[13px] font-semibold text-slate-500">
+                    {{ field.label }}
+                  </label>
+
+                  <div v-if="field.type === 'color'" class="flex items-center gap-3">
+                    <input
+                      :value="quickCreateForm[field.key]"
+                      type="color"
+                      class="h-11 w-16 rounded-2xl border border-slate-200 bg-white p-1"
+                      @input="quickCreateForm[field.key] = String($event.target.value || '').toUpperCase()"
+                    />
+                    <input
+                      :value="quickCreateForm[field.key]"
+                      type="text"
+                      maxlength="7"
+                      class="h-11 flex-1 rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                      :class="quickCreateErrors[field.key] ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'"
+                      placeholder="#000000"
+                      @input="quickCreateForm[field.key] = String($event.target.value || '').toUpperCase()"
+                    />
+                  </div>
+
+                  <input
+                    v-else
+                    :value="quickCreateForm[field.key]"
+                    :type="field.type || 'text'"
+                    :min="field.min"
+                    class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    :class="[
+                      quickCreateErrors[field.key] ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50',
+                      field.uppercase ? 'uppercase' : ''
+                    ]"
+                    :placeholder="field.placeholder"
+                    @input="quickCreateForm[field.key] = field.uppercase ? String($event.target.value || '').toUpperCase() : $event.target.value"
+                  />
+
+                  <p v-if="quickCreateErrors[field.key]" class="mt-1 text-xs text-rose-500">
+                    {{ quickCreateErrors[field.key] }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              <button
+                type="button"
+                class="admin-btn-soft"
+                @click="closeQuickCreate"
+              >
+                Hủy
+              </button>
+
+              <button
+                type="button"
+                class="admin-btn-primary disabled:opacity-60"
+                :disabled="quickCreateSaving"
+                @click="handleQuickCreateSave"
+              >
+                <Save :size="16" />
+                {{ quickCreateSaving ? 'Đang thêm...' : 'Thêm vào form' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <Teleport to="body">
       <Transition name="fade">

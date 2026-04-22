@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Check, ChevronDown, Search } from 'lucide-vue-next'
+import { Check, ChevronDown, Plus, Search } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: {
@@ -38,20 +38,42 @@ const props = defineProps({
   error: {
     type: Boolean,
     default: false
+  },
+  allowCreate: {
+    type: Boolean,
+    default: false
+  },
+  creating: {
+    type: Boolean,
+    default: false
+  },
+  createLabel: {
+    type: String,
+    default: 'Thêm mới'
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'create'])
 
 const rootRef = ref(null)
 const searchInputRef = ref(null)
 const isOpen = ref(false)
 const query = ref('')
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, (char) => (char === 'đ' ? 'd' : 'D'))
+    .toLowerCase()
+    .trim()
+}
+
 const normalizedOptions = computed(() =>
   (props.options || []).map((item) => ({
     ...item,
-    searchText: String(item.searchText || `${item.label || ''} ${item.description || ''}`).toLowerCase()
+    searchText: normalizeText(item.searchText || `${item.label || ''} ${item.description || ''}`),
+    createMatchText: normalizeText(item.createMatchText || item.label || '')
   }))
 )
 
@@ -60,10 +82,25 @@ const selectedOption = computed(() =>
 )
 
 const filteredOptions = computed(() => {
-  const keyword = query.value.trim().toLowerCase()
+  const keyword = normalizeText(query.value)
   if (!keyword) return normalizedOptions.value
   return normalizedOptions.value.filter((item) => item.searchText.includes(keyword))
 })
+
+const normalizedQuery = computed(() => query.value.trim())
+
+const hasExactMatch = computed(() => {
+  const keyword = normalizeText(normalizedQuery.value)
+  if (!keyword) return false
+
+  return normalizedOptions.value.some((item) =>
+    item.createMatchText === keyword
+  )
+})
+
+const showCreateOption = computed(() =>
+  props.allowCreate && Boolean(normalizedQuery.value) && !hasExactMatch.value
+)
 
 function openDropdown() {
   if (props.disabled) return
@@ -88,6 +125,13 @@ function closeDropdown() {
 function selectValue(value) {
   emit('update:modelValue', value)
   closeDropdown()
+}
+
+function handleCreate() {
+  if (!showCreateOption.value || props.creating) return
+  const value = normalizedQuery.value
+  closeDropdown()
+  emit('create', value)
 }
 
 function handleDocumentClick(event) {
@@ -154,6 +198,19 @@ onBeforeUnmount(() => {
 
       <div class="max-h-64 overflow-y-auto p-2">
         <button
+          v-if="showCreateOption"
+          type="button"
+          class="mb-1 flex w-full items-center justify-between rounded-xl border border-dashed border-rose-200 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+          :disabled="creating"
+          @click="handleCreate"
+        >
+          <span class="truncate">
+            {{ creating ? 'Đang thêm...' : `${createLabel} "${normalizedQuery}"` }}
+          </span>
+          <Plus :size="15" class="shrink-0" />
+        </button>
+
+        <button
           v-if="allowClear && modelValue != null"
           type="button"
           class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
@@ -188,7 +245,7 @@ onBeforeUnmount(() => {
         </button>
 
         <div
-          v-if="!filteredOptions.length"
+          v-if="!filteredOptions.length && !showCreateOption"
           class="rounded-xl px-3 py-6 text-center text-sm text-slate-400"
         >
           {{ emptyLabel }}
