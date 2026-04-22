@@ -4,14 +4,19 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @Value("${app.debug-errors:false}")
+    private boolean debugErrors;
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException exception) {
@@ -51,12 +56,23 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, exception.getMessage()));
     }
 
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ErrorResponse> handleRestClient(RestClientException exception) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(ErrorCode.BUSINESS_ERROR, exception.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnhandled(Exception exception) {
+        String message = ErrorCode.UNEXPECTED_ERROR.messageTemplate();
+        if (debugErrors) {
+            String detail = exception.getMessage();
+            message = exception.getClass().getSimpleName() + (detail == null || detail.isBlank() ? "" : ": " + detail);
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.of(
                         ErrorCode.UNEXPECTED_ERROR,
-                        ErrorCode.UNEXPECTED_ERROR.messageTemplate()
+                        message
                 ));
     }
 }

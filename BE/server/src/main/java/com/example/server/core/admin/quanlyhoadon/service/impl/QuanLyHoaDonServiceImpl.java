@@ -155,6 +155,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     @Transactional
     public HoaDonDetailResponse capNhatTrangThaiHoaDon(Integer id, CapNhatTrangThaiHoaDonRequest request) {
         HoaDon hoaDon = findHoaDon(id);
+        ensureHoaDonEditable(hoaDon);
         VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(id).orElse(null);
         String trangThai = normalizeLabel(request.trangThai());
 
@@ -221,6 +222,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     @Transactional
     public HoaDonDetailResponse capNhatSanPhamHoaDon(Integer id, CapNhatSanPhamHoaDonRequest request) {
         HoaDon hoaDon = findHoaDon(id);
+        ensureHoaDonEditable(hoaDon);
         if (hoaDon.getTrangThai() != TRANG_THAI_CHO_XAC_NHAN) {
             throw new BusinessException("Chi co the cap nhat san pham khi hoa don dang o trang thai cho xac nhan");
         }
@@ -291,6 +293,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     @Transactional
     public TinhPhiVanChuyenGhnResponse tinhVaCapNhatPhiVanChuyenGhn(Integer id, TinhPhiVanChuyenGhnRequest request) {
         HoaDon hoaDon = findHoaDon(id);
+        ensureHoaDonEditable(hoaDon);
         if (isTaiQuay(hoaDon)) {
             throw new BusinessException("Hoa don tai quay khong can tinh phi van chuyen GHN");
         }
@@ -444,6 +447,12 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private HoaDon findHoaDon(Integer id) {
         return hoaDonRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
+    }
+
+    private void ensureHoaDonEditable(HoaDon hoaDon) {
+        if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == TRANG_THAI_HOAN_THANH) {
+            throw new BusinessException("Hoa don da hoan thanh, khong the chinh sua");
+        }
     }
 
     private String resolveTrangThaiHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {

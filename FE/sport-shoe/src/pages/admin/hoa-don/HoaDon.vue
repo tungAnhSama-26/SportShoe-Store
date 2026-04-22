@@ -57,6 +57,8 @@ const dsTrangThai: TrangThaiLoc[] = [
   "Cần hoàn tiền",
 ];
 const boLoc = ref(taoBoLocMacDinh());
+const tuNgayPicker = ref<HTMLInputElement | null>(null);
+const denNgayPicker = ref<HTMLInputElement | null>(null);
 
 const mauTrangThai: Record<string, string> = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
@@ -110,6 +112,17 @@ function chuyenNgayLocSangInput(value: string) {
   const [, day, month, year] = match;
   const fullYear = year.length === 2 ? `20${year}` : year;
   return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function moLich(input: HTMLInputElement | null) {
+  if (!input) return;
+  const picker = input as HTMLInputElement & { showPicker?: () => void };
+  if (picker.showPicker) {
+    picker.showPicker();
+    return;
+  }
+  input.click();
+  input.focus();
 }
 
 function taoBoLocMacDinh() {
@@ -299,7 +312,6 @@ onMounted(taiDanhSach);
         <label class="min-w-[160px] flex-1 space-y-2">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Ngày bắt đầu</span>
           <div class="relative">
-            <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               v-model="tuNgayHienThi"
               type="text"
@@ -307,19 +319,48 @@ onMounted(taiDanhSach);
               placeholder="dd/mm/yyyy"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#B82220]"
+              @click="moLich(tuNgayPicker)"
+            >
+              <CalendarDays class="h-4 w-4" />
+            </button>
+            <input
+              ref="tuNgayPicker"
+              v-model="boLoc.tuNgay"
+              type="date"
+              aria-label="Chọn ngày bắt đầu"
+              class="pointer-events-none absolute right-3 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0"
+              tabindex="-1"
+            />
           </div>
         </label>
 
         <label class="min-w-[160px] flex-1 space-y-2">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Ngày kết thúc</span>
           <div class="relative">
-            <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               v-model="denNgayHienThi"
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#B82220]"
+              @click="moLich(denNgayPicker)"
+            >
+              <CalendarDays class="h-4 w-4" />
+            </button>
+            <input
+              ref="denNgayPicker"
+              v-model="boLoc.denNgay"
+              type="date"
+              aria-label="Chọn ngày kết thúc"
+              class="pointer-events-none absolute right-3 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0"
+              tabindex="-1"
             />
           </div>
         </label>
