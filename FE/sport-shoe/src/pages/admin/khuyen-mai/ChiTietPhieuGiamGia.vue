@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Ticket } from "lucide-vue-next";
+import { ArrowLeft, Save, Ticket, RefreshCcw } from "lucide-vue-next";
 import {
   createPhieuGiamGia,
   getPhieuGiamGiaDetail,
@@ -23,7 +23,8 @@ const form = reactive({
   id: null,
   ma: "",
   ten: "",
-  loai: "1",
+  loai: "1", // Mặc định là phần trăm
+  loaiPhieu: "1",
   giaTri: "",
   giaTriToiThieu: "0",
   giamToiDa: "0",
@@ -37,12 +38,33 @@ function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function parseVndNumber(value) {
+  const rawValue = String(value ?? "").replace(/[^\d]/g, "");
+  return rawValue ? Number(rawValue) : 0;
+}
+
+function formatVndNumber(value) {
+  const numberValue = parseVndNumber(value);
+  return numberValue ? numberValue.toLocaleString("vi-VN") : "0";
+}
+
+function handleVndInput(field, event) {
+  form[field] = formatVndNumber(event.target.value);
+}
+
 function resetErrors() {
   Object.keys(formErrors).forEach((key) => delete formErrors[key]);
 }
 
+function taoMaNgauNhien() {
+  form.ma = 'PGG' + Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
 async function taiChiTiet() {
-  if (laMoi) return;
+  if (laMoi) {
+    taoMaNgauNhien();
+    return;
+  }
   dangTai.value = true;
   try {
     const detail = await getPhieuGiamGiaDetail(id);
@@ -50,10 +72,11 @@ async function taiChiTiet() {
       id: detail.id,
       ma: detail.ma ?? "",
       ten: detail.ten ?? "",
-      loai: String(detail.loai ?? 1),
+      loai: "1", // Cố định phần trăm
+      loaiPhieu: String(detail.loaiPhieu ?? 1),
       giaTri: detail.giaTri ?? "",
-      giaTriToiThieu: detail.giaTriToiThieu ?? "0",
-      giamToiDa: detail.giamToiDa ?? "0",
+      giaTriToiThieu: formatVndNumber(detail.giaTriToiThieu ?? "0"),
+      giamToiDa: formatVndNumber(detail.giamToiDa ?? "0"),
       ngayBatDau: detail.ngayBatDau ?? "",
       ngayKetThuc: detail.ngayKetThuc ?? "",
       soLuong: detail.soLuong ?? "",
@@ -72,7 +95,13 @@ async function submitForm() {
 
   if (!form.ma.trim()) { formErrors.ma = "Mã phiếu không được để trống"; isValid = false; }
   if (!form.ten.trim()) { formErrors.ten = "Tên phiếu không được để trống"; isValid = false; }
-  if (!form.giaTri || Number(form.giaTri) <= 0) { formErrors.giaTri = "Giá trị giảm không hợp lệ"; isValid = false; }
+  if (!form.giaTri || Number(form.giaTri) <= 0) { 
+    formErrors.giaTri = "Giá trị giảm không hợp lệ"; 
+    isValid = false; 
+  } else if (Number(form.giaTri) > 100) {
+    formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
+    isValid = false;
+  }
   if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng không hợp lệ"; isValid = false; }
   if (!form.ngayBatDau) { formErrors.ngayBatDau = "Chọn ngày bắt đầu"; isValid = false; }
   if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày kết thúc"; isValid = false; }
@@ -90,10 +119,11 @@ async function submitForm() {
     const payload = {
       ma: form.ma.trim(),
       ten: form.ten.trim(),
-      loai: Number(form.loai),
+      loai: 1, // Luôn lưu là Phần trăm
+      loaiPhieu: Number(form.loaiPhieu),
       giaTri: Number(form.giaTri),
-      giaTriToiThieu: Number(form.giaTriToiThieu),
-      giamToiDa: Number(form.giamToiDa),
+      giaTriToiThieu: parseVndNumber(form.giaTriToiThieu),
+      giamToiDa: parseVndNumber(form.giamToiDa),
       ngayBatDau: form.ngayBatDau,
       ngayKetThuc: form.ngayKetThuc,
       soLuong: Number(form.soLuong),
@@ -158,7 +188,12 @@ onMounted(taiChiTiet);
       <div class="grid gap-6 md:grid-cols-2">
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Mã phiếu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
+          <div class="relative">
+            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
+            <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors">
+              <RefreshCw class="h-4 w-4" />
+            </button>
+          </div>
           <p v-if="formErrors.ma" class="text-xs text-rose-500 mt-1">{{ formErrors.ma }}</p>
         </div>
 
@@ -169,41 +204,44 @@ onMounted(taiChiTiet);
         </div>
 
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Loại giảm <span class="text-rose-500">*</span></label>
+          <label class="text-[13px] font-semibold text-slate-500">Loại phiếu <span class="text-rose-500">*</span></label>
           <div class="flex gap-6 pt-2">
             <label class="flex items-center gap-2 cursor-pointer group">
               <div class="relative flex items-center justify-center">
-                <input type="radio" v-model="form.loai" value="1" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
+                <input type="radio" v-model="form.loaiPhieu" value="1" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
                 <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
               </div>
-              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Phần trăm (%)</span>
+              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Công khai</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer group">
               <div class="relative flex items-center justify-center">
-                <input type="radio" v-model="form.loai" value="2" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
+                <input type="radio" v-model="form.loaiPhieu" value="2" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
                 <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
               </div>
-              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Tiền mặt (VNĐ)</span>
+              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Cá nhân</span>
             </label>
           </div>
-          <p v-if="formErrors.loai" class="text-xs text-rose-500 mt-1">{{ formErrors.loai }}</p>
+          <p v-if="formErrors.loaiPhieu" class="text-xs text-rose-500 mt-1">{{ formErrors.loaiPhieu }}</p>
         </div>
 
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm <span class="text-rose-500">*</span></label>
-          <input v-model="form.giaTri" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Nhập giá trị..." />
-          <p v-if="formErrors.giaTri" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTri }}</p>
+           <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm (%) <span class="text-rose-500">*</span></label>
+           <div class="relative">
+             <input v-model="form.giaTri" type="number" min="0" max="100" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-10 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="0" />
+             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+           </div>
+           <p v-if="formErrors.giaTri" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTri }}</p>
         </div>
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Giá trị đơn tối thiểu (VNĐ)</label>
-          <input v-model="form.giaTriToiThieu" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.giaTriToiThieu" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
           <p v-if="formErrors.giaTriToiThieu" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTriToiThieu }}</p>
         </div>
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Giảm tối đa (VNĐ)</label>
-          <input v-model="form.giamToiDa" type="number" min="0" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.giamToiDa" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
           <p v-if="formErrors.giamToiDa" class="text-xs text-rose-500 mt-1">{{ formErrors.giamToiDa }}</p>
         </div>
 
@@ -213,11 +251,11 @@ onMounted(taiChiTiet);
           <p v-if="formErrors.soLuong" class="text-xs text-rose-500 mt-1">{{ formErrors.soLuong }}</p>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="!laMoi" class="order-last space-y-2 md:col-span-1">
           <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
           <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-            <option value="1">Kích hoạt</option>
-            <option value="0">Tắt</option>
+            <option value="1">Đang hoạt động</option>
+            <option value="0">Ngưng hoạt động</option>
           </select>
           <p v-if="formErrors.trangThai" class="text-xs text-rose-500 mt-1">{{ formErrors.trangThai }}</p>
         </div>

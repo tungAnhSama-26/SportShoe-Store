@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Edit, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2, UserSearch
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, ToggleLeft, ToggleRight, UserSearch
 } from "lucide-vue-next";
 import {
   createPhieuGiamGia,
@@ -49,8 +49,8 @@ const totalItemsKh = ref(0);
 
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
-  { label: "Kích hoạt", value: "1" },
-  { label: "Tắt", value: "0" },
+  { label: "Đang hoạt động", value: "1" },
+  { label: "Ngưng hoạt động", value: "0" },
 ];
 
 const phieuOptions = ref([]);
@@ -67,7 +67,7 @@ function mauTrangThai(trangThai) {
 }
 
 function statusText(value) {
-  return Number(value) === 1 ? "Kích hoạt" : "Tắt";
+  return Number(value) === 1 ? "Đang hoạt động" : "Ngưng hoạt động";
 }
 
 function mauLoaiGiam(loai) {
@@ -76,6 +76,24 @@ function mauLoaiGiam(loai) {
 
 function loaiGiamText(loai) {
   return Number(loai) === 1 ? "Phần trăm" : "Tiền mặt";
+}
+
+function mauLoaiPhieu(loaiPhieu) {
+  return Number(loaiPhieu) === 1 ? "bg-indigo-50 text-indigo-600" : "bg-purple-50 text-purple-600";
+}
+
+function loaiPhieuText(loaiPhieu) {
+  return Number(loaiPhieu) === 1 ? "Công khai" : "Cá nhân";
+}
+
+function formatGiaTri(giaTri, loai) {
+  if (!giaTri) return "0";
+  return Number(loai) === 1 ? `${giaTri}%` : `${Number(giaTri).toLocaleString('vi-VN')}đ`;
+}
+
+function formatTien(tien) {
+  if (!tien) return "0đ";
+  return `${Number(tien).toLocaleString('vi-VN')}đ`;
 }
 
 function toDisplayDate(value) {
@@ -211,8 +229,10 @@ async function xuatExcel() {
           { label: "STT", value: (_, index) => index + 1 },
           { label: "Mã", key: "ma" },
           { label: "Tên", key: "ten" },
+          { label: "Giảm tối đa", value: (row) => row.giamToiDa ? `${row.giamToiDa.toLocaleString('vi-VN')}đ` : "0đ" },
+          { label: "Loại phiếu", value: (row) => Number(row.loaiPhieu) === 1 ? "Công khai" : "Cá nhân" },
           { label: "Loại giảm", value: (row) => Number(row.loai) === 1 ? "Phần trăm" : "Tiền mặt" },
-          { label: "Giá trị", key: "giaTri" },
+          { label: "Giá trị", value: (row) => Number(row.loai) === 1 ? `${row.giaTri}%` : `${Number(row.giaTri).toLocaleString('vi-VN')}đ` },
           { label: "Số lượng", key: "soLuong" },
           { label: "Ngày bắt đầu", value: (row) => toDisplayDate(row.ngayBatDau) },
           { label: "Ngày kết thúc", value: (row) => toDisplayDate(row.ngayKetThuc) },
@@ -318,6 +338,41 @@ async function submitForm() {
   }
 }
 
+
+async function nhanhDoiTrangThai(item) {
+  try {
+    const detail = await getPhieuGiamGiaDetail(item.id);
+    // Đảo trạng thái: 1 <-> 0
+    detail.trangThai = Number(detail.trangThai) === 1 ? 0 : 1;
+    // Chuyển các field số về kiểu Number (đảm bảo payload sạch)
+    detail.loai = Number(detail.loai);
+    detail.loaiPhieu = Number(detail.loaiPhieu);
+    detail.giaTri = Number(detail.giaTri);
+    detail.soLuong = Number(detail.soLuong);
+    detail.trangThai = Number(detail.trangThai);
+    
+    await updatePhieuGiamGia(item.id, detail);
+    await taiDanhSach();
+  } catch (error) {
+    alert(error.message || "Đổi trạng thái thất bại");
+  }
+}
+
+async function nhanhDoiTrangThaiKh(item) {
+  try {
+    const detail = await getPhieuGiamGiaKhachHangDetail(item.id);
+    detail.trangThai = Number(detail.trangThai) === 1 ? 0 : 1;
+    // Tương tự cho phiếu khách hàng
+    detail.phieuGiamGiaId = Number(detail.phieuGiamGiaId);
+    detail.trangThai = Number(detail.trangThai);
+    
+    await updatePhieuGiamGiaKhachHang(item.id, detail);
+    await taiDanhSachKh();
+  } catch (error) {
+    alert(error.message || "Đổi trạng thái thất bại");
+  }
+}
+
 onMounted(taiDanhSach);
 </script>
 
@@ -375,13 +430,13 @@ onMounted(taiDanhSach);
             </select>
           </label>
 
+
           <template v-if="activeTab === 'phieu'">
             <label class="space-y-2">
               <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giảm</span>
               <select v-model="boLoc.loai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
                 <option value="">Tất cả</option>
                 <option value="1">Phần trăm</option>
-                <option value="2">Tiền mặt</option>
               </select>
             </label>
 
@@ -424,8 +479,8 @@ onMounted(taiDanhSach);
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên</th>
-              <th class="bg-slate-100 px-4 py-3">Loại giảm</th>
-              <th class="bg-slate-100 px-4 py-3">Giá trị</th>
+              <th class="bg-slate-100 px-4 py-3">Loại phiếu</th>
+              <th class="bg-slate-100 px-4 py-3">Giá trị (%)</th>
               <th class="bg-slate-100 px-4 py-3">SL</th>
               <th class="bg-slate-100 px-4 py-3">Thời gian</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
@@ -442,13 +497,16 @@ onMounted(taiDanhSach);
             <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ma }}</td>
-              <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ten }}</td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiGiam(item.loai)">
-                  {{ loaiGiamText(item.loai) }}
+                <div class="font-semibold text-slate-800">{{ item.ten }}</div>
+                <div v-if="item.giamToiDa > 0" class="text-[12px] text-rose-500 font-medium mt-0.5" title="Giảm tối đa">Tối đa: {{ formatTien(item.giamToiDa) }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiPhieu(item.loaiPhieu)">
+                  {{ loaiPhieuText(item.loaiPhieu) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-slate-600">{{ item.giaTri }}</td>
+              <td class="px-4 py-3 font-semibold text-rose-600">{{ item.giaTri }}%</td>
               <td class="px-4 py-3 text-slate-600">{{ item.soLuong }}</td>
               <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}<br/>{{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
@@ -457,9 +515,13 @@ onMounted(taiDanhSach);
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex justify-center gap-2">
-                  <button @click="openEditModal('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Edit class="h-4 w-4" /></button>
-                  <button @click="removeItem('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
+                <div class="flex justify-center items-center gap-3">
+                  <button @click="openEditModal('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500" title="Xem chi tiết">
+                    <Eye class="h-5 w-5" />
+                  </button>
+                  <button @click="nhanhDoiTrangThai(item)" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none" :class="Number(item.trangThai) === 1 ? 'bg-rose-500' : 'bg-slate-200'" :title="Number(item.trangThai) === 1 ? 'Ngưng hoạt động' : 'Kích hoạt'">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200" :class="Number(item.trangThai) === 1 ? 'translate-x-5' : 'translate-x-0'"></span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -501,9 +563,13 @@ onMounted(taiDanhSach);
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex justify-center gap-2">
-                  <button @click="openEditModal('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Edit class="h-4 w-4" /></button>
-                  <button @click="removeItem('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
+                <div class="flex justify-center items-center gap-3">
+                  <button @click="openEditModal('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500" title="Xem chi tiết">
+                    <Eye class="h-5 w-5" />
+                  </button>
+                  <button @click="nhanhDoiTrangThaiKh(item)" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none" :class="Number(item.trangThai) === 1 ? 'bg-rose-500' : 'bg-slate-200'" :title="Number(item.trangThai) === 1 ? 'Ngưng hoạt động' : 'Kích hoạt'">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200" :class="Number(item.trangThai) === 1 ? 'translate-x-5' : 'translate-x-0'"></span>
+                  </button>
                 </div>
               </td>
             </tr>

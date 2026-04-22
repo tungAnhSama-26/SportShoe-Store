@@ -23,6 +23,8 @@ public class PhieuGiamGiaRequest {
     @NotNull(message = "Loại giảm không được để trống")
     private Integer loai;
 
+    private Integer loaiPhieu;
+
     @NotNull(message = "Giá trị giảm không được để trống")
     @Min(value = 1, message = "Giá trị giảm phải lớn hơn 0")
     private BigDecimal giaTri;

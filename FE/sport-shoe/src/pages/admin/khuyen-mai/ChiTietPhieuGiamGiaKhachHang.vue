@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Users, Search } from "lucide-vue-next";
+import { ArrowLeft, Save, Users, Search, CheckSquare, Square } from "lucide-vue-next";
 import {
   createPhieuGiamGiaKhachHang,
   getPhieuGiamGiaKhachHangDetail,
@@ -9,7 +9,7 @@ import {
   getPhieuGiamGiaList,
   getEmailSuggestions
 } from "../../../services/khuyen-mai";
-import { layChiTietKhachHang } from "../../../services/khach-hang";
+import { layChiTietKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
 
 const route = useRoute();
 const router = useRouter();
@@ -24,6 +24,9 @@ const formErrors = reactive({});
 
 const phieuOptions = ref([]);
 const emailOptions = ref([]);
+const danhSachKh = ref([]);
+const searchKh = ref("");
+const dsEmailChon = ref([]);
 
 const form = reactive({
   id: null,
@@ -46,7 +49,10 @@ async function taiDuLieu() {
   try {
     // Tải danh sách phiếu active
     const dataOpts = await getPhieuGiamGiaList({ pageNo: 0, pageSize: 1000, trangThai: 1 });
-    phieuOptions.value = dataOpts?.content || [];
+    // Lọc chỉ hiển thị phiếu cá nhân (loaiPhieu === 2)
+    phieuOptions.value = (dataOpts?.content || []).filter(opt => Number(opt.loaiPhieu) === 2);
+    // Tải danh sách khách hàng ban đầu
+    await taiKhachHang();
 
     // Tải danh sách email gợi ý
     const emails = await getEmailSuggestions();
@@ -84,7 +90,11 @@ async function submitForm() {
     formErrors.phieuGiamGiaId = "Vui lòng chọn phiếu giảm giá";
     isValid = false;
   }
-  if (!form.email || !form.email.includes('@')) {
+  if (laMoi && dsEmailChon.value.length === 0) {
+    formErrors.email = "Vui lòng chọn ít nhất một khách hàng";
+    isValid = false;
+  }
+  if (!laMoi && (!form.email || !form.email.includes('@'))) {
     formErrors.email = "Email không hợp lệ";
     isValid = false;
   }
@@ -94,18 +104,26 @@ async function submitForm() {
   saving.value = true;
   loiTrang.value = "";
   try {
-    const payload = {
-      phieuGiamGiaId: Number(form.phieuGiamGiaId),
-      email: form.email.trim(),
-      ngaySuDung: form.ngaySuDung || null,
-      trangThai: Number(form.trangThai),
-      ngayTao: laMoi ? getToday() : undefined
-    };
-
     if (laMoi) {
-      await createPhieuGiamGiaKhachHang(payload);
-      alert("Tặng phiếu cho khách hàng thành công");
+      // Tạo cho nhiều khách hàng
+      const basePayload = {
+        phieuGiamGiaId: Number(form.phieuGiamGiaId),
+        ngaySuDung: form.ngaySuDung || null,
+        trangThai: Number(form.trangThai),
+        ngayTao: getToday()
+      };
+
+      for (const email of dsEmailChon.value) {
+        await createPhieuGiamGiaKhachHang({ ...basePayload, email });
+      }
+      alert(`Đã tặng phiếu thành công cho ${dsEmailChon.value.length} khách hàng`);
     } else {
+      const payload = {
+        phieuGiamGiaId: Number(form.phieuGiamGiaId),
+        email: form.email.trim(),
+        ngaySuDung: form.ngaySuDung || null,
+        trangThai: Number(form.trangThai)
+      };
       await updatePhieuGiamGiaKhachHang(id, payload);
       alert("Cập nhật thành công");
     }
@@ -115,6 +133,44 @@ async function submitForm() {
   } finally {
     saving.value = false;
   }
+}
+
+
+async function taiKhachHang() {
+  try {
+    const data = await layDanhSachKhachHang({ keyword: searchKh.value });
+    // Dữ liệu khách hàng trả về có thể là Array trực tiếp hoặc qua field content
+    if (Array.isArray(data)) {
+      danhSachKh.value = data;
+    } else if (data && Array.isArray(data.content)) {
+      danhSachKh.value = data.content;
+    } else {
+      danhSachKh.value = [];
+    }
+  } catch (e) {
+    console.error("Lỗi tải khách hàng:", e);
+    danhSachKh.value = [];
+  }
+}
+
+function toggleEmail(email) {
+  const idx = dsEmailChon.value.indexOf(email);
+  if (idx > -1) dsEmailChon.value.splice(idx, 1);
+  else dsEmailChon.value.push(email);
+}
+
+function chonTatCa() {
+  if (dsEmailChon.value.length === danhSachKh.value.length) {
+    dsEmailChon.value = [];
+  } else {
+    dsEmailChon.value = danhSachKh.value.map(kh => kh.email).filter(e => e);
+  }
+}
+
+let searchTimer;
+function handleSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => taiKhachHang(), 300);
 }
 
 onMounted(taiDuLieu);
@@ -161,18 +217,51 @@ onMounted(taiDuLieu);
           <p v-if="formErrors.phieuGiamGiaId" class="text-xs text-rose-500 mt-1">{{ formErrors.phieuGiamGiaId }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Email Khách hàng <span class="text-rose-500">*</span></label>
-          <input 
-            v-model="form.email" 
-            type="email" 
-            list="email-suggestions" 
-            placeholder="Ví dụ: customer@example.com"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" 
-          />
-          <datalist id="email-suggestions">
-            <option v-for="em in emailOptions" :key="em" :value="em"></option>
-          </datalist>
+        <div class="space-y-3 md:col-span-2">
+          <label class="text-[13px] font-semibold text-slate-500 flex justify-between items-center">
+            <span>Chọn khách hàng mục tiêu <span class="text-rose-500">*</span></span>
+            <span v-if="laMoi" class="text-[12px] text-blue-500 cursor-pointer hover:underline" @click="chonTatCa">
+              {{ dsEmailChon.length === danhSachKh.length && danhSachKh.length > 0 ? 'Bỏ chọn tất cả' : 'Chọn tất cả bản ghi hiện tại' }}
+            </span>
+          </label>
+          
+          <template v-if="laMoi">
+            <!-- Thanh tìm kiếm khách hàng -->
+            <div class="relative mb-3">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input 
+                v-model="searchKh" 
+                type="text" 
+                placeholder="Tìm theo tên hoặc số điện thoại khách hàng..."
+                @input="handleSearch"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:bg-white" 
+              />
+            </div>
+
+            <!-- Danh sách khách hàng có Checkbox -->
+            <div class="max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-2 space-y-1">
+              <div v-for="kh in danhSachKh" :key="kh.id" 
+                   @click="toggleEmail(kh.email)"
+                   class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition"
+                   :class="dsEmailChon.includes(kh.email) ? 'bg-blue-50 text-blue-700' : 'hover:bg-white text-slate-600'">
+                <div class="flex-shrink-0">
+                  <CheckSquare v-if="dsEmailChon.includes(kh.email)" class="h-5 w-5 text-blue-600" />
+                  <Square v-else class="h-5 w-5 text-slate-300" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm truncate">{{ kh.hoTen }}</div>
+                  <div class="text-[12px] opacity-70">SĐT: {{ kh.sdt || 'N/A' }} | Email: {{ kh.email }}</div>
+                </div>
+              </div>
+              <div v-if="!danhSachKh.length" class="py-10 text-center text-sm text-slate-400">Không tìm thấy khách hàng nào.</div>
+            </div>
+            <div class="text-[12px] font-medium text-slate-400">Đã chọn: <span class="text-blue-600">{{ dsEmailChon.length }}</span> khách hàng.</div>
+          </template>
+          
+          <template v-else>
+             <input v-model="form.email" disabled class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm outline-none" />
+          </template>
+
           <p v-if="formErrors.email" class="text-xs text-rose-500 mt-1">{{ formErrors.email }}</p>
         </div>
 
