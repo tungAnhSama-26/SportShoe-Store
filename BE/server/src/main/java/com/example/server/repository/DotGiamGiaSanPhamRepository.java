@@ -12,41 +12,47 @@ import java.util.List;
 public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSanPham, Integer> {
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
-    dotGiamGiaSP.id,dotGiamGiaSP.dotGiamGia.id,dotGiamGiaSP.giay.id,dotGiamGiaSP.dotGiamGia.ten,dotGiamGiaSP.giay.ten,dotGiamGiaSP.trangThai,dotGiamGiaSP.ngayTao
+    dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 
+    dotGiamGiaSP.giayChiTiet.giay.ten, dotGiamGiaSP.giayChiTiet.mauSac.ten, dotGiamGiaSP.giayChiTiet.kichCo.giaTri,
+    dotGiamGiaSP.trangThai, dotGiamGiaSP.ngayTao
     )
     FROM DotGiamGiaSanPham dotGiamGiaSP 
-    JOIN DotGiamGia dotGiamGia ON dotGiamGiaSP.dotGiamGia.id = dotGiamGia.id
-    JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
+    JOIN dotGiamGiaSP.dotGiamGia dotGiamGia
+    JOIN dotGiamGiaSP.giayChiTiet gct
 """)
     List<QuanLyDotGiamGiaSanPhamResponse> hienThiQuanLyDotGiamGiaSanPham();
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
-    dotGiamGiaSP.id,dotGiamGiaSP.dotGiamGia.id,dotGiamGiaSP.giay.id,dotGiamGiaSP.dotGiamGia.ten,dotGiamGiaSP.giay.ten,dotGiamGiaSP.trangThai,dotGiamGiaSP.ngayTao
+    dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 
+    dotGiamGiaSP.giayChiTiet.giay.ten, dotGiamGiaSP.giayChiTiet.mauSac.ten, dotGiamGiaSP.giayChiTiet.kichCo.giaTri,
+    dotGiamGiaSP.trangThai, dotGiamGiaSP.ngayTao
     )
     FROM DotGiamGiaSanPham dotGiamGiaSP 
-    JOIN DotGiamGia dotGiamGia ON dotGiamGiaSP.dotGiamGia.id = dotGiamGia.id
-    JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
+    JOIN dotGiamGiaSP.dotGiamGia dotGiamGia
+    JOIN dotGiamGiaSP.giayChiTiet gct
     WHERE dotGiamGiaSP.id = ?1
 """)
     QuanLyDotGiamGiaSanPhamResponse detailQuanLyDotGiamGiaSanPham(Integer id);
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
-    dotGiamGiaSP.id,dotGiamGiaSP.dotGiamGia.id,dotGiamGiaSP.giay.id,dotGiamGiaSP.dotGiamGia.ten,dotGiamGiaSP.giay.ten,dotGiamGiaSP.trangThai,dotGiamGiaSP.ngayTao
+    dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 
+    dotGiamGiaSP.giayChiTiet.giay.ten, dotGiamGiaSP.giayChiTiet.mauSac.ten, dotGiamGiaSP.giayChiTiet.kichCo.giaTri,
+    dotGiamGiaSP.trangThai, dotGiamGiaSP.ngayTao
     )
     FROM DotGiamGiaSanPham dotGiamGiaSP 
-    JOIN DotGiamGia dotGiamGia ON dotGiamGiaSP.dotGiamGia.id = dotGiamGia.id
-    JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
+    JOIN dotGiamGiaSP.dotGiamGia dotGiamGia
+    JOIN dotGiamGiaSP.giayChiTiet gct
 """)
     Page<QuanLyDotGiamGiaSanPhamResponse> phanTrangQuanLyDotGiamGiaSanPham(Pageable pageable);
 
-    @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia WHERE d.giay.id = ?1 AND d.trangThai = 1 AND d.dotGiamGia.kichHoat = 1")
-    List<DotGiamGiaSanPham> findActiveByGiayId(Integer giayId);
+    @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia WHERE d.giayChiTiet.id = ?1 AND d.trangThai = 1 AND d.dotGiamGia.kichHoat = 1")
+    List<DotGiamGiaSanPham> findActiveByGiayChiTietId(Integer giayChiTietId);
 
     @Query("SELECT d FROM DotGiamGiaSanPham d WHERE d.dotGiamGia.id = ?1")
     List<DotGiamGiaSanPham> findByDotGiamGiaId(Integer dotGiamGiaId);
 
-    @Query("SELECT DISTINCT d.giay.id FROM DotGiamGiaSanPham d")
-    List<Integer> findDistinctGiayIds();
+    @Query("SELECT DISTINCT d.giayChiTiet.id FROM DotGiamGiaSanPham d")
+    List<Integer> findDistinctGiayChiTietIds();
 }
