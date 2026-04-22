@@ -215,7 +215,6 @@ async function xuatExcel() {
         { label: 'STT', value: (_, index) => index + 1 },
         { label: 'Mã SP', key: 'maSanPham' },
         { label: 'Mã CTSP', key: 'maChiTietSanPham' },
-        { label: 'SKU', key: 'sku' },
         { label: 'Tên sản phẩm', key: 'tenSanPham' },
         { label: 'Thương hiệu', key: 'thuongHieu' },
         { label: 'Loại giày', key: 'loaiGiay' },
@@ -386,40 +385,39 @@ onMounted(async () => {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1180px] w-full border-separate border-spacing-y-2 text-sm">
+        <table class="min-w-[1020px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
             <tr class="text-left text-sm font-bold text-slate-500">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã SP</th>
-              <th class="bg-slate-100 px-4 py-3">Mã CTSP</th>
-              <th class="bg-slate-100 px-4 py-3">Ảnh</th>
-              <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>
-              <th class="bg-slate-100 px-4 py-3">Màu sắc</th>
-              <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
-              <th class="bg-slate-100 px-4 py-3">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3">SL tồn</th>
-              <th class="bg-slate-100 px-4 py-3">Giá bán</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+              <th class="rounded-l-2xl bg-slate-100 px-4 py-3 whitespace-nowrap">STT</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã SP</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã CTSP</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Ảnh</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Màu sắc</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Kích cỡ</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Loại giày</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">SL tồn</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="12" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!items.length">
-              <td colspan="12" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
             </tr>
             <tr
               v-for="(item, index) in items"
               :key="item.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500">
+              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500 whitespace-nowrap">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ item.maSanPham }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700">{{ item.maChiTietSanPham }}</td>
+              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ item.maSanPham }}</td>
+              <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">{{ item.maChiTietSanPham }}</td>
               <td class="px-4 py-4">
                 <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                   <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
@@ -427,11 +425,7 @@ onMounted(async () => {
                 </div>
               </td>
               <td class="px-4 py-4">
-                <p class="font-semibold text-slate-800">{{ item.tenSanPham }}</p>
-                <p class="mt-1 text-xs text-slate-400">{{ item.sku }}</p>
-              </td>
-              <td class="px-4 py-4">
-                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
                   <span
                     class="h-2.5 w-2.5 rounded-full border border-black/5"
                     :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
@@ -439,14 +433,14 @@ onMounted(async () => {
                   {{ item.mauSac }}
                 </div>
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-700">{{ item.kichCo }}</td>
-              <td class="px-4 py-4 text-slate-600">{{ item.loaiGiay || '—' }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700">
+              <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">{{ item.kichCo }}</td>
+              <td class="px-4 py-4 text-slate-600 whitespace-nowrap">{{ item.loaiGiay || '—' }}</td>
+              <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ formatCurrency(item.giaBan) }} đ</td>
+              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ formatCurrency(item.giaBan) }} đ</td>
               <td class="px-4 py-4">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="bienTheTrangThaiClass(item)">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
                   {{ bienTheTrangThaiLabel(item) }}
                 </span>
               </td>
