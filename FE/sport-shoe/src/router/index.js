@@ -32,6 +32,10 @@ import CongNgheDem from "../pages/admin/danh-muc/CongNgheDem.vue";
 import MauSac from "../pages/admin/danh-muc/MauSac.vue";
 import KichCo from "../pages/admin/danh-muc/KichCo.vue";
 import TrongLuong from "../pages/admin/danh-muc/TrongLuong.vue";
+import Login from "../pages/login/Login.vue";
+import Register from "../pages/register/Register.vue";
+import ForgotPassword from "../pages/login/ForgotPassword.vue";
+
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior(to, from, savedPosition) {
@@ -44,6 +48,21 @@ const router = createRouter({
     return { top: 0, behavior: "smooth" };
   },
   routes: [
+    {
+      path: "/login",
+      name: "login",
+      component: Login
+    },
+    {
+      path: "/register",
+      name: "register",
+      component: Register
+    },
+    {
+      path: "/forgot-password",
+      name: "forgot-password",
+      component: ForgotPassword
+    },
     {
       path: "/",
       component: TrangMacDinh,
