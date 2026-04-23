@@ -108,6 +108,11 @@ export interface ChiTietSanPhamListItem {
   hinhAnh?: string
   ngayTao: string
   ngayCapNhat?: string
+  dotGiamGiaId?: number
+  maDotGiamGia?: string
+  tenDotGiamGia?: string
+  loaiGiam?: number
+  giaTriGiam?: number
 }
 
 export interface BienThe {
@@ -125,6 +130,11 @@ export interface BienThe {
   kichCo: string
   ngayTao: string
   ngayCapNhat?: string
+  dotGiamGiaId?: number
+  maDotGiamGia?: string
+  tenDotGiamGia?: string
+  loaiGiam?: number
+  giaTriGiam?: number
 }
 
 export interface HinhAnhGiay {

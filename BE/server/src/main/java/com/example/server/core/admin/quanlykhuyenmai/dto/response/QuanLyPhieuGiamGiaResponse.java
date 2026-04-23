@@ -54,7 +54,7 @@ public class QuanLyPhieuGiamGiaResponse {
         this.giaTriToiThieu = giaTriToiThieu;
         this.giamToiDa = giamToiDa;
         this.ngayBatDau = toLocalDate(ngayBatDau);
-        this.ngayKetThuc = toLocalDate(ngayKetThuc);
+        this.ngayKetThuc = toLocalDate(ngayKetThuc );
         this.soLuong = soLuong;
         this.soLuongDaDung = soLuongDaDung;
         this.trangThai = trangThai;

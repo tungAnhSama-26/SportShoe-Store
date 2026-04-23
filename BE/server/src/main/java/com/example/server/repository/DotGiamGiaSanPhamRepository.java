@@ -6,7 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSanPham, Integer> {
@@ -52,6 +54,17 @@ public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSan
 
     @Query("SELECT d FROM DotGiamGiaSanPham d WHERE d.dotGiamGia.id = ?1")
     List<DotGiamGiaSanPham> findByDotGiamGiaId(Integer dotGiamGiaId);
+
+    @Query("""
+            SELECT d
+            FROM DotGiamGiaSanPham d
+            JOIN FETCH d.dotGiamGia dg
+            JOIN FETCH d.giayChiTiet gct
+            WHERE gct.id IN :giayChiTietIds
+              AND d.trangThai = 1
+              AND dg.kichHoat = 1
+            """)
+    List<DotGiamGiaSanPham> findActiveByGiayChiTietIdIn(@Param("giayChiTietIds") Collection<Integer> giayChiTietIds);
 
     @Query("SELECT DISTINCT d.giayChiTiet.id FROM DotGiamGiaSanPham d")
     List<Integer> findDistinctGiayChiTietIds();

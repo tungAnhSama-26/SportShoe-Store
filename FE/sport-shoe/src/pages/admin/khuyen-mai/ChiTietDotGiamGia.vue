@@ -14,7 +14,7 @@ import { layDanhSachGiay, layBienThe } from "../../../services/san-pham-api";
 import {
   ArrowLeft, Save, Tag, Search, Plus, Minus,
   ChevronRight, ChevronDown, CheckSquare, Square, Package, X, RefreshCcw,
-  CheckCircle2, CircleX
+  CheckCircle2, CircleX, ArrowUpRight
 } from "lucide-vue-next";
 import { computed } from "vue";
 
@@ -205,6 +205,15 @@ async function toggleProduct(product) {
 
 function removeSelectedVariant(variantId) {
   selectedVariants.value = selectedVariants.value.filter(v => v.id !== variantId);
+}
+
+function moChiTietSanPham(giayId, chiTietId) {
+  if (!giayId) return;
+  const query = { giayId: String(giayId) };
+  if (chiTietId) {
+    query.chiTietId = String(chiTietId);
+  }
+  router.push({ name: "admin-bien-the-san-pham", query });
 }
 
 function formatCurrency(val) {
@@ -639,7 +648,15 @@ onMounted(taiChiTiet);
                           </span>
                         </div>
                       </div>
-                      <div class="flex items-center gap-6">
+                      <div class="flex items-center gap-3">
+                        <button
+                          type="button"
+                          class="inline-flex h-8 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-600"
+                          @click.stop="moChiTietSanPham(bt.giayId, bt.id)"
+                        >
+                          <ArrowUpRight class="h-3.5 w-3.5" />
+                          CTSP
+                        </button>
                         <div class="text-right">
                           <p class="text-sm font-bold text-slate-600">{{ formatCurrency(bt.giaBan) }}</p>
                           <p class="text-xs text-slate-400">SL: {{ bt.soLuong }}</p>
@@ -725,10 +742,20 @@ onMounted(taiChiTiet);
                     </div>
                   </td>
                   <td class="px-4 py-3 text-center">
-                    <button @click="removeSelectedVariant(v.id)"
-                      class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition">
-                      <X class="h-4 w-4" />
-                    </button>
+                    <div class="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-600"
+                        @click="moChiTietSanPham(v.giayId, v.id)"
+                      >
+                        <ArrowUpRight class="h-3.5 w-3.5" />
+                        CTSP
+                      </button>
+                      <button @click="removeSelectedVariant(v.id)"
+                        class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition">
+                        <X class="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>

@@ -7,7 +7,9 @@ import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.*;
 import com.example.server.utils.GiaySpecifications;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,8 +25,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class QuanLySanPhamService {
 
+    private record ActiveDiscountInfo(
+            Integer dotGiamGiaId,
+            String maDotGiamGia,
+            String tenDotGiamGia,
+            Integer loaiGiam,
+            BigDecimal giaTriGiam,
+            BigDecimal giaSauGiam
+    ) {}
+
     private final GiayRepository giayRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final GiayThuocTinhRepository giayThuocTinhRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final ThuongHieuRepository thuongHieuRepository;
@@ -40,6 +52,7 @@ public class QuanLySanPhamService {
     public QuanLySanPhamService(
             GiayRepository giayRepository,
             GiayChiTietRepository giayChiTietRepository,
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
             GiayThuocTinhRepository giayThuocTinhRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
             ThuongHieuRepository thuongHieuRepository,
@@ -54,6 +67,7 @@ public class QuanLySanPhamService {
     ) {
         this.giayRepository = giayRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
         this.giayThuocTinhRepository = giayThuocTinhRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.thuongHieuRepository = thuongHieuRepository;
@@ -216,7 +230,8 @@ public class QuanLySanPhamService {
 
         List<Integer> chiTietIds = page.map(GiayChiTiet::getId).getContent();
         Map<Integer, String> imageMap = buildChiTietImageMap(chiTietIds);
-        return PageResponse.from(page.map(item -> toChiTietListItem(item, imageMap)));
+        Map<Integer, ActiveDiscountInfo> discountMap = buildActiveDiscountInfoMap(page.getContent());
+        return PageResponse.from(page.map(item -> toChiTietListItem(item, imageMap, discountMap.get(item.getId()))));
     }
 
     private Map<Integer, String> buildChiTietImageMap(Collection<Integer> ids) {
@@ -230,7 +245,11 @@ public class QuanLySanPhamService {
         return map;
     }
 
-    private ChiTietSanPhamListItemResponse toChiTietListItem(GiayChiTiet gct, Map<Integer, String> imageMap) {
+    private ChiTietSanPhamListItemResponse toChiTietListItem(
+            GiayChiTiet gct,
+            Map<Integer, String> imageMap,
+            ActiveDiscountInfo activeDiscount
+    ) {
         Giay giay = gct.getGiay();
         return new ChiTietSanPhamListItemResponse(
                 gct.getId(),
@@ -254,7 +273,12 @@ public class QuanLySanPhamService {
                 gct.getKichHoat(),
                 imageMap.get(gct.getId()),
                 gct.getNgayTao(),
-                gct.getNgayCapNhat()
+                gct.getNgayCapNhat(),
+                activeDiscount != null ? activeDiscount.dotGiamGiaId() : null,
+                activeDiscount != null ? activeDiscount.maDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.tenDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.loaiGiam() : null,
+                activeDiscount != null ? activeDiscount.giaTriGiam() : null
         );
     }
 
@@ -521,8 +545,11 @@ public class QuanLySanPhamService {
         if (!giayRepository.existsById(giayId)) {
             throw new ResourceNotFoundException("Giày #" + giayId + " không tồn tại");
         }
-        return giayChiTietRepository.findByGiayIdEager(giayId).stream()
-                .map(this::toBienThe).toList();
+        List<GiayChiTiet> bienThes = giayChiTietRepository.findByGiayIdEager(giayId);
+        Map<Integer, ActiveDiscountInfo> discountMap = buildActiveDiscountInfoMap(bienThes);
+        return bienThes.stream()
+                .map(item -> toBienThe(item, discountMap.get(item.getId())))
+                .toList();
     }
 
     @Transactional
@@ -554,7 +581,7 @@ public class QuanLySanPhamService {
 
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(giayId);
-        return toBienThe(saved);
+        return toBienThe(saved, null);
     }
 
     @Transactional
@@ -573,7 +600,7 @@ public class QuanLySanPhamService {
         gct.setNgayCapNhat(Instant.now());
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
-        return toBienThe(saved);
+        return toBienThe(saved, null);
     }
 
     @Transactional
@@ -593,7 +620,7 @@ public class QuanLySanPhamService {
         gct.setNgayCapNhat(Instant.now());
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
-        return toBienThe(saved);
+        return toBienThe(saved, null);
     }
 
     @Transactional
@@ -605,13 +632,18 @@ public class QuanLySanPhamService {
         updateTrangThaiTuSoLuong(giayId);
     }
 
-    private BienTheResponse toBienThe(GiayChiTiet gct) {
+    private BienTheResponse toBienThe(GiayChiTiet gct, ActiveDiscountInfo activeDiscount) {
         return new BienTheResponse(
                 gct.getId(), gct.getMaBienThe(), gct.getSku(),
                 gct.getSoLuong(), gct.getGiaGoc(), gct.getGiaBan(), gct.getKichHoat(),
                 gct.getMauSac().getId(), gct.getMauSac().getTen(), gct.getMauSac().getMaMauHex(),
                 gct.getKichCo().getId(), gct.getKichCo().getGiaTri(),
-                gct.getNgayTao(), gct.getNgayCapNhat()
+                gct.getNgayTao(), gct.getNgayCapNhat(),
+                activeDiscount != null ? activeDiscount.dotGiamGiaId() : null,
+                activeDiscount != null ? activeDiscount.maDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.tenDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.loaiGiam() : null,
+                activeDiscount != null ? activeDiscount.giaTriGiam() : null
         );
     }
 
@@ -697,6 +729,79 @@ public class QuanLySanPhamService {
             giay.setTrangThai(newStatus);
             giay.setNgayCapNhat(Instant.now());
         }
+    }
+
+    private Map<Integer, ActiveDiscountInfo> buildActiveDiscountInfoMap(Collection<GiayChiTiet> chiTiets) {
+        Map<Integer, ActiveDiscountInfo> result = new HashMap<>();
+        if (chiTiets == null || chiTiets.isEmpty()) {
+            return result;
+        }
+
+        Map<Integer, GiayChiTiet> chiTietMap = new HashMap<>();
+        for (GiayChiTiet item : chiTiets) {
+            chiTietMap.put(item.getId(), item);
+        }
+
+        LocalDate now = LocalDate.now();
+        for (DotGiamGiaSanPham link : dotGiamGiaSanPhamRepository.findActiveByGiayChiTietIdIn(chiTietMap.keySet())) {
+            GiayChiTiet gct = chiTietMap.get(link.getGiayChiTiet().getId());
+            if (gct == null) {
+                continue;
+            }
+
+            DotGiamGia dotGiamGia = link.getDotGiamGia();
+            if (!isDiscountEffective(dotGiamGia, now)) {
+                continue;
+            }
+
+            BigDecimal giaSauGiam = calculateDiscountedPrice(gct.getGiaGoc(), dotGiamGia);
+            ActiveDiscountInfo current = result.get(gct.getId());
+            if (current == null || giaSauGiam.compareTo(current.giaSauGiam()) < 0) {
+                result.put(
+                        gct.getId(),
+                        new ActiveDiscountInfo(
+                                dotGiamGia.getId(),
+                                dotGiamGia.getMa(),
+                                dotGiamGia.getTen(),
+                                dotGiamGia.getLoaiGiam(),
+                                dotGiamGia.getGiaTriGiam(),
+                                giaSauGiam
+                        )
+                );
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isDiscountEffective(DotGiamGia dotGiamGia, LocalDate now) {
+        if (dotGiamGia == null || dotGiamGia.getKichHoat() == null || dotGiamGia.getKichHoat() == 0) {
+            return false;
+        }
+        if (dotGiamGia.getNgayBatDau() != null && now.isBefore(dotGiamGia.getNgayBatDau())) {
+            return false;
+        }
+        return dotGiamGia.getNgayKetThuc() == null || !now.isAfter(dotGiamGia.getNgayKetThuc());
+    }
+
+    private BigDecimal calculateDiscountedPrice(BigDecimal giaGoc, DotGiamGia dotGiamGia) {
+        if (giaGoc == null || dotGiamGia == null || dotGiamGia.getGiaTriGiam() == null) {
+            return giaGoc;
+        }
+
+        BigDecimal giaSauGiam = giaGoc;
+        if (dotGiamGia.getLoaiGiam() != null && dotGiamGia.getLoaiGiam() == 1) {
+            BigDecimal discountAmount = giaGoc.multiply(dotGiamGia.getGiaTriGiam())
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            giaSauGiam = giaGoc.subtract(discountAmount);
+        } else if (dotGiamGia.getLoaiGiam() != null && dotGiamGia.getLoaiGiam() == 2) {
+            giaSauGiam = giaGoc.subtract(dotGiamGia.getGiaTriGiam());
+        }
+
+        if (giaSauGiam.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return giaSauGiam;
     }
 
     private String resolveChatLieuText(String rawChatLieu, ChatLieuGiay chatLieuGiay) {

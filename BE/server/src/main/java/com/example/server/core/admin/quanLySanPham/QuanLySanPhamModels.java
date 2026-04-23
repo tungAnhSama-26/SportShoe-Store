@@ -123,7 +123,12 @@ record ChiTietSanPhamListItemResponse(
         Integer kichHoat,
         String hinhAnh,
         Instant ngayTao,
-        Instant ngayCapNhat
+        Instant ngayCapNhat,
+        Integer dotGiamGiaId,
+        String maDotGiamGia,
+        String tenDotGiamGia,
+        Integer loaiGiam,
+        BigDecimal giaTriGiam
 ) {}
 
 // ─── Biến thể ────────────────────────────────────────────────────────────────
@@ -142,7 +147,12 @@ record BienTheResponse(
         Integer kichCoId,
         String kichCo,
         Instant ngayTao,
-        Instant ngayCapNhat
+        Instant ngayCapNhat,
+        Integer dotGiamGiaId,
+        String maDotGiamGia,
+        String tenDotGiamGia,
+        Integer loaiGiam,
+        BigDecimal giaTriGiam
 ) {}
 
 // ─── Hình ảnh ────────────────────────────────────────────────────────────────
