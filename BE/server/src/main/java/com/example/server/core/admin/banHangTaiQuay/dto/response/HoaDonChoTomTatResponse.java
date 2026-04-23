@@ -10,6 +10,7 @@ public record HoaDonChoTomTatResponse(
         UUID khachHangId,
         String tenKhachHang,
         String soDienThoai,
+        ThongTinGiaoHangTaiQuayResponse thongTinGiaoHang,
         Integer tongSanPham,
         BigDecimal tongTienHang,
         BigDecimal tienGiam,

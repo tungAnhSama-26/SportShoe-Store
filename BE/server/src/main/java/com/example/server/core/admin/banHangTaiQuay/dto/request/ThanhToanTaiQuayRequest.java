@@ -11,6 +11,7 @@ public record ThanhToanTaiQuayRequest(
         String tenKhachHang,
         String soDienThoai,
         String maPhieuGiamGia,
+        ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
         @NotNull(message = "Hinh thuc thanh toan khong duoc de trong")
         Integer hinhThucThanhToan,
         BigDecimal tienKhachDua,

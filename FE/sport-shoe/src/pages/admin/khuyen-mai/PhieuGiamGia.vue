@@ -467,9 +467,9 @@ onMounted(taiDanhSach);
 
       <div class="flex flex-col gap-6">
         <!-- Hàng 1: Các ô nhập liệu (4 cột) -->
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div class="space-y-2">
-            <label class="text-[13px] font-semibold text-slate-500">Tìm kiếm</label>
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Tìm kiếm</label>
             <div class="relative">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -482,7 +482,7 @@ onMounted(taiDanhSach);
           </div>
 
           <div class="space-y-2">
-            <label class="text-[13px] font-semibold text-slate-500">Ngày bắt đầu</label>
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày bắt đầu</label>
             <input 
               v-model="boLoc.tuNgay" 
               type="date" 
@@ -491,7 +491,7 @@ onMounted(taiDanhSach);
           </div>
 
           <div class="space-y-2">
-            <label class="text-[13px] font-semibold text-slate-500">Ngày kết thúc</label>
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày kết thúc</label>
             <input 
               v-model="boLoc.denNgay" 
               type="date" 
@@ -500,7 +500,7 @@ onMounted(taiDanhSach);
           </div>
 
           <div class="space-y-2">
-            <label class="text-[13px] font-semibold text-slate-500">Trạng thái</label>
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Trạng thái</label>
             <select v-model="(activeTab === 'phieu' ? boLoc : boLocKh).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
               <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
             </select>
@@ -509,13 +509,13 @@ onMounted(taiDanhSach);
 
         <!-- Hàng 2: Các nút bấm (Căn phải) -->
         <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
-          <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
+          <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 whitespace-nowrap">
             <RotateCcw class="h-4 w-4" /> Đặt lại
           </button>
-          <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
+          <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 whitespace-nowrap">
             <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
           </button>
-          <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-6 text-sm font-semibold text-white transition hover:bg-rose-600 shadow-lg shadow-rose-200">
+          <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-6 text-sm font-semibold text-white transition hover:bg-rose-600 shadow-lg shadow-rose-200 whitespace-nowrap">
             <Plus class="h-4 w-4" /> {{ activeTab === 'phieu' ? 'Thêm phiếu giảm giá' : 'Tặng phiếu khách hàng' }}
           </button>
         </div>
@@ -526,7 +526,7 @@ onMounted(taiDanhSach);
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center justify-between">
         <div class="inline-flex rounded-2xl bg-slate-100 p-1">
-          <button v-for="tab in tabs" :key="tab.key" class="rounded-2xl px-5 py-2 text-sm font-semibold transition" :class="activeTab === tab.key ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'" @click="activeTab = tab.key">
+          <button v-for="tab in tabs" :key="tab.key" class="rounded-2xl px-5 py-2 text-sm font-semibold transition whitespace-nowrap" :class="activeTab === tab.key ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'" @click="activeTab = tab.key">
             {{ tab.label }}
           </button>
         </div>
@@ -570,12 +570,12 @@ onMounted(taiDanhSach);
                 <div v-if="item.giamToiDa > 0" class="text-[12px] text-rose-500 font-medium mt-0.5" title="Giảm tối đa">Tối đa: {{ formatTien(item.giamToiDa) }}</div>
               </td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiPhieu(item.loaiPhieu)">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="mauLoaiPhieu(item.loaiPhieu)">
                   {{ loaiPhieuText(item.loaiPhieu) }}
                 </span>
               </td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauLoaiGiam(item.loai)">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="mauLoaiGiam(item.loai)">
                   {{ loaiGiamText(item.loai) }}
                 </span>
               </td>
@@ -584,7 +584,7 @@ onMounted(taiDanhSach);
               <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
               <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="mauTrangThai(item.trangThai)">
                   {{ statusText(item.trangThai) }}
                 </span>
               </td>
@@ -634,7 +634,7 @@ onMounted(taiDanhSach);
                 <span v-else class="text-slate-300 italic">Chưa dùng</span>
               </td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="mauTrangThai(item.trangThai)">
                   {{ statusText(item.trangThai) }}
                 </span>
               </td>
@@ -683,3 +683,4 @@ onMounted(taiDanhSach);
 
   </div>
 </template>
+

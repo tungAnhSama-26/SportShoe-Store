@@ -47,6 +47,7 @@ const {
   appliedCoupon,
   maPhieuChuaApDung,
   khachCanTra,
+  shippingInfo,
   paymentMethod,
   amountPaid,
   tienThua,
@@ -81,6 +82,8 @@ const {
   handleApplyCoupon,
   chonPhieuGiamGia,
   handleRemoveCoupon,
+  updateShippingInfo,
+  handleCalculateShippingFee,
   handleAmountPaidInput,
   handleCreatePendingInvoice,
   handlePayNow,
@@ -134,6 +137,7 @@ const {
     :applied-coupon="appliedCoupon"
     :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
     :khach-can-tra="khachCanTra"
+    :shipping-info="shippingInfo"
     :payment-method="paymentMethod"
     :amount-paid="amountPaid"
     :tien-thua="tienThua"
@@ -171,6 +175,8 @@ const {
     @apply-coupon="handleApplyCoupon"
     @select-coupon="chonPhieuGiamGia"
     @remove-coupon="handleRemoveCoupon"
+    @update-shipping="updateShippingInfo"
+    @calculate-shipping="handleCalculateShippingFee"
     @update:payment-method="paymentMethod = $event"
     @amount-input="handleAmountPaidInput"
     @update:payment-note="paymentNote = $event"

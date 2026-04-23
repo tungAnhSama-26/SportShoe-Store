@@ -259,56 +259,56 @@ onMounted(taiChiTiet);
         </div>
       </div>
 
-      <div class="grid gap-6 md:grid-cols-2">
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Mã phiếu <span class="text-rose-500">*</span></label>
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Mã phiếu <span class="text-rose-500">*</span></label>
           <div class="relative">
             <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
             <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors">
-              <RefreshCw class="h-4 w-4" />
+              <RefreshCcw class="h-4 w-4" />
             </button>
           </div>
           <p v-if="formErrors.ma" class="text-xs text-rose-500 mt-1">{{ formErrors.ma }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Tên phiếu <span class="text-rose-500">*</span></label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Tên phiếu <span class="text-rose-500">*</span></label>
           <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Giảm giá hè 2024" />
           <p v-if="formErrors.ten" class="text-xs text-rose-500 mt-1">{{ formErrors.ten }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Loại phiếu <span class="text-rose-500">*</span></label>
-          <div class="flex gap-6 pt-2">
-            <label class="flex items-center gap-2 cursor-pointer group">
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Loại phiếu <span class="text-rose-500">*</span></label>
+          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:gap-6">
+            <label class="flex items-center gap-2 cursor-pointer group whitespace-nowrap">
               <div class="relative flex items-center justify-center">
                 <input type="radio" v-model="form.loaiPhieu" value="1" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
                 <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
               </div>
-              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Công khai</span>
+              <span class="whitespace-nowrap text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Công khai</span>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer group">
+            <label class="flex items-center gap-2 cursor-pointer group whitespace-nowrap">
               <div class="relative flex items-center justify-center">
                 <input type="radio" v-model="form.loaiPhieu" value="2" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
                 <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
               </div>
-              <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Cá nhân</span>
+              <span class="whitespace-nowrap text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Cá nhân</span>
             </label>
           </div>
           <p v-if="formErrors.loaiPhieu" class="text-xs text-rose-500 mt-1">{{ formErrors.loaiPhieu }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Loại giảm <span class="text-rose-500">*</span></label>
-          <div class="flex gap-6 pt-2">
-            <label class="flex items-center gap-2 cursor-pointer group">
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Loại giảm <span class="text-rose-500">*</span></label>
+          <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:gap-6">
+            <label class="flex items-center gap-2 cursor-pointer group whitespace-nowrap">
               <div class="relative flex items-center justify-center">
                 <input type="radio" v-model="form.loai" value="1" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
                 <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
               </div>
               <span class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Phần trăm (%)</span>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer group">
+            <label class="flex items-center gap-2 cursor-pointer group whitespace-nowrap">
               <div class="relative flex items-center justify-center">
                 <input type="radio" v-model="form.loai" value="2" class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-rose-500 transition-all" />
                 <div class="pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-rose-500 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
@@ -318,8 +318,8 @@ onMounted(taiChiTiet);
           </div>
         </div>
 
-        <div class="space-y-2">
-           <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
+        <div class="min-w-0 space-y-2">
+           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
            <div class="relative">
              <input 
                :value="form.giaTri" 
@@ -334,54 +334,55 @@ onMounted(taiChiTiet);
            <p v-if="formErrors.giaTri" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTri }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Giá trị đơn tối thiểu (VNĐ)</label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Giá trị đơn tối thiểu (VNĐ)</label>
           <input :value="form.giaTriToiThieu" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:ring-2 focus:ring-rose-500/20" :class="formErrors.giaTriToiThieu ? 'border-rose-500 bg-rose-50 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300 focus:bg-white'" @input="handleVndInput('giaTriToiThieu', $event)" />
           <p v-if="formErrors.giaTriToiThieu" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTriToiThieu }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Giảm tối đa (VNĐ)</label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Giảm tối đa (VNĐ)</label>
           <input :value="form.giamToiDa" type="text" inputmode="numeric" class="h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:ring-2 focus:ring-rose-500/20" :class="formErrors.giamToiDa ? 'border-rose-500 bg-rose-50 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300 focus:bg-white'" @input="handleVndInput('giamToiDa', $event)" />
           <p v-if="formErrors.giamToiDa" class="text-xs text-rose-500 mt-1">{{ formErrors.giamToiDa }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Số lượng <span class="text-rose-500">*</span></label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Số lượng <span class="text-rose-500">*</span></label>
           <input v-model="form.soLuong" type="number" min="1" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           <p v-if="formErrors.soLuong" class="text-xs text-rose-500 mt-1">{{ formErrors.soLuong }}</p>
         </div>
 
-        <div v-if="!laMoi" class="order-last space-y-2 md:col-span-1">
-          <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+        <div v-if="!laMoi" class="order-last min-w-0 space-y-2 xl:col-span-1">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Trạng thái <span class="text-rose-500">*</span></label>
+          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition whitespace-nowrap focus:border-rose-300 focus:bg-white">
             <option value="1">Đang hoạt động</option>
             <option value="0">Ngưng hoạt động</option>
           </select>
           <p v-if="formErrors.trangThai" class="text-xs text-rose-500 mt-1">{{ formErrors.trangThai }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Ngày bắt đầu <span class="text-rose-500">*</span></label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày bắt đầu <span class="text-rose-500">*</span></label>
           <input v-model="form.ngayBatDau" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           <p v-if="formErrors.ngayBatDau" class="text-xs text-rose-500 mt-1">{{ formErrors.ngayBatDau }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Ngày kết thúc <span class="text-rose-500">*</span></label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày kết thúc <span class="text-rose-500">*</span></label>
           <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
           <p v-if="formErrors.ngayKetThuc" class="text-xs text-rose-500 mt-1">{{ formErrors.ngayKetThuc }}</p>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-3 pt-6 border-t border-slate-100">
-        <button @click="submitForm" :disabled="saving" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
+      <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center">
+        <button @click="submitForm" :disabled="saving" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60 whitespace-nowrap">
           <Save class="h-4 w-4" />
           {{ saving ? "Đang lưu..." : (laMoi ? "Tạo phiếu giảm giá" : "Lưu thay đổi") }}
         </button>
-        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
+        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 whitespace-nowrap">Hủy</button>
       </div>
     </section>
   </div>
 </template>
+

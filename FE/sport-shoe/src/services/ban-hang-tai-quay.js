@@ -61,6 +61,12 @@ function apDungPhieuGiamGiaTaiQuay(payload) {
     body: JSON.stringify(payload)
   });
 }
+function tinhPhiVanChuyenTaiQuay(payload) {
+  return request("/admin/ban-hang-tai-quay/phi-van-chuyen/ghn", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
 function timPhieuGiamGiaTaiQuay(params) {
   const searchParams = new URLSearchParams();
   if (params.keyword?.trim()) {
@@ -93,6 +99,7 @@ export {
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
+  tinhPhiVanChuyenTaiQuay,
   taoHoaDonCho,
   thanhToanTaiQuay,
   timKhachHangTheoSoDienThoai,

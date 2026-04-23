@@ -182,6 +182,10 @@ defineProps({
     type: Number,
     default: 0
   },
+  shippingInfo: {
+    type: Object,
+    default: () => ({})
+  },
   paymentMethod: {
     type: Number,
     default: 1
@@ -255,6 +259,8 @@ const emit = defineEmits([
   "apply-coupon",
   "select-coupon",
   "remove-coupon",
+  "update-shipping",
+  "calculate-shipping",
   "update:paymentMethod",
   "amount-input",
   "update:paymentNote",
@@ -365,6 +371,7 @@ const emit = defineEmits([
         :applied-coupon="appliedCoupon"
         :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
         :khach-can-tra="khachCanTra"
+        :shipping-info="shippingInfo"
         :ten-khach-hang-hien-thi="tenKhachHangHienThi"
         :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
         :payment-method="paymentMethod"
@@ -384,6 +391,8 @@ const emit = defineEmits([
         @apply-coupon="emit('apply-coupon')"
         @select-coupon="emit('select-coupon', $event)"
         @remove-coupon="emit('remove-coupon')"
+        @update-shipping="emit('update-shipping', $event)"
+        @calculate-shipping="emit('calculate-shipping')"
         @update:payment-method="emit('update:paymentMethod', $event)"
         @amount-input="emit('amount-input', $event)"
         @update:payment-note="emit('update:paymentNote', $event)"

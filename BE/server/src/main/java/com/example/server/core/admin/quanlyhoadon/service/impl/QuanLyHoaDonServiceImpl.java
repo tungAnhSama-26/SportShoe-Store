@@ -57,10 +57,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private static final int TRANG_THAI_CAN_HOAN_TIEN = 8;
     
     private static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
-    private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
-    private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
-    private static final int TRANG_THAI_THANH_TOAN_THANH_CONG = 1;
-    private static final int TRANG_THAI_HINH_ANH_HOAT_DONG = 1;
+private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
+private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
+private static final int TRANG_THAI_THANH_TOAN_THANH_CONG = 1;
+private static final int TRANG_THAI_HINH_ANH_HOAT_DONG = 1;
+private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
@@ -138,10 +139,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveTenNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId())),
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                        mapLoaiDon(hoaDon.getKenhBan()),
-                        resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
-                ))
-                .toList();
+                    mapLoaiDon(hoaDon),
+                    resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
+            ))
+            .toList();
     }
 
     @Override
@@ -294,9 +295,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     public TinhPhiVanChuyenGhnResponse tinhVaCapNhatPhiVanChuyenGhn(Integer id, TinhPhiVanChuyenGhnRequest request) {
         HoaDon hoaDon = findHoaDon(id);
         ensureHoaDonEditable(hoaDon);
-        if (isTaiQuay(hoaDon)) {
-            throw new BusinessException("Hoa don tai quay khong can tinh phi van chuyen GHN");
-        }
+    if (isTaiQuay(hoaDon) && !isDonGiaoHang(hoaDon)) {
+        throw new BusinessException("Hoa don tai quay khong can tinh phi van chuyen GHN");
+    }
 
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
         if (items.isEmpty()) {
@@ -360,8 +361,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 tenNhanVien,
                 hoaDon.getTongTienThanhToan(),
                 hoaDon.getNgayTao(),
-                mapLoaiDon(hoaDon.getKenhBan()),
-                resolveTrangThaiHoaDon(hoaDon, vanChuyen),
+            mapLoaiDon(hoaDon),
+            resolveTrangThaiHoaDon(hoaDon, vanChuyen),
                 safeValue(hoaDon.getSdtNguoiNhan()),
                 resolveEmail(hoaDon.getKhachHang()),
                 safeValue(hoaDon.getDiaChiGiaoHang()),
@@ -503,7 +504,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         if (loaiDon == null || loaiDon.isBlank()) {
             return true;
         }
-        return mapLoaiDon(hoaDon.getKenhBan()).equalsIgnoreCase(loaiDon.trim());
+    return mapLoaiDon(hoaDon).equalsIgnoreCase(loaiDon.trim());
     }
 
     private Integer mapTrangThaiFilterToDb(String trangThai) {
@@ -524,17 +525,22 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         };
     }
 
-    private String mapLoaiDon(Integer kenhBan) {
-        return isTaiQuay(kenhBan) ? "Tại cửa hàng" : "Online";
-    }
+private String mapLoaiDon(HoaDon hoaDon) {
+    return isTaiQuay(hoaDon) && !isDonGiaoHang(hoaDon) ? "Tại cửa hàng" : "Online";
+}
 
-    private boolean isTaiQuay(HoaDon hoaDon) {
-        return isTaiQuay(hoaDon.getKenhBan());
-    }
+private boolean isTaiQuay(HoaDon hoaDon) {
+    return isTaiQuay(hoaDon.getKenhBan());
+}
 
-    private boolean isTaiQuay(Integer kenhBan) {
-        return kenhBan != null && kenhBan == KENH_BAN_TAI_QUAY;
-    }
+private boolean isTaiQuay(Integer kenhBan) {
+    return kenhBan != null && kenhBan == KENH_BAN_TAI_QUAY;
+}
+
+private boolean isDonGiaoHang(HoaDon hoaDon) {
+    String diaChi = safeValue(hoaDon.getDiaChiGiaoHang());
+    return !diaChi.isBlank() && !DIA_CHI_TAI_QUAY.equalsIgnoreCase(diaChi.trim());
+}
 
     private String resolveTenKhachHang(HoaDon hoaDon) {
         if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getHoTen() != null && !hoaDon.getKhachHang().getHoTen().isBlank()) {

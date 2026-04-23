@@ -92,6 +92,26 @@ export const thuongHieuApi = {
   toggleStatus: (id: number, trangThai: number) =>
     req<void>(`/thuong-hieu/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
   delete: (id: number) => req<void>(`/thuong-hieu/${id}`, { method: 'DELETE' }),
+  uploadFile: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      body: formData
+    })
+
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(payload.message || 'Tải ảnh thương hiệu thất bại')
+    }
+
+    if (!payload.data?.url) {
+      throw new Error('Không nhận được URL ảnh sau khi upload')
+    }
+
+    return payload.data.url as string
+  }
 }
 
 export const deGiayApi = {
