@@ -4,6 +4,7 @@ import {
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
+  tinhPhiVanChuyenTaiQuay,
   thanhToanTaiQuay,
   taoHoaDonCho,
   timKhachHangTheoSoDienThoai,
@@ -51,6 +52,22 @@ function useBanHangTaiQuay() {
   const paymentMethod = ref(1);
   const amountPaid = ref("");
   const paymentNote = ref("");
+  const deliveryEnabled = ref(false);
+  const deliveryRecipientName = ref("");
+  const deliveryRecipientPhone = ref("");
+  const deliveryAddress = ref("");
+  const deliveryCarrier = ref("GHN");
+  const deliveryFee = ref(0);
+  const deliveryResolvedAddress = ref("");
+  const deliveryCalculated = ref(false);
+  const calculatingDeliveryFee = ref(false);
+  const deliveryConfig = ref({
+    serviceTypeId: 2,
+    length: 30,
+    width: 20,
+    height: 12,
+    weight: 500
+  });
 
   let customerTimer;
   let productTimer;
@@ -95,7 +112,41 @@ function useBanHangTaiQuay() {
   const daChonKhach = computed(
     () => Boolean(selectedCustomer.value) || Boolean(activePendingInvoice.value) || isGuestCustomer.value
   );
-  const khachCanTra = computed(() => appliedCoupon.value?.tongTienSauGiam ?? tongTien.value);
+  const tenNguoiNhanGiaoHangHienThi = computed(() => {
+    if (deliveryRecipientName.value.trim()) {
+      return deliveryRecipientName.value.trim();
+    }
+    if (selectedCustomer.value?.hoTen) {
+      return selectedCustomer.value.hoTen;
+    }
+    return activePendingInvoice.value?.thongTinGiaoHang?.tenNguoiNhan || "";
+  });
+  const soDienThoaiNguoiNhanGiaoHangHienThi = computed(() => {
+    if (deliveryRecipientPhone.value.trim()) {
+      return deliveryRecipientPhone.value.trim();
+    }
+    if (selectedCustomer.value?.sdt) {
+      return selectedCustomer.value.sdt;
+    }
+    return activePendingInvoice.value?.thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
+  });
+  const phiVanChuyenHienThi = computed(() => deliveryEnabled.value ? deliveryFee.value : 0);
+  const khachCanTra = computed(() => tongTienSauGiamHienThi.value + phiVanChuyenHienThi.value);
+  const coTheTinhPhiVanChuyen = computed(
+    () => deliveryEnabled.value &&
+      cartItems.value.length > 0 &&
+      Boolean(deliveryAddress.value.trim()) &&
+      !calculatingDeliveryFee.value
+  );
+  const coThongTinGiaoHangHopLe = computed(
+    () => !deliveryEnabled.value ||
+      (
+        Boolean(tenNguoiNhanGiaoHangHienThi.value) &&
+        Boolean(soDienThoaiNguoiNhanGiaoHangHienThi.value) &&
+        Boolean(deliveryAddress.value.trim()) &&
+        deliveryCalculated.value
+      )
+  );
   const coTheTimPhieu = computed(() => cartItems.value.length > 0 && tongTien.value > 0);
   const phieuGiamGiaHopLeDangNhap = computed(() => {
     const keyword = couponCode.value.trim().toLowerCase();
@@ -145,10 +196,11 @@ function useBanHangTaiQuay() {
     () => cartItems.value.length > 0 &&
       !savingPendingInvoice.value &&
       !maPhieuChuaApDung.value &&
-      !pendingInvoiceLimitReached.value
+      !pendingInvoiceLimitReached.value &&
+      coThongTinGiaoHangHopLe.value
   );
   const canPay = computed(() => {
-    if (!cartItems.value.length || payingInvoice.value || maPhieuChuaApDung.value) {
+    if (!cartItems.value.length || payingInvoice.value || maPhieuChuaApDung.value || !coThongTinGiaoHangHopLe.value) {
       return false;
     }
     if (paymentMethod.value === 1) {
@@ -183,6 +235,23 @@ function useBanHangTaiQuay() {
 
     return Array.from(grouped.values());
   });
+  const shippingInfo = computed(() => ({
+    giaoHang: deliveryEnabled.value,
+    tenNguoiNhan: deliveryRecipientName.value,
+    soDienThoaiNguoiNhan: deliveryRecipientPhone.value,
+    diaChiGiaoHang: deliveryAddress.value,
+    donViVanChuyen: deliveryCarrier.value,
+    phiVanChuyen: deliveryFee.value,
+    diaChiDaDo: deliveryResolvedAddress.value,
+    daTinhPhi: deliveryCalculated.value,
+    dangTinhPhi: calculatingDeliveryFee.value,
+    coTheTinhPhi: coTheTinhPhiVanChuyen.value,
+    serviceTypeId: deliveryConfig.value.serviceTypeId,
+    length: deliveryConfig.value.length,
+    width: deliveryConfig.value.width,
+    height: deliveryConfig.value.height,
+    weight: deliveryConfig.value.weight
+  }));
 
   function dinhDangTien(value) {
     return new Intl.NumberFormat("vi-VN", {
@@ -212,11 +281,42 @@ function useBanHangTaiQuay() {
     successMessage.value = "";
   }
 
+  function markShippingFeeDirty() {
+    if (!deliveryEnabled.value) {
+      return;
+    }
+    deliveryFee.value = 0;
+    deliveryResolvedAddress.value = "";
+    deliveryCalculated.value = false;
+  }
+
   function taoDanhSachSanPhamThanhToan() {
     return cartItems.value.map((item) => ({
       chiTietId: item.chiTietId,
       soLuong: item.soLuong
     }));
+  }
+
+  function buildShippingPayload() {
+    if (!deliveryEnabled.value) {
+      return {
+        giaoHang: false,
+        tenNguoiNhan: null,
+        soDienThoaiNguoiNhan: null,
+        diaChiGiaoHang: null,
+        phiVanChuyen: 0,
+        donViVanChuyen: null
+      };
+    }
+
+    return {
+      giaoHang: true,
+      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
+      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
+      diaChiGiaoHang: deliveryAddress.value.trim(),
+      phiVanChuyen: deliveryFee.value,
+      donViVanChuyen: deliveryCarrier.value || "GHN"
+    };
   }
 
   function layKhachHangIdHienTai() {
@@ -338,6 +438,22 @@ function useBanHangTaiQuay() {
     paymentMethod.value = 1;
     amountPaid.value = "";
     paymentNote.value = "";
+    deliveryEnabled.value = false;
+    deliveryRecipientName.value = "";
+    deliveryRecipientPhone.value = "";
+    deliveryAddress.value = "";
+    deliveryCarrier.value = "GHN";
+    deliveryFee.value = 0;
+    deliveryResolvedAddress.value = "";
+    deliveryCalculated.value = false;
+    calculatingDeliveryFee.value = false;
+    deliveryConfig.value = {
+      serviceTypeId: 2,
+      length: 30,
+      width: 20,
+      height: 12,
+      weight: 500
+    };
     showCustomerDropdown.value = false;
     showProductDropdown.value = false;
     showCouponDropdown.value = false;
@@ -562,6 +678,12 @@ function useBanHangTaiQuay() {
   function chonKhachHang(customer) {
     selectedCustomer.value = customer;
     customerKeyword.value = customer.hoTen;
+    if (!deliveryRecipientName.value.trim()) {
+      deliveryRecipientName.value = customer.hoTen || "";
+    }
+    if (!deliveryRecipientPhone.value.trim()) {
+      deliveryRecipientPhone.value = customer.sdt || "";
+    }
     customerResults.value = [];
     showCustomerDropdown.value = false;
     danhDauCanApDungLaiPhieu();
@@ -580,6 +702,10 @@ function useBanHangTaiQuay() {
   function chonKhachVangLai() {
     selectedCustomer.value = null;
     customerKeyword.value = GUEST_LABEL;
+    if (!activePendingInvoice.value) {
+      deliveryRecipientName.value = "";
+      deliveryRecipientPhone.value = "";
+    }
     customerResults.value = [];
     showCustomerDropdown.value = false;
     danhDauCanApDungLaiPhieu();
@@ -646,6 +772,7 @@ function useBanHangTaiQuay() {
     selectedQuantity.value = 1;
     showProductDropdown.value = false;
     danhDauCanApDungLaiPhieu();
+    markShippingFeeDirty();
     capNhatTienKhachThanhToan();
     clearFeedback();
   }
@@ -698,6 +825,7 @@ function useBanHangTaiQuay() {
       return;
     }
     danhDauCanApDungLaiPhieu();
+    markShippingFeeDirty();
     capNhatTienKhachThanhToan();
   }
 
@@ -706,6 +834,7 @@ function useBanHangTaiQuay() {
       .map((item) => item.chiTietId === chiTietId ? { ...item, soLuong: item.soLuong - 1 } : item)
       .filter((item) => item.soLuong > 0);
     danhDauCanApDungLaiPhieu();
+    markShippingFeeDirty();
     capNhatTienKhachThanhToan();
   }
 
@@ -713,6 +842,7 @@ function useBanHangTaiQuay() {
     const thongTinTheoChiTietId = new Map(
       productVariantResults.value.map((product) => [product.chiTietId, product])
     );
+    const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
 
     customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || GUEST_LABEL;
     selectedCustomer.value = invoice.khachHangId
@@ -738,6 +868,21 @@ function useBanHangTaiQuay() {
         soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
       };
     });
+    deliveryEnabled.value = Boolean(thongTinGiaoHang?.giaoHang);
+    deliveryRecipientName.value = thongTinGiaoHang?.tenNguoiNhan || "";
+    deliveryRecipientPhone.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
+    deliveryAddress.value = thongTinGiaoHang?.diaChiGiaoHang || "";
+    deliveryCarrier.value = thongTinGiaoHang?.donViVanChuyen || "GHN";
+    deliveryFee.value = Number(thongTinGiaoHang?.phiVanChuyen || 0);
+    deliveryResolvedAddress.value = "";
+    deliveryCalculated.value = deliveryEnabled.value;
+    deliveryConfig.value = {
+      serviceTypeId: 2,
+      length: 30,
+      width: 20,
+      height: 12,
+      weight: 500
+    };
     couponCode.value = invoice.phieuGiamGia?.ma ?? "";
     appliedCoupon.value = invoice.phieuGiamGia
       ? {
@@ -750,7 +895,7 @@ function useBanHangTaiQuay() {
         giamToiDa: null,
         soTienGiam: invoice.tienGiam || invoice.phieuGiamGia.soTienGiam,
         tongTienHang: invoice.tongTienHang || 0,
-        tongTienSauGiam: invoice.tongTien || 0
+        tongTienSauGiam: Math.max((invoice.tongTienHang || 0) - (invoice.tienGiam || 0), 0)
       }
       : null;
     couponResults.value = [];
@@ -827,6 +972,102 @@ function useBanHangTaiQuay() {
     clearFeedback();
   }
 
+  function updateShippingInfo(patch) {
+    const canTinhLai = [
+      "diaChiGiaoHang",
+      "serviceTypeId",
+      "length",
+      "width",
+      "height",
+      "weight"
+    ].some((key) => Object.prototype.hasOwnProperty.call(patch, key));
+
+    if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
+      deliveryEnabled.value = Boolean(patch.giaoHang);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "tenNguoiNhan")) {
+      deliveryRecipientName.value = patch.tenNguoiNhan ?? "";
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "soDienThoaiNguoiNhan")) {
+      deliveryRecipientPhone.value = patch.soDienThoaiNguoiNhan ?? "";
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
+      deliveryAddress.value = patch.diaChiGiaoHang ?? "";
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "serviceTypeId")) {
+      deliveryConfig.value = {
+        ...deliveryConfig.value,
+        serviceTypeId: Number(patch.serviceTypeId) || 2
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "length")) {
+      deliveryConfig.value = {
+        ...deliveryConfig.value,
+        length: Number(patch.length) || 30
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "width")) {
+      deliveryConfig.value = {
+        ...deliveryConfig.value,
+        width: Number(patch.width) || 20
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "height")) {
+      deliveryConfig.value = {
+        ...deliveryConfig.value,
+        height: Number(patch.height) || 12
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "weight")) {
+      deliveryConfig.value = {
+        ...deliveryConfig.value,
+        weight: Number(patch.weight) || 500
+      };
+    }
+
+    if (canTinhLai) {
+      markShippingFeeDirty();
+    }
+    clearFeedback();
+  }
+
+  async function handleCalculateShippingFee() {
+    if (!coTheTinhPhiVanChuyen.value) {
+      return;
+    }
+
+    calculatingDeliveryFee.value = true;
+    pageError.value = "";
+    successMessage.value = "";
+    try {
+      const response = await tinhPhiVanChuyenTaiQuay({
+        toAddress: deliveryAddress.value.trim(),
+        serviceTypeId: Number(deliveryConfig.value.serviceTypeId) || 2,
+        length: Number(deliveryConfig.value.length) || 30,
+        width: Number(deliveryConfig.value.width) || 20,
+        height: Number(deliveryConfig.value.height) || 12,
+        weight: Number(deliveryConfig.value.weight) || 500,
+        insuranceValue: Math.min(Math.round(tongTien.value || 0), 5000000),
+        items: taoDanhSachSanPhamThanhToan()
+      });
+      deliveryFee.value = Number(response?.phiVanChuyen ?? response?.total ?? 0);
+      deliveryResolvedAddress.value = [
+        response?.matchedWardName,
+        response?.matchedDistrictName,
+        response?.matchedProvinceName
+      ].filter(Boolean).join(", ");
+      deliveryCalculated.value = true;
+      successMessage.value = `Da tinh phi giao hang ${dinhDangTien(deliveryFee.value)}`;
+    } catch (error) {
+      deliveryFee.value = 0;
+      deliveryResolvedAddress.value = "";
+      deliveryCalculated.value = false;
+      pageError.value = error instanceof Error ? error.message : "Khong the tinh phi giao hang";
+    } finally {
+      calculatingDeliveryFee.value = false;
+    }
+  }
+
   async function handleCreatePendingInvoice() {
     if (pendingInvoiceLimitReached.value) {
       pageError.value = `Chỉ được tạo tối đa ${MAX_PENDING_INVOICES} hóa đơn chờ.`;
@@ -844,6 +1085,7 @@ function useBanHangTaiQuay() {
         tenKhachHang: tenKhachHangHienThi.value,
         soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
         maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
+        thongTinGiaoHang: buildShippingPayload(),
         items: taoDanhSachSanPhamThanhToan()
       });
       successMessage.value = `Đã tạo hóa đơn chờ ${createdInvoice.ma}`;
@@ -885,6 +1127,7 @@ function useBanHangTaiQuay() {
         tenKhachHang: tenKhachHangHienThi.value,
         soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
         maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
+        thongTinGiaoHang: buildShippingPayload(),
         hinhThucThanhToan: paymentMethod.value,
         tienKhachDua: paymentMethod.value === 1 ? tienKhachThanhToan.value : khachCanTra.value,
         ghiChu: paymentNote.value,
@@ -1020,6 +1263,7 @@ function useBanHangTaiQuay() {
     appliedCoupon,
     maPhieuChuaApDung,
     khachCanTra,
+    shippingInfo,
     paymentMethod,
     amountPaid,
     tienThua,
@@ -1054,6 +1298,8 @@ function useBanHangTaiQuay() {
     handleApplyCoupon,
     chonPhieuGiamGia,
     handleRemoveCoupon,
+    updateShippingInfo,
+    handleCalculateShippingFee,
     handleAmountPaidInput,
     handleCreatePendingInvoice,
     handlePayNow,

@@ -9,6 +9,7 @@ public record TaoHoaDonChoRequest(
         String tenKhachHang,
         String soDienThoai,
         String maPhieuGiamGia,
+        ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
         @NotEmpty(message = "Danh sach san pham khong duoc de trong")
         List<TaoHoaDonChoItemRequest> items
 ) {

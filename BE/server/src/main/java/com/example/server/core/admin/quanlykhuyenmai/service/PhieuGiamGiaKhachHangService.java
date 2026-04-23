@@ -55,8 +55,8 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setPhieuGiamGia(phieuGiamGia);
         phieuGiamGiaKhachHang.setKhachHang(khachHang);
         phieuGiamGiaKhachHang.setNgaySuDung(toInstant(request.getNgaySuDung()));
-        phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai());
-        phieuGiamGiaKhachHang.setNgayTao(toInstant(request.getNgayTao()));
+        phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai() == null ? 1 : request.getTrangThai());
+        phieuGiamGiaKhachHang.setNgayTao(resolveNgayTao(request.getNgayTao()));
 
         return phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
     }
@@ -73,10 +73,18 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setPhieuGiamGia(phieuGiamGia);
         phieuGiamGiaKhachHang.setKhachHang(khachHang);
         phieuGiamGiaKhachHang.setNgaySuDung(toInstant(request.getNgaySuDung()));
-        phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai());
-        phieuGiamGiaKhachHang.setNgayTao(toInstant(request.getNgayTao()));
+        phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai() == null ? phieuGiamGiaKhachHang.getTrangThai() : request.getTrangThai());
+        if (request.getNgayTao() != null) {
+            phieuGiamGiaKhachHang.setNgayTao(toInstant(request.getNgayTao()));
+        } else if (phieuGiamGiaKhachHang.getNgayTao() == null) {
+            phieuGiamGiaKhachHang.setNgayTao(Instant.now());
+        }
 
         return phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+    }
+
+    private Instant resolveNgayTao(LocalDate value) {
+        return value == null ? Instant.now() : toInstant(value);
     }
 
     private Instant toInstant(LocalDate value) {

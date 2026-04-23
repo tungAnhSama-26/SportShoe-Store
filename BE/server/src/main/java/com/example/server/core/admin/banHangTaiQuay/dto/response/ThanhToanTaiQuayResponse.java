@@ -16,6 +16,7 @@ public record ThanhToanTaiQuayResponse(
         Integer hinhThucThanhToan,
         String tenKhachHang,
         String soDienThoai,
+        ThongTinGiaoHangTaiQuayResponse thongTinGiaoHang,
         ThongTinPhieuGiamGiaHoaDonResponse phieuGiamGia,
         Instant ngayThanhToan
 ) {

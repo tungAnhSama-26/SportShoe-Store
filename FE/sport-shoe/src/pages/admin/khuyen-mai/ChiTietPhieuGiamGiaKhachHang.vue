@@ -140,20 +140,42 @@ async function submitForm() {
     if (laMoi) {
       let successCount = 0;
       let failCount = 0;
+      let firstErrorMessage = "";
       for (const email of dsEmailChon.value) {
         try {
           await createPhieuGiamGiaKhachHang({ 
             phieuGiamGiaId: Number(form.phieuGiamGiaId), 
             email: email,
             ngaySuDung: form.ngaySuDung || null,
-            trangThai: Number(form.trangThai)
+            trangThai: Number(form.trangThai),
+            ngayTao: getToday()
           });
           successCount++;
         } catch (e) {
           failCount++;
+          if (!firstErrorMessage) {
+            firstErrorMessage = e?.message || "Khong the tang phieu cho khach hang da chon";
+          }
         }
       }
-      hienThiThongBao("success", "Kết quả tặng phiếu", `Thành công: ${successCount}, Thất bại: ${failCount}`);
+      if (successCount > 0 && failCount === 0) {
+        hienThiThongBao("success", "Tặng phiếu thành công", `Đã tặng cho ${successCount} khách hàng`);
+        setTimeout(() => {
+          router.push({ name: "admin-phieu-giam-gia", query: { tab: "khach-hang" } });
+        }, 1500);
+        return;
+      }
+
+      if (successCount > 0) {
+        hienThiThongBao("warning", "Tặng phiếu hoàn tất một phần", `Thành công: ${successCount}, Thất bại: ${failCount}`);
+        setTimeout(() => {
+          router.push({ name: "admin-phieu-giam-gia", query: { tab: "khach-hang" } });
+        }, 1500);
+        return;
+      }
+
+      hienThiThongBao("error", "Tặng phiếu thất bại", firstErrorMessage || `Thất bại: ${failCount}`);
+      return;
     } else {
       const payload = {
         phieuGiamGiaId: Number(form.phieuGiamGiaId),
@@ -163,10 +185,11 @@ async function submitForm() {
       };
       await updatePhieuGiamGiaKhachHang(id, payload);
       hienThiThongBao("success", "Cập nhật thành công");
+      setTimeout(() => {
+        router.push({ name: "admin-phieu-giam-gia", query: { tab: "khach-hang" } });
+      }, 1500);
+      return;
     }
-    setTimeout(() => {
-      router.push({ name: "admin-phieu-giam-gia", query: { tab: 'khach-hang' } });
-    }, 1500);
   } catch (error) {
     hienThiThongBao("error", "Lỗi dữ liệu", error.message || "Lưu thất bại");
   } finally {
@@ -274,9 +297,9 @@ onMounted(taiDuLieu);
         </div>
       </div>
 
-      <div class="grid gap-6 md:grid-cols-2">
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
           <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">-- Chọn một phiếu --</option>
             <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
@@ -285,9 +308,9 @@ onMounted(taiDuLieu);
         </div>
 
         <div class="space-y-3 md:col-span-2">
-          <label class="text-[13px] font-semibold text-slate-500 flex justify-between items-center">
+          <label class="flex flex-col gap-2 text-[13px] font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <span>Chọn khách hàng mục tiêu <span class="text-rose-500">*</span></span>
-            <span v-if="laMoi" class="text-[12px] text-blue-500 cursor-pointer hover:underline" @click="chonTatCa">
+            <span v-if="laMoi" class="text-[12px] text-blue-500 cursor-pointer hover:underline whitespace-nowrap" @click="chonTatCa">
               {{ dsEmailChon.length === danhSachKh.length && danhSachKh.length > 0 ? 'Bỏ chọn tất cả' : 'Chọn tất cả bản ghi hiện tại' }}
             </span>
           </label>
@@ -317,7 +340,7 @@ onMounted(taiDuLieu);
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="font-bold text-sm truncate">{{ kh.hoTen }}</div>
-                  <div class="text-[12px] opacity-70">SĐT: {{ kh.sdt || 'N/A' }} | Email: {{ kh.email }}</div>
+                  <div class="truncate text-[12px] opacity-70">SĐT: {{ kh.sdt || 'N/A' }} | Email: {{ kh.email }}</div>
                 </div>
               </div>
               <div v-if="!danhSachKh.length" class="py-10 text-center text-sm text-slate-400">Không tìm thấy khách hàng nào.</div>
@@ -332,13 +355,13 @@ onMounted(taiDuLieu);
           <p v-if="formErrors.email" class="text-xs text-rose-500 mt-1">{{ formErrors.email }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Ngày sử dụng</label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày sử dụng</label>
           <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
         </div>
 
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
+        <div class="min-w-0 space-y-2">
+          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Trạng thái <span class="text-rose-500">*</span></label>
           <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>
@@ -347,13 +370,14 @@ onMounted(taiDuLieu);
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-3 pt-6 border-t border-slate-100">
-        <button @click="submitForm" :disabled="saving" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
+      <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center">
+        <button @click="submitForm" :disabled="saving" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60 whitespace-nowrap">
           <Save class="h-4 w-4" />
           {{ saving ? "Đang lưu..." : "Lưu dữ liệu" }}
         </button>
-        <button @click="router.push({ name: 'admin-phieu-giam-gia', query: { tab: 'khach-hang' } })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
+        <button @click="router.push({ name: 'admin-phieu-giam-gia', query: { tab: 'khach-hang' } })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 whitespace-nowrap">Hủy</button>
       </div>
     </section>
   </div>
 </template>
+
