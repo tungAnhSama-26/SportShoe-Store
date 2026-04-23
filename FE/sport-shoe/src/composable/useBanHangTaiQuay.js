@@ -167,13 +167,15 @@ function useBanHangTaiQuay() {
         grouped.set(key, {
           ...product,
           soLuongTon: 0,
-          tongBienThe: 0
+          tongBienThe: 0,
+          coGiamGia: false
         });
       }
 
       const groupedProduct = grouped.get(key);
       groupedProduct.soLuongTon += soLuongKhaDung;
       groupedProduct.tongBienThe += 1;
+      groupedProduct.coGiamGia = groupedProduct.coGiamGia || Number(product.giaBan || 0) < Number(product.giaGoc || 0);
       if (!groupedProduct.hinhAnh && product.hinhAnh) {
         groupedProduct.hinhAnh = product.hinhAnh;
       }

@@ -36,6 +36,10 @@ const emit = defineEmits([
   "blur-product",
   "open-product"
 ]);
+
+function isDiscounted(product) {
+  return Boolean(product?.coGiamGia) || Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
+}
 </script>
 
 <template>
@@ -87,7 +91,12 @@ const emit = defineEmits([
 
           <div class="text-right">
             <p class="text-sm font-semibold text-red-500">{{ dinhDangTien(product.giaBan) }}</p>
-            <p class="mt-1 text-xs text-slate-500">Tồn: {{ product.soLuongTon }}</p>
+            <p v-if="isDiscounted(product)" class="mt-1">
+              <span class="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
+                Giảm giá
+              </span>
+            </p>
+            <p class="mt-1 text-xs text-slate-500">Tồn kho: {{ product.soLuongTon }}</p>
           </div>
         </button>
       </div>
@@ -129,7 +138,15 @@ const emit = defineEmits([
               <p class="mt-1 truncate text-xs text-slate-500">
                 Mã: {{ product.maSanPham }} | {{ product.tongBienThe || 1 }} biến thể
               </p>
-              <p class="mt-2 text-sm font-semibold text-slate-700">Tồn khả dụng: {{ product.soLuongTon }}</p>
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <p class="text-sm font-semibold text-slate-700">Tồn kho: {{ product.soLuongTon }}</p>
+                <span
+                  v-if="isDiscounted(product)"
+                  class="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600"
+                >
+                  Giảm giá
+                </span>
+              </div>
             </div>
           </div>
 

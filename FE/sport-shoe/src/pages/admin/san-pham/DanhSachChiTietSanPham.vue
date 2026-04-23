@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, TriangleAlert, X } from 'lucide-vue-next'
+import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
@@ -46,6 +46,12 @@ const selectedGiayId = computed(() => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 })
 
+const focusedChiTietId = computed(() => {
+  const raw = Array.isArray(route.query.chiTietId) ? route.query.chiTietId[0] : route.query.chiTietId
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+})
+
 const toastTitle = computed(() => {
   if (toast.type === 'error') return 'Có lỗi xảy ra'
   if (toast.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
@@ -73,6 +79,36 @@ function closeToast() {
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('vi-VN')
+}
+
+function isDiscounted(item) {
+  return Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)
+}
+
+function formatDiscountPercent(item) {
+  const giaGoc = Number(item?.giaGoc || 0)
+  const giaBan = Number(item?.giaBan || 0)
+  if (giaGoc <= 0 || giaBan >= giaGoc) return '—'
+
+  const percent = ((giaGoc - giaBan) / giaGoc) * 100
+  const rounded = percent % 1 === 0 ? percent.toFixed(0) : percent.toFixed(1)
+  return `${rounded}%`
+}
+
+function discountTitle(item) {
+  return item?.maDotGiamGia || item?.tenDotGiamGia || 'Xem đợt giảm giá'
+}
+
+function isFocusedVariant(item) {
+  return focusedChiTietId.value != null && Number(item?.id) === focusedChiTietId.value
+}
+
+function openDiscountDetail(item) {
+  if (!item?.dotGiamGiaId) return
+  router.push({
+    name: 'admin-dot-giam-gia-chi-tiet',
+    params: { id: item.dotGiamGiaId }
+  })
 }
 
 function bienTheTrangThaiLabel(item) {
@@ -220,7 +256,7 @@ async function xuatExcel() {
         { label: 'Loại giày', key: 'loaiGiay' },
         { label: 'Màu sắc', key: 'mauSac' },
         { label: 'Kích cỡ', key: 'kichCo' },
-        { label: 'SL tồn', value: (row) => row.soLuong || 0 },
+        { label: 'Tồn kho', value: (row) => row.soLuong || 0 },
         { label: 'Giá bán', value: (row) => formatCurrency(row.giaBan) },
         { label: 'Trạng thái', value: (row) => bienTheTrangThaiLabel(row) }
       ],
@@ -395,23 +431,27 @@ onMounted(async () => {
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Màu sắc</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Kích cỡ</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">SL tồn</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Tồn kho</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giảm %</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="12" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!items.length">
-              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
+              <td colspan="12" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
             </tr>
             <tr
               v-for="(item, index) in items"
               :key="item.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
+              :class="[
+                'text-slate-700 shadow-sm',
+                isFocusedVariant(item) ? 'bg-rose-50 ring-2 ring-rose-200' : 'bg-white ring-1 ring-slate-100'
+              ]"
             >
               <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500 whitespace-nowrap">
                 {{ currentPage * pageSize + index + 1 }}
@@ -438,7 +478,27 @@ onMounted(async () => {
               <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ formatCurrency(item.giaBan) }} đ</td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <p class="font-semibold" :class="isDiscounted(item) ? 'text-rose-600' : 'text-slate-800'">
+                  {{ formatCurrency(item.giaBan) }} đ
+                </p>
+                <p v-if="isDiscounted(item)" class="mt-1 text-xs text-slate-400 line-through">
+                  {{ formatCurrency(item.giaGoc) }} đ
+                </p>
+              </td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <button
+                  v-if="item.dotGiamGiaId"
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                  :title="discountTitle(item)"
+                  @click="openDiscountDetail(item)"
+                >
+                  <Tag class="h-3 w-3" />
+                  {{ formatDiscountPercent(item) }}
+                </button>
+                <span v-else class="text-xs text-slate-400">—</span>
+              </td>
               <td class="px-4 py-4">
                 <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
                   {{ bienTheTrangThaiLabel(item) }}
@@ -574,3 +634,4 @@ onMounted(async () => {
   transform: translateY(-8px);
 }
 </style>
+

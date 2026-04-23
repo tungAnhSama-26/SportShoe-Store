@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ImageOff, Images, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../common/AdminQuickStatusAction.vue'
 
@@ -91,6 +91,15 @@ function quickToggleConfirmMessage(item) {
   const action = Number(item.kichHoat) === 1 ? 'ngừng bán' : 'đang bán'
   const target = item.maBienThe || item.sku || `#${item.id}`
   return `Bạn có muốn chuyển CTSP "${target}" sang ${action} không?`
+}
+
+function formatDiscountPercent(item) {
+  const giaGoc = Number(item?.giaGoc || 0)
+  const giaBan = Number(item?.giaBan || 0)
+  if (giaGoc <= 0 || giaBan >= giaGoc) return '-'
+
+  const percent = ((giaGoc - giaBan) / giaGoc) * 100
+  return percent % 1 === 0 ? `${percent.toFixed(0)}%` : `${percent.toFixed(1)}%`
 }
 </script>
 
@@ -208,12 +217,13 @@ function quickToggleConfirmMessage(item) {
             </div>
 
             <div class="overflow-x-auto">
-              <table class="admin-table admin-table--compact min-w-[940px]">
+              <table class="admin-table admin-table--compact min-w-[1040px]">
                 <thead class="border-b border-gray-100 bg-gray-50">
                   <tr>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Biến thể</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Thuộc tính</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Kho / giá</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Giảm %</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Trạng thái</th>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Ảnh</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Thao tác</th>
@@ -221,7 +231,7 @@ function quickToggleConfirmMessage(item) {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                   <tr v-if="bienTheList.length === 0">
-                    <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-400">
+                    <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400">
                       Chưa có CTSP nào. Hãy thêm CTSP đầu tiên để bắt đầu gắn ảnh và số lượng.
                     </td>
                   </tr>
@@ -245,6 +255,14 @@ function quickToggleConfirmMessage(item) {
                       <div class="font-semibold text-slate-700">{{ formatCount(item.soLuong) }} sản phẩm</div>
                       <div class="mt-1 text-xs text-slate-400">Giá gốc: {{ formatCurrency(item.giaGoc) }}đ</div>
                       <div class="text-xs text-slate-400">Giá bán: {{ formatCurrency(item.giaBan) }}đ</div>
+                    </td>
+                    <td class="px-4 py-4 align-top">
+                      <span
+                        class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap"
+                        :class="formatDiscountPercent(item) === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-50 text-rose-600'"
+                      >
+                        {{ formatDiscountPercent(item) }}
+                      </span>
                     </td>
                     <td class="px-4 py-4 align-top">
                       <span class="admin-status-chip whitespace-nowrap" :class="bienTheTrangThaiClass(item)">

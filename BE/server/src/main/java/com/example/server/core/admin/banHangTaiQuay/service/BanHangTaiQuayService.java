@@ -125,6 +125,7 @@ public class BanHangTaiQuayService {
                         chiTiet.getSku(),
                         chiTiet.getMaBienThe(),
                         chiTiet.getSoLuong(),
+                        chiTiet.getGiaGoc(),
                         chiTiet.getGiaBan(),
                         hinhAnhMap.get(chiTiet.getId()),
                         chiTiet.getGiay().getLoaiGiay() != null ? chiTiet.getGiay().getLoaiGiay().getTen() : null,

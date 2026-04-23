@@ -9,6 +9,7 @@ public record SanPhamTaiQuayResponse(
         String sku,
         String maBienThe,
         Integer soLuongTon,
+        BigDecimal giaGoc,
         BigDecimal giaBan,
         String hinhAnh,
         String loaiGiay,

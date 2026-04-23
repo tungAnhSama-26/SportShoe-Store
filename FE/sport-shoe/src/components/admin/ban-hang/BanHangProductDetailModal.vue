@@ -54,6 +54,10 @@ const emit = defineEmits([
   "increase-quantity",
   "add-selected-variant"
 ]);
+
+function isDiscounted(product) {
+  return Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
+}
 </script>
 
 <template>
@@ -111,6 +115,15 @@ const emit = defineEmits([
                 <div class="text-right">
                   <p class="text-sm text-slate-500">Giá bán</p>
                   <p class="mt-1 text-base font-bold text-red-500">{{ dinhDangTien(chiTietDangChon?.giaBan || 0) }}</p>
+                  <p v-if="isDiscounted(chiTietDangChon)" class="mt-1 text-xs text-slate-400 line-through">
+                    {{ dinhDangTien(chiTietDangChon?.giaGoc || 0) }}
+                  </p>
+                  <span
+                    v-if="isDiscounted(chiTietDangChon)"
+                    class="mt-2 inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600"
+                  >
+                    Giảm giá
+                  </span>
                 </div>
               </div>
 
@@ -126,7 +139,7 @@ const emit = defineEmits([
               </div>
 
               <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tồn kho còn lại</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Còn lại</p>
                 <p class="mt-1 text-base font-semibold text-slate-900">{{ soLuongTonSauKhiChon }}</p>
               </div>
             </div>
