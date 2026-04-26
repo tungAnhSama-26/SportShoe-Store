@@ -1,12 +1,12 @@
 package com.example.server.infrastructure.exception;
 
 public enum ErrorCode {
-    DUPLICATE_DATA("DUPLICATE_DATA", "{0} da ton tai"),
-    RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "{0} khong ton tai"),
-    VALIDATION_ERROR("VALIDATION_ERROR", "Du lieu dau vao khong hop le"),
-    INVALID_REQUEST("INVALID_REQUEST", "Yeu cau khong hop le"),
-    BUSINESS_ERROR("BUSINESS_ERROR", "Nghiep vu khong hop le"),
-    UNEXPECTED_ERROR("UNEXPECTED_ERROR", "Loi he thong khong mong muon");
+    DUPLICATE_DATA("DUPLICATE_DATA", "{0} đã tồn tại"),
+    RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "{0} không tồn tại"),
+    VALIDATION_ERROR("VALIDATION_ERROR", "Dữ liệu đầu vào không hợp lệ"),
+    INVALID_REQUEST("INVALID_REQUEST", "Yêu cầu không hợp lệ"),
+    BUSINESS_ERROR("BUSINESS_ERROR", "Nghiệp vụ không hợp lệ"),
+    UNEXPECTED_ERROR("UNEXPECTED_ERROR", "Lỗi hệ thống không mong muốn");
 
     private final String code;
     private final String messageTemplate;

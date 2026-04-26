@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
@@ -19,7 +19,7 @@ const pageSize = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
 const selectedProduct = ref(null)
-const updatingStatusId = ref(null)
+const updatingStatusIds = reactive(new Set())
 
 const filters = reactive({
   keyword: '',
@@ -39,6 +39,7 @@ const toast = reactive({
 
 const pageSizeOptions = [5, 10, 20, 50]
 let toastTimer = null
+let latestLoadRequestId = 0
 
 const selectedGiayId = computed(() => {
   const raw = Array.isArray(route.query.giayId) ? route.query.giayId[0] : route.query.giayId
@@ -75,6 +76,10 @@ function closeToast() {
     toastTimer = null
   }
   toast.show = false
+}
+
+function isUpdatingStatus(id) {
+  return updatingStatusIds.has(id)
 }
 
 function formatCurrency(value) {
@@ -189,6 +194,7 @@ async function syncSelectedProduct() {
 }
 
 async function loadData(page = 0) {
+  const requestId = ++latestLoadRequestId
   loading.value = true
   try {
     const response = await api.layDanhSachChiTietSanPham({
@@ -200,13 +206,16 @@ async function loadData(page = 0) {
       page,
       size: pageSize.value
     })
+    if (requestId !== latestLoadRequestId) return
     items.value = response.items || []
     currentPage.value = response.page
     totalItems.value = response.totalItems
     totalPages.value = response.totalPages
   } catch (error) {
+    if (requestId !== latestLoadRequestId) return
     showToast(error.message || 'Không tải được danh sách chi tiết sản phẩm', 'error')
   } finally {
+    if (requestId !== latestLoadRequestId) return
     loading.value = false
   }
 }
@@ -291,12 +300,13 @@ async function xuatExcel() {
 }
 
 async function toggleBienTheStatus(item) {
+  if (isUpdatingStatus(item.id)) return
   if (!canToggleStatus(item)) {
     showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
     return
   }
 
-  updatingStatusId.value = item.id
+  updatingStatusIds.add(item.id)
   try {
     await api.doiTrangThaiBienThe(item.id, nextBienTheStatus(item))
     showToast('Cập nhật trạng thái CTSP thành công')
@@ -307,7 +317,7 @@ async function toggleBienTheStatus(item) {
   } catch (error) {
     showToast(error.message || 'Không thể cập nhật trạng thái CTSP', 'error')
   } finally {
-    updatingStatusId.value = null
+    updatingStatusIds.delete(item.id)
   }
 }
 
@@ -328,6 +338,10 @@ onMounted(async () => {
   await loadDanhMuc()
   await syncSelectedProduct()
   await loadData(0)
+})
+
+onUnmounted(() => {
+  closeToast()
 })
 </script>
 
@@ -525,8 +539,8 @@ onMounted(async () => {
               <td class="rounded-r-2xl px-4 py-4 text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AdminQuickStatusAction
-                    :loading="updatingStatusId === item.id"
-                    :disabled="updatingStatusId === item.id || !canToggleStatus(item)"
+                    :loading="isUpdatingStatus(item.id)"
+                    :disabled="isUpdatingStatus(item.id) || !canToggleStatus(item)"
                     :action-label="quickToggleLabel(item)"
                     :disabled-title="quickToggleDisabledTitle(item)"
                     :confirm-message="quickToggleConfirmMessage(item)"

@@ -25,6 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class QuanLySanPhamService {
 
+    private static final int TRANG_THAI_NGUNG_KINH_DOANH = 0;
+    private static final int TRANG_THAI_KINH_DOANH = 1;
+    private static final int TRANG_THAI_HET_HANG = 2;
+
     private record ActiveDiscountInfo(
             Integer dotGiamGiaId,
             String maDotGiamGia,
@@ -341,7 +345,7 @@ public class QuanLySanPhamService {
         giay.setGioiTinh(req.gioiTinh());
         giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
         giay.setMoTa(req.moTa());
-        giay.setTrangThai(1);
+        giay.setTrangThai(TRANG_THAI_KINH_DOANH);
         giay.setNgayTao(Instant.now());
         giay = giayRepository.save(giay);
 
@@ -508,12 +512,21 @@ public class QuanLySanPhamService {
     @Transactional
     public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
         System.out.println(">>> DOI TRANG THAI GIAY #" + id + " -> " + req.trangThai());
+        if (!isTrangThaiGiayHopLe(req.trangThai())) {
+            throw new BusinessException("Trạng thái sản phẩm không hợp lệ");
+        }
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
+        if (req.trangThai() == TRANG_THAI_KINH_DOANH && !coTonKho(id)) {
+            throw new BusinessException("Sản phẩm hết hàng, chưa thể chuyển sang kinh doanh");
+        }
+        if (req.trangThai() == TRANG_THAI_HET_HANG && coTonKho(id)) {
+            throw new BusinessException("Sản phẩm vẫn còn tồn kho, không thể chuyển sang hết hàng");
+        }
         giay.setTrangThai(req.trangThai());
         giay.setNgayCapNhat(Instant.now());
-        if (req.trangThai() != 0) {
-            updateTrangThaiTuSoLuong(id);
+        if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
+            updateTrangThaiTuSoLuong(giay);
         }
     }
 
@@ -524,11 +537,11 @@ public class QuanLySanPhamService {
             var giay = giayRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
             
-            if (giay.getTrangThai() == 0) {
-                giay.setTrangThai(1); 
-                updateTrangThaiTuSoLuong(id);
+            if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+                giay.setTrangThai(TRANG_THAI_KINH_DOANH);
+                updateTrangThaiTuSoLuong(giay);
             } else {
-                giay.setTrangThai(0);
+                giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
             }
             giay.setNgayCapNhat(Instant.now());
         } catch (Exception e) {
@@ -720,15 +733,35 @@ public class QuanLySanPhamService {
 
     private void updateTrangThaiTuSoLuong(Integer giayId) {
         var giay = giayRepository.findById(giayId).orElse(null);
-        if (giay == null || giay.getTrangThai() == 0) return;
+        if (giay == null) {
+            return;
+        }
+        updateTrangThaiTuSoLuong(giay);
+    }
 
-        Long totalQty = giayChiTietRepository.sumSoLuongByGiayId(giayId);
-        int newStatus = (totalQty != null && totalQty > 0) ? 1 : 2;
+    private void updateTrangThaiTuSoLuong(Giay giay) {
+        if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+            return;
+        }
+
+        int newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
 
         if (giay.getTrangThai() != newStatus) {
             giay.setTrangThai(newStatus);
             giay.setNgayCapNhat(Instant.now());
         }
+    }
+
+    private boolean coTonKho(Integer giayId) {
+        Long totalQty = giayChiTietRepository.sumSoLuongByGiayId(giayId);
+        return totalQty != null && totalQty > 0;
+    }
+
+    private boolean isTrangThaiGiayHopLe(Integer trangThai) {
+        return trangThai != null
+                && (trangThai == TRANG_THAI_NGUNG_KINH_DOANH
+                || trangThai == TRANG_THAI_KINH_DOANH
+                || trangThai == TRANG_THAI_HET_HANG);
     }
 
     private Map<Integer, ActiveDiscountInfo> buildActiveDiscountInfoMap(Collection<GiayChiTiet> chiTiets) {

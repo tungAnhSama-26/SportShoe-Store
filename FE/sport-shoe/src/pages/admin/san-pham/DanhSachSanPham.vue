@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, FileSpreadsheet, Filter, Package, Plus, RotateCcw, Search } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
@@ -16,7 +16,7 @@ const currentPage = ref(0)
 const pageSize = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
-const updatingStatusId = ref(null)
+const updatingStatusIds = reactive(new Set())
 
 const filters = reactive({
   keyword: '',
@@ -32,13 +32,17 @@ const toast = reactive({
 })
 
 const pageSizeOptions = [5, 10, 20, 50]
+let toastTimer = null
+let latestLoadRequestId = 0
 
 function showToast(message, type = 'success') {
+  if (toastTimer) clearTimeout(toastTimer)
   toast.message = message
   toast.type = type
   toast.show = true
-  setTimeout(() => {
+  toastTimer = setTimeout(() => {
     toast.show = false
+    toastTimer = null
   }, 3000)
 }
 
@@ -72,6 +76,10 @@ function canQuickToggleProduct(item) {
   return Number(item.trangThai) !== 0 || Number(item.tongSoLuong || 0) > 0
 }
 
+function isUpdatingStatus(id) {
+  return updatingStatusIds.has(id)
+}
+
 function productQuickToggleLabel(item) {
   return Number(item.trangThai) === 0 ? 'Chuyển sang kinh doanh' : 'Chuyển sang ngừng kinh doanh'
 }
@@ -100,6 +108,7 @@ async function loadDanhMuc() {
 }
 
 async function loadData(page = 0) {
+  const requestId = ++latestLoadRequestId
   loading.value = true
   try {
     const response = await api.layDanhSachGiay({
@@ -110,13 +119,16 @@ async function loadData(page = 0) {
       page,
       size: pageSize.value
     })
+    if (requestId !== latestLoadRequestId) return
     items.value = response.items || []
     totalItems.value = response.totalItems
     totalPages.value = response.totalPages
     currentPage.value = response.page
   } catch (error) {
+    if (requestId !== latestLoadRequestId) return
     showToast(error.message || 'Không tải được danh sách sản phẩm', 'error')
   } finally {
+    if (requestId !== latestLoadRequestId) return
     loading.value = false
   }
 }
@@ -141,11 +153,12 @@ function goToChiTietList(item) {
 }
 
 async function handleToggleStatus(item) {
+  if (isUpdatingStatus(item.id)) return
   if (!canQuickToggleProduct(item)) {
     showToast('Sản phẩm hết hàng chưa thể chuyển sang kinh doanh', 'error')
     return
   }
-  updatingStatusId.value = item.id
+  updatingStatusIds.add(item.id)
   try {
     await api.doiTrangThai(item.id, nextProductStatus(item))
     showToast('Cập nhật trạng thái sản phẩm thành công')
@@ -153,7 +166,7 @@ async function handleToggleStatus(item) {
   } catch (error) {
     showToast(error.message || 'Không thể cập nhật trạng thái sản phẩm', 'error')
   } finally {
-    updatingStatusId.value = null
+    updatingStatusIds.delete(item.id)
   }
 }
 
@@ -189,7 +202,7 @@ async function xuatExcel() {
         { label: 'Loại giày', key: 'loaiGiay' },
         { label: 'Chất liệu', value: (row) => row.chatLieu || '—' },
         { label: 'Tổng tồn', value: (row) => row.tongSoLuong || 0 },
-        { label: 'Khoảng giá', value: (row) => giaHienThi(row) },
+        { label: 'Giá bán', value: (row) => giaHienThi(row) },
         { label: 'Trạng thái', value: (row) => trangThaiLabel(row.trangThai) }
       ],
       rows: response.items || []
@@ -212,6 +225,10 @@ function applyStatusFilter(value) {
 onMounted(async () => {
   await loadDanhMuc()
   await loadData(0)
+})
+
+onUnmounted(() => {
+  if (toastTimer) clearTimeout(toastTimer)
 })
 </script>
 
@@ -328,7 +345,7 @@ onMounted(async () => {
               <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
               <th class="bg-slate-100 px-4 py-3">Loại giày</th>
               <th class="bg-slate-100 px-4 py-3">Số lượng tồn</th>
-              <th class="bg-slate-100 px-4 py-3">Khoảng giá</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
@@ -358,17 +375,17 @@ onMounted(async () => {
               <td class="px-4 py-4 font-semibold text-slate-700">
                 {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ giaHienThi(item) }}</td>
-              <td class="px-4 py-4">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
+              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ giaHienThi(item) }}</td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <span class="inline-flex min-w-max whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
                   {{ trangThaiLabel(item.trangThai) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-4 text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AdminQuickStatusAction
-                    :loading="updatingStatusId === item.id"
-                    :disabled="updatingStatusId === item.id || !canQuickToggleProduct(item)"
+                    :loading="isUpdatingStatus(item.id)"
+                    :disabled="isUpdatingStatus(item.id) || !canQuickToggleProduct(item)"
                     :action-label="productQuickToggleLabel(item)"
                     :disabled-title="productQuickToggleDisabledTitle(item)"
                     :confirm-message="productQuickToggleConfirmMessage(item)"
