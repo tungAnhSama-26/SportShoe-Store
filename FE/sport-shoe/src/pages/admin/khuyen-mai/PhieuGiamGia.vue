@@ -21,6 +21,7 @@ import {
 import { layChiTietKhachHang } from "../../../services/khach-hang";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const tabs = [
   { key: "phieu", label: "Phiếu giảm giá" },
@@ -196,7 +197,7 @@ async function taiDanhSach() {
     tongSoTrang.value = data?.totalPages || 1;
     totalItems.value = data?.totalElements || 0;
   } catch (e) {
-    loiTrang.value = e.message || "Lỗi tải phiếu giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách phiếu giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -226,7 +227,7 @@ async function taiDanhSachKh() {
       .catch(err => console.error("Error loading email suggestions:", err));
 
   } catch (e) {
-    loiTrang.value = e.message || "Lỗi tải phiếu khách hàng";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách phiếu giảm giá khách hàng");
   } finally {
     dangTai.value = false;
   }
@@ -308,7 +309,7 @@ async function xuatExcel() {
       rows,
     });
   } catch (error) {
-    window.alert(error?.message || "Xuất Excel thất bại.");
+    window.alert(getDisplayErrorMessage(error, "Không thể xuất Excel phiếu giảm giá"));
   }
 }
 
@@ -340,7 +341,7 @@ async function removeItem(target, item) {
     }
     hienThiThongBao("success", "Xóa thành công");
   } catch (error) {
-    hienThiThongBao("error", "Xóa thất bại", error.message);
+    hienThiThongBao("error", "Xóa thất bại", getDisplayErrorMessage(error, "Không thể xóa phiếu giảm giá"));
   }
 }
 
@@ -369,7 +370,7 @@ async function submitForm() {
     hienThiThongBao("success", "Lưu thành công");
     taiDanhSachKh();
   } catch (error) {
-    hienThiThongBao("error", "Lưu thất bại", error.message);
+    hienThiThongBao("error", "Lưu thất bại", getDisplayErrorMessage(error, "Không thể lưu phiếu giảm giá khách hàng"));
   } finally {
     saving.value = false;
   }
@@ -393,7 +394,7 @@ async function nhanhDoiTrangThai(item) {
     hienThiThongBao("success", "Đổi trạng thái thành công");
     await taiDanhSach();
   } catch (error) {
-    hienThiThongBao("error", "Đổi trạng thái thất bại", error.message);
+    hienThiThongBao("error", "Đổi trạng thái thất bại", getDisplayErrorMessage(error, "Không thể cập nhật trạng thái phiếu giảm giá"));
   }
 }
 
@@ -410,7 +411,7 @@ async function nhanhDoiTrangThaiKh(item) {
     hienThiThongBao("success", "Đổi trạng thái thành công");
     await taiDanhSachKh();
   } catch (error) {
-    hienThiThongBao("error", "Đổi trạng thái thất bại", error.message);
+    hienThiThongBao("error", "Đổi trạng thái thất bại", getDisplayErrorMessage(error, "Không thể cập nhật trạng thái phiếu giảm giá khách hàng"));
   }
 }
 

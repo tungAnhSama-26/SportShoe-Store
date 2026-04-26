@@ -6,6 +6,7 @@ import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShel
 import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -23,7 +24,7 @@ async function loadData(page = 0) {
   try {
     const res = await thuongHieuApi.list(keyword.value || undefined, page, pageSize.value)
     items.value = res.items; totalItems.value = res.totalItems; totalPages.value = res.totalPages; currentPage.value = res.page
-  } catch (e) { showToast(e.message || 'Lỗi tải dữ liệu', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách thương hiệu'), 'error') }
   finally { loading.value = false }
 }
 
@@ -62,7 +63,7 @@ async function handleLogoUpload(event) {
   uploadingLogo.value = true
   try {
     form.logoUrl = await thuongHieuApi.uploadFile(target.files[0])
-  } catch (e) { showToast(e.message || 'Tải logo thất bại', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải logo thương hiệu'), 'error') }
   finally { uploadingLogo.value = false; target.value = '' }
 }
 
@@ -70,8 +71,8 @@ function clearLogo() { form.logoUrl = '' }
 
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.ma.trim()) errors.ma = 'Mã không được để trống'
-  if (!form.ten.trim()) errors.ten = 'Tên không được để trống'
+  if (!form.ma.trim()) errors.ma = 'Vui lòng nhập mã thương hiệu'
+  if (!form.ten.trim()) errors.ten = 'Vui lòng nhập tên thương hiệu'
   return Object.keys(errors).length === 0
 }
 
@@ -84,7 +85,10 @@ async function handleSave() {
     else await thuongHieuApi.update(selectedItem.value.id, body)
     showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false; loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
+  } catch (e) {
+    Object.assign(errors, getFieldErrors(e))
+    showToast(getDisplayErrorMessage(e, 'Không thể lưu thương hiệu'), 'error')
+  }
   finally { saving.value = false }
 }
 
@@ -97,7 +101,7 @@ async function handleToggleStatus(item) {
   try {
     await thuongHieuApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
   }
-  catch (e) { showToast(e.message || 'Lỗi cập nhật', 'error') }
+  catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái thương hiệu'), 'error') }
   finally { updatingStatusId.value = null }
 }
 
@@ -126,7 +130,7 @@ async function xuatExcel() {
 
     showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
   } catch (e) {
-    showToast(e.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel thương hiệu'), 'error')
   }
 }
 </script>

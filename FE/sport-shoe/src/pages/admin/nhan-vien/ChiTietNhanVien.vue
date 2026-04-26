@@ -11,6 +11,7 @@ import {
   xoaNhanVien,
   uploadFile,
 } from "../../../services/nhan-vien";
+import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -59,7 +60,7 @@ async function taiChiTiet() {
       vaiTro: data.vaiTro,
     };
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể tải thông tin nhân viên";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải thông tin nhân viên");
   } finally {
     dangTai.value = false;
   }
@@ -70,23 +71,23 @@ async function luu() {
   let hasError = false;
 
   if (!form.value.hoTen.trim()) {
-    loiForm.value.hoTen = "Vui lòng nhập họ tên.";
+    loiForm.value.hoTen = "Vui lòng nhập họ tên nhân viên.";
     hasError = true;
   }
   
   if (!form.value.email.trim()) {
-    loiForm.value.email = "Vui lòng nhập email.";
+    loiForm.value.email = "Vui lòng nhập email nhân viên.";
     hasError = true;
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-    loiForm.value.email = "Email không hợp lệ.";
+    loiForm.value.email = "Email nhân viên chưa đúng định dạng.";
     hasError = true;
   }
   
   if (laMoi && !form.value.matKhau.trim()) {
-    loiForm.value.matKhau = "Vui lòng nhập mật khẩu.";
+    loiForm.value.matKhau = "Vui lòng nhập mật khẩu cho nhân viên mới.";
     hasError = true;
   } else if (laMoi && form.value.matKhau.length < 6) {
-    loiForm.value.matKhau = "Mật khẩu phải có ít nhất 6 ký tự.";
+    loiForm.value.matKhau = "Mật khẩu nhân viên phải có ít nhất 6 ký tự.";
     hasError = true;
   }
 
@@ -121,7 +122,8 @@ async function luu() {
       setTimeout(() => (thongBao.value = ""), 3000);
     }
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Có lỗi xảy ra";
+    Object.assign(loiForm.value, getFieldErrors(e));
+    loiTrang.value = getDisplayErrorMessage(e, laMoi ? "Không thể tạo nhân viên" : "Không thể lưu thay đổi nhân viên");
   } finally {
     dangLuu.value = false;
   }
@@ -141,7 +143,7 @@ async function doiMatKhau() {
     thongBao.value = "Đã đổi mật khẩu thành công!";
     setTimeout(() => (thongBao.value = ""), 3000);
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể đổi mật khẩu";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể đổi mật khẩu nhân viên");
   } finally {
     dangLuu.value = false;
   }
@@ -154,7 +156,7 @@ async function doiTrangThai(trangThai: number) {
     thongBao.value = trangThai === 1 ? "Đã kích hoạt tài khoản!" : "Đã khóa tài khoản!";
     setTimeout(() => (thongBao.value = ""), 3000);
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể đổi trạng thái";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể cập nhật trạng thái nhân viên");
   }
 }
 
@@ -164,7 +166,7 @@ async function xoa() {
     await xoaNhanVien(id!);
     router.push({ name: "admin-nhan-vien" });
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể xóa nhân viên";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể xóa nhân viên");
   }
 }
 
@@ -176,7 +178,7 @@ async function xuLyUploadAnh(event: Event) {
     const url = await uploadFile(target.files[0]);
     form.value.hinhAnh = url;
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Có lỗi khi tải ảnh";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải ảnh nhân viên");
   } finally {
     dangUpload.value = false;
   }

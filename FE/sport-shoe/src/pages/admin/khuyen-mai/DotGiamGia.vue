@@ -20,6 +20,7 @@ import {
 import { layDanhSachGiay } from "../../../services/san-pham-api";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const router = useRouter();
 const dangTai = ref(false);
@@ -161,7 +162,7 @@ async function taiDanhSach() {
     tongSoTrang.value = data?.totalPages || 1;
     totalItems.value = data?.totalElements || 0;
   } catch (e) {
-    loiTrang.value = e.message || "Lỗi tải đợt giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách đợt giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -208,7 +209,7 @@ async function xuatExcel() {
       rows,
     });
   } catch (error) {
-    window.alert(error?.message || "Xuất Excel thất bại.");
+    window.alert(getDisplayErrorMessage(error, "Không thể xuất Excel đợt giảm giá"));
   }
 }
 
@@ -228,7 +229,7 @@ async function removeItem(item) {
     hienThiThongBao("success", "Xóa thành công");
     taiDanhSach();
   } catch (error) {
-    hienThiThongBao("error", "Xóa thất bại", error.message);
+    hienThiThongBao("error", "Xóa thất bại", getDisplayErrorMessage(error, "Không thể xóa đợt giảm giá"));
   }
 }
 
@@ -247,7 +248,7 @@ async function nhanhDoiTrangThai(item) {
     hienThiThongBao("success", "Đổi trạng thái thành công");
     await taiDanhSach();
   } catch (error) {
-    hienThiThongBao("error", "Đổi trạng thái thất bại", error.message);
+    hienThiThongBao("error", "Đổi trạng thái thất bại", getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đợt giảm giá"));
   }
 }
 
@@ -396,7 +397,7 @@ onMounted(taiDanhSach);
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ma }}</td>
               <td class="px-4 py-3 font-semibold text-slate-800">
                 <div>{{ item.ten }}</div>
-                <div class="font-normal text-xs text-slate-500">{{ item.moTa || '—' }}</div>
+                <div class="table-text-wrap font-normal text-xs text-slate-500">{{ item.moTa || '—' }}</div>
               </td>
               <td class="px-4 py-3 text-slate-600 font-bold text-rose-500">
                 {{ item.giaTriGiam }}%

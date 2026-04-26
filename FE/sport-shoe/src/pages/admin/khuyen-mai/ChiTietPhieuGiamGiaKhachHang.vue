@@ -10,6 +10,7 @@ import {
   getEmailSuggestions
 } from "../../../services/khuyen-mai";
 import { layChiTietKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
+import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -109,7 +110,7 @@ async function taiDuLieu() {
       }
     }
   } catch (e) {
-    loiTrang.value = e.message || "Không thể tải dữ liệu";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải dữ liệu phiếu giảm giá khách hàng");
   } finally {
     dangTai.value = false;
   }
@@ -120,15 +121,15 @@ async function submitForm() {
   let isValid = true;
 
   if (!form.phieuGiamGiaId) {
-    formErrors.phieuGiamGiaId = "Vui lòng chọn phiếu giảm giá";
+    formErrors.phieuGiamGiaId = "Vui lòng chọn phiếu giảm giá cá nhân";
     isValid = false;
   }
   if (laMoi && dsEmailChon.value.length === 0) {
-    formErrors.email = "Vui lòng chọn ít nhất một khách hàng";
+    formErrors.email = "Vui lòng chọn ít nhất một khách hàng để tặng phiếu";
     isValid = false;
   }
   if (!laMoi && (!form.email || !form.email.includes('@'))) {
-    formErrors.email = "Email không hợp lệ";
+    formErrors.email = "Email khách hàng chưa đúng định dạng";
     isValid = false;
   }
 
@@ -154,7 +155,7 @@ async function submitForm() {
         } catch (e) {
           failCount++;
           if (!firstErrorMessage) {
-            firstErrorMessage = e?.message || "Khong the tang phieu cho khach hang da chon";
+            firstErrorMessage = getDisplayErrorMessage(e, "Không thể tặng phiếu cho một số khách hàng đã chọn");
           }
         }
       }
@@ -191,7 +192,11 @@ async function submitForm() {
       return;
     }
   } catch (error) {
-    hienThiThongBao("error", "Lỗi dữ liệu", error.message || "Lưu thất bại");
+    const fieldErrors = getFieldErrors(error);
+    Object.assign(formErrors, fieldErrors);
+    if (!Object.keys(fieldErrors).length) {
+      hienThiThongBao("error", "Lỗi dữ liệu", getDisplayErrorMessage(error, "Không thể lưu phiếu giảm giá khách hàng"));
+    }
   } finally {
     saving.value = false;
   }

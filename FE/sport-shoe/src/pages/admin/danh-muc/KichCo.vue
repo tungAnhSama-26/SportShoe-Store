@@ -6,6 +6,8 @@ import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShel
 import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
+import { normalizeSizeValue } from '../../../utils/thuoc-tinh-san-pham'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -23,7 +25,7 @@ async function loadData(page = 0) {
   try {
     const res = await kichCoApi.list(keyword.value || undefined, page, pageSize.value)
     items.value = res.items; totalItems.value = res.totalItems; totalPages.value = res.totalPages; currentPage.value = res.page
-  } catch (e) { showToast(e.message || 'Lỗi tải dữ liệu', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách kích cỡ'), 'error') }
   finally { loading.value = false }
 }
 
@@ -59,7 +61,13 @@ function openView(item) { openEdit(item) }
 
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.giaTri.trim()) errors.giaTri = 'Giá trị kích cỡ không được để trống'
+  const normalizedSize = normalizeSizeValue(form.giaTri)
+  if (!normalizedSize) {
+    errors.giaTri = 'Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42'
+    return false
+  }
+
+  form.giaTri = normalizedSize
   return Object.keys(errors).length === 0
 }
 
@@ -67,12 +75,15 @@ async function handleSave() {
   if (!validate()) return
   saving.value = true
   try {
-    const body = { giaTri: form.giaTri.trim(), ghiChu: form.ghiChu || null }
+    const body = { giaTri: normalizeSizeValue(form.giaTri), ghiChu: form.ghiChu || null }
     if (modalMode.value === 'add') await kichCoApi.create(body)
     else await kichCoApi.update(selectedItem.value.id, body)
     showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false; loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
+  } catch (e) {
+    Object.assign(errors, getFieldErrors(e))
+    showToast(getDisplayErrorMessage(e, 'Không thể lưu kích cỡ'), 'error')
+  }
   finally { saving.value = false }
 }
 
@@ -85,7 +96,7 @@ async function handleToggleStatus(item) {
   try {
     await kichCoApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
   }
-  catch (e) { showToast(e.message || 'Lỗi cập nhật', 'error') }
+  catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái kích cỡ'), 'error') }
   finally { updatingStatusId.value = null }
 }
 
@@ -111,7 +122,7 @@ async function xuatExcel() {
 
     showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
   } catch (e) {
-    showToast(e.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel kích cỡ'), 'error')
   }
 }
 </script>
@@ -171,7 +182,7 @@ async function xuatExcel() {
                 <span class="inline-flex h-8 min-w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800">{{ item.giaTri }}</span>
               </div>
             </td>
-            <td class="px-4 py-3 text-xs text-gray-500"><span class="block truncate">{{ item.ghiChu || '—' }}</span></td>
+            <td class="px-4 py-3 text-xs text-gray-500"><span class="table-text-wrap">{{ item.ghiChu || '—' }}</span></td>
             <td class="px-4 py-3 text-center"><div class="flex justify-center"><DanhMucQuickStatusToggle :trang-thai="item.trangThai" :loading="updatingStatusId === item.id" /></div></td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-center gap-1">

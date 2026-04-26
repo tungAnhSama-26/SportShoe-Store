@@ -6,6 +6,7 @@ import * as api from '../../../services/san-pham-api'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage } from '../../../utils/error-message'
 
 const router = useRouter()
 
@@ -103,7 +104,7 @@ async function loadDanhMuc() {
   try {
     danhMuc.value = await api.layDanhMuc()
   } catch (error) {
-    showToast(error.message || 'Không tải được danh mục', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh mục sản phẩm'), 'error')
   }
 }
 
@@ -126,7 +127,7 @@ async function loadData(page = 0) {
     currentPage.value = response.page
   } catch (error) {
     if (requestId !== latestLoadRequestId) return
-    showToast(error.message || 'Không tải được danh sách sản phẩm', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh sách sản phẩm'), 'error')
   } finally {
     if (requestId !== latestLoadRequestId) return
     loading.value = false
@@ -164,7 +165,7 @@ async function handleToggleStatus(item) {
     showToast('Cập nhật trạng thái sản phẩm thành công')
     await loadData(currentPage.value)
   } catch (error) {
-    showToast(error.message || 'Không thể cập nhật trạng thái sản phẩm', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái sản phẩm'), 'error')
   } finally {
     updatingStatusIds.delete(item.id)
   }
@@ -213,7 +214,7 @@ async function xuatExcel() {
       exported ? 'success' : 'error'
     )
   } catch (error) {
-    showToast(error.message || 'Xuất Excel thất bại', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể xuất Excel sản phẩm'), 'error')
   }
 }
 
@@ -344,7 +345,7 @@ onUnmounted(() => {
               <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>
               <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
               <th class="bg-slate-100 px-4 py-3">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3">Số lượng tồn</th>
+              <th class="bg-slate-100 px-4 py-3">Số lượng</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>

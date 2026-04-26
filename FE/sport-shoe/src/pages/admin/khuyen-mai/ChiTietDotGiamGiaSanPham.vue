@@ -10,6 +10,7 @@ import {
   getDotGiamGiaList
 } from "../../../services/khuyen-mai";
 import { layDanhSachGiay } from "../../../services/san-pham-api";
+import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -97,7 +98,7 @@ async function taiDuLieu() {
       productSearch.value = detail.tenGiay ?? "";
     }
   } catch (e) {
-    loiTrang.value = e.message || "Không thể tải dữ liệu";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải dữ liệu liên kết đợt giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -135,11 +136,11 @@ async function submitForm() {
   let isValid = true;
 
   if (!form.dotGiamGiaId) {
-    formErrors.dotGiamGiaId = "Vui lòng chọn đợt giảm giá";
+    formErrors.dotGiamGiaId = "Vui lòng chọn đợt giảm giá cần áp dụng";
     isValid = false;
   }
   if (!form.giayId) {
-    formErrors.giayId = "Vui lòng chọn sản phẩm";
+    formErrors.giayId = "Vui lòng chọn sản phẩm cần áp dụng";
     isValid = false;
   }
 
@@ -166,7 +167,11 @@ async function submitForm() {
       router.push({ name: "admin-dot-giam-gia", query: { tab: 'san-pham' } });
     }, 1000);
   } catch (error) {
-    hienThiThongBao("error", "Lỗi lưu dữ liệu", error.message);
+    const fieldErrors = getFieldErrors(error);
+    Object.assign(formErrors, fieldErrors);
+    if (!Object.keys(fieldErrors).length) {
+      hienThiThongBao("error", "Lỗi lưu dữ liệu", getDisplayErrorMessage(error, "Không thể lưu liên kết đợt giảm giá và sản phẩm"));
+    }
   } finally {
     saving.value = false;
   }

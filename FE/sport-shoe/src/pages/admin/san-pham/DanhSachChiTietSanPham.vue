@@ -7,6 +7,7 @@ import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusA
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage } from '../../../utils/error-message'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,7 +55,7 @@ const focusedChiTietId = computed(() => {
 })
 
 const toastTitle = computed(() => {
-  if (toast.type === 'error') return 'Có lỗi xảy ra'
+  if (toast.type === 'error') return 'Không thể hoàn tất thao tác'
   if (toast.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
   return 'Thao tác thành công'
 })
@@ -175,7 +176,7 @@ async function loadDanhMuc() {
   try {
     danhMuc.value = await api.layDanhMuc()
   } catch (error) {
-    showToast(error.message || 'Không tải được danh mục', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh mục sản phẩm'), 'error')
   }
 }
 
@@ -189,7 +190,7 @@ async function syncSelectedProduct() {
     selectedProduct.value = await api.chiTietGiay(selectedGiayId.value)
     showToast(`Đang xem CTSP của ${selectedProduct.value.ten} (${selectedProduct.value.ma})`, 'info')
   } catch (error) {
-    showToast(error.message || 'Không tải được sản phẩm đã chọn', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được sản phẩm đang chọn'), 'error')
   }
 }
 
@@ -213,7 +214,7 @@ async function loadData(page = 0) {
     totalPages.value = response.totalPages
   } catch (error) {
     if (requestId !== latestLoadRequestId) return
-    showToast(error.message || 'Không tải được danh sách chi tiết sản phẩm', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh sách chi tiết sản phẩm'), 'error')
   } finally {
     if (requestId !== latestLoadRequestId) return
     loading.value = false
@@ -295,7 +296,7 @@ async function xuatExcel() {
       exported ? 'success' : 'error'
     )
   } catch (error) {
-    showToast(error.message || 'Xuất Excel thất bại', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể xuất Excel chi tiết sản phẩm'), 'error')
   }
 }
 
@@ -315,7 +316,7 @@ async function toggleBienTheStatus(item) {
       selectedGiayId.value === item.giayId ? syncSelectedProduct() : Promise.resolve()
     ])
   } catch (error) {
-    showToast(error.message || 'Không thể cập nhật trạng thái CTSP', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái chi tiết sản phẩm'), 'error')
   } finally {
     updatingStatusIds.delete(item.id)
   }

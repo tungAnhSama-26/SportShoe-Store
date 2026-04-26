@@ -1,3 +1,5 @@
+import { sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
 async function request(path, init) {
   let response;
@@ -10,7 +12,7 @@ async function request(path, init) {
       ...init
     });
   } catch {
-    throw new Error(`Khong the ket noi den may chu ${API_BASE_URL}`);
+    throw new Error("Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.");
   }
 
   const text = await response.text();
@@ -24,7 +26,12 @@ async function request(path, init) {
   }
 
   if (!response.ok) {
-    throw new Error(payload?.message || "Khong the ket noi den may chu");
+    throw new Error(
+      sanitizeErrorMessage(
+        payload?.message,
+        "Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.",
+      ),
+    );
   }
 
   return payload?.data ?? payload;

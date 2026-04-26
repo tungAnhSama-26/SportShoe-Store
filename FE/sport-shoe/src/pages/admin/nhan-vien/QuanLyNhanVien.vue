@@ -8,6 +8,7 @@ import {
 import { useAdminSession } from "../../../composable/useAdminSession";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 import {
   Eye,
@@ -94,8 +95,7 @@ async function taiDanhSach() {
           : undefined,
     });
   } catch (e) {
-    loiTrang.value =
-      e instanceof Error ? e.message : "Không thể tải danh sách nhân viên";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách nhân viên");
   } finally {
     dangTai.value = false;
   }
@@ -172,7 +172,7 @@ async function capNhatTrangThai(nv: any) {
     await taiDanhSach();
   } catch (e) {
     window.alert(
-      e instanceof Error ? e.message : "Không thể cập nhật trạng thái",
+      getDisplayErrorMessage(e, "Không thể cập nhật trạng thái nhân viên"),
     );
   }
 }

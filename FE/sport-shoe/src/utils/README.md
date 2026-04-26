@@ -1,1 +1,1 @@
-Tien ich va ham ho tro dung chung.
+Tiện ích và hàm hỗ trợ dùng chung.

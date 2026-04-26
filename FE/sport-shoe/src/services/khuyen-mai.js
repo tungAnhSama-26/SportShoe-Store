@@ -1,3 +1,5 @@
+import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
 
 async function request(path, init) {
@@ -13,9 +15,11 @@ async function request(path, init) {
   const payload = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    const error = new Error(payload?.message || "Không thể kết nối đến máy chủ");
-    error.errors = payload?.errors;
-    throw error;
+    throw createRequestError(
+      payload?.message,
+      "Không thể hoàn tất thao tác khuyến mãi lúc này. Vui lòng thử lại.",
+      payload?.errors,
+    );
   }
 
   return payload?.data ?? payload;
