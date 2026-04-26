@@ -15,6 +15,7 @@ import {
   xoaDiaChi,
   uploadFile
 } from "../../../services/khach-hang";
+import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -79,7 +80,7 @@ async function taiChiTiet() {
     };
     await taiDsDiaChi();
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể tải thông tin khách hàng";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải thông tin khách hàng");
   } finally {
     dangTai.value = false;
   }
@@ -99,22 +100,22 @@ async function luu() {
   let hasError = false;
 
   if (laMoi && !form.value.tenDangNhap.trim()) {
-    loiForm.value.tenDangNhap = "Vui lòng nhập tên đăng nhập.";
+    loiForm.value.tenDangNhap = "Vui lòng nhập tên đăng nhập cho khách hàng.";
     hasError = true;
   }
 
   if (!form.value.hoTen.trim()) {
-    loiForm.value.hoTen = "Vui lòng nhập họ tên.";
+    loiForm.value.hoTen = "Vui lòng nhập họ tên khách hàng.";
     hasError = true;
   }
 
   if (form.value.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-    loiForm.value.email = "Email không hợp lệ.";
+    loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
     hasError = true;
   }
 
   if (laMoi && !form.value.matKhau.trim()) {
-    loiForm.value.matKhau = "Vui lòng nhập mật khẩu.";
+    loiForm.value.matKhau = "Vui lòng nhập mật khẩu cho khách hàng mới.";
     hasError = true;
   }
 
@@ -148,7 +149,8 @@ async function luu() {
       setTimeout(() => (thongBao.value = ""), 3000);
     }
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Có lỗi xảy ra";
+    Object.assign(loiForm.value, getFieldErrors(e));
+    loiTrang.value = getDisplayErrorMessage(e, laMoi ? "Không thể tạo khách hàng" : "Không thể lưu thay đổi khách hàng");
   } finally {
     dangLuu.value = false;
   }
@@ -168,7 +170,7 @@ async function doiMatKhau() {
     thongBao.value = "Đã đổi mật khẩu thành công!";
     setTimeout(() => (thongBao.value = ""), 3000);
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể đổi mật khẩu";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể đổi mật khẩu khách hàng");
   } finally {
     dangLuu.value = false;
   }
@@ -186,7 +188,7 @@ async function doiTrangThai(trangThai: number) {
     thongBao.value = trangThai === 1 ? "Đã kích hoạt khách hàng!" : "Đã khóa khách hàng!";
     setTimeout(() => (thongBao.value = ""), 3000);
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể đổi trạng thái";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể cập nhật trạng thái khách hàng");
   }
 }
 
@@ -198,7 +200,7 @@ async function xuLyUploadAnh(event: Event) {
     const url = await uploadFile(target.files[0]);
     form.value.hinhAnh = url;
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Có lỗi khi tải ảnh";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải ảnh khách hàng");
   } finally {
     dangUpload.value = false;
   }
@@ -222,7 +224,7 @@ async function luuDiaChi() {
     thongBao.value = "Đã lưu địa chỉ thành công!";
     setTimeout(() => (thongBao.value = ""), 3000);
   } catch (e) {
-    alert(e instanceof Error ? e.message : "Không thể lưu địa chỉ");
+    alert(getDisplayErrorMessage(e, "Không thể lưu địa chỉ khách hàng"));
   } finally {
     dangLuuDiaChi.value = false;
   }
@@ -267,7 +269,7 @@ async function xoaDiaChiKh(diaChiId: number) {
     await xoaDiaChi(diaChiId);
     await taiDsDiaChi();
   } catch (e) {
-    alert("Không thể xóa địa chỉ");
+    alert("Không thể xóa địa chỉ khách hàng");
   }
 }
 

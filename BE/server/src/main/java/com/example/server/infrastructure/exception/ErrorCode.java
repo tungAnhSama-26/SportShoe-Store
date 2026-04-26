@@ -6,7 +6,7 @@ public enum ErrorCode {
     VALIDATION_ERROR("VALIDATION_ERROR", "Dữ liệu đầu vào không hợp lệ"),
     INVALID_REQUEST("INVALID_REQUEST", "Yêu cầu không hợp lệ"),
     BUSINESS_ERROR("BUSINESS_ERROR", "Nghiệp vụ không hợp lệ"),
-    UNEXPECTED_ERROR("UNEXPECTED_ERROR", "Lỗi hệ thống không mong muốn");
+    UNEXPECTED_ERROR("UNEXPECTED_ERROR", "Không thể hoàn tất thao tác này lúc này. Vui lòng thử lại.");
 
     private final String code;
     private final String messageTemplate;

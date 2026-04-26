@@ -8,6 +8,7 @@ import {
   getPhieuGiamGiaDetail,
   updatePhieuGiamGia
 } from "../../../services/khuyen-mai";
+import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -120,7 +121,7 @@ async function taiChiTiet() {
       trangThai: String(detail.trangThai ?? 1)
     });
   } catch (e) {
-    loiTrang.value = e.message || "Không thể tải chi tiết phiếu giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải chi tiết phiếu giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -130,8 +131,8 @@ async function submitForm() {
   resetErrors();
   let isValid = true;
 
-  if (!form.ma.trim()) { formErrors.ma = "Mã phiếu không được để trống"; isValid = false; }
-  if (!form.ten.trim()) { formErrors.ten = "Tên phiếu không được để trống"; isValid = false; }
+  if (!form.ma.trim()) { formErrors.ma = "Vui lòng nhập mã phiếu giảm giá"; isValid = false; }
+  if (!form.ten.trim()) { formErrors.ten = "Vui lòng nhập tên phiếu giảm giá"; isValid = false; }
   if (!form.giaTri || parseVndNumber(form.giaTri) <= 0) { 
     formErrors.giaTri = "Giá trị giảm phải lớn hơn 0"; 
     isValid = false; 
@@ -141,13 +142,13 @@ async function submitForm() {
   }
 
   if (form.giaTriToiThieu && parseVndNumber(form.giaTriToiThieu) < 1) {
-    formErrors.giaTriToiThieu = "Giá trị tối thiểu phải lớn hơn 0";
+    formErrors.giaTriToiThieu = "Giá trị đơn tối thiểu phải lớn hơn 0";
     isValid = false;
   }
 
-  if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng phải lớn hơn 0"; isValid = false; }
-  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Chọn ngày bắt đầu"; isValid = false; }
-  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày kết thúc"; isValid = false; }
+  if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0"; isValid = false; }
+  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng"; isValid = false; }
+  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng"; isValid = false; }
   
   if (form.ngayBatDau && form.ngayKetThuc && form.ngayBatDau > form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
@@ -186,10 +187,10 @@ async function submitForm() {
       router.push({ name: "admin-phieu-giam-gia" });
     }, 1000);
   } catch (error) {
-    if (error.errors) {
-      Object.assign(formErrors, error.errors);
-    } else {
-      hienThiThongBao("error", "Lỗi lưu dữ liệu", error.message);
+    const fieldErrors = getFieldErrors(error);
+    Object.assign(formErrors, fieldErrors);
+    if (!Object.keys(fieldErrors).length) {
+      hienThiThongBao("error", "Lỗi lưu dữ liệu", getDisplayErrorMessage(error, "Không thể lưu phiếu giảm giá"));
     }
   } finally {
     saving.value = false;

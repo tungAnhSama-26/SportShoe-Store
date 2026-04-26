@@ -24,6 +24,7 @@ import {
 import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn } from "../../../services/hoa-don";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -241,7 +242,7 @@ async function taiChiTiet() {
   try {
     hoaDon.value = await layChiTietHoaDon(Number(route.params.id));
   } catch (error) {
-    loiTrang.value = error instanceof Error ? error.message : "Không Thể Tải Chi Tiết Hóa Đơn";
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải chi tiết hóa đơn");
   } finally {
     dangTai.value = false;
   }
@@ -272,7 +273,7 @@ async function handleXacNhanTrangThai() {
     hienThiThongBao("success", "Cập Nhật Thành Công", `Đơn hàng đã chuyển sang ${trangThaiMoiXacNhan.value}.`);
     hienModalXacNhan.value = false;
   } catch (error) {
-    hienThiThongBao("error", "Lỗi Cập Nhật Trạng Thái", error instanceof Error ? error.message : "Không thể cập nhật trạng thái đơn hàng.");
+    hienThiThongBao("error", "Lỗi Cập Nhật Trạng Thái", getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đơn hàng."));
   } finally {
     dangCapNhat.value = false;
   }
@@ -339,7 +340,7 @@ async function handleSaveSanPham() {
     hienThiThongBao("success", "Cập Nhật Thành Công", "Sản phẩm hóa đơn đã được cập nhật.");
     hienModalSanPham.value = false;
   } catch (error) {
-    window.alert(error instanceof Error ? error.message : "Lỗi Cập Nhật Sản Phẩm");
+    window.alert(getDisplayErrorMessage(error, "Không thể cập nhật sản phẩm trong hóa đơn"));
   } finally {
     dangCapNhat.value = false;
   }
@@ -445,7 +446,7 @@ async function handleLuuThongTin() {
     hienThiThongBao("success", "Cập Nhật Thành Công", "Thông tin hóa đơn đã được cập nhật.");
     hienModalThongTin.value = false;
   } catch (error) {
-    hienThiThongBao("error", "Lỗi Cập Nhật Thông Tin", error instanceof Error ? error.message : "Không thể cập nhật thông tin hóa đơn.");
+    hienThiThongBao("error", "Lỗi Cập Nhật Thông Tin", getDisplayErrorMessage(error, "Không thể cập nhật thông tin hóa đơn."));
   } finally {
     dangCapNhat.value = false;
   }
@@ -479,7 +480,7 @@ async function handleTinhPhiGhn() {
     hoaDon.value = await layChiTietHoaDon(hoaDon.value.id);
     hienThiThongBao("success", "Đã Tính Phí GHN", `Phí vận chuyển mới: ${dinhDangTien(ketQua.phiVanChuyen || ketQua.total || 0)}.`);
   } catch (error) {
-    window.alert(error instanceof Error ? error.message : "Không thể tính phí vận chuyển GHN.");
+    window.alert(getDisplayErrorMessage(error, "Không thể tính phí vận chuyển GHN"));
   } finally {
     dangTinhPhiGhn.value = false;
   }

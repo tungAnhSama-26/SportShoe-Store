@@ -1,3 +1,4 @@
+import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8080/api/v1";
@@ -8,7 +9,13 @@ async function request(path, init) {
     ...init,
   });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.message || "Không thể kết nối đến máy chủ");
+  if (!response.ok) {
+    throw createRequestError(
+      payload.message,
+      "Không thể hoàn tất thao tác nhân viên lúc này. Vui lòng thử lại.",
+      payload.errors,
+    );
+  }
   return payload.data;
 }
 
@@ -65,6 +72,10 @@ export async function uploadFile(file) {
     body: formData,
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.message || "Tải ảnh thất bại");
+  if (!response.ok) {
+    throw new Error(
+      sanitizeErrorMessage(result.message, "Không thể tải ảnh nhân viên lên lúc này"),
+    );
+  }
   return result.data.url;
 }

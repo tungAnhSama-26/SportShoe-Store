@@ -18,7 +18,7 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-[28px] border border-slate-100">
+  <div class="overflow-x-auto rounded-[28px] border border-slate-100">
     <table class="min-w-full border-collapse">
       <thead class="bg-slate-100 text-left text-sm text-slate-600">
         <tr>

@@ -285,3 +285,27 @@
   border-top-right-radius: 1rem;
   border-bottom-right-radius: 1rem;
 }
+
+/* Keep table text larger and on one line; horizontal scroll handles overflow. */
+table th,
+table td {
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+  white-space: nowrap;
+}
+
+table th *,
+table td * {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  white-space: inherit;
+}
+
+.table-text-wrap {
+  display: block;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

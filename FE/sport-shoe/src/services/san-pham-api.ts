@@ -1,3 +1,4 @@
+import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
 const BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -284,7 +285,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || `HTTP ${res.status}`)
+    throw createRequestError(
+      err.message || `HTTP ${res.status}`,
+      'Không thể hoàn tất thao tác sản phẩm lúc này. Vui lòng thử lại.',
+      err.errors
+    )
   }
   const json = await res.json()
   return json.data
@@ -406,7 +411,12 @@ export async function uploadFile(file: File): Promise<string> {
 
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
-    throw new Error(payload.message || 'Tải ảnh thất bại')
+    throw new Error(
+      sanitizeErrorMessage(
+        payload.message,
+        'Không thể tải ảnh sản phẩm lên lúc này'
+      )
+    )
   }
 
   if (!payload.data?.url) {

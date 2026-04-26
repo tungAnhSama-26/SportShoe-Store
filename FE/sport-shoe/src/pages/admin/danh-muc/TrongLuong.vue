@@ -6,6 +6,7 @@ import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShel
 import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -23,7 +24,7 @@ async function loadData(page = 0) {
   try {
     const res = await trongLuongApi.list(keyword.value || undefined, page, pageSize.value)
     items.value = res.items; totalItems.value = res.totalItems; totalPages.value = res.totalPages; currentPage.value = res.page
-  } catch (e) { showToast(e.message || 'Lỗi tải dữ liệu', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách trọng lượng'), 'error') }
   finally { loading.value = false }
 }
 
@@ -59,8 +60,8 @@ function openView(item) { openEdit(item) }
 
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.ma.trim()) errors.ma = 'Mã không được để trống'
-  if (!form.giaTri || form.giaTri < 1) errors.giaTri = 'Giá trị phải >= 1'
+  if (!form.ma.trim()) errors.ma = 'Vui lòng nhập mã trọng lượng'
+  if (!form.giaTri || form.giaTri < 1) errors.giaTri = 'Trọng lượng phải từ 1 gram trở lên'
   return Object.keys(errors).length === 0
 }
 
@@ -73,7 +74,10 @@ async function handleSave() {
     else await trongLuongApi.update(selectedItem.value.id, body)
     showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false; loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
+  } catch (e) {
+    Object.assign(errors, getFieldErrors(e))
+    showToast(getDisplayErrorMessage(e, 'Không thể lưu trọng lượng'), 'error')
+  }
   finally { saving.value = false }
 }
 
@@ -86,7 +90,7 @@ async function handleToggleStatus(item) {
   try {
     await trongLuongApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
   }
-  catch (e) { showToast(e.message || 'Lỗi cập nhật', 'error') }
+  catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái trọng lượng'), 'error') }
   finally { updatingStatusId.value = null }
 }
 
@@ -113,7 +117,7 @@ async function xuatExcel() {
 
     showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
   } catch (e) {
-    showToast(e.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel trọng lượng'), 'error')
   }
 }
 </script>
@@ -172,7 +176,7 @@ async function xuatExcel() {
             <td class="px-4 py-3 text-gray-500">{{ currentPage * pageSize + idx + 1 }}</td>
             <td class="px-4 py-3 font-semibold text-slate-800"><span class="block truncate">{{ item.ma }}</span></td>
             <td class="px-4 py-3 text-center font-medium text-gray-800 tabular-nums">{{ item.giaTri }}</td>
-            <td class="px-4 py-3 text-xs text-gray-500"><span class="block truncate">{{ item.moTa || '—' }}</span></td>
+            <td class="px-4 py-3 text-xs text-gray-500"><span class="table-text-wrap">{{ item.moTa || '—' }}</span></td>
             <td class="px-4 py-3 text-center"><div class="flex justify-center"><DanhMucQuickStatusToggle :trang-thai="item.trangThai" :loading="updatingStatusId === item.id" /></div></td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-center gap-1">

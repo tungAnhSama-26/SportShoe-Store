@@ -17,6 +17,7 @@ import {
   CheckCircle2, CircleX, ArrowUpRight
 } from "lucide-vue-next";
 import { computed } from "vue";
+import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
 const router = useRouter();
@@ -319,7 +320,7 @@ async function taiChiTiet() {
 
     taiDanhSachSP();
   } catch (e) {
-    loiTrang.value = e.message || "Không thể tải chi tiết đợt giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải chi tiết đợt giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -330,17 +331,17 @@ async function submitForm() {
   let isValid = true;
   const dangTaoMoi = laMoi;
 
-  if (!form.ma.trim()) { formErrors.ma = "Mã đợt không được để trống"; isValid = false; }
-  if (!form.ten.trim()) { formErrors.ten = "Tên đợt không được để trống"; isValid = false; }
+  if (!form.ma.trim()) { formErrors.ma = "Vui lòng nhập mã đợt giảm giá"; isValid = false; }
+  if (!form.ten.trim()) { formErrors.ten = "Vui lòng nhập tên đợt giảm giá"; isValid = false; }
   if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) {
-    formErrors.giaTriGiam = "Giá trị giảm không hợp lệ";
+    formErrors.giaTriGiam = "Giá trị giảm phải lớn hơn 0%";
     isValid = false;
   } else if (Number(form.giaTriGiam) > 100) {
     formErrors.giaTriGiam = "Phần trăm giảm không được vượt quá 100%";
     isValid = false;
   }
-  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Chọn ngày bắt đầu"; isValid = false; }
-  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày kết thúc"; isValid = false; }
+  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng"; isValid = false; }
+  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng"; isValid = false; }
 
   if (form.ngayBatDau && form.ngayKetThuc && form.ngayBatDau > form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
@@ -383,8 +384,11 @@ async function submitForm() {
     hienThiThongBao("success", dangTaoMoi ? "Thêm đợt giảm giá thành công" : "Cập nhật thành công");
     setTimeout(() => { router.push({ name: "admin-dot-giam-gia" }); }, 1000);
   } catch (error) {
-    hienThiThongBao("error", "Lỗi lưu dữ liệu", error.message);
-    if (error.errors) Object.assign(formErrors, error.errors);
+    const fieldErrors = getFieldErrors(error);
+    Object.assign(formErrors, fieldErrors);
+    if (!Object.keys(fieldErrors).length) {
+      hienThiThongBao("error", "Lỗi lưu dữ liệu", getDisplayErrorMessage(error, "Không thể lưu đợt giảm giá"));
+    }
   } finally {
     saving.value = false;
   }

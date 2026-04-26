@@ -16,6 +16,7 @@ import { layChiTietHoaDon, layDanhSachHoaDon } from "../../../services/hoa-don";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 type TrangThaiLoc =
   | "Tất cả"
@@ -197,9 +198,8 @@ async function taiDanhSach() {
       // Không gửi trạng thái lên backend để số lượng trạng thái hiển thị đúng.
       trangThai: undefined,
     });
-  } catch (error) {
-    loiTrang.value =
-      error instanceof Error ? error.message : "Không thể tải danh sách hóa đơn";
+    } catch (error) {
+      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải danh sách hóa đơn");
   } finally {
     dangTai.value = false;
   }
@@ -256,10 +256,10 @@ async function xuatHoaDonPdf(id: number) {
       formatDate: dinhDangNgay,
       targetWindow: popup,
     });
-  } catch (error) {
-    if (popup) popup.close();
-    window.alert(error instanceof Error ? error.message : "Không thể xuất PDF hóa đơn.");
-  } finally {
+    } catch (error) {
+      if (popup) popup.close();
+      window.alert(getDisplayErrorMessage(error, "Không thể xuất PDF hóa đơn"));
+    } finally {
     dangXuatPdfId.value = null;
   }
 }

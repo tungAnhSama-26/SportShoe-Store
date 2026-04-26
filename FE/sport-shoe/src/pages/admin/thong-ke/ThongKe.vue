@@ -25,6 +25,7 @@ import {
 import { Bar, Pie } from "vue-chartjs";
 import AppPagination from "../../../components/common/AppPagination.vue";
 import { layDashboardThongKe } from "../../../services/thong-ke";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -359,7 +360,7 @@ async function fetchDashboard() {
       return;
     }
     dashboard.value = EMPTY_DASHBOARD();
-    errorMessage.value = error.message || "Không thể tải dữ liệu thống kê.";
+    errorMessage.value = getDisplayErrorMessage(error, "Không thể tải dữ liệu thống kê.");
   } finally {
     if (requestId === latestDashboardRequestId) {
       isLoading.value = false;

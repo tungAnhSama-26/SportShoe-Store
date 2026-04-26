@@ -1,3 +1,5 @@
+import { sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8080/api/v1";
@@ -8,7 +10,14 @@ export async function request(path, init) {
     ...init,
   });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.message || "Không thể kết nối đến máy chủ");
+  if (!response.ok) {
+    throw new Error(
+      sanitizeErrorMessage(
+        payload.message,
+        "Không thể hoàn tất thao tác đăng nhập lúc này. Vui lòng thử lại.",
+      ),
+    );
+  }
   return payload; // Return full payload to get message and data
 }
 

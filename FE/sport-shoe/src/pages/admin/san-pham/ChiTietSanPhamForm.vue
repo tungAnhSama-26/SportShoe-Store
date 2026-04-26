@@ -17,6 +17,14 @@ import {
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
 import AdminFormattedNumberInput from '../../../components/common/AdminFormattedNumberInput.vue'
 import AdminSearchableSelect from '../../../components/common/AdminSearchableSelect.vue'
+import {
+  DEFAULT_COLOR_HEX,
+  generateColorAttributeCode,
+  generateHexColorFromText,
+  isValidHexColor,
+  normalizeSizeValue
+} from '../../../utils/thuoc-tinh-san-pham'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const route = useRoute()
 const router = useRouter()
@@ -72,11 +80,23 @@ const quickCreateForm = reactive({
   ma: '',
   ten: '',
   xuatXu: '',
-  maMauHex: '#000000',
+  maMauHex: DEFAULT_COLOR_HEX,
   giaTri: '',
   ghiChu: ''
 })
 const inlineCreatingType = ref(null)
+const quickCreateColorSeed = ref(createAttributeSeed())
+const quickCreatedPriority = reactive({
+  thuongHieu: [],
+  loaiGiay: [],
+  chatLieuGiay: [],
+  deGiay: [],
+  coGiay: [],
+  congNgheDem: [],
+  trongLuong: [],
+  mauSac: [],
+  kichCo: []
+})
 
 const isExistingProduct = computed(() => Boolean(currentProductId.value))
 const productCode = computed(() => currentProduct.value?.ma || '(Tự sinh)')
@@ -169,6 +189,19 @@ const quickCreateDefinition = computed(() =>
   quickCreateType.value ? quickCreateDefinitions[quickCreateType.value] || null : null
 )
 
+watch(
+  [() => quickCreateType.value, () => quickCreateForm.ten],
+  ([type]) => {
+    if (type !== 'mauSac') {
+      return
+    }
+
+    quickCreateForm.ma = generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
+    quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
+  },
+  { immediate: true }
+)
+
 const thuongHieuOptions = computed(() =>
   (danhMuc.value?.thuongHieu || []).map((item) => ({
     value: item.id,
@@ -238,6 +271,44 @@ function generateInlineCode(prefix, value) {
   const seed = normalizeCodeValue(value).slice(0, 6) || 'NEW'
   const suffix = Date.now().toString(36).toUpperCase().slice(-4)
   return `${prefix}${seed}${suffix}`
+}
+
+function createAttributeSeed() {
+  return Date.now().toString(36).toUpperCase().slice(-4)
+}
+
+function pinQuickCreatedAttribute(type, id) {
+  if (!Object.prototype.hasOwnProperty.call(quickCreatedPriority, type)) {
+    return
+  }
+
+  const numericId = Number(id)
+  quickCreatedPriority[type] = [
+    numericId,
+    ...quickCreatedPriority[type].filter((item) => item !== numericId)
+  ]
+}
+
+function sortItemsByPriority(items, priorityIds = []) {
+  if (!Array.isArray(items) || !items.length || !priorityIds.length) {
+    return items || []
+  }
+
+  const prioritySet = new Set(priorityIds.map(Number))
+  const priorityMap = new Map(priorityIds.map((id, index) => [Number(id), index]))
+
+  return [...items].sort((first, second) => {
+    const firstPriority = prioritySet.has(Number(first.id))
+    const secondPriority = prioritySet.has(Number(second.id))
+
+    if (firstPriority && secondPriority) {
+      return priorityMap.get(Number(first.id)) - priorityMap.get(Number(second.id))
+    }
+
+    if (firstPriority) return -1
+    if (secondPriority) return 1
+    return 0
+  })
 }
 
 async function handleInlineCreateAttribute(type, rawValue) {
@@ -315,11 +386,12 @@ async function handleInlineCreateAttribute(type, rawValue) {
       throw new Error('Không nhận được dữ liệu thuộc tính vừa tạo')
     }
 
+    pinQuickCreatedAttribute(type, created.id)
     await loadDanhMuc()
     assignQuickCreatedValue(type, created.id)
     showToast('Đã thêm thuộc tính mới vào form')
   } catch (error) {
-    showToast(error.message || 'Không thể thêm nhanh thuộc tính', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể thêm nhanh thuộc tính'), 'error')
   } finally {
     inlineCreatingType.value = null
   }
@@ -330,11 +402,12 @@ function clearQuickCreateErrors() {
 }
 
 function resetQuickCreateForm() {
+  quickCreateColorSeed.value = createAttributeSeed()
   Object.assign(quickCreateForm, {
     ma: '',
     ten: '',
     xuatXu: '',
-    maMauHex: '#000000',
+    maMauHex: DEFAULT_COLOR_HEX,
     giaTri: '',
     ghiChu: ''
   })
@@ -393,11 +466,11 @@ function assignQuickCreatedValue(type, id) {
       productForm.trongLuongId = numericId
       break
     case 'mauSac':
-      variantBuilder.mauSacIds = [...new Set([...variantBuilder.mauSacIds, numericId])]
+      variantBuilder.mauSacIds = [numericId, ...variantBuilder.mauSacIds.filter((item) => item !== numericId)]
       mauSacSearch.value = ''
       break
     case 'kichCo':
-      variantBuilder.kichCoIds = [...new Set([...variantBuilder.kichCoIds, numericId])]
+      variantBuilder.kichCoIds = [numericId, ...variantBuilder.kichCoIds.filter((item) => item !== numericId)]
       kichCoSearch.value = ''
       break
   }
@@ -406,31 +479,63 @@ function assignQuickCreatedValue(type, id) {
 function validateQuickCreateForm() {
   clearQuickCreateErrors()
 
+  if (quickCreateType.value === 'kichCo') {
+    const normalizedSize = normalizeSizeValue(quickCreateForm.giaTri)
+    if (!normalizedSize) {
+      quickCreateErrors.giaTri = 'Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42'
+      return false
+    }
+
+    quickCreateForm.giaTri = normalizedSize
+  }
+
   switch (quickCreateType.value) {
     case 'thuongHieu':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã thương hiệu'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên thương hiệu'
+      break
     case 'loaiGiay':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã loại giày'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên loại giày'
+      break
     case 'chatLieuGiay':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã chất liệu giày'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên chất liệu giày'
+      break
     case 'deGiay':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã đế giày'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên đế giày'
+      break
     case 'coGiay':
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã cổ giày'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên cổ giày'
+      break
     case 'congNgheDem':
-      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Mã không được để trống'
-      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Tên không được để trống'
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã công nghệ đệm'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên công nghệ đệm'
       break
     case 'trongLuong':
-      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Mã không được để trống'
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã trọng lượng'
       if (!Number.isInteger(Number(quickCreateForm.giaTri)) || Number(quickCreateForm.giaTri) < 1) {
-        quickCreateErrors.giaTri = 'Trọng lượng phải lớn hơn hoặc bằng 1'
+        quickCreateErrors.giaTri = 'Trọng lượng phải từ 1 gram trở lên'
       }
       break
     case 'mauSac':
-      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Mã không được để trống'
-      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Tên không được để trống'
-      if (!/^#[0-9A-Fa-f]{6}$/.test(String(quickCreateForm.maMauHex || ''))) {
-        quickCreateErrors.maMauHex = 'Mã HEX không hợp lệ'
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã màu sắc'
+      if (!trimToNull(quickCreateForm.ten)) quickCreateErrors.ten = 'Vui lòng nhập tên màu sắc'
+      delete quickCreateErrors.ma
+      quickCreateForm.ma = trimToNull(quickCreateForm.ma)
+        || generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
+      if (!trimToNull(quickCreateForm.ma)) quickCreateErrors.ma = 'Vui lòng nhập mã màu sắc'
+      quickCreateForm.maMauHex = isValidHexColor(quickCreateForm.maMauHex)
+        ? String(quickCreateForm.maMauHex).toUpperCase()
+        : generateHexColorFromText(quickCreateForm.ten)
+      if (!isValidHexColor(quickCreateForm.maMauHex)) {
+        quickCreateErrors.maMauHex = 'Mã HEX màu sắc phải theo dạng #RRGGBB, ví dụ #FF5733'
       }
       break
     case 'kichCo':
-      if (!trimToNull(quickCreateForm.giaTri)) quickCreateErrors.giaTri = 'Kích cỡ không được để trống'
+      if (!trimToNull(quickCreateForm.giaTri)) quickCreateErrors.giaTri = 'Vui lòng nhập kích cỡ cần thêm'
       break
   }
 
@@ -443,6 +548,21 @@ async function handleQuickCreateSave() {
   quickCreateSaving.value = true
   try {
     let created = null
+    const normalizedSize = quickCreateType.value === 'kichCo'
+      ? normalizeSizeValue(quickCreateForm.giaTri)
+      : ''
+    const resolvedColorCode = quickCreateType.value === 'mauSac'
+      ? (trimToNull(quickCreateForm.ma) || generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value))
+      : null
+    const resolvedHexColor = quickCreateType.value === 'mauSac'
+      ? (isValidHexColor(quickCreateForm.maMauHex)
+        ? String(quickCreateForm.maMauHex).toUpperCase()
+        : generateHexColorFromText(quickCreateForm.ten))
+      : null
+
+    if (quickCreateType.value === 'kichCo' && !normalizedSize) {
+      throw new Error('Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42')
+    }
 
     switch (quickCreateType.value) {
       case 'thuongHieu':
@@ -499,14 +619,14 @@ async function handleQuickCreateSave() {
         break
       case 'mauSac':
         created = await mauSacApi.create({
-          ma: trimToNull(quickCreateForm.ma),
+          ma: resolvedColorCode,
           ten: trimToNull(quickCreateForm.ten),
-          maMauHex: String(quickCreateForm.maMauHex || '').toUpperCase()
+          maMauHex: resolvedHexColor
         })
         break
       case 'kichCo':
         created = await kichCoApi.create({
-          giaTri: trimToNull(quickCreateForm.giaTri),
+          giaTri: normalizedSize,
           ghiChu: trimToNull(quickCreateForm.ghiChu)
         })
         break
@@ -516,12 +636,17 @@ async function handleQuickCreateSave() {
       throw new Error('Không nhận được dữ liệu thuộc tính vừa tạo')
     }
 
+    pinQuickCreatedAttribute(quickCreateType.value, created.id)
     await loadDanhMuc()
     assignQuickCreatedValue(quickCreateType.value, created.id)
     showToast('Đã thêm thuộc tính mới vào form')
     closeQuickCreate()
   } catch (error) {
-    showToast(error.message || 'Không thể thêm nhanh thuộc tính', 'error')
+    const fieldErrors = getFieldErrors(error)
+    Object.assign(quickCreateErrors, fieldErrors)
+    if (!Object.keys(fieldErrors).length) {
+      showToast(getDisplayErrorMessage(error, 'Không thể thêm nhanh thuộc tính'), 'error')
+    }
   } finally {
     quickCreateSaving.value = false
   }
@@ -543,6 +668,20 @@ const selectedMauSacItems = computed(() =>
 const selectedKichCoItems = computed(() =>
   (danhMuc.value?.kichCo || []).filter((item) => variantBuilder.kichCoIds.includes(item.id))
 )
+
+const representativeCreatedVariants = computed(() => {
+  const groupedVariants = new Map()
+
+  createdVariants.value.forEach((item) => {
+    const colorKey = Number(item.mauSacId || 0) || item.mauSac || item.id
+
+    if (!groupedVariants.has(colorKey)) {
+      groupedVariants.set(colorKey, item)
+    }
+  })
+
+  return Array.from(groupedVariants.values())
+})
 
 const filteredMauSacItems = computed(() => {
   const keyword = mauSacSearch.value.trim().toLowerCase()
@@ -660,16 +799,16 @@ function kichCoLabel(id) {
 
 function validateProductForm() {
   clearProductErrors()
-  if (!productForm.ten.trim()) productErrors.ten = 'Tên sản phẩm không được để trống'
-  if (!productForm.thuongHieuId) productErrors.thuongHieuId = 'Chọn thương hiệu'
-  if (!productForm.loaiGiayId) productErrors.loaiGiayId = 'Chọn loại giày'
+  if (!productForm.ten.trim()) productErrors.ten = 'Vui lòng nhập tên sản phẩm'
+  if (!productForm.thuongHieuId) productErrors.thuongHieuId = 'Vui lòng chọn thương hiệu cho sản phẩm'
+  if (!productForm.loaiGiayId) productErrors.loaiGiayId = 'Vui lòng chọn loại giày cho sản phẩm'
   return Object.keys(productErrors).length === 0
 }
 
 function validateVariantBuilder() {
   clearVariantErrors()
-  if (!variantBuilder.mauSacIds.length) variantErrors.mauSacIds = 'Chọn ít nhất 1 màu sắc'
-  if (!variantBuilder.kichCoIds.length) variantErrors.kichCoIds = 'Chọn ít nhất 1 kích cỡ'
+  if (!variantBuilder.mauSacIds.length) variantErrors.mauSacIds = 'Vui lòng chọn ít nhất một màu sắc để tạo biến thể'
+  if (!variantBuilder.kichCoIds.length) variantErrors.kichCoIds = 'Vui lòng chọn ít nhất một kích cỡ để tạo biến thể'
   return Object.keys(variantErrors).length === 0
 }
 
@@ -754,7 +893,7 @@ function validateGeneratedVariants() {
   delete variantErrors.generated
 
   if (!generatedVariants.value.length) {
-    variantErrors.generated = 'Hãy bấm "Tạo biến thể tự động" để sinh danh sách CTSP'
+    variantErrors.generated = 'Bạn chưa tạo danh sách chi tiết sản phẩm tự động'
     return false
   }
 
@@ -763,7 +902,7 @@ function validateGeneratedVariants() {
   )
 
   if (hasInvalid) {
-    variantErrors.generated = 'Vui lòng kiểm tra lại số lượng và giá trên danh sách CTSP'
+    variantErrors.generated = 'Vui lòng kiểm tra lại số lượng tồn, giá gốc và giá bán của từng chi tiết sản phẩm'
     return false
   }
 
@@ -796,7 +935,20 @@ function buildGeneratedVariantPayload() {
 }
 
 async function loadDanhMuc() {
-  danhMuc.value = await api.layDanhMuc()
+  const categories = await api.layDanhMuc()
+
+  danhMuc.value = {
+    ...categories,
+    thuongHieu: sortItemsByPriority(categories.thuongHieu, quickCreatedPriority.thuongHieu),
+    loaiGiay: sortItemsByPriority(categories.loaiGiay, quickCreatedPriority.loaiGiay),
+    chatLieuGiay: sortItemsByPriority(categories.chatLieuGiay, quickCreatedPriority.chatLieuGiay),
+    deGiay: sortItemsByPriority(categories.deGiay, quickCreatedPriority.deGiay),
+    coGiay: sortItemsByPriority(categories.coGiay, quickCreatedPriority.coGiay),
+    congNgheDem: sortItemsByPriority(categories.congNgheDem, quickCreatedPriority.congNgheDem),
+    trongLuong: sortItemsByPriority(categories.trongLuong, quickCreatedPriority.trongLuong),
+    mauSac: sortItemsByPriority(categories.mauSac, quickCreatedPriority.mauSac),
+    kichCo: sortItemsByPriority(categories.kichCo, quickCreatedPriority.kichCo)
+  }
 }
 
 async function loadCurrentProduct() {
@@ -831,7 +983,7 @@ async function loadInitialData() {
     }
     await loadCurrentProduct()
   } catch (error) {
-    showToast(error.message || 'Không tải được dữ liệu khởi tạo', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được dữ liệu khởi tạo'), 'error')
   } finally {
     loadingInit.value = false
   }
@@ -872,7 +1024,15 @@ async function handleSave() {
 
     showToast('Lưu sản phẩm và chi tiết sản phẩm thành công')
   } catch (error) {
-    showToast(error.message || 'Lưu dữ liệu thất bại', 'error')
+    const fieldErrors = getFieldErrors(error)
+    Object.assign(productErrors, fieldErrors)
+    Object.assign(variantErrors, fieldErrors)
+    if (fieldErrors.bienThes && !variantErrors.generated) {
+      variantErrors.generated = fieldErrors.bienThes
+    }
+    if (!Object.keys(fieldErrors).length) {
+      showToast(getDisplayErrorMessage(error, 'Không thể lưu sản phẩm và biến thể'), 'error')
+    }
   } finally {
     saving.value = false
   }
@@ -1374,7 +1534,7 @@ onBeforeUnmount(() => {
       </section>
 
       <section
-        v-if="createdVariants.length"
+        v-if="representativeCreatedVariants.length"
         class="rounded-[24px] border border-emerald-100 bg-emerald-50/60 p-5 shadow-sm"
       >
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -1383,9 +1543,10 @@ onBeforeUnmount(() => {
               <CheckCircle2 :size="16" />
               Lưu chi tiết sản phẩm thành công
             </div>
-            <h2 class="mt-3 text-2xl font-black text-slate-900">Thêm ảnh cho từng biến thể</h2>
+            <h2 class="mt-3 text-2xl font-black text-slate-900">Thêm ảnh theo màu đại diện</h2>
             <p class="mt-2 text-sm text-slate-600">
-              Ảnh được lưu theo từng biến thể. Bạn có thể tải ảnh ngay cho {{ createdVariants.length }} biến thể vừa tạo bên dưới.
+              Mỗi màu chỉ hiển thị một biến thể đại diện để bạn thêm ảnh nhanh cho sản phẩm.
+              Bạn đang có {{ representativeCreatedVariants.length }} màu cần bổ sung ảnh.
             </p>
           </div>
 
@@ -1401,9 +1562,10 @@ onBeforeUnmount(() => {
 
         <div class="mt-6 grid gap-5">
           <BienTheImageManager
-            v-for="item in createdVariants"
+            v-for="item in representativeCreatedVariants"
             :key="item.id"
             :variant="item"
+            display-mode="color"
             @updated="showToast('Cập nhật ảnh thành công')"
             @error="showToast($event, 'error')"
           />

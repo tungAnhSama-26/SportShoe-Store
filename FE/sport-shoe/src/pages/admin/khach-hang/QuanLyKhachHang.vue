@@ -7,6 +7,7 @@ import {
 import { doiTrangThaiKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const router = useRouter();
 
@@ -55,7 +56,7 @@ async function taiDanhSach() {
     });
     danhSach.value = data;
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể tải danh sách khách hàng";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách khách hàng");
   } finally {
     dangTai.value = false;
   }
@@ -85,7 +86,7 @@ async function toggleTrangThai(kh: any) {
     kh.trangThai = trangThaiMoi;
     kh.tenTrangThai = trangThaiMoi === 1 ? "Hoạt động" : "Khóa";
   } catch (e) {
-    loiTrang.value = e instanceof Error ? e.message : "Không thể đổi trạng thái";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể cập nhật trạng thái khách hàng");
     setTimeout(() => (loiTrang.value = ""), 3000);
   } finally {
     dangDoiTrangThai.value = null;

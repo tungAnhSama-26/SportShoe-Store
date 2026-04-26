@@ -13,6 +13,7 @@ import QuanLySanPhamBienTheModal from '../../../components/admin/san-pham/QuanLy
 import QuanLySanPhamBienTheFormModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheFormModal.vue'
 import QuanLySanPhamHinhAnhModal from '../../../components/admin/san-pham/QuanLySanPhamHinhAnhModal.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const route = useRoute()
 const router = useRouter()
@@ -186,7 +187,7 @@ async function loadData(page = 0) {
     totalPages.value = response.totalPages
     currentPage.value = response.page
   } catch (error) {
-    showToast(error.message || 'Lỗi tải dữ liệu', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh sách sản phẩm'), 'error')
   } finally {
     loading.value = false
   }
@@ -262,7 +263,7 @@ async function xuatExcel() {
       exported ? 'success' : 'error'
     )
   } catch (error) {
-    showToast(error.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể xuất Excel sản phẩm'), 'error')
   }
 }
 
@@ -368,9 +369,9 @@ function buildCreateProductPayload() {
 
 function validateProductForm() {
   resetProductErrors()
-  if (!productForm.ten.trim()) productErrors.ten = 'Tên sản phẩm không được để trống'
-  if (!productForm.thuongHieuId) productErrors.thuongHieuId = 'Chọn thương hiệu'
-  if (!productForm.loaiGiayId) productErrors.loaiGiayId = 'Chọn loại giày'
+  if (!productForm.ten.trim()) productErrors.ten = 'Vui lòng nhập tên sản phẩm'
+  if (!productForm.thuongHieuId) productErrors.thuongHieuId = 'Vui lòng chọn thương hiệu cho sản phẩm'
+  if (!productForm.loaiGiayId) productErrors.loaiGiayId = 'Vui lòng chọn loại giày cho sản phẩm'
   return Object.keys(productErrors).length === 0
 }
 
@@ -413,7 +414,7 @@ async function openEdit(item) {
     selectedProductForModal.value = detail
     hydrateProductForm(detail)
   } catch (error) {
-    showToast(error.message || 'Lỗi tải chi tiết sản phẩm', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được chi tiết sản phẩm'), 'error')
     closeProductModal()
   } finally {
     loadingProductDetail.value = false
@@ -445,7 +446,11 @@ async function handleSaveProduct() {
       closeProductModal()
     }
   } catch (error) {
-    showToast(error.message || 'Có lỗi xảy ra khi lưu sản phẩm', 'error')
+    const fieldErrors = getFieldErrors(error)
+    Object.assign(productErrors, fieldErrors)
+    if (!Object.keys(fieldErrors).length) {
+      showToast(getDisplayErrorMessage(error, 'Không thể lưu sản phẩm'), 'error')
+    }
   } finally {
     productSaving.value = false
   }
@@ -463,7 +468,7 @@ async function handleToggleProductStatus(item) {
         : Promise.resolve()
     ])
   } catch (error) {
-    showToast(error.message || 'Lỗi cập nhật trạng thái sản phẩm', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái sản phẩm'), 'error')
   } finally {
     updatingProductStatusId.value = null
   }
@@ -567,7 +572,7 @@ async function syncSelectedGiayContext(giayId = selectedGiay.value?.id) {
   } catch (error) {
     selectedGiay.value = null
     bienTheList.value = []
-    showToast(error.message || 'Lỗi tải biến thể sản phẩm', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh sách biến thể sản phẩm'), 'error')
   } finally {
     loadingBienThe.value = false
   }
@@ -612,9 +617,9 @@ function closeBienTheForm() {
 
 function validateBulkBienTheBuilder() {
   Object.keys(bulkBienTheErrors).forEach((key) => delete bulkBienTheErrors[key])
-  if (!bulkBienTheForm.mauSacIds.length) bulkBienTheErrors.mauSacIds = 'Chọn ít nhất 1 màu sắc'
-  if (!bulkBienTheForm.kichCoIds.length) bulkBienTheErrors.kichCoIds = 'Chọn ít nhất 1 kích cỡ'
-  if (Number(bulkBienTheForm.giaGoc) < 0) bulkBienTheErrors.giaGoc = 'Giá gốc không được âm'
+  if (!bulkBienTheForm.mauSacIds.length) bulkBienTheErrors.mauSacIds = 'Vui lòng chọn ít nhất một màu sắc để tạo CTSP'
+  if (!bulkBienTheForm.kichCoIds.length) bulkBienTheErrors.kichCoIds = 'Vui lòng chọn ít nhất một kích cỡ để tạo CTSP'
+  if (Number(bulkBienTheForm.giaGoc) < 0) bulkBienTheErrors.giaGoc = 'Giá gốc của CTSP không được âm'
   return Object.keys(bulkBienTheErrors).length === 0
 }
 
@@ -653,7 +658,7 @@ function validateGeneratedBulkBienThes() {
   delete bulkBienTheErrors.generated
 
   if (!generatedBulkBienThes.value.length) {
-    bulkBienTheErrors.generated = 'Hãy bấm "Tạo CTSP tự động" để sinh danh sách CTSP'
+    bulkBienTheErrors.generated = 'Bạn chưa tạo danh sách chi tiết sản phẩm tự động'
     return false
   }
 
@@ -662,7 +667,7 @@ function validateGeneratedBulkBienThes() {
   )
 
   if (hasInvalidRow) {
-    bulkBienTheErrors.generated = 'Vui lòng kiểm tra lại số lượng và giá trên danh sách CTSP'
+    bulkBienTheErrors.generated = 'Vui lòng kiểm tra lại số lượng tồn, giá gốc và giá bán của từng chi tiết sản phẩm'
     return false
   }
 
@@ -676,9 +681,9 @@ async function handleSaveBienThe() {
   savingBienThe.value = true
   try {
     if (editingBienThe.value) {
-      if (Number(bienTheForm.giaBan) <= 0) bienTheErrors.giaBan = 'Giá bán phải lớn hơn 0'
-      if (Number(bienTheForm.giaGoc) < 0) bienTheErrors.giaGoc = 'Giá gốc không được âm'
-      if (Number(bienTheForm.soLuong) < 0) bienTheErrors.soLuong = 'Số lượng không được âm'
+      if (Number(bienTheForm.giaBan) <= 0) bienTheErrors.giaBan = 'Giá bán của chi tiết sản phẩm phải lớn hơn 0'
+      if (Number(bienTheForm.giaGoc) < 0) bienTheErrors.giaGoc = 'Giá gốc của chi tiết sản phẩm không được âm'
+      if (Number(bienTheForm.soLuong) < 0) bienTheErrors.soLuong = 'Số lượng tồn của chi tiết sản phẩm không được âm'
       if (Object.keys(bienTheErrors).length > 0) return
 
       await api.capNhatBienThe(editingBienThe.value.id, {
@@ -708,7 +713,15 @@ async function handleSaveBienThe() {
       loadData(currentPage.value)
     ])
   } catch (error) {
-    showToast(error.message || 'Lỗi lưu CTSP', 'error')
+    const fieldErrors = getFieldErrors(error)
+    Object.assign(bienTheErrors, fieldErrors)
+    Object.assign(bulkBienTheErrors, fieldErrors)
+    if (fieldErrors.bienThes && !bulkBienTheErrors.generated) {
+      bulkBienTheErrors.generated = fieldErrors.bienThes
+    }
+    if (!Object.keys(fieldErrors).length) {
+      showToast(getDisplayErrorMessage(error, 'Không thể lưu chi tiết sản phẩm'), 'error')
+    }
   } finally {
     savingBienThe.value = false
   }
@@ -729,7 +742,7 @@ async function handleToggleBienTheStatus(item) {
       loadData(currentPage.value)
     ])
   } catch (error) {
-    showToast(error.message || 'Lỗi cập nhật trạng thái CTSP', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái chi tiết sản phẩm'), 'error')
   } finally {
     updatingBienTheStatusId.value = null
   }
@@ -745,7 +758,7 @@ async function handleDeleteBienThe(id) {
       loadData(currentPage.value)
     ])
   } catch (error) {
-    showToast(error.message || 'Lỗi xóa biến thể', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể xóa biến thể sản phẩm'), 'error')
   }
 }
 

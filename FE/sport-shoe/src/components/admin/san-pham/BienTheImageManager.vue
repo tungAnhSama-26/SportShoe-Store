@@ -15,6 +15,10 @@ const props = defineProps({
   autoLoad: {
     type: Boolean,
     default: true
+  },
+  displayMode: {
+    type: String,
+    default: 'variant'
   }
 })
 
@@ -160,10 +164,10 @@ onMounted(() => {
     <div class="flex items-center justify-between gap-3">
       <div>
         <p class="text-sm font-semibold text-slate-800">
-          Ảnh cho biến thể {{ variant.mauSac }} / {{ variant.kichCo }}
+          {{ displayMode === 'color' ? `Ảnh đại diện màu ${variant.mauSac}` : `Ảnh cho biến thể ${variant.mauSac} / ${variant.kichCo}` }}
         </p>
         <p class="mt-1 text-xs text-slate-400">
-          {{ variant.maBienThe || variant.sku }}
+          {{ displayMode === 'color' ? `Biến thể đại diện • Size ${variant.kichCo}` : (variant.maBienThe || variant.sku) }}
         </p>
       </div>
 
