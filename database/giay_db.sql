@@ -303,7 +303,7 @@ GO
 
 -- ============================================================
 -- [13] giay
---   trang_thai: 1 = Đang bán | 2 = Ngừng bán
+--   trang_thai: 0 = Ngừng kinh doanh | 1 = Kinh doanh | 2 = Hết hàng
 -- ============================================================
 CREATE TABLE giay (
     id             INT           NOT NULL CONSTRAINT pk_giay PRIMARY KEY IDENTITY(1,1),
@@ -316,11 +316,11 @@ CREATE TABLE giay (
     chat_lieu      NVARCHAR(100) NULL,
     mo_ta          NVARCHAR(MAX) NULL,
     trang_thai     INT           NOT NULL CONSTRAINT df_giay_trang_thai DEFAULT 1,
-    -- 1 = Đang bán  |  2 = Ngừng bán
+    -- 0 = Ngừng kinh doanh | 1 = Kinh doanh | 2 = Hết hàng
     ngay_tao       DATETIME2     NOT NULL CONSTRAINT df_giay_ngay_tao   DEFAULT SYSDATETIME(),
     ngay_cap_nhat  DATETIME2     NULL,
     CONSTRAINT uq_giay_ma           UNIQUE (ma),
-    CONSTRAINT ck_giay_trang_thai   CHECK  (trang_thai IN (1, 2)),
+    CONSTRAINT ck_giay_trang_thai   CHECK  (trang_thai IN (0, 1, 2)),
     CONSTRAINT ck_giay_gioi_tinh    CHECK  (gioi_tinh IS NULL OR gioi_tinh IN (1, 2, 3)),
     CONSTRAINT fk_giay_thuong_hieu  FOREIGN KEY (thuong_hieu_id) REFERENCES thuong_hieu(id),
     CONSTRAINT fk_giay_loai_giay    FOREIGN KEY (loai_giay_id)   REFERENCES loai_giay(id)

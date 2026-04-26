@@ -1,6 +1,6 @@
 ﻿<script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Search, Plus, Trash2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Search, Plus, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { trongLuongApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
 import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
@@ -75,12 +75,6 @@ async function handleSave() {
     showModal.value = false; loadData(currentPage.value)
   } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
   finally { saving.value = false }
-}
-
-async function handleDelete(item) {
-  if (!confirm(`Xóa trọng lượng "${item.ma}"?`)) return
-  try { await trongLuongApi.delete(item.id); showToast('Xóa thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi xóa', 'error') }
 }
 
 async function handleToggleStatus(item) {
@@ -184,7 +178,6 @@ async function xuatExcel() {
               <div class="flex items-center justify-center gap-1">
                 <AdminQuickStatusAction :loading="updatingStatusId === item.id" :action-label="item.trangThai === 1 ? 'Chuyển sang ngừng bán' : 'Chuyển sang đang bán'" :intent="item.trangThai === 1 ? 'deactivate' : 'activate'" @toggle="handleToggleStatus(item)" />
                 <button @click="openView(item)" title="Xem và sửa" class="admin-table-action text-slate-600 hover:text-rose-500"><Eye :size="14" /></button>
-                <button @click="handleDelete(item)" class="admin-table-action text-red-500 hover:text-red-600"><Trash2 :size="14" /></button>
               </div>
             </td>
           </tr>

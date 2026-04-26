@@ -1,6 +1,7 @@
 package com.example.server.core.admin.quanLySanPham;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -242,7 +243,7 @@ record TaoChiTietSanPhamHangLoatRequest(
         @NotEmpty java.util.List<@Valid TaoChiTietSanPhamHangLoatItemRequest> bienThes
 ) {}
 
-record DoiTrangThaiRequest(@NotNull Integer trangThai) {}
+record DoiTrangThaiRequest(@NotNull @Min(0) @Max(2) Integer trangThai) {}
 
 record DoiTrangThaiBienTheRequest(@NotNull Integer kichHoat) {}
 
