@@ -221,9 +221,10 @@ function formatCurrency(val) {
 }
 
 function tinhGiaGiam(giaGoc) {
+  const giaCoSo = Number(giaGoc) || 0;
   const phanTram = Number(form.giaTriGiam) || 0;
-  if (phanTram <= 0) return giaGoc;
-  return giaGoc * (1 - phanTram / 100);
+  if (phanTram <= 0) return giaCoSo;
+  return giaCoSo * (1 - phanTram / 100);
 }
 
 function getToday() {
@@ -327,6 +328,7 @@ async function taiChiTiet() {
 async function submitForm() {
   resetErrors();
   let isValid = true;
+  const dangTaoMoi = laMoi;
 
   if (!form.ma.trim()) { formErrors.ma = "Mã đợt không được để trống"; isValid = false; }
   if (!form.ten.trim()) { formErrors.ten = "Tên đợt không được để trống"; isValid = false; }
@@ -359,21 +361,15 @@ async function submitForm() {
       ngayBatDau: form.ngayBatDau,
       ngayKetThuc: form.ngayKetThuc,
       kichHoat: Number(form.kichHoat),
-      ngayTao: laMoi ? getToday() : undefined,
-      ngayCapNhat: !laMoi ? getToday() : undefined
+      ngayTao: dangTaoMoi ? getToday() : undefined,
+      ngayCapNhat: !dangTaoMoi ? getToday() : undefined
     };
 
     let savedId = id;
-    if (laMoi) {
+    if (dangTaoMoi) {
       const res = await createDotGiamGia(payload);
       if (!res || !res.id) throw new Error("Không nhận được phản hồi từ máy chủ.");
       savedId = res.id;
-      
-      // Quan trọng: Chuyển sang chế độ cập nhật ngay lập tức
-      id = savedId;
-      laMoi = false;
-      // Cập nhật URL mà không reload trang (tùy chọn, để nếu nhấn F5 vẫn ở trang chi tiết)
-      try { router.replace({ name: 'admin-dot-giam-gia-chi-tiet', params: { id: savedId } }); } catch(e) {}
     } else {
       await updateDotGiamGia(id, payload);
     }
@@ -384,7 +380,7 @@ async function submitForm() {
       giayChiTietIds: currentVariantIds
     });
 
-    hienThiThongBao("success", laMoi ? "Thêm đợt giảm giá thành công" : "Cập nhật thành công");
+    hienThiThongBao("success", dangTaoMoi ? "Thêm đợt giảm giá thành công" : "Cập nhật thành công");
     setTimeout(() => { router.push({ name: "admin-dot-giam-gia" }); }, 1000);
   } catch (error) {
     hienThiThongBao("error", "Lỗi lưu dữ liệu", error.message);
@@ -726,8 +722,8 @@ onMounted(taiChiTiet);
                   <td class="px-4 py-3 font-bold">
                     <div v-if="Number(form.giaTriGiam) > 0">
                       <span class="text-[11px] text-slate-400 line-through block font-normal">{{
-                        formatCurrency(v.giaBan) }}</span>
-                      <span class="text-rose-600">{{ formatCurrency(tinhGiaGiam(v.giaBan)) }}</span>
+                        formatCurrency(v.giaGoc || v.giaBan) }}</span>
+                      <span class="text-rose-600">{{ formatCurrency(tinhGiaGiam(v.giaGoc || v.giaBan)) }}</span>
                     </div>
                     <div v-else class="text-slate-800">
                       {{ formatCurrency(v.giaBan) }}

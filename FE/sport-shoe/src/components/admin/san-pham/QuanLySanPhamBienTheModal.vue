@@ -93,13 +93,33 @@ function quickToggleConfirmMessage(item) {
   return `Bạn có muốn chuyển CTSP "${target}" sang ${action} không?`
 }
 
+function formatPercentValue(value) {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue) || numericValue <= 0) return '-'
+
+  const normalizedValue = Math.min(numericValue, 100)
+  return normalizedValue % 1 === 0 ? `${normalizedValue.toFixed(0)}%` : `${normalizedValue.toFixed(1)}%`
+}
+
 function formatDiscountPercent(item) {
+  const loaiGiam = Number(item?.loaiGiam || 0)
+  const giaTriGiam = Number(item?.giaTriGiam || 0)
   const giaGoc = Number(item?.giaGoc || 0)
   const giaBan = Number(item?.giaBan || 0)
+
+  if (giaTriGiam > 0) {
+    if (loaiGiam === 1) {
+      return formatPercentValue(giaTriGiam)
+    }
+
+    if (loaiGiam === 2 && giaGoc > 0) {
+      return formatPercentValue((giaTriGiam / giaGoc) * 100)
+    }
+  }
+
   if (giaGoc <= 0 || giaBan >= giaGoc) return '-'
 
-  const percent = ((giaGoc - giaBan) / giaGoc) * 100
-  return percent % 1 === 0 ? `${percent.toFixed(0)}%` : `${percent.toFixed(1)}%`
+  return formatPercentValue(((giaGoc - giaBan) / giaGoc) * 100)
 }
 </script>
 

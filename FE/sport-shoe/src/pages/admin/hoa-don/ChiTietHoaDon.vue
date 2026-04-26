@@ -190,6 +190,14 @@ function thongBaoDonDaHoanThanh() {
   hienThiThongBao("warning", "Đơn Hàng Đã Hoàn Thành", "Đơn hàng đã hoàn thành không thể thay đổi trạng thái");
 }
 
+function moModalThongTin() {
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
+  hienModalThongTin.value = true;
+}
+
 const tongTienHang = computed(() => hoaDon.value?.sanPham?.reduce((tong: number, sp: any) => tong + sp.thanhTien, 0) ?? 0);
 const tongKhachCanTra = computed(() =>
   hoaDon.value ? tongTienHang.value + (hoaDon.value.phiVanChuyen || 0) - (hoaDon.value.giamGia || 0) : 0,
@@ -271,15 +279,19 @@ async function handleXacNhanTrangThai() {
 }
 
 watch(hienModalSanPham, (val) => {
-  if (val && hoaDon.value) {
-    danhSachSanPhamUpdate.value = (hoaDon.value.sanPham || []).map((sp: any) => ({
-      chiTietId: sp.id,
-      tenSanPham: sp.tenSanPham,
-      soLuong: sp.soLuong,
-      giaBan: sp.donGia,
-      maBienThe: sp.phanLoai || "",
-    }));
+  if (!val || !hoaDon.value) return;
+  if (donDaHoanThanh.value) {
+    hienModalSanPham.value = false;
+    thongBaoDonDaHoanThanh();
+    return;
   }
+  danhSachSanPhamUpdate.value = (hoaDon.value.sanPham || []).map((sp: any) => ({
+    chiTietId: sp.id,
+    tenSanPham: sp.tenSanPham,
+    soLuong: sp.soLuong,
+    giaBan: sp.donGia,
+    maBienThe: sp.phanLoai || "",
+  }));
 });
 
 async function timKiemSanPham() {
@@ -316,7 +328,7 @@ function removeSanPham(id: number) {
 async function handleSaveSanPham() {
   if (!hoaDon.value || dangCapNhat.value) return;
   if (donDaHoanThanh.value) {
-    window.alert("Đơn hàng đã hoàn thành, không thể chỉnh sửa.");
+    thongBaoDonDaHoanThanh();
     return;
   }
   dangCapNhat.value = true;
@@ -381,28 +393,39 @@ function hienThiOptionTrangThai(index: number, key: string) {
 }
 
 watch(hienModalThongTin, (val) => {
-  if (val && hoaDon.value) {
-    const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
-    let defaultStt = hoaDon.value.trangThai;
-    if (stt === 'chờ xác nhận' || stt === 'cho_xac_nhan') defaultStt = "Chờ xác nhận";
-    else if (stt === 'chờ giao hàng' || stt === 'đã xác nhận' || stt === 'cho_giao_hang') defaultStt = "Chờ giao hàng";
-    else if (stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Đang vận chuyển";
-    else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
-    else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
-    else if (stt === 'yêu cầu hủy' || stt === 'yeu_cau_huy') defaultStt = "Yêu cầu hủy";
-    else if (stt === 'cần hoàn tiền' || stt === 'can_hoan_tien') defaultStt = "Cần hoàn tiền";
-    else if (stt === 'hủy' || stt === 'huy') defaultStt = "Hủy";
-
-    formThongTin.value = {
-      trangThai: defaultStt,
-      tenKhachHang: hoaDon.value.tenKhachHang || "",
-      soDienThoai: hoaDon.value.soDienThoai || "",
-      email: hoaDon.value.email || "",
-      diaChi: hoaDon.value.diaChi || "",
-      loaiDon: hoaDon.value.loaiDon || ""
-    };
-    tabHienTai.value = "donHang";
+  if (!val || !hoaDon.value) return;
+  if (donDaHoanThanh.value) {
+    hienModalThongTin.value = false;
+    thongBaoDonDaHoanThanh();
+    return;
   }
+  const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
+  let defaultStt = hoaDon.value.trangThai;
+  if (stt === 'chờ xác nhận' || stt === 'cho_xac_nhan') defaultStt = "Chờ xác nhận";
+  else if (stt === 'chờ giao hàng' || stt === 'đã xác nhận' || stt === 'cho_giao_hang') defaultStt = "Chờ giao hàng";
+  else if (stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Đang vận chuyển";
+  else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
+  else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
+  else if (stt === 'yêu cầu hủy' || stt === 'yeu_cau_huy') defaultStt = "Yêu cầu hủy";
+  else if (stt === 'cần hoàn tiền' || stt === 'can_hoan_tien') defaultStt = "Cần hoàn tiền";
+  else if (stt === 'hủy' || stt === 'huy') defaultStt = "Hủy";
+
+  formThongTin.value = {
+    trangThai: defaultStt,
+    tenKhachHang: hoaDon.value.tenKhachHang || "",
+    soDienThoai: hoaDon.value.soDienThoai || "",
+    email: hoaDon.value.email || "",
+    diaChi: hoaDon.value.diaChi || "",
+    loaiDon: hoaDon.value.loaiDon || ""
+  };
+  tabHienTai.value = "donHang";
+});
+
+watch(donDaHoanThanh, (locked) => {
+  if (!locked) return;
+  hienModalXacNhan.value = false;
+  hienModalSanPham.value = false;
+  hienModalThongTin.value = false;
 });
 
 async function handleLuuThongTin() {
@@ -431,7 +454,7 @@ async function handleLuuThongTin() {
 async function handleTinhPhiGhn() {
   if (!hoaDon.value || dangTinhPhiGhn.value) return;
   if (donDaHoanThanh.value) {
-    window.alert("Đơn hàng đã hoàn thành, không thể chỉnh sửa.");
+    thongBaoDonDaHoanThanh();
     return;
   }
   if (!formThongTin.value.diaChi.trim()) {
@@ -711,12 +734,18 @@ onMounted(taiChiTiet);
 
           <button
             type="button"
-            @click="hienModalThongTin = true"
-            class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+            @click="moModalThongTin"
+            :disabled="donDaHoanThanh"
+            :title="donDaHoanThanh ? 'Đơn hàng đã hoàn thành, không thể chỉnh sửa.' : ''"
+            class="flex h-10 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:shadow-none"
+            :class="donDaHoanThanh ? 'bg-slate-300 hover:bg-slate-300' : 'bg-amber-500 hover:bg-amber-600'"
           >
             <Pencil class="h-4 w-4" />
             Chỉnh Sửa Đơn Hàng
           </button>
+          <p v-if="donDaHoanThanh" class="text-center text-xs font-medium text-slate-400">
+            Đơn hàng đã hoàn thành nên không thể chỉnh sửa.
+          </p>
         </div>
       </section>
 
@@ -894,7 +923,7 @@ onMounted(taiChiTiet);
                 <button @click="hienModalSanPham = false" class="flex-1 rounded-2xl bg-white py-3 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
                   Đóng
                 </button>
-                <button @click="handleSaveSanPham" :disabled="dangCapNhat" class="flex-1 rounded-2xl bg-amber-500 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50">
+                <button @click="handleSaveSanPham" :disabled="dangCapNhat || donDaHoanThanh" class="flex-1 rounded-2xl bg-amber-500 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50">
                   {{ dangCapNhat ? "Đang Lưu..." : "Lưu Thay Đổi" }}
                 </button>
               </div>
@@ -1043,7 +1072,7 @@ onMounted(taiChiTiet);
           <button @click="hienModalThongTin = false" class="rounded-full bg-slate-500 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-slate-600">
             Hủy
           </button>
-          <button @click="handleLuuThongTin" :disabled="dangCapNhat" class="rounded-full bg-emerald-600 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50">
+          <button @click="handleLuuThongTin" :disabled="dangCapNhat || donDaHoanThanh" class="rounded-full bg-emerald-600 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50">
             {{ dangCapNhat ? 'Đang Lưu...' : 'Lưu' }}
           </button>
         </div>

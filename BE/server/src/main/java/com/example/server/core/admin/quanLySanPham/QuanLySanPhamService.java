@@ -750,7 +750,7 @@ public class QuanLySanPhamService {
             }
 
             DotGiamGia dotGiamGia = link.getDotGiamGia();
-            if (!isDiscountEffective(dotGiamGia, now)) {
+            if (!isDiscountDisplayable(dotGiamGia, now)) {
                 continue;
             }
 
@@ -779,6 +779,13 @@ public class QuanLySanPhamService {
             return false;
         }
         if (dotGiamGia.getNgayBatDau() != null && now.isBefore(dotGiamGia.getNgayBatDau())) {
+            return false;
+        }
+        return dotGiamGia.getNgayKetThuc() == null || !now.isAfter(dotGiamGia.getNgayKetThuc());
+    }
+
+    private boolean isDiscountDisplayable(DotGiamGia dotGiamGia, LocalDate now) {
+        if (dotGiamGia == null || dotGiamGia.getKichHoat() == null || dotGiamGia.getKichHoat() == 0) {
             return false;
         }
         return dotGiamGia.getNgayKetThuc() == null || !now.isAfter(dotGiamGia.getNgayKetThuc());
