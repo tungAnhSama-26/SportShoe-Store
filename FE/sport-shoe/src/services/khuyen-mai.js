@@ -148,6 +148,7 @@ function deletePhieuGiamGia(id) {
 function getPhieuGiamGiaKhachHangList(filters) {
   const params = new URLSearchParams();
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
+  if (filters?.phieuGiamGiaId) params.set("phieuGiamGiaId", String(filters.phieuGiamGiaId));
   if (filters?.trangThai != null && filters?.trangThai !== "") params.set("trangThai", String(filters.trangThai));
   params.set("pageNo", String(filters?.pageNo ?? 0));
   params.set("pageSize", String(filters?.pageSize ?? 5));

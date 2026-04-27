@@ -32,7 +32,7 @@ type TrangThaiLoc =
 type HoaDonItem = {
   id: number;
   maHoaDon: string;
-  tenNhanVien: string;
+  maNhanVien: string;
   tenKhachHang: string;
   tongTien: number;
   ngayTao: string;
@@ -226,7 +226,7 @@ function xuatExcel() {
     columns: [
       { label: "STT", value: (_, index) => index + 1 },
       { label: "Mã hóa đơn", key: "maHoaDon" },
-      { label: "Nhân viên", value: (row) => row.tenNhanVien || "—" },
+      { label: "Mã nhân viên", value: (row) => row.maNhanVien || "—" },
       { label: "Khách hàng", value: (row) => row.tenKhachHang || "—" },
       { label: "Tổng tiền", value: (row) => dinhDangTien(row.tongTien) },
       { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
@@ -303,7 +303,7 @@ onMounted(taiDanhSach);
             <input
               v-model="boLoc.keyword"
               type="text"
-              placeholder="Tìm theo mã hóa đơn, tên nhân viên, khách hàng..."
+              placeholder="Tìm theo mã hóa đơn, mã/tên nhân viên, khách hàng..."
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-[#B82220]/40 focus:bg-white"
             />
           </div>
@@ -427,10 +427,10 @@ onMounted(taiDanhSach);
       <div class="overflow-x-auto">
         <table class="min-w-[1080px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã hóa đơn</th>
-              <th class="bg-slate-100 px-4 py-3">Nhân viên</th>
+              <th class="bg-slate-100 px-4 py-3">Mã nhân viên</th>
               <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
               <th class="bg-slate-100 px-4 py-3">Tổng tiền</th>
               <th class="bg-slate-100 px-4 py-3">Ngày tạo</th>
@@ -455,7 +455,7 @@ onMounted(taiDanhSach);
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
-              <td class="px-4 py-4">{{ hoaDon.tenNhanVien }}</td>
+              <td class="px-4 py-4">{{ hoaDon.maNhanVien || "—" }}</td>
               <td class="px-4 py-4">{{ hoaDon.tenKhachHang || "—" }}</td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
               <td class="px-4 py-4">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { Plus, Trash2, Eye, X, Upload, ImageOff } from 'lucide-vue-next'
 import { thuongHieuApi } from '../../../services/danh-muc-api'
@@ -169,13 +169,13 @@ async function xuatExcel() {
         </colgroup>
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-16">Logo</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên thương hiệu</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Xuất xứ</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase w-12">STT</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-16">Logo</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Mã</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Tên thương hiệu</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Xuất xứ</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Trạng thái</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">

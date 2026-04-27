@@ -388,7 +388,7 @@ onUnmounted(() => {
       <div class="overflow-x-auto">
         <table class="min-w-[980px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã sản phẩm</th>
               <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>

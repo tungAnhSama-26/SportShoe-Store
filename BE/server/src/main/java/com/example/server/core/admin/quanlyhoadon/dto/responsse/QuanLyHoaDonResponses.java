@@ -13,7 +13,7 @@ public final class QuanLyHoaDonResponses {
             Integer id,
             String maHoaDon,
             String tenKhachHang,
-            String tenNhanVien,
+            String maNhanVien,
             BigDecimal tongTien,
             Instant ngayTao,
             String loaiDon,
