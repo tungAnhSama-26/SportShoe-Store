@@ -175,11 +175,13 @@ async function batCamera() {
     }
 
     if (!hasBarcodeDetectorSupport.value) {
-      const [{ BrowserMultiFormatReader, BarcodeFormat }, zxingLibrary] =
+      const [{ BrowserMultiFormatReader }, zxingLibrary] =
         await Promise.all([
           import("@zxing/browser"),
           import("@zxing/library"),
         ]);
+
+      const { BarcodeFormat } = zxingLibrary;
 
       const hints = new Map();
       hints.set(zxingLibrary.DecodeHintType.POSSIBLE_FORMATS, [

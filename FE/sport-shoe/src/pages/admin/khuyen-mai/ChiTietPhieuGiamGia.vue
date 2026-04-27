@@ -1,13 +1,17 @@
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Ticket, RefreshCcw, CheckCircle2, CircleX, X } from "lucide-vue-next";
+import { ArrowLeft, Save, Ticket, RefreshCcw, CheckCircle2, CircleX, X, Users, CheckSquare, Square, Search } from "lucide-vue-next";
 import { computed } from "vue";
 import {
   createPhieuGiamGia,
   getPhieuGiamGiaDetail,
-  updatePhieuGiamGia
+  updatePhieuGiamGia,
+  createPhieuGiamGiaKhachHang,
+  getPhieuGiamGiaKhachHangList,
+  deletePhieuGiamGiaKhachHang
 } from "../../../services/khuyen-mai";
+import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
 const route = useRoute();
@@ -72,6 +76,60 @@ const form = reactive({
   trangThai: "1"
 });
 
+// Customer Selection State
+const searchKh = ref("");
+const danhSachKh = ref([]);
+const dsEmailChon = ref([]);
+const dsKhachHangDaGan = ref([]); // Tracks initial assignment objects { email, id }
+const dangTaiKh = ref(false);
+
+async function taiKhachHang() {
+  dangTaiKh.value = true;
+  try {
+    const data = await layDanhSachKhachHang({ keyword: searchKh.value });
+    if (Array.isArray(data)) {
+      danhSachKh.value = data;
+    } else if (data && Array.isArray(data.content)) {
+      danhSachKh.value = data.content;
+    } else {
+      danhSachKh.value = [];
+    }
+  } catch (e) {
+    console.error("Lỗi tải khách hàng:", e);
+    danhSachKh.value = [];
+  } finally {
+    dangTaiKh.value = false;
+  }
+}
+
+function toggleEmail(email) {
+  if (!email) return;
+  const normalized = email.trim().toLowerCase();
+  const idx = dsEmailChon.value.findIndex(e => e.trim().toLowerCase() === normalized);
+  if (idx > -1) dsEmailChon.value.splice(idx, 1);
+  else dsEmailChon.value.push(email);
+}
+
+function chonTatCa() {
+  if (dsEmailChon.value.length === danhSachKh.value.length && danhSachKh.value.length > 0) {
+    dsEmailChon.value = [];
+  } else {
+    dsEmailChon.value = danhSachKh.value.map(kh => kh.email).filter(e => e);
+  }
+}
+
+let searchTimer;
+function handleSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => taiKhachHang(), 300);
+}
+
+watch(() => form.loaiPhieu, (val) => {
+  if (val === '2' && danhSachKh.value.length === 0) {
+    taiKhachHang();
+  }
+});
+
 function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -120,6 +178,61 @@ async function taiChiTiet() {
       soLuong: detail.soLuong ?? "",
       trangThai: String(detail.trangThai ?? 1)
     });
+
+    // Nếu là phiếu cá nhân, tải danh sách khách hàng đã gán
+    if (String(detail.loaiPhieu) === '2') {
+      await taiKhachHang(); // Load full list first to show in table
+      try {
+        const res = await getPhieuGiamGiaKhachHangList({
+          phieuGiamGiaId: detail.id,
+          keyword: detail.ma, // Fallback for some backend implementations
+          pageSize: 1000
+        });
+        
+        // Handle both paging object and direct array
+        const list = res?.content || res || [];
+        if (Array.isArray(list)) {
+          const assignedEmails = new Set();
+          
+          list.forEach(item => {
+            // Check coupon match
+            const mId = item.phieuGiamGiaId || item.phieuGiamGia?.id;
+            const mMa = item.maPhieuGiamGia || item.phieuGiamGia?.ma;
+            if (String(mId) !== String(detail.id) && mMa !== detail.ma) return;
+
+            // Try to get email directly
+            const email = item.email || item.khachHangEmail || item.khachHang?.email || item.emailKhachHang;
+            let normalizedEmail = null;
+            
+            if (email) {
+              normalizedEmail = email.trim();
+            } else {
+              // Try to find email by khachHangId in the loaded list
+              const kId = item.khachHangId || item.khachHang?.id;
+              if (kId) {
+                const found = danhSachKh.value.find(k => String(k.id) === String(kId));
+                if (found && found.email) {
+                  normalizedEmail = found.email.trim();
+                }
+              }
+            }
+            
+            if (normalizedEmail) {
+              assignedEmails.add(normalizedEmail);
+              dsKhachHangDaGan.value.push({
+                id: item.id,
+                email: normalizedEmail.toLowerCase()
+              });
+            }
+          });
+          
+          dsEmailChon.value = Array.from(assignedEmails);
+          console.log("Đã khớp danh sách email từ ID và Email:", dsEmailChon.value);
+        }
+      } catch (e) {
+        console.error("Lỗi tải danh sách khách hàng đã gán:", e);
+      }
+    }
   } catch (e) {
     loiTrang.value = getDisplayErrorMessage(e, "Không thể tải chi tiết phiếu giảm giá");
   } finally {
@@ -138,6 +251,11 @@ async function submitForm() {
     isValid = false; 
   } else if (Number(form.loai) === 1 && parseVndNumber(form.giaTri) > 100) {
     formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
+    isValid = false;
+  }
+
+  if (form.loaiPhieu === '2' && dsEmailChon.value.length === 0) {
+    hienThiThongBao("warning", "Chưa chọn khách hàng", "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân");
     isValid = false;
   }
 
@@ -176,12 +294,56 @@ async function submitForm() {
       ngayCapNhat: !laMoi ? getToday() : undefined
     };
 
+    let couponId = id;
     if (laMoi) {
-      await createPhieuGiamGia(payload);
+      const res = await createPhieuGiamGia(payload);
+      couponId = res.id;
       hienThiThongBao("success", "Thêm phiếu giảm giá thành công");
     } else {
       await updatePhieuGiamGia(id, payload);
       hienThiThongBao("success", "Cập nhật phiếu giảm giá thành công");
+    }
+
+    // Sync customer assignments if Private
+    if (form.loaiPhieu === '2') {
+      let addedCount = 0;
+      let removedCount = 0;
+      
+      const currentSelectedEmails = dsEmailChon.value.map(e => e.toLowerCase());
+      
+      // 1. Delete unchecked assignments
+      for (const assignment of dsKhachHangDaGan.value) {
+        if (!currentSelectedEmails.includes(assignment.email)) {
+          try {
+            await deletePhieuGiamGiaKhachHang(assignment.id);
+            removedCount++;
+          } catch (e) {
+            console.error(`Lỗi xóa gán phiếu cho ${assignment.email}:`, e);
+          }
+        }
+      }
+      
+      // 2. Create new assignments
+      const alreadyAssignedEmails = dsKhachHangDaGan.value.map(a => a.email);
+      for (const email of dsEmailChon.value) {
+        if (!alreadyAssignedEmails.includes(email.toLowerCase())) {
+          try {
+            await createPhieuGiamGiaKhachHang({
+              phieuGiamGiaId: Number(couponId),
+              email: email,
+              trangThai: 1,
+              ngayTao: getToday()
+            });
+            addedCount++;
+          } catch (e) {
+            console.error(`Lỗi tặng phiếu mới cho ${email}:`, e);
+          }
+        }
+      }
+      
+      if (addedCount > 0 || removedCount > 0) {
+        hienThiThongBao("success", "Đồng bộ khách hàng thành công", `Đã thêm mới ${addedCount}, gỡ bỏ ${removedCount} khách hàng`);
+      }
     }
     setTimeout(() => {
       router.push({ name: "admin-phieu-giam-gia" });
@@ -299,6 +461,8 @@ onMounted(taiChiTiet);
           <p v-if="formErrors.loaiPhieu" class="text-xs text-rose-500 mt-1">{{ formErrors.loaiPhieu }}</p>
         </div>
 
+
+
         <div class="min-w-0 space-y-2">
           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Loại giảm <span class="text-rose-500">*</span></label>
           <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:gap-6">
@@ -374,6 +538,83 @@ onMounted(taiChiTiet);
           <p v-if="formErrors.ngayKetThuc" class="text-xs text-rose-500 mt-1">{{ formErrors.ngayKetThuc }}</p>
         </div>
       </div>
+
+      <!-- Customer Selection for Private Coupons -->
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="transform translate-y-4 opacity-0"
+        enter-to-class="transform translate-y-0 opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="transform translate-y-0 opacity-100"
+        leave-to-class="transform translate-y-4 opacity-0"
+      >
+        <div v-if="form.loaiPhieu === '2'" class="space-y-4 rounded-3xl border border-slate-100 bg-slate-50/30 p-5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-slate-800">
+              <Users class="h-5 w-5 text-rose-500" />
+              <span class="text-sm font-bold">Chọn khách hàng mục tiêu</span>
+            </div>
+            <button type="button" @click="chonTatCa" class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition-colors">
+              {{ dsEmailChon.length === danhSachKh.length && danhSachKh.length > 0 ? 'Bỏ chọn tất cả' : 'Chọn tất cả bản ghi hiện tại' }}
+            </button>
+          </div>
+
+          <div class="relative">
+            <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input 
+              v-model="searchKh"
+              type="text"
+              placeholder="Tìm theo tên hoặc số điện thoại khách hàng..."
+              @input="handleSearch"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-500/5"
+            />
+          </div>
+
+          <div class="max-h-[350px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead class="sticky top-0 z-10 bg-slate-50 text-[13px] font-bold text-slate-950">
+                <tr>
+                  <th class="px-4 py-3 w-12 text-center">#</th>
+                  <th class="px-4 py-3">Họ tên</th>
+                  <th class="px-4 py-3 w-32">Số điện thoại</th>
+                  <th class="px-4 py-3">Email</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm text-slate-600">
+                <tr v-for="kh in danhSachKh" :key="kh.id" 
+                    @click="toggleEmail(kh.email)"
+                    class="cursor-pointer transition-colors hover:bg-rose-50/50"
+                    :class="dsEmailChon.some(e => e.trim().toLowerCase() === kh.email?.trim().toLowerCase()) ? 'bg-rose-50/30' : ''">
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center">
+                      <div class="h-5 w-5 rounded-md border transition-all flex items-center justify-center"
+                           :class="dsEmailChon.some(e => e.trim().toLowerCase() === kh.email?.trim().toLowerCase()) ? 'bg-rose-500 border-rose-500' : 'border-slate-300 bg-white'">
+                        <CheckSquare v-if="dsEmailChon.some(e => e.trim().toLowerCase() === kh.email?.trim().toLowerCase())" class="h-3.5 w-3.5 text-white" />
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-slate-800">{{ kh.hoTen }}</td>
+                  <td class="px-4 py-3">{{ kh.sdt || '—' }}</td>
+                  <td class="px-4 py-3">{{ kh.email }}</td>
+                </tr>
+                <tr v-if="!danhSachKh.length && !dangTaiKh">
+                  <td colspan="4" class="py-12 text-center text-sm text-slate-400 font-medium">Không tìm thấy khách hàng nào.</td>
+                </tr>
+                <tr v-if="dangTaiKh">
+                  <td colspan="4" class="py-12 text-center">
+                    <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-rose-500 border-t-transparent"></div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+            <span class="text-xs font-medium text-slate-400">Đã chọn: <span class="text-rose-600 font-bold">{{ dsEmailChon.length }}</span> khách hàng</span>
+            <p v-if="formErrors.email" class="text-xs text-rose-500 font-medium">{{ formErrors.email }}</p>
+          </div>
+        </div>
+      </Transition>
 
       <!-- Actions -->
       <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center">
