@@ -78,7 +78,7 @@ watch(productSearch, async (val) => {
   loadingProductHints.value = true;
   try {
     const res = await layDanhSachGiay({ keyword: val.trim(), size: 10 });
-    productHints.value = res?.items || [];
+    productHints.value = res?.content || res?.items || [];
   } catch (e) {
     productHints.value = [];
   } finally {
@@ -208,7 +208,7 @@ onMounted(taiDuLieu);
         </div>
 
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
+          <label class="text-[13px] font-semibold text-slate-700">Trạng thái <span class="text-rose-500">*</span></label>
           <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>

@@ -193,11 +193,6 @@ async function xuatExcel() {
   }
 }
 
-function applyStatusFilter(value) {
-  filters.trangThai = value
-  loadData(0)
-}
-
 watch(
   () => route.query.giayId,
   async () => {
@@ -353,13 +348,8 @@ onMounted(async () => {
               <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-<<<<<<< Updated upstream
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ item.maSanPham }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700">{{ item.maChiTietSanPham }}</td>
-=======
               <td class="px-4 py-4 font-bold text-slate-950 whitespace-nowrap">{{ item.maSanPham }}</td>
               <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.maChiTietSanPham }}</td>
->>>>>>> Stashed changes
               <td class="px-4 py-4">
                 <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                   <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
@@ -368,7 +358,7 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-4">
                 <p class="font-semibold text-slate-800">{{ item.tenSanPham }}</p>
-                <p class="mt-1 text-xs text-slate-400">{{ item.sku }}</p>
+                <p class="mt-1 text-xs text-slate-400 font-medium">{{ item.sku }}</p>
               </td>
               <td class="px-4 py-4">
                 <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -379,15 +369,9 @@ onMounted(async () => {
                   {{ item.mauSac }}
                 </div>
               </td>
-<<<<<<< Updated upstream
-              <td class="px-4 py-4 font-semibold text-slate-700">{{ item.kichCo }}</td>
-              <td class="px-4 py-4 text-slate-600">{{ item.loaiGiay || '—' }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700">
-=======
               <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.kichCo }}</td>
               <td class="px-4 py-4 text-slate-800 whitespace-nowrap">{{ item.loaiGiay || '—' }}</td>
               <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">
->>>>>>> Stashed changes
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ formatCurrency(item.giaBan) }} đ</td>
