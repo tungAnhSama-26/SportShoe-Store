@@ -24,6 +24,10 @@ defineProps({
     type: Number,
     default: 0
   },
+  sanPhamValidationMessage: {
+    type: String,
+    default: ""
+  },
   couponCode: {
     type: String,
     default: ""
@@ -81,6 +85,10 @@ defineProps({
     default: 1
   },
   amountPaid: {
+    type: String,
+    default: ""
+  },
+  paymentValidationMessage: {
     type: String,
     default: ""
   },
@@ -454,9 +462,13 @@ const emit = defineEmits([
             autocomplete="off"
             :disabled="paymentMethod !== 1"
             :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
-            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            class="w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            :class="paymentValidationMessage ? 'border-rose-300 bg-rose-50 focus:border-rose-400' : 'border-slate-200 focus:border-red-300'"
             @input="emit('amount-input', $event.target.value)"
           />
+          <p v-if="paymentValidationMessage" class="mt-2 text-xs font-medium text-rose-500">
+            {{ paymentValidationMessage }}
+          </p>
         </div>
         <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Tiền thừa trả khách</span>
@@ -492,6 +504,9 @@ const emit = defineEmits([
           {{ payingInvoice ? "Đang thanh toán..." : "Thanh toán" }}
         </button>
       </div>
+      <p v-if="sanPhamValidationMessage" class="mt-3 text-xs font-medium text-rose-500">
+        {{ sanPhamValidationMessage }}
+      </p>
       <button
         v-if="activePendingInvoice"
         type="button"

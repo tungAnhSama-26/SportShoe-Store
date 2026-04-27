@@ -1,5 +1,6 @@
 package com.example.server.core.admin.banHangTaiQuay.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,6 +17,6 @@ public record ThanhToanTaiQuayRequest(
         Integer hinhThucThanhToan,
         BigDecimal tienKhachDua,
         String ghiChu,
-        List<TaoHoaDonChoItemRequest> items
+        List<@Valid TaoHoaDonChoItemRequest> items
 ) {
 }

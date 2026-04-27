@@ -1,4 +1,8 @@
 <script setup>
+import { ref } from "vue";
+import { QrCode } from "lucide-vue-next";
+import BanHangQrScannerModal from "./BanHangQrScannerModal.vue";
+
 defineProps({
   productKeyword: {
     type: String,
@@ -34,11 +38,27 @@ const emit = defineEmits([
   "update:productKeyword",
   "focus-product",
   "blur-product",
-  "open-product"
+  "open-product",
+  "scan-product",
 ]);
+
+const showQrScanner = ref(false);
 
 function isDiscounted(product) {
   return Boolean(product?.coGiamGia) || Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
+}
+
+function moQuetQr() {
+  showQrScanner.value = true;
+}
+
+function dongQuetQr() {
+  showQrScanner.value = false;
+}
+
+function xuLyMaQuet(value) {
+  showQrScanner.value = false;
+  emit("scan-product", value);
 }
 </script>
 
@@ -46,18 +66,34 @@ function isDiscounted(product) {
   <div class="space-y-6">
     <div class="relative">
       <label class="mb-2 block text-sm font-semibold text-slate-700">Tìm sản phẩm</label>
-      <input
-        :value="productKeyword"
-        type="text"
-        placeholder="Nhập mã, tên sản phẩm, SKU..."
-        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
-        @input="emit('update:productKeyword', $event.target.value)"
-        @focus="emit('focus-product')"
-        @blur="emit('blur-product')"
-      />
+      <div class="flex gap-3">
+        <div class="relative flex-1">
+          <input
+            :value="productKeyword"
+            type="text"
+            placeholder="Nhập mã, tên sản phẩm, SKU..."
+            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
+            @input="emit('update:productKeyword', $event.target.value)"
+            @focus="emit('focus-product')"
+            @blur="emit('blur-product')"
+          />
 
-      <div v-if="loadingProducts" class="absolute right-4 top-[46px] text-xs font-semibold text-slate-400">
-        Đang tìm...
+          <div
+            v-if="loadingProducts"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400"
+          >
+            Đang tìm...
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+          @click="moQuetQr"
+        >
+          <QrCode :size="16" />
+          Quét QR
+        </button>
       </div>
 
       <div
@@ -159,5 +195,11 @@ function isDiscounted(product) {
         </button>
       </div>
     </div>
+
+    <BanHangQrScannerModal
+      :open="showQrScanner"
+      @close="dongQuetQr"
+      @scan="xuLyMaQuet"
+    />
   </div>
 </template>

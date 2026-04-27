@@ -1,5 +1,6 @@
 package com.example.server.core.admin.banHangTaiQuay.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
@@ -16,6 +17,6 @@ public record TinhPhiVanChuyenTaiQuayRequest(
         Integer insuranceValue,
         String coupon,
         @NotEmpty(message = "Danh sach san pham khong duoc de trong")
-        List<TaoHoaDonChoItemRequest> items
+        List<@Valid TaoHoaDonChoItemRequest> items
 ) {
 }

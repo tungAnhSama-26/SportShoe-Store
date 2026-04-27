@@ -620,6 +620,8 @@ function validateBulkBienTheBuilder() {
   if (!bulkBienTheForm.mauSacIds.length) bulkBienTheErrors.mauSacIds = 'Vui lòng chọn ít nhất một màu sắc để tạo CTSP'
   if (!bulkBienTheForm.kichCoIds.length) bulkBienTheErrors.kichCoIds = 'Vui lòng chọn ít nhất một kích cỡ để tạo CTSP'
   if (Number(bulkBienTheForm.giaGoc) < 0) bulkBienTheErrors.giaGoc = 'Giá gốc của CTSP không được âm'
+  if (Number(bulkBienTheForm.soLuong) < 0) bulkBienTheErrors.soLuong = 'Số lượng của CTSP không được âm'
+  if (Number(bulkBienTheForm.giaBan) < 0) bulkBienTheErrors.giaBan = 'Giá bán của CTSP không được âm'
   return Object.keys(bulkBienTheErrors).length === 0
 }
 
@@ -647,7 +649,7 @@ function generateBulkBienThes() {
   )
 
   delete bulkBienTheErrors.generated
-  showToast(`Đã tạo ${generatedBulkBienThes.value.length} CTSP nháp`)
+  return showToast(`Đã tạo thành công ${generatedBulkBienThes.value.length} chi tiết sản phẩm`)
 }
 
 function removeGeneratedBulkBienThe(key) {

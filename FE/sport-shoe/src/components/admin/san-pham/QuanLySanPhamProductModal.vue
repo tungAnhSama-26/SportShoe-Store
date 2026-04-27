@@ -127,7 +127,8 @@ const congNgheDemOptions = computed(() =>
 const trongLuongOptions = computed(() =>
   (props.danhMuc?.trongLuong || []).map((item) => ({
     value: item.id,
-    label: `${item.ma || 'TL'} - ${Number(item.giaTri || 0).toLocaleString('vi-VN')}`
+    label: Number(item.giaTri || 0).toLocaleString('vi-VN'),
+    searchText: `${item.ma || ''} ${item.giaTri || ''} ${item.moTa || ''}`
   }))
 )
 </script>

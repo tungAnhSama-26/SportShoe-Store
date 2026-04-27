@@ -1,0 +1,281 @@
+0 verbose cli D:\nodejs\node.exe D:\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.11.0
+2 info using node@v24.14.1
+3 silly config load:file:D:\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\FE\sport-shoe\.npmrc
+5 silly config load:file:C:\Users\tunga\.npmrc
+6 silly config load:file:C:\Users\tunga\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install @zxing/browser
+8 verbose argv "install" "@zxing/browser"
+9 verbose logfile logs-max:10 dir:C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\FE\sport-shoe\.npm-cache\_logs\2026-04-27T08_56_07_897Z-
+10 verbose logfile C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\FE\sport-shoe\.npm-cache\_logs\2026-04-27T08_56_07_897Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+14 silly idealTree buildDeps
+15 silly fetch manifest @zxing/browser@*
+16 silly packumentCache full:https://registry.npmjs.org/@zxing%2fbrowser cache-miss
+17 http fetch GET 200 https://registry.npmjs.org/@zxing%2fbrowser 242ms (cache miss)
+18 silly packumentCache full:https://registry.npmjs.org/@zxing%2fbrowser set size:undefined disposed:false
+19 silly fetch manifest @zxing/library@^0.21.0
+20 silly packumentCache full:https://registry.npmjs.org/@zxing%2flibrary cache-miss
+21 http fetch GET 200 https://registry.npmjs.org/@zxing%2flibrary 98ms (cache miss)
+22 silly packumentCache full:https://registry.npmjs.org/@zxing%2flibrary set size:undefined disposed:false
+23 silly placeDep ROOT @zxing/browser@0.1.5 OK for: trang-chu-giay-viet@0.1.0 want: *
+24 silly placeDep ROOT @zxing/library@0.21.3 OK for: @zxing/browser@0.1.5 want: ^0.21.0
+25 silly fetch manifest @zxing/text-encoding@^0.9.0
+26 silly packumentCache full:https://registry.npmjs.org/@zxing%2ftext-encoding cache-miss
+27 silly fetch manifest ts-custom-error@^3.2.1
+28 silly packumentCache full:https://registry.npmjs.org/ts-custom-error cache-miss
+29 silly fetch manifest @zxing/text-encoding@~0.9.0
+30 silly packumentCache full:https://registry.npmjs.org/@zxing%2ftext-encoding cache-miss
+31 http fetch GET 200 https://registry.npmjs.org/npm 448ms
+32 http fetch GET 200 https://registry.npmjs.org/@zxing%2ftext-encoding 79ms (cache miss)
+33 silly packumentCache full:https://registry.npmjs.org/@zxing%2ftext-encoding set size:undefined disposed:false
+34 http fetch GET 200 https://registry.npmjs.org/@zxing%2ftext-encoding 148ms (cache miss)
+35 silly packumentCache full:https://registry.npmjs.org/@zxing%2ftext-encoding set size:undefined disposed:false
+36 http fetch GET 200 https://registry.npmjs.org/ts-custom-error 161ms (cache miss)
+37 silly packumentCache full:https://registry.npmjs.org/ts-custom-error set size:undefined disposed:false
+38 silly placeDep ROOT @zxing/text-encoding@0.9.0 OK for: @zxing/browser@0.1.5 want: ^0.9.0
+39 silly placeDep ROOT ts-custom-error@3.3.1 OK for: @zxing/library@0.21.3 want: ^3.2.1
+40 silly reify moves {}
+41 silly audit bulk request {
+41 silly audit   '@babel/helper-string-parser': [ '7.27.1' ],
+41 silly audit   '@babel/helper-validator-identifier': [ '7.28.5' ],
+41 silly audit   '@babel/parser': [ '7.29.2' ],
+41 silly audit   '@babel/types': [ '7.29.0' ],
+41 silly audit   '@esbuild/aix-ppc64': [ '0.25.12' ],
+41 silly audit   '@esbuild/android-arm': [ '0.25.12' ],
+41 silly audit   '@esbuild/android-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/android-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/darwin-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/darwin-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/freebsd-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/freebsd-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-arm': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-ia32': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-loong64': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-mips64el': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-ppc64': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-riscv64': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-s390x': [ '0.25.12' ],
+41 silly audit   '@esbuild/linux-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/netbsd-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/netbsd-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/openbsd-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/openbsd-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/openharmony-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/sunos-x64': [ '0.25.12' ],
+41 silly audit   '@esbuild/win32-arm64': [ '0.25.12' ],
+41 silly audit   '@esbuild/win32-ia32': [ '0.25.12' ],
+41 silly audit   '@esbuild/win32-x64': [ '0.25.12' ],
+41 silly audit   '@isaacs/fs-minipass': [ '4.0.1' ],
+41 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+41 silly audit   '@jridgewell/remapping': [ '2.3.5' ],
+41 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+41 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+41 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+41 silly audit   '@kurkle/color': [ '0.3.4' ],
+41 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-android-arm64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.1' ],
+41 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.1' ],
+41 silly audit   '@tailwindcss/node': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-android-arm64': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-darwin-arm64': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-darwin-x64': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-freebsd-x64': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-linux-arm-gnueabihf': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-linux-arm64-gnu': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-linux-arm64-musl': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-linux-x64-gnu': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-linux-x64-musl': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-wasm32-wasi': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-win32-arm64-msvc': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/oxide-win32-x64-msvc': [ '4.1.12' ],
+41 silly audit   '@tailwindcss/vite': [ '4.1.12' ],
+41 silly audit   '@types/estree': [ '1.0.8' ],
+41 silly audit   '@vitejs/plugin-vue': [ '5.2.4' ],
+41 silly audit   '@vue/compiler-core': [ '3.5.32' ],
+41 silly audit   '@vue/compiler-dom': [ '3.5.32' ],
+41 silly audit   '@vue/compiler-sfc': [ '3.5.32' ],
+41 silly audit   '@vue/compiler-ssr': [ '3.5.32' ],
+41 silly audit   '@vue/devtools-api': [ '6.6.4' ],
+41 silly audit   '@vue/reactivity': [ '3.5.32' ],
+41 silly audit   '@vue/runtime-core': [ '3.5.32' ],
+41 silly audit   '@vue/runtime-dom': [ '3.5.32' ],
+41 silly audit   '@vue/server-renderer': [ '3.5.32' ],
+41 silly audit   '@vue/shared': [ '3.5.32' ],
+41 silly audit   'chart.js': [ '4.5.1' ],
+41 silly audit   chownr: [ '3.0.0' ],
+41 silly audit   csstype: [ '3.2.3' ],
+41 silly audit   'detect-libc': [ '2.1.2' ],
+41 silly audit   'enhanced-resolve': [ '5.20.1' ],
+41 silly audit   entities: [ '7.0.1' ],
+41 silly audit   esbuild: [ '0.25.12' ],
+41 silly audit   'estree-walker': [ '2.0.2' ],
+41 silly audit   fdir: [ '6.5.0' ],
+41 silly audit   fsevents: [ '2.3.3' ],
+41 silly audit   'graceful-fs': [ '4.2.11' ],
+41 silly audit   jiti: [ '2.6.1' ],
+41 silly audit   lightningcss: [ '1.30.1' ],
+41 silly audit   'lightningcss-darwin-arm64': [ '1.30.1' ],
+41 silly audit   'lightningcss-darwin-x64': [ '1.30.1' ],
+41 silly audit   'lightningcss-freebsd-x64': [ '1.30.1' ],
+41 silly audit   'lightningcss-linux-arm-gnueabihf': [ '1.30.1' ],
+41 silly audit   'lightningcss-linux-arm64-gnu': [ '1.30.1' ],
+41 silly audit   'lightningcss-linux-arm64-musl': [ '1.30.1' ],
+41 silly audit   'lightningcss-linux-x64-gnu': [ '1.30.1' ],
+41 silly audit   'lightningcss-linux-x64-musl': [ '1.30.1' ],
+41 silly audit   'lightningcss-win32-arm64-msvc': [ '1.30.1' ],
+41 silly audit   'lightningcss-win32-x64-msvc': [ '1.30.1' ],
+41 silly audit   'lucide-vue-next': [ '1.0.0' ],
+41 silly audit   'magic-string': [ '0.30.21' ],
+41 silly audit   minipass: [ '7.1.3' ],
+41 silly audit   minizlib: [ '3.1.0' ],
+41 silly audit   nanoid: [ '3.3.11' ],
+41 silly audit   picocolors: [ '1.1.1' ],
+41 silly audit   picomatch: [ '4.0.4' ],
+41 silly audit   postcss: [ '8.5.8' ],
+41 silly audit   rollup: [ '4.60.1' ],
+41 silly audit   'source-map-js': [ '1.2.1' ],
+41 silly audit   tailwindcss: [ '4.1.12' ],
+41 silly audit   tapable: [ '2.3.2' ],
+41 silly audit   tar: [ '7.5.13' ],
+41 silly audit   tinyglobby: [ '0.2.15' ],
+41 silly audit   vite: [ '6.3.5' ],
+41 silly audit   vue: [ '3.5.32' ],
+41 silly audit   'vue-chartjs': [ '5.3.3' ],
+41 silly audit   'vue-router': [ '4.6.4' ],
+41 silly audit   yallist: [ '5.0.0' ],
+41 silly audit   '@zxing/browser': [ '0.1.5' ],
+41 silly audit   '@zxing/library': [ '0.21.3' ],
+41 silly audit   '@zxing/text-encoding': [ '0.9.0' ],
+41 silly audit   'ts-custom-error': [ '3.3.1' ]
+41 silly audit }
+42 http cache ts-custom-error@https://registry.npmjs.org/ts-custom-error/-/ts-custom-error-3.3.1.tgz 0ms (cache hit)
+43 silly tarball no local data for ts-custom-error@https://registry.npmjs.org/ts-custom-error/-/ts-custom-error-3.3.1.tgz. Extracting by manifest.
+44 http cache @zxing/library@https://registry.npmjs.org/@zxing/library/-/library-0.21.3.tgz 0ms (cache hit)
+45 http cache @zxing/browser@https://registry.npmjs.org/@zxing/browser/-/browser-0.1.5.tgz 0ms (cache hit)
+46 http cache @zxing/text-encoding@https://registry.npmjs.org/@zxing/text-encoding/-/text-encoding-0.9.0.tgz 0ms (cache hit)
+47 silly tarball no local data for @zxing/library@https://registry.npmjs.org/@zxing/library/-/library-0.21.3.tgz. Extracting by manifest.
+48 silly tarball no local data for @zxing/browser@https://registry.npmjs.org/@zxing/browser/-/browser-0.1.5.tgz. Extracting by manifest.
+49 silly tarball no local data for @zxing/text-encoding@https://registry.npmjs.org/@zxing/text-encoding/-/text-encoding-0.9.0.tgz. Extracting by manifest.
+50 http fetch GET 200 https://registry.npmjs.org/ts-custom-error/-/ts-custom-error-3.3.1.tgz 129ms (cache miss)
+51 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 330ms
+52 silly audit report {
+52 silly audit report   postcss: [
+52 silly audit report     {
+52 silly audit report       id: 1117015,
+52 silly audit report       url: 'https://github.com/advisories/GHSA-qx2v-qp2m-jg93',
+52 silly audit report       title: 'PostCSS has XSS via Unescaped </style> in its CSS Stringify Output',
+52 silly audit report       severity: 'moderate',
+52 silly audit report       vulnerable_versions: '<8.5.10',
+52 silly audit report       cwe: [Array],
+52 silly audit report       cvss: [Object]
+52 silly audit report     }
+52 silly audit report   ],
+52 silly audit report   vite: [
+52 silly audit report     {
+52 silly audit report       id: 1107324,
+52 silly audit report       url: 'https://github.com/advisories/GHSA-g4jq-h2w9-997c',
+52 silly audit report       title: 'Vite middleware may serve files starting with the same name with the public directory',
+52 silly audit report       severity: 'low',
+52 silly audit report       vulnerable_versions: '>=6.0.0 <=6.3.5',
+52 silly audit report       cwe: [Array],
+52 silly audit report       cvss: [Object]
+52 silly audit report     },
+52 silly audit report     {
+52 silly audit report       id: 1107328,
+52 silly audit report       url: 'https://github.com/advisories/GHSA-jqfw-vq24-v9c3',
+52 silly audit report       title: "Vite's `server.fs` settings were not applied to HTML files",
+52 silly audit report       severity: 'low',
+52 silly audit report       vulnerable_versions: '>=6.0.0 <=6.3.5',
+52 silly audit report       cwe: [Array],
+52 silly audit report       cvss: [Object]
+52 silly audit report     },
+52 silly audit report     {
+52 silly audit report       id: 1109135,
+52 silly audit report       url: 'https://github.com/advisories/GHSA-93m4-6634-74q7',
+52 silly audit report       title: 'vite allows server.fs.deny bypass via backslash on Windows',
+52 silly audit report       severity: 'moderate',
+52 silly audit report       vulnerable_versions: '>=6.0.0 <=6.4.0',
+52 silly audit report       cwe: [Array],
+52 silly audit report       cvss: [Object]
+52 silly audit report     },
+52 silly audit report     {
+52 silly audit report       id: 1116229,
+52 silly audit report       url: 'https://github.com/advisories/GHSA-4w7w-66w2-5vf9',
+52 silly audit report       title: 'Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling',
+52 silly audit report       severity: 'moderate',
+52 silly audit report       vulnerable_versions: '<=6.4.1',
+52 silly audit report       cwe: [Array],
+52 silly audit report       cvss: [Object]
+52 silly audit report     },
+52 silly audit report     {
+52 silly audit report       id: 1116234,
+52 silly audit report       url: 'https://github.com/advisories/GHSA-p9ff-h696-f583',
+52 silly audit report       title: 'Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket',
+52 silly audit report       severity: 'high',
+52 silly audit report       vulnerable_versions: '>=6.0.0 <=6.4.1',
+52 silly audit report       cwe: [Array],
+52 silly audit report       cvss: [Object]
+52 silly audit report     }
+52 silly audit report   ]
+52 silly audit report }
+53 silly packumentCache corgi:https://registry.npmjs.org/postcss cache-miss
+54 silly packumentCache corgi:https://registry.npmjs.org/vite cache-miss
+55 http fetch GET 200 https://registry.npmjs.org/postcss 100ms (cache miss)
+56 silly packumentCache corgi:https://registry.npmjs.org/postcss set size:undefined disposed:false
+57 http fetch GET 200 https://registry.npmjs.org/vite 179ms (cache miss)
+58 silly packumentCache corgi:https://registry.npmjs.org/vite set size:undefined disposed:false
+59 silly packumentCache corgi:https://registry.npmjs.org/@vue%2fcompiler-sfc cache-miss
+60 http fetch GET 200 https://registry.npmjs.org/@vue%2fcompiler-sfc 202ms (cache miss)
+61 silly packumentCache corgi:https://registry.npmjs.org/@vue%2fcompiler-sfc set size:undefined disposed:false
+62 silly packumentCache corgi:https://registry.npmjs.org/@tailwindcss%2fvite cache-miss
+63 silly packumentCache corgi:https://registry.npmjs.org/@vitejs%2fplugin-vue cache-miss
+64 http fetch GET 200 https://registry.npmjs.org/@vitejs%2fplugin-vue 107ms (cache miss)
+65 silly packumentCache corgi:https://registry.npmjs.org/@vitejs%2fplugin-vue set size:undefined disposed:false
+66 http fetch GET 200 https://registry.npmjs.org/@tailwindcss%2fvite 147ms (cache miss)
+67 silly packumentCache corgi:https://registry.npmjs.org/@tailwindcss%2fvite set size:undefined disposed:false
+68 http fetch GET 200 https://registry.npmjs.org/@zxing/browser/-/browser-0.1.5.tgz 1297ms (cache miss)
+69 http fetch GET 200 https://registry.npmjs.org/@zxing/text-encoding/-/text-encoding-0.9.0.tgz 1697ms (cache miss)
+70 http fetch GET 200 https://registry.npmjs.org/@zxing/library/-/library-0.21.3.tgz 3675ms (cache miss)
+71 silly ADD node_modules/ts-custom-error
+72 silly ADD node_modules/@zxing/text-encoding
+73 silly ADD node_modules/@zxing/library
+74 silly ADD node_modules/@zxing/browser
+75 verbose cwd C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\FE\sport-shoe
+76 verbose os Windows_NT 10.0.19045
+77 verbose node v24.14.1
+78 verbose npm  v11.11.0
+79 notice
+79 notice New minor version of npm available! 11.11.0 -> 11.13.0
+79 notice Changelog: https://github.com/npm/cli/releases/tag/v11.13.0
+79 notice To update run: npm install -g npm@11.13.0
+79 notice  { force: true, Symbol(proc-log.meta): true }
+80 verbose exit 0
+81 info ok
