@@ -170,7 +170,7 @@ onMounted(taiDuLieu);
       <div class="grid gap-6 md:grid-cols-2">
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Đợt giảm giá <span class="text-rose-500">*</span></label>
-          <select v-model="form.dotGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+          <select v-model="form.dotGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">-- Chọn đợt giảm giá --</option>
             <option v-for="item in dotOptions" :key="item.id" :value="String(item.id)">{{ item.ten }} ({{ item.ma }})</option>
           </select>
@@ -185,7 +185,7 @@ onMounted(taiDuLieu);
               v-model="productSearch" 
               type="text" 
               placeholder="Nhập tên hoặc mã sản phẩm..." 
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" 
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" 
             />
           </div>
           <p v-if="formErrors.giayId" class="text-xs text-rose-500 mt-1">{{ formErrors.giayId }}</p>
@@ -199,8 +199,8 @@ onMounted(taiDuLieu);
               class="flex items-center justify-between cursor-pointer rounded-xl p-3 hover:bg-slate-50 transition"
             >
               <div>
-                <p class="text-sm font-bold text-slate-800">{{ item.ten }}</p>
-                <p class="text-xs text-slate-400">{{ item.ma }}</p>
+                <p class="text-sm font-bold text-slate-900">{{ item.ten }}</p>
+                <p class="text-xs text-slate-500">{{ item.ma }}</p>
               </div>
               <button class="text-xs font-bold text-rose-500">Chọn</button>
             </div>
@@ -209,7 +209,7 @@ onMounted(taiDuLieu);
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>
           </select>

@@ -244,7 +244,7 @@ onMounted(async () => {
                 v-model="filters.keyword"
                 type="text"
                 placeholder="Tìm theo mã SP / mã CTSP / tên sản phẩm..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
                 @keyup.enter="loadData(0)"
               />
             </div>
@@ -271,7 +271,7 @@ onMounted(async () => {
             <span class="mb-1 text-[13px] font-semibold text-slate-500">Màu sắc</span>
             <select
               v-model.number="filters.mauSacId"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               @change="loadData(0)"
             >
               <option :value="null">Tất cả màu sắc</option>
@@ -285,7 +285,7 @@ onMounted(async () => {
             <span class="mb-1 text-[13px] font-semibold text-slate-500">Kích cỡ</span>
             <select
               v-model.number="filters.kichCoId"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               @change="loadData(0)"
             >
               <option :value="null">Tất cả kích cỡ</option>
@@ -298,7 +298,7 @@ onMounted(async () => {
             <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
             <select
               v-model.number="filters.trangThai"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               @change="loadData(0)"
             >
               <option :value="null">Tất cả trạng thái</option>
@@ -353,8 +353,13 @@ onMounted(async () => {
               <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
+<<<<<<< Updated upstream
               <td class="px-4 py-4 font-semibold text-slate-800">{{ item.maSanPham }}</td>
               <td class="px-4 py-4 font-semibold text-slate-700">{{ item.maChiTietSanPham }}</td>
+=======
+              <td class="px-4 py-4 font-bold text-slate-950 whitespace-nowrap">{{ item.maSanPham }}</td>
+              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.maChiTietSanPham }}</td>
+>>>>>>> Stashed changes
               <td class="px-4 py-4">
                 <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                   <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
@@ -374,9 +379,15 @@ onMounted(async () => {
                   {{ item.mauSac }}
                 </div>
               </td>
+<<<<<<< Updated upstream
               <td class="px-4 py-4 font-semibold text-slate-700">{{ item.kichCo }}</td>
               <td class="px-4 py-4 text-slate-600">{{ item.loaiGiay || '—' }}</td>
               <td class="px-4 py-4 font-semibold text-slate-700">
+=======
+              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.kichCo }}</td>
+              <td class="px-4 py-4 text-slate-800 whitespace-nowrap">{{ item.loaiGiay || '—' }}</td>
+              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">
+>>>>>>> Stashed changes
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ formatCurrency(item.giaBan) }} đ</td>

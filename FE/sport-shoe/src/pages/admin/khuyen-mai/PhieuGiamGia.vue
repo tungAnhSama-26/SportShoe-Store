@@ -19,6 +19,7 @@ import {
 } from "../../../services/khuyen-mai";
 import { layChiTietKhachHang } from "../../../services/khach-hang";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 
 const tabs = [
@@ -53,12 +54,20 @@ const dsTrangThai = [
   { label: "Tắt", value: "0" },
 ];
 
+<<<<<<< Updated upstream
 const phieuOptions = ref([]);
 const emailOptions = ref([]);
 
 const khForm = reactive({
   id: null, phieuGiamGiaId: "", email: "", ngaySuDung: "", trangThai: "1", ngayTao: ""
 });
+=======
+const dsLoai = [
+  { label: "Tất cả", value: "" },
+  { label: "Phần trăm", value: "1" },
+  { label: "Tiền mặt", value: "2" },
+];
+>>>>>>> Stashed changes
 
 const formErrors = reactive({});
 
@@ -340,20 +349,36 @@ onMounted(taiDanhSach);
         </div>
       </div>
 
+<<<<<<< Updated upstream
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div class="min-w-0 flex-1">
             <div class="relative max-w-3xl">
+=======
+      <div class="flex flex-col gap-6">
+        <!-- Hàng 1: Các ô nhập liệu (4 cột) -->
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div class="space-y-2">
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Tìm kiếm</label>
+            <div class="relative">
+>>>>>>> Stashed changes
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 v-model="(activeTab === 'phieu' ? boLoc : boLocKh).keyword"
                 type="text"
+<<<<<<< Updated upstream
                 :placeholder="activeTab === 'phieu' ? 'Nhập mã hoặc tên phiếu...' : 'Mã phiếu, tên KH...'"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+=======
+                placeholder="Mã, tên, giá trị, số lượng..."
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-rose-300 focus:bg-white"
+                @keyup.enter="taiDanhSach()"
+>>>>>>> Stashed changes
               />
             </div>
           </div>
 
+<<<<<<< Updated upstream
           <div class="flex flex-wrap items-center gap-3 xl:justify-end">
             <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
               <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
@@ -364,6 +389,40 @@ onMounted(taiDanhSach);
             <button @click="openCreateModal(activeTab)" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
               <Plus class="h-4 w-4" /> Thêm mới
             </button>
+=======
+          <div class="space-y-2">
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày bắt đầu</label>
+            <input 
+              v-model="boLoc.tuNgay" 
+              type="date" 
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-rose-300 focus:bg-white" 
+              @change="taiDanhSach(1)"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày kết thúc</label>
+            <input 
+              v-model="boLoc.denNgay" 
+              type="date" 
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-rose-300 focus:bg-white" 
+              @change="taiDanhSach(1)"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Hình thức</label>
+            <select v-model="boLoc.loai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-rose-300 focus:bg-white" @change="taiDanhSach(1)">
+              <option v-for="l in dsLoai" :key="l.value" :value="l.value">{{ l.label }}</option>
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Trạng thái</label>
+            <select v-model="boLoc.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-rose-300 focus:bg-white" @change="taiDanhSach(1)">
+              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
+            </select>
+>>>>>>> Stashed changes
           </div>
         </div>
 
@@ -439,8 +498,9 @@ onMounted(taiDanhSach);
             <tr v-else-if="!danhSach.length">
               <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
             </tr>
-            <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100">
+            <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-rose-200">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
+<<<<<<< Updated upstream
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ma }}</td>
               <td class="px-4 py-3 font-semibold text-slate-800">{{ item.ten }}</td>
               <td class="px-4 py-3">
@@ -451,12 +511,30 @@ onMounted(taiDanhSach);
               <td class="px-4 py-3 text-slate-600">{{ item.giaTri }}</td>
               <td class="px-4 py-3 text-slate-600">{{ item.soLuong }}</td>
               <td class="px-4 py-3 text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}<br/>{{ toDisplayDate(item.ngayKetThuc) }}</td>
+=======
+              <td class="px-4 py-3 font-bold text-slate-900 tracking-tight">{{ item.ma }}</td>
+              <td class="px-4 py-3">
+                <div class="font-bold text-slate-900">{{ item.ten }}</div>
+                <div v-if="item.giamToiDa > 0" class="text-[12px] text-rose-500 font-medium mt-0.5" title="Giảm tối đa">Tối đa: {{ formatTien(item.giamToiDa) }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="mauLoaiPhieu(item.loaiPhieu)">
+                   {{ loaiPhieuText(item.loaiPhieu) }}
+                </span>
+              </td>
+
+              <td class="px-4 py-3 font-bold text-rose-600">{{ formatGiaTri(item.giaTri, item.loai) }}</td>
+              <td class="px-4 py-3 font-medium text-slate-700">{{ item.soLuong }}</td>
+              <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
+              <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>
+>>>>>>> Stashed changes
               <td class="px-4 py-3">
                 <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.trangThai)">
                   {{ statusText(item.trangThai) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
+<<<<<<< Updated upstream
                 <div class="flex justify-center gap-2">
                   <button @click="openEditModal('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Edit class="h-4 w-4" /></button>
                   <button @click="removeItem('phieu', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
@@ -504,6 +582,19 @@ onMounted(taiDanhSach);
                 <div class="flex justify-center gap-2">
                   <button @click="openEditModal('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Edit class="h-4 w-4" /></button>
                   <button @click="removeItem('khach-hang', item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"><Trash2 class="h-4 w-4" /></button>
+=======
+                <div class="flex justify-center items-center gap-3">
+                  <AdminQuickStatusAction
+                    :loading="false"
+                    :action-label="Number(item.trangThai) === 1 ? 'Ngưng hoạt động phiếu' : 'Kích hoạt phiếu'"
+                    :confirm-message="`Bạn có chắc chắn muốn ${Number(item.trangThai) === 1 ? 'ngưng hoạt động' : 'kích hoạt'} phiếu này không?`"
+                    :intent="Number(item.trangThai) === 1 ? 'deactivate' : 'activate'"
+                    @toggle="nhanhDoiTrangThai(item)"
+                  />
+                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500" title="Xem chi tiết">
+                    <Eye class="h-5 w-5" />
+                  </button>
+>>>>>>> Stashed changes
                 </div>
               </td>
             </tr>

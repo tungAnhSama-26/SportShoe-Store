@@ -46,7 +46,11 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
     dotGiamGia.ngayBatDau,dotGiamGia.ngayKetThuc,dotGiamGia.kichHoat,dotGiamGia.ngayTao,dotGiamGia.ngayCapNhat
     )
     FROM DotGiamGia dotGiamGia
-    WHERE (:keyword IS NULL OR LOWER(dotGiamGia.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(dotGiamGia.ten) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    WHERE (:keyword IS NULL 
+        OR LOWER(dotGiamGia.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) 
+        OR LOWER(dotGiamGia.ten) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(dotGiamGia.moTa) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR CAST(dotGiamGia.giaTriGiam AS string) LIKE CONCAT('%', :keyword, '%'))
     AND (:trangThai IS NULL OR dotGiamGia.kichHoat = :trangThai)
     AND (:loaiGiam IS NULL OR dotGiamGia.loaiGiam = :loaiGiam)
     AND (CAST(:tuNgay AS date) IS NULL OR dotGiamGia.ngayBatDau >= CAST(:tuNgay AS date))
