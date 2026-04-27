@@ -322,6 +322,7 @@ public class BanHangTaiQuayService {
 
     @Transactional
     public ThanhToanTaiQuayResponse thanhToanTaiQuay(ThanhToanTaiQuayRequest request) {
+        validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
                 ? taoHoaDon(
@@ -809,6 +810,12 @@ public class BanHangTaiQuayService {
         }
 
         return tienKhachDua == null || tienKhachDua.compareTo(BigDecimal.ZERO) <= 0 ? tongTien : tienKhachDua;
+    }
+
+    private void validateTienKhachDua(BigDecimal tienKhachDua) {
+        if (tienKhachDua != null && tienKhachDua.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("Tien khach dua khong duoc am");
+        }
     }
 
     private BigDecimal tinhTienThua(Integer hinhThuc, BigDecimal tienKhachDua, BigDecimal tongTien) {

@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
@@ -21,6 +22,8 @@ const totalItems = ref(0)
 const totalPages = ref(0)
 const selectedProduct = ref(null)
 const updatingStatusIds = reactive(new Set())
+const showQrModal = ref(false)
+const selectedQrItem = ref(null)
 
 const filters = reactive({
   keyword: '',
@@ -250,9 +253,56 @@ function openImageModal(item) {
   showImageModal.value = true
 }
 
+function openVariantQr(item) {
+  const qrValue = String(item?.sku || item?.maChiTietSanPham || '').trim()
+  if (!qrValue) {
+    showToast('Chi tiết sản phẩm này chưa có mã để tạo QR', 'error')
+    return
+  }
+
+  selectedQrItem.value = {
+    badge: 'QR chi tiết sản phẩm',
+    title: item.tenSanPham || 'Chi tiết sản phẩm',
+    subtitle: `${item.maChiTietSanPham || qrValue} • ${item.mauSac || 'Chưa có màu'} / ${item.kichCo || 'Chưa có kích cỡ'}`,
+    codeLabel: item.sku ? 'SKU / mã quét' : 'Mã chi tiết sản phẩm',
+    value: qrValue,
+    note: 'Quét mã này ở bán hàng tại quầy để tìm nhanh đúng biến thể sản phẩm.',
+    imageUrl: item.hinhAnh || '',
+    imageAlt: item.tenSanPham || item.maChiTietSanPham || 'Ảnh chi tiết sản phẩm',
+    detailItems: [
+      { label: 'Màu sắc', value: item.mauSac || '—' },
+      { label: 'Kích cỡ', value: item.kichCo || '—' },
+      { label: 'Số lượng', value: Number(item.soLuong || 0).toLocaleString('vi-VN') },
+      { label: 'Giá bán', value: `${formatCurrency(item.giaBan)} đ` },
+      { label: 'Trạng thái', value: bienTheTrangThaiLabel(item) },
+      { label: 'SKU', value: item.sku || '—' }
+    ],
+    primaryActionLabel: 'Quản lý ảnh của biến thể',
+    actionType: 'manage-images',
+    item
+  }
+  showQrModal.value = true
+}
+
 function closeImageModal() {
   selectedVariant.value = null
   showImageModal.value = false
+}
+
+function closeQrModal() {
+  showQrModal.value = false
+  selectedQrItem.value = null
+}
+
+function handleQrPrimaryAction() {
+  const actionType = selectedQrItem.value?.actionType
+  const targetItem = selectedQrItem.value?.item
+
+  closeQrModal()
+
+  if (actionType === 'manage-images' && targetItem) {
+    openImageModal(targetItem)
+  }
 }
 
 async function xuatExcel() {
@@ -551,8 +601,8 @@ onUnmounted(() => {
                   <button
                     type="button"
                     class="admin-table-action text-slate-600 hover:text-rose-500"
-                    title="Quản lý ảnh"
-                    @click="openImageModal(item)"
+                    title="Xem QR và thông tin chi tiết sản phẩm"
+                    @click="openVariantQr(item)"
                   >
                     <Eye class="h-4 w-4" />
                   </button>
@@ -577,6 +627,22 @@ onUnmounted(() => {
         @update:page-size="handlePageSizeChange"
       />
     </section>
+
+    <AdminQrCodeModal
+      :open="showQrModal && !!selectedQrItem"
+      :badge="selectedQrItem?.badge"
+      :title="selectedQrItem?.title"
+      :subtitle="selectedQrItem?.subtitle"
+      :code-label="selectedQrItem?.codeLabel"
+      :value="selectedQrItem?.value"
+      :note="selectedQrItem?.note"
+      :image-url="selectedQrItem?.imageUrl"
+      :image-alt="selectedQrItem?.imageAlt"
+      :detail-items="selectedQrItem?.detailItems"
+      :primary-action-label="selectedQrItem?.primaryActionLabel"
+      @close="closeQrModal"
+      @primary-action="handleQrPrimaryAction"
+    />
 
     <Teleport to="body">
       <Transition name="fade">

@@ -142,6 +142,10 @@ defineProps({
     type: Number,
     default: 0
   },
+  sanPhamValidationMessage: {
+    type: String,
+    default: ""
+  },
   couponCode: {
     type: String,
     default: ""
@@ -191,6 +195,10 @@ defineProps({
     default: 1
   },
   amountPaid: {
+    type: String,
+    default: ""
+  },
+  paymentValidationMessage: {
     type: String,
     default: ""
   },
@@ -245,6 +253,7 @@ const emit = defineEmits([
   "focus-product",
   "blur-product",
   "open-product",
+  "scan-product",
   "increase-item",
   "decrease-item",
   "close-product-detail",
@@ -323,6 +332,7 @@ const emit = defineEmits([
           @focus-product="emit('focus-product')"
           @blur-product="emit('blur-product')"
           @open-product="emit('open-product', $event)"
+          @scan-product="emit('scan-product', $event)"
         />
 
         <BanHangCartTable
@@ -361,6 +371,7 @@ const emit = defineEmits([
         :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
         :tien-giam="tienGiam"
         :tong-tien="tongTien"
+        :san-pham-validation-message="sanPhamValidationMessage"
         :coupon-code="couponCode"
         :co-the-ap-dung-phieu="coTheApDungPhieu"
         :applying-coupon="applyingCoupon"
@@ -376,6 +387,7 @@ const emit = defineEmits([
         :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
         :payment-method="paymentMethod"
         :amount-paid="amountPaid"
+        :payment-validation-message="paymentValidationMessage"
         :tien-thua="tienThua"
         :payment-note="paymentNote"
         :can-create-pending-invoice="canCreatePendingInvoice"

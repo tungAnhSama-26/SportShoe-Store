@@ -86,15 +86,69 @@ const filteredKichCoItems = computed(() => {
 
 const mauSacSummary = computed(() => {
   if (!selectedMauSacItems.value.length) return 'Chọn màu sắc'
-  if (selectedMauSacItems.value.length === 1) return selectedMauSacItems.value[0].ten
-  return `Đã chọn ${selectedMauSacItems.value.length} màu sắc`
+  return selectedMauSacItems.value.map((item) => item.ten).join(', ')
 })
 
 const kichCoSummary = computed(() => {
   if (!selectedKichCoItems.value.length) return 'Chọn kích cỡ'
-  if (selectedKichCoItems.value.length === 1) return `Size ${selectedKichCoItems.value[0].giaTri}`
-  return `Đã chọn ${selectedKichCoItems.value.length} kích cỡ`
+  return selectedKichCoItems.value.map((item) => `Size ${item.giaTri}`).join(', ')
 })
+
+function parseNumericValue(value) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function buildNegativeError(label, value) {
+  return parseNumericValue(value) < 0 ? `${label} không được âm` : ''
+}
+
+const editingFieldErrors = computed(() => ({
+  soLuong: buildNegativeError('Số lượng', props.bienTheForm.soLuong),
+  giaGoc: buildNegativeError('Giá gốc', props.bienTheForm.giaGoc),
+  giaBan: buildNegativeError('Giá bán', props.bienTheForm.giaBan)
+}))
+
+const bulkDefaultErrors = computed(() => ({
+  soLuong: buildNegativeError('Số lượng mặc định', props.bulkBienTheForm.soLuong),
+  giaGoc: buildNegativeError('Giá gốc mặc định', props.bulkBienTheForm.giaGoc),
+  giaBan: buildNegativeError('Giá bán mặc định', props.bulkBienTheForm.giaBan)
+}))
+
+const generatedBulkFieldErrors = computed(() =>
+  Object.fromEntries(
+    props.generatedBulkBienThes.map((item) => [
+      item.key,
+      {
+        soLuong: buildNegativeError('Số lượng', item.soLuong),
+        giaGoc: buildNegativeError('Giá gốc', item.giaGoc),
+        giaBan: buildNegativeError('Giá bán', item.giaBan)
+      }
+    ])
+  )
+)
+
+const hasBulkDefaultErrors = computed(() =>
+  Object.values(bulkDefaultErrors.value).some(Boolean)
+)
+
+const hasGeneratedBulkFieldErrors = computed(() =>
+  Object.values(generatedBulkFieldErrors.value).some((fieldErrors) =>
+    Object.values(fieldErrors).some(Boolean)
+  )
+)
+
+const hasEditingFieldErrors = computed(() =>
+  Object.values(editingFieldErrors.value).some(Boolean)
+)
+
+function resolveFieldError(localError, propError) {
+  return localError || propError || ''
+}
+
+function inputErrorClass(errorMessage) {
+  return errorMessage ? 'border-red-400 bg-red-50' : 'border-gray-200'
+}
 
 function toggleSelectionDropdown(type) {
   openSelectionDropdown.value = openSelectionDropdown.value === type ? null : type
@@ -135,11 +189,34 @@ function clearSelectedValues(field) {
 }
 
 function applyGeneratedDefaults() {
+  if (hasBulkDefaultErrors.value) {
+    props.bulkBienTheErrors.generated = 'Vui lòng sửa các giá trị âm trước khi áp dụng.'
+    return
+  }
+
+  delete props.bulkBienTheErrors.generated
   props.generatedBulkBienThes.forEach((item) => {
     item.soLuong = Number(props.bulkBienTheForm.soLuong || 0)
     item.giaGoc = Number(props.bulkBienTheForm.giaGoc || 0)
     item.giaBan = Number(props.bulkBienTheForm.giaBan || 0)
   })
+}
+
+function handleSaveClick() {
+  if (props.editingBienThe) {
+    Object.assign(props.bienTheErrors, editingFieldErrors.value)
+    if (hasEditingFieldErrors.value) {
+      return
+    }
+  } else {
+    if (hasBulkDefaultErrors.value || hasGeneratedBulkFieldErrors.value) {
+      props.bulkBienTheErrors.generated = 'Vui lòng sửa các giá trị âm trước khi lưu.'
+      return
+    }
+    delete props.bulkBienTheErrors.generated
+  }
+
+  emit('save')
 }
 
 onMounted(() => {
@@ -202,9 +279,10 @@ onBeforeUnmount(() => {
                 <AdminFormattedNumberInput
                   v-model="bienTheForm.soLuong"
                   :min="0"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  :class="inputErrorClass(resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong))"
                 />
-                <p v-if="bienTheErrors.soLuong" class="mt-1 text-xs text-red-500">{{ bienTheErrors.soLuong }}</p>
+                <p v-if="resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong) }}</p>
               </div>
 
               <div>
@@ -212,9 +290,10 @@ onBeforeUnmount(() => {
                 <AdminFormattedNumberInput
                   v-model="bienTheForm.giaGoc"
                   :min="0"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc))"
                 />
-                <p v-if="bienTheErrors.giaGoc" class="mt-1 text-xs text-red-500">{{ bienTheErrors.giaGoc }}</p>
+                <p v-if="resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc) }}</p>
               </div>
 
               <div>
@@ -223,9 +302,9 @@ onBeforeUnmount(() => {
                   v-model="bienTheForm.giaBan"
                   :min="0"
                   class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="bienTheErrors.giaBan ? 'border-red-400' : 'border-gray-200'"
+                  :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan))"
                 />
-                <p v-if="bienTheErrors.giaBan" class="mt-1 text-xs text-red-500">{{ bienTheErrors.giaBan }}</p>
+                <p v-if="resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan) }}</p>
               </div>
 
               <div>
@@ -256,12 +335,12 @@ onBeforeUnmount(() => {
                     <label class="mb-1 block text-xs font-medium text-gray-700">Màu sắc *</label>
                     <button
                       type="button"
-                      class="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
+                      class="flex min-h-10 w-full items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] transition hover:bg-white"
                       :class="selectedMauSacItems.length ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
                       @click="toggleSelectionDropdown('mauSac')"
                     >
-                      <span class="truncate">{{ mauSacSummary }}</span>
-                      <ChevronDown :size="14" />
+                      <span class="min-w-0 flex-1 text-left leading-5 whitespace-normal break-words">{{ mauSacSummary }}</span>
+                      <ChevronDown :size="14" class="mt-0.5 shrink-0" />
                     </button>
 
                     <div
@@ -320,7 +399,7 @@ onBeforeUnmount(() => {
                     </div>
 
                     <p class="mt-1 text-xs text-slate-400">
-                      {{ selectedMauSacItems.length ? `${selectedMauSacItems.length} màu đã chọn` : 'Chưa chọn màu sắc' }}
+                      {{ selectedMauSacItems.length ? selectedMauSacItems.map((item) => item.ten).join(', ') : 'Chưa chọn màu sắc' }}
                     </p>
                     <p v-if="bulkBienTheErrors.mauSacIds" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.mauSacIds }}</p>
                   </div>
@@ -329,12 +408,12 @@ onBeforeUnmount(() => {
                     <label class="mb-1 block text-xs font-medium text-gray-700">Kích cỡ *</label>
                     <button
                       type="button"
-                      class="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
+                      class="flex min-h-10 w-full items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] transition hover:bg-white"
                       :class="selectedKichCoItems.length ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
                       @click="toggleSelectionDropdown('kichCo')"
                     >
-                      <span class="truncate">{{ kichCoSummary }}</span>
-                      <ChevronDown :size="14" />
+                      <span class="min-w-0 flex-1 text-left leading-5 whitespace-normal break-words">{{ kichCoSummary }}</span>
+                      <ChevronDown :size="14" class="mt-0.5 shrink-0" />
                     </button>
 
                     <div
@@ -387,7 +466,7 @@ onBeforeUnmount(() => {
                     </div>
 
                     <p class="mt-1 text-xs text-slate-400">
-                      {{ selectedKichCoItems.length ? `${selectedKichCoItems.length} kích cỡ đã chọn` : 'Chưa chọn kích cỡ' }}
+                      {{ selectedKichCoItems.length ? selectedKichCoItems.map((item) => `Size ${item.giaTri}`).join(', ') : 'Chưa chọn kích cỡ' }}
                     </p>
                     <p v-if="bulkBienTheErrors.kichCoIds" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.kichCoIds }}</p>
                   </div>
@@ -428,8 +507,10 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bulkBienTheForm.soLuong"
                       :min="0"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.soLuong, bulkBienTheErrors.soLuong))"
                     />
+                    <p v-if="resolveFieldError(bulkDefaultErrors.soLuong, bulkBienTheErrors.soLuong)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.soLuong, bulkBienTheErrors.soLuong) }}</p>
                   </div>
 
                   <div>
@@ -438,9 +519,9 @@ onBeforeUnmount(() => {
                       v-model="bulkBienTheForm.giaGoc"
                       :min="0"
                       class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      :class="bulkBienTheErrors.giaGoc ? 'border-red-400' : 'border-gray-200'"
+                      :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc))"
                     />
-                    <p v-if="bulkBienTheErrors.giaGoc" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.giaGoc }}</p>
+                    <p v-if="resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc) }}</p>
                   </div>
 
                   <div>
@@ -448,8 +529,10 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bulkBienTheForm.giaBan"
                       :min="0"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan))"
                     />
+                    <p v-if="resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan) }}</p>
                   </div>
 
                   <div class="flex items-end">
@@ -487,22 +570,28 @@ onBeforeUnmount(() => {
                           <AdminFormattedNumberInput
                             v-model="item.soLuong"
                             :min="0"
-                            class="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            class="w-28 rounded-lg border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.soLuong)"
                           />
+                          <p v-if="generatedBulkFieldErrors[item.key]?.soLuong" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].soLuong }}</p>
                         </td>
                         <td class="px-3 py-2">
                           <AdminFormattedNumberInput
                             v-model="item.giaGoc"
                             :min="0"
-                            class="w-32 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            class="w-32 rounded-lg border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.giaGoc)"
                           />
+                          <p v-if="generatedBulkFieldErrors[item.key]?.giaGoc" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].giaGoc }}</p>
                         </td>
                         <td class="px-3 py-2">
                           <AdminFormattedNumberInput
                             v-model="item.giaBan"
                             :min="0"
-                            class="w-32 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            class="w-32 rounded-lg border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.giaBan)"
                           />
+                          <p v-if="generatedBulkFieldErrors[item.key]?.giaBan" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].giaBan }}</p>
                         </td>
                         <td class="px-3 py-2 text-center">
                           <button
@@ -541,7 +630,7 @@ onBeforeUnmount(() => {
             type="button"
             :disabled="savingBienThe"
             class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:opacity-60"
-            @click="emit('save')"
+            @click="handleSaveClick"
           >
             {{ savingBienThe ? 'Đang lưu...' : (editingBienThe ? 'Lưu biến thể' : 'Lưu danh sách biến thể') }}
           </button>

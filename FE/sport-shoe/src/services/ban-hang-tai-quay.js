@@ -1,6 +1,15 @@
-import { sanitizeErrorMessage } from "../utils/error-message";
+import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
+
+function firstFieldError(errors) {
+  if (!errors || typeof errors !== "object" || Array.isArray(errors)) {
+    return "";
+  }
+
+  return Object.values(errors).find((value) => typeof value === "string" && value.trim())?.trim() ?? "";
+}
+
 async function request(path, init) {
   let response;
   try {
@@ -26,11 +35,10 @@ async function request(path, init) {
   }
 
   if (!response.ok) {
-    throw new Error(
-      sanitizeErrorMessage(
-        payload?.message,
-        "Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.",
-      ),
+    throw createRequestError(
+      firstFieldError(payload?.errors) || payload?.message,
+      "Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.",
+      payload?.errors,
     );
   }
 

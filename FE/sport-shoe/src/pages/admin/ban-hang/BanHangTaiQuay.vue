@@ -37,6 +37,7 @@ const {
   tongTienSauGiamHienThi,
   tienGiam,
   tongTien,
+  sanPhamValidationMessage,
   couponCode,
   coTheApDungPhieu,
   applyingCoupon,
@@ -50,6 +51,7 @@ const {
   shippingInfo,
   paymentMethod,
   amountPaid,
+  paymentValidationMessage,
   tienThua,
   paymentNote,
   canCreatePendingInvoice,
@@ -67,9 +69,10 @@ const {
   chonKhachVangLai,
   boChonKhachHang,
   moDanhSachSanPham,
-  dongDanhSachSanPham,
-  moChiTietSanPham,
-  tangSoLuong,
+   dongDanhSachSanPham,
+   moChiTietSanPham,
+   handleProductQrScan,
+   tangSoLuong,
   giamSoLuong,
   dongChiTietSanPham,
   chonMauSac,
@@ -127,6 +130,7 @@ const {
     :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
     :tien-giam="tienGiam"
     :tong-tien="tongTien"
+    :san-pham-validation-message="sanPhamValidationMessage"
     :coupon-code="couponCode"
     :co-the-ap-dung-phieu="coTheApDungPhieu"
     :applying-coupon="applyingCoupon"
@@ -140,6 +144,7 @@ const {
     :shipping-info="shippingInfo"
     :payment-method="paymentMethod"
     :amount-paid="amountPaid"
+    :payment-validation-message="paymentValidationMessage"
     :tien-thua="tienThua"
     :payment-note="paymentNote"
     :can-create-pending-invoice="canCreatePendingInvoice"
@@ -158,10 +163,11 @@ const {
     @select-guest="chonKhachVangLai"
     @clear-customer="boChonKhachHang"
     @update:product-keyword="productKeyword = $event"
-    @focus-product="moDanhSachSanPham"
-    @blur-product="dongDanhSachSanPham"
-    @open-product="moChiTietSanPham"
-    @increase-item="tangSoLuong"
+     @focus-product="moDanhSachSanPham"
+     @blur-product="dongDanhSachSanPham"
+     @open-product="moChiTietSanPham"
+     @scan-product="handleProductQrScan"
+     @increase-item="tangSoLuong"
     @decrease-item="giamSoLuong"
     @close-product-detail="dongChiTietSanPham"
     @select-color="chonMauSac"
