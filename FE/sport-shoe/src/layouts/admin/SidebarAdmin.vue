@@ -291,11 +291,11 @@ function subItemClass(active) {
         <div v-show="openKhuyenMai && !compactMode" class="space-y-1 overflow-hidden pr-4 pl-[36px] transition-all duration-300">
           <router-link to="/admin/phieu-giam-gia" :class="subItemClass(isActive('/admin/phieu-giam-gia'))">
             <Ticket class="mr-3 h-[18px] w-[18px] shrink-0" :class="isActive('/admin/phieu-giam-gia') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="leading-tight">Phi&#7871;u gi&#7843;m gi&#225;</span>
+            <span class="leading-tight">Phiếu giảm giá</span>
           </router-link>
           <router-link to="/admin/dot-giam-gia" :class="subItemClass(isActive('/admin/dot-giam-gia'))">
             <Tag class="mr-3 h-[18px] w-[18px] shrink-0" :class="isActive('/admin/dot-giam-gia') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="leading-tight">&#272;&#7907;t gi&#7843;m gi&#225;</span>
+            <span class="leading-tight">Đợt giảm giá</span>
           </router-link>
         </div>
       </div>

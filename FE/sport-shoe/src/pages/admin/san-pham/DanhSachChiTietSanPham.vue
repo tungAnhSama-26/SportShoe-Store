@@ -372,11 +372,6 @@ async function toggleBienTheStatus(item) {
   }
 }
 
-function applyStatusFilter(value) {
-  filters.trangThai = value
-  loadData(0)
-}
-
 watch(
   () => route.query.giayId,
   async () => {
@@ -427,7 +422,7 @@ onUnmounted(() => {
                 v-model="filters.keyword"
                 type="text"
                 placeholder="Tìm theo mã SP / mã CTSP / tên sản phẩm..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
                 @keyup.enter="loadData(0)"
               />
             </div>
@@ -454,7 +449,7 @@ onUnmounted(() => {
             <span class="mb-1 text-[13px] font-semibold text-slate-500">Màu sắc</span>
             <select
               v-model.number="filters.mauSacId"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               @change="loadData(0)"
             >
               <option :value="null">Tất cả màu sắc</option>
@@ -468,7 +463,7 @@ onUnmounted(() => {
             <span class="mb-1 text-[13px] font-semibold text-slate-500">Kích cỡ</span>
             <select
               v-model.number="filters.kichCoId"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               @change="loadData(0)"
             >
               <option :value="null">Tất cả kích cỡ</option>
@@ -481,7 +476,7 @@ onUnmounted(() => {
             <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
             <select
               v-model.number="filters.trangThai"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               @change="loadData(0)"
             >
               <option :value="null">Tất cả trạng thái</option>
@@ -539,8 +534,8 @@ onUnmounted(() => {
               <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500 whitespace-nowrap">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ item.maSanPham }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">{{ item.maChiTietSanPham }}</td>
+              <td class="px-4 py-4 font-bold text-slate-950 whitespace-nowrap">{{ item.maSanPham }}</td>
+              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.maChiTietSanPham }}</td>
               <td class="px-4 py-4">
                 <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                   <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
@@ -548,7 +543,11 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-4 py-4">
-                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                <p class="font-semibold text-slate-800">{{ item.tenSanPham }}</p>
+                <p class="mt-1 text-xs text-slate-400 font-medium">{{ item.sku }}</p>
+              </td>
+              <td class="px-4 py-4">
+                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                   <span
                     class="h-2.5 w-2.5 rounded-full border border-black/5"
                     :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
@@ -556,9 +555,9 @@ onUnmounted(() => {
                   {{ item.mauSac }}
                 </div>
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">{{ item.kichCo }}</td>
-              <td class="px-4 py-4 text-slate-600 whitespace-nowrap">{{ item.loaiGiay || '—' }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">
+              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.kichCo }}</td>
+              <td class="px-4 py-4 text-slate-800 whitespace-nowrap">{{ item.loaiGiay || '—' }}</td>
+              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
               <td class="px-4 py-4 whitespace-nowrap">

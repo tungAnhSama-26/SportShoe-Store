@@ -66,7 +66,11 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )
     FROM PhieuGiamGia phieuGG 
-    WHERE (:keyword IS NULL OR LOWER(phieuGG.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(phieuGG.ten) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    WHERE (:keyword IS NULL 
+        OR LOWER(phieuGG.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) 
+        OR LOWER(phieuGG.ten) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR CAST(phieuGG.giaTri AS string) LIKE CONCAT('%', :keyword, '%')
+        OR CAST(phieuGG.soLuong AS string) LIKE CONCAT('%', :keyword, '%'))
     AND (:trangThai IS NULL OR phieuGG.trangThai = :trangThai)
     AND (:loai IS NULL OR phieuGG.loai = :loai)
     AND (CAST(:tuNgay AS timestamp) IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
