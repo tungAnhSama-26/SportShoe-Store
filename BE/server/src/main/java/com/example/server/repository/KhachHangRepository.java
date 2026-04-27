@@ -19,6 +19,7 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, UUID> {
                 :keyword is null
                 or kh.sdt like concat('%', :keyword, '%')
                 or lower(kh.hoTen) like lower(concat('%', :keyword, '%'))
+                or lower(kh.email) like lower(concat('%', :keyword, '%'))
               )
             order by kh.ngayTao desc
             """)
