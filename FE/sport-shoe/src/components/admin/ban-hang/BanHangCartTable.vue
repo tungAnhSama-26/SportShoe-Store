@@ -20,13 +20,13 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
 <template>
   <div class="overflow-x-auto rounded-[28px] border border-slate-100">
     <table class="min-w-full border-collapse">
-      <thead class="bg-slate-100 text-left text-sm text-slate-600">
+      <thead class="bg-slate-100 text-left text-sm text-slate-950 font-bold">
         <tr>
-          <th class="px-5 py-4 font-semibold">STT</th>
-          <th class="px-5 py-4 font-semibold">Mã sản phẩm</th>
-          <th class="px-5 py-4 font-semibold">Tên sản phẩm</th>
-          <th class="px-5 py-4 font-semibold">Đơn giá</th>
-          <th class="px-5 py-4 font-semibold">Số lượng</th>
+          <th class="px-5 py-4">STT</th>
+          <th class="px-5 py-4">Mã sản phẩm</th>
+          <th class="px-5 py-4">Tên sản phẩm</th>
+          <th class="px-5 py-4">Đơn giá</th>
+          <th class="px-5 py-4">Số lượng</th>
         </tr>
       </thead>
       <tbody class="bg-white text-sm text-slate-700">

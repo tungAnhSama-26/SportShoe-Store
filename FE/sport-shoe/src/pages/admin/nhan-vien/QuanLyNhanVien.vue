@@ -300,7 +300,7 @@ onMounted(taiDanhSach);
           class="min-w-[900px] w-full border-separate border-spacing-y-2 text-sm"
         >
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Ảnh</th>
               <th class="bg-slate-100 px-4 py-3">Mã NV</th>

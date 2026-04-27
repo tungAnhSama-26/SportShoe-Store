@@ -17,6 +17,7 @@ import {
   Printer,
   Search,
   Trash2,
+  TriangleAlert,
   Truck,
   User,
   X,
@@ -25,6 +26,7 @@ import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhi
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import logoGhn from "../../../assets/logo/Logo-GHN-Blue-Orange.png";
 
 const route = useRoute();
 const router = useRouter();
@@ -43,6 +45,7 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 const hienModalXacNhan = ref(false);
 const hienModalLichSu = ref(false);
 const hienModalSanPham = ref(false);
+const hienModalXacNhanHuy = ref(false);
 
 const hienModalThongTin = ref(false);
 const tabHienTai = ref("donHang");
@@ -80,6 +83,16 @@ const cacBuocCoDinh = [
   { id: 3, key: "Đang vận chuyển", ten: "Đang Vận Chuyển", icon: markRaw(Truck) },
   { id: 4, key: "Đã giao hàng", ten: "Đã Giao Hàng", icon: markRaw(CircleCheck) },
   { id: 5, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
+];
+
+const cacBuocYeuCauHuy = [
+  { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
+  { id: 7, key: "Yêu cầu hủy", ten: "Yêu Cầu Hủy", icon: markRaw(TriangleAlert) },
+];
+
+const cacBuocDaHuy = [
+  { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
+  { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
 ];
 
 const laDonTaiQuay = computed(() => {
@@ -148,6 +161,16 @@ const donDaHoanThanh = computed(() => {
   return stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh";
 });
 
+const donYeuCauHuy = computed(() => {
+  const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+  return stt === "yêu cầu hủy" || stt === "yeu_cau_huy";
+});
+
+const donDaHuy = computed(() => {
+  const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+  return stt === "hủy" || stt === "huy" || stt === "đã hủy" || stt === "da_huy";
+});
+
 const toastClass = computed(() => {
   if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
   if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
@@ -207,7 +230,8 @@ const thanhToanGanNhat = computed(() => hoaDon.value?.lichSuThanhToan?.[0] ?? nu
 const lichSuRutGon = computed(() => hoaDon.value?.lichSuHoaDon ?? []);
 const thongTinBuoc = computed(() => {
   const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
-  return cacBuoc.value.map((buoc) => {
+  const nguonBuoc = donDaHuy.value ? cacBuocDaHuy : donYeuCauHuy.value ? cacBuocYeuCauHuy : cacBuoc.value;
+  return nguonBuoc.map((buoc) => {
     const banGhi = lichSu.find((item: any) => 
       (item.trangThai || "").toLowerCase() === buoc.key.toLowerCase() || 
       (item.trangThai || "").toLowerCase() === buoc.ten.toLowerCase()
@@ -230,11 +254,47 @@ const thongTinBuoc = computed(() => {
 });
 
 const cacBuocHienThi = computed(() => {
+  if (donDaHuy.value) {
+    return thongTinBuoc.value;
+  }
+  if (donYeuCauHuy.value) {
+    return thongTinBuoc.value;
+  }
   if (laDonTaiQuay.value) {
     return thongTinBuoc.value;
   }
   return thongTinBuoc.value.filter(b => b.id <= buocHienTai.value + 1);
 });
+
+function lopVongTrangThai(buoc: any) {
+  if (donDaHuy.value) {
+    if (buoc.id === 1) {
+      return "border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]";
+    }
+    return "border-rose-500 bg-rose-500 text-white shadow-[0_10px_22px_rgba(244,63,94,0.2)]";
+  }
+
+  if (donYeuCauHuy.value) {
+    if (buoc.id === 1) {
+      return "border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]";
+    }
+    return "border-amber-400 bg-white text-slate-500 shadow-[0_10px_20px_rgba(245,158,11,0.12)]";
+  }
+
+  return buoc.id <= buocHienTai.value
+    ? "border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]"
+    : "border-[#B82220] bg-white text-[#B82220]";
+}
+
+function lopTenTrangThai(buoc: any) {
+  if (donDaHuy.value && buoc.id === 6) {
+    return "text-rose-500";
+  }
+  if (donYeuCauHuy.value && buoc.id === 7) {
+    return "text-slate-500";
+  }
+  return "text-[#B82220]";
+}
 
 async function taiChiTiet() {
   dangTai.value = true;
@@ -276,6 +336,38 @@ async function handleXacNhanTrangThai() {
     hienThiThongBao("error", "Lỗi Cập Nhật Trạng Thái", getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đơn hàng."));
   } finally {
     dangCapNhat.value = false;
+  }
+}
+
+async function handleXuLyYeuCauHuy(trangThai: "Hủy" | "Chờ xác nhận") {
+  if (!hoaDon.value || dangCapNhat.value) return;
+  dangCapNhat.value = true;
+  try {
+    hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+      trangThai,
+      ghiChu: trangThai === "Hủy" ? "Xác nhận yêu cầu hủy của khách hàng" : "Từ chối yêu cầu hủy của khách hàng",
+    });
+    hienThiThongBao(
+      "success",
+      trangThai === "Hủy" ? "Đã Xác Nhận Hủy" : "Đã Từ Chối Hủy",
+      trangThai === "Hủy" ? "Đơn hàng đã được chuyển sang trạng thái hủy." : "Đơn hàng đã quay lại trạng thái chờ xác nhận.",
+    );
+  } catch (error) {
+    hienThiThongBao("error", "Lỗi Xử Lý Yêu Cầu Hủy", getDisplayErrorMessage(error, "Không thể xử lý yêu cầu hủy đơn hàng."));
+  } finally {
+    dangCapNhat.value = false;
+  }
+}
+
+function moModalXacNhanHuy() {
+  if (dangCapNhat.value) return;
+  hienModalXacNhanHuy.value = true;
+}
+
+async function handleXacNhanHuyDon() {
+  await handleXuLyYeuCauHuy("Hủy");
+  if (!dangCapNhat.value) {
+    hienModalXacNhanHuy.value = false;
   }
 }
 
@@ -593,19 +685,17 @@ onMounted(taiChiTiet);
               <div v-for="buoc in cacBuocHienThi" :key="buoc.id" class="relative z-10 flex flex-col items-center text-center w-32">
                 <div
                   class="flex h-[58px] w-[58px] items-center justify-center overflow-visible rounded-full border-[2.5px] transition-all"
-                  :class="
-                    buoc.id <= buocHienTai
-                      ? 'border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]'
-                      : 'border-[#B82220] bg-white text-[#B82220]'
-                  "
+                  :class="lopVongTrangThai(buoc)"
                 >
                   <Hourglass v-if="buoc.id === 1" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <Package v-else-if="buoc.id === 2" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <Truck v-else-if="buoc.id === 3" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <CircleCheck v-else-if="buoc.id === 4" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <Flag v-else-if="buoc.id === 5" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
+                  <CircleX v-else-if="buoc.id === 6" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
+                  <TriangleAlert v-else-if="buoc.id === 7" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                 </div>
-                <p class="mt-3 text-[13px] font-semibold text-[#B82220]">{{ buoc.ten }}</p>
+                <p class="mt-3 text-[13px] font-semibold" :class="lopTenTrangThai(buoc)">{{ buoc.ten }}</p>
                 <div class="mt-1 min-h-[32px]">
                   <p v-if="buoc.thoiGian" class="text-[11px] leading-4 text-slate-400">
                     {{ dinhDangGio(buoc.thoiGian) }} {{ dinhDangNgay(buoc.thoiGian) }}
@@ -614,6 +704,21 @@ onMounted(taiChiTiet);
                 </div>
               </div>
             </div>
+          </div>
+
+          <div
+            v-if="donYeuCauHuy"
+            class="mt-5 flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700"
+          >
+            <TriangleAlert class="h-4 w-4" />
+            Khách hàng yêu cầu hủy - đang chờ xác nhận
+          </div>
+          <div
+            v-if="donDaHuy"
+            class="mt-5 flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700"
+          >
+            <CircleX class="h-4 w-4" />
+            Đơn hàng đã bị hủy
           </div>
 
           <div class="mt-5 flex justify-end">
@@ -644,7 +749,10 @@ onMounted(taiChiTiet);
               <span class="font-semibold text-emerald-500">- {{ dinhDangTien(hoaDon.giamGia) }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-500">Phí Vận Chuyển</span>
+              <span class="flex items-center gap-2 text-slate-500">
+                Phí Vận Chuyển
+                <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
+              </span>
               <span class="font-semibold text-slate-700">+ {{ dinhDangTien(hoaDon.phiVanChuyen) }}</span>
             </div>
 
@@ -724,6 +832,37 @@ onMounted(taiChiTiet);
             <div v-else class="mt-4 text-sm text-slate-400">Chưa Có Lịch Sử Thanh Toán.</div>
           </div>
 
+          <div
+            v-if="donYeuCauHuy"
+            class="rounded-[26px] border border-rose-100 bg-white px-5 py-4 shadow-sm"
+          >
+            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-[#B82220]">
+              <TriangleAlert class="h-4.5 w-4.5" />
+              Khách Hàng Yêu Cầu Hủy Đơn
+            </h2>
+            <p class="mt-2 text-xs text-slate-500">Xem lịch sử thao tác để biết lý do yêu cầu hủy.</p>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                @click="moModalXacNhanHuy"
+                :disabled="dangCapNhat"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#B82220] px-4 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CircleCheck class="h-4 w-4" />
+                Xác Nhận Hủy
+              </button>
+              <button
+                type="button"
+                @click="handleXuLyYeuCauHuy('Chờ xác nhận')"
+                :disabled="dangCapNhat"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CircleX class="h-4 w-4" />
+                Từ Chối Hủy
+              </button>
+            </div>
+          </div>
+
           <button
             type="button"
             @click="handlePrint"
@@ -762,7 +901,7 @@ onMounted(taiChiTiet);
           <div class="overflow-x-auto">
             <table class="min-w-[980px] w-full text-sm">
               <thead>
-                <tr class="bg-slate-100 text-left text-[11px] tracking-wide text-slate-500">
+                <tr class="bg-slate-100 text-left text-[11px] font-bold tracking-wide text-slate-950">
                   <th class="rounded-l-2xl px-4 py-3">STT</th>
                   <th class="px-4 py-3">Ảnh</th>
                   <th class="px-4 py-3">Sản Phẩm</th>
@@ -824,6 +963,43 @@ onMounted(taiChiTiet);
             </button>
             <button @click="handleXacNhanTrangThai" :disabled="dangCapNhat" class="flex-1 rounded-2xl bg-[#B82220] py-3 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:opacity-50">
               {{ dangCapNhat ? "Đang Lưu..." : "Xác Nhận" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="hienModalXacNhanHuy" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+      <div class="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[#B82220]">
+              <TriangleAlert class="h-6 w-6" />
+            </div>
+            <div>
+              <h3 class="text-[19px] font-bold text-slate-800">Xác Nhận Hủy Đơn Hàng?</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-500">
+                Bạn có chắc chắn muốn xác nhận hủy đơn hàng này không? Sau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái đã hủy.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-7 flex gap-3">
+            <button
+              type="button"
+              @click="hienModalXacNhanHuy = false"
+              :disabled="dangCapNhat"
+              class="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Quay Lại
+            </button>
+            <button
+              type="button"
+              @click="handleXacNhanHuyDon"
+              :disabled="dangCapNhat"
+              class="flex-1 rounded-2xl bg-[#B82220] py-3 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ dangCapNhat ? "Đang Hủy..." : "Xác Nhận Hủy" }}
             </button>
           </div>
         </div>
@@ -1022,7 +1198,10 @@ onMounted(taiChiTiet);
              <div class="rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
                 <div class="mb-3 flex items-center justify-between gap-3">
                   <div>
-                    <p class="text-[13px] font-semibold text-slate-700">Tự Tính Phí Vận Chuyển GHN</p>
+                    <p class="flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                      Tự Tính Phí Vận Chuyển
+                      <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
+                    </p>
                   </div>
                   <button
                     type="button"

@@ -136,7 +136,7 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
                         hoaDon.getId(),
                         hoaDon.getMa(),
                         resolveTenKhachHang(hoaDon),
-                        resolveTenNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId())),
+                        resolveMaNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId())),
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
                     mapLoaiDon(hoaDon),
@@ -486,11 +486,13 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
         }
         String ma = normalize(hoaDon.getMa());
         String khachHang = normalize(resolveTenKhachHang(hoaDon));
-        String nhanVien = normalize(resolveTenNhanVien(hoaDon, thanhToan));
+        String maNhanVien = normalize(resolveMaNhanVien(hoaDon, thanhToan));
+        String tenNhanVien = normalize(resolveTenNhanVien(hoaDon, thanhToan));
         
         return (ma != null && ma.contains(keyword)) ||
                (khachHang != null && khachHang.contains(keyword)) ||
-               (nhanVien != null && nhanVien.contains(keyword));
+               (maNhanVien != null && maNhanVien.contains(keyword)) ||
+               (tenNhanVien != null && tenNhanVien.contains(keyword));
     }
 
     private Integer mapLoaiDonToKenhBan(String loaiDon) {
@@ -561,6 +563,16 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
             return hoaDon.getNhanVien().getHoTen();
         }
         return resolveTenNhanVien(thanhToan);
+    }
+
+    private String resolveMaNhanVien(HoaDon hoaDon, ThanhToan thanhToan) {
+        if (hoaDon.getNhanVien() != null && hoaDon.getNhanVien().getMa() != null && !hoaDon.getNhanVien().getMa().isBlank()) {
+            return hoaDon.getNhanVien().getMa();
+        }
+        if (thanhToan != null && thanhToan.getNhanVien() != null && thanhToan.getNhanVien().getMa() != null && !thanhToan.getNhanVien().getMa().isBlank()) {
+            return thanhToan.getNhanVien().getMa();
+        }
+        return "Chưa cập nhật";
     }
 
     private String resolveTenNhanVien(ThanhToan thanhToan) {

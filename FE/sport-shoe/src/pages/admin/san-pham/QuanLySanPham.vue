@@ -1051,13 +1051,13 @@ onMounted(async () => {
         <table class="admin-table admin-table--wide min-w-[1180px]">
           <thead class="border-b border-gray-100 bg-gray-50">
             <tr>
-              <th class="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">STT</th>
-              <th class="w-16 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Ảnh</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Sản phẩm</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Thuộc tính</th>
-              <th class="w-[220px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Giá / tồn kho</th>
-              <th class="w-[180px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Trạng thái</th>
-              <th class="w-[170px] px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Thao tác</th>
+              <th class="w-12 px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-950 font-bold">STT</th>
+              <th class="w-16 px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-950 font-bold">Ảnh</th>
+              <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-950 font-bold">Sản phẩm</th>
+              <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-950 font-bold">Thuộc tính</th>
+              <th class="w-[220px] px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-950 font-bold">Giá / tồn kho</th>
+              <th class="w-[180px] px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-950 font-bold">Trạng thái</th>
+              <th class="w-[170px] px-4 py-3 text-right text-xs uppercase tracking-wider text-slate-950 font-bold">Thao tác</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
