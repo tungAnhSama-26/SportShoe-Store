@@ -153,8 +153,8 @@ onMounted(taiDuLieu);
 
       <div class="grid gap-6 md:grid-cols-2">
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
-          <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+          <label class="text-[13px] font-semibold text-slate-700">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
+          <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">-- Chọn một phiếu --</option>
             <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
           </select>
@@ -168,7 +168,7 @@ onMounted(taiDuLieu);
             type="email" 
             list="email-suggestions" 
             placeholder="Ví dụ: customer@example.com"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" 
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" 
           />
           <datalist id="email-suggestions">
             <option v-for="em in emailOptions" :key="em" :value="em"></option>
@@ -178,12 +178,12 @@ onMounted(taiDuLieu);
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Ngày sử dụng</label>
-          <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
         </div>
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>
           </select>
