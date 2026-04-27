@@ -691,7 +691,7 @@ onMounted(taiChiTiet);
           <div class="overflow-x-auto min-h-[200px]">
             <table class="w-full text-sm text-left border-separate border-spacing-y-2">
               <thead>
-                <tr class="text-slate-500 font-bold text-[11px] tracking-wider">
+                <tr class="text-slate-950 font-bold text-[11px] tracking-wider">
                   <th class="px-4 py-2">STT</th>
                   <th class="px-4 py-2">Ảnh</th>
                   <th class="px-4 py-2">Mã SP (CT)</th>

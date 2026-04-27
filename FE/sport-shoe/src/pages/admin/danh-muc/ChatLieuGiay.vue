@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, Plus, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { chatLieuGiayApi } from '../../../services/danh-muc-api'
@@ -152,12 +152,12 @@ async function xuatExcel() {
         </colgroup>
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên chất liệu giày</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mô tả</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase w-12">STT</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Mã</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Tên chất liệu giày</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Mô tả</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Trạng thái</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
