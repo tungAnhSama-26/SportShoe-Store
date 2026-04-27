@@ -39,6 +39,17 @@ record ThuongHieuRequest(
 
 // ─── Đế Giày ─────────────────────────────────────────────────────────────────
 
+record ChatLieuGiayResponse(
+        Integer id, String ma, String ten, String moTa,
+        Integer trangThai, Instant ngayTao, Instant ngayCapNhat
+) {}
+
+record ChatLieuGiayRequest(
+        @NotBlank String ma,
+        @NotBlank @Size(max = 100) String ten,
+        @Size(max = 300) String moTa
+) {}
+
 record DeGiayResponse(
         Integer id, String ma, String ten, String moTa,
         Integer trangThai, Instant ngayTao, Instant ngayCapNhat

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft,
   Banknote,
+  CheckCircle2,
   CircleCheck,
   CircleX,
   ClipboardList,
@@ -16,12 +17,16 @@ import {
   Printer,
   Search,
   Trash2,
+  TriangleAlert,
   Truck,
   User,
+  X,
 } from "lucide-vue-next";
-import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon } from "../../../services/hoa-don";
+import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn } from "../../../services/hoa-don";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
+import logoGhn from "../../../assets/logo/Logo-GHN-Blue-Orange.png";
 
 const route = useRoute();
 const router = useRouter();
@@ -29,11 +34,18 @@ const hoaDon = ref<any>(null);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const dangCapNhat = ref(false);
-const thongBao = ref("");
+const toast = ref({
+  hienThi: false,
+  loai: "success" as "success" | "warning" | "error",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 const hienModalXacNhan = ref(false);
 const hienModalLichSu = ref(false);
 const hienModalSanPham = ref(false);
+const hienModalXacNhanHuy = ref(false);
 
 const hienModalThongTin = ref(false);
 const tabHienTai = ref("donHang");
@@ -45,6 +57,15 @@ const formThongTin = ref({
   diaChi: "",
   loaiDon: ""
 });
+const formGhn = ref({
+  serviceTypeId: 2,
+  length: 30,
+  width: 20,
+  height: 12,
+  weight: 500,
+});
+const dangTinhPhiGhn = ref(false);
+const diaChiGhnDaDo = ref("");
 
 const trangThaiMoiXacNhan = ref<string | null>(null);
 const ghiChuXacNhan = ref("");
@@ -62,6 +83,16 @@ const cacBuocCoDinh = [
   { id: 3, key: "Đang vận chuyển", ten: "Đang Vận Chuyển", icon: markRaw(Truck) },
   { id: 4, key: "Đã giao hàng", ten: "Đã Giao Hàng", icon: markRaw(CircleCheck) },
   { id: 5, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
+];
+
+const cacBuocYeuCauHuy = [
+  { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
+  { id: 7, key: "Yêu cầu hủy", ten: "Yêu Cầu Hủy", icon: markRaw(TriangleAlert) },
+];
+
+const cacBuocDaHuy = [
+  { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
+  { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
 ];
 
 const laDonTaiQuay = computed(() => {
@@ -125,6 +156,72 @@ const buocHienTai = computed(() => {
   return 0;
 });
 
+const donDaHoanThanh = computed(() => {
+  const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+  return stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh";
+});
+
+const donYeuCauHuy = computed(() => {
+  const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+  return stt === "yêu cầu hủy" || stt === "yeu_cau_huy";
+});
+
+const donDaHuy = computed(() => {
+  const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+  return stt === "hủy" || stt === "huy" || stt === "đã hủy" || stt === "da_huy";
+});
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  if (toast.value.loai === "warning") return CircleX;
+  return CircleX;
+});
+
+function hienThiThongBao(loai: "success" | "warning" | "error", tieuDe: string, noiDung = "") {
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+  toast.value = {
+    hienThi: true,
+    loai,
+    tieuDe,
+    noiDung,
+  };
+  toastTimer = setTimeout(() => {
+    toast.value.hienThi = false;
+  }, 3200);
+}
+
+function thongBaoDonDaHoanThanh() {
+  hienThiThongBao("warning", "Đơn Hàng Đã Hoàn Thành", "Đơn hàng đã hoàn thành không thể thay đổi trạng thái");
+}
+
+function moModalThongTin() {
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
+  hienModalThongTin.value = true;
+}
+
 const tongTienHang = computed(() => hoaDon.value?.sanPham?.reduce((tong: number, sp: any) => tong + sp.thanhTien, 0) ?? 0);
 const tongKhachCanTra = computed(() =>
   hoaDon.value ? tongTienHang.value + (hoaDon.value.phiVanChuyen || 0) - (hoaDon.value.giamGia || 0) : 0,
@@ -133,7 +230,8 @@ const thanhToanGanNhat = computed(() => hoaDon.value?.lichSuThanhToan?.[0] ?? nu
 const lichSuRutGon = computed(() => hoaDon.value?.lichSuHoaDon ?? []);
 const thongTinBuoc = computed(() => {
   const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
-  return cacBuoc.value.map((buoc) => {
+  const nguonBuoc = donDaHuy.value ? cacBuocDaHuy : donYeuCauHuy.value ? cacBuocYeuCauHuy : cacBuoc.value;
+  return nguonBuoc.map((buoc) => {
     const banGhi = lichSu.find((item: any) => 
       (item.trangThai || "").toLowerCase() === buoc.key.toLowerCase() || 
       (item.trangThai || "").toLowerCase() === buoc.ten.toLowerCase()
@@ -156,11 +254,47 @@ const thongTinBuoc = computed(() => {
 });
 
 const cacBuocHienThi = computed(() => {
+  if (donDaHuy.value) {
+    return thongTinBuoc.value;
+  }
+  if (donYeuCauHuy.value) {
+    return thongTinBuoc.value;
+  }
   if (laDonTaiQuay.value) {
     return thongTinBuoc.value;
   }
   return thongTinBuoc.value.filter(b => b.id <= buocHienTai.value + 1);
 });
+
+function lopVongTrangThai(buoc: any) {
+  if (donDaHuy.value) {
+    if (buoc.id === 1) {
+      return "border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]";
+    }
+    return "border-rose-500 bg-rose-500 text-white shadow-[0_10px_22px_rgba(244,63,94,0.2)]";
+  }
+
+  if (donYeuCauHuy.value) {
+    if (buoc.id === 1) {
+      return "border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]";
+    }
+    return "border-amber-400 bg-white text-slate-500 shadow-[0_10px_20px_rgba(245,158,11,0.12)]";
+  }
+
+  return buoc.id <= buocHienTai.value
+    ? "border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]"
+    : "border-[#B82220] bg-white text-[#B82220]";
+}
+
+function lopTenTrangThai(buoc: any) {
+  if (donDaHuy.value && buoc.id === 6) {
+    return "text-rose-500";
+  }
+  if (donYeuCauHuy.value && buoc.id === 7) {
+    return "text-slate-500";
+  }
+  return "text-[#B82220]";
+}
 
 async function taiChiTiet() {
   dangTai.value = true;
@@ -168,13 +302,17 @@ async function taiChiTiet() {
   try {
     hoaDon.value = await layChiTietHoaDon(Number(route.params.id));
   } catch (error) {
-    loiTrang.value = error instanceof Error ? error.message : "Không Thể Tải Chi Tiết Hóa Đơn";
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải chi tiết hóa đơn");
   } finally {
     dangTai.value = false;
   }
 }
 
 function openModalXacNhan(trangThai: string) {
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
   trangThaiMoiXacNhan.value = trangThai;
   ghiChuXacNhan.value = "";
   hienModalXacNhan.value = true;
@@ -182,31 +320,71 @@ function openModalXacNhan(trangThai: string) {
 
 async function handleXacNhanTrangThai() {
   if (!hoaDon.value || !trangThaiMoiXacNhan.value || dangCapNhat.value) return;
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
   dangCapNhat.value = true;
   try {
     hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
       trangThai: trangThaiMoiXacNhan.value,
       ghiChu: ghiChuXacNhan.value,
     });
-    thongBao.value = `Cập Nhật Sang Trạng Thái ${trangThaiMoiXacNhan.value} Thành Công.`;
+    hienThiThongBao("success", "Cập Nhật Thành Công", `Đơn hàng đã chuyển sang ${trangThaiMoiXacNhan.value}.`);
     hienModalXacNhan.value = false;
   } catch (error) {
-    window.alert(error instanceof Error ? error.message : "Lỗi Cập Nhật Trạng Thái");
+    hienThiThongBao("error", "Lỗi Cập Nhật Trạng Thái", getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đơn hàng."));
   } finally {
     dangCapNhat.value = false;
   }
 }
 
-watch(hienModalSanPham, (val) => {
-  if (val && hoaDon.value) {
-    danhSachSanPhamUpdate.value = (hoaDon.value.sanPham || []).map((sp: any) => ({
-      chiTietId: sp.id,
-      tenSanPham: sp.tenSanPham,
-      soLuong: sp.soLuong,
-      giaBan: sp.donGia,
-      maBienThe: sp.phanLoai || "",
-    }));
+async function handleXuLyYeuCauHuy(trangThai: "Hủy" | "Chờ xác nhận") {
+  if (!hoaDon.value || dangCapNhat.value) return;
+  dangCapNhat.value = true;
+  try {
+    hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+      trangThai,
+      ghiChu: trangThai === "Hủy" ? "Xác nhận yêu cầu hủy của khách hàng" : "Từ chối yêu cầu hủy của khách hàng",
+    });
+    hienThiThongBao(
+      "success",
+      trangThai === "Hủy" ? "Đã Xác Nhận Hủy" : "Đã Từ Chối Hủy",
+      trangThai === "Hủy" ? "Đơn hàng đã được chuyển sang trạng thái hủy." : "Đơn hàng đã quay lại trạng thái chờ xác nhận.",
+    );
+  } catch (error) {
+    hienThiThongBao("error", "Lỗi Xử Lý Yêu Cầu Hủy", getDisplayErrorMessage(error, "Không thể xử lý yêu cầu hủy đơn hàng."));
+  } finally {
+    dangCapNhat.value = false;
   }
+}
+
+function moModalXacNhanHuy() {
+  if (dangCapNhat.value) return;
+  hienModalXacNhanHuy.value = true;
+}
+
+async function handleXacNhanHuyDon() {
+  await handleXuLyYeuCauHuy("Hủy");
+  if (!dangCapNhat.value) {
+    hienModalXacNhanHuy.value = false;
+  }
+}
+
+watch(hienModalSanPham, (val) => {
+  if (!val || !hoaDon.value) return;
+  if (donDaHoanThanh.value) {
+    hienModalSanPham.value = false;
+    thongBaoDonDaHoanThanh();
+    return;
+  }
+  danhSachSanPhamUpdate.value = (hoaDon.value.sanPham || []).map((sp: any) => ({
+    chiTietId: sp.id,
+    tenSanPham: sp.tenSanPham,
+    soLuong: sp.soLuong,
+    giaBan: sp.donGia,
+    maBienThe: sp.phanLoai || "",
+  }));
 });
 
 async function timKiemSanPham() {
@@ -242,15 +420,19 @@ function removeSanPham(id: number) {
 
 async function handleSaveSanPham() {
   if (!hoaDon.value || dangCapNhat.value) return;
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
   dangCapNhat.value = true;
   try {
     hoaDon.value = await capNhatSanPhamHoaDon(hoaDon.value.id, {
       items: danhSachSanPhamUpdate.value.map((i) => ({ chiTietId: i.chiTietId, soLuong: i.soLuong })),
     });
-    thongBao.value = "Cập Nhật Sản Phẩm Hóa Đơn Thành Công.";
+    hienThiThongBao("success", "Cập Nhật Thành Công", "Sản phẩm hóa đơn đã được cập nhật.");
     hienModalSanPham.value = false;
   } catch (error) {
-    window.alert(error instanceof Error ? error.message : "Lỗi Cập Nhật Sản Phẩm");
+    window.alert(getDisplayErrorMessage(error, "Không thể cập nhật sản phẩm trong hóa đơn"));
   } finally {
     dangCapNhat.value = false;
   }
@@ -262,7 +444,6 @@ const danhSachTrangThaiHienThi = [
   { key: "Đang vận chuyển", label: "Đang vận chuyển" },
   { key: "Đã giao hàng", label: "Đã giao hàng" },
   { key: "Hoàn thành", label: "Hoàn thành" },
-  { key: "Hủy", label: "Hủy" },
   { key: "Yêu cầu hủy", label: "Yêu cầu hủy" },
   { key: "Cần hoàn tiền", label: "Cần hoàn tiền" }
 ];
@@ -295,33 +476,57 @@ function isOptionDisabled(stKey: string) {
   return targetIndex < indexTrangThaiHienTai.value;
 }
 
-watch(hienModalThongTin, (val) => {
-  if (val && hoaDon.value) {
-    const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
-    let defaultStt = hoaDon.value.trangThai;
-    if (stt === 'chờ xác nhận' || stt === 'cho_xac_nhan') defaultStt = "Chờ xác nhận";
-    else if (stt === 'chờ giao hàng' || stt === 'đã xác nhận' || stt === 'cho_giao_hang') defaultStt = "Chờ giao hàng";
-    else if (stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Đang vận chuyển";
-    else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
-    else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
-    else if (stt === 'yêu cầu hủy' || stt === 'yeu_cau_huy') defaultStt = "Yêu cầu hủy";
-    else if (stt === 'cần hoàn tiền' || stt === 'can_hoan_tien') defaultStt = "Cần hoàn tiền";
-    else if (stt === 'hủy' || stt === 'huy') defaultStt = "Hủy";
-
-    formThongTin.value = {
-      trangThai: defaultStt,
-      tenKhachHang: hoaDon.value.tenKhachHang || "",
-      soDienThoai: hoaDon.value.soDienThoai || "",
-      email: hoaDon.value.email || "",
-      diaChi: hoaDon.value.diaChi || "",
-      loaiDon: hoaDon.value.loaiDon || ""
-    };
-    tabHienTai.value = "donHang";
+function hienThiOptionTrangThai(index: number, key: string) {
+  if (donDaHoanThanh.value) {
+    return key === "Hoàn thành";
   }
+  return laDonTaiQuay.value
+    ? (index === 0 || key === "Hoàn thành")
+    : (index === indexTrangThaiHienTai.value || index === indexTrangThaiHienTai.value + 1);
+}
+
+watch(hienModalThongTin, (val) => {
+  if (!val || !hoaDon.value) return;
+  if (donDaHoanThanh.value) {
+    hienModalThongTin.value = false;
+    thongBaoDonDaHoanThanh();
+    return;
+  }
+  const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
+  let defaultStt = hoaDon.value.trangThai;
+  if (stt === 'chờ xác nhận' || stt === 'cho_xac_nhan') defaultStt = "Chờ xác nhận";
+  else if (stt === 'chờ giao hàng' || stt === 'đã xác nhận' || stt === 'cho_giao_hang') defaultStt = "Chờ giao hàng";
+  else if (stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Đang vận chuyển";
+  else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
+  else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
+  else if (stt === 'yêu cầu hủy' || stt === 'yeu_cau_huy') defaultStt = "Yêu cầu hủy";
+  else if (stt === 'cần hoàn tiền' || stt === 'can_hoan_tien') defaultStt = "Cần hoàn tiền";
+  else if (stt === 'hủy' || stt === 'huy') defaultStt = "Hủy";
+
+  formThongTin.value = {
+    trangThai: defaultStt,
+    tenKhachHang: hoaDon.value.tenKhachHang || "",
+    soDienThoai: hoaDon.value.soDienThoai || "",
+    email: hoaDon.value.email || "",
+    diaChi: hoaDon.value.diaChi || "",
+    loaiDon: hoaDon.value.loaiDon || ""
+  };
+  tabHienTai.value = "donHang";
+});
+
+watch(donDaHoanThanh, (locked) => {
+  if (!locked) return;
+  hienModalXacNhan.value = false;
+  hienModalSanPham.value = false;
+  hienModalThongTin.value = false;
 });
 
 async function handleLuuThongTin() {
   if (!hoaDon.value || dangCapNhat.value) return;
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
   dangCapNhat.value = true;
   try {
     if (formThongTin.value.trangThai !== hoaDon.value.trangThai) {
@@ -330,12 +535,46 @@ async function handleLuuThongTin() {
         ghiChu: ""
       });
     }
-    thongBao.value = "Cập Nhật Thông Tin Hóa Đơn Thành Công.";
+    hienThiThongBao("success", "Cập Nhật Thành Công", "Thông tin hóa đơn đã được cập nhật.");
     hienModalThongTin.value = false;
   } catch (error) {
-    window.alert(error instanceof Error ? error.message : "Lỗi Cập Nhật Thông Tin");
+    hienThiThongBao("error", "Lỗi Cập Nhật Thông Tin", getDisplayErrorMessage(error, "Không thể cập nhật thông tin hóa đơn."));
   } finally {
     dangCapNhat.value = false;
+  }
+}
+
+async function handleTinhPhiGhn() {
+  if (!hoaDon.value || dangTinhPhiGhn.value) return;
+  if (donDaHoanThanh.value) {
+    thongBaoDonDaHoanThanh();
+    return;
+  }
+  if (!formThongTin.value.diaChi.trim()) {
+    window.alert("Vui lòng nhập địa chỉ người nhận để tính phí GHN.");
+    return;
+  }
+
+  dangTinhPhiGhn.value = true;
+  try {
+    const ketQua = await tinhPhiVanChuyenGhn(hoaDon.value.id, {
+      toAddress: formThongTin.value.diaChi.trim(),
+      serviceTypeId: Number(formGhn.value.serviceTypeId) || 2,
+      length: Number(formGhn.value.length) || 30,
+      width: Number(formGhn.value.width) || 20,
+      height: Number(formGhn.value.height) || 12,
+      weight: Number(formGhn.value.weight) || 500,
+      insuranceValue: Math.min(Number(tongTienHang.value) || 0, 5000000),
+    });
+    diaChiGhnDaDo.value = [ketQua.matchedWardName, ketQua.matchedDistrictName, ketQua.matchedProvinceName]
+      .filter(Boolean)
+      .join(", ");
+    hoaDon.value = await layChiTietHoaDon(hoaDon.value.id);
+    hienThiThongBao("success", "Đã Tính Phí GHN", `Phí vận chuyển mới: ${dinhDangTien(ketQua.phiVanChuyen || ketQua.total || 0)}.`);
+  } catch (error) {
+    window.alert(getDisplayErrorMessage(error, "Không thể tính phí vận chuyển GHN"));
+  } finally {
+    dangTinhPhiGhn.value = false;
   }
 }
 
@@ -354,6 +593,35 @@ onMounted(taiChiTiet);
 
 <template>
   <div class="space-y-4 pb-10">
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toastClass"
+      >
+        <div class="flex gap-3 p-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
+            <component :is="ToastIcon" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
+      </div>
+    </Transition>
+
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]">Chi Tiết Đơn Hàng</h1>
@@ -399,10 +667,6 @@ onMounted(taiChiTiet);
     </div>
 
     <template v-else>
-      <div v-if="thongBao" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-600">
-        {{ thongBao }}
-      </div>
-
       <section class="grid items-stretch gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
         <div class="flex h-full flex-col rounded-[26px] border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-5 xl:col-span-2">
           <div class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
@@ -421,19 +685,17 @@ onMounted(taiChiTiet);
               <div v-for="buoc in cacBuocHienThi" :key="buoc.id" class="relative z-10 flex flex-col items-center text-center w-32">
                 <div
                   class="flex h-[58px] w-[58px] items-center justify-center overflow-visible rounded-full border-[2.5px] transition-all"
-                  :class="
-                    buoc.id <= buocHienTai
-                      ? 'border-[#B82220] bg-[#B82220] text-white shadow-[0_10px_22px_rgba(184,34,32,0.18)]'
-                      : 'border-[#B82220] bg-white text-[#B82220]'
-                  "
+                  :class="lopVongTrangThai(buoc)"
                 >
                   <Hourglass v-if="buoc.id === 1" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <Package v-else-if="buoc.id === 2" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <Truck v-else-if="buoc.id === 3" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <CircleCheck v-else-if="buoc.id === 4" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                   <Flag v-else-if="buoc.id === 5" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
+                  <CircleX v-else-if="buoc.id === 6" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
+                  <TriangleAlert v-else-if="buoc.id === 7" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                 </div>
-                <p class="mt-3 text-[13px] font-semibold text-[#B82220]">{{ buoc.ten }}</p>
+                <p class="mt-3 text-[13px] font-semibold" :class="lopTenTrangThai(buoc)">{{ buoc.ten }}</p>
                 <div class="mt-1 min-h-[32px]">
                   <p v-if="buoc.thoiGian" class="text-[11px] leading-4 text-slate-400">
                     {{ dinhDangGio(buoc.thoiGian) }} {{ dinhDangNgay(buoc.thoiGian) }}
@@ -442,6 +704,21 @@ onMounted(taiChiTiet);
                 </div>
               </div>
             </div>
+          </div>
+
+          <div
+            v-if="donYeuCauHuy"
+            class="mt-5 flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700"
+          >
+            <TriangleAlert class="h-4 w-4" />
+            Khách hàng yêu cầu hủy - đang chờ xác nhận
+          </div>
+          <div
+            v-if="donDaHuy"
+            class="mt-5 flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700"
+          >
+            <CircleX class="h-4 w-4" />
+            Đơn hàng đã bị hủy
           </div>
 
           <div class="mt-5 flex justify-end">
@@ -472,7 +749,10 @@ onMounted(taiChiTiet);
               <span class="font-semibold text-emerald-500">- {{ dinhDangTien(hoaDon.giamGia) }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-500">Phí Vận Chuyển</span>
+              <span class="flex items-center gap-2 text-slate-500">
+                Phí Vận Chuyển
+                <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
+              </span>
               <span class="font-semibold text-slate-700">+ {{ dinhDangTien(hoaDon.phiVanChuyen) }}</span>
             </div>
 
@@ -552,6 +832,37 @@ onMounted(taiChiTiet);
             <div v-else class="mt-4 text-sm text-slate-400">Chưa Có Lịch Sử Thanh Toán.</div>
           </div>
 
+          <div
+            v-if="donYeuCauHuy"
+            class="rounded-[26px] border border-rose-100 bg-white px-5 py-4 shadow-sm"
+          >
+            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-[#B82220]">
+              <TriangleAlert class="h-4.5 w-4.5" />
+              Khách Hàng Yêu Cầu Hủy Đơn
+            </h2>
+            <p class="mt-2 text-xs text-slate-500">Xem lịch sử thao tác để biết lý do yêu cầu hủy.</p>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                @click="moModalXacNhanHuy"
+                :disabled="dangCapNhat"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#B82220] px-4 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CircleCheck class="h-4 w-4" />
+                Xác Nhận Hủy
+              </button>
+              <button
+                type="button"
+                @click="handleXuLyYeuCauHuy('Chờ xác nhận')"
+                :disabled="dangCapNhat"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CircleX class="h-4 w-4" />
+                Từ Chối Hủy
+              </button>
+            </div>
+          </div>
+
           <button
             type="button"
             @click="handlePrint"
@@ -563,12 +874,18 @@ onMounted(taiChiTiet);
 
           <button
             type="button"
-            @click="hienModalThongTin = true"
-            class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+            @click="moModalThongTin"
+            :disabled="donDaHoanThanh"
+            :title="donDaHoanThanh ? 'Đơn hàng đã hoàn thành, không thể chỉnh sửa.' : ''"
+            class="flex h-10 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:shadow-none"
+            :class="donDaHoanThanh ? 'bg-slate-300 hover:bg-slate-300' : 'bg-amber-500 hover:bg-amber-600'"
           >
             <Pencil class="h-4 w-4" />
             Chỉnh Sửa Đơn Hàng
           </button>
+          <p v-if="donDaHoanThanh" class="text-center text-xs font-medium text-slate-400">
+            Đơn hàng đã hoàn thành nên không thể chỉnh sửa.
+          </p>
         </div>
       </section>
 
@@ -584,7 +901,7 @@ onMounted(taiChiTiet);
           <div class="overflow-x-auto">
             <table class="min-w-[980px] w-full text-sm">
               <thead>
-                <tr class="bg-slate-100 text-left text-[11px] tracking-wide text-slate-500">
+                <tr class="bg-slate-100 text-left text-[11px] font-bold tracking-wide text-slate-950">
                   <th class="rounded-l-2xl px-4 py-3">STT</th>
                   <th class="px-4 py-3">Ảnh</th>
                   <th class="px-4 py-3">Sản Phẩm</th>
@@ -646,6 +963,43 @@ onMounted(taiChiTiet);
             </button>
             <button @click="handleXacNhanTrangThai" :disabled="dangCapNhat" class="flex-1 rounded-2xl bg-[#B82220] py-3 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:opacity-50">
               {{ dangCapNhat ? "Đang Lưu..." : "Xác Nhận" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="hienModalXacNhanHuy" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+      <div class="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[#B82220]">
+              <TriangleAlert class="h-6 w-6" />
+            </div>
+            <div>
+              <h3 class="text-[19px] font-bold text-slate-800">Xác Nhận Hủy Đơn Hàng?</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-500">
+                Bạn có chắc chắn muốn xác nhận hủy đơn hàng này không? Sau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái đã hủy.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-7 flex gap-3">
+            <button
+              type="button"
+              @click="hienModalXacNhanHuy = false"
+              :disabled="dangCapNhat"
+              class="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Quay Lại
+            </button>
+            <button
+              type="button"
+              @click="handleXacNhanHuyDon"
+              :disabled="dangCapNhat"
+              class="flex-1 rounded-2xl bg-[#B82220] py-3 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ dangCapNhat ? "Đang Hủy..." : "Xác Nhận Hủy" }}
             </button>
           </div>
         </div>
@@ -746,7 +1100,7 @@ onMounted(taiChiTiet);
                 <button @click="hienModalSanPham = false" class="flex-1 rounded-2xl bg-white py-3 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
                   Đóng
                 </button>
-                <button @click="handleSaveSanPham" :disabled="dangCapNhat" class="flex-1 rounded-2xl bg-amber-500 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50">
+                <button @click="handleSaveSanPham" :disabled="dangCapNhat || donDaHoanThanh" class="flex-1 rounded-2xl bg-amber-500 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50">
                   {{ dangCapNhat ? "Đang Lưu..." : "Lưu Thay Đổi" }}
                 </button>
               </div>
@@ -803,10 +1157,10 @@ onMounted(taiChiTiet);
             </div>
             <div>
               <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Trạng thái</label>
-              <select v-model="formThongTin.trangThai" class="w-full rounded-[8px] border border-blue-400 px-3 py-2.5 text-[14px] text-slate-800 outline-none ring-1 ring-blue-100 transition focus:border-blue-500 focus:ring-blue-300">
+              <select v-model="formThongTin.trangThai" class="w-full rounded-[8px] border border-blue-400 px-3 py-2.5 text-[14px] text-slate-800 outline-none ring-1 ring-blue-100 transition focus:border-blue-500 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-slate-100">
                 <template v-for="(st, index) in danhSachTrangThaiHienThi" :key="st.key">
                   <option 
-                    v-if="laDonTaiQuay ? (index === 0 || index === 4) : (index === indexTrangThaiHienTai || index === indexTrangThaiHienTai + 1)"
+                    v-if="hienThiOptionTrangThai(index, st.key)"
                     :value="st.key" 
                     :disabled="isOptionDisabled(st.key)"
                   >
@@ -841,6 +1195,56 @@ onMounted(taiChiTiet);
                 <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Loại đơn</label>
                 <input type="text" readonly :value="formThongTin.loaiDon" class="w-full rounded-[8px] bg-slate-100 px-3 py-2.5 text-[14px] text-slate-600 outline-none" />
              </div>
+             <div class="rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="flex items-center gap-2 text-[13px] font-semibold text-slate-700">
+                      Tự Tính Phí Vận Chuyển
+                      <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    @click="handleTinhPhiGhn"
+                    :disabled="dangTinhPhiGhn || laDonTaiQuay || donDaHoanThanh"
+                    class="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {{ dangTinhPhiGhn ? "Đang Tính..." : "Tự Tính Phí GHN" }}
+                  </button>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2">
+                  <div v-if="diaChiGhnDaDo" class="md:col-span-2 rounded-xl bg-white px-3 py-2 text-sm text-slate-600">
+                    GHN Đã Dò: <span class="font-semibold text-slate-800">{{ diaChiGhnDaDo }}</span>
+                  </div>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Loại Dịch Vụ</span>
+                    <select v-model.number="formGhn.serviceTypeId" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300">
+                      <option :value="2">Hàng Nhẹ</option>
+                      <option :value="5">Hàng Nặng</option>
+                    </select>
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Cân Nặng (gram)</span>
+                    <input v-model.number="formGhn.weight" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Dài (cm)</span>
+                    <input v-model.number="formGhn.length" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Rộng (cm)</span>
+                    <input v-model.number="formGhn.width" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs font-medium text-slate-500">Cao (cm)</span>
+                    <input v-model.number="formGhn.height" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
+                  </label>
+                  <div class="flex items-end justify-between rounded-xl bg-white px-3 py-2 text-sm">
+                    <span class="text-slate-500">Phí Hiện Tại</span>
+                    <span class="font-semibold text-rose-500">{{ dinhDangTien(hoaDon.phiVanChuyen) }}</span>
+                  </div>
+                </div>
+             </div>
           </div>
         </div>
 
@@ -848,7 +1252,7 @@ onMounted(taiChiTiet);
           <button @click="hienModalThongTin = false" class="rounded-full bg-slate-500 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-slate-600">
             Hủy
           </button>
-          <button @click="handleLuuThongTin" :disabled="dangCapNhat" class="rounded-full bg-emerald-600 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50">
+          <button @click="handleLuuThongTin" :disabled="dangCapNhat || donDaHoanThanh" class="rounded-full bg-emerald-600 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50">
             {{ dangCapNhat ? 'Đang Lưu...' : 'Lưu' }}
           </button>
         </div>

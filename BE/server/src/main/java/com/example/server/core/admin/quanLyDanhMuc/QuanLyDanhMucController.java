@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/danh-muc")
+@RequestMapping("/api/v1/admin/danh-muc")
 public class QuanLyDanhMucController {
 
     private final QuanLyDanhMucService service;
@@ -101,6 +101,45 @@ public class QuanLyDanhMucController {
     }
 
     // ─── Đế Giày ─────────────────────────────────────────────────────────────
+
+    @GetMapping("/chat-lieu-giay")
+    public ResponseEntity<ApiResponse<PageResponse<ChatLieuGiayResponse>>> danhSachChatLieuGiay(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        return ResponseEntity.ok(ApiResponse.success("Láº¥y danh sÃ¡ch cháº¥t liá»‡u giÃ y thÃ nh cÃ´ng",
+                service.danhSachChatLieuGiay(keyword, pageable)));
+    }
+
+    @GetMapping("/chat-lieu-giay/{id}")
+    public ResponseEntity<ApiResponse<ChatLieuGiayResponse>> chiTietChatLieuGiay(@PathVariable Integer id) {
+        return ResponseEntity.ok(ApiResponse.success("Láº¥y chi tiáº¿t cháº¥t liá»‡u giÃ y thÃ nh cÃ´ng", service.chiTietChatLieuGiay(id)));
+    }
+
+    @PostMapping("/chat-lieu-giay")
+    public ResponseEntity<ApiResponse<ChatLieuGiayResponse>> taoChatLieuGiay(@Valid @RequestBody ChatLieuGiayRequest req) {
+        return ResponseEntity.ok(ApiResponse.success("Táº¡o cháº¥t liá»‡u giÃ y thÃ nh cÃ´ng", service.taoChatLieuGiay(req)));
+    }
+
+    @PutMapping("/chat-lieu-giay/{id}")
+    public ResponseEntity<ApiResponse<ChatLieuGiayResponse>> capNhatChatLieuGiay(
+            @PathVariable Integer id, @Valid @RequestBody ChatLieuGiayRequest req) {
+        return ResponseEntity.ok(ApiResponse.success("Cáº­p nháº­t cháº¥t liá»‡u giÃ y thÃ nh cÃ´ng", service.capNhatChatLieuGiay(id, req)));
+    }
+
+    @PatchMapping("/chat-lieu-giay/{id}/trang-thai")
+    public ResponseEntity<ApiResponse<Void>> doiTrangThaiChatLieuGiay(
+            @PathVariable Integer id, @Valid @RequestBody DoiTrangThaiDanhMucRequest req) {
+        service.doiTrangThaiChatLieuGiay(id, req);
+        return ResponseEntity.ok(ApiResponse.success("Äá»•i tráº¡ng thÃ¡i thÃ nh cÃ´ng", null));
+    }
+
+    @DeleteMapping("/chat-lieu-giay/{id}")
+    public ResponseEntity<ApiResponse<Void>> xoaChatLieuGiay(@PathVariable Integer id) {
+        service.xoaChatLieuGiay(id);
+        return ResponseEntity.ok(ApiResponse.success("XÃ³a cháº¥t liá»‡u giÃ y thÃ nh cÃ´ng", null));
+    }
 
     @GetMapping("/de-giay")
     public ResponseEntity<ApiResponse<PageResponse<DeGiayResponse>>> danhSachDeGiay(

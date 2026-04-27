@@ -12,7 +12,7 @@ import java.time.LocalDate;
 public class DotGiamGiaSanPhamRequest {
     private Integer dotGiamGiaId;
 
-    private Integer giayId;
+    private Integer giayChiTietId;
 
     private Integer trangThai;
 

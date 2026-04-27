@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("${app.api.base-path}/upload")
+@RequestMapping("/api/v1/upload")
 public class FileUploadController {
 
     private final Path rootLocation = Paths.get("uploads");

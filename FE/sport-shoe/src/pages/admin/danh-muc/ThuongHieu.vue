@@ -1,9 +1,12 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Search, Plus, Trash2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Plus, Trash2, Eye, X, Upload, ImageOff } from 'lucide-vue-next'
 import { thuongHieuApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
+import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -21,7 +24,7 @@ async function loadData(page = 0) {
   try {
     const res = await thuongHieuApi.list(keyword.value || undefined, page, pageSize.value)
     items.value = res.items; totalItems.value = res.totalItems; totalPages.value = res.totalPages; currentPage.value = res.page
-  } catch (e) { showToast(e.message || 'Lỗi tải dữ liệu', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách thương hiệu'), 'error') }
   finally { loading.value = false }
 }
 
@@ -45,16 +48,31 @@ const saving = ref(false)
 const selectedItem = ref(null)
 const form = reactive({ ma: '', ten: '', xuatXu: '', logoUrl: '', website: '', moTa: '' })
 const errors = reactive({})
+const updatingStatusId = ref(null)
+const uploadingLogo = ref(false)
 
 function clearForm() { Object.assign(form, { ma: '', ten: '', xuatXu: '', logoUrl: '', website: '', moTa: '' }); Object.keys(errors).forEach(k => delete errors[k]) }
 function openAdd() { clearForm(); modalMode.value = 'add'; showModal.value = true }
 function openEdit(item) { clearForm(); Object.assign(form, { ma: item.ma, ten: item.ten, xuatXu: item.xuatXu || '', logoUrl: item.logoUrl || '', website: item.website || '', moTa: item.moTa || '' }); selectedItem.value = item; modalMode.value = 'edit'; showModal.value = true }
 function openView(item) { openEdit(item) }
 
+async function handleLogoUpload(event) {
+  const target = event.target
+  if (!target.files?.length) return
+
+  uploadingLogo.value = true
+  try {
+    form.logoUrl = await thuongHieuApi.uploadFile(target.files[0])
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải logo thương hiệu'), 'error') }
+  finally { uploadingLogo.value = false; target.value = '' }
+}
+
+function clearLogo() { form.logoUrl = '' }
+
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.ma.trim()) errors.ma = 'Mã không được để trống'
-  if (!form.ten.trim()) errors.ten = 'Tên không được để trống'
+  if (!form.ma.trim()) errors.ma = 'Vui lòng nhập mã thương hiệu'
+  if (!form.ten.trim()) errors.ten = 'Vui lòng nhập tên thương hiệu'
   return Object.keys(errors).length === 0
 }
 
@@ -67,19 +85,24 @@ async function handleSave() {
     else await thuongHieuApi.update(selectedItem.value.id, body)
     showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false; loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
+  } catch (e) {
+    Object.assign(errors, getFieldErrors(e))
+    showToast(getDisplayErrorMessage(e, 'Không thể lưu thương hiệu'), 'error')
+  }
   finally { saving.value = false }
 }
 
-async function handleDelete(item) {
-  if (!confirm(`Xóa thương hiệu "${item.ten}"?`)) return
-  try { await thuongHieuApi.delete(item.id); showToast('Xóa thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi xóa', 'error') }
-}
-
 async function handleToggleStatus(item) {
-  try { await thuongHieuApi.toggleStatus(item.id, item.trangThai === 1 ? 0 : 1); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi cập nhật', 'error') }
+  const nextTrangThai = item.trangThai === 1 ? 0 : 1
+  const actionLabel = nextTrangThai === 1 ? 'bật' : 'dừng'
+  if (!confirm('Xác nhận ' + actionLabel + ' nhanh thương hiệu "' + item.ten + '"?')) return
+
+  updatingStatusId.value = item.id
+  try {
+    await thuongHieuApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
+  }
+  catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái thương hiệu'), 'error') }
+  finally { updatingStatusId.value = null }
 }
 
 async function xuatExcel() {
@@ -107,7 +130,7 @@ async function xuatExcel() {
 
     showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
   } catch (e) {
-    showToast(e.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel thương hiệu'), 'error')
   }
 }
 </script>
@@ -146,13 +169,13 @@ async function xuatExcel() {
         </colgroup>
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-16">Logo</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên thương hiệu</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Xuất xứ</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase w-12">STT</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-16">Logo</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Mã</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Tên thương hiệu</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Xuất xứ</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Trạng thái</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
@@ -181,18 +204,11 @@ async function xuatExcel() {
             <td class="px-4 py-3 font-semibold text-slate-800"><span class="block truncate">{{ item.ma }}</span></td>
             <td class="px-4 py-3 font-medium text-gray-800"><span class="block truncate">{{ item.ten }}</span></td>
             <td class="px-4 py-3 text-gray-500"><span class="block truncate">{{ item.xuatXu || '—' }}</span></td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex justify-center">
-                <button @click="handleToggleStatus(item)" class="admin-status-chip"
-                  :class="item.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'">
-                  {{ item.trangThai === 1 ? 'Hoạt động' : 'Dừng' }}
-                </button>
-              </div>
-            </td>
+            <td class="px-4 py-3 text-center"><div class="flex justify-center"><DanhMucQuickStatusToggle :trang-thai="item.trangThai" :loading="updatingStatusId === item.id" /></div></td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-center gap-1">
+                <AdminQuickStatusAction :loading="updatingStatusId === item.id" :action-label="item.trangThai === 1 ? 'Chuyển sang ngừng bán' : 'Chuyển sang đang bán'" :intent="item.trangThai === 1 ? 'deactivate' : 'activate'" @toggle="handleToggleStatus(item)" />
                 <button @click="openView(item)" title="Xem và sửa" class="admin-table-action text-slate-600 hover:text-rose-500"><Eye :size="14" /></button>
-                <button @click="handleDelete(item)" class="admin-table-action text-red-500 hover:text-red-600"><Trash2 :size="14" /></button>
               </div>
             </td>
           </tr>
@@ -226,9 +242,43 @@ async function xuatExcel() {
               <input v-model="form.xuatXu" :disabled="modalMode === 'view'" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" placeholder="VD: Mỹ" />
             </div>
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Logo URL</label>
-              <input v-model="form.logoUrl" :disabled="modalMode === 'view'" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" placeholder="https://..." />
-              <img v-if="form.logoUrl" :src="form.logoUrl" class="mt-2 h-12 object-contain rounded border border-gray-100" alt="Logo preview" />
+              <label class="block text-xs font-medium text-gray-700 mb-2">Logo</label>
+              <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                    <img v-if="form.logoUrl" :src="form.logoUrl" class="h-full w-full object-contain p-2" alt="Logo preview" />
+                    <div v-else class="flex flex-col items-center gap-2 text-gray-400">
+                      <ImageOff :size="22" />
+                      <span class="text-[11px] font-medium">Chưa có logo</span>
+                    </div>
+                  </div>
+
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <label
+                      v-if="modalMode !== 'view'"
+                      class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-600"
+                    >
+                      <Upload :size="16" />
+                      {{ uploadingLogo ? 'Đang tải ảnh...' : form.logoUrl ? 'Đổi ảnh logo' : 'Chọn ảnh logo' }}
+                      <input type="file" accept="image/*" class="hidden" @change="handleLogoUpload" />
+                    </label>
+
+                    <button
+                      v-if="modalMode !== 'view' && form.logoUrl"
+                      type="button"
+                      class="ml-2 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-gray-50"
+                      @click="clearLogo"
+                    >
+                      <Trash2 :size="16" />
+                      Xóa ảnh
+                    </button>
+
+                    <p class="text-xs text-gray-500">
+                      Chọn file ảnh để hệ thống tự upload và hiển thị logo.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">Website</label>
@@ -249,6 +299,9 @@ async function xuatExcel() {
     </template>
   </DanhMucPageShell>
 </template>
+
+
+
 
 
 

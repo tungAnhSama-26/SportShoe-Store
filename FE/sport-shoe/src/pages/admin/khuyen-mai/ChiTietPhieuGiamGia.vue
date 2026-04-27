@@ -21,6 +21,42 @@ const laMoi = !id;
 const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer = null;
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  return CircleX;
+});
+
+function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+}
 const formErrors = reactive({});
 
 const form = reactive({
@@ -45,6 +81,20 @@ const dangTaiKh = ref(false);
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function parseVndNumber(value) {
+  const rawValue = String(value ?? "").replace(/[^\d]/g, "");
+  return rawValue ? Number(rawValue) : 0;
+}
+
+function formatVndNumber(value) {
+  const numberValue = parseVndNumber(value);
+  return numberValue ? numberValue.toLocaleString("vi-VN") : "0";
+}
+
+function handleVndInput(field, event) {
+  form[field] = formatVndNumber(event.target.value);
 }
 
 function resetErrors() {
@@ -114,8 +164,8 @@ async function taiChiTiet() {
       loai: String(detail.loai ?? 1),
       loaiPhieu: String(detail.loaiPhieu ?? 1),
       giaTri: detail.giaTri ?? "",
-      giaTriToiThieu: detail.giaTriToiThieu ?? "0",
-      giamToiDa: detail.giamToiDa ?? "0",
+      giaTriToiThieu: formatVndNumber(detail.giaTriToiThieu ?? "0"),
+      giamToiDa: formatVndNumber(detail.giamToiDa ?? "0"),
       ngayBatDau: detail.ngayBatDau ?? "",
       ngayKetThuc: detail.ngayKetThuc ?? "",
       soLuong: detail.soLuong ?? "",
@@ -129,7 +179,7 @@ async function taiChiTiet() {
     
     taiDanhSachKh();
   } catch (e) {
-    loiTrang.value = e.message || "Không thể tải chi tiết phiếu giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải chi tiết phiếu giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -139,12 +189,29 @@ async function submitForm() {
   resetErrors();
   let isValid = true;
 
-  if (!form.ma.trim()) { formErrors.ma = "Mã phiếu không được để trống"; isValid = false; }
-  if (!form.ten.trim()) { formErrors.ten = "Tên phiếu không được để trống"; isValid = false; }
-  if (!form.giaTri || Number(form.giaTri) <= 0) { formErrors.giaTri = "Giá trị giảm không hợp lệ"; isValid = false; }
-  if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng không hợp lệ"; isValid = false; }
-  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Chọn ngày bắt đầu"; isValid = false; }
-  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày kết thúc"; isValid = false; }
+  if (!form.ma.trim()) { formErrors.ma = "Vui lòng nhập mã phiếu giảm giá"; isValid = false; }
+  if (!form.ten.trim()) { formErrors.ten = "Vui lòng nhập tên phiếu giảm giá"; isValid = false; }
+  if (!form.giaTri || parseVndNumber(form.giaTri) <= 0) { 
+    formErrors.giaTri = "Giá trị giảm phải lớn hơn 0"; 
+    isValid = false; 
+  } else if (Number(form.loai) === 1 && parseVndNumber(form.giaTri) > 100) {
+    formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
+    isValid = false;
+  }
+
+  if (form.loaiPhieu === '2' && dsEmailChon.value.length === 0) {
+    hienThiThongBao("warning", "Chưa chọn khách hàng", "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân");
+    isValid = false;
+  }
+
+  if (form.giaTriToiThieu && parseVndNumber(form.giaTriToiThieu) < 1) {
+    formErrors.giaTriToiThieu = "Giá trị đơn tối thiểu phải lớn hơn 0";
+    isValid = false;
+  }
+
+  if (!form.soLuong || Number(form.soLuong) <= 0) { formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0"; isValid = false; }
+  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng"; isValid = false; }
+  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng"; isValid = false; }
   
   if (form.loaiPhieu === '2' && dsEmailChon.value.length === 0) {
       formErrors.email = "Phải chọn ít nhất 1 khách hàng cho phiếu cá nhân";
@@ -212,7 +279,36 @@ onMounted(taiChiTiet);
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 pb-10">
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toastClass"
+      >
+        <div class="flex gap-3 p-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
+            <component :is="ToastIcon" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
+      </div>
+    </Transition>
     <!-- Header -->
     <section class="flex items-center gap-4">
       <button
@@ -379,7 +475,7 @@ onMounted(taiChiTiet);
           <Save class="h-4 w-4" />
           {{ saving ? "Đang lưu..." : (laMoi ? "Tạo phiếu giảm giá" : "Lưu thay đổi") }}
         </button>
-        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
+        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 whitespace-nowrap">Hủy</button>
       </div>
     </section>
   </div>

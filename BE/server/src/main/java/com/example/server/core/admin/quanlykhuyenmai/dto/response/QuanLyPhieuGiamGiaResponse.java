@@ -18,6 +18,7 @@ public class QuanLyPhieuGiamGiaResponse {
     private String ma;
     private String ten;
     private Integer loai;
+    private Integer loaiPhieu;
     private BigDecimal giaTri;
     private BigDecimal giaTriToiThieu;
     private BigDecimal giamToiDa;
@@ -33,6 +34,7 @@ public class QuanLyPhieuGiamGiaResponse {
             String ma,
             String ten,
             Integer loai,
+            Integer loaiPhieu,
             BigDecimal giaTri,
             BigDecimal giaTriToiThieu,
             BigDecimal giamToiDa,
@@ -47,11 +49,12 @@ public class QuanLyPhieuGiamGiaResponse {
         this.ma = ma;
         this.ten = ten;
         this.loai = loai;
+        this.loaiPhieu = loaiPhieu == null ? 1 : loaiPhieu;
         this.giaTri = giaTri;
         this.giaTriToiThieu = giaTriToiThieu;
         this.giamToiDa = giamToiDa;
         this.ngayBatDau = toLocalDate(ngayBatDau);
-        this.ngayKetThuc = toLocalDate(ngayKetThuc);
+        this.ngayKetThuc = toLocalDate(ngayKetThuc );
         this.soLuong = soLuong;
         this.soLuongDaDung = soLuongDaDung;
         this.trangThai = trangThai;

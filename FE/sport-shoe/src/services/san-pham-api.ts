@@ -1,4 +1,5 @@
-const BASE = 'http://localhost:8080/api/v1'
+import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
+const BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -8,6 +9,7 @@ export interface MauSacOption { id: number; ten: string; maMauHex?: string }
 export interface KichCoOption { id: number; giaTri: string }
 export interface DeGiayOption { id: number; ten: string }
 export interface CoGiayOption { id: number; ten: string }
+export interface ChatLieuGiayOption { id: number; ten: string }
 export interface TrongLuongOption { id: number; ma: string; giaTri: number }
 export interface CongNgheDemOption { id: number; ten: string }
 
@@ -18,6 +20,7 @@ export interface DanhMucSanPhamResponse {
   kichCo: KichCoOption[]
   deGiay: DeGiayOption[]
   coGiay: CoGiayOption[]
+  chatLieuGiay: ChatLieuGiayOption[]
   trongLuong: TrongLuongOption[]
   congNgheDem: CongNgheDemOption[]
 }
@@ -27,6 +30,7 @@ export interface ThuocTinhResponse {
   deGiayId?: number; deGiay?: string
   coGiayId?: number; coGiay?: string
   congNgheDemId?: number; congNgheDem?: string
+  chatLieuGiayId?: number; chatLieuGiay?: string
   trongLuongId?: number; trongLuong?: string
 }
 
@@ -105,6 +109,11 @@ export interface ChiTietSanPhamListItem {
   hinhAnh?: string
   ngayTao: string
   ngayCapNhat?: string
+  dotGiamGiaId?: number
+  maDotGiamGia?: string
+  tenDotGiamGia?: string
+  loaiGiam?: number
+  giaTriGiam?: number
 }
 
 export interface BienThe {
@@ -122,6 +131,11 @@ export interface BienThe {
   kichCo: string
   ngayTao: string
   ngayCapNhat?: string
+  dotGiamGiaId?: number
+  maDotGiamGia?: string
+  tenDotGiamGia?: string
+  loaiGiam?: number
+  giaTriGiam?: number
 }
 
 export interface HinhAnhGiay {
@@ -172,6 +186,7 @@ export interface TaoGiayRequest {
   loaiGiayId: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -185,6 +200,7 @@ export interface CapNhatGiayRequest {
   loaiGiayId: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -199,6 +215,7 @@ export interface TaoChiTietSanPhamRequest {
   loaiGiayId?: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -226,6 +243,7 @@ export interface TaoChiTietSanPhamHangLoatRequest {
   loaiGiayId?: number
   gioiTinh?: number
   chatLieu?: string
+  chatLieuGiayId?: number
   moTa?: string
   deGiayId?: number
   coGiayId?: number
@@ -235,6 +253,7 @@ export interface TaoChiTietSanPhamHangLoatRequest {
 }
 
 export interface DoiTrangThaiRequest { trangThai: number }
+export interface DoiTrangThaiBienTheRequest { kichHoat: number }
 
 export interface TaoBienTheRequest {
   mauSacId: number
@@ -266,7 +285,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || `HTTP ${res.status}`)
+    throw createRequestError(
+      err.message || `HTTP ${res.status}`,
+      'Không thể hoàn tất thao tác sản phẩm lúc này. Vui lòng thử lại.',
+      err.errors
+    )
   }
   const json = await res.json()
   return json.data
@@ -349,6 +372,13 @@ export function capNhatBienThe(id: number, body: CapNhatBienTheRequest): Promise
   return request<BienThe>(`/admin/san-pham/bien-the/${id}`, { method: 'PUT', body: JSON.stringify(body) })
 }
 
+export function doiTrangThaiBienThe(id: number, kichHoat: number): Promise<BienThe> {
+  return request<BienThe>(`/admin/san-pham/bien-the/${id}/trang-thai`, {
+    method: 'PATCH',
+    body: JSON.stringify({ kichHoat })
+  })
+}
+
 export function xoaBienThe(id: number): Promise<void> {
   return request<void>(`/admin/san-pham/bien-the/${id}`, { method: 'DELETE' })
 }
@@ -381,7 +411,12 @@ export async function uploadFile(file: File): Promise<string> {
 
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
-    throw new Error(payload.message || 'Tải ảnh thất bại')
+    throw new Error(
+      sanitizeErrorMessage(
+        payload.message,
+        'Không thể tải ảnh sản phẩm lên lúc này'
+      )
+    )
   }
 
   if (!payload.data?.url) {

@@ -6,44 +6,66 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSanPham, Integer> {
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
-    dotGiamGiaSP.id,dotGiamGiaSP.dotGiamGia.id,dotGiamGiaSP.giay.id,dotGiamGiaSP.dotGiamGia.ten,dotGiamGiaSP.giay.ten,dotGiamGiaSP.trangThai,dotGiamGiaSP.ngayTao
+    dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 
+    dotGiamGiaSP.giayChiTiet.giay.ten, dotGiamGiaSP.giayChiTiet.mauSac.ten, dotGiamGiaSP.giayChiTiet.kichCo.giaTri,
+    dotGiamGiaSP.trangThai, dotGiamGiaSP.ngayTao
     )
     FROM DotGiamGiaSanPham dotGiamGiaSP 
-    JOIN DotGiamGia dotGiamGia ON dotGiamGiaSP.dotGiamGia.id = dotGiamGia.id
-    JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
+    JOIN dotGiamGiaSP.dotGiamGia dotGiamGia
+    JOIN dotGiamGiaSP.giayChiTiet gct
 """)
     List<QuanLyDotGiamGiaSanPhamResponse> hienThiQuanLyDotGiamGiaSanPham();
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
-    dotGiamGiaSP.id,dotGiamGiaSP.dotGiamGia.id,dotGiamGiaSP.giay.id,dotGiamGiaSP.dotGiamGia.ten,dotGiamGiaSP.giay.ten,dotGiamGiaSP.trangThai,dotGiamGiaSP.ngayTao
+    dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 
+    dotGiamGiaSP.giayChiTiet.giay.ten, dotGiamGiaSP.giayChiTiet.mauSac.ten, dotGiamGiaSP.giayChiTiet.kichCo.giaTri,
+    dotGiamGiaSP.trangThai, dotGiamGiaSP.ngayTao
     )
     FROM DotGiamGiaSanPham dotGiamGiaSP 
-    JOIN DotGiamGia dotGiamGia ON dotGiamGiaSP.dotGiamGia.id = dotGiamGia.id
-    JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
+    JOIN dotGiamGiaSP.dotGiamGia dotGiamGia
+    JOIN dotGiamGiaSP.giayChiTiet gct
     WHERE dotGiamGiaSP.id = ?1
 """)
     QuanLyDotGiamGiaSanPhamResponse detailQuanLyDotGiamGiaSanPham(Integer id);
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
-    dotGiamGiaSP.id,dotGiamGiaSP.dotGiamGia.id,dotGiamGiaSP.giay.id,dotGiamGiaSP.dotGiamGia.ten,dotGiamGiaSP.giay.ten,dotGiamGiaSP.trangThai,dotGiamGiaSP.ngayTao
+    dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 
+    dotGiamGiaSP.giayChiTiet.giay.ten, dotGiamGiaSP.giayChiTiet.mauSac.ten, dotGiamGiaSP.giayChiTiet.kichCo.giaTri,
+    dotGiamGiaSP.trangThai, dotGiamGiaSP.ngayTao
     )
     FROM DotGiamGiaSanPham dotGiamGiaSP 
-    JOIN DotGiamGia dotGiamGia ON dotGiamGiaSP.dotGiamGia.id = dotGiamGia.id
-    JOIN Giay giay ON dotGiamGiaSP.giay.id = giay.id
+    JOIN dotGiamGiaSP.dotGiamGia dotGiamGia
+    JOIN dotGiamGiaSP.giayChiTiet gct
 """)
     Page<QuanLyDotGiamGiaSanPhamResponse> phanTrangQuanLyDotGiamGiaSanPham(Pageable pageable);
 
-    @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia WHERE d.giay.id = ?1 AND d.trangThai = 1 AND d.dotGiamGia.kichHoat = 1")
-    List<DotGiamGiaSanPham> findActiveByGiayId(Integer giayId);
+    @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia WHERE d.giayChiTiet.id = ?1 AND d.trangThai = 1 AND d.dotGiamGia.kichHoat = 1")
+    List<DotGiamGiaSanPham> findActiveByGiayChiTietId(Integer giayChiTietId);
 
     @Query("SELECT d FROM DotGiamGiaSanPham d WHERE d.dotGiamGia.id = ?1")
     List<DotGiamGiaSanPham> findByDotGiamGiaId(Integer dotGiamGiaId);
+
+    @Query("""
+            SELECT d
+            FROM DotGiamGiaSanPham d
+            JOIN FETCH d.dotGiamGia dg
+            JOIN FETCH d.giayChiTiet gct
+            WHERE gct.id IN :giayChiTietIds
+              AND d.trangThai = 1
+              AND dg.kichHoat = 1
+            """)
+    List<DotGiamGiaSanPham> findActiveByGiayChiTietIdIn(@Param("giayChiTietIds") Collection<Integer> giayChiTietIds);
+
+    @Query("SELECT DISTINCT d.giayChiTiet.id FROM DotGiamGiaSanPham d")
+    List<Integer> findDistinctGiayChiTietIds();
 }

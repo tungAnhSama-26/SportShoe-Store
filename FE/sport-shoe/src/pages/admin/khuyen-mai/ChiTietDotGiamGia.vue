@@ -22,18 +22,47 @@ const dangTai = ref(false);
 const dangTaiSP = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer = null;
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  return CircleX;
+});
+
+function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+}
 const formErrors = reactive({});
 
 const form = reactive({
-  id: null,
-  ma: "",
-  ten: "",
-  moTa: "",
-  loaiGiam: "1",
-  giaTriGiam: "",
-  ngayBatDau: "",
-  ngayKetThuc: "",
-  kichHoat: "1"
+  id: null, ma: "", ten: "", moTa: "", loaiGiam: "1", giaTriGiam: "",
+  ngayBatDau: "", ngayKetThuc: "", kichHoat: "1"
 });
 
 const searchSP = ref("");
@@ -155,7 +184,7 @@ async function taiChiTiet() {
 
     taiDanhSachSP();
   } catch (e) {
-    loiTrang.value = e.message || "Không thể tải chi tiết đợt giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải chi tiết đợt giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -164,12 +193,19 @@ async function taiChiTiet() {
 async function submitForm() {
   resetErrors();
   let isValid = true;
+  const dangTaoMoi = laMoi;
 
-  if (!form.ma.trim()) { formErrors.ma = "Mã đợt không được để trống"; isValid = false; }
-  if (!form.ten.trim()) { formErrors.ten = "Tên đợt không được để trống"; isValid = false; }
-  if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) { formErrors.giaTriGiam = "Giá trị giảm không hợp lệ"; isValid = false; }
-  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Chọn ngày bắt đầu"; isValid = false; }
-  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Chọn ngày kết thúc"; isValid = false; }
+  if (!form.ma.trim()) { formErrors.ma = "Vui lòng nhập mã đợt giảm giá"; isValid = false; }
+  if (!form.ten.trim()) { formErrors.ten = "Vui lòng nhập tên đợt giảm giá"; isValid = false; }
+  if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) {
+    formErrors.giaTriGiam = "Giá trị giảm phải lớn hơn 0%";
+    isValid = false;
+  } else if (Number(form.giaTriGiam) > 100) {
+    formErrors.giaTriGiam = "Phần trăm giảm không được vượt quá 100%";
+    isValid = false;
+  }
+  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng"; isValid = false; }
+  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng"; isValid = false; }
 
   if (form.ngayBatDau && form.ngayKetThuc && form.ngayBatDau > form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
@@ -184,14 +220,14 @@ async function submitForm() {
     const payload = {
       ma: form.ma.trim(),
       ten: form.ten.trim(),
-      moTa: form.moTa.trim(),
+      moTa: (form.moTa || "").trim(),
       loaiGiam: Number(form.loaiGiam),
       giaTriGiam: Number(form.giaTriGiam),
       ngayBatDau: form.ngayBatDau,
       ngayKetThuc: form.ngayKetThuc,
       kichHoat: Number(form.kichHoat),
-      ngayTao: laMoi ? getToday() : undefined,
-      ngayCapNhat: !laMoi ? getToday() : undefined
+      ngayTao: dangTaoMoi ? getToday() : undefined,
+      ngayCapNhat: !dangTaoMoi ? getToday() : undefined
     };
 
     let campaignId = id;
@@ -230,13 +266,41 @@ onMounted(taiChiTiet);
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 pb-10">
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toastClass"
+      >
+        <div class="flex gap-3 p-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
+            <component :is="ToastIcon" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
+      </div>
+    </Transition>
+
     <!-- Header -->
     <section class="flex items-center gap-4">
-      <button
-        @click="router.push({ name: 'admin-dot-giam-gia' })"
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
-      >
+      <button @click="router.push({ name: 'admin-dot-giam-gia' })"
+        class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200">
         <ArrowLeft class="h-5 w-5" />
       </button>
       <div class="flex-1 flex items-center gap-4 min-w-0">
@@ -253,7 +317,9 @@ onMounted(taiChiTiet);
       </div>
     </section>
 
-    <div v-if="loiTrang" class="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
+    <div v-if="loiTrang"
+      class="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}
+    </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
       <!-- Cột trái: Thông tin đợt giảm -->

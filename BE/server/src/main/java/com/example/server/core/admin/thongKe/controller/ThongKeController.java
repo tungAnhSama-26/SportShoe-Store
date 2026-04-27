@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/thong-ke")
+@RequestMapping("/api/v1/admin/thong-ke")
 public class ThongKeController {
 
     private final ThongKeService thongKeService;

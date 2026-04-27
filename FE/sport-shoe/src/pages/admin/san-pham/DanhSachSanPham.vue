@@ -1,10 +1,13 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, FileSpreadsheet, Filter, Package, Plus, RotateCcw, Search } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage } from '../../../utils/error-message'
 
 const router = useRouter()
 
@@ -15,6 +18,9 @@ const currentPage = ref(0)
 const pageSize = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
+const updatingStatusIds = reactive(new Set())
+const showQrModal = ref(false)
+const selectedQrItem = ref(null)
 
 const filters = reactive({
   keyword: '',
@@ -30,13 +36,17 @@ const toast = reactive({
 })
 
 const pageSizeOptions = [5, 10, 20, 50]
+let toastTimer = null
+let latestLoadRequestId = 0
 
 function showToast(message, type = 'success') {
+  if (toastTimer) clearTimeout(toastTimer)
   toast.message = message
   toast.type = type
   toast.show = true
-  setTimeout(() => {
+  toastTimer = setTimeout(() => {
     toast.show = false
+    toastTimer = null
   }, 3000)
 }
 
@@ -62,15 +72,47 @@ function trangThaiClass(value) {
   return 'bg-rose-50 text-rose-600'
 }
 
+function nextProductStatus(item) {
+  return Number(item.trangThai) === 0 ? 1 : 0
+}
+
+function canQuickToggleProduct(item) {
+  return Number(item.trangThai) !== 0 || Number(item.tongSoLuong || 0) > 0
+}
+
+function isUpdatingStatus(id) {
+  return updatingStatusIds.has(id)
+}
+
+function productQuickToggleLabel(item) {
+  return Number(item.trangThai) === 0 ? 'Chuyển sang kinh doanh' : 'Chuyển sang ngừng kinh doanh'
+}
+
+function productQuickToggleIntent(item) {
+  return Number(item.trangThai) === 0 ? 'activate' : 'deactivate'
+}
+
+function productQuickToggleDisabledTitle(item) {
+  return canQuickToggleProduct(item)
+    ? productQuickToggleLabel(item)
+    : 'Hết hàng chưa thể chuyển sang kinh doanh'
+}
+
+function productQuickToggleConfirmMessage(item) {
+  const action = nextProductStatus(item) === 1 ? 'kinh doanh' : 'ngừng kinh doanh'
+  return `Bạn có muốn chuyển sản phẩm "${item.ten}" sang ${action} không?`
+}
+
 async function loadDanhMuc() {
   try {
     danhMuc.value = await api.layDanhMuc()
   } catch (error) {
-    showToast(error.message || 'Không tải được danh mục', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh mục sản phẩm'), 'error')
   }
 }
 
 async function loadData(page = 0) {
+  const requestId = ++latestLoadRequestId
   loading.value = true
   try {
     const response = await api.layDanhSachGiay({
@@ -81,13 +123,16 @@ async function loadData(page = 0) {
       page,
       size: pageSize.value
     })
+    if (requestId !== latestLoadRequestId) return
     items.value = response.items || []
     totalItems.value = response.totalItems
     totalPages.value = response.totalPages
     currentPage.value = response.page
   } catch (error) {
-    showToast(error.message || 'Không tải được danh sách sản phẩm', 'error')
+    if (requestId !== latestLoadRequestId) return
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh sách sản phẩm'), 'error')
   } finally {
+    if (requestId !== latestLoadRequestId) return
     loading.value = false
   }
 }
@@ -109,6 +154,70 @@ function goToChiTietList(item) {
     name: 'admin-bien-the-san-pham',
     query: { giayId: String(item.id) }
   })
+}
+
+function openProductQr(item) {
+  const qrValue = String(item?.ma || '').trim()
+  if (!qrValue) {
+    showToast('Sản phẩm này chưa có mã để tạo QR', 'error')
+    return
+  }
+
+  selectedQrItem.value = {
+    badge: 'QR sản phẩm',
+    title: item.ten || 'Sản phẩm',
+    subtitle: `${item.ma}${item.thuongHieu ? ` • ${item.thuongHieu}` : ''}`,
+    codeLabel: 'Mã sản phẩm',
+    value: qrValue,
+    note: 'Quét mã này ở bán hàng tại quầy để tìm nhanh sản phẩm theo mã sản phẩm.',
+    imageUrl: item.hinhAnh || '',
+    imageAlt: item.ten || item.ma || 'Ảnh sản phẩm',
+    detailItems: [
+      { label: 'Thương hiệu', value: item.thuongHieu || '—' },
+      { label: 'Loại giày', value: item.loaiGiay || '—' },
+      { label: 'Số lượng', value: Number(item.tongSoLuong || 0).toLocaleString('vi-VN') },
+      { label: 'Giá bán', value: giaHienThi(item) },
+      { label: 'Trạng thái', value: trangThaiLabel(item.trangThai) }
+    ],
+    primaryActionLabel: 'Xem danh sách biến thể',
+    actionType: 'go-to-variants',
+    item
+  }
+  showQrModal.value = true
+}
+
+function closeQrModal() {
+  showQrModal.value = false
+  selectedQrItem.value = null
+}
+
+function handleQrPrimaryAction() {
+  const actionType = selectedQrItem.value?.actionType
+  const targetItem = selectedQrItem.value?.item
+
+  closeQrModal()
+
+  if (actionType === 'go-to-variants' && targetItem) {
+    goToChiTietList(targetItem)
+  }
+}
+
+async function handleToggleStatus(item) {
+  if (isUpdatingStatus(item.id)) return
+  if (!canQuickToggleProduct(item)) {
+    showToast('Sản phẩm hết hàng chưa thể chuyển sang kinh doanh', 'error')
+    return
+  }
+  updatingStatusIds.add(item.id)
+  try {
+    await api.doiTrangThai(item.id, nextProductStatus(item))
+    showToast('Cập nhật trạng thái sản phẩm thành công')
+    await loadData(currentPage.value)
+  } catch (error) {
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái sản phẩm'), 'error')
+  } finally {
+    updatingStatusIds.delete(item.id)
+  }
 }
 
 function handlePageSizeChange(size) {
@@ -143,7 +252,7 @@ async function xuatExcel() {
         { label: 'Loại giày', key: 'loaiGiay' },
         { label: 'Chất liệu', value: (row) => row.chatLieu || '—' },
         { label: 'Tổng tồn', value: (row) => row.tongSoLuong || 0 },
-        { label: 'Khoảng giá', value: (row) => giaHienThi(row) },
+        { label: 'Giá bán', value: (row) => giaHienThi(row) },
         { label: 'Trạng thái', value: (row) => trangThaiLabel(row.trangThai) }
       ],
       rows: response.items || []
@@ -154,7 +263,7 @@ async function xuatExcel() {
       exported ? 'success' : 'error'
     )
   } catch (error) {
-    showToast(error.message || 'Xuất Excel thất bại', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể xuất Excel sản phẩm'), 'error')
   }
 }
 
@@ -166,6 +275,10 @@ function applyStatusFilter(value) {
 onMounted(async () => {
   await loadDanhMuc()
   await loadData(0)
+})
+
+onUnmounted(() => {
+  if (toastTimer) clearTimeout(toastTimer)
 })
 </script>
 
@@ -275,14 +388,14 @@ onMounted(async () => {
       <div class="overflow-x-auto">
         <table class="min-w-[980px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã sản phẩm</th>
               <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>
               <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
               <th class="bg-slate-100 px-4 py-3">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3">Số lượng tồn</th>
-              <th class="bg-slate-100 px-4 py-3">Khoảng giá</th>
+              <th class="bg-slate-100 px-4 py-3">Số lượng</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
               <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
@@ -312,21 +425,32 @@ onMounted(async () => {
               <td class="px-4 py-4 font-semibold text-slate-700">
                 {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ giaHienThi(item) }}</td>
-              <td class="px-4 py-4">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
+              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ giaHienThi(item) }}</td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <span class="inline-flex min-w-max whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
                   {{ trangThaiLabel(item.trangThai) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-4 text-center">
-                <button
-                  type="button"
-                  class="admin-table-action text-slate-600 hover:text-rose-500"
-                  title="Xem chi tiết sản phẩm"
-                  @click="goToChiTietList(item)"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
+                <div class="flex items-center justify-center gap-1">
+                  <AdminQuickStatusAction
+                    :loading="isUpdatingStatus(item.id)"
+                    :disabled="isUpdatingStatus(item.id) || !canQuickToggleProduct(item)"
+                    :action-label="productQuickToggleLabel(item)"
+                    :disabled-title="productQuickToggleDisabledTitle(item)"
+                    :confirm-message="productQuickToggleConfirmMessage(item)"
+                    :intent="productQuickToggleIntent(item)"
+                    @toggle="handleToggleStatus(item)"
+                  />
+                  <button
+                    type="button"
+                    class="admin-table-action text-slate-600 hover:text-rose-500"
+                    title="Xem QR và thông tin sản phẩm"
+                    @click="openProductQr(item)"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -347,6 +471,22 @@ onMounted(async () => {
         @update:page-size="handlePageSizeChange"
       />
     </section>
+
+    <AdminQrCodeModal
+      :open="showQrModal && !!selectedQrItem"
+      :badge="selectedQrItem?.badge"
+      :title="selectedQrItem?.title"
+      :subtitle="selectedQrItem?.subtitle"
+      :code-label="selectedQrItem?.codeLabel"
+      :value="selectedQrItem?.value"
+      :note="selectedQrItem?.note"
+      :image-url="selectedQrItem?.imageUrl"
+      :image-alt="selectedQrItem?.imageAlt"
+      :detail-items="selectedQrItem?.detailItems"
+      :primary-action-label="selectedQrItem?.primaryActionLabel"
+      @close="closeQrModal"
+      @primary-action="handleQrPrimaryAction"
+    />
 
     <Teleport to="body">
       <Transition name="fade">

@@ -24,6 +24,10 @@ defineProps({
     type: Number,
     default: 0
   },
+  sanPhamValidationMessage: {
+    type: String,
+    default: ""
+  },
   couponCode: {
     type: String,
     default: ""
@@ -64,6 +68,10 @@ defineProps({
     type: Number,
     default: 0
   },
+  shippingInfo: {
+    type: Object,
+    default: () => ({})
+  },
   tenKhachHangHienThi: {
     type: String,
     default: ""
@@ -77,6 +85,10 @@ defineProps({
     default: 1
   },
   amountPaid: {
+    type: String,
+    default: ""
+  },
+  paymentValidationMessage: {
     type: String,
     default: ""
   },
@@ -125,6 +137,8 @@ const emit = defineEmits([
   "apply-coupon",
   "select-coupon",
   "remove-coupon",
+  "update-shipping",
+  "calculate-shipping",
   "update:paymentMethod",
   "amount-input",
   "update:paymentNote",
@@ -249,6 +263,10 @@ const emit = defineEmits([
           <span class="text-sm text-slate-500">Tiền giảm</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">{{ dinhDangTien(tienGiam) }}</span>
         </div>
+        <div v-if="shippingInfo.giaoHang" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+          <span class="text-sm text-slate-500">Phí ship</span>
+          <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(shippingInfo.phiVanChuyen || 0) }}</span>
+        </div>
         <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Khách cần trả</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
@@ -260,6 +278,139 @@ const emit = defineEmits([
         <div class="flex items-center justify-between border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Số điện thoại</span>
           <span class="text-right text-sm font-semibold text-slate-700">{{ soDienThoaiKhachHangHienThi }}</span>
+        </div>
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-slate-800">Giao hàng</p>
+              <p class="mt-1 text-xs text-slate-500">Tính phí ship theo luồng quản lý hóa đơn.</p>
+            </div>
+            <label class="inline-flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-700">
+              <input
+                :checked="shippingInfo.giaoHang"
+                type="checkbox"
+                class="h-4 w-4 rounded accent-red-500"
+                @change="emit('update-shipping', { giaoHang: $event.target.checked })"
+              />
+              <span>{{ shippingInfo.giaoHang ? "Bật" : "Tắt" }}</span>
+            </label>
+          </div>
+
+          <div v-if="shippingInfo.giaoHang" class="mt-4 space-y-3">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="block text-xs font-medium text-slate-500">Người nhận</span>
+                <input
+                  :value="shippingInfo.tenNguoiNhan || ''"
+                  type="text"
+                  placeholder="Nhập tên người nhận"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @input="emit('update-shipping', { tenNguoiNhan: $event.target.value })"
+                />
+              </label>
+              <label class="space-y-2">
+                <span class="block text-xs font-medium text-slate-500">Số điện thoại</span>
+                <input
+                  :value="shippingInfo.soDienThoaiNguoiNhan || ''"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="Nhập số điện thoại"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @input="emit('update-shipping', { soDienThoaiNguoiNhan: $event.target.value })"
+                />
+              </label>
+            </div>
+
+            <label class="space-y-2">
+              <span class="block text-xs font-medium text-slate-500">Địa chỉ giao hàng</span>
+              <textarea
+                :value="shippingInfo.diaChiGiaoHang || ''"
+                rows="2"
+                placeholder="Nhập địa chỉ giao hàng đầy đủ"
+                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                @input="emit('update-shipping', { diaChiGiaoHang: $event.target.value })"
+              />
+            </label>
+
+            <div v-if="shippingInfo.diaChiDaDo" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              GHN dò: <span class="font-semibold text-slate-800">{{ shippingInfo.diaChiDaDo }}</span>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="block text-xs font-medium text-slate-500">Loại dịch vụ</span>
+                <select
+                  :value="shippingInfo.serviceTypeId ?? 2"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @change="emit('update-shipping', { serviceTypeId: Number($event.target.value) })"
+                >
+                  <option :value="2">Hàng nhẹ</option>
+                  <option :value="5">Hàng nặng</option>
+                </select>
+              </label>
+              <label class="space-y-2">
+                <span class="block text-xs font-medium text-slate-500">Cân nặng (gram)</span>
+                <input
+                  :value="shippingInfo.weight ?? 500"
+                  type="number"
+                  min="1"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @input="emit('update-shipping', { weight: Number($event.target.value) })"
+                />
+              </label>
+              <label class="space-y-2">
+                <span class="block text-xs font-medium text-slate-500">Dài (cm)</span>
+                <input
+                  :value="shippingInfo.length ?? 30"
+                  type="number"
+                  min="1"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @input="emit('update-shipping', { length: Number($event.target.value) })"
+                />
+              </label>
+              <label class="space-y-2">
+                <span class="block text-xs font-medium text-slate-500">Rộng (cm)</span>
+                <input
+                  :value="shippingInfo.width ?? 20"
+                  type="number"
+                  min="1"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @input="emit('update-shipping', { width: Number($event.target.value) })"
+                />
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="block text-xs font-medium text-slate-500">Cao (cm)</span>
+                <input
+                  :value="shippingInfo.height ?? 12"
+                  type="number"
+                  min="1"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
+                  @input="emit('update-shipping', { height: Number($event.target.value) })"
+                />
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+              <div class="min-w-0">
+                <p class="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Phí ship</p>
+                <p class="mt-1 text-lg font-bold text-slate-900">
+                  {{ shippingInfo.daTinhPhi ? dinhDangTien(shippingInfo.phiVanChuyen || 0) : "Chưa tính" }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                :disabled="!shippingInfo.coTheTinhPhi"
+                @click="emit('calculate-shipping')"
+              >
+                {{ shippingInfo.dangTinhPhi ? "Đang tính..." : "Tính phí GHN" }}
+              </button>
+            </div>
+
+            <p v-if="!shippingInfo.daTinhPhi" class="text-xs font-medium text-amber-600">
+              Vui lòng tính phí ship trước khi lưu hoặc thanh toán.
+            </p>
+          </div>
         </div>
         <div>
           <p class="mb-2 text-sm text-slate-500">Hình thức thanh toán</p>
@@ -311,9 +462,13 @@ const emit = defineEmits([
             autocomplete="off"
             :disabled="paymentMethod !== 1"
             :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
-            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-900 outline-none transition focus:border-red-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            class="w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            :class="paymentValidationMessage ? 'border-rose-300 bg-rose-50 focus:border-rose-400' : 'border-slate-200 focus:border-red-300'"
             @input="emit('amount-input', $event.target.value)"
           />
+          <p v-if="paymentValidationMessage" class="mt-2 text-xs font-medium text-rose-500">
+            {{ paymentValidationMessage }}
+          </p>
         </div>
         <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Tiền thừa trả khách</span>
@@ -349,6 +504,9 @@ const emit = defineEmits([
           {{ payingInvoice ? "Đang thanh toán..." : "Thanh toán" }}
         </button>
       </div>
+      <p v-if="sanPhamValidationMessage" class="mt-3 text-xs font-medium text-rose-500">
+        {{ sanPhamValidationMessage }}
+      </p>
       <button
         v-if="activePendingInvoice"
         type="button"

@@ -69,7 +69,7 @@ function handleClick() {
 
 <style scoped>
 .admin-quick-status-action--activate {
-  color: #0f172a;
+  color: #64748b;
 }
 
 .admin-quick-status-action--activate:hover {
@@ -85,7 +85,7 @@ function handleClick() {
 }
 
 .admin-quick-status-action--neutral {
-  color: #0f172a;
+  color: #64748b;
 }
 
 .admin-quick-status-action--neutral:hover {

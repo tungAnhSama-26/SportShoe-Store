@@ -16,6 +16,7 @@ import { layChiTietHoaDon, layDanhSachHoaDon } from "../../../services/hoa-don";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 type TrangThaiLoc =
   | "Tất cả"
@@ -31,7 +32,7 @@ type TrangThaiLoc =
 type HoaDonItem = {
   id: number;
   maHoaDon: string;
-  tenNhanVien: string;
+  maNhanVien: string;
   tenKhachHang: string;
   tongTien: number;
   ngayTao: string;
@@ -57,6 +58,8 @@ const dsTrangThai: TrangThaiLoc[] = [
   "Cần hoàn tiền",
 ];
 const boLoc = ref(taoBoLocMacDinh());
+const tuNgayPicker = ref<HTMLInputElement | null>(null);
+const denNgayPicker = ref<HTMLInputElement | null>(null);
 
 const mauTrangThai: Record<string, string> = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
@@ -87,14 +90,65 @@ function dinhDangNgay(ngay: string) {
   }).format(new Date(ngay));
 }
 
+function layNgayHienTaiInput() {
+  const homNay = new Date();
+  const year = homNay.getFullYear();
+  const month = String(homNay.getMonth() + 1).padStart(2, "0");
+  const day = String(homNay.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dinhDangNgayLoc(value: string) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
+function chuyenNgayLocSangInput(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return "";
+  const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!match) return normalized;
+  const [, day, month, year] = match;
+  const fullYear = year.length === 2 ? `20${year}` : year;
+  return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function moLich(input: HTMLInputElement | null) {
+  if (!input) return;
+  const picker = input as HTMLInputElement & { showPicker?: () => void };
+  if (picker.showPicker) {
+    picker.showPicker();
+    return;
+  }
+  input.click();
+  input.focus();
+}
+
 function taoBoLocMacDinh() {
+  const homNay = layNgayHienTaiInput();
   return {
     keyword: "",
-    tuNgay: "",
-    denNgay: "",
+    tuNgay: homNay,
+    denNgay: homNay,
     loaiDon: "",
   };
 }
+
+const tuNgayHienThi = computed({
+  get: () => dinhDangNgayLoc(boLoc.value.tuNgay),
+  set: (value: string) => {
+    boLoc.value.tuNgay = chuyenNgayLocSangInput(value);
+  },
+});
+
+const denNgayHienThi = computed({
+  get: () => dinhDangNgayLoc(boLoc.value.denNgay),
+  set: (value: string) => {
+    boLoc.value.denNgay = chuyenNgayLocSangInput(value);
+  },
+});
 
 const tongTheoTrangThai = computed(() =>
   dsTrangThai.map((trangThai) => ({
@@ -144,9 +198,8 @@ async function taiDanhSach() {
       // Không gửi trạng thái lên backend để số lượng trạng thái hiển thị đúng.
       trangThai: undefined,
     });
-  } catch (error) {
-    loiTrang.value =
-      error instanceof Error ? error.message : "Không thể tải danh sách hóa đơn";
+    } catch (error) {
+      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải danh sách hóa đơn");
   } finally {
     dangTai.value = false;
   }
@@ -173,7 +226,7 @@ function xuatExcel() {
     columns: [
       { label: "STT", value: (_, index) => index + 1 },
       { label: "Mã hóa đơn", key: "maHoaDon" },
-      { label: "Nhân viên", value: (row) => row.tenNhanVien || "—" },
+      { label: "Mã nhân viên", value: (row) => row.maNhanVien || "—" },
       { label: "Khách hàng", value: (row) => row.tenKhachHang || "—" },
       { label: "Tổng tiền", value: (row) => dinhDangTien(row.tongTien) },
       { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
@@ -203,10 +256,10 @@ async function xuatHoaDonPdf(id: number) {
       formatDate: dinhDangNgay,
       targetWindow: popup,
     });
-  } catch (error) {
-    if (popup) popup.close();
-    window.alert(error instanceof Error ? error.message : "Không thể xuất PDF hóa đơn.");
-  } finally {
+    } catch (error) {
+      if (popup) popup.close();
+      window.alert(getDisplayErrorMessage(error, "Không thể xuất PDF hóa đơn"));
+    } finally {
     dangXuatPdfId.value = null;
   }
 }
@@ -250,7 +303,7 @@ onMounted(taiDanhSach);
             <input
               v-model="boLoc.keyword"
               type="text"
-              placeholder="Tìm theo mã hóa đơn, tên nhân viên, khách hàng..."
+              placeholder="Tìm theo mã hóa đơn, mã/tên nhân viên, khách hàng..."
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-[#B82220]/40 focus:bg-white"
             />
           </div>
@@ -259,11 +312,27 @@ onMounted(taiDanhSach);
         <label class="min-w-[160px] flex-1 space-y-2">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Ngày bắt đầu</span>
           <div class="relative">
-            <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              v-model="tuNgayHienThi"
+              type="text"
+              inputmode="numeric"
+              placeholder="dd/mm/yyyy"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#B82220]"
+              @click="moLich(tuNgayPicker)"
+            >
+              <CalendarDays class="h-4 w-4" />
+            </button>
+            <input
+              ref="tuNgayPicker"
               v-model="boLoc.tuNgay"
               type="date"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              aria-label="Chọn ngày bắt đầu"
+              class="pointer-events-none absolute right-3 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0"
+              tabindex="-1"
             />
           </div>
         </label>
@@ -271,11 +340,27 @@ onMounted(taiDanhSach);
         <label class="min-w-[160px] flex-1 space-y-2">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Ngày kết thúc</span>
           <div class="relative">
-            <CalendarDays class="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              v-model="denNgayHienThi"
+              type="text"
+              inputmode="numeric"
+              placeholder="dd/mm/yyyy"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#B82220]"
+              @click="moLich(denNgayPicker)"
+            >
+              <CalendarDays class="h-4 w-4" />
+            </button>
+            <input
+              ref="denNgayPicker"
               v-model="boLoc.denNgay"
               type="date"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              aria-label="Chọn ngày kết thúc"
+              class="pointer-events-none absolute right-3 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0"
+              tabindex="-1"
             />
           </div>
         </label>
@@ -342,10 +427,10 @@ onMounted(taiDanhSach);
       <div class="overflow-x-auto">
         <table class="min-w-[1080px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã hóa đơn</th>
-              <th class="bg-slate-100 px-4 py-3">Nhân viên</th>
+              <th class="bg-slate-100 px-4 py-3">Mã nhân viên</th>
               <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
               <th class="bg-slate-100 px-4 py-3">Tổng tiền</th>
               <th class="bg-slate-100 px-4 py-3">Ngày tạo</th>
@@ -370,7 +455,7 @@ onMounted(taiDanhSach);
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
-              <td class="px-4 py-4">{{ hoaDon.tenNhanVien }}</td>
+              <td class="px-4 py-4">{{ hoaDon.maNhanVien || "—" }}</td>
               <td class="px-4 py-4">{{ hoaDon.tenKhachHang || "—" }}</td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
               <td class="px-4 py-4">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>

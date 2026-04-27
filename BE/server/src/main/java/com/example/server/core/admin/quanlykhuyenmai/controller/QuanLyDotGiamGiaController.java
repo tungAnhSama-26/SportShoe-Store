@@ -11,7 +11,7 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/dot-giam-gia")
+@RequestMapping("/api/v1/admin/dot-giam-gia")
 public class QuanLyDotGiamGiaController {
 
     @Autowired
@@ -46,12 +46,12 @@ public class QuanLyDotGiamGiaController {
     }
 
     @PostMapping("add")
-    public void add(@Valid @RequestBody DotGiamGiaRequest request) {
-        dotGiamGiaService.add(request);
+    public com.example.server.entity.DotGiamGia add(@Valid @RequestBody DotGiamGiaRequest request) {
+        return dotGiamGiaService.add(request);
     }
 
     @PutMapping("update")
-    public void update(@RequestParam("id") Integer id, @Valid @RequestBody DotGiamGiaRequest request) {
-        dotGiamGiaService.update(id, request);
+    public com.example.server.entity.DotGiamGia update(@RequestParam("id") Integer id, @Valid @RequestBody DotGiamGiaRequest request) {
+        return dotGiamGiaService.update(id, request);
     }
 }

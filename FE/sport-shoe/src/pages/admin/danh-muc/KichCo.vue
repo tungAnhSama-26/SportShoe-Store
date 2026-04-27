@@ -1,9 +1,13 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Search, Plus, Trash2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Search, Plus, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { kichCoApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
+import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
+import { normalizeSizeValue } from '../../../utils/thuoc-tinh-san-pham'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -21,7 +25,7 @@ async function loadData(page = 0) {
   try {
     const res = await kichCoApi.list(keyword.value || undefined, page, pageSize.value)
     items.value = res.items; totalItems.value = res.totalItems; totalPages.value = res.totalPages; currentPage.value = res.page
-  } catch (e) { showToast(e.message || 'Lỗi tải dữ liệu', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách kích cỡ'), 'error') }
   finally { loading.value = false }
 }
 
@@ -48,6 +52,7 @@ const saving = ref(false)
 const selectedItem = ref(null)
 const form = reactive({ giaTri: '', ghiChu: '' })
 const errors = reactive({})
+const updatingStatusId = ref(null)
 
 function clearForm() { Object.assign(form, { giaTri: '', ghiChu: '' }); Object.keys(errors).forEach(k => delete errors[k]) }
 function openAdd() { clearForm(); modalMode.value = 'add'; showModal.value = true }
@@ -56,7 +61,13 @@ function openView(item) { openEdit(item) }
 
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.giaTri.trim()) errors.giaTri = 'Giá trị kích cỡ không được để trống'
+  const normalizedSize = normalizeSizeValue(form.giaTri)
+  if (!normalizedSize) {
+    errors.giaTri = 'Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42'
+    return false
+  }
+
+  form.giaTri = normalizedSize
   return Object.keys(errors).length === 0
 }
 
@@ -64,24 +75,29 @@ async function handleSave() {
   if (!validate()) return
   saving.value = true
   try {
-    const body = { giaTri: form.giaTri.trim(), ghiChu: form.ghiChu || null }
+    const body = { giaTri: normalizeSizeValue(form.giaTri), ghiChu: form.ghiChu || null }
     if (modalMode.value === 'add') await kichCoApi.create(body)
     else await kichCoApi.update(selectedItem.value.id, body)
     showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false; loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
+  } catch (e) {
+    Object.assign(errors, getFieldErrors(e))
+    showToast(getDisplayErrorMessage(e, 'Không thể lưu kích cỡ'), 'error')
+  }
   finally { saving.value = false }
 }
 
-async function handleDelete(item) {
-  if (!confirm(`Xóa kích cỡ "${item.giaTri}"?`)) return
-  try { await kichCoApi.delete(item.id); showToast('Xóa thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi xóa', 'error') }
-}
-
 async function handleToggleStatus(item) {
-  try { await kichCoApi.toggleStatus(item.id, item.trangThai === 1 ? 0 : 1); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi cập nhật', 'error') }
+  const nextTrangThai = item.trangThai === 1 ? 0 : 1
+  const actionLabel = nextTrangThai === 1 ? 'bật' : 'dừng'
+  if (!confirm('Xác nhận ' + actionLabel + ' nhanh kích cỡ "' + item.giaTri + '"?')) return
+
+  updatingStatusId.value = item.id
+  try {
+    await kichCoApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
+  }
+  catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái kích cỡ'), 'error') }
+  finally { updatingStatusId.value = null }
 }
 
 async function xuatExcel() {
@@ -106,7 +122,7 @@ async function xuatExcel() {
 
     showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
   } catch (e) {
-    showToast(e.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel kích cỡ'), 'error')
   }
 }
 </script>
@@ -143,11 +159,11 @@ async function xuatExcel() {
         </colgroup>
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Kích cỡ</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Ghi chú</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase w-12">STT</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase">Kích cỡ</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Ghi chú</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Trạng thái</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
@@ -166,19 +182,12 @@ async function xuatExcel() {
                 <span class="inline-flex h-8 min-w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800">{{ item.giaTri }}</span>
               </div>
             </td>
-            <td class="px-4 py-3 text-xs text-gray-500"><span class="block truncate">{{ item.ghiChu || '—' }}</span></td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex justify-center">
-                <button @click="handleToggleStatus(item)" class="admin-status-chip"
-                  :class="item.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'">
-                  {{ item.trangThai === 1 ? 'Hoạt động' : 'Dừng' }}
-                </button>
-              </div>
-            </td>
+            <td class="px-4 py-3 text-xs text-gray-500"><span class="table-text-wrap">{{ item.ghiChu || '—' }}</span></td>
+            <td class="px-4 py-3 text-center"><div class="flex justify-center"><DanhMucQuickStatusToggle :trang-thai="item.trangThai" :loading="updatingStatusId === item.id" /></div></td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-center gap-1">
+                <AdminQuickStatusAction :loading="updatingStatusId === item.id" :action-label="item.trangThai === 1 ? 'Chuyển sang ngừng bán' : 'Chuyển sang đang bán'" :intent="item.trangThai === 1 ? 'deactivate' : 'activate'" @toggle="handleToggleStatus(item)" />
                 <button @click="openView(item)" title="Xem và sửa" class="admin-table-action text-slate-600 hover:text-rose-500"><Eye :size="14" /></button>
-                <button @click="handleDelete(item)" class="admin-table-action text-red-500 hover:text-red-600"><Trash2 :size="14" /></button>
               </div>
             </td>
           </tr>
@@ -219,6 +228,9 @@ async function xuatExcel() {
     </template>
   </DanhMucPageShell>
 </template>
+
+
+
 
 
 

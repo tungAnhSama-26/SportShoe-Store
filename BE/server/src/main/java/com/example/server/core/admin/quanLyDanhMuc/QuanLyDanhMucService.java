@@ -6,6 +6,7 @@ import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.*;
 import java.time.Instant;
+import java.util.regex.Pattern;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,8 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class QuanLyDanhMucService {
 
+    private static final Pattern KICH_CO_PATTERN = Pattern.compile(
+            "^(?:(EU|US|UK|CM)\\s*)?(\\d{1,2})(?:([.]\\d{1,2})|(\\s+[12]/3))?$",
+            Pattern.CASE_INSENSITIVE
+    );
+
     private final LoaiGiayRepository loaiGiayRepository;
     private final ThuongHieuRepository thuongHieuRepository;
+    private final ChatLieuGiayRepository chatLieuGiayRepository;
     private final DeGiayRepository deGiayRepository;
     private final CoGiayRepository coGiayRepository;
     private final CongNgheDemRepository congNgheDemRepository;
@@ -25,6 +32,7 @@ public class QuanLyDanhMucService {
     public QuanLyDanhMucService(
             LoaiGiayRepository loaiGiayRepository,
             ThuongHieuRepository thuongHieuRepository,
+            ChatLieuGiayRepository chatLieuGiayRepository,
             DeGiayRepository deGiayRepository,
             CoGiayRepository coGiayRepository,
             CongNgheDemRepository congNgheDemRepository,
@@ -34,6 +42,7 @@ public class QuanLyDanhMucService {
     ) {
         this.loaiGiayRepository = loaiGiayRepository;
         this.thuongHieuRepository = thuongHieuRepository;
+        this.chatLieuGiayRepository = chatLieuGiayRepository;
         this.deGiayRepository = deGiayRepository;
         this.coGiayRepository = coGiayRepository;
         this.congNgheDemRepository = congNgheDemRepository;
@@ -157,6 +166,68 @@ public class QuanLyDanhMucService {
     }
 
     // ─── Đế Giày ─────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PageResponse<ChatLieuGiayResponse> danhSachChatLieuGiay(String keyword, Pageable pageable) {
+        String kw = hasText(keyword) ? keyword.trim() : null;
+        return PageResponse.from(chatLieuGiayRepository.search(kw, pageable).map(this::toChatLieuGiay));
+    }
+
+    @Transactional(readOnly = true)
+    public ChatLieuGiayResponse chiTietChatLieuGiay(Integer id) {
+        return toChatLieuGiay(chatLieuGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i")));
+    }
+
+    @Transactional
+    public ChatLieuGiayResponse taoChatLieuGiay(ChatLieuGiayRequest req) {
+        String ma = req.ma().trim().toUpperCase();
+        if (chatLieuGiayRepository.existsByMaIgnoreCase(ma)) {
+            throw new BusinessException("MÃ£ cháº¥t liá»‡u giÃ y '" + ma + "' Ä‘Ã£ tá»“n táº¡i");
+        }
+        var e = new ChatLieuGiay();
+        e.setMa(ma);
+        e.setTen(req.ten().trim());
+        e.setMoTa(req.moTa());
+        e.setTrangThai(1);
+        e.setNgayTao(Instant.now());
+        return toChatLieuGiay(chatLieuGiayRepository.save(e));
+    }
+
+    @Transactional
+    public ChatLieuGiayResponse capNhatChatLieuGiay(Integer id, ChatLieuGiayRequest req) {
+        var e = chatLieuGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i"));
+        String ma = req.ma().trim().toUpperCase();
+        if (chatLieuGiayRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
+            throw new BusinessException("MÃ£ cháº¥t liá»‡u giÃ y '" + ma + "' Ä‘Ã£ tá»“n táº¡i");
+        }
+        e.setMa(ma);
+        e.setTen(req.ten().trim());
+        e.setMoTa(req.moTa());
+        e.setNgayCapNhat(Instant.now());
+        return toChatLieuGiay(e);
+    }
+
+    @Transactional
+    public void doiTrangThaiChatLieuGiay(Integer id, DoiTrangThaiDanhMucRequest req) {
+        var e = chatLieuGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i"));
+        e.setTrangThai(req.trangThai());
+        e.setNgayCapNhat(Instant.now());
+    }
+
+    @Transactional
+    public void xoaChatLieuGiay(Integer id) {
+        if (!chatLieuGiayRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Cháº¥t liá»‡u giÃ y #" + id + " khÃ´ng tá»“n táº¡i");
+        }
+        chatLieuGiayRepository.deleteById(id);
+    }
+
+    private ChatLieuGiayResponse toChatLieuGiay(ChatLieuGiay e) {
+        return new ChatLieuGiayResponse(e.getId(), e.getMa(), e.getTen(), e.getMoTa(), e.getTrangThai(), e.getNgayTao(), e.getNgayCapNhat());
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<DeGiayResponse> danhSachDeGiay(String keyword, Pageable pageable) {
@@ -364,10 +435,10 @@ public class QuanLyDanhMucService {
 
     @Transactional
     public KichCoResponse taoKichCo(KichCoRequest req) {
-        String giaTri = req.giaTri().trim();
+        String giaTri = normalizeKichCoGiaTri(req.giaTri());
         if (kichCoRepository.existsByGiaTriIgnoreCase(giaTri)) throw new BusinessException("Kích cỡ '" + giaTri + "' đã tồn tại");
         var e = new KichCo();
-        e.setGiaTri(giaTri); e.setGhiChu(req.ghiChu());
+        e.setGiaTri(giaTri); e.setGhiChu(hasText(req.ghiChu()) ? req.ghiChu().trim() : null);
         e.setTrangThai(1); e.setNgayTao(Instant.now());
         return toKichCo(kichCoRepository.save(e));
     }
@@ -375,9 +446,9 @@ public class QuanLyDanhMucService {
     @Transactional
     public KichCoResponse capNhatKichCo(Integer id, KichCoRequest req) {
         var e = kichCoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Kích cỡ #" + id + " không tồn tại"));
-        String giaTri = req.giaTri().trim();
+        String giaTri = normalizeKichCoGiaTri(req.giaTri());
         if (kichCoRepository.existsByGiaTriIgnoreCaseAndIdNot(giaTri, id)) throw new BusinessException("Kích cỡ '" + giaTri + "' đã tồn tại");
-        e.setGiaTri(giaTri); e.setGhiChu(req.ghiChu()); e.setNgayCapNhat(Instant.now());
+        e.setGiaTri(giaTri); e.setGhiChu(hasText(req.ghiChu()) ? req.ghiChu().trim() : null); e.setNgayCapNhat(Instant.now());
         return toKichCo(e);
     }
 
@@ -446,6 +517,33 @@ public class QuanLyDanhMucService {
     }
 
     // ─── Utils ───────────────────────────────────────────────────────────────
+
+    private String normalizeKichCoGiaTri(String value) {
+        if (!hasText(value)) {
+            throw new BusinessException("Kích cỡ không được để trống");
+        }
+
+        String normalized = value.trim()
+                .toUpperCase()
+                .replace(',', '.')
+                .replaceAll("\\s+", " ");
+
+        var matcher = KICH_CO_PATTERN.matcher(normalized);
+        if (!matcher.matches()) {
+            throw new BusinessException("Kích cỡ chỉ hỗ trợ dạng như 42, 40.5 hoặc EU42");
+        }
+
+        int baseValue = Integer.parseInt(matcher.group(2));
+        if (baseValue < 1 || baseValue > 60) {
+            throw new BusinessException("Kích cỡ phải nằm trong khoảng hợp lệ từ 1 đến 60");
+        }
+
+        String prefix = matcher.group(1) != null ? matcher.group(1).toUpperCase() + " " : "";
+        String decimal = matcher.group(3) != null ? matcher.group(3) : "";
+        String fraction = matcher.group(4) != null ? " " + matcher.group(4).trim() : "";
+
+        return (prefix + baseValue + decimal + fraction).trim();
+    }
 
     private static boolean hasText(String s) {
         return s != null && !s.isBlank();

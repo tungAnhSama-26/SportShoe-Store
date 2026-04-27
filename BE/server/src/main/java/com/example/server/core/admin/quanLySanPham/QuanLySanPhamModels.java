@@ -1,6 +1,7 @@
 package com.example.server.core.admin.quanLySanPham;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,6 +18,7 @@ record MauSacOption(Integer id, String ten, String maMauHex) {}
 record KichCoOption(Integer id, String giaTri) {}
 record DeGiayOption(Integer id, String ten) {}
 record CoGiayOption(Integer id, String ten) {}
+record ChatLieuGiayOption(Integer id, String ten) {}
 record TrongLuongOption(Integer id, String ma, Integer giaTri) {}
 record CongNgheDemOption(Integer id, String ten) {}
 
@@ -27,6 +29,7 @@ record DanhMucSanPhamResponse(
         java.util.List<KichCoOption> kichCo,
         java.util.List<DeGiayOption> deGiay,
         java.util.List<CoGiayOption> coGiay,
+        java.util.List<ChatLieuGiayOption> chatLieuGiay,
         java.util.List<TrongLuongOption> trongLuong,
         java.util.List<CongNgheDemOption> congNgheDem
 ) {}
@@ -63,6 +66,8 @@ record ThuocTinhResponse(
         String coGiay,
         Integer congNgheDemId,
         String congNgheDem,
+        Integer chatLieuGiayId,
+        String chatLieuGiay,
         Integer trongLuongId,
         String trongLuong
 ) {}
@@ -119,7 +124,12 @@ record ChiTietSanPhamListItemResponse(
         Integer kichHoat,
         String hinhAnh,
         Instant ngayTao,
-        Instant ngayCapNhat
+        Instant ngayCapNhat,
+        Integer dotGiamGiaId,
+        String maDotGiamGia,
+        String tenDotGiamGia,
+        Integer loaiGiam,
+        BigDecimal giaTriGiam
 ) {}
 
 // ─── Biến thể ────────────────────────────────────────────────────────────────
@@ -138,7 +148,12 @@ record BienTheResponse(
         Integer kichCoId,
         String kichCo,
         Instant ngayTao,
-        Instant ngayCapNhat
+        Instant ngayCapNhat,
+        Integer dotGiamGiaId,
+        String maDotGiamGia,
+        String tenDotGiamGia,
+        Integer loaiGiam,
+        BigDecimal giaTriGiam
 ) {}
 
 // ─── Hình ảnh ────────────────────────────────────────────────────────────────
@@ -162,6 +177,7 @@ record TaoGiayRequest(
         @NotNull Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -175,6 +191,7 @@ record CapNhatGiayRequest(
         @NotNull Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -189,6 +206,7 @@ record TaoChiTietSanPhamRequest(
         Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -216,6 +234,7 @@ record TaoChiTietSanPhamHangLoatRequest(
         Integer loaiGiayId,
         Integer gioiTinh,
         String chatLieu,
+        Integer chatLieuGiayId,
         String moTa,
         Integer deGiayId,
         Integer coGiayId,
@@ -224,7 +243,9 @@ record TaoChiTietSanPhamHangLoatRequest(
         @NotEmpty java.util.List<@Valid TaoChiTietSanPhamHangLoatItemRequest> bienThes
 ) {}
 
-record DoiTrangThaiRequest(@NotNull Integer trangThai) {}
+record DoiTrangThaiRequest(@NotNull @Min(0) @Max(2) Integer trangThai) {}
+
+record DoiTrangThaiBienTheRequest(@NotNull Integer kichHoat) {}
 
 record TaoBienTheRequest(
         @NotNull Integer mauSacId,

@@ -1,3 +1,5 @@
+import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
 
 async function request(path, init) {
@@ -13,9 +15,11 @@ async function request(path, init) {
   const payload = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    const error = new Error(payload?.message || "Không thể kết nối đến máy chủ");
-    error.errors = payload?.errors;
-    throw error;
+    throw createRequestError(
+      payload?.message,
+      "Không thể hoàn tất thao tác khuyến mãi lúc này. Vui lòng thử lại.",
+      payload?.errors,
+    );
   }
 
   return payload?.data ?? payload;
@@ -97,6 +101,13 @@ function deleteDotGiamGiaSanPham(id) {
   });
 }
 
+function syncDotGiamGiaSanPham(payload) {
+  return request("/admin/dot-giam-gia-san-pham/bulk-sync", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 function getPhieuGiamGiaList(filters) {
   const params = new URLSearchParams();
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
@@ -137,6 +148,7 @@ function deletePhieuGiamGia(id) {
 function getPhieuGiamGiaKhachHangList(filters) {
   const params = new URLSearchParams();
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
+  if (filters?.phieuGiamGiaId) params.set("phieuGiamGiaId", String(filters.phieuGiamGiaId));
   if (filters?.trangThai != null && filters?.trangThai !== "") params.set("trangThai", String(filters.trangThai));
   params.set("pageNo", String(filters?.pageNo ?? 0));
   params.set("pageSize", String(filters?.pageSize ?? 5));
@@ -195,6 +207,7 @@ export {
   getPhieuGiamGiaKhachHangList,
   getPhieuGiamGiaList,
   searchSanPhamTaiQuay,
+  syncDotGiamGiaSanPham,
   updateDotGiamGia,
   updateDotGiamGiaSanPham,
   updatePhieuGiamGia,
