@@ -1,4 +1,6 @@
-const BASE = 'http://localhost:8080/api/v1/admin/danh-muc'
+import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
+const BASE = `${API_BASE_URL}/admin/danh-muc`
 
 export interface PageResponse<T> {
   items: T[]
@@ -22,6 +24,10 @@ export interface ThuongHieuItem {
   trangThai: number; ngayTao: string; ngayCapNhat?: string
 }
 export interface DeGiayItem {
+  id: number; ma: string; ten: string; moTa?: string
+  trangThai: number; ngayTao: string; ngayCapNhat?: string
+}
+export interface ChatLieuGiayItem {
   id: number; ma: string; ten: string; moTa?: string
   trangThai: number; ngayTao: string; ngayCapNhat?: string
 }
@@ -55,7 +61,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || `HTTP ${res.status}`)
+    throw createRequestError(
+      err.message || `HTTP ${res.status}`,
+      'Không thể hoàn tất thao tác danh mục lúc này. Vui lòng thử lại.',
+      err.errors
+    )
   }
   const json = await res.json()
   return json.data
@@ -87,6 +97,31 @@ export const thuongHieuApi = {
   toggleStatus: (id: number, trangThai: number) =>
     req<void>(`/thuong-hieu/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
   delete: (id: number) => req<void>(`/thuong-hieu/${id}`, { method: 'DELETE' }),
+  uploadFile: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      body: formData
+    })
+
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(
+        sanitizeErrorMessage(
+          payload.message,
+          'Không thể tải ảnh thương hiệu lên lúc này'
+        )
+      )
+    }
+
+    if (!payload.data?.url) {
+      throw new Error('Không nhận được URL ảnh sau khi upload')
+    }
+
+    return payload.data.url as string
+  }
 }
 
 export const deGiayApi = {
@@ -97,6 +132,16 @@ export const deGiayApi = {
   toggleStatus: (id: number, trangThai: number) =>
     req<void>(`/de-giay/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
   delete: (id: number) => req<void>(`/de-giay/${id}`, { method: 'DELETE' }),
+}
+
+export const chatLieuGiayApi = {
+  list: (kw?: string, page = 0, size = 10) =>
+    req<PageResponse<ChatLieuGiayItem>>(buildListUrl('/chat-lieu-giay', kw, page, size)),
+  create: (body: object) => req<ChatLieuGiayItem>('/chat-lieu-giay', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: number, body: object) => req<ChatLieuGiayItem>(`/chat-lieu-giay/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  toggleStatus: (id: number, trangThai: number) =>
+    req<void>(`/chat-lieu-giay/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
+  delete: (id: number) => req<void>(`/chat-lieu-giay/${id}`, { method: 'DELETE' }),
 }
 
 export const coGiayApi = {

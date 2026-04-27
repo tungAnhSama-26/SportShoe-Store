@@ -1,11 +1,14 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, X } from 'lucide-vue-next'
+import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage } from '../../../utils/error-message'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,6 +21,9 @@ const pageSize = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
 const selectedProduct = ref(null)
+const updatingStatusIds = reactive(new Set())
+const showQrModal = ref(false)
+const selectedQrItem = ref(null)
 
 const filters = reactive({
   keyword: '',
@@ -37,11 +43,24 @@ const toast = reactive({
 
 const pageSizeOptions = [5, 10, 20, 50]
 let toastTimer = null
+let latestLoadRequestId = 0
 
 const selectedGiayId = computed(() => {
   const raw = Array.isArray(route.query.giayId) ? route.query.giayId[0] : route.query.giayId
   const parsed = Number(raw)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+})
+
+const focusedChiTietId = computed(() => {
+  const raw = Array.isArray(route.query.chiTietId) ? route.query.chiTietId[0] : route.query.chiTietId
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+})
+
+const toastTitle = computed(() => {
+  if (toast.type === 'error') return 'Không thể hoàn tất thao tác'
+  if (toast.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
+  return 'Thao tác thành công'
 })
 
 function showToast(message, type = 'success') {
@@ -51,16 +70,77 @@ function showToast(message, type = 'success') {
   toast.show = true
   toastTimer = setTimeout(() => {
     toast.show = false
+    toastTimer = null
   }, 3000)
+}
+
+function closeToast() {
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+    toastTimer = null
+  }
+  toast.show = false
+}
+
+function isUpdatingStatus(id) {
+  return updatingStatusIds.has(id)
 }
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('vi-VN')
 }
 
+function isDiscounted(item) {
+  return Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)
+}
+
+function formatPercentValue(value) {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue) || numericValue <= 0) return '—'
+
+  const normalizedValue = Math.min(numericValue, 100)
+  return normalizedValue % 1 === 0 ? `${normalizedValue.toFixed(0)}%` : `${normalizedValue.toFixed(1)}%`
+}
+
+function formatDiscountPercent(item) {
+  const loaiGiam = Number(item?.loaiGiam || 0)
+  const giaTriGiam = Number(item?.giaTriGiam || 0)
+  const giaGoc = Number(item?.giaGoc || 0)
+  const giaBan = Number(item?.giaBan || 0)
+
+  if (giaTriGiam > 0) {
+    if (loaiGiam === 1) {
+      return formatPercentValue(giaTriGiam)
+    }
+
+    if (loaiGiam === 2 && giaGoc > 0) {
+      return formatPercentValue((giaTriGiam / giaGoc) * 100)
+    }
+  }
+  if (giaGoc <= 0 || giaBan >= giaGoc) return '—'
+
+  return formatPercentValue(((giaGoc - giaBan) / giaGoc) * 100)
+}
+
+function discountTitle(item) {
+  return item?.maDotGiamGia || item?.tenDotGiamGia || 'Xem đợt giảm giá'
+}
+
+function isFocusedVariant(item) {
+  return focusedChiTietId.value != null && Number(item?.id) === focusedChiTietId.value
+}
+
+function openDiscountDetail(item) {
+  if (!item?.dotGiamGiaId) return
+  router.push({
+    name: 'admin-dot-giam-gia-chi-tiet',
+    params: { id: item.dotGiamGiaId }
+  })
+}
+
 function bienTheTrangThaiLabel(item) {
   if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
-  return Number(item.kichHoat) === 1 ? 'Kinh doanh' : 'Tạm dừng'
+  return Number(item.kichHoat) === 1 ? 'Đang bán' : 'Ngừng bán'
 }
 
 function bienTheTrangThaiClass(item) {
@@ -68,11 +148,38 @@ function bienTheTrangThaiClass(item) {
   return Number(item.kichHoat) === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'
 }
 
+function nextBienTheStatus(item) {
+  return Number(item.kichHoat) === 1 ? 2 : 1
+}
+
+function quickToggleLabel(item) {
+  if (Number(item.kichHoat) === 1) return 'Chuyển sang ngừng bán'
+  return 'Chuyển sang đang bán'
+}
+
+function canToggleStatus(item) {
+  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
+}
+
+function quickToggleIntent(item) {
+  return Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'
+}
+
+function quickToggleDisabledTitle(item) {
+  return canToggleStatus(item) ? quickToggleLabel(item) : 'Hết hàng chưa thể chuyển sang đang bán'
+}
+
+function quickToggleConfirmMessage(item) {
+  const action = Number(item.kichHoat) === 1 ? 'ngừng bán' : 'đang bán'
+  const target = item.maChiTietSanPham || item.maBienThe || item.sku || `#${item.id}`
+  return `Bạn có muốn chuyển CTSP "${target}" sang ${action} không?`
+}
+
 async function loadDanhMuc() {
   try {
     danhMuc.value = await api.layDanhMuc()
   } catch (error) {
-    showToast(error.message || 'Không tải được danh mục', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh mục sản phẩm'), 'error')
   }
 }
 
@@ -86,11 +193,12 @@ async function syncSelectedProduct() {
     selectedProduct.value = await api.chiTietGiay(selectedGiayId.value)
     showToast(`Đang xem CTSP của ${selectedProduct.value.ten} (${selectedProduct.value.ma})`, 'info')
   } catch (error) {
-    showToast(error.message || 'Không tải được sản phẩm đã chọn', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không tải được sản phẩm đang chọn'), 'error')
   }
 }
 
 async function loadData(page = 0) {
+  const requestId = ++latestLoadRequestId
   loading.value = true
   try {
     const response = await api.layDanhSachChiTietSanPham({
@@ -102,13 +210,16 @@ async function loadData(page = 0) {
       page,
       size: pageSize.value
     })
+    if (requestId !== latestLoadRequestId) return
     items.value = response.items || []
     currentPage.value = response.page
     totalItems.value = response.totalItems
     totalPages.value = response.totalPages
   } catch (error) {
-    showToast(error.message || 'Không tải được danh sách chi tiết sản phẩm', 'error')
+    if (requestId !== latestLoadRequestId) return
+    showToast(getDisplayErrorMessage(error, 'Không tải được danh sách chi tiết sản phẩm'), 'error')
   } finally {
+    if (requestId !== latestLoadRequestId) return
     loading.value = false
   }
 }
@@ -142,9 +253,56 @@ function openImageModal(item) {
   showImageModal.value = true
 }
 
+function openVariantQr(item) {
+  const qrValue = String(item?.sku || item?.maChiTietSanPham || '').trim()
+  if (!qrValue) {
+    showToast('Chi tiết sản phẩm này chưa có mã để tạo QR', 'error')
+    return
+  }
+
+  selectedQrItem.value = {
+    badge: 'QR chi tiết sản phẩm',
+    title: item.tenSanPham || 'Chi tiết sản phẩm',
+    subtitle: `${item.maChiTietSanPham || qrValue} • ${item.mauSac || 'Chưa có màu'} / ${item.kichCo || 'Chưa có kích cỡ'}`,
+    codeLabel: item.sku ? 'SKU / mã quét' : 'Mã chi tiết sản phẩm',
+    value: qrValue,
+    note: 'Quét mã này ở bán hàng tại quầy để tìm nhanh đúng biến thể sản phẩm.',
+    imageUrl: item.hinhAnh || '',
+    imageAlt: item.tenSanPham || item.maChiTietSanPham || 'Ảnh chi tiết sản phẩm',
+    detailItems: [
+      { label: 'Màu sắc', value: item.mauSac || '—' },
+      { label: 'Kích cỡ', value: item.kichCo || '—' },
+      { label: 'Số lượng', value: Number(item.soLuong || 0).toLocaleString('vi-VN') },
+      { label: 'Giá bán', value: `${formatCurrency(item.giaBan)} đ` },
+      { label: 'Trạng thái', value: bienTheTrangThaiLabel(item) },
+      { label: 'SKU', value: item.sku || '—' }
+    ],
+    primaryActionLabel: 'Quản lý ảnh của biến thể',
+    actionType: 'manage-images',
+    item
+  }
+  showQrModal.value = true
+}
+
 function closeImageModal() {
   selectedVariant.value = null
   showImageModal.value = false
+}
+
+function closeQrModal() {
+  showQrModal.value = false
+  selectedQrItem.value = null
+}
+
+function handleQrPrimaryAction() {
+  const actionType = selectedQrItem.value?.actionType
+  const targetItem = selectedQrItem.value?.item
+
+  closeQrModal()
+
+  if (actionType === 'manage-images' && targetItem) {
+    openImageModal(targetItem)
+  }
 }
 
 async function xuatExcel() {
@@ -171,13 +329,12 @@ async function xuatExcel() {
         { label: 'STT', value: (_, index) => index + 1 },
         { label: 'Mã SP', key: 'maSanPham' },
         { label: 'Mã CTSP', key: 'maChiTietSanPham' },
-        { label: 'SKU', key: 'sku' },
         { label: 'Tên sản phẩm', key: 'tenSanPham' },
         { label: 'Thương hiệu', key: 'thuongHieu' },
         { label: 'Loại giày', key: 'loaiGiay' },
         { label: 'Màu sắc', key: 'mauSac' },
         { label: 'Kích cỡ', key: 'kichCo' },
-        { label: 'SL tồn', value: (row) => row.soLuong || 0 },
+        { label: 'Tồn kho', value: (row) => row.soLuong || 0 },
         { label: 'Giá bán', value: (row) => formatCurrency(row.giaBan) },
         { label: 'Trạng thái', value: (row) => bienTheTrangThaiLabel(row) }
       ],
@@ -189,7 +346,29 @@ async function xuatExcel() {
       exported ? 'success' : 'error'
     )
   } catch (error) {
-    showToast(error.message || 'Xuất Excel thất bại', 'error')
+    showToast(getDisplayErrorMessage(error, 'Không thể xuất Excel chi tiết sản phẩm'), 'error')
+  }
+}
+
+async function toggleBienTheStatus(item) {
+  if (isUpdatingStatus(item.id)) return
+  if (!canToggleStatus(item)) {
+    showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
+    return
+  }
+
+  updatingStatusIds.add(item.id)
+  try {
+    await api.doiTrangThaiBienThe(item.id, nextBienTheStatus(item))
+    showToast('Cập nhật trạng thái CTSP thành công')
+    await Promise.all([
+      loadData(currentPage.value),
+      selectedGiayId.value === item.giayId ? syncSelectedProduct() : Promise.resolve()
+    ])
+  } catch (error) {
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái chi tiết sản phẩm'), 'error')
+  } finally {
+    updatingStatusIds.delete(item.id)
   }
 }
 
@@ -205,6 +384,10 @@ onMounted(async () => {
   await loadDanhMuc()
   await syncSelectedProduct()
   await loadData(0)
+})
+
+onUnmounted(() => {
+  closeToast()
 })
 </script>
 
@@ -297,8 +480,8 @@ onMounted(async () => {
               @change="loadData(0)"
             >
               <option :value="null">Tất cả trạng thái</option>
-              <option :value="1">Kinh doanh</option>
-              <option :value="2">Tạm dừng / Hết hàng</option>
+              <option :value="1">Đang bán</option>
+              <option :value="2">Ngừng bán / Hết hàng</option>
             </select>
           </label>
         </div>
@@ -316,21 +499,21 @@ onMounted(async () => {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1180px] w-full border-separate border-spacing-y-2 text-sm">
+        <table class="min-w-[1020px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã SP</th>
-              <th class="bg-slate-100 px-4 py-3">Mã CTSP</th>
-              <th class="bg-slate-100 px-4 py-3">Ảnh</th>
-              <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>
-              <th class="bg-slate-100 px-4 py-3">Màu sắc</th>
-              <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
-              <th class="bg-slate-100 px-4 py-3">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3">SL tồn</th>
-              <th class="bg-slate-100 px-4 py-3">Giá bán</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+            <tr class="text-left text-sm font-bold text-slate-950">
+              <th class="rounded-l-2xl bg-slate-100 px-4 py-3 whitespace-nowrap">STT</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã SP</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã CTSP</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Ảnh</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Màu sắc</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Kích cỡ</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Loại giày</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Tồn kho</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giảm %</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -343,9 +526,12 @@ onMounted(async () => {
             <tr
               v-for="(item, index) in items"
               :key="item.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
+              :class="[
+                'text-slate-700 shadow-sm',
+                isFocusedVariant(item) ? 'bg-rose-50 ring-2 ring-rose-200' : 'bg-white ring-1 ring-slate-100'
+              ]"
             >
-              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500">
+              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500 whitespace-nowrap">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
               <td class="px-4 py-4 font-bold text-slate-950 whitespace-nowrap">{{ item.maSanPham }}</td>
@@ -374,21 +560,52 @@ onMounted(async () => {
               <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ formatCurrency(item.giaBan) }} đ</td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <p class="font-semibold" :class="isDiscounted(item) ? 'text-rose-600' : 'text-slate-800'">
+                  {{ formatCurrency(item.giaBan) }} đ
+                </p>
+                <p v-if="isDiscounted(item)" class="mt-1 text-xs text-slate-400 line-through">
+                  {{ formatCurrency(item.giaGoc) }} đ
+                </p>
+              </td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <button
+                  v-if="item.dotGiamGiaId"
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                  :title="discountTitle(item)"
+                  @click="openDiscountDetail(item)"
+                >
+                  <Tag class="h-3 w-3" />
+                  {{ formatDiscountPercent(item) }}
+                </button>
+                <span v-else class="text-xs text-slate-400">—</span>
+              </td>
               <td class="px-4 py-4">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="bienTheTrangThaiClass(item)">
+                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
                   {{ bienTheTrangThaiLabel(item) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-4 text-center">
-                <button
-                  type="button"
-                  class="admin-table-action text-slate-600 hover:text-rose-500"
-                  title="Quản lý ảnh"
-                  @click="openImageModal(item)"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
+                <div class="flex items-center justify-center gap-1">
+                  <AdminQuickStatusAction
+                    :loading="isUpdatingStatus(item.id)"
+                    :disabled="isUpdatingStatus(item.id) || !canToggleStatus(item)"
+                    :action-label="quickToggleLabel(item)"
+                    :disabled-title="quickToggleDisabledTitle(item)"
+                    :confirm-message="quickToggleConfirmMessage(item)"
+                    :intent="quickToggleIntent(item)"
+                    @toggle="toggleBienTheStatus(item)"
+                  />
+                  <button
+                    type="button"
+                    class="admin-table-action text-slate-600 hover:text-rose-500"
+                    title="Xem QR và thông tin chi tiết sản phẩm"
+                    @click="openVariantQr(item)"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -409,6 +626,22 @@ onMounted(async () => {
         @update:page-size="handlePageSizeChange"
       />
     </section>
+
+    <AdminQrCodeModal
+      :open="showQrModal && !!selectedQrItem"
+      :badge="selectedQrItem?.badge"
+      :title="selectedQrItem?.title"
+      :subtitle="selectedQrItem?.subtitle"
+      :code-label="selectedQrItem?.codeLabel"
+      :value="selectedQrItem?.value"
+      :note="selectedQrItem?.note"
+      :image-url="selectedQrItem?.imageUrl"
+      :image-alt="selectedQrItem?.imageAlt"
+      :detail-items="selectedQrItem?.detailItems"
+      :primary-action-label="selectedQrItem?.primaryActionLabel"
+      @close="closeQrModal"
+      @primary-action="handleQrPrimaryAction"
+    />
 
     <Teleport to="body">
       <Transition name="fade">
@@ -452,16 +685,35 @@ onMounted(async () => {
       <Transition name="fade">
         <div
           v-if="toast.show"
-          class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
-          :class="
-            toast.type === 'error'
-              ? 'bg-rose-500'
-              : toast.type === 'info'
-                ? 'bg-slate-900'
-                : 'bg-emerald-500'
-          "
+          class="fixed right-4 top-[88px] z-[100] w-[min(92vw,380px)] rounded-3xl border bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)]"
+          :class="toast.type === 'error' ? 'border-rose-100' : 'border-emerald-100'"
         >
-          {{ toast.message }}
+          <div class="flex items-start gap-3">
+            <div
+              class="mt-0.5 rounded-2xl p-2"
+              :class="toast.type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'"
+            >
+              <TriangleAlert v-if="toast.type === 'error'" class="h-5 w-5" />
+              <CircleCheckBig v-else class="h-5 w-5" />
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-slate-800">
+                {{ toastTitle }}
+              </p>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ toast.message }}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              @click="closeToast"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </Transition>
     </Teleport>
@@ -480,3 +732,4 @@ onMounted(async () => {
   transform: translateY(-8px);
 }
 </style>
+

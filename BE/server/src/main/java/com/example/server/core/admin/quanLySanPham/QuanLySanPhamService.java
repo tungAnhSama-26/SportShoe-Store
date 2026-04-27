@@ -7,7 +7,9 @@ import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.*;
 import com.example.server.utils.GiaySpecifications;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,8 +25,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class QuanLySanPhamService {
 
+    private static final int TRANG_THAI_NGUNG_KINH_DOANH = 0;
+    private static final int TRANG_THAI_KINH_DOANH = 1;
+    private static final int TRANG_THAI_HET_HANG = 2;
+
+    private record ActiveDiscountInfo(
+            Integer dotGiamGiaId,
+            String maDotGiamGia,
+            String tenDotGiamGia,
+            Integer loaiGiam,
+            BigDecimal giaTriGiam,
+            BigDecimal giaSauGiam
+    ) {}
+
     private final GiayRepository giayRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final GiayThuocTinhRepository giayThuocTinhRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final ThuongHieuRepository thuongHieuRepository;
@@ -33,12 +49,14 @@ public class QuanLySanPhamService {
     private final KichCoRepository kichCoRepository;
     private final DeGiayRepository deGiayRepository;
     private final CoGiayRepository coGiayRepository;
+    private final ChatLieuGiayRepository chatLieuGiayRepository;
     private final TrongLuongRepository trongLuongRepository;
     private final CongNgheDemRepository congNgheDemRepository;
 
     public QuanLySanPhamService(
             GiayRepository giayRepository,
             GiayChiTietRepository giayChiTietRepository,
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
             GiayThuocTinhRepository giayThuocTinhRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
             ThuongHieuRepository thuongHieuRepository,
@@ -47,11 +65,13 @@ public class QuanLySanPhamService {
             KichCoRepository kichCoRepository,
             DeGiayRepository deGiayRepository,
             CoGiayRepository coGiayRepository,
+            ChatLieuGiayRepository chatLieuGiayRepository,
             TrongLuongRepository trongLuongRepository,
             CongNgheDemRepository congNgheDemRepository
     ) {
         this.giayRepository = giayRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
         this.giayThuocTinhRepository = giayThuocTinhRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.thuongHieuRepository = thuongHieuRepository;
@@ -60,6 +80,7 @@ public class QuanLySanPhamService {
         this.kichCoRepository = kichCoRepository;
         this.deGiayRepository = deGiayRepository;
         this.coGiayRepository = coGiayRepository;
+        this.chatLieuGiayRepository = chatLieuGiayRepository;
         this.trongLuongRepository = trongLuongRepository;
         this.congNgheDemRepository = congNgheDemRepository;
     }
@@ -86,13 +107,16 @@ public class QuanLySanPhamService {
         var coGiay = coGiayRepository.findAll().stream()
                 .filter(c -> c.getTrangThai() == 1)
                 .map(c -> new CoGiayOption(c.getId(), c.getTen())).toList();
+        var chatLieuGiay = chatLieuGiayRepository.findAll().stream()
+                .filter(c -> c.getTrangThai() == 1)
+                .map(c -> new ChatLieuGiayOption(c.getId(), c.getTen())).toList();
         var trongLuong = trongLuongRepository.findAll().stream()
                 .filter(t -> t.getTrangThai() == 1)
                 .map(t -> new TrongLuongOption(t.getId(), t.getMa(), t.getGiaTri())).toList();
         var congNgheDem = congNgheDemRepository.findAll().stream()
                 .filter(c -> c.getTrangThai() == 1)
                 .map(c -> new CongNgheDemOption(c.getId(), c.getTen())).toList();
-        return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, trongLuong, congNgheDem);
+        return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, chatLieuGiay, trongLuong, congNgheDem);
     }
 
     // ─── Danh sách giày ──────────────────────────────────────────────────────
@@ -210,7 +234,8 @@ public class QuanLySanPhamService {
 
         List<Integer> chiTietIds = page.map(GiayChiTiet::getId).getContent();
         Map<Integer, String> imageMap = buildChiTietImageMap(chiTietIds);
-        return PageResponse.from(page.map(item -> toChiTietListItem(item, imageMap)));
+        Map<Integer, ActiveDiscountInfo> discountMap = buildActiveDiscountInfoMap(page.getContent());
+        return PageResponse.from(page.map(item -> toChiTietListItem(item, imageMap, discountMap.get(item.getId()))));
     }
 
     private Map<Integer, String> buildChiTietImageMap(Collection<Integer> ids) {
@@ -224,7 +249,11 @@ public class QuanLySanPhamService {
         return map;
     }
 
-    private ChiTietSanPhamListItemResponse toChiTietListItem(GiayChiTiet gct, Map<Integer, String> imageMap) {
+    private ChiTietSanPhamListItemResponse toChiTietListItem(
+            GiayChiTiet gct,
+            Map<Integer, String> imageMap,
+            ActiveDiscountInfo activeDiscount
+    ) {
         Giay giay = gct.getGiay();
         return new ChiTietSanPhamListItemResponse(
                 gct.getId(),
@@ -248,7 +277,12 @@ public class QuanLySanPhamService {
                 gct.getKichHoat(),
                 imageMap.get(gct.getId()),
                 gct.getNgayTao(),
-                gct.getNgayCapNhat()
+                gct.getNgayCapNhat(),
+                activeDiscount != null ? activeDiscount.dotGiamGiaId() : null,
+                activeDiscount != null ? activeDiscount.maDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.tenDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.loaiGiam() : null,
+                activeDiscount != null ? activeDiscount.giaTriGiam() : null
         );
     }
 
@@ -267,6 +301,8 @@ public class QuanLySanPhamService {
                 gtt.getCoGiay() != null ? gtt.getCoGiay().getTen() : null,
                 gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getId() : null,
                 gtt.getCongNgheDem() != null ? gtt.getCongNgheDem().getTen() : null,
+                gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getId() : null,
+                gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getTen() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getId() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getMa() : null
         );
@@ -307,9 +343,9 @@ public class QuanLySanPhamService {
         giay.setThuongHieu(thuongHieu);
         giay.setLoaiGiay(loaiGiay);
         giay.setGioiTinh(req.gioiTinh());
-        giay.setChatLieu(req.chatLieu());
+        giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
         giay.setMoTa(req.moTa());
-        giay.setTrangThai(1);
+        giay.setTrangThai(TRANG_THAI_KINH_DOANH);
         giay.setNgayTao(Instant.now());
         giay = giayRepository.save(giay);
 
@@ -321,6 +357,7 @@ public class QuanLySanPhamService {
         gtt.setDeGiay(req.deGiayId() != null ? deGiayRepository.findById(req.deGiayId()).orElse(null) : null);
         gtt.setCoGiay(req.coGiayId() != null ? coGiayRepository.findById(req.coGiayId()).orElse(null) : null);
         gtt.setCongNgheDem(req.congNgheDemId() != null ? congNgheDemRepository.findById(req.congNgheDemId()).orElse(null) : null);
+        gtt.setChatLieuGiay(req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null);
         gtt.setTrongLuong(req.trongLuongId() != null ? trongLuongRepository.findById(req.trongLuongId()).orElse(null) : null);
         gtt.setTrangThai(1);
         gtt.setNgayTao(Instant.now());
@@ -352,6 +389,7 @@ public class QuanLySanPhamService {
                     req.loaiGiayId(),
                     req.gioiTinh(),
                     req.chatLieu(),
+                    req.chatLieuGiayId(),
                     req.moTa(),
                     req.deGiayId(),
                     req.coGiayId(),
@@ -400,6 +438,7 @@ public class QuanLySanPhamService {
                     req.loaiGiayId(),
                     req.gioiTinh(),
                     req.chatLieu(),
+                    req.chatLieuGiayId(),
                     req.moTa(),
                     req.deGiayId(),
                     req.coGiayId(),
@@ -447,7 +486,7 @@ public class QuanLySanPhamService {
         giay.setThuongHieu(thuongHieu);
         giay.setLoaiGiay(loaiGiay);
         giay.setGioiTinh(req.gioiTinh());
-        giay.setChatLieu(req.chatLieu());
+        giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
         giay.setMoTa(req.moTa());
         giay.setNgayCapNhat(Instant.now());
 
@@ -461,6 +500,7 @@ public class QuanLySanPhamService {
         gtt.setDeGiay(req.deGiayId() != null ? deGiayRepository.findById(req.deGiayId()).orElse(null) : null);
         gtt.setCoGiay(req.coGiayId() != null ? coGiayRepository.findById(req.coGiayId()).orElse(null) : null);
         gtt.setCongNgheDem(req.congNgheDemId() != null ? congNgheDemRepository.findById(req.congNgheDemId()).orElse(null) : null);
+        gtt.setChatLieuGiay(req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null);
         gtt.setTrongLuong(req.trongLuongId() != null ? trongLuongRepository.findById(req.trongLuongId()).orElse(null) : null);
         gtt.setNgayCapNhat(Instant.now());
         giayThuocTinhRepository.save(gtt);
@@ -472,12 +512,21 @@ public class QuanLySanPhamService {
     @Transactional
     public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
         System.out.println(">>> DOI TRANG THAI GIAY #" + id + " -> " + req.trangThai());
+        if (!isTrangThaiGiayHopLe(req.trangThai())) {
+            throw new BusinessException("Trạng thái sản phẩm không hợp lệ");
+        }
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
+        if (req.trangThai() == TRANG_THAI_KINH_DOANH && !coTonKho(id)) {
+            throw new BusinessException("Sản phẩm hết hàng, chưa thể chuyển sang kinh doanh");
+        }
+        if (req.trangThai() == TRANG_THAI_HET_HANG && coTonKho(id)) {
+            throw new BusinessException("Sản phẩm vẫn còn tồn kho, không thể chuyển sang hết hàng");
+        }
         giay.setTrangThai(req.trangThai());
         giay.setNgayCapNhat(Instant.now());
-        if (req.trangThai() != 0) {
-            updateTrangThaiTuSoLuong(id);
+        if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
+            updateTrangThaiTuSoLuong(giay);
         }
     }
 
@@ -488,11 +537,11 @@ public class QuanLySanPhamService {
             var giay = giayRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
             
-            if (giay.getTrangThai() == 0) {
-                giay.setTrangThai(1); 
-                updateTrangThaiTuSoLuong(id);
+            if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+                giay.setTrangThai(TRANG_THAI_KINH_DOANH);
+                updateTrangThaiTuSoLuong(giay);
             } else {
-                giay.setTrangThai(0);
+                giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
             }
             giay.setNgayCapNhat(Instant.now());
         } catch (Exception e) {
@@ -509,8 +558,11 @@ public class QuanLySanPhamService {
         if (!giayRepository.existsById(giayId)) {
             throw new ResourceNotFoundException("Giày #" + giayId + " không tồn tại");
         }
-        return giayChiTietRepository.findByGiayIdEager(giayId).stream()
-                .map(this::toBienThe).toList();
+        List<GiayChiTiet> bienThes = giayChiTietRepository.findByGiayIdEager(giayId);
+        Map<Integer, ActiveDiscountInfo> discountMap = buildActiveDiscountInfoMap(bienThes);
+        return bienThes.stream()
+                .map(item -> toBienThe(item, discountMap.get(item.getId())))
+                .toList();
     }
 
     @Transactional
@@ -542,7 +594,7 @@ public class QuanLySanPhamService {
 
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(giayId);
-        return toBienThe(saved);
+        return toBienThe(saved, null);
     }
 
     @Transactional
@@ -561,7 +613,27 @@ public class QuanLySanPhamService {
         gct.setNgayCapNhat(Instant.now());
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
-        return toBienThe(saved);
+        return toBienThe(saved, null);
+    }
+
+    @Transactional
+    public BienTheResponse doiTrangThaiBienThe(Integer id, DoiTrangThaiBienTheRequest req) {
+        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
+            throw new BusinessException("Trang thai CTSP khong hop le");
+        }
+
+        var gct = giayChiTietRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Bien the #" + id + " khong ton tai"));
+
+        if (req.kichHoat() == 1 && (gct.getSoLuong() == null || gct.getSoLuong() <= 0)) {
+            throw new BusinessException("Khong the kich hoat CTSP khi so luong ton bang 0");
+        }
+
+        gct.setKichHoat(req.kichHoat());
+        gct.setNgayCapNhat(Instant.now());
+        var saved = giayChiTietRepository.save(gct);
+        updateTrangThaiTuSoLuong(saved.getGiay().getId());
+        return toBienThe(saved, null);
     }
 
     @Transactional
@@ -573,13 +645,18 @@ public class QuanLySanPhamService {
         updateTrangThaiTuSoLuong(giayId);
     }
 
-    private BienTheResponse toBienThe(GiayChiTiet gct) {
+    private BienTheResponse toBienThe(GiayChiTiet gct, ActiveDiscountInfo activeDiscount) {
         return new BienTheResponse(
                 gct.getId(), gct.getMaBienThe(), gct.getSku(),
                 gct.getSoLuong(), gct.getGiaGoc(), gct.getGiaBan(), gct.getKichHoat(),
                 gct.getMauSac().getId(), gct.getMauSac().getTen(), gct.getMauSac().getMaMauHex(),
                 gct.getKichCo().getId(), gct.getKichCo().getGiaTri(),
-                gct.getNgayTao(), gct.getNgayCapNhat()
+                gct.getNgayTao(), gct.getNgayCapNhat(),
+                activeDiscount != null ? activeDiscount.dotGiamGiaId() : null,
+                activeDiscount != null ? activeDiscount.maDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.tenDotGiamGia() : null,
+                activeDiscount != null ? activeDiscount.loaiGiam() : null,
+                activeDiscount != null ? activeDiscount.giaTriGiam() : null
         );
     }
 
@@ -656,15 +733,122 @@ public class QuanLySanPhamService {
 
     private void updateTrangThaiTuSoLuong(Integer giayId) {
         var giay = giayRepository.findById(giayId).orElse(null);
-        if (giay == null || giay.getTrangThai() == 0) return;
+        if (giay == null) {
+            return;
+        }
+        updateTrangThaiTuSoLuong(giay);
+    }
 
-        Long totalQty = giayChiTietRepository.sumSoLuongByGiayId(giayId);
-        int newStatus = (totalQty != null && totalQty > 0) ? 1 : 2;
+    private void updateTrangThaiTuSoLuong(Giay giay) {
+        if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+            return;
+        }
+
+        int newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
 
         if (giay.getTrangThai() != newStatus) {
             giay.setTrangThai(newStatus);
             giay.setNgayCapNhat(Instant.now());
         }
+    }
+
+    private boolean coTonKho(Integer giayId) {
+        Long totalQty = giayChiTietRepository.sumSoLuongByGiayId(giayId);
+        return totalQty != null && totalQty > 0;
+    }
+
+    private boolean isTrangThaiGiayHopLe(Integer trangThai) {
+        return trangThai != null
+                && (trangThai == TRANG_THAI_NGUNG_KINH_DOANH
+                || trangThai == TRANG_THAI_KINH_DOANH
+                || trangThai == TRANG_THAI_HET_HANG);
+    }
+
+    private Map<Integer, ActiveDiscountInfo> buildActiveDiscountInfoMap(Collection<GiayChiTiet> chiTiets) {
+        Map<Integer, ActiveDiscountInfo> result = new HashMap<>();
+        if (chiTiets == null || chiTiets.isEmpty()) {
+            return result;
+        }
+
+        Map<Integer, GiayChiTiet> chiTietMap = new HashMap<>();
+        for (GiayChiTiet item : chiTiets) {
+            chiTietMap.put(item.getId(), item);
+        }
+
+        LocalDate now = LocalDate.now();
+        for (DotGiamGiaSanPham link : dotGiamGiaSanPhamRepository.findActiveByGiayChiTietIdIn(chiTietMap.keySet())) {
+            GiayChiTiet gct = chiTietMap.get(link.getGiayChiTiet().getId());
+            if (gct == null) {
+                continue;
+            }
+
+            DotGiamGia dotGiamGia = link.getDotGiamGia();
+            if (!isDiscountDisplayable(dotGiamGia, now)) {
+                continue;
+            }
+
+            BigDecimal giaSauGiam = calculateDiscountedPrice(gct.getGiaGoc(), dotGiamGia);
+            ActiveDiscountInfo current = result.get(gct.getId());
+            if (current == null || giaSauGiam.compareTo(current.giaSauGiam()) < 0) {
+                result.put(
+                        gct.getId(),
+                        new ActiveDiscountInfo(
+                                dotGiamGia.getId(),
+                                dotGiamGia.getMa(),
+                                dotGiamGia.getTen(),
+                                dotGiamGia.getLoaiGiam(),
+                                dotGiamGia.getGiaTriGiam(),
+                                giaSauGiam
+                        )
+                );
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isDiscountEffective(DotGiamGia dotGiamGia, LocalDate now) {
+        if (dotGiamGia == null || dotGiamGia.getKichHoat() == null || dotGiamGia.getKichHoat() == 0) {
+            return false;
+        }
+        if (dotGiamGia.getNgayBatDau() != null && now.isBefore(dotGiamGia.getNgayBatDau())) {
+            return false;
+        }
+        return dotGiamGia.getNgayKetThuc() == null || !now.isAfter(dotGiamGia.getNgayKetThuc());
+    }
+
+    private boolean isDiscountDisplayable(DotGiamGia dotGiamGia, LocalDate now) {
+        if (dotGiamGia == null || dotGiamGia.getKichHoat() == null || dotGiamGia.getKichHoat() == 0) {
+            return false;
+        }
+        return dotGiamGia.getNgayKetThuc() == null || !now.isAfter(dotGiamGia.getNgayKetThuc());
+    }
+
+    private BigDecimal calculateDiscountedPrice(BigDecimal giaGoc, DotGiamGia dotGiamGia) {
+        if (giaGoc == null || dotGiamGia == null || dotGiamGia.getGiaTriGiam() == null) {
+            return giaGoc;
+        }
+
+        BigDecimal giaSauGiam = giaGoc;
+        if (dotGiamGia.getLoaiGiam() != null && dotGiamGia.getLoaiGiam() == 1) {
+            BigDecimal discountAmount = giaGoc.multiply(dotGiamGia.getGiaTriGiam())
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            giaSauGiam = giaGoc.subtract(discountAmount);
+        } else if (dotGiamGia.getLoaiGiam() != null && dotGiamGia.getLoaiGiam() == 2) {
+            giaSauGiam = giaGoc.subtract(dotGiamGia.getGiaTriGiam());
+        }
+
+        if (giaSauGiam.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return giaSauGiam;
+    }
+
+    private String resolveChatLieuText(String rawChatLieu, ChatLieuGiay chatLieuGiay) {
+        if (chatLieuGiay != null) {
+            return chatLieuGiay.getTen();
+        }
+        return hasText(rawChatLieu) ? rawChatLieu.trim() : null;
     }
 
     private static boolean hasText(String s) {

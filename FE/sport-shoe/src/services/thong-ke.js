@@ -1,3 +1,5 @@
+import { sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
 
 async function request(path, init) {
@@ -14,7 +16,7 @@ async function request(path, init) {
     if (error?.name === "AbortError") {
       throw error;
     }
-    throw new Error(`Không thể kết nối đến máy chủ ${API_BASE_URL}`);
+    throw new Error("Không thể tải dữ liệu thống kê lúc này. Vui lòng thử lại sau.");
   }
 
   const text = await response.text();
@@ -28,7 +30,12 @@ async function request(path, init) {
   }
 
   if (!response.ok) {
-    throw new Error(payload?.message || "Không thể kết nối đến máy chủ");
+    throw new Error(
+      sanitizeErrorMessage(
+        payload?.message,
+        "Không thể tải dữ liệu thống kê lúc này. Vui lòng thử lại sau.",
+      ),
+    );
   }
 
   return payload?.data ?? payload;

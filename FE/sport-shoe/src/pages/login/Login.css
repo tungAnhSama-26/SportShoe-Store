@@ -1,0 +1,473 @@
+@import url("https://fonts.googleapis.com/css2?family=Nosifer&family=Montserrat:wght@500;600;700;800;900&display=swap");
+
+.login-page {
+  min-height: 100svh;
+  width: 100%;
+  overflow-y: auto; /* Allow vertical scrolling if zoomed or small screen */
+  background:
+    radial-gradient(circle at 12% 12%, rgba(75, 31, 35, 0.72), transparent 34%),
+    linear-gradient(115deg, #672124 0%, #8b2422 48%, #d71f14 100%);
+  font-family: "Montserrat", sans-serif;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Toast Notification Styles */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 16px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  min-width: 300px;
+  backdrop-filter: blur(10px);
+}
+
+.toast-notification.error {
+  background: rgba(255, 71, 64, 0.9);
+  border-left: 5px solid #d32b1f;
+}
+
+.toast-notification.success {
+  background: rgba(46, 204, 113, 0.9);
+  border-left: 5px solid #27ae60;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-content i {
+  font-size: 1.2rem;
+}
+
+/* Toast Transitions */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(100px);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px);
+}
+
+.login-stage {
+  position: relative;
+  min-height: 100svh;
+  width: 100%;
+  overflow: visible;
+  border-radius: 4px;
+  background: transparent;
+  isolation: isolate;
+  --scale: 1.62;
+}
+
+.corner-logo {
+  position: absolute;
+  top: clamp(22px, 4vw, 34px);
+  left: clamp(24px, 4vw, 48px);
+  z-index: 8;
+  color: #fff;
+  font-family: "Nosifer", cursive;
+  font-size: clamp(16px, 1.7vw, 22px);
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.shoe-panel {
+  position: absolute;
+  left: calc(50% - (345px * var(--scale)));
+  top: calc(50% - (172px * var(--scale)));
+  width: calc(412px * var(--scale));
+  height: calc(432px * var(--scale));
+  overflow: hidden;
+  border-radius: calc(26px * var(--scale));
+  background: linear-gradient(180deg, #ff2a18 0%, #ff1f12 100%);
+  box-shadow:
+    0 calc(28px * var(--scale)) calc(58px * var(--scale)) rgba(52, 10, 8, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  animation: panelIn 620ms ease both;
+}
+
+.brand-repeat {
+  position: absolute;
+  inset: -8% -10% -8% 3%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  color: rgba(255, 164, 150, 0.36);
+  font-weight: 900;
+  font-size: calc(44px * var(--scale));
+  letter-spacing: calc(12px * var(--scale));
+  line-height: 0.95;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.brand-repeat span {
+  transform: none;
+}
+
+.hero-shoe {
+  position: absolute;
+  left: calc(50% - (376px * var(--scale)));
+  top: calc(50% - (80px * var(--scale)));
+  z-index: 30; /* Higher than login-box to show the toe on top */
+  width: calc(485px * var(--scale));
+  max-width: none;
+  pointer-events: none; /* Crucial: allows clicking inputs behind the shoe */
+  filter: drop-shadow(calc(22px * var(--scale)) calc(28px * var(--scale)) calc(20px * var(--scale)) rgba(0, 0, 0, 0.56));
+  animation: shoeIn 760ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.login-box {
+  position: absolute;
+  left: calc(50% - (42px * var(--scale)));
+  top: calc(50% - (140px * var(--scale)));
+  z-index: 20; /* Ensure it's above the shoe */
+  width: calc(380px * var(--scale));
+  min-height: calc(365px * var(--scale));
+  padding:
+    calc(28px * var(--scale))
+    calc(48px * var(--scale))
+    calc(36px * var(--scale));
+  border-radius: calc(28px * var(--scale));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background:
+    linear-gradient(145deg, rgba(213, 43, 31, 0.9), rgba(113, 31, 34, 0.94)),
+    rgba(132, 35, 35, 0.92);
+  box-shadow:
+    0 calc(22px * var(--scale)) calc(56px * var(--scale)) rgba(36, 7, 7, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #fff;
+  animation: formIn 700ms 120ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.login-logo {
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  font-family: "Nosifer", cursive;
+  font-size: calc(31px * var(--scale));
+  letter-spacing: calc(6px * var(--scale));
+  line-height: 1;
+}
+
+.login-title {
+  margin: calc(18px * var(--scale)) 0 calc(14px * var(--scale));
+  text-align: center;
+  color: #fff;
+  font-size: calc(22px * var(--scale));
+  font-weight: 900;
+}
+
+.login-form {
+  width: 100%;
+}
+
+.field {
+  display: block;
+  margin-top: calc(16px * var(--scale));
+}
+
+.field > span {
+  display: block;
+  margin-bottom: calc(8px * var(--scale));
+  color: #fff;
+  font-size: calc(12px * var(--scale));
+  font-weight: 900;
+}
+
+.field input,
+.password-field input {
+  width: 100%;
+  height: calc(25px * var(--scale));
+  border: 0;
+  border-radius: calc(8px * var(--scale));
+  background: rgba(255, 255, 255, 0.97);
+  color: #321717;
+  font: 700 calc(8px * var(--scale))/1 "Montserrat", sans-serif;
+  padding: 0 calc(12px * var(--scale));
+  outline: none;
+  transition: box-shadow 180ms ease, background 180ms ease;
+}
+
+.field input:focus,
+.password-field input:focus {
+  background: #fff;
+  box-shadow: 0 0 0 calc(3px * var(--scale)) rgba(255, 77, 69, 0.25);
+}
+
+/* Hide browser native password icons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: calc(34px * var(--scale));
+}
+
+.password-toggle {
+  position: absolute;
+  right: calc(7px * var(--scale));
+  top: 50%;
+  display: grid;
+  width: calc(20px * var(--scale));
+  height: calc(20px * var(--scale));
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+}
+
+.icon {
+  width: calc(12px * var(--scale));
+  height: calc(12px * var(--scale));
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10px * var(--scale));
+  margin: calc(11px * var(--scale)) 0 calc(10px * var(--scale));
+  color: rgba(255, 255, 255, 0.94);
+  font-size: calc(10px * var(--scale));
+}
+
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(7px * var(--scale));
+  font-weight: 800;
+}
+
+.remember input {
+  width: calc(9px * var(--scale));
+  height: calc(9px * var(--scale));
+  accent-color: #ff463e;
+}
+
+.forgot-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.primary-login,
+.google-login {
+  width: 100%;
+  height: calc(27px * var(--scale));
+  border: 0;
+  border-radius: calc(7px * var(--scale));
+  color: #fff;
+  font: 900 calc(11px * var(--scale))/1 "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: transform 180ms ease, filter 180ms ease, background 180ms ease;
+}
+
+.primary-login {
+  background: #ff4740;
+  box-shadow: 0 calc(10px * var(--scale)) calc(20px * var(--scale)) rgba(255, 52, 44, 0.25);
+}
+
+.google-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(9px * var(--scale));
+  margin-top: calc(13px * var(--scale));
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.google-login .google-icon {
+  width: calc(18px * var(--scale));
+  height: calc(18px * var(--scale));
+}
+
+.register-link {
+  margin-top: calc(15px * var(--scale));
+  text-align: center;
+  font-size: calc(10px * var(--scale));
+  color: #ffffff; /* Use pure white for maximum sharpness */
+  font-weight: 500;
+}
+
+.register-link a {
+  color: #ff4740;
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+.primary-login:hover,
+.google-login:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.primary-login:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+.loader {
+  display: inline-block;
+  width: calc(16px * var(--scale));
+  height: calc(16px * var(--scale));
+  border: 3px solid rgba(255, 255, 255, 0.34);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 850ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateX(-18px) scale(0.985); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes shoeIn {
+  from { opacity: 0; transform: translate(-24px, 22px) scale(0.94); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+@keyframes formIn {
+  from { opacity: 0; transform: translateX(24px) scale(0.985); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@media (max-width: 1280px), (max-height: 760px) {
+  .login-stage {
+    --scale: 1.34;
+  }
+}
+
+@media (max-width: 1040px), (max-height: 640px) {
+  .login-stage {
+    --scale: 1.12;
+  }
+}
+
+@media (max-width: 760px) {
+  .login-page {
+    overflow-y: auto;
+  }
+
+  .login-stage {
+    min-height: 100svh;
+    padding: 18px;
+  }
+
+  .corner-logo {
+    position: relative;
+    inset: auto;
+    display: inline-block;
+    margin-bottom: 18px;
+    font-size: 15px;
+  }
+
+  .shoe-panel,
+  .login-box {
+    --scale: 1;
+  }
+
+  .shoe-panel {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: 300px;
+    border-radius: 26px;
+  }
+
+  .brand-repeat {
+    font-size: 44px;
+    letter-spacing: 10px;
+  }
+
+  .hero-shoe {
+    left: 50%;
+    top: 100px; /* Move it higher */
+    width: min(420px, 110vw); /* Scale it down slightly */
+    transform: translateX(-50%);
+  }
+
+  @keyframes shoeIn {
+    from { opacity: 0; transform: translate(-50%, 22px) scale(0.94); }
+    to { opacity: 1; transform: translateX(-50%) scale(1); }
+  }
+
+  .login-box {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    min-height: auto;
+    margin-top: -18px;
+    padding: 30px 20px;
+    border-radius: 26px;
+  }
+
+  .login-logo {
+    font-size: 28px;
+    letter-spacing: 5px;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  .field > span,
+  .form-row {
+    font-size: 13px;
+  }
+
+  .field input,
+  .password-field input,
+  .primary-login,
+  .google-login {
+    height: 44px;
+    font-size: 12px;
+  }
+
+  .form-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

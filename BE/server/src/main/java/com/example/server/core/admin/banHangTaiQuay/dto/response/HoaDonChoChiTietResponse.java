@@ -11,6 +11,7 @@ public record HoaDonChoChiTietResponse(
         UUID khachHangId,
         String tenKhachHang,
         String soDienThoai,
+        ThongTinGiaoHangTaiQuayResponse thongTinGiaoHang,
         BigDecimal tongTienHang,
         BigDecimal tienGiam,
         BigDecimal tongTien,

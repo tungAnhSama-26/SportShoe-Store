@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Validated
 @RestController
-@RequestMapping("${app.api.base-path}/ws")
+@RequestMapping("/api/v1/ws")
 public class WebSocketTestController {
 
     private final WebSocketNotificationService webSocketNotificationService;

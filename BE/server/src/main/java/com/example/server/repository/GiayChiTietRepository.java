@@ -27,6 +27,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             left join fetch gtt.congNgheDem cnd
             left join fetch gtt.trongLuong tl
             where gct.kichHoat = 1
+              and gct.soLuong > 0
               and g.trangThai = 1
               and (
                 :keyword is null
@@ -35,7 +36,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                 or lower(gct.sku) like lower(concat('%', :keyword, '%'))
                 or lower(gct.maBienThe) like lower(concat('%', :keyword, '%'))
               )
-            order by g.ten asc, gct.sku asc
+            order by coalesce(gct.ngayCapNhat, gct.ngayTao) desc, g.ten asc, gct.sku asc
             """)
     List<GiayChiTiet> searchForCounterSale(@Param("keyword") String keyword);
 

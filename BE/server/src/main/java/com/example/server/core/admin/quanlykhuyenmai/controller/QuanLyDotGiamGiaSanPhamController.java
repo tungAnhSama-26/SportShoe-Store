@@ -1,6 +1,7 @@
 package com.example.server.core.admin.quanlykhuyenmai.controller;
 
 import com.example.server.core.admin.quanlykhuyenmai.dto.request.DotGiamGiaSanPhamRequest;
+import com.example.server.core.admin.quanlykhuyenmai.dto.request.DotGiamGiaSanPhamBulkRequest;
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse;
 import com.example.server.core.admin.quanlykhuyenmai.service.DotGiamGiaSanPhamService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/dot-giam-gia-san-pham")
+@RequestMapping("/api/v1/admin/dot-giam-gia-san-pham")
 public class QuanLyDotGiamGiaSanPhamController {
 
     @Autowired
@@ -46,5 +47,10 @@ public class QuanLyDotGiamGiaSanPhamController {
     @PutMapping("update")
     public void update(@RequestParam("id") Integer id, @RequestBody DotGiamGiaSanPhamRequest request) {
         dotGiamGiaSanPhamService.update(id, request);
+    }
+
+    @PostMapping("bulk-sync")
+    public void bulkSync(@RequestBody DotGiamGiaSanPhamBulkRequest request) {
+        dotGiamGiaSanPhamService.saveAll(request);
     }
 }

@@ -1,9 +1,12 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Search, Plus, Trash2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Search, Plus, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { loaiGiayApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
+import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -27,7 +30,7 @@ async function loadData(page = 0) {
     totalItems.value = res.totalItems
     totalPages.value = res.totalPages
     currentPage.value = res.page
-  } catch (e) { showToast(e.message || 'Lỗi tải dữ liệu', 'error') }
+  } catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách loại giày'), 'error') }
   finally { loading.value = false }
 }
 
@@ -54,6 +57,7 @@ const saving = ref(false)
 const selectedItem = ref(null)
 const form = reactive({ ma: '', ten: '', moTa: '' })
 const errors = reactive({})
+const updatingStatusId = ref(null)
 
 function clearForm() { Object.assign(form, { ma: '', ten: '', moTa: '' }); Object.keys(errors).forEach(k => delete errors[k]) }
 function openAdd() { clearForm(); modalMode.value = 'add'; showModal.value = true }
@@ -62,8 +66,8 @@ function openView(item) { openEdit(item) }
 
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.ma.trim()) errors.ma = 'Mã không được để trống'
-  if (!form.ten.trim()) errors.ten = 'Tên không được để trống'
+  if (!form.ma.trim()) errors.ma = 'Vui lòng nhập mã loại giày'
+  if (!form.ten.trim()) errors.ten = 'Vui lòng nhập tên loại giày'
   return Object.keys(errors).length === 0
 }
 
@@ -76,19 +80,24 @@ async function handleSave() {
     else await loaiGiayApi.update(selectedItem.value.id, body)
     showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false; loadData(currentPage.value)
-  } catch (e) { showToast(e.message || 'Có lỗi xảy ra', 'error') }
+  } catch (e) {
+    Object.assign(errors, getFieldErrors(e))
+    showToast(getDisplayErrorMessage(e, 'Không thể lưu loại giày'), 'error')
+  }
   finally { saving.value = false }
 }
 
-async function handleDelete(item) {
-  if (!confirm(`Xóa loại giày "${item.ten}"?`)) return
-  try { await loaiGiayApi.delete(item.id); showToast('Xóa thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi xóa', 'error') }
-}
-
 async function handleToggleStatus(item) {
-  try { await loaiGiayApi.toggleStatus(item.id, item.trangThai === 1 ? 0 : 1); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value) }
-  catch (e) { showToast(e.message || 'Lỗi cập nhật trạng thái', 'error') }
+  const nextTrangThai = item.trangThai === 1 ? 0 : 1
+  const actionLabel = nextTrangThai === 1 ? 'bật' : 'dừng'
+  if (!confirm('Xác nhận ' + actionLabel + ' nhanh loại giày "' + item.ten + '"?')) return
+
+  updatingStatusId.value = item.id
+  try {
+    await loaiGiayApi.toggleStatus(item.id, nextTrangThai); showToast('Cập nhật trạng thái thành công'); loadData(currentPage.value)
+  }
+  catch (e) { showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái loại giày'), 'error') }
+  finally { updatingStatusId.value = null }
 }
 
 async function xuatExcel() {
@@ -114,7 +123,7 @@ async function xuatExcel() {
 
     showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
   } catch (e) {
-    showToast(e.message || 'Lỗi xuất Excel', 'error')
+    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel loại giày'), 'error')
   }
 }
 </script>
@@ -152,12 +161,12 @@ async function xuatExcel() {
         </colgroup>
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-12">STT</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mã</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tên loại giày</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mô tả</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Trạng thái</th>
-            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Thao tác</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase w-12">STT</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Mã</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Tên loại giày</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-950 uppercase">Mô tả</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Trạng thái</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-slate-950 uppercase w-28">Thao tác</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
@@ -178,19 +187,12 @@ async function xuatExcel() {
             <td class="px-4 py-3 text-gray-500">{{ currentPage * pageSize + idx + 1 }}</td>
             <td class="px-4 py-3 font-semibold text-slate-800"><span class="block truncate">{{ item.ma }}</span></td>
             <td class="px-4 py-3 font-medium text-gray-800"><span class="block truncate">{{ item.ten }}</span></td>
-            <td class="px-4 py-3 text-xs text-gray-500"><span class="block truncate">{{ item.moTa || '—' }}</span></td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex justify-center">
-                <button @click="handleToggleStatus(item)" class="admin-status-chip"
-                  :class="item.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'">
-                  {{ item.trangThai === 1 ? 'Hoạt động' : 'Dừng' }}
-                </button>
-              </div>
-            </td>
+            <td class="px-4 py-3 text-xs text-gray-500"><span class="table-text-wrap">{{ item.moTa || '—' }}</span></td>
+            <td class="px-4 py-3 text-center"><div class="flex justify-center"><DanhMucQuickStatusToggle :trang-thai="item.trangThai" :loading="updatingStatusId === item.id" /></div></td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-center gap-1">
+                <AdminQuickStatusAction :loading="updatingStatusId === item.id" :action-label="item.trangThai === 1 ? 'Chuyển sang ngừng bán' : 'Chuyển sang đang bán'" :intent="item.trangThai === 1 ? 'deactivate' : 'activate'" @toggle="handleToggleStatus(item)" />
                 <button @click="openView(item)" title="Xem và sửa" class="admin-table-action text-slate-600 hover:text-rose-500"><Eye :size="14" /></button>
-                <button @click="handleDelete(item)" class="admin-table-action text-red-500 hover:text-red-600"><Trash2 :size="14" /></button>
               </div>
             </td>
           </tr>
@@ -232,6 +234,9 @@ async function xuatExcel() {
     </template>
   </DanhMucPageShell>
 </template>
+
+
+
 
 
 

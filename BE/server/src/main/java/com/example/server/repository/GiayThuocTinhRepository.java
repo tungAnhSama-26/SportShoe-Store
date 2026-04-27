@@ -18,6 +18,7 @@ public interface GiayThuocTinhRepository extends JpaRepository<GiayThuocTinh, In
             left join fetch gtt.deGiay
             left join fetch gtt.coGiay
             left join fetch gtt.congNgheDem
+            left join fetch gtt.chatLieuGiay
             left join fetch gtt.trongLuong
             where gtt.giay.id in :giayIds
             """)

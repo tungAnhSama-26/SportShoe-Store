@@ -2,7 +2,8 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, Edit, Trash2, PackageSearch
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight,
+  CheckCircle2, CircleX, X
 } from "lucide-vue-next";
 import {
   deleteDotGiamGia,
@@ -15,19 +16,49 @@ import {
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
+import { getDisplayErrorMessage } from "../../../utils/error-message";
 
-const tabs = [
-  { key: "dot", label: "Đợt giảm giá" },
-  { key: "san-pham", label: "Sản phẩm áp dụng" }
-];
-
-const activeTab = ref("dot");
 const router = useRouter();
 const dangTai = ref(false);
 const loiTrang = ref("");
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer = null;
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  return CircleX;
+});
+
+function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+}
 
 const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" });
-const boLocSp = ref({ keyword: "", trangThai: "" });
 
 const danhSach = ref([]);
 const tongSoTrang = ref(1);
@@ -122,7 +153,7 @@ async function taiDanhSach() {
     tongSoTrang.value = data?.totalPages || 1;
     totalItems.value = data?.totalElements || 0;
   } catch (e) {
-    loiTrang.value = e.message || "Lỗi tải đợt giảm giá";
+    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách đợt giảm giá");
   } finally {
     dangTai.value = false;
   }
@@ -142,11 +173,7 @@ async function taiDanhSachSp() {
 }
 
 function lamMoiBoLoc() {
-  if (activeTab.value === 'dot') {
-    boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" };
-  } else {
-    boLocSp.value = { keyword: "", trangThai: "" };
-  }
+  boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" };
 }
 
 async function nhanhDoiTrangThai(item) {
@@ -225,7 +252,7 @@ async function xuatExcel() {
       });
     }
   } catch (error) {
-    window.alert(error?.message || "Xuất Excel thất bại.");
+    window.alert(getDisplayErrorMessage(error, "Không thể xuất Excel đợt giảm giá"));
   }
 }
 
@@ -334,13 +361,9 @@ onMounted(taiDanhSach);
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center justify-between">
-        <div class="inline-flex rounded-2xl bg-slate-100 p-1">
-          <button v-for="tab in tabs" :key="tab.key" class="rounded-2xl px-5 py-2 text-sm font-semibold transition" :class="activeTab === tab.key ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'" @click="activeTab = tab.key">
-            {{ tab.label }}
-          </button>
-        </div>
+        <h2 class="text-lg font-bold text-slate-800">Danh sách các đợt giảm giá</h2>
         <div>
-          <p class="text-sm text-slate-400 font-medium">{{ activeTab === 'dot' ? totalItems : filteredDanhSachSp.length }} bản ghi hiển thị.</p>
+          <p class="text-sm text-slate-400 font-medium">{{ totalItems }} bản ghi hiển thị.</p>
         </div>
       </div>
 
@@ -350,7 +373,7 @@ onMounted(taiDanhSach);
         <!-- Bảng Đợt giảm giá -->
         <table v-if="activeTab === 'dot'" class="min-w-[900px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-500">
+            <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên / Mô tả</th>
@@ -458,7 +481,6 @@ onMounted(taiDanhSach);
       </div>
 
       <AdminTableFooter
-        v-if="activeTab === 'dot'"
         :current-page="trangHienTai"
         :page-size="soPhanTuMotTrang"
         :page-size-options="[5, 10, 20]"
@@ -469,19 +491,6 @@ onMounted(taiDanhSach);
         @refresh="taiDanhSach"
         @update:current-page="trangHienTai = $event"
         @update:page-size="soPhanTuMotTrang = $event"
-      />
-      <AdminTableFooter
-        v-else
-        :current-page="trangHienTaiSp"
-        :page-size="soPhanTuMotTrangSp"
-        :page-size-options="[5, 10, 20]"
-        :total-items="filteredDanhSachSp.length"
-        :total-pages="tongSoTrangSp"
-        compact
-        show-refresh
-        @refresh="taiDanhSachSp"
-        @update:current-page="trangHienTaiSp = $event"
-        @update:page-size="soPhanTuMotTrangSp = $event"
       />
     </section>
   </div>

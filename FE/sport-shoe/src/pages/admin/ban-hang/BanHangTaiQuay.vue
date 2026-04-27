@@ -24,6 +24,7 @@ const {
   cartItems,
   selectedProductDetail,
   chiTietDangChon,
+  hinhAnhDangChon,
   soLuongTonSauKhiChon,
   colorOptions,
   sizeOptions,
@@ -36,6 +37,7 @@ const {
   tongTienSauGiamHienThi,
   tienGiam,
   tongTien,
+  sanPhamValidationMessage,
   couponCode,
   coTheApDungPhieu,
   applyingCoupon,
@@ -46,8 +48,10 @@ const {
   appliedCoupon,
   maPhieuChuaApDung,
   khachCanTra,
+  shippingInfo,
   paymentMethod,
   amountPaid,
+  paymentValidationMessage,
   tienThua,
   paymentNote,
   canCreatePendingInvoice,
@@ -65,9 +69,10 @@ const {
   chonKhachVangLai,
   boChonKhachHang,
   moDanhSachSanPham,
-  dongDanhSachSanPham,
-  moChiTietSanPham,
-  tangSoLuong,
+   dongDanhSachSanPham,
+   moChiTietSanPham,
+   handleProductQrScan,
+   tangSoLuong,
   giamSoLuong,
   dongChiTietSanPham,
   chonMauSac,
@@ -80,6 +85,8 @@ const {
   handleApplyCoupon,
   chonPhieuGiamGia,
   handleRemoveCoupon,
+  updateShippingInfo,
+  handleCalculateShippingFee,
   handleAmountPaidInput,
   handleCreatePendingInvoice,
   handlePayNow,
@@ -110,6 +117,7 @@ const {
     :cart-items="cartItems"
     :selected-product-detail="selectedProductDetail"
     :chi-tiet-dang-chon="chiTietDangChon"
+    :hinh-anh-dang-chon="hinhAnhDangChon"
     :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
     :color-options="colorOptions"
     :size-options="sizeOptions"
@@ -122,6 +130,7 @@ const {
     :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
     :tien-giam="tienGiam"
     :tong-tien="tongTien"
+    :san-pham-validation-message="sanPhamValidationMessage"
     :coupon-code="couponCode"
     :co-the-ap-dung-phieu="coTheApDungPhieu"
     :applying-coupon="applyingCoupon"
@@ -132,8 +141,10 @@ const {
     :applied-coupon="appliedCoupon"
     :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
     :khach-can-tra="khachCanTra"
+    :shipping-info="shippingInfo"
     :payment-method="paymentMethod"
     :amount-paid="amountPaid"
+    :payment-validation-message="paymentValidationMessage"
     :tien-thua="tienThua"
     :payment-note="paymentNote"
     :can-create-pending-invoice="canCreatePendingInvoice"
@@ -152,10 +163,11 @@ const {
     @select-guest="chonKhachVangLai"
     @clear-customer="boChonKhachHang"
     @update:product-keyword="productKeyword = $event"
-    @focus-product="moDanhSachSanPham"
-    @blur-product="dongDanhSachSanPham"
-    @open-product="moChiTietSanPham"
-    @increase-item="tangSoLuong"
+     @focus-product="moDanhSachSanPham"
+     @blur-product="dongDanhSachSanPham"
+     @open-product="moChiTietSanPham"
+     @scan-product="handleProductQrScan"
+     @increase-item="tangSoLuong"
     @decrease-item="giamSoLuong"
     @close-product-detail="dongChiTietSanPham"
     @select-color="chonMauSac"
@@ -169,6 +181,8 @@ const {
     @apply-coupon="handleApplyCoupon"
     @select-coupon="chonPhieuGiamGia"
     @remove-coupon="handleRemoveCoupon"
+    @update-shipping="updateShippingInfo"
+    @calculate-shipping="handleCalculateShippingFee"
     @update:payment-method="paymentMethod = $event"
     @amount-input="handleAmountPaidInput"
     @update:payment-note="paymentNote = $event"

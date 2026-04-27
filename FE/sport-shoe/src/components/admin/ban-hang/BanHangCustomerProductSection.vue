@@ -75,7 +75,8 @@ const emit = defineEmits([
   "update:productKeyword",
   "focus-product",
   "blur-product",
-  "open-product"
+  "open-product",
+  "scan-product",
 ]);
 </script>
 
@@ -110,6 +111,7 @@ const emit = defineEmits([
       @focus-product="emit('focus-product')"
       @blur-product="emit('blur-product')"
       @open-product="emit('open-product', $event)"
+      @scan-product="emit('scan-product', $event)"
     />
   </div>
 </template>

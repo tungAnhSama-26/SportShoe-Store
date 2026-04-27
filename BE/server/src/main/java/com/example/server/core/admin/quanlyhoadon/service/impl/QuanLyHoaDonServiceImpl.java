@@ -2,11 +2,14 @@ package com.example.server.core.admin.quanlyhoadon.service.impl;
 
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonDetailResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonHistoryResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonPaymentHistoryResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonProductResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonSummaryResponse;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
+import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HinhAnhGiay;
@@ -54,10 +57,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private static final int TRANG_THAI_CAN_HOAN_TIEN = 8;
     
     private static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
-    private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
-    private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
-    private static final int TRANG_THAI_THANH_TOAN_THANH_CONG = 1;
-    private static final int TRANG_THAI_HINH_ANH_HOAT_DONG = 1;
+private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
+private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
+private static final int TRANG_THAI_THANH_TOAN_THANH_CONG = 1;
+private static final int TRANG_THAI_HINH_ANH_HOAT_DONG = 1;
+private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
@@ -66,6 +70,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final GhnShippingService ghnShippingService;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -74,7 +79,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             VanChuyenRepository vanChuyenRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
             LichSuHoaDonRepository lichSuHoaDonRepository,
-            GiayChiTietRepository giayChiTietRepository
+            GiayChiTietRepository giayChiTietRepository,
+            GhnShippingService ghnShippingService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -83,6 +89,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.ghnShippingService = ghnShippingService;
     }
 
     @Override
@@ -129,13 +136,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         hoaDon.getId(),
                         hoaDon.getMa(),
                         resolveTenKhachHang(hoaDon),
-                        resolveTenNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId())),
+                        resolveMaNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId())),
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                        mapLoaiDon(hoaDon.getKenhBan()),
-                        resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
-                ))
-                .toList();
+                    mapLoaiDon(hoaDon),
+                    resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
+            ))
+            .toList();
     }
 
     @Override
@@ -149,6 +156,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     @Transactional
     public HoaDonDetailResponse capNhatTrangThaiHoaDon(Integer id, CapNhatTrangThaiHoaDonRequest request) {
         HoaDon hoaDon = findHoaDon(id);
+        ensureHoaDonEditable(hoaDon);
         VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(id).orElse(null);
         String trangThai = normalizeLabel(request.trangThai());
 
@@ -215,6 +223,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     @Transactional
     public HoaDonDetailResponse capNhatSanPhamHoaDon(Integer id, CapNhatSanPhamHoaDonRequest request) {
         HoaDon hoaDon = findHoaDon(id);
+        ensureHoaDonEditable(hoaDon);
         if (hoaDon.getTrangThai() != TRANG_THAI_CHO_XAC_NHAN) {
             throw new BusinessException("Chi co the cap nhat san pham khi hoa don dang o trang thai cho xac nhan");
         }
@@ -281,6 +290,47 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         return mapHoaDonDetail(findHoaDon(id));
     }
 
+    @Override
+    @Transactional
+    public TinhPhiVanChuyenGhnResponse tinhVaCapNhatPhiVanChuyenGhn(Integer id, TinhPhiVanChuyenGhnRequest request) {
+        HoaDon hoaDon = findHoaDon(id);
+        ensureHoaDonEditable(hoaDon);
+    if (isTaiQuay(hoaDon) && !isDonGiaoHang(hoaDon)) {
+        throw new BusinessException("Hoa don tai quay khong can tinh phi van chuyen GHN");
+    }
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
+        if (items.isEmpty()) {
+            throw new BusinessException("Hoa don chua co san pham de tinh phi van chuyen");
+        }
+
+        TinhPhiVanChuyenGhnResponse phiGhn = ghnShippingService.tinhPhi(hoaDon, items, request);
+        VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(id).orElseGet(() -> {
+            VanChuyen created = new VanChuyen();
+            created.setHoaDon(hoaDon);
+            created.setDonViVanChuyen("GHN");
+            created.setTrangThai(TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
+            created.setNgayTao(Instant.now());
+            return created;
+        });
+
+        vanChuyen.setDonViVanChuyen("GHN");
+        vanChuyen.setPhiVanChuyen(phiGhn.phiVanChuyen());
+        vanChuyen.setNgayCapNhat(Instant.now());
+        vanChuyenRepository.save(vanChuyen);
+
+        hoaDon.setTongTienThanhToan(
+                defaultMoney(hoaDon.getTongTienHang())
+                        .add(phiGhn.phiVanChuyen())
+                        .subtract(defaultMoney(hoaDon.getTienGiam()))
+                        .max(BigDecimal.ZERO)
+        );
+        hoaDon.setNgayCapNhat(Instant.now());
+        hoaDonRepository.save(hoaDon);
+
+        return phiGhn;
+    }
+
     private HoaDonDetailResponse mapHoaDonDetail(HoaDon hoaDon) {
         List<HoaDonChiTiet> hoaDonChiTiets = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
         List<ThanhToan> thanhToans = thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
@@ -311,8 +361,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 tenNhanVien,
                 hoaDon.getTongTienThanhToan(),
                 hoaDon.getNgayTao(),
-                mapLoaiDon(hoaDon.getKenhBan()),
-                resolveTrangThaiHoaDon(hoaDon, vanChuyen),
+            mapLoaiDon(hoaDon),
+            resolveTrangThaiHoaDon(hoaDon, vanChuyen),
                 safeValue(hoaDon.getSdtNguoiNhan()),
                 resolveEmail(hoaDon.getKhachHang()),
                 safeValue(hoaDon.getDiaChiGiaoHang()),
@@ -400,6 +450,12 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
     }
 
+    private void ensureHoaDonEditable(HoaDon hoaDon) {
+        if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == TRANG_THAI_HOAN_THANH) {
+            throw new BusinessException("Hoa don da hoan thanh, khong the chinh sua");
+        }
+    }
+
     private String resolveTrangThaiHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
         if (hoaDon.getTrangThai() != null) {
             switch (hoaDon.getTrangThai()) {
@@ -430,11 +486,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         }
         String ma = normalize(hoaDon.getMa());
         String khachHang = normalize(resolveTenKhachHang(hoaDon));
-        String nhanVien = normalize(resolveTenNhanVien(hoaDon, thanhToan));
+        String maNhanVien = normalize(resolveMaNhanVien(hoaDon, thanhToan));
+        String tenNhanVien = normalize(resolveTenNhanVien(hoaDon, thanhToan));
         
         return (ma != null && ma.contains(keyword)) ||
                (khachHang != null && khachHang.contains(keyword)) ||
-               (nhanVien != null && nhanVien.contains(keyword));
+               (maNhanVien != null && maNhanVien.contains(keyword)) ||
+               (tenNhanVien != null && tenNhanVien.contains(keyword));
     }
 
     private Integer mapLoaiDonToKenhBan(String loaiDon) {
@@ -448,7 +506,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         if (loaiDon == null || loaiDon.isBlank()) {
             return true;
         }
-        return mapLoaiDon(hoaDon.getKenhBan()).equalsIgnoreCase(loaiDon.trim());
+    return mapLoaiDon(hoaDon).equalsIgnoreCase(loaiDon.trim());
     }
 
     private Integer mapTrangThaiFilterToDb(String trangThai) {
@@ -469,17 +527,22 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         };
     }
 
-    private String mapLoaiDon(Integer kenhBan) {
-        return isTaiQuay(kenhBan) ? "Tại cửa hàng" : "Online";
-    }
+private String mapLoaiDon(HoaDon hoaDon) {
+    return isTaiQuay(hoaDon) && !isDonGiaoHang(hoaDon) ? "Tại cửa hàng" : "Online";
+}
 
-    private boolean isTaiQuay(HoaDon hoaDon) {
-        return isTaiQuay(hoaDon.getKenhBan());
-    }
+private boolean isTaiQuay(HoaDon hoaDon) {
+    return isTaiQuay(hoaDon.getKenhBan());
+}
 
-    private boolean isTaiQuay(Integer kenhBan) {
-        return kenhBan != null && kenhBan == KENH_BAN_TAI_QUAY;
-    }
+private boolean isTaiQuay(Integer kenhBan) {
+    return kenhBan != null && kenhBan == KENH_BAN_TAI_QUAY;
+}
+
+private boolean isDonGiaoHang(HoaDon hoaDon) {
+    String diaChi = safeValue(hoaDon.getDiaChiGiaoHang());
+    return !diaChi.isBlank() && !DIA_CHI_TAI_QUAY.equalsIgnoreCase(diaChi.trim());
+}
 
     private String resolveTenKhachHang(HoaDon hoaDon) {
         if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getHoTen() != null && !hoaDon.getKhachHang().getHoTen().isBlank()) {
@@ -500,6 +563,16 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             return hoaDon.getNhanVien().getHoTen();
         }
         return resolveTenNhanVien(thanhToan);
+    }
+
+    private String resolveMaNhanVien(HoaDon hoaDon, ThanhToan thanhToan) {
+        if (hoaDon.getNhanVien() != null && hoaDon.getNhanVien().getMa() != null && !hoaDon.getNhanVien().getMa().isBlank()) {
+            return hoaDon.getNhanVien().getMa();
+        }
+        if (thanhToan != null && thanhToan.getNhanVien() != null && thanhToan.getNhanVien().getMa() != null && !thanhToan.getNhanVien().getMa().isBlank()) {
+            return thanhToan.getNhanVien().getMa();
+        }
+        return "Chưa cập nhật";
     }
 
     private String resolveTenNhanVien(ThanhToan thanhToan) {

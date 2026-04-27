@@ -3,12 +3,14 @@ package com.example.server.core.admin.banHangTaiQuay.controller;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ApDungPhieuGiamGiaRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThanhToanTaiQuayRequest;
+import com.example.server.core.admin.banHangTaiQuay.dto.request.TinhPhiVanChuyenTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTietResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoTomTatResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.KhachHangTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.PhieuGiamGiaTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.SanPhamTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.ThanhToanTaiQuayResponse;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 import com.example.server.core.admin.banHangTaiQuay.service.BanHangTaiQuayService;
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${app.api.base-path}/admin/ban-hang-tai-quay")
+@RequestMapping("/api/v1/admin/ban-hang-tai-quay")
 public class BanHangTaiQuayController {
 
     private final BanHangTaiQuayService banHangTaiQuayService;
@@ -93,6 +95,16 @@ public class BanHangTaiQuayController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Ap dung phieu giam gia thanh cong",
                 banHangTaiQuayService.apDungPhieuGiamGia(request)
+        ));
+    }
+
+    @PostMapping("/phi-van-chuyen/ghn")
+    public ResponseEntity<ApiResponse<TinhPhiVanChuyenGhnResponse>> tinhPhiVanChuyenGhn(
+            @Valid @RequestBody TinhPhiVanChuyenTaiQuayRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tinh phi van chuyen GHN thanh cong",
+                banHangTaiQuayService.tinhPhiVanChuyenGhn(request)
         ));
     }
 

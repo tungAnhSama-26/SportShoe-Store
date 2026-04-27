@@ -18,15 +18,15 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-[28px] border border-slate-100">
+  <div class="overflow-x-auto rounded-[28px] border border-slate-100">
     <table class="min-w-full border-collapse">
-      <thead class="bg-slate-100 text-left text-sm text-slate-600">
+      <thead class="bg-slate-100 text-left text-sm text-slate-950 font-bold">
         <tr>
-          <th class="px-5 py-4 font-semibold">STT</th>
-          <th class="px-5 py-4 font-semibold">Mã sản phẩm</th>
-          <th class="px-5 py-4 font-semibold">Tên sản phẩm</th>
-          <th class="px-5 py-4 font-semibold">Đơn giá</th>
-          <th class="px-5 py-4 font-semibold">Số lượng</th>
+          <th class="px-5 py-4">STT</th>
+          <th class="px-5 py-4">Mã sản phẩm</th>
+          <th class="px-5 py-4">Tên sản phẩm</th>
+          <th class="px-5 py-4">Đơn giá</th>
+          <th class="px-5 py-4">Số lượng</th>
         </tr>
       </thead>
       <tbody class="bg-white text-sm text-slate-700">
@@ -34,7 +34,20 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
           <td class="px-5 py-4 font-semibold text-slate-900">{{ index + 1 }}</td>
           <td class="px-5 py-4 font-semibold text-slate-600">{{ item.maSanPham }}</td>
           <td class="px-5 py-4">
-            <p class="font-semibold text-slate-900">{{ item.tenSanPham }}</p>
+            <div class="flex items-center gap-3">
+              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-sm font-bold text-red-400">
+                <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
+                <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
+              </div>
+
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-900">{{ item.tenSanPham }}</p>
+                <p class="mt-1 text-xs text-slate-500">
+                  {{ item.mauSac || "--" }} / {{ item.kichCo || "--" }}
+                </p>
+                <p v-if="item.sku" class="mt-1 text-xs text-slate-400">SKU: {{ item.sku }}</p>
+              </div>
+            </div>
           </td>
           <td class="px-5 py-4 font-semibold text-slate-700">{{ dinhDangTien(item.giaBan) }}</td>
           <td class="px-5 py-4">

@@ -4,6 +4,8 @@ import com.example.server.core.admin.banHangTaiQuay.dto.request.ApDungPhieuGiamG
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThanhToanTaiQuayRequest;
+import com.example.server.core.admin.banHangTaiQuay.dto.request.ThongTinGiaoHangTaiQuayRequest;
+import com.example.server.core.admin.banHangTaiQuay.dto.request.TinhPhiVanChuyenTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTietResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoDongSanPhamResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoTomTatResponse;
@@ -11,29 +13,40 @@ import com.example.server.core.admin.banHangTaiQuay.dto.response.KhachHangTaiQua
 import com.example.server.core.admin.banHangTaiQuay.dto.response.PhieuGiamGiaTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.SanPhamTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.ThanhToanTaiQuayResponse;
+import com.example.server.core.admin.banHangTaiQuay.dto.response.ThongTinGiaoHangTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.ThongTinPhieuGiamGiaHoaDonResponse;
+import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
+import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
+import com.example.server.entity.LichSuHoaDon;
 import com.example.server.entity.PhieuGiamGia;
 import com.example.server.entity.PhieuGiamGiaKhachHang;
 import com.example.server.entity.ThanhToan;
+import com.example.server.entity.VanChuyen;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.GiayChiTietRepository;
+import com.example.server.repository.HinhAnhGiayRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.KhachHangRepository;
+import com.example.server.repository.LichSuHoaDonRepository;
 import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaRepository;
 import com.example.server.repository.ThanhToanRepository;
+import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -42,10 +55,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BanHangTaiQuayService {
 
+    private static final int SO_SAN_PHAM_TIM_TOI_DA = 50;
     private static final int KENH_BAN_TAI_QUAY = 1;
-    private static final int TRANG_THAI_HOA_DON_CHO = 1;
-    private static final int TRANG_THAI_DA_THANH_TOAN = 2;
-    private static final int TRANG_THAI_DA_HUY = 5;
+    private static final int TRANG_THAI_HOA_DON_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_HOA_DON_CHO_GIAO_HANG = 2;
+    private static final int TRANG_THAI_HOA_DON_HOAN_THANH = 5;
+    private static final int TRANG_THAI_HOA_DON_HUY = 6;
+    private static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
     private static final int HINH_THUC_TIEN_MAT = 1;
     private static final int HINH_THUC_CHUYEN_KHOAN = 2;
     private static final int HINH_THUC_VI = 3;
@@ -59,28 +75,40 @@ public class BanHangTaiQuayService {
 
     private final KhachHangRepository khachHangRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
+    private final LichSuHoaDonRepository lichSuHoaDonRepository;
+    private final VanChuyenRepository vanChuyenRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
+    private final GhnShippingService ghnShippingService;
 
     public BanHangTaiQuayService(
             KhachHangRepository khachHangRepository,
             GiayChiTietRepository giayChiTietRepository,
+            HinhAnhGiayRepository hinhAnhGiayRepository,
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             ThanhToanRepository thanhToanRepository,
+            LichSuHoaDonRepository lichSuHoaDonRepository,
+            VanChuyenRepository vanChuyenRepository,
             PhieuGiamGiaRepository phieuGiamGiaRepository,
-            PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository
+            PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository,
+            GhnShippingService ghnShippingService
     ) {
         this.khachHangRepository = khachHangRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
+        this.lichSuHoaDonRepository = lichSuHoaDonRepository;
+        this.vanChuyenRepository = vanChuyenRepository;
         this.phieuGiamGiaRepository = phieuGiamGiaRepository;
         this.phieuGiamGiaKhachHangRepository = phieuGiamGiaKhachHangRepository;
+        this.ghnShippingService = ghnShippingService;
     }
 
     @Transactional(readOnly = true)
@@ -99,9 +127,13 @@ public class BanHangTaiQuayService {
 
     @Transactional(readOnly = true)
     public List<SanPhamTaiQuayResponse> timSanPham(String keyword) {
-        return giayChiTietRepository.searchForCounterSale(chuanHoaTuKhoa(keyword))
+        List<GiayChiTiet> danhSachChiTiet = giayChiTietRepository.searchForCounterSale(chuanHoaTuKhoa(keyword))
                 .stream()
-                .limit(10)
+                .limit(SO_SAN_PHAM_TIM_TOI_DA)
+                .toList();
+        Map<Integer, String> hinhAnhMap = buildImageMap(danhSachChiTiet);
+
+        return danhSachChiTiet.stream()
                 .map(chiTiet -> new SanPhamTaiQuayResponse(
                         chiTiet.getId(),
                         chiTiet.getGiay().getMa(),
@@ -109,7 +141,9 @@ public class BanHangTaiQuayService {
                         chiTiet.getSku(),
                         chiTiet.getMaBienThe(),
                         chiTiet.getSoLuong(),
+                        chiTiet.getGiaGoc(),
                         chiTiet.getGiaBan(),
+                        hinhAnhMap.get(chiTiet.getId()),
                         chiTiet.getGiay().getLoaiGiay() != null ? chiTiet.getGiay().getLoaiGiay().getTen() : null,
                         chiTiet.getGiay().getThuongHieu() != null ? chiTiet.getGiay().getThuongHieu().getTen() : null,
                         chiTiet.getGiay().getGiayThuocTinh() != null && chiTiet.getGiay().getGiayThuocTinh().getDeGiay() != null
@@ -124,6 +158,25 @@ public class BanHangTaiQuayService {
                                 ? chiTiet.getGiay().getGiayThuocTinh().getTrongLuong().getGiaTri() + " gram" : null
                 ))
                 .toList();
+    }
+
+    private Map<Integer, String> buildImageMap(List<GiayChiTiet> danhSachChiTiet) {
+        Map<Integer, String> imageMap = new HashMap<>();
+        if (danhSachChiTiet.isEmpty()) {
+            return imageMap;
+        }
+
+        List<Integer> chiTietIds = danhSachChiTiet.stream()
+                .map(GiayChiTiet::getId)
+                .toList();
+
+        for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(chiTietIds)) {
+            if (row[0] != null && row[1] != null) {
+                Integer chiTietId = ((Number) row[0]).intValue();
+                imageMap.putIfAbsent(chiTietId, (String) row[1]);
+            }
+        }
+        return imageMap;
     }
 
     @Transactional(readOnly = true)
@@ -183,6 +236,35 @@ public class BanHangTaiQuayService {
         return mapPhieuGiamGiaTaiQuayResponse(phieuGiamGia);
     }
 
+    @Transactional(readOnly = true)
+    public TinhPhiVanChuyenGhnResponse tinhPhiVanChuyenGhn(TinhPhiVanChuyenTaiQuayRequest request) {
+        List<HoaDonChiTiet> items = taoDanhSachDongHoaDonTam(request.items());
+        HoaDon hoaDonTam = new HoaDon();
+        hoaDonTam.setTongTienHang(
+                items.stream()
+                        .map(HoaDonChiTiet::getThanhTien)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        );
+
+        return ghnShippingService.tinhPhi(
+                hoaDonTam,
+                items,
+                new TinhPhiVanChuyenGhnRequest(
+                        request.toDistrictId(),
+                        request.toWardCode(),
+                        request.toAddress(),
+                        request.serviceId(),
+                        request.serviceTypeId(),
+                        request.length(),
+                        request.width(),
+                        request.height(),
+                        request.weight(),
+                        request.insuranceValue(),
+                        request.coupon()
+                )
+        );
+    }
+
     @Transactional
     public HoaDonChoChiTietResponse taoHoaDonCho(TaoHoaDonChoRequest request) {
         HoaDon savedHoaDon = taoHoaDon(
@@ -190,13 +272,15 @@ public class BanHangTaiQuayService {
                 request.tenKhachHang(),
                 request.soDienThoai(),
                 request.maPhieuGiamGia(),
+                request.thongTinGiaoHang(),
                 request.items(),
-                TRANG_THAI_HOA_DON_CHO,
+                TRANG_THAI_HOA_DON_CHO_XAC_NHAN,
                 "Hoa don cho tao tu man hinh ban hang tai quay"
         );
+        luuLichSuHoaDon(savedHoaDon, TRANG_THAI_HOA_DON_CHO_XAC_NHAN, savedHoaDon.getGhiChu());
         List<HoaDonChiTiet> savedItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(savedHoaDon.getId());
 
-        return mapHoaDonChiTiet(savedHoaDon, savedItems);
+        return mapHoaDonChiTiet(savedHoaDon, savedItems, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
     }
 
     @Transactional
@@ -229,22 +313,26 @@ public class BanHangTaiQuayService {
             hoaDon.setTongTienThanhToan(hoaDon.getTongTienHang());
         }
 
-        hoaDon.setTrangThai(TRANG_THAI_DA_HUY);
+        hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HUY);
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDon.setGhiChu("Hoa don cho da bi huy");
         hoaDonRepository.save(hoaDon);
+        luuLichSuHoaDon(hoaDon, TRANG_THAI_HOA_DON_HUY, hoaDon.getGhiChu());
     }
 
     @Transactional
     public ThanhToanTaiQuayResponse thanhToanTaiQuay(ThanhToanTaiQuayRequest request) {
+        validateTienKhachDua(request.tienKhachDua());
+        Integer trangThaiSauThanhToan = xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
                 ? taoHoaDon(
                 request.khachHangId(),
                 request.tenKhachHang(),
                 request.soDienThoai(),
                 request.maPhieuGiamGia(),
+                request.thongTinGiaoHang(),
                 request.items(),
-                TRANG_THAI_DA_THANH_TOAN,
+                trangThaiSauThanhToan,
                 request.ghiChu()
         )
                 : thanhToanHoaDonCho(request);
@@ -265,10 +353,11 @@ public class BanHangTaiQuayService {
         thanhToan.setNgayTao(Instant.now());
         thanhToanRepository.save(thanhToan);
 
-        hoaDon.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
+        hoaDon.setTrangThai(trangThaiSauThanhToan);
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hoaDon);
+        luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, request.ghiChu());
 
         return new ThanhToanTaiQuayResponse(
                 hoaDon.getId(),
@@ -280,8 +369,9 @@ public class BanHangTaiQuayService {
                 tienKhachDua,
                 tienThua,
                 request.hinhThucThanhToan(),
-                hoaDon.getTenNguoiNhan(),
-                hoaDon.getSdtNguoiNhan(),
+                resolveTenKhachHangHoaDon(hoaDon),
+                resolveSoDienThoaiKhachHangHoaDon(hoaDon),
+                mapThongTinGiaoHangHoaDon(hoaDon, vanChuyenRepository.findByHoaDonId(hoaDon.getId()).orElse(null)),
                 mapThongTinPhieuGiamGiaHoaDon(hoaDon),
                 hoaDon.getNgayThanhToan()
         );
@@ -289,8 +379,17 @@ public class BanHangTaiQuayService {
 
     @Transactional(readOnly = true)
     public List<HoaDonChoTomTatResponse> layDanhSachHoaDonCho() {
-        return hoaDonRepository.findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO)
+        List<HoaDon> hoaDons = hoaDonRepository.findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(
+                        KENH_BAN_TAI_QUAY,
+                        TRANG_THAI_HOA_DON_CHO_XAC_NHAN
+                )
                 .stream()
+                .toList();
+        Map<Integer, VanChuyen> vanChuyenMap = vanChuyenRepository.findByHoaDonIdIn(
+                hoaDons.stream().map(HoaDon::getId).toList()
+        ).stream().collect(HashMap::new, (map, vanChuyen) -> map.put(vanChuyen.getHoaDon().getId(), vanChuyen), HashMap::putAll);
+
+        return hoaDons.stream()
                 .map(hoaDon -> {
                     List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
                     int tongSanPham = items.stream().mapToInt(HoaDonChiTiet::getSoLuong).sum();
@@ -298,8 +397,9 @@ public class BanHangTaiQuayService {
                             hoaDon.getId(),
                             hoaDon.getMa(),
                             hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getId() : null,
-                            hoaDon.getTenNguoiNhan(),
-                            hoaDon.getSdtNguoiNhan(),
+                            resolveTenKhachHangHoaDon(hoaDon),
+                            resolveSoDienThoaiKhachHangHoaDon(hoaDon),
+                            mapThongTinGiaoHangHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                             tongSanPham,
                             hoaDon.getTongTienHang(),
                             hoaDon.getTienGiam(),
@@ -316,7 +416,7 @@ public class BanHangTaiQuayService {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
-        return mapHoaDonChiTiet(hoaDon, items);
+        return mapHoaDonChiTiet(hoaDon, items, vanChuyenRepository.findByHoaDonId(hoaDonId).orElse(null));
     }
 
     private HoaDon layHoaDonTaiQuayNeuCo(Integer hoaDonId) {
@@ -402,6 +502,7 @@ public class BanHangTaiQuayService {
             String tenKhachHangInput,
             String soDienThoaiInput,
             String maPhieuGiamGia,
+            ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
             List<TaoHoaDonChoItemRequest> items,
             Integer trangThai,
             String ghiChu
@@ -427,17 +528,16 @@ public class BanHangTaiQuayService {
         HoaDon hoaDon = new HoaDon();
         hoaDon.setMa(taoMaHoaDon());
         hoaDon.setKenhBan(KENH_BAN_TAI_QUAY);
-        hoaDon.setTenNguoiNhan(tenKhachHang);
-        hoaDon.setSdtNguoiNhan(soDienThoai);
-        hoaDon.setDiaChiGiaoHang(DIA_CHI_TAI_QUAY);
         hoaDon.setNgayLap(Instant.now());
         hoaDon.setTrangThai(trangThai);
         hoaDon.setTongTienHang(tongTienHang);
         hoaDon.setGhiChu(ghiChu);
         hoaDon.setNgayTao(Instant.now());
         ganPhieuGiamGiaChoHoaDon(hoaDon, maPhieuGiamGia, khachHang, tongTienHang);
+        apDungThongTinGiaoHangChoHoaDon(hoaDon, thongTinGiaoHang, tenKhachHang, soDienThoai);
         hoaDon.setKhachHang(khachHang);
         HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
+        dongBoVanChuyen(savedHoaDon, thongTinGiaoHang);
 
         List<HoaDonChiTiet> chiTietCanLuu = new ArrayList<>();
         for (HoaDonChiTiet item : chiTietTam) {
@@ -476,11 +576,12 @@ public class BanHangTaiQuayService {
 
         ganPhieuGiamGiaChoHoaDon(hoaDon, request.maPhieuGiamGia(), khachHang, hoaDon.getTongTienHang());
         hoaDon.setKhachHang(khachHang);
-        hoaDon.setTenNguoiNhan(tenKhachHang);
-        hoaDon.setSdtNguoiNhan(soDienThoai);
+        apDungThongTinGiaoHangChoHoaDon(hoaDon, request.thongTinGiaoHang(), tenKhachHang, soDienThoai);
         hoaDon.setGhiChu(request.ghiChu());
         hoaDon.setNgayCapNhat(Instant.now());
-        return hoaDonRepository.save(hoaDon);
+        HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
+        dongBoVanChuyen(savedHoaDon, request.thongTinGiaoHang());
+        return savedHoaDon;
     }
 
     private void ganPhieuGiamGiaChoHoaDon(
@@ -669,7 +770,31 @@ public class BanHangTaiQuayService {
     }
 
     private boolean trangThaiHoaDonCho(Integer trangThai) {
-        return trangThai != null && trangThai == TRANG_THAI_HOA_DON_CHO;
+        return trangThai != null && trangThai == TRANG_THAI_HOA_DON_CHO_XAC_NHAN;
+    }
+
+    private void luuLichSuHoaDon(HoaDon hoaDon, Integer trangThai, String ghiChu) {
+        if (hoaDon == null || trangThai == null) {
+            return;
+        }
+
+        LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+        lichSuHoaDon.setHoaDon(hoaDon);
+        lichSuHoaDon.setNhanVien(hoaDon.getNhanVien());
+        lichSuHoaDon.setTrangThai(labelTrangThaiHoaDon(trangThai));
+        lichSuHoaDon.setGhiChu(ghiChu);
+        lichSuHoaDon.setNgayTao(Instant.now());
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+    }
+
+    private String labelTrangThaiHoaDon(Integer trangThai) {
+        return switch (trangThai) {
+            case TRANG_THAI_HOA_DON_CHO_XAC_NHAN -> "Ch\u1edd x\u00e1c nh\u1eadn";
+            case TRANG_THAI_HOA_DON_CHO_GIAO_HANG -> "Ch\u1edd giao h\u00e0ng";
+            case TRANG_THAI_HOA_DON_HOAN_THANH -> "Ho\u00e0n th\u00e0nh";
+            case TRANG_THAI_HOA_DON_HUY -> "H\u1ee7y";
+            default -> "Ch\u1edd x\u00e1c nh\u1eadn";
+        };
     }
 
     private BigDecimal xacDinhTienKhachDua(Integer hinhThuc, BigDecimal tienKhachDua, BigDecimal tongTien) {
@@ -685,6 +810,12 @@ public class BanHangTaiQuayService {
         }
 
         return tienKhachDua == null || tienKhachDua.compareTo(BigDecimal.ZERO) <= 0 ? tongTien : tienKhachDua;
+    }
+
+    private void validateTienKhachDua(BigDecimal tienKhachDua) {
+        if (tienKhachDua != null && tienKhachDua.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("Tien khach dua khong duoc am");
+        }
     }
 
     private BigDecimal tinhTienThua(Integer hinhThuc, BigDecimal tienKhachDua, BigDecimal tongTien) {
@@ -716,13 +847,14 @@ public class BanHangTaiQuayService {
         };
     }
 
-    private HoaDonChoChiTietResponse mapHoaDonChiTiet(HoaDon hoaDon, List<HoaDonChiTiet> items) {
+    private HoaDonChoChiTietResponse mapHoaDonChiTiet(HoaDon hoaDon, List<HoaDonChiTiet> items, VanChuyen vanChuyen) {
         return new HoaDonChoChiTietResponse(
                 hoaDon.getId(),
                 hoaDon.getMa(),
                 hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getId() : null,
-                hoaDon.getTenNguoiNhan(),
-                hoaDon.getSdtNguoiNhan(),
+                resolveTenKhachHangHoaDon(hoaDon),
+                resolveSoDienThoaiKhachHangHoaDon(hoaDon),
+                mapThongTinGiaoHangHoaDon(hoaDon, vanChuyen),
                 hoaDon.getTongTienHang(),
                 hoaDon.getTienGiam(),
                 hoaDon.getTongTienThanhToan(),
@@ -739,6 +871,125 @@ public class BanHangTaiQuayService {
                         ))
                         .toList()
         );
+    }
+
+    private List<HoaDonChiTiet> taoDanhSachDongHoaDonTam(List<TaoHoaDonChoItemRequest> items) {
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException("Hoa don phai co it nhat mot san pham");
+        }
+
+        validateDuplicateItems(items);
+        return items.stream()
+                .map(this::taoDongHoaDonTam)
+                .toList();
+    }
+
+    private HoaDonChiTiet taoDongHoaDonTam(TaoHoaDonChoItemRequest item) {
+        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(item.chiTietId(), item.soLuong());
+        HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
+        hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
+        hoaDonChiTiet.setSoLuong(item.soLuong());
+        hoaDonChiTiet.setGiaDonVi(giayChiTiet.getGiaBan());
+        hoaDonChiTiet.setThanhTien(giayChiTiet.getGiaBan().multiply(BigDecimal.valueOf(item.soLuong().longValue())));
+        hoaDonChiTiet.setTrangThai(1);
+        hoaDonChiTiet.setNgayTao(Instant.now());
+        return hoaDonChiTiet;
+    }
+
+    private Integer xacDinhTrangThaiSauThanhToan(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        return laDonGiaoHang(thongTinGiaoHang)
+                ? TRANG_THAI_HOA_DON_CHO_GIAO_HANG
+                : TRANG_THAI_HOA_DON_HOAN_THANH;
+    }
+
+    private void apDungThongTinGiaoHangChoHoaDon(
+            HoaDon hoaDon,
+            ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
+            String tenMacDinh,
+            String soDienThoaiMacDinh
+    ) {
+        boolean giaoHang = laDonGiaoHang(thongTinGiaoHang);
+        String tenNguoiNhan = resolveGiaTriChuoi(
+                giaoHang && thongTinGiaoHang != null ? thongTinGiaoHang.tenNguoiNhan() : null,
+                tenMacDinh
+        );
+        String soDienThoaiNguoiNhan = resolveGiaTriChuoi(
+                giaoHang && thongTinGiaoHang != null ? thongTinGiaoHang.soDienThoaiNguoiNhan() : null,
+                soDienThoaiMacDinh
+        );
+
+        if (giaoHang && (soDienThoaiNguoiNhan == null || soDienThoaiNguoiNhan.isBlank() || "Khong co".equalsIgnoreCase(soDienThoaiNguoiNhan))) {
+            throw new BusinessException("Vui long nhap so dien thoai nguoi nhan");
+        }
+
+        String diaChiGiaoHang = giaoHang ? requireDiaChiGiaoHang(thongTinGiaoHang) : DIA_CHI_TAI_QUAY;
+        BigDecimal phiVanChuyen = giaoHang ? resolvePhiVanChuyen(thongTinGiaoHang) : BigDecimal.ZERO;
+
+        hoaDon.setTenNguoiNhan(tenNguoiNhan);
+        hoaDon.setSdtNguoiNhan(soDienThoaiNguoiNhan);
+        hoaDon.setDiaChiGiaoHang(diaChiGiaoHang);
+        hoaDon.setTongTienThanhToan(defaultMoney(hoaDon.getTongTienThanhToan()).add(phiVanChuyen).max(BigDecimal.ZERO));
+    }
+
+    private void dongBoVanChuyen(HoaDon hoaDon, ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).orElse(null);
+
+        if (!laDonGiaoHang(thongTinGiaoHang)) {
+            if (vanChuyen != null) {
+                vanChuyenRepository.delete(vanChuyen);
+            }
+            return;
+        }
+
+        if (vanChuyen == null) {
+            vanChuyen = new VanChuyen();
+            vanChuyen.setHoaDon(hoaDon);
+            vanChuyen.setTrangThai(TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
+            vanChuyen.setNgayTao(Instant.now());
+        }
+
+        vanChuyen.setDonViVanChuyen(resolveDonViVanChuyen(thongTinGiaoHang));
+        vanChuyen.setPhiVanChuyen(resolvePhiVanChuyen(thongTinGiaoHang));
+        vanChuyen.setNgayCapNhat(Instant.now());
+        if (vanChuyen.getTrangThai() == null) {
+            vanChuyen.setTrangThai(TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
+        }
+        vanChuyenRepository.save(vanChuyen);
+    }
+
+    private boolean laDonGiaoHang(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        return thongTinGiaoHang != null && Boolean.TRUE.equals(thongTinGiaoHang.giaoHang());
+    }
+
+    private String requireDiaChiGiaoHang(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        String diaChi = thongTinGiaoHang != null ? thongTinGiaoHang.diaChiGiaoHang() : null;
+        if (diaChi == null || diaChi.isBlank()) {
+            throw new BusinessException("Vui long nhap dia chi giao hang");
+        }
+        return diaChi.trim();
+    }
+
+    private BigDecimal resolvePhiVanChuyen(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        BigDecimal phiVanChuyen = defaultMoney(thongTinGiaoHang != null ? thongTinGiaoHang.phiVanChuyen() : null);
+        if (phiVanChuyen.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("Phi van chuyen khong hop le");
+        }
+        return phiVanChuyen;
+    }
+
+    private String resolveDonViVanChuyen(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        String donViVanChuyen = thongTinGiaoHang != null ? thongTinGiaoHang.donViVanChuyen() : null;
+        if (donViVanChuyen == null || donViVanChuyen.isBlank()) {
+            return "GHN";
+        }
+        return donViVanChuyen.trim();
+    }
+
+    private String resolveGiaTriChuoi(String value, String fallback) {
+        if (value != null && !value.isBlank()) {
+            return value.trim();
+        }
+        return fallback;
     }
 
     private ThongTinPhieuGiamGiaHoaDonResponse mapThongTinPhieuGiamGiaHoaDon(HoaDon hoaDon) {
@@ -794,6 +1045,36 @@ public class BanHangTaiQuayService {
             return soDienThoai.trim();
         }
         return "Khong co";
+    }
+
+    private String resolveTenKhachHangHoaDon(HoaDon hoaDon) {
+        if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getHoTen() != null && !hoaDon.getKhachHang().getHoTen().isBlank()) {
+            return hoaDon.getKhachHang().getHoTen();
+        }
+        return hoaDon.getTenNguoiNhan();
+    }
+
+    private String resolveSoDienThoaiKhachHangHoaDon(HoaDon hoaDon) {
+        if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getSdt() != null && !hoaDon.getKhachHang().getSdt().isBlank()) {
+            return hoaDon.getKhachHang().getSdt();
+        }
+        return hoaDon.getSdtNguoiNhan();
+    }
+
+    private ThongTinGiaoHangTaiQuayResponse mapThongTinGiaoHangHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
+        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null && !DIA_CHI_TAI_QUAY.equalsIgnoreCase(hoaDon.getDiaChiGiaoHang());
+        return new ThongTinGiaoHangTaiQuayResponse(
+                giaoHang,
+                hoaDon.getTenNguoiNhan(),
+                hoaDon.getSdtNguoiNhan(),
+                giaoHang ? hoaDon.getDiaChiGiaoHang() : "",
+                vanChuyen != null ? defaultMoney(vanChuyen.getPhiVanChuyen()) : BigDecimal.ZERO,
+                vanChuyen != null ? vanChuyen.getDonViVanChuyen() : null
+        );
+    }
+
+    private BigDecimal defaultMoney(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     private String taoMaHoaDon() {

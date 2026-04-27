@@ -1,4 +1,15 @@
+import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
+
+function firstFieldError(errors) {
+  if (!errors || typeof errors !== "object" || Array.isArray(errors)) {
+    return "";
+  }
+
+  return Object.values(errors).find((value) => typeof value === "string" && value.trim())?.trim() ?? "";
+}
+
 async function request(path, init) {
   let response;
   try {
@@ -10,7 +21,7 @@ async function request(path, init) {
       ...init
     });
   } catch {
-    throw new Error(`Khong the ket noi den may chu ${API_BASE_URL}`);
+    throw new Error("Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.");
   }
 
   const text = await response.text();
@@ -24,7 +35,11 @@ async function request(path, init) {
   }
 
   if (!response.ok) {
-    throw new Error(payload?.message || "Khong the ket noi den may chu");
+    throw createRequestError(
+      firstFieldError(payload?.errors) || payload?.message,
+      "Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.",
+      payload?.errors,
+    );
   }
 
   return payload?.data ?? payload;
@@ -61,6 +76,12 @@ function apDungPhieuGiamGiaTaiQuay(payload) {
     body: JSON.stringify(payload)
   });
 }
+function tinhPhiVanChuyenTaiQuay(payload) {
+  return request("/admin/ban-hang-tai-quay/phi-van-chuyen/ghn", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
 function timPhieuGiamGiaTaiQuay(params) {
   const searchParams = new URLSearchParams();
   if (params.keyword?.trim()) {
@@ -93,6 +114,7 @@ export {
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
+  tinhPhiVanChuyenTaiQuay,
   taoHoaDonCho,
   thanhToanTaiQuay,
   timKhachHangTheoSoDienThoai,

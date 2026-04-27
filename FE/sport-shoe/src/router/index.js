@@ -26,11 +26,16 @@ import ChiTietPhieuGiamGiaKhachHang from "../pages/admin/khuyen-mai/ChiTietPhieu
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
 import DeGiay from "../pages/admin/danh-muc/DeGiay.vue";
+import ChatLieuGiay from "../pages/admin/danh-muc/ChatLieuGiay.vue";
 import ThuongHieu from "../pages/admin/danh-muc/ThuongHieu.vue";
 import CongNgheDem from "../pages/admin/danh-muc/CongNgheDem.vue";
 import MauSac from "../pages/admin/danh-muc/MauSac.vue";
 import KichCo from "../pages/admin/danh-muc/KichCo.vue";
 import TrongLuong from "../pages/admin/danh-muc/TrongLuong.vue";
+import Login from "../pages/login/Login.vue";
+import Register from "../pages/register/Register.vue";
+import ForgotPassword from "../pages/login/ForgotPassword.vue";
+
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior(to, from, savedPosition) {
@@ -43,6 +48,21 @@ const router = createRouter({
     return { top: 0, behavior: "smooth" };
   },
   routes: [
+    {
+      path: "/login",
+      name: "login",
+      component: Login
+    },
+    {
+      path: "/register",
+      name: "register",
+      component: Register
+    },
+    {
+      path: "/forgot-password",
+      name: "forgot-password",
+      component: ForgotPassword
+    },
     {
       path: "/",
       component: TrangMacDinh,
@@ -140,6 +160,7 @@ const router = createRouter({
         { path: "loai-giay", name: "admin-loai-giay", component: LoaiGiay },
         { path: "co-giay", name: "admin-co-giay", component: CoGiay },
         { path: "de-giay", name: "admin-de-giay", component: DeGiay },
+        { path: "chat-lieu-giay", name: "admin-chat-lieu-giay", component: ChatLieuGiay },
         { path: "thuong-hieu", name: "admin-thuong-hieu", component: ThuongHieu },
         { path: "cong-nghe-dem", name: "admin-cong-nghe-dem", component: CongNgheDem },
         { path: "mau-sac", name: "admin-mau-sac", component: MauSac },

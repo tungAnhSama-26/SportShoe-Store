@@ -5,11 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/BE.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/BE.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../FE/sport-shoe/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../FE/sport-shoe/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../FE/sport-shoe/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../FE/sport-shoe/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../database/sua_trang_thai_hoa_don.sql" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,10 +15,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -88,6 +84,8 @@
       <workItem from="1775839440462" duration="760000" />
       <workItem from="1775840223355" duration="19000" />
       <workItem from="1775840265730" duration="275000" />
+      <workItem from="1776694343699" duration="489000" />
+      <workItem from="1776777784040" duration="30000" />
     </task>
     <servers />
   </component>
