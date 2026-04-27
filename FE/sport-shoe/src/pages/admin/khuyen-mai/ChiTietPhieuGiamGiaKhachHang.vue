@@ -302,72 +302,39 @@ onMounted(taiDuLieu);
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div class="min-w-0 space-y-2">
-          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
-          <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="space-y-2">
+          <label class="text-[13px] font-semibold text-slate-700">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
+          <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">-- Chọn một phiếu --</option>
             <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
           </select>
           <p v-if="formErrors.phieuGiamGiaId" class="text-xs text-rose-500 mt-1">{{ formErrors.phieuGiamGiaId }}</p>
         </div>
 
-        <div class="space-y-3 md:col-span-2">
-          <label class="flex flex-col gap-2 text-[13px] font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>Chọn khách hàng mục tiêu <span class="text-rose-500">*</span></span>
-            <span v-if="laMoi" class="text-[12px] text-blue-500 cursor-pointer hover:underline whitespace-nowrap" @click="chonTatCa">
-              {{ dsEmailChon.length === danhSachKh.length && danhSachKh.length > 0 ? 'Bỏ chọn tất cả' : 'Chọn tất cả bản ghi hiện tại' }}
-            </span>
-          </label>
-          
-          <template v-if="laMoi">
-            <!-- Thanh tìm kiếm khách hàng -->
-            <div class="relative mb-3">
-              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input 
-                v-model="searchKh" 
-                type="text" 
-                placeholder="Tìm theo tên hoặc số điện thoại khách hàng..."
-                @input="handleSearch"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:bg-white" 
-              />
-            </div>
-
-            <!-- Danh sách khách hàng có Checkbox -->
-            <div class="max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-2 space-y-1">
-              <div v-for="kh in danhSachKh" :key="kh.id" 
-                   @click="toggleEmail(kh.email)"
-                   class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition"
-                   :class="dsEmailChon.includes(kh.email) ? 'bg-blue-50 text-blue-700' : 'hover:bg-white text-slate-600'">
-                <div class="flex-shrink-0">
-                  <CheckSquare v-if="dsEmailChon.includes(kh.email)" class="h-5 w-5 text-blue-600" />
-                  <Square v-else class="h-5 w-5 text-slate-300" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-sm truncate">{{ kh.hoTen }}</div>
-                  <div class="truncate text-[12px] opacity-70">SĐT: {{ kh.sdt || 'N/A' }} | Email: {{ kh.email }}</div>
-                </div>
-              </div>
-              <div v-if="!danhSachKh.length" class="py-10 text-center text-sm text-slate-400">Không tìm thấy khách hàng nào.</div>
-            </div>
-            <div class="text-[12px] font-medium text-slate-400">Đã chọn: <span class="text-blue-600">{{ dsEmailChon.length }}</span> khách hàng.</div>
-          </template>
-          
-          <template v-else>
-             <input v-model="form.email" disabled class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm outline-none" />
-          </template>
-
+        <div class="space-y-2">
+          <label class="text-[13px] font-semibold text-slate-500">Email Khách hàng <span class="text-rose-500">*</span></label>
+          <input 
+            v-model="form.email" 
+            type="email" 
+            list="email-suggestions" 
+            placeholder="Ví dụ: customer@example.com"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" 
+          />
+          <datalist id="email-suggestions">
+            <option v-for="em in emailOptions" :key="em" :value="em"></option>
+          </datalist>
           <p v-if="formErrors.email" class="text-xs text-rose-500 mt-1">{{ formErrors.email }}</p>
         </div>
 
-        <div class="min-w-0 space-y-2">
-          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Ngày sử dụng</label>
-          <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+        <div class="space-y-2">
+          <label class="text-[13px] font-semibold text-slate-500">Ngày sử dụng</label>
+          <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
         </div>
 
-        <div class="min-w-0 space-y-2">
-          <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+        <div class="space-y-2">
+          <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
+          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>
           </select>
