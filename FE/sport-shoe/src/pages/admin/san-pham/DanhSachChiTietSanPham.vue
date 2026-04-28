@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, X } from 'lucide-vue-next'
+import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
@@ -499,13 +499,14 @@ onUnmounted(() => {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[1020px] w-full border-separate border-spacing-y-2 text-sm">
+        <table class="min-w-[1180px] w-full border-separate border-spacing-y-2 text-sm">
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3 whitespace-nowrap">STT</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã SP</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã CTSP</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Ảnh</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Tên sản phẩm</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Màu sắc</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Kích cỡ</th>
               <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Loại giày</th>
@@ -518,10 +519,10 @@ onUnmounted(() => {
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="12" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="13" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!items.length">
-              <td colspan="12" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
+              <td colspan="13" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
             </tr>
             <tr
               v-for="(item, index) in items"

@@ -89,6 +89,31 @@ const generatedVariantFieldErrors = computed(() =>
   ),
 );
 
+function resolveColorGroupKey(item) {
+  return Number(item?.mauSacId || 0) || item?.mauSac || item?.key;
+}
+
+const generatedVariantGroups = computed(() => {
+  const groupedVariants = new Map();
+
+  props.generatedVariants.forEach((item) => {
+    const colorKey = resolveColorGroupKey(item);
+
+    if (!groupedVariants.has(colorKey)) {
+      groupedVariants.set(colorKey, {
+        key: colorKey,
+        mauSacId: item.mauSacId,
+        mauSac: item.mauSac || "Màu chưa đặt tên",
+        variants: [],
+      });
+    }
+
+    groupedVariants.get(colorKey).variants.push(item);
+  });
+
+  return Array.from(groupedVariants.values());
+});
+
 const hasDefaultFieldErrors = computed(() =>
   Object.values(defaultFieldErrors.value).some(Boolean),
 );
@@ -261,95 +286,118 @@ async function handleSaveClick() {
       </div>
     </div>
 
-    <div v-if="generatedVariants.length" class="overflow-x-auto">
-      <table class="min-w-full border-separate border-spacing-y-2 text-sm">
-        <thead>
-          <tr class="text-left text-sm font-bold text-slate-500">
-            <th class="rounded-l-2xl bg-slate-100 px-4 py-3">Màu sắc</th>
-            <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
-            <th class="bg-slate-100 px-4 py-3">Số lượng</th>
-            <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
-            <th class="bg-slate-100 px-4 py-3">Giá bán</th>
-            <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-right">
-              Xóa
-            </th>
-          </tr>
-        </thead>
+    <div v-if="generatedVariantGroups.length" class="space-y-4">
+      <section
+        v-for="group in generatedVariantGroups"
+        :key="`generated-group-${group.key}`"
+        class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4"
+      >
+        <div
+          class="mb-4 flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <h3 class="text-lg font-black text-slate-900">
+              Màu {{ group.mauSac }}
+            </h3>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ group.variants.length }} biến thể kích cỡ trong nhóm màu này.
+            </p>
+          </div>
 
-        <tbody>
-          <tr
-            v-for="item in generatedVariants"
-            :key="item.key"
-            class="bg-white shadow-sm"
+          <span
+            class="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm"
           >
-            <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-800">
-              {{ item.mauSac }}
-            </td>
-            <td class="px-4 py-4 font-semibold text-slate-700">
-              Size {{ item.kichCo }}
-            </td>
-            <td class="px-4 py-4">
-              <AdminFormattedNumberInput
-                v-model="item.soLuong"
-                :min="0"
-                class="h-10 w-28 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                :class="
-                  fieldErrorClass(generatedVariantFieldErrors[item.key]?.soLuong)
-                "
-              />
-              <p
-                v-if="generatedVariantFieldErrors[item.key]?.soLuong"
-                class="mt-1 text-xs text-rose-500"
+            {{ group.variants.map((item) => `Size ${item.kichCo}`).join(" • ") }}
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full border-separate border-spacing-y-2 text-sm">
+            <thead>
+              <tr class="text-left text-sm font-bold text-slate-500">
+                <th class="rounded-l-2xl bg-slate-100 px-4 py-3">Kích cỡ</th>
+                <th class="bg-slate-100 px-4 py-3">Số lượng</th>
+                <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
+                <th class="bg-slate-100 px-4 py-3">Giá bán</th>
+                <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-right">
+                  Xóa
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr
+                v-for="item in group.variants"
+                :key="item.key"
+                class="bg-white shadow-sm"
               >
-                {{ generatedVariantFieldErrors[item.key].soLuong }}
-              </p>
-            </td>
-            <td class="px-4 py-4">
-              <AdminFormattedNumberInput
-                v-model="item.giaGoc"
-                :min="0"
-                class="h-10 w-36 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                :class="
-                  fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaGoc)
-                "
-              />
-              <p
-                v-if="generatedVariantFieldErrors[item.key]?.giaGoc"
-                class="mt-1 text-xs text-rose-500"
-              >
-                {{ generatedVariantFieldErrors[item.key].giaGoc }}
-              </p>
-            </td>
-            <td class="px-4 py-4">
-              <AdminFormattedNumberInput
-                v-model="item.giaBan"
-                :min="0"
-                class="h-10 w-36 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                :class="
-                  fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaBan)
-                "
-              />
-              <p
-                v-if="generatedVariantFieldErrors[item.key]?.giaBan"
-                class="mt-1 text-xs text-rose-500"
-              >
-                {{ generatedVariantFieldErrors[item.key].giaBan }}
-              </p>
-            </td>
-            <td class="rounded-r-2xl px-4 py-4">
-              <div class="flex justify-end">
-                <button
-                  type="button"
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition hover:bg-rose-100"
-                  @click="emit('remove-generated-variant', item.key)"
-                >
-                  <Trash2 :size="15" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-700">
+                  Size {{ item.kichCo }}
+                </td>
+                <td class="px-4 py-4">
+                  <AdminFormattedNumberInput
+                    v-model="item.soLuong"
+                    :min="0"
+                    class="h-10 w-28 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    :class="
+                      fieldErrorClass(generatedVariantFieldErrors[item.key]?.soLuong)
+                    "
+                  />
+                  <p
+                    v-if="generatedVariantFieldErrors[item.key]?.soLuong"
+                    class="mt-1 text-xs text-rose-500"
+                  >
+                    {{ generatedVariantFieldErrors[item.key].soLuong }}
+                  </p>
+                </td>
+                <td class="px-4 py-4">
+                  <AdminFormattedNumberInput
+                    v-model="item.giaGoc"
+                    :min="0"
+                    class="h-10 w-36 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    :class="
+                      fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaGoc)
+                    "
+                  />
+                  <p
+                    v-if="generatedVariantFieldErrors[item.key]?.giaGoc"
+                    class="mt-1 text-xs text-rose-500"
+                  >
+                    {{ generatedVariantFieldErrors[item.key].giaGoc }}
+                  </p>
+                </td>
+                <td class="px-4 py-4">
+                  <AdminFormattedNumberInput
+                    v-model="item.giaBan"
+                    :min="0"
+                    class="h-10 w-36 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    :class="
+                      fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaBan)
+                    "
+                  />
+                  <p
+                    v-if="generatedVariantFieldErrors[item.key]?.giaBan"
+                    class="mt-1 text-xs text-rose-500"
+                  >
+                    {{ generatedVariantFieldErrors[item.key].giaBan }}
+                  </p>
+                </td>
+                <td class="rounded-r-2xl px-4 py-4">
+                  <div class="flex justify-end">
+                    <button
+                      type="button"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition hover:bg-rose-100"
+                      @click="emit('remove-generated-variant', item.key)"
+                    >
+                      <Trash2 :size="15" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <div

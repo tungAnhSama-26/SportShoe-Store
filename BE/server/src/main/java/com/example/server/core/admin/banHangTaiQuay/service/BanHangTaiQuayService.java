@@ -72,6 +72,7 @@ public class BanHangTaiQuayService {
     private static final int TRANG_THAI_PHIEU_THEO_KH_DA_DUNG = 0;
     private static final int TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG = 1;
     private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
+    private static final String MA_HOA_DON_TAM_PREFIX = "HD";
 
     private final KhachHangRepository khachHangRepository;
     private final GiayChiTietRepository giayChiTietRepository;
@@ -526,17 +527,19 @@ public class BanHangTaiQuayService {
         String soDienThoai = laySoDienThoai(khachHang, soDienThoaiInput);
 
         HoaDon hoaDon = new HoaDon();
-        hoaDon.setMa(taoMaHoaDon());
         hoaDon.setKenhBan(KENH_BAN_TAI_QUAY);
         hoaDon.setNgayLap(Instant.now());
         hoaDon.setTrangThai(trangThai);
         hoaDon.setTongTienHang(tongTienHang);
         hoaDon.setGhiChu(ghiChu);
         hoaDon.setNgayTao(Instant.now());
+        hoaDon.setMa(taoMaHoaDonTam());
         ganPhieuGiamGiaChoHoaDon(hoaDon, maPhieuGiamGia, khachHang, tongTienHang);
         apDungThongTinGiaoHangChoHoaDon(hoaDon, thongTinGiaoHang, tenKhachHang, soDienThoai);
         hoaDon.setKhachHang(khachHang);
         HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
+        savedHoaDon.setMa(taoMaHoaDon(savedHoaDon.getId()));
+        savedHoaDon = hoaDonRepository.save(savedHoaDon);
         dongBoVanChuyen(savedHoaDon, thongTinGiaoHang);
 
         List<HoaDonChiTiet> chiTietCanLuu = new ArrayList<>();
@@ -1077,8 +1080,12 @@ public class BanHangTaiQuayService {
         return value == null ? BigDecimal.ZERO : value;
     }
 
-    private String taoMaHoaDon() {
-        return "HDCHO-" + System.currentTimeMillis();
+    private String taoMaHoaDonTam() {
+        return MA_HOA_DON_TAM_PREFIX + System.currentTimeMillis();
+    }
+
+    private String taoMaHoaDon(Integer hoaDonId) {
+        return String.format("%s%06d", MA_HOA_DON_TAM_PREFIX, hoaDonId);
     }
 
     private String chuanHoaTuKhoa(String value) {

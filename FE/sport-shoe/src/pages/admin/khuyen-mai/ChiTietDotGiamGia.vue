@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, reactive, ref, computed } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Tag, RefreshCcw, Search, CheckSquare, X, ArrowUpRight, Square } from "lucide-vue-next";
+import { ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X } from "lucide-vue-next";
 import {
   createDotGiamGia,
   getDotGiamGiaDetail,
@@ -144,11 +144,20 @@ function removeSelectedVariant(variantId) {
 }
 
 function moChiTietSanPham(giayId, variantId) {
-  router.push({ name: 'admin-san-pham-chi-tiet', params: { id: giayId }, query: { variantId } });
+  router.push({
+    name: 'admin-bien-the-san-pham',
+    query: {
+      giayId: String(giayId),
+      chiTietId: String(variantId)
+    }
+  });
 }
 
 async function taiChiTiet() {
   if (laMoi) {
+    if (!form.ma) {
+      taoMaNgauNhien();
+    }
     taiDanhSachSP();
     return;
   }
@@ -308,11 +317,10 @@ onMounted(taiChiTiet);
           <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
             {{ laMoi ? "Thêm đợt giảm giá mới" : "Chi tiết đợt giảm giá" }}
           </h1>
-          <p class="text-sm text-slate-400">{{ laMoi ? "Điền thông tin đợt giảm giá mới vào form bên dưới." : `Mã: ${form.ma || '...'}` }}</p>
         </div>
         <div v-if="Number(form.giaTriGiam) > 0" class="flex items-center gap-2 rounded-2xl bg-rose-500 px-4 py-2 text-white shadow-sm animate-in zoom-in duration-300">
           <Tag class="h-5 w-5 fill-white/20" />
-          <span class="text-lg font-black tracking-tight">{{ form.giaTriGiam }}% OFF</span>
+          <span class="text-base font-semibold tracking-tight">Giảm {{ form.giaTriGiam }}%</span>
         </div>
       </div>
     </section>
@@ -331,7 +339,6 @@ onMounted(taiChiTiet);
             </div>
             <div>
               <h2 class="text-base font-bold text-slate-800">Thông tin đợt giảm</h2>
-              <p class="text-sm text-slate-400">Cấu hình chương trình.</p>
             </div>
           </div>
 
@@ -339,7 +346,7 @@ onMounted(taiChiTiet);
             <div class="space-y-2">
               <label class="text-[13px] font-semibold text-slate-500">Mã đợt <span class="text-rose-500">*</span></label>
               <div class="relative">
-                <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: SUMMER2024" />
+                <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: SUMMER2024" />
                 <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors">
                   <RefreshCcw class="h-4 w-4" />
                 </button>
@@ -349,7 +356,7 @@ onMounted(taiChiTiet);
 
             <div class="space-y-2">
               <label class="text-[13px] font-semibold text-slate-500">Tên đợt <span class="text-rose-500">*</span></label>
-              <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Siêu giảm giá mùa hè" />
+              <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Siêu giảm giá mùa hè" />
               <p v-if="formErrors.ten" class="text-xs text-rose-500 mt-1">{{ formErrors.ten }}</p>
             </div>
 
@@ -357,7 +364,7 @@ onMounted(taiChiTiet);
               <div class="space-y-2">
                 <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm (%) <span class="text-rose-500">*</span></label>
                 <div class="relative">
-                  <input v-model="form.giaTriGiam" type="number" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" placeholder="0" />
+                  <input v-model="form.giaTriGiam" type="number" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="0" />
                   <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
                 </div>
                 <p v-if="formErrors.giaTriGiam" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTriGiam }}</p>
@@ -371,14 +378,14 @@ onMounted(taiChiTiet);
                 <p v-if="formErrors.ngayBatDau" class="text-xs text-rose-500 mt-1">{{ formErrors.ngayBatDau }}</p>
               </div>
               <div class="space-y-2">
-                <label class="text-[13px] font-semibold text-slate-700">Đến ngày <span class="text-rose-500">*</span></label>
+                <label class="text-[13px] font-semibold text-slate-500">Đến ngày <span class="text-rose-500">*</span></label>
                 <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
                 <p v-if="formErrors.ngayKetThuc" class="text-xs text-rose-500 mt-1">{{ formErrors.ngayKetThuc }}</p>
               </div>
             </div>
 
             <div v-if="!laMoi" class="space-y-2">
-              <label class="text-[13px] font-semibold text-slate-700">Trạng thái <span class="text-rose-500">*</span></label>
+              <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
               <select v-model="form.kichHoat" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
                 <option value="1">Kích hoạt</option>
                 <option value="0">Tắt</option>
@@ -387,7 +394,7 @@ onMounted(taiChiTiet);
 
             <div class="space-y-2">
               <label class="text-[13px] font-semibold text-slate-500">Mô tả</label>
-              <textarea v-model="form.moTa" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Nhập mô tả..."></textarea>
+              <textarea v-model="form.moTa" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Nhập mô tả..."></textarea>
             </div>
           </div>
 
@@ -396,7 +403,7 @@ onMounted(taiChiTiet);
               <Save class="h-4 w-4" />
               {{ saving ? "Đang lưu..." : (laMoi ? "Tạo đợt giảm giá" : "Lưu thay đổi") }}
             </button>
-            <button @click="router.push({ name: 'admin-dot-giam-gia' })" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 uppercase">Hủy</button>
+            <button @click="router.push({ name: 'admin-dot-giam-gia' })" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
           </div>
         </section>
       </div>
@@ -411,7 +418,6 @@ onMounted(taiChiTiet);
               </div>
               <div>
                 <h2 class="text-base font-bold text-slate-800">Chọn sản phẩm áp dụng</h2>
-                <p class="text-sm text-slate-400">Tìm kiếm và chọn các biến thể sản phẩm.</p>
               </div>
             </div>
           </div>
@@ -419,7 +425,7 @@ onMounted(taiChiTiet);
           <div class="mb-4 flex gap-3">
             <div class="relative flex-1">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input v-model="searchSP" @keyup.enter="taiDanhSachSP" type="text" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+              <input v-model="searchSP" @keyup.enter="taiDanhSachSP" type="text" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" />
             </div>
             <button @click="taiDanhSachSP" class="h-11 px-6 rounded-2xl bg-slate-800 text-white text-sm font-bold hover:bg-slate-900 transition">Tìm kiếm</button>
           </div>
@@ -447,7 +453,7 @@ onMounted(taiChiTiet);
                         <Square v-else class="h-5 w-5 text-slate-300" />
                       </button>
                       <div class="text-[13px] font-medium text-slate-700">
-                        Màu: {{ bt.mauSac }} | Size: {{ bt.kichCo }}
+                        Màu: {{ bt.mauSac }} | Kích cỡ: {{ bt.kichCo }}
                       </div>
                     </div>
                     <div class="text-right">
@@ -470,7 +476,6 @@ onMounted(taiChiTiet);
               </div>
               <div>
                 <h2 class="text-base font-bold text-slate-800">Sản phẩm đã chọn ({{ selectedVariants.length }})</h2>
-                <p class="text-sm text-slate-400">Các biến thể sẽ được áp dụng đợt giảm giá này.</p>
               </div>
             </div>
           </div>
@@ -478,7 +483,7 @@ onMounted(taiChiTiet);
           <div class="overflow-x-auto">
             <table class="w-full text-sm text-left border-separate border-spacing-y-2">
               <thead>
-                <tr class="text-slate-500 font-bold text-[11px] uppercase tracking-wider bg-slate-50 rounded-xl">
+                <tr class="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 rounded-xl">
                   <th class="px-4 py-3 first:rounded-l-xl">Ảnh</th>
                   <th class="px-4 py-3">Tên sản phẩm / SKU</th>
                   <th class="px-4 py-3">Giá bán</th>
@@ -508,7 +513,7 @@ onMounted(taiChiTiet);
                     <div v-else>{{ formatCurrency(v.giaBan) }}</div>
                   </td>
                   <td class="px-4 py-3">
-                    <span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-600">Màu: {{ v.mauSac }} | Size: {{ v.kichCo }}</span>
+                    <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">Màu: {{ v.mauSac }} | Kích cỡ: {{ v.kichCo }}</span>
                   </td>
                   <td class="px-4 py-3 last:rounded-r-2xl text-center">
                     <div class="flex items-center justify-center gap-2">

@@ -302,7 +302,7 @@ const trongLuongOptions = computed(() =>
                   v-model="productForm.moTa"
                   rows="5"
                   class="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  placeholder="Mô tả ngắn về sản phẩm..."
+                  placeholder="Mô tả sản phẩm"
                 ></textarea>
               </div>
             </section>
