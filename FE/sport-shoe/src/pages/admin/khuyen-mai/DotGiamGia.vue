@@ -2,8 +2,8 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight,
-  CheckCircle2, CircleX, X
+  Edit, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight,
+  CheckCircle2, CircleX, Trash2, X
 } from "lucide-vue-next";
 import {
   deleteDotGiamGia,
@@ -21,6 +21,7 @@ import { getDisplayErrorMessage } from "../../../utils/error-message";
 const router = useRouter();
 const dangTai = ref(false);
 const loiTrang = ref("");
+const activeTab = ref("dot");
 const toast = ref({
   hienThi: false,
   loai: "success",
@@ -59,6 +60,8 @@ function hienThiThongBao(loai, tieuDe, noiDung = "") {
 }
 
 const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" });
+const boLocSp = ref({ keyword: "", trangThai: "" });
+const boLocKh = ref({ keyword: "", trangThai: "" });
 
 const danhSach = ref([]);
 const tongSoTrang = ref(1);
@@ -70,6 +73,10 @@ const danhSachSp = ref([]);
 const tongSoTrangSp = computed(() => Math.ceil(filteredDanhSachSp.value.length / soPhanTuMotTrangSp.value) || 1);
 const soPhanTuMotTrangSp = ref(5);
 const trangHienTaiSp = ref(1);
+const tongSoTrangKh = ref(1);
+const soPhanTuMotTrangKh = ref(5);
+const trangHienTaiKh = ref(1);
+const totalItemsKh = ref(0);
 
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
@@ -105,7 +112,7 @@ const danhSachSpPhanTrang = computed(() => {
 });
 
 function mauTrangThai(trangThai) {
-  return Number(trangThai) === 1 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600";
+  return Number(trangThai) === 1 ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-700";
 }
 
 function statusText(value) {
@@ -391,14 +398,14 @@ onMounted(taiDanhSach);
             <tr v-else-if="!danhSach.length">
               <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
             </tr>
-            <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-rose-200">
+            <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
               <td class="px-4 py-3 font-bold text-slate-900 tracking-tight">{{ item.ma }}</td>
               <td class="px-4 py-3">
                 <div class="font-bold text-slate-900">{{ item.ten }}</div>
                 <div class="font-normal text-xs text-slate-500 mt-0.5 max-w-[200px] truncate">{{ item.moTa || '—' }}</div>
               </td>
-              <td class="px-4 py-3 font-bold text-rose-500">
+              <td class="px-4 py-3 font-bold text-slate-800">
                 {{ item.giaTriGiam }}{{ Number(item.loaiGiam) === 1 ? '%' : ' đ' }}
               </td>
               <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
@@ -417,10 +424,10 @@ onMounted(taiDanhSach);
                     :intent="Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'"
                     @toggle="nhanhDoiTrangThai(item)"
                   />
-                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500" title="Xem chi tiết">
+                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xem chi tiết">
                     <Eye class="h-5 w-5" />
                   </button>
-                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-600" title="Xóa">
+                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xóa">
                     <Trash2 class="h-4 w-4" />
                   </button>
                 </div>
@@ -448,7 +455,7 @@ onMounted(taiDanhSach);
             <tr v-else-if="!danhSachSpPhanTrang.length">
               <td colspan="6" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
             </tr>
-            <tr v-for="(item, index) in danhSachSpPhanTrang" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 transition hover:ring-rose-200">
+            <tr v-for="(item, index) in danhSachSpPhanTrang" :key="item.id" class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTaiSp - 1) * soPhanTuMotTrangSp + index + 1 }}</td>
               <td class="px-4 py-3 font-bold text-slate-900">{{ item.tenDotGiamGia }}</td>
               <td class="px-4 py-3 font-medium text-slate-700">{{ item.tenGiay }}</td>
@@ -467,10 +474,10 @@ onMounted(taiDanhSach);
                     :intent="Number(item.trangThai) === 1 ? 'deactivate' : 'activate'"
                     @toggle="nhanhDoiTrangThaiSp(item)"
                   />
-                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500" title="Sửa">
+                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Sửa">
                     <Edit class="h-4 w-4" />
                   </button>
-                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-600" title="Xóa">
+                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xóa">
                     <Trash2 class="h-4 w-4" />
                   </button>
                 </div>

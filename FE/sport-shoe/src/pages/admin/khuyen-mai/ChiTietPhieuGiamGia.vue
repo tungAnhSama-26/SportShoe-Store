@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Ticket, RefreshCcw, Search, Users, CheckSquare } from "lucide-vue-next";
+import { ArrowLeft, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Ticket, Users, X } from "lucide-vue-next";
 import {
   createPhieuGiamGia,
   getPhieuGiamGiaDetail,
@@ -105,15 +105,10 @@ function taoMaNgauNhien() {
   form.ma = "VCH" + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-function formatVnd(value) {
-    if (!value) return "0";
-    return String(value).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function handleVndInput(field, event) {
-    const val = event.target.value.replace(/\D/g, "");
-    form[field] = val;
-    event.target.value = formatVnd(val);
+function dongBoSoLuongPhieuCaNhan() {
+  if (form.loaiPhieu === "2") {
+    form.soLuong = String(dsEmailChon.value.length);
+  }
 }
 
 async function taiDanhSachKh() {
@@ -149,8 +144,21 @@ function handleSearch() {
     searchTimer = setTimeout(taiDanhSachKh, 500);
 }
 
+watch(() => form.loaiPhieu, (loaiPhieuMoi) => {
+  if (loaiPhieuMoi === "2") {
+    dongBoSoLuongPhieuCaNhan();
+  }
+});
+
+watch(dsEmailChon, () => {
+  dongBoSoLuongPhieuCaNhan();
+}, { deep: true });
+
 async function taiChiTiet() {
   if (laMoi) {
+    if (!form.ma) {
+      taoMaNgauNhien();
+    }
     taiDanhSachKh();
     return;
   }
@@ -321,7 +329,6 @@ onMounted(taiChiTiet);
         <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
           {{ laMoi ? "Thêm phiếu giảm giá mới" : "Chi tiết phiếu giảm giá" }}
         </h1>
-        <p class="text-sm text-slate-400">{{ laMoi ? "Điền thông tin phiếu giảm giá mới vào form bên dưới." : `Mã: ${form.ma || '...'}` }}</p>
       </div>
     </section>
 
@@ -334,7 +341,6 @@ onMounted(taiChiTiet);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Thông tin phiếu</h2>
-          <p class="text-sm text-slate-400">Thiết lập các thông số giảm giá và thời gian áp dụng.</p>
         </div>
       </div>
 
@@ -342,7 +348,7 @@ onMounted(taiChiTiet);
         <div class="min-w-0 space-y-2">
           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Mã phiếu <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
+          <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
             <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors">
               <RefreshCcw class="h-4 w-4" />
             </button>
@@ -352,7 +358,7 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Tên phiếu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Giảm giá hè 2024" />
+          <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Giảm giá hè 2024" />
           <p v-if="formErrors.ten" class="text-xs text-rose-500 mt-1">{{ formErrors.ten }}</p>
         </div>
 
@@ -385,9 +391,9 @@ onMounted(taiChiTiet);
         </div>
 
         <div class="min-w-0 space-y-2">
-           <label class="block text-[13px] font-semibold text-slate-700 whitespace-nowrap">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
+           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
            <div class="relative">
-             <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
+             <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[11px]">{{ form.loai === '1' ? '%' : 'VNĐ' }}</span>
            </div>
            <p v-if="formErrors.giaTri" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTri }}</p>
@@ -395,17 +401,25 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Giá trị đơn tối thiểu (VNĐ)</label>
-          <input :value="form.giaTriToiThieu" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
+          <input :value="form.giaTriToiThieu" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
         </div>
 
         <div class="min-w-0 space-y-2">
           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Giảm tối đa (VNĐ)</label>
-          <input :value="form.giamToiDa" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
+          <input :value="form.giamToiDa" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
         </div>
 
         <div class="min-w-0 space-y-2">
           <label class="block text-[13px] font-semibold text-slate-500 whitespace-nowrap">Số lượng <span class="text-rose-500">*</span></label>
-          <input v-model="form.soLuong" type="number" min="1" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input
+            v-model="form.soLuong"
+            type="number"
+            min="1"
+            :readonly="form.loaiPhieu === '2'"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+            :class="form.loaiPhieu === '2' ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100' : ''"
+          />
+          <p v-if="form.loaiPhieu === '2'" class="text-xs text-slate-400">Tự động bằng số khách hàng đã chọn.</p>
           <p v-if="formErrors.soLuong" class="text-xs text-rose-500 mt-1">{{ formErrors.soLuong }}</p>
         </div>
 
@@ -442,12 +456,12 @@ onMounted(taiChiTiet);
 
           <div class="relative">
             <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input v-model="searchKh" type="text" placeholder="Tìm theo tên hoặc số điện thoại..." @input="handleSearch" class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300" />
+          <input v-model="searchKh" type="text" placeholder="Tìm theo tên hoặc số điện thoại..." @input="handleSearch" class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300" />
           </div>
 
           <div class="max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm custom-scrollbar">
             <table class="w-full text-left text-sm border-collapse">
-              <thead class="sticky top-0 z-10 bg-slate-50 text-[12px] font-bold text-slate-500 uppercase">
+            <thead class="sticky top-0 z-10 bg-slate-50 text-[12px] font-semibold text-slate-500">
                 <tr>
                   <th class="px-4 py-3 w-12 text-center">#</th>
                   <th class="px-4 py-3">Khách hàng</th>
@@ -466,7 +480,7 @@ onMounted(taiChiTiet);
               </tbody>
             </table>
           </div>
-          <div class="text-xs font-medium text-slate-400">Đã chọn: <span class="text-rose-600 font-bold">{{ dsEmailChon.length }}</span> khách hàng</div>
+          <div class="text-xs font-medium text-slate-400">Đã chọn: <span class="font-bold text-slate-700">{{ dsEmailChon.length }}</span> khách hàng</div>
           <p v-if="formErrors.email" class="text-xs text-rose-500">{{ formErrors.email }}</p>
       </div>
 

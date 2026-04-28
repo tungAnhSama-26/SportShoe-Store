@@ -223,7 +223,6 @@ onMounted(taiDuLieu);
         <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
           {{ laMoi ? "Áp dụng sản phẩm vào đợt" : "Chi tiết liên kết đợt - sản phẩm" }}
         </h1>
-        <p class="text-sm text-slate-400">Gán sản phẩm cụ thể vào chương trình khuyến mãi.</p>
       </div>
     </section>
 
@@ -236,7 +235,6 @@ onMounted(taiDuLieu);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Cấu hình liên kết</h2>
-          <p class="text-sm text-slate-400">Chọn đợt giảm giá và sản phẩm tương ứng.</p>
         </div>
       </div>
 
@@ -258,7 +256,7 @@ onMounted(taiDuLieu);
               v-model="productSearch" 
               type="text" 
               placeholder="Nhập tên hoặc mã sản phẩm..." 
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" 
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" 
             />
           </div>
           <p v-if="formErrors.giayId" class="text-xs text-rose-500 mt-1">{{ formErrors.giayId }}</p>
@@ -281,7 +279,7 @@ onMounted(taiDuLieu);
         </div>
 
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-700">Trạng thái <span class="text-rose-500">*</span></label>
+          <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
           <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>

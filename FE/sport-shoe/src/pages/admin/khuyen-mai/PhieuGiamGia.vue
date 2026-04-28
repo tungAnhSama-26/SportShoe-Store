@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
-  Edit, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2, Eye
+  CheckCircle2, CircleX, Edit, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2
 } from "lucide-vue-next";
 import {
   deletePhieuGiamGia,
@@ -17,9 +17,11 @@ import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusA
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
+const route = useRoute();
 const router = useRouter();
 const dangTai = ref(false);
 const loiTrang = ref("");
+const activeTab = ref(route.query.tab === "khach-hang" ? "khach-hang" : "phieu");
 const toast = ref({
   hienThi: false,
   loai: "success",
@@ -58,11 +60,17 @@ function hienThiThongBao(loai, tieuDe, noiDung = "") {
 }
 
 const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" });
+const boLocKh = ref({ keyword: "", trangThai: "" });
 const danhSach = ref([]);
 const tongSoTrang = ref(1);
 const soPhanTuMotTrang = ref(5);
 const trangHienTai = ref(1);
 const totalItems = ref(0);
+const danhSachKh = ref([]);
+const tongSoTrangKh = ref(1);
+const soPhanTuMotTrangKh = ref(5);
+const trangHienTaiKh = ref(1);
+const totalItemsKh = ref(0);
 
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
@@ -77,7 +85,7 @@ const dsLoai = [
 ];
 
 function mauTrangThai(trangThai) {
-  return Number(trangThai) === 1 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600";
+  return Number(trangThai) === 1 ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-700";
 }
 
 function statusText(value) {
@@ -85,7 +93,7 @@ function statusText(value) {
 }
 
 function mauLoaiGiam(loai) {
-  return Number(loai) === 1 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600";
+  return Number(loai) === 1 ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-700";
 }
 
 function loaiGiamText(loai) {
@@ -93,7 +101,7 @@ function loaiGiamText(loai) {
 }
 
 function mauLoaiPhieu(loaiPhieu) {
-  return Number(loaiPhieu) === 1 ? "bg-indigo-50 text-indigo-600" : "bg-purple-50 text-purple-600";
+  return Number(loaiPhieu) === 1 ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-700";
 }
 
 function loaiPhieuText(loaiPhieu) {
@@ -119,8 +127,27 @@ function formatCurrency(value) {
     return new Intl.NumberFormat("vi-VN").format(value || 0) + " đ";
 }
 
+watch(activeTab, (newTab) => {
+  if (newTab === "phieu") {
+    trangHienTai.value = 1;
+    taiDanhSach();
+    return;
+  }
+  trangHienTaiKh.value = 1;
+  taiDanhSachKh();
+});
+
 watch(soPhanTuMotTrang, () => { trangHienTai.value = 1; taiDanhSach(); });
 watch(trangHienTai, taiDanhSach);
+watch(soPhanTuMotTrangKh, () => { trangHienTaiKh.value = 1; taiDanhSachKh(); });
+watch(trangHienTaiKh, taiDanhSachKh);
+
+watch(() => route.query.tab, (tab) => {
+  const nextTab = tab === "khach-hang" ? "khach-hang" : "phieu";
+  if (activeTab.value !== nextTab) {
+    activeTab.value = nextTab;
+  }
+});
 
 let timer;
 watch(boLoc, () => {
@@ -177,7 +204,11 @@ async function taiDanhSachKh() {
 }
 
 function lamMoiBoLoc() {
-  boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" };
+  if (activeTab.value === "phieu") {
+    boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" };
+    return;
+  }
+  boLocKh.value = { keyword: "", trangThai: "" };
 }
 
 async function nhanhDoiTrangThai(item) {
@@ -206,8 +237,16 @@ function openCreateModal() {
   router.push({ name: "admin-phieu-giam-gia-them" });
 }
 
-async function openEditModal(item) {
-  router.push({ name: "admin-phieu-giam-gia-chi-tiet", params: { id: item.id } });
+function openEditModal(target, itemArg) {
+  const item = typeof target === "string" ? itemArg : target;
+  if (!item?.id) return;
+
+  router.push({
+    name: target === "khach-hang"
+      ? "admin-phieu-giam-gia-khach-hang-chi-tiet"
+      : "admin-phieu-giam-gia-chi-tiet",
+    params: { id: item.id }
+  });
 }
 
 async function removeItem(item) {
@@ -292,7 +331,13 @@ async function xuatExcel() {
 
 
 
-onMounted(taiDanhSach);
+onMounted(() => {
+  if (activeTab.value === "phieu") {
+    taiDanhSach();
+    return;
+  }
+  taiDanhSachKh();
+});
 </script>
 
 <template>
@@ -357,7 +402,7 @@ onMounted(taiDanhSach);
             <button @click="router.push({ name: 'admin-phieu-giam-gia-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
               <Plus class="h-4 w-4" /> Tạo phiếu mới
             </button>
-            <button @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-blue-500 px-5 text-sm font-semibold text-white transition hover:bg-blue-600">
+            <button @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
               <Plus class="h-4 w-4" /> Tặng cho khách hàng
             </button>
         </div>
@@ -366,9 +411,13 @@ onMounted(taiDanhSach);
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center justify-between">
-        <h2 class="text-lg font-bold text-slate-800">Danh sách phiếu giảm giá</h2>
+        <h2 class="text-lg font-bold text-slate-800">
+          {{ activeTab === "phieu" ? "Danh sách phiếu giảm giá" : "Danh sách phiếu khách hàng" }}
+        </h2>
         <div>
-          <p class="text-sm text-slate-400 font-medium">{{ totalItems }} bản ghi hiển thị.</p>
+          <p class="text-sm text-slate-400 font-medium">
+            {{ activeTab === "phieu" ? totalItems : totalItemsKh }} bản ghi hiển thị.
+          </p>
         </div>
       </div>
 
@@ -488,16 +537,16 @@ onMounted(taiDanhSach);
       </div>
 
       <AdminTableFooter
-        :current-page="trangHienTai"
-        :page-size="soPhanTuMotTrang"
+        :current-page="activeTab === 'phieu' ? trangHienTai : trangHienTaiKh"
+        :page-size="activeTab === 'phieu' ? soPhanTuMotTrang : soPhanTuMotTrangKh"
         :page-size-options="[5, 10, 20]"
-        :total-items="totalItems"
-        :total-pages="tongSoTrang"
+        :total-items="activeTab === 'phieu' ? totalItems : totalItemsKh"
+        :total-pages="activeTab === 'phieu' ? tongSoTrang : tongSoTrangKh"
         compact
         show-refresh
-        @refresh="taiDanhSach"
-        @update:current-page="trangHienTai = $event"
-        @update:page-size="soPhanTuMotTrang = $event"
+        @refresh="activeTab === 'phieu' ? taiDanhSach() : taiDanhSachKh()"
+        @update:current-page="activeTab === 'phieu' ? (trangHienTai = $event) : (trangHienTaiKh = $event)"
+        @update:page-size="activeTab === 'phieu' ? (soPhanTuMotTrang = $event) : (soPhanTuMotTrangKh = $event)"
       />
     </section>
   </div>

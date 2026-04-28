@@ -9,11 +9,11 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  ArrowLeft,
   Check,
   CheckCircle2,
   ChevronDown,
   Plus,
+  Save,
   Search,
   X,
 } from "lucide-vue-next";
@@ -55,12 +55,23 @@ const currentProductId = ref(null);
 const createdVariants = ref([]);
 const draftColorImages = ref({});
 const createdImageManagerRefs = ref({});
+const showCreatedImagesModal = ref(false);
+
+const redirectPopup = reactive({
+  show: false,
+  title: "",
+  message: "",
+  giayId: null,
+  chiTietId: null,
+});
 
 const toast = reactive({
   show: false,
   message: "",
   type: "success",
 });
+let toastTimer = null;
+let redirectTimer = null;
 
 const productForm = reactive({
   ten: "",
@@ -770,11 +781,16 @@ async function handleQuickCreateSave() {
 }
 
 function showToast(message, type = "success") {
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+
   toast.message = message;
   toast.type = type;
   toast.show = true;
-  setTimeout(() => {
+  toastTimer = setTimeout(() => {
     toast.show = false;
+    toastTimer = null;
   }, 3000);
 }
 
@@ -1137,6 +1153,72 @@ function updateDraftImagesForColor(mauSacId, nextImages) {
   };
 }
 
+function clearRedirectTimer() {
+  if (!redirectTimer) {
+    return;
+  }
+
+  clearTimeout(redirectTimer);
+  redirectTimer = null;
+}
+
+function navigateToVariantScreen(giayId = currentProductId.value, chiTietId = null) {
+  if (giayId) {
+    const query = { giayId: String(giayId) };
+
+    if (chiTietId) {
+      query.chiTietId = String(chiTietId);
+    }
+
+    router.push({
+      name: "admin-bien-the-san-pham",
+      query,
+    });
+    return;
+  }
+
+  router.push({ name: "admin-san-pham" });
+}
+
+function closeRedirectPopup() {
+  clearRedirectTimer();
+  redirectPopup.show = false;
+}
+
+function scheduleVariantRedirect({
+  giayId = currentProductId.value,
+  chiTietId = null,
+  title = "Lưu ảnh thành công",
+  message = "Đang chuyển sang màn biến thể sản phẩm.",
+} = {}) {
+  clearRedirectTimer();
+  showCreatedImagesModal.value = false;
+  redirectPopup.show = true;
+  redirectPopup.title = title;
+  redirectPopup.message = message;
+  redirectPopup.giayId = giayId;
+  redirectPopup.chiTietId = chiTietId;
+  redirectTimer = setTimeout(() => {
+    closeRedirectPopup();
+    navigateToVariantScreen(giayId, chiTietId);
+  }, 1400);
+}
+
+function handleRedirectNow() {
+  const targetGiayId = redirectPopup.giayId;
+  const targetChiTietId = redirectPopup.chiTietId;
+  closeRedirectPopup();
+  navigateToVariantScreen(targetGiayId, targetChiTietId);
+}
+
+function handleCreatedImageSaved(variant) {
+  scheduleVariantRedirect({
+    giayId: currentProductId.value,
+    chiTietId: variant?.id ?? null,
+    message: "Ảnh chi tiết sản phẩm đã được lưu. Đang chuyển sang màn biến thể sản phẩm.",
+  });
+}
+
 function validateGeneratedVariants() {
   delete variantErrors.generated;
   assignVariantDefaultFieldErrors();
@@ -1283,6 +1365,7 @@ async function loadCurrentProduct() {
     createdVariants.value = [];
     resetProductForm();
     resetVariantBuilder();
+    showCreatedImagesModal.value = false;
     return;
   }
 
@@ -1367,6 +1450,8 @@ async function handleSave() {
     });
 
     if (imageSyncError) {
+      showCreatedImagesModal.value =
+        representativeCreatedVariants.value.length > 0;
       showToast(
         getDisplayErrorMessage(
           imageSyncError,
@@ -1666,13 +1751,13 @@ onBeforeUnmount(() => {
 
             <label class="block md:col-span-2">
               <span class="mb-1 block text-[13px] font-semibold text-slate-500"
-                >Mô tả ngắn</span
+                >Mô tả</span
               >
               <textarea
                 v-model="productForm.moTa"
                 rows="4"
                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                placeholder="Mô tả ngắn cho sản phẩm..."
+                placeholder="Mô tả sản phẩm"
               ></textarea>
             </label>
           </div>

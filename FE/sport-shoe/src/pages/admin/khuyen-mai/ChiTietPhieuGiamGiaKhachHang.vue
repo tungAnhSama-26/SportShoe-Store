@@ -285,7 +285,6 @@ onMounted(taiDuLieu);
         <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
           {{ laMoi ? "Tặng phiếu khách hàng" : "Chi tiết phiếu tặng" }}
         </h1>
-        <p class="text-sm text-slate-400">Gửi phiếu giảm giá cho khách hàng cụ thể.</p>
       </div>
     </section>
 
@@ -298,13 +297,12 @@ onMounted(taiDuLieu);
         </div>
         <div>
           <h2 class="text-base font-bold text-slate-800">Thông tin tặng phiếu</h2>
-          <p class="text-sm text-slate-400">Chọn phiếu và khách hàng mục tiêu.</p>
         </div>
       </div>
 
       <div class="grid gap-6 md:grid-cols-2">
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-700">Chọn Phiếu giảm giá <span class="text-rose-500">*</span></label>
+          <label class="text-[13px] font-semibold text-slate-500">Chọn phiếu giảm giá <span class="text-rose-500">*</span></label>
           <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">-- Chọn một phiếu --</option>
             <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
@@ -313,13 +311,13 @@ onMounted(taiDuLieu);
         </div>
 
         <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Email Khách hàng <span class="text-rose-500">*</span></label>
+          <label class="text-[13px] font-semibold text-slate-500">Email khách hàng <span class="text-rose-500">*</span></label>
           <input 
             v-model="form.email" 
             type="email" 
             list="email-suggestions" 
             placeholder="Ví dụ: customer@example.com"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" 
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" 
           />
           <datalist id="email-suggestions">
             <option v-for="em in emailOptions" :key="em" :value="em"></option>

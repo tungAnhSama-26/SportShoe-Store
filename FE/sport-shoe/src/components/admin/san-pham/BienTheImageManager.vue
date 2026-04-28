@@ -30,7 +30,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['updated', 'error', 'change-draft-images'])
+const emit = defineEmits(['updated', 'error', 'change-draft-images', 'saved'])
 
 const images = ref([])
 const loading = ref(false)
@@ -124,6 +124,16 @@ function isSameImage(left, right) {
   return left?.url === right?.url && String(left?.moTa || '') === String(right?.moTa || '')
 }
 
+function buildSavedPayload() {
+  return {
+    variantId: props.variant?.id ?? persistedTargetVariants.value[0]?.id ?? null,
+    mauSacId: props.variant?.mauSacId ?? null,
+    displayMode: props.displayMode,
+    draft: isDraftMode.value,
+    totalTargets: targetVariants.value.length
+  }
+}
+
 async function loadImages() {
   if (isDraftMode.value || !props.variant?.id) return
 
@@ -180,6 +190,7 @@ async function handleSave() {
 
       updateDraftImages([...displayedImages.value, draftItem])
       closeAddForm()
+      emit('saved', buildSavedPayload())
       emit('updated')
       return true
     }
@@ -200,6 +211,7 @@ async function handleSave() {
 
     closeAddForm()
     await loadImages()
+    emit('saved', buildSavedPayload())
     emit('updated')
     return true
   } catch (error) {
