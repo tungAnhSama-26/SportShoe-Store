@@ -21,7 +21,6 @@ import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
 import ChiTietPhieuGiamGia from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue";
 import ChiTietDotGiamGia from "../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue";
 import ChiTietDotGiamGiaSanPham from "../pages/admin/khuyen-mai/ChiTietDotGiamGiaSanPham.vue";
-import ChiTietPhieuGiamGiaKhachHang from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGiaKhachHang.vue";
 
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
@@ -120,12 +119,12 @@ const router = createRouter({
         {
           path: "phieu-giam-gia-khach-hang/them",
           name: "admin-phieu-giam-gia-khach-hang-them",
-          component: ChiTietPhieuGiamGiaKhachHang
+          redirect: "/admin/phieu-giam-gia"
         },
         {
           path: "phieu-giam-gia-khach-hang/:id",
           name: "admin-phieu-giam-gia-khach-hang-chi-tiet",
-          component: ChiTietPhieuGiamGiaKhachHang
+          redirect: "/admin/phieu-giam-gia"
         },
         {
           path: "hoa-don",
