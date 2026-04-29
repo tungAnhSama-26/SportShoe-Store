@@ -16,12 +16,9 @@ import java.nio.file.Paths;
 @Service
 public class EmailService {
 
-<<<<<<< HEAD
-    private static final String SYSTEM_LOGIN_URL = "http://localhost:3000/login";
-=======
+
     private static final String SYSTEM_LOGIN_URL = "http://localhost:5173/login";
     private static final String CUSTOMER_LOGIN_URL = "http://localhost:3000/login";
->>>>>>> 2db35d8b0bf0af53fc337e5ed4c37d33cdf2f08c
     private static final String LOGO_CONTENT_ID = "sportshoe-logo";
     private static final Path LOGO_PATH = Paths.get(
             "..", "..", "FE", "sport-shoe", "src", "assets", "logo", "delete-background-logo.png"
