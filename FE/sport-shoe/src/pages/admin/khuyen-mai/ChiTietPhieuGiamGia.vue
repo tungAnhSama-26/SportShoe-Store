@@ -105,11 +105,24 @@ function taoMaNgauNhien() {
   form.ma = "VCH" + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+//<<<<<<< Updated upstream
 function dongBoSoLuongPhieuCaNhan() {
   if (form.loaiPhieu === "2") {
     form.soLuong = String(dsEmailChon.value.length);
   }
 }
+//=======
+// function formatVnd(value) {
+//     if (!value) return "0";
+//     return String(value).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+// }
+
+// function handleVndInput(field, event) {
+//     const val = event.target.value.replace(/\D/g, "");
+//     form[field] = val;
+//     event.target.value = formatVnd(val);
+// }
+//>>>>>>> Stashed changes
 
 async function taiDanhSachKh() {
     dangTaiKh.value = true;
