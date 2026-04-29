@@ -23,15 +23,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import com.example.server.infrastructure.service.EmailService;
+
 @Service
 public class KhachHangServiceImpl implements KhachHangService {
 
     private final KhachHangRepository khachHangRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+    private final EmailService emailService;
 
-    public KhachHangServiceImpl(KhachHangRepository khachHangRepository, DiaChiKhachHangRepository diaChiKhachHangRepository) {
+    public KhachHangServiceImpl(KhachHangRepository khachHangRepository, DiaChiKhachHangRepository diaChiKhachHangRepository, EmailService emailService) {
         this.khachHangRepository = khachHangRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -74,7 +78,22 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setTrangThai(1);
         kh.setNgayTao(Instant.now());
 
-        return toKhachHangResponse(khachHangRepository.save(kh));
+        KhachHang saved = khachHangRepository.save(kh);
+
+        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            try {
+                emailService.sendCustomerRegistrationEmail(
+                        saved.getEmail(),
+                        saved.getHoTen(),
+                        saved.getTenDangNhap(),
+                        request.matKhau()
+                );
+            } catch (Exception exception) {
+                System.err.println("Khong the gui email tai khoan khach hang: " + exception.getMessage());
+            }
+        }
+
+        return toKhachHangResponse(saved);
     }
 
     @Override
