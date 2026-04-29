@@ -285,7 +285,7 @@ onUnmounted(() => {
 <template>
   <div class="space-y-5">
     <section>
-      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý sản phẩm</h1>
+      <h1 class="admin-page-title text-[30px]">Quản lý sản phẩm</h1>
     </section>
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
@@ -294,14 +294,14 @@ onUnmounted(() => {
           <Filter class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+          <h2 class="admin-section-title">Bộ lọc</h2>
         </div>
       </div>
 
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <label class="min-w-0 flex-1 space-y-2">
-            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Tìm kiếm</span>
+            <span class="admin-filter-label mb-1">Tìm kiếm</span>
             <div class="relative max-w-3xl">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -332,7 +332,7 @@ onUnmounted(() => {
 
         <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-3">
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Thương hiệu</span>
+            <span class="admin-filter-label mb-1">Thương hiệu</span>
             <select
               v-model.number="filters.thuongHieuId"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
@@ -346,7 +346,7 @@ onUnmounted(() => {
           </label>
 
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Loại giày</span>
+            <span class="admin-filter-label mb-1">Loại giày</span>
             <select
               v-model.number="filters.loaiGiayId"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
@@ -359,7 +359,7 @@ onUnmounted(() => {
             </select>
           </label>
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500">Trạng thái</span>
+            <span class="admin-filter-label mb-1">Trạng thái</span>
             <select
               v-model.number="filters.trangThai"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
@@ -381,7 +381,7 @@ onUnmounted(() => {
           <Package class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Danh sách sản phẩm</h2>
+          <h2 class="admin-section-title">Danh sách sản phẩm</h2>
         </div>
       </div>
 

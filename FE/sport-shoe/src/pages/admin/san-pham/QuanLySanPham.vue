@@ -836,7 +836,7 @@ onMounted(async () => {
     <section class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div class="space-y-2">
         <div>
-          <h1 class="text-[30px] font-bold tracking-tight text-slate-800">{{ pageTitle }}</h1>
+          <h1 class="admin-page-title text-[30px]">{{ pageTitle }}</h1>
           <p class="mt-1 text-sm text-slate-500">{{ pageDescription }}</p>
         </div>
       </div>
@@ -858,7 +858,7 @@ onMounted(async () => {
           <Filter class="h-4 w-4" />
         </div>
         <div>
-          <h2 class="text-sm font-bold text-slate-800">Bộ lọc</h2>
+          <h2 class="admin-section-title text-sm">Bộ lọc</h2>
           <p class="text-xs text-slate-400">Lọc nhanh theo thương hiệu, loại giày và trạng thái.</p>
         </div>
       </div>
@@ -873,7 +873,7 @@ onMounted(async () => {
                 @keyup.enter="doSearch"
                 type="text"
                 :placeholder="searchPlaceholder"
-                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                class="admin-field h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
           </div>
@@ -905,11 +905,11 @@ onMounted(async () => {
 
         <div class="flex flex-wrap items-start gap-3">
           <div class="relative w-full sm:w-[220px] md:w-[240px]" @click.stop>
-            <label class="mb-1 block text-[10px] font-normal uppercase tracking-wide text-slate-500">Thương hiệu</label>
+            <label class="admin-filter-label mb-1">Thương hiệu</label>
             <button
               @click="toggleDropdown('thuongHieu')"
               class="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
-              :class="filterThuongHieu ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
+              :class="filterThuongHieu ? 'border-rose-300 text-slate-600' : 'text-slate-600'"
             >
               <span class="truncate">{{ thuongHieuName(filterThuongHieu) }}</span>
               <ChevronDown :size="14" />
@@ -940,11 +940,11 @@ onMounted(async () => {
           </div>
 
           <div class="relative w-full sm:w-[220px] md:w-[240px]" @click.stop>
-            <label class="mb-1 block text-[10px] font-normal uppercase tracking-wide text-slate-500">Loại giày</label>
+            <label class="admin-filter-label mb-1">Loại giày</label>
             <button
               @click="toggleDropdown('loaiGiay')"
               class="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
-              :class="filterLoaiGiay ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
+              :class="filterLoaiGiay ? 'border-rose-300 text-slate-600' : 'text-slate-600'"
             >
               <span class="truncate">{{ loaiGiayName(filterLoaiGiay) }}</span>
               <ChevronDown :size="14" />
@@ -975,11 +975,11 @@ onMounted(async () => {
           </div>
 
           <div class="relative w-full sm:w-[170px] md:w-[200px]" @click.stop>
-            <label class="mb-1 block text-[10px] font-normal uppercase tracking-wide text-slate-500">Trạng thái</label>
+            <label class="admin-filter-label mb-1">Trạng thái</label>
             <button
               @click="toggleDropdown('trangThai')"
               class="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] transition hover:bg-white"
-              :class="filterTrangThai !== null ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
+              :class="filterTrangThai !== null ? 'border-rose-300 text-slate-600' : 'text-slate-600'"
             >
               <span class="truncate">
                 {{
@@ -1042,7 +1042,7 @@ onMounted(async () => {
           <Layers3 class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Danh sách sản phẩm</h2>
+          <h2 class="admin-section-title">Danh sách sản phẩm</h2>
           <p class="text-xs text-slate-400">Danh sách đã bổ sung thêm thuộc tính kỹ thuật và điểm vào quản lý CTSP.</p>
         </div>
       </div>

@@ -60,14 +60,61 @@
   }
 
   .admin-content h1 {
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.02em;
   }
 
   .admin-content h2,
-  .admin-content h3,
+  .admin-content h3 {
+    font-weight: 500 !important;
+    color: #475569;
+    letter-spacing: -0.01em;
+  }
+
   .admin-content th {
     font-weight: 600;
+  }
+
+  .admin-page-title {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1e293b;
+  }
+
+  .admin-section-title {
+    font-size: 1rem;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    letter-spacing: -0.01em;
+  }
+
+  .admin-filter-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #64748b;
+  }
+
+  .admin-field {
+    font-weight: 400 !important;
+    color: #475569 !important;
+  }
+
+  .admin-field::placeholder {
+    color: #94a3b8;
+  }
+
+  .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+  .admin-content select,
+  .admin-content textarea {
+    font-weight: 400;
+    color: #475569;
+  }
+
+  .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"])::placeholder,
+  .admin-content textarea::placeholder {
+    color: #94a3b8;
   }
 
   .admin-section-card {

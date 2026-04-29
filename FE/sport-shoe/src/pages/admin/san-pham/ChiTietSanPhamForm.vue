@@ -984,6 +984,16 @@ function mauSacLabel(id) {
   );
 }
 
+function mauSacHex(id) {
+  const hexColor = danhMuc.value?.mauSac?.find(
+    (item) => item.id === Number(id),
+  )?.maMauHex;
+
+  return isValidHexColor(hexColor)
+    ? String(hexColor).toUpperCase()
+    : generateHexColorFromText(mauSacLabel(id));
+}
+
 function kichCoLabel(id) {
   return (
     danhMuc.value?.kichCo?.find((item) => item.id === Number(id))?.giaTri ||
@@ -1026,11 +1036,13 @@ function generateVariants() {
   generatedVariants.value = variantBuilder.mauSacIds.flatMap((mauSacId) =>
     variantBuilder.kichCoIds.map((kichCoId) => {
       const key = `${mauSacId}-${kichCoId}`;
+      const existingVariant = existingMap.get(key);
       return (
-        existingMap.get(key) || {
+        existingVariant || {
           key,
           mauSacId: Number(mauSacId),
           mauSac: mauSacLabel(mauSacId),
+          maMauHex: mauSacHex(mauSacId),
           kichCoId: Number(kichCoId),
           kichCo: kichCoLabel(kichCoId),
           soLuong: Number(variantBuilder.soLuong),
@@ -1040,6 +1052,13 @@ function generateVariants() {
       );
     }),
   );
+
+  generatedVariants.value = generatedVariants.value.map((item) => ({
+    ...item,
+    maMauHex: isValidHexColor(item.maMauHex)
+      ? String(item.maMauHex).toUpperCase()
+      : mauSacHex(item.mauSacId),
+  }));
 
   delete variantErrors.generated;
   return showToast(`Đã tạo thành công ${generatedVariants.value.length} chi tiết sản phẩm`);

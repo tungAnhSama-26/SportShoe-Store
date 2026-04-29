@@ -184,7 +184,7 @@ onMounted(taiDanhSach);
   <div class="space-y-5">
     <!-- Header -->
     <section>
-      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">
+      <h1 class="admin-page-title text-[30px]">
         Quản lý nhân viên
       </h1>
     </section>
@@ -200,7 +200,7 @@ onMounted(taiDanhSach);
           <Filter class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+          <h2 class="admin-section-title">Bộ lọc</h2>
         </div>
       </div>
 
@@ -237,7 +237,7 @@ onMounted(taiDanhSach);
 
         <div class="grid gap-4 md:grid-cols-2 xl:max-w-2xl">
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500"
+            <span class="admin-filter-label mb-1"
               >Vai trò</span
             >
             <select
@@ -251,7 +251,7 @@ onMounted(taiDanhSach);
           </label>
 
           <label class="space-y-2">
-            <span class="mb-1 text-[13px] font-semibold text-slate-500"
+            <span class="admin-filter-label mb-1"
               >Trạng thái</span
             >
             <select
@@ -282,7 +282,7 @@ onMounted(taiDanhSach);
           <Users class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">
+          <h2 class="admin-section-title">
             Danh sách nhân viên
           </h2>
         </div>
