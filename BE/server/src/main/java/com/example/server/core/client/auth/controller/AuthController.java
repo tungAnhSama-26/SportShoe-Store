@@ -10,6 +10,7 @@ import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.repository.KhachHangRepository;
+import com.example.server.repository.DiaChiKhachHangRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,12 +31,14 @@ public class AuthController {
 
     private final KhachHangRepository khachHangRepository;
     private final EmailService emailService;
+    private final DiaChiKhachHangRepository diaChiKhachHangRepository;
     
     private static final Map<String, String> otpStorage = new ConcurrentHashMap<>();
 
-    public AuthController(KhachHangRepository khachHangRepository, EmailService emailService) {
+    public AuthController(KhachHangRepository khachHangRepository, EmailService emailService, DiaChiKhachHangRepository diaChiKhachHangRepository) {
         this.khachHangRepository = khachHangRepository;
         this.emailService = emailService;
+        this.diaChiKhachHangRepository = diaChiKhachHangRepository;
     }
 
     @PostMapping("/login")
@@ -92,7 +95,7 @@ public class AuthController {
         khachHangRepository.save(kh);
 
         try {
-            emailService.sendRegistrationEmail(kh.getEmail(), kh.getHoTen(), kh.getTenDangNhap(), password);
+            emailService.sendCustomerRegistrationEmail(kh.getEmail(), kh.getHoTen(), kh.getTenDangNhap(), password);
         } catch (Exception e) {
             System.err.println("Failed to send email: " + e.getMessage());
         }
@@ -153,6 +156,11 @@ public class AuthController {
     }
 
     private KhachHangResponse toKhachHangResponse(KhachHang kh) {
+        String diaChiMacDinh = diaChiKhachHangRepository
+                .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId())
+                .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
+                .orElse(null);
+
         return new KhachHangResponse(
                 kh.getId(),
                 kh.getTenDangNhap(),
@@ -164,7 +172,11 @@ public class AuthController {
                 kh.getTrangThai(),
                 kh.getTrangThai() == 1 ? "Đang hoạt động" : "Ngừng hoạt động",
                 kh.getNgayTao(),
+<<<<<<< HEAD
                 null
+=======
+                diaChiMacDinh
+>>>>>>> 2db35d8b0bf0af53fc337e5ed4c37d33cdf2f08c
         );
     }
 }

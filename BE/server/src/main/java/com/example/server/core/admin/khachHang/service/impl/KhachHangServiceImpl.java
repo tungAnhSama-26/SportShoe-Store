@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import com.example.server.infrastructure.service.EmailService;
+
 @Service
 public class KhachHangServiceImpl implements KhachHangService {
 
@@ -31,11 +33,15 @@ public class KhachHangServiceImpl implements KhachHangService {
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
     private final EmailService emailService;
 
+<<<<<<< HEAD
     public KhachHangServiceImpl(
             KhachHangRepository khachHangRepository,
             DiaChiKhachHangRepository diaChiKhachHangRepository,
             EmailService emailService
     ) {
+=======
+    public KhachHangServiceImpl(KhachHangRepository khachHangRepository, DiaChiKhachHangRepository diaChiKhachHangRepository, EmailService emailService) {
+>>>>>>> 2db35d8b0bf0af53fc337e5ed4c37d33cdf2f08c
         this.khachHangRepository = khachHangRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
         this.emailService = emailService;
@@ -82,9 +88,16 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgayTao(Instant.now());
 
         KhachHang saved = khachHangRepository.save(kh);
+<<<<<<< HEAD
         if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
             try {
                 emailService.sendRegistrationEmail(
+=======
+
+        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            try {
+                emailService.sendCustomerRegistrationEmail(
+>>>>>>> 2db35d8b0bf0af53fc337e5ed4c37d33cdf2f08c
                         saved.getEmail(),
                         saved.getHoTen(),
                         saved.getTenDangNhap(),
