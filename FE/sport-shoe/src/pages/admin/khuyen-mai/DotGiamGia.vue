@@ -3,14 +3,12 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   Edit, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Tag, PackageSearch, ToggleLeft, ToggleRight,
-  CheckCircle2, CircleX, Trash2, X
+  CheckCircle2, CircleX, X
 } from "lucide-vue-next";
 import {
-  deleteDotGiamGia,
   getDotGiamGiaList,
   getDotGiamGiaSanPhamList, 
   updateDotGiamGia,
-  deleteDotGiamGiaSanPham,
   updateDotGiamGiaSanPham
 } from "../../../services/khuyen-mai";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
@@ -112,7 +110,9 @@ const danhSachSpPhanTrang = computed(() => {
 });
 
 function mauTrangThai(trangThai) {
-  return Number(trangThai) === 1 ? "bg-slate-100 text-slate-700" : "bg-slate-200 text-slate-700";
+  return Number(trangThai) === 1
+    ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"
+    : "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
 function statusText(value) {
@@ -279,26 +279,13 @@ async function openEditModal(item) {
   }
 }
 
-async function removeItem(item) {
-    if (!confirm("Bạn có chắc muốn xóa bản ghi này?")) return;
-    try {
-        if (activeTab.value === "dot") await deleteDotGiamGia(item.id);
-        else await deleteDotGiamGiaSanPham(item.id);
-        alert("Xóa thành công");
-        if (activeTab.value === "dot") taiDanhSach();
-        else taiDanhSachSp();
-    } catch (e) {
-        alert(e.message || "Xóa thất bại");
-    }
-}
-
 onMounted(taiDanhSach);
 </script>
 
 <template>
   <div class="space-y-5">
     <section class="flex items-end justify-between">
-      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">Quản lý đợt giảm giá</h1>
+      <h1 class="admin-page-title text-[30px]">Quản lý đợt giảm giá</h1>
     </section>
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
@@ -307,7 +294,7 @@ onMounted(taiDanhSach);
           <Filter class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+          <h2 class="admin-section-title">Bộ lọc</h2>
           <p class="text-sm text-slate-400">Tra cứu nhanh dữ liệu.</p>
         </div>
       </div>
@@ -315,51 +302,51 @@ onMounted(taiDanhSach);
       <div class="flex flex-col gap-6">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
           <div class="space-y-2">
-            <label class="text-[13px] font-semibold text-slate-500">Tìm kiếm</label>
+            <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input v-model="(activeTab === 'dot' ? boLoc : boLocSp).keyword" type="text" :placeholder="activeTab === 'dot' ? 'Mã, tên, mô tả...' : 'Tên đợt, tên giày...'" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" @keyup.enter="activeTab === 'dot' ? taiDanhSach() : null" />
+              <input v-model="(activeTab === 'dot' ? boLoc : boLocSp).keyword" type="text" :placeholder="activeTab === 'dot' ? 'Mã, tên, mô tả...' : 'Tên đợt, tên giày...'" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" @keyup.enter="activeTab === 'dot' ? taiDanhSach() : null" />
             </div>
           </div>
 
           <template v-if="activeTab === 'dot'">
             <div class="space-y-2">
-              <label class="text-[13px] font-semibold text-slate-500">Ngày bắt đầu</label>
-              <input v-model="boLoc.tuNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+              <label class="admin-filter-label">Ngày bắt đầu</label>
+              <input v-model="boLoc.tuNgay" type="date" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
             </div>
 
             <div class="space-y-2">
-              <label class="text-[13px] font-semibold text-slate-500">Ngày kết thúc</label>
-              <input v-model="boLoc.denNgay" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+              <label class="admin-filter-label">Ngày kết thúc</label>
+              <input v-model="boLoc.denNgay" type="date" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
             </div>
 
             <div class="space-y-2">
-              <label class="text-[13px] font-semibold text-slate-500">Hình thức</label>
-              <select v-model="boLoc.loaiGiam" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
+              <label class="admin-filter-label">Hình thức</label>
+              <select v-model="boLoc.loaiGiam" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
                 <option v-for="lg in dsLoaiGiam" :key="lg.value" :value="lg.value">{{ lg.label }}</option>
               </select>
             </div>
           </template>
 
           <div class="space-y-2" :class="activeTab !== 'dot' ? 'lg:col-span-2' : ''">
-            <label class="text-[13px] font-semibold text-slate-500">Trạng thái</label>
-            <select v-model="(activeTab === 'dot' ? boLoc : boLocSp).trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
+            <label class="admin-filter-label">Trạng thái</label>
+            <select v-model="(activeTab === 'dot' ? boLoc : boLocSp).trangThai" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
               <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
             </select>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-3 justify-end">
-            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
               <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
             </button>
-            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">
+            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
               <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
             </button>
-            <button @click="router.push({ name: 'admin-dot-giam-gia-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600">
+            <button @click="router.push({ name: 'admin-dot-giam-gia-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]">
               <Plus class="h-4 w-4" /> Tạo đợt giảm giá
             </button>
-            <button @click="router.push({ name: 'admin-dot-giam-gia-san-pham-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-amber-500 px-5 text-sm font-semibold text-white transition hover:bg-amber-600">
+            <button @click="router.push({ name: 'admin-dot-giam-gia-san-pham-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]">
               <Plus class="h-4 w-4" /> Áp dụng sản phẩm
             </button>
         </div>
@@ -368,7 +355,7 @@ onMounted(taiDanhSach);
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center justify-between">
-        <h2 class="text-lg font-bold text-slate-800">Danh sách các đợt giảm giá</h2>
+        <h2 class="admin-section-title text-lg">Danh sách các đợt giảm giá</h2>
         <div>
           <p class="text-sm text-slate-400 font-medium">{{ totalItems }} bản ghi hiển thị.</p>
         </div>
@@ -427,9 +414,6 @@ onMounted(taiDanhSach);
                   <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xem chi tiết">
                     <Eye class="h-5 w-5" />
                   </button>
-                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xóa">
-                    <Trash2 class="h-4 w-4" />
-                  </button>
                 </div>
               </td>
             </tr>
@@ -476,9 +460,6 @@ onMounted(taiDanhSach);
                   />
                   <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Sửa">
                     <Edit class="h-4 w-4" />
-                  </button>
-                  <button @click="removeItem(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xóa">
-                    <Trash2 class="h-4 w-4" />
                   </button>
                 </div>
               </td>

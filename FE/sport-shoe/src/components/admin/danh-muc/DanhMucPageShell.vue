@@ -73,7 +73,7 @@ function onKeywordInput(event) {
     </Transition>
 
     <section>
-      <h1 class="text-[30px] font-bold tracking-tight text-slate-800">{{ title }}</h1>
+      <h1 class="admin-page-title text-[30px]">{{ title }}</h1>
     </section>
 
     <section class="admin-section-card">
@@ -82,7 +82,7 @@ function onKeywordInput(event) {
           <Filter class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">Bộ lọc</h2>
+          <h2 class="admin-section-title">Bộ lọc</h2>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ function onKeywordInput(event) {
               :value="keyword"
               type="text"
               :placeholder="searchPlaceholder"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @input="onKeywordInput"
               @keyup.enter="emit('search')"
             />
@@ -137,7 +137,7 @@ function onKeywordInput(event) {
           <Layers3 class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-base font-bold text-slate-800">{{ listTitle }}</h2>
+          <h2 class="admin-section-title">{{ listTitle }}</h2>
         </div>
       </div>
 

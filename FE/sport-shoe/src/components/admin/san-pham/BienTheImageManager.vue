@@ -66,19 +66,29 @@ const displayedImages = computed(() =>
   isDraftMode.value ? props.draftImages || [] : images.value
 )
 
+function normalizeDisplayText(value) {
+  return String(value || '').trim().toLocaleLowerCase('vi-VN')
+}
+
+function toSentenceCase(value) {
+  const normalized = normalizeDisplayText(value)
+  if (!normalized) return ''
+  return normalized.charAt(0).toLocaleUpperCase('vi-VN') + normalized.slice(1)
+}
+
 const colorScopeText = computed(() => {
   if (props.displayMode !== 'color') {
     return props.variant?.maBienThe || props.variant?.sku || ''
   }
 
   const variantCount = targetVariants.value.length
-  const representativeSize = props.variant?.kichCo ? `Size đại diện ${props.variant.kichCo}` : 'Màu đại diện'
+  const sizeText = props.variant?.kichCo ? `Size ${props.variant.kichCo}` : 'Cùng màu'
 
   if (variantCount > 1) {
-    return `Áp dụng cho ${variantCount} kích cỡ cùng màu • ${representativeSize}`
+    return `Áp dụng cho ${variantCount} kích cỡ cùng màu • ${sizeText}`
   }
 
-  return `Biến thể đại diện • ${representativeSize}`
+  return `Áp dụng cho ${sizeText}`
 })
 
 function clearForm() {
@@ -358,8 +368,8 @@ defineExpose({
   >
     <div class="flex items-center justify-between gap-3">
       <div>
-        <p class="text-sm font-semibold text-slate-800">
-          {{ displayMode === 'color' ? `Ảnh đại diện màu ${variant.mauSac}` : `Ảnh cho biến thể ${variant.mauSac} / ${variant.kichCo}` }}
+        <p class="text-sm font-medium text-slate-700">
+          {{ displayMode === 'color' ? `Ảnh sản phẩm màu ${normalizeDisplayText(variant.mauSac)}` : `Ảnh cho biến thể ${toSentenceCase(variant.mauSac)} / ${variant.kichCo}` }}
         </p>
         <p class="mt-1 text-xs text-slate-400">
           {{ colorScopeText }}
