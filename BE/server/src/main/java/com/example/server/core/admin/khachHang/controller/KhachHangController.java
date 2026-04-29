@@ -8,6 +8,8 @@ import com.example.server.core.admin.khachHang.dto.request.TaoKhachHangRequest;
 import com.example.server.core.admin.khachHang.dto.responsse.DiaChiResponse;
 import com.example.server.core.admin.khachHang.dto.responsse.KhachHangResponse;
 import com.example.server.core.admin.khachHang.service.KhachHangService;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonSummaryResponse;
+import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,9 +24,11 @@ import java.util.UUID;
 public class KhachHangController {
 
     private final KhachHangService khachHangService;
+    private final QuanLyHoaDonService quanLyHoaDonService;
 
-    public KhachHangController(KhachHangService khachHangService) {
+    public KhachHangController(KhachHangService khachHangService, QuanLyHoaDonService quanLyHoaDonService) {
         this.khachHangService = khachHangService;
+        this.quanLyHoaDonService = quanLyHoaDonService;
     }
 
     @GetMapping
@@ -131,5 +135,19 @@ public class KhachHangController {
     public ResponseEntity<ApiResponse<Void>> xoaDiaChi(@PathVariable Integer diaChiId) {
         khachHangService.xoaDiaChi(diaChiId);
         return ResponseEntity.ok(ApiResponse.success("Xóa địa chỉ thành công", null));
+    }
+
+    @PatchMapping("/dia-chi/{diaChiId}/mac-dinh")
+    public ResponseEntity<ApiResponse<Void>> datMacDinhDiaChi(@PathVariable Integer diaChiId) {
+        khachHangService.datMacDinhDiaChi(diaChiId);
+        return ResponseEntity.ok(ApiResponse.success("Đặt địa chỉ mặc định thành công", null));
+    }
+
+    @GetMapping("/{id}/hoa-don")
+    public ResponseEntity<ApiResponse<List<HoaDonSummaryResponse>>> layHoaDonTheoKhachHang(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy danh sách đơn hàng thành công",
+                quanLyHoaDonService.layDanhSachHoaDonTheoKhachHang(id)
+        ));
     }
 }

@@ -147,6 +147,29 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
 
     @Override
     @Transactional(readOnly = true)
+    public List<HoaDonSummaryResponse> layDanhSachHoaDonTheoKhachHang(java.util.UUID khachHangId) {
+        List<HoaDon> hoaDons = hoaDonRepository.findByKhachHangId(khachHangId);
+
+        Map<Integer, VanChuyen> vanChuyenMap = vanChuyenRepository.findByHoaDonIdIn(
+                hoaDons.stream().map(HoaDon::getId).toList()
+        ).stream().collect(Collectors.toMap(vc -> vc.getHoaDon().getId(), Function.identity()));
+
+        return hoaDons.stream()
+                .map(hoaDon -> new HoaDonSummaryResponse(
+                        hoaDon.getId(),
+                        hoaDon.getMa(),
+                        resolveTenKhachHang(hoaDon),
+                        null,
+                        hoaDon.getTongTienThanhToan(),
+                        hoaDon.getNgayTao(),
+                        mapLoaiDon(hoaDon),
+                        resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
+                ))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public HoaDonDetailResponse layChiTietHoaDon(Integer id) {
         HoaDon hoaDon = findHoaDon(id);
         return mapHoaDonDetail(hoaDon);
