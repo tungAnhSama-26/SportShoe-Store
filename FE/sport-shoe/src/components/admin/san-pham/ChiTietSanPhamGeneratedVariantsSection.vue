@@ -3,6 +3,10 @@ import { computed, ref } from "vue";
 import { Package2, Save, Trash2 } from "lucide-vue-next";
 import BienTheImageManager from "./BienTheImageManager.vue";
 import AdminFormattedNumberInput from "../../common/AdminFormattedNumberInput.vue";
+import {
+  generateHexColorFromText,
+  isValidHexColor,
+} from "../../../utils/thuoc-tinh-san-pham";
 
 const props = defineProps({
   generatedVariants: {
@@ -104,6 +108,7 @@ const generatedVariantGroups = computed(() => {
         key: colorKey,
         mauSacId: item.mauSacId,
         mauSac: item.mauSac || "Màu chưa đặt tên",
+        maMauHex: item.maMauHex || null,
         variants: [],
       });
     }
@@ -182,6 +187,21 @@ function handleApplyDefaults() {
   }
 
   emit("apply-defaults");
+}
+
+function resolveColorHex(group) {
+  const explicitHex = group?.maMauHex || group?.variants?.find((item) => item?.maMauHex)?.maMauHex;
+  if (isValidHexColor(explicitHex)) {
+    return String(explicitHex).toUpperCase();
+  }
+
+  return generateHexColorFromText(group?.mauSac);
+}
+
+function formatColorName(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("vi-VN");
+  if (!normalized) return "";
+  return normalized.charAt(0).toLocaleUpperCase("vi-VN") + normalized.slice(1);
 }
 
 async function handleSaveClick() {
@@ -295,13 +315,14 @@ async function handleSaveClick() {
         <div
           class="mb-4 flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div>
-            <h3 class="text-lg font-black text-slate-900">
-              Màu {{ group.mauSac }}
+          <div class="flex items-center gap-3">
+            <span
+              class="h-4 w-4 rounded-full border border-slate-200 shadow-sm"
+              :style="{ backgroundColor: resolveColorHex(group) }"
+            ></span>
+            <h3 class="text-sm font-medium text-slate-600">
+              {{ formatColorName(group.mauSac) }}
             </h3>
-            <p class="mt-1 text-sm text-slate-500">
-              {{ group.variants.length }} biến thể kích cỡ trong nhóm màu này.
-            </p>
           </div>
 
           <span
@@ -406,12 +427,12 @@ async function handleSaveClick() {
     >
       <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 class="text-xl font-black text-slate-900">
-            Ảnh theo màu cho biến thể nháp
+          <h2 class="text-sm font-medium text-slate-600">
+            Ảnh sản phẩm theo màu
           </h2>
-          <p class="mt-2 text-sm text-slate-600">
-            Mỗi form ảnh chỉ đại diện cho một màu và sẽ được áp cho toàn bộ kích
-            cỡ cùng màu sau khi lưu CTSP.
+          <p class="mt-1 text-sm text-slate-500">
+            Mỗi nhóm ảnh đại diện cho một màu và sẽ được áp cho toàn bộ kích cỡ
+            cùng màu sau khi lưu chi tiết sản phẩm.
           </p>
         </div>
       </div>
@@ -439,7 +460,7 @@ async function handleSaveClick() {
         <Package2 :size="24" />
       </div>
       <p class="mt-4 text-base font-semibold text-slate-700">
-        Chưa có biến thể nháp
+        Chưa có biến thể
       </p>
       <p class="mt-1 text-sm text-slate-400">
         Chọn màu sắc, kích cỡ trong bộ lọc rồi bấm "Tạo biến thể tự động".
