@@ -61,42 +61,7 @@ const dsVaiTro = [
   { value: 3, label: "Kho" },
 ];
 
-const dsTinhThanh = [
-  { value: "an-giang", label: "An Giang" },
-  { value: "bac-ninh", label: "Bắc Ninh" },
-  { value: "cao-bang", label: "Cao Bằng" },
-  { value: "ca-mau", label: "Cà Mau" },
-  { value: "can-tho", label: "Cần Thơ" },
-  { value: "da-nang", label: "Đà Nẵng" },
-  { value: "dien-bien", label: "Điện Biên" },
-  { value: "dak-lak", label: "Đắk Lắk" },
-  { value: "dong-nai", label: "Đồng Nai" },
-  { value: "dong-thap", label: "Đồng Tháp" },
-  { value: "gia-lai", label: "Gia Lai" },
-  { value: "ha-noi", label: "Hà Nội" },
-  { value: "ha-tinh", label: "Hà Tĩnh" },
-  { value: "hai-phong", label: "Hải Phòng" },
-  { value: "ho-chi-minh", label: "TP Hồ Chí Minh" },
-  { value: "hung-yen", label: "Hưng Yên" },
-  { value: "hue", label: "Huế" },
-  { value: "khanh-hoa", label: "Khánh Hòa" },
-  { value: "lai-chau", label: "Lai Châu" },
-  { value: "lao-cai", label: "Lào Cai" },
-  { value: "lam-dong", label: "Lâm Đồng" },
-  { value: "lang-son", label: "Lạng Sơn" },
-  { value: "nghe-an", label: "Nghệ An" },
-  { value: "ninh-binh", label: "Ninh Bình" },
-  { value: "phu-tho", label: "Phú Thọ" },
-  { value: "quang-ngai", label: "Quảng Ngãi" },
-  { value: "quang-ninh", label: "Quảng Ninh" },
-  { value: "quang-tri", label: "Quảng Trị" },
-  { value: "son-la", label: "Sơn La" },
-  { value: "tay-ninh", label: "Tây Ninh" },
-  { value: "thai-nguyen", label: "Thái Nguyên" },
-  { value: "thanh-hoa", label: "Thanh Hóa" },
-  { value: "tuyen-quang", label: "Tuyên Quang" },
-  { value: "vinh-long", label: "Vĩnh Long" },
-];
+
 
 const dsQuanHuyenTheoTinh: Record<string, Array<{ value: string; label: string }>> = {
   "ha-noi": [
@@ -115,7 +80,71 @@ const dsQuanHuyenTheoTinh: Record<string, Array<{ value: string; label: string }
     { value: "son-tra", label: "Sơn Trà" },
   ],
 };
-
+const dsTinhThanh = [
+  { value: "01", label: "Thành phố Hà Nội" },
+  { value: "79", label: "Thành phố Hồ Chí Minh" },
+  { value: "31", label: "Thành phố Hải Phòng" },
+  { value: "48", label: "Thành phố Đà Nẵng" },
+  { value: "92", label: "Thành phố Cần Thơ" },
+  { value: "02", label: "Tỉnh Hà Giang" },
+  { value: "04", label: "Tỉnh Cao Bằng" },
+  { value: "06", label: "Tỉnh Bắc Kạn" },
+  { value: "08", label: "Tỉnh Tuyên Quang" },
+  { value: "10", label: "Tỉnh Lào Cai" },
+  { value: "11", label: "Tỉnh Điện Biên" },
+  { value: "12", label: "Tỉnh Lai Châu" },
+  { value: "14", label: "Tỉnh Sơn La" },
+  { value: "15", label: "Tỉnh Yên Bái" },
+  { value: "17", label: "Tỉnh Hoà Bình" },
+  { value: "19", label: "Tỉnh Thái Nguyên" },
+  { value: "20", label: "Tỉnh Lạng Sơn" },
+  { value: "22", label: "Tỉnh Quảng Ninh" },
+  { value: "24", label: "Tỉnh Bắc Giang" },
+  { value: "25", label: "Tỉnh Phú Thọ" },
+  { value: "26", label: "Tỉnh Vĩnh Phúc" },
+  { value: "27", label: "Tỉnh Bắc Ninh" },
+  { value: "30", label: "Tỉnh Hải Dương" },
+  { value: "33", label: "Tỉnh Hưng Yên" },
+  { value: "34", label: "Tỉnh Thái Bình" },
+  { value: "35", label: "Tỉnh Hà Nam" },
+  { value: "36", label: "Tỉnh Nam Định" },
+  { value: "37", label: "Tỉnh Ninh Bình" },
+  { value: "38", label: "Tỉnh Thanh Hóa" },
+  { value: "40", label: "Tỉnh Nghệ An" },
+  { value: "42", label: "Tỉnh Hà Tĩnh" },
+  { value: "44", label: "Tỉnh Quảng Bình" },
+  { value: "45", label: "Tỉnh Quảng Trị" },
+  { value: "46", label: "Tỉnh Thừa Thiên Huế" },
+  { value: "49", label: "Tỉnh Quảng Nam" },
+  { value: "51", label: "Tỉnh Quảng Ngãi" },
+  { value: "52", label: "Tỉnh Bình Định" },
+  { value: "54", label: "Tỉnh Phú Yên" },
+  { value: "56", label: "Tỉnh Khánh Hòa" },
+  { value: "58", label: "Tỉnh Ninh Thuận" },
+  { value: "60", label: "Tỉnh Bình Thuận" },
+  { value: "62", label: "Tỉnh Kon Tum" },
+  { value: "64", label: "Tỉnh Gia Lai" },
+  { value: "66", label: "Tỉnh Đắk Lắk" },
+  { value: "67", label: "Tỉnh Đắk Nông" },
+  { value: "68", label: "Tỉnh Lâm Đồng" },
+  { value: "70", label: "Tỉnh Bình Phước" },
+  { value: "72", label: "Tỉnh Tây Ninh" },
+  { value: "74", label: "Tỉnh Bình Dương" },
+  { value: "75", label: "Tỉnh Đồng Nai" },
+  { value: "77", label: "Tỉnh Bà Rịa - Vũng Tàu" },
+  { value: "80", label: "Tỉnh Long An" },
+  { value: "82", label: "Tỉnh Tiền Giang" },
+  { value: "83", label: "Tỉnh Bến Tre" },
+  { value: "84", label: "Tỉnh Trà Vinh" },
+  { value: "86", label: "Tỉnh Vĩnh Long" },
+  { value: "87", label: "Tỉnh Đồng Tháp" },
+  { value: "89", label: "Tỉnh An Giang" },
+  { value: "91", label: "Tỉnh Kiên Giang" },
+  { value: "93", label: "Tỉnh Hậu Giang" },
+  { value: "94", label: "Tỉnh Sóc Trăng" },
+  { value: "95", label: "Tỉnh Bạc Liêu" },
+  { value: "96", label: "Tỉnh Cà Mau" }
+];
 const dsXaPhuongTheoQuan: Record<string, Array<{ value: string; label: string }>> = {
   "cau-giay": [
     { value: "dich-vong", label: "Dịch Vọng" },
@@ -163,37 +192,59 @@ const dsXaPhuongTheoQuan: Record<string, Array<{ value: string; label: string }>
     { value: "man-thai", label: "Mân Thái" },
   ],
 };
+// 1. Thêm hàm fetch dữ liệu từ API (Ví dụ dùng pro-vinces.open-api.vn)
+const dsQuanHuyen = ref<any[]>([]);
+const dsXaPhuong = ref<any[]>([]);
 
-const dsQuanHuyen = computed(() => dsQuanHuyenTheoTinh[form.value.tinhThanh] ?? []);
-const dsXaPhuong = computed(() => dsXaPhuongTheoQuan[form.value.quanHuyen] ?? []);
+// Theo dõi thay đổi Tỉnh/Thành để load Quận/Huyện
+watch(() => form.value.tinhThanh, async (newVal) => {
+  form.value.quanHuyen = "";
+  form.value.xaPhuong = "";
+  dsXaPhuong.value = [];
+  
+  if (!newVal) {
+    dsQuanHuyen.value = [];
+    return;
+  }
+  
+  try {
+    // Đây là URL API lấy quận huyện theo mã tỉnh (newVal là mã số như '01', '79')
+    const res = await fetch(`https://provinces.open-api.vn/api/p/${newVal}?depth=2`);
+    const data = await res.json();
+    dsQuanHuyen.value = data.districts.map((d: any) => ({
+      value: d.code.toString(),
+      label: d.name
+    }));
+  } catch (e) {
+    console.error("Lỗi tải quận huyện", e);
+  }
+});
 
-watch(
-  () => form.value.tinhThanh,
-  () => {
-    if (!dsQuanHuyen.value.some((item) => item.value === form.value.quanHuyen)) {
-      form.value.quanHuyen = "";
-    }
-    if (!dsXaPhuong.value.some((item) => item.value === form.value.xaPhuong)) {
-      form.value.xaPhuong = "";
-    }
-  },
-);
-
-watch(
-  () => form.value.quanHuyen,
-  () => {
-    if (!dsXaPhuong.value.some((item) => item.value === form.value.xaPhuong)) {
-      form.value.xaPhuong = "";
-    }
-  },
-);
-
-function layLabel(options: Array<{ value: string; label: string }>, value: string) {
-  return options.find((item) => item.value === value)?.label ?? "";
+// Theo dõi thay đổi Quận/Huyện để load Xã/Phường
+watch(() => form.value.quanHuyen, async (newVal) => {
+  form.value.xaPhuong = "";
+  if (!newVal) {
+    dsXaPhuong.value = [];
+    return;
+  }
+  
+  try {
+    const res = await fetch(`https://provinces.open-api.vn/api/d/${newVal}?depth=2`);
+    const data = await res.json();
+    dsXaPhuong.value = data.wards.map((w: any) => ({
+      value: w.code.toString(),
+      label: w.name
+    }));
+  } catch (e) {
+    console.error("Lỗi tải xã phường", e);
+  }
+});
+function layLabel(options: any[], value: string) {
+  return options.find((item) => item.value == value)?.label ?? "";
 }
 
 function gopDiaChi() {
-  return [
+  const diaChiFull = [
     form.value.diaChiCuThe.trim(),
     layLabel(dsXaPhuong.value, form.value.xaPhuong),
     layLabel(dsQuanHuyen.value, form.value.quanHuyen),
@@ -201,6 +252,7 @@ function gopDiaChi() {
   ]
     .filter(Boolean)
     .join(", ");
+  return diaChiFull;
 }
 
 async function taiChiTiet() {
@@ -519,7 +571,7 @@ onMounted(taiChiTiet);
             </div>
 
             <label class="mt-10 block space-y-2">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Họ và tên <span class="text-rose-500">*</span>
               </span>
               <input
@@ -542,7 +594,7 @@ onMounted(taiChiTiet);
 
           <div class="mt-10 grid gap-x-6 gap-y-7 xl:grid-cols-12" style="color: black;">
             <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Số cccd <span class="text-rose-500">*</span>
               </span>
               <input
@@ -558,7 +610,7 @@ onMounted(taiChiTiet);
             </label>
 
             <div class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Giới tính <span class="text-rose-500">*</span>
               </span>
               <div class="flex h-14 items-center gap-8 px-1 text-[17px] text-slate-700">
@@ -574,7 +626,7 @@ onMounted(taiChiTiet);
             </div>
 
             <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px]  tracking-[0.06em] text-black">
                 Ngày sinh <span class="text-rose-500">*</span>
               </span>
               <input
@@ -585,7 +637,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Email <span class="text-rose-500">*</span>
               </span>
               <input
@@ -601,7 +653,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-4">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Tỉnh/Thành phố <span class="text-rose-500">*</span>
               </span>
               <select
@@ -614,7 +666,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-4">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px]  tracking-[0.06em] text-black">
                 Quận/Huyện <span class="text-rose-500">*</span>
               </span>
               <select
@@ -627,7 +679,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-4">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px]  tracking-[0.06em] text-black">
                 Xã/Phường/Thị trấn <span class="text-rose-500">*</span>
               </span>
               <select
@@ -640,7 +692,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px]  tracking-[0.06em] text-black">
                 Số điện thoại <span class="text-rose-500">*</span>
               </span>
               <input
@@ -656,7 +708,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Vai trò <span class="text-rose-500">*</span>
               </span>
               <select
@@ -668,7 +720,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label class="space-y-2 xl:col-span-12">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Địa chỉ cụ thể <span class="text-rose-500">*</span>
               </span>
               <input
@@ -680,7 +732,7 @@ onMounted(taiChiTiet);
             </label>
 
             <label v-if="laMoi" class="space-y-2 xl:col-span-12">
-              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+              <span class="text-[18px] tracking-[0.06em] text-black">
                 Mật khẩu <span class="text-rose-500">*</span>
               </span>
               <input
