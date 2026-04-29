@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, User } from "lucide-vue-next";
+import { ArrowLeft, QrCode, Save } from "lucide-vue-next";
+import BanHangQrScannerModal from "../../../components/admin/ban-hang/BanHangQrScannerModal.vue";
 import {
   capNhatNhanVien,
   doiMatKhauNhanVien,
   doiTrangThaiNhanVien,
   layChiTietNhanVien,
   taoNhanVien,
-  xoaNhanVien,
   uploadFile,
+  xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 
@@ -23,26 +24,184 @@ const dangTai = ref(false);
 const dangLuu = ref(false);
 const dangUpload = ref(false);
 const loiTrang = ref("");
+const thongBao = ref("");
+const nhanVien = ref<any>(null);
+const fileInputAvatar = ref<HTMLInputElement | null>(null);
+const moQuetQr = ref(false);
+const matKhauMoi = ref("");
+const showDoiMatKhau = ref(false);
+
 const loiForm = ref({
   hoTen: "",
   email: "",
   matKhau: "",
+  cccd: "",
+  sdt: "",
 });
-const thongBao = ref("");
-const nhanVien = ref(null);
 
 const form = ref({
   hoTen: "",
   email: "",
   matKhau: "",
   sdt: "",
-  diaChi: "",
+  diaChiCuThe: "",
   hinhAnh: "",
   vaiTro: 2,
+  cccd: "",
+  gioiTinh: "Nam",
+  ngaySinh: "",
+  tinhThanh: "",
+  quanHuyen: "",
+  xaPhuong: "",
 });
 
-const matKhauMoi = ref("");
-const showDoiMatKhau = ref(false);
+const dsVaiTro = [
+  { value: 1, label: "Admin" },
+  { value: 2, label: "Bán hàng" },
+  { value: 3, label: "Kho" },
+];
+
+const dsTinhThanh = [
+  { value: "an-giang", label: "An Giang" },
+  { value: "bac-ninh", label: "Bắc Ninh" },
+  { value: "cao-bang", label: "Cao Bằng" },
+  { value: "ca-mau", label: "Cà Mau" },
+  { value: "can-tho", label: "Cần Thơ" },
+  { value: "da-nang", label: "Đà Nẵng" },
+  { value: "dien-bien", label: "Điện Biên" },
+  { value: "dak-lak", label: "Đắk Lắk" },
+  { value: "dong-nai", label: "Đồng Nai" },
+  { value: "dong-thap", label: "Đồng Tháp" },
+  { value: "gia-lai", label: "Gia Lai" },
+  { value: "ha-noi", label: "Hà Nội" },
+  { value: "ha-tinh", label: "Hà Tĩnh" },
+  { value: "hai-phong", label: "Hải Phòng" },
+  { value: "ho-chi-minh", label: "TP Hồ Chí Minh" },
+  { value: "hung-yen", label: "Hưng Yên" },
+  { value: "hue", label: "Huế" },
+  { value: "khanh-hoa", label: "Khánh Hòa" },
+  { value: "lai-chau", label: "Lai Châu" },
+  { value: "lao-cai", label: "Lào Cai" },
+  { value: "lam-dong", label: "Lâm Đồng" },
+  { value: "lang-son", label: "Lạng Sơn" },
+  { value: "nghe-an", label: "Nghệ An" },
+  { value: "ninh-binh", label: "Ninh Bình" },
+  { value: "phu-tho", label: "Phú Thọ" },
+  { value: "quang-ngai", label: "Quảng Ngãi" },
+  { value: "quang-ninh", label: "Quảng Ninh" },
+  { value: "quang-tri", label: "Quảng Trị" },
+  { value: "son-la", label: "Sơn La" },
+  { value: "tay-ninh", label: "Tây Ninh" },
+  { value: "thai-nguyen", label: "Thái Nguyên" },
+  { value: "thanh-hoa", label: "Thanh Hóa" },
+  { value: "tuyen-quang", label: "Tuyên Quang" },
+  { value: "vinh-long", label: "Vĩnh Long" },
+];
+
+const dsQuanHuyenTheoTinh: Record<string, Array<{ value: string; label: string }>> = {
+  "ha-noi": [
+    { value: "cau-giay", label: "Cầu Giấy" },
+    { value: "dong-da", label: "Đống Đa" },
+    { value: "nam-tu-liem", label: "Nam Từ Liêm" },
+  ],
+  "ho-chi-minh": [
+    { value: "quan-1", label: "Quận 1" },
+    { value: "quan-7", label: "Quận 7" },
+    { value: "thu-duc", label: "TP Thủ Đức" },
+  ],
+  "da-nang": [
+    { value: "hai-chau", label: "Hải Châu" },
+    { value: "thanh-khe", label: "Thanh Khê" },
+    { value: "son-tra", label: "Sơn Trà" },
+  ],
+};
+
+const dsXaPhuongTheoQuan: Record<string, Array<{ value: string; label: string }>> = {
+  "cau-giay": [
+    { value: "dich-vong", label: "Dịch Vọng" },
+    { value: "mai-dich", label: "Mai Dịch" },
+    { value: "nghia-tan", label: "Nghĩa Tân" },
+  ],
+  "dong-da": [
+    { value: "cat-linh", label: "Cát Linh" },
+    { value: "lang-thuong", label: "Láng Thượng" },
+    { value: "quoc-tu-giam", label: "Quốc Tử Giám" },
+  ],
+  "nam-tu-liem": [
+    { value: "my-dinh-1", label: "Mỹ Đình 1" },
+    { value: "my-dinh-2", label: "Mỹ Đình 2" },
+    { value: "trung-van", label: "Trung Văn" },
+  ],
+  "quan-1": [
+    { value: "ben-nghe", label: "Bến Nghé" },
+    { value: "ben-thanh", label: "Bến Thành" },
+    { value: "da-kao", label: "Đa Kao" },
+  ],
+  "quan-7": [
+    { value: "tan-phong", label: "Tân Phong" },
+    { value: "tan-quy", label: "Tân Quy" },
+    { value: "phu-my", label: "Phú Mỹ" },
+  ],
+  "thu-duc": [
+    { value: "an-khanh", label: "An Khánh" },
+    { value: "hiep-binh", label: "Hiệp Bình" },
+    { value: "linh-trung", label: "Linh Trung" },
+  ],
+  "hai-chau": [
+    { value: "hai-chau-1", label: "Hải Châu 1" },
+    { value: "hai-chau-2", label: "Hải Châu 2" },
+    { value: "thach-thang", label: "Thạch Thang" },
+  ],
+  "thanh-khe": [
+    { value: "tam-thuan", label: "Tam Thuận" },
+    { value: "thanh-khe-dong", label: "Thanh Khê Đông" },
+    { value: "xuan-ha", label: "Xuân Hà" },
+  ],
+  "son-tra": [
+    { value: "an-hai-bac", label: "An Hải Bắc" },
+    { value: "an-hai-dong", label: "An Hải Đông" },
+    { value: "man-thai", label: "Mân Thái" },
+  ],
+};
+
+const dsQuanHuyen = computed(() => dsQuanHuyenTheoTinh[form.value.tinhThanh] ?? []);
+const dsXaPhuong = computed(() => dsXaPhuongTheoQuan[form.value.quanHuyen] ?? []);
+
+watch(
+  () => form.value.tinhThanh,
+  () => {
+    if (!dsQuanHuyen.value.some((item) => item.value === form.value.quanHuyen)) {
+      form.value.quanHuyen = "";
+    }
+    if (!dsXaPhuong.value.some((item) => item.value === form.value.xaPhuong)) {
+      form.value.xaPhuong = "";
+    }
+  },
+);
+
+watch(
+  () => form.value.quanHuyen,
+  () => {
+    if (!dsXaPhuong.value.some((item) => item.value === form.value.xaPhuong)) {
+      form.value.xaPhuong = "";
+    }
+  },
+);
+
+function layLabel(options: Array<{ value: string; label: string }>, value: string) {
+  return options.find((item) => item.value === value)?.label ?? "";
+}
+
+function gopDiaChi() {
+  return [
+    form.value.diaChiCuThe.trim(),
+    layLabel(dsXaPhuong.value, form.value.xaPhuong),
+    layLabel(dsQuanHuyen.value, form.value.quanHuyen),
+    layLabel(dsTinhThanh, form.value.tinhThanh),
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
 
 async function taiChiTiet() {
   if (laMoi) return;
@@ -51,30 +210,36 @@ async function taiChiTiet() {
     const data = await layChiTietNhanVien(id!);
     nhanVien.value = data;
     form.value = {
-      hoTen: data.hoTen,
-      email: data.email,
+      hoTen: data.hoTen ?? "",
+      email: data.email ?? "",
       matKhau: "",
       sdt: data.sdt ?? "",
-      diaChi: data.diaChi ?? "",
+      diaChiCuThe: data.diaChi ?? "",
       hinhAnh: data.hinhAnh ?? "",
-      vaiTro: data.vaiTro,
+      vaiTro: data.vaiTro ?? 2,
+      cccd: "",
+      gioiTinh: "Nam",
+      ngaySinh: "",
+      tinhThanh: "",
+      quanHuyen: "",
+      xaPhuong: "",
     };
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải thông tin nhân viên");
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải thông tin nhân viên");
   } finally {
     dangTai.value = false;
   }
 }
 
 async function luu() {
-  loiForm.value = { hoTen: "", email: "", matKhau: "" };
+  loiForm.value = { hoTen: "", email: "", matKhau: "", cccd: "", sdt: "" };
   let hasError = false;
 
   if (!form.value.hoTen.trim()) {
-    loiForm.value.hoTen = "Vui lòng nhập họ tên nhân viên.";
+    loiForm.value.hoTen = "Vui lòng nhập họ và tên nhân viên.";
     hasError = true;
   }
-  
+
   if (!form.value.email.trim()) {
     loiForm.value.email = "Vui lòng nhập email nhân viên.";
     hasError = true;
@@ -82,11 +247,21 @@ async function luu() {
     loiForm.value.email = "Email nhân viên chưa đúng định dạng.";
     hasError = true;
   }
-  
+
+  if (!/^\d{12}$/.test(form.value.cccd.trim())) {
+    loiForm.value.cccd = "CCCD phải gồm đúng 12 chữ số.";
+    hasError = true;
+  }
+
+  if (!/^\d{10}$/.test(form.value.sdt.trim())) {
+    loiForm.value.sdt = "Số điện thoại phải gồm đúng 10 chữ số.";
+    hasError = true;
+  }
+
   if (laMoi && !form.value.matKhau.trim()) {
     loiForm.value.matKhau = "Vui lòng nhập mật khẩu cho nhân viên mới.";
     hasError = true;
-  } else if (laMoi && form.value.matKhau.length < 6) {
+  } else if (laMoi && form.value.matKhau.trim().length < 6) {
     loiForm.value.matKhau = "Mật khẩu nhân viên phải có ít nhất 6 ký tự.";
     hasError = true;
   }
@@ -96,54 +271,59 @@ async function luu() {
   dangLuu.value = true;
   loiTrang.value = "";
   thongBao.value = "";
+
+  const payload = {
+    hoTen: form.value.hoTen.trim(),
+    email: form.value.email.trim(),
+    ...(laMoi ? { matKhau: form.value.matKhau } : {}),
+    sdt: form.value.sdt.trim() || undefined,
+    diaChi: gopDiaChi() || form.value.diaChiCuThe.trim() || undefined,
+    hinhAnh: form.value.hinhAnh || undefined,
+    vaiTro: form.value.vaiTro,
+  };
+
   try {
     if (laMoi) {
-      await taoNhanVien({
-        hoTen: form.value.hoTen,
-        email: form.value.email,
-        matKhau: form.value.matKhau,
-        sdt: form.value.sdt || undefined,
-        diaChi: form.value.diaChi || undefined,
-        hinhAnh: form.value.hinhAnh || undefined,
-        vaiTro: form.value.vaiTro,
-      });
+      await taoNhanVien(payload);
       router.push({ name: "admin-nhan-vien" });
-    } else {
-      const updated = await capNhatNhanVien(id!, {
-        hoTen: form.value.hoTen,
-        email: form.value.email,
-        sdt: form.value.sdt || undefined,
-        diaChi: form.value.diaChi || undefined,
-        hinhAnh: form.value.hinhAnh || undefined,
-        vaiTro: form.value.vaiTro,
-      });
-      nhanVien.value = updated;
-      thongBao.value = "Đã lưu thay đổi thành công!";
-      setTimeout(() => (thongBao.value = ""), 3000);
+      return;
     }
-  } catch (e) {
-    Object.assign(loiForm.value, getFieldErrors(e));
-    loiTrang.value = getDisplayErrorMessage(e, laMoi ? "Không thể tạo nhân viên" : "Không thể lưu thay đổi nhân viên");
+
+    const updated = await capNhatNhanVien(id!, payload);
+    nhanVien.value = updated;
+    thongBao.value = "Đã lưu thay đổi thành công.";
+    setTimeout(() => {
+      thongBao.value = "";
+    }, 3000);
+  } catch (error) {
+    Object.assign(loiForm.value, getFieldErrors(error));
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      laMoi ? "Không thể tạo nhân viên" : "Không thể cập nhật nhân viên",
+    );
   } finally {
     dangLuu.value = false;
   }
 }
 
 async function doiMatKhau() {
-  if (!matKhauMoi.value.trim() || matKhauMoi.value.length < 6) {
+  if (!matKhauMoi.value.trim() || matKhauMoi.value.trim().length < 6) {
     loiTrang.value = "Mật khẩu mới phải có ít nhất 6 ký tự.";
     return;
   }
+
   dangLuu.value = true;
   loiTrang.value = "";
   try {
-    await doiMatKhauNhanVien(id!, matKhauMoi.value);
+    await doiMatKhauNhanVien(id!, matKhauMoi.value.trim());
+    thongBao.value = "Đã đổi mật khẩu thành công.";
     matKhauMoi.value = "";
     showDoiMatKhau.value = false;
-    thongBao.value = "Đã đổi mật khẩu thành công!";
-    setTimeout(() => (thongBao.value = ""), 3000);
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể đổi mật khẩu nhân viên");
+    setTimeout(() => {
+      thongBao.value = "";
+    }, 3000);
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể đổi mật khẩu nhân viên");
   } finally {
     dangLuu.value = false;
   }
@@ -153,192 +333,470 @@ async function doiTrangThai(trangThai: number) {
   try {
     const updated = await doiTrangThaiNhanVien(id!, trangThai);
     nhanVien.value = updated;
-    thongBao.value = trangThai === 1 ? "Đã kích hoạt tài khoản!" : "Đã khóa tài khoản!";
-    setTimeout(() => (thongBao.value = ""), 3000);
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể cập nhật trạng thái nhân viên");
+    thongBao.value = trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.";
+    setTimeout(() => {
+      thongBao.value = "";
+    }, 3000);
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể cập nhật trạng thái nhân viên");
   }
 }
 
-async function xoa() {
-  if (!confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) return;
+async function xoaNhanVienHienTai() {
+  if (!window.confirm("Bạn có chắc chắn muốn xóa nhân viên này không?")) return;
   try {
     await xoaNhanVien(id!);
     router.push({ name: "admin-nhan-vien" });
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể xóa nhân viên");
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể xóa nhân viên");
   }
 }
 
 async function xuLyUploadAnh(event: Event) {
   const target = event.target as HTMLInputElement;
   if (!target.files?.length) return;
+
   dangUpload.value = true;
+  loiTrang.value = "";
   try {
     const url = await uploadFile(target.files[0]);
     form.value.hinhAnh = url;
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải ảnh nhân viên");
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải ảnh nhân viên");
   } finally {
     dangUpload.value = false;
   }
 }
 
-const dsVaiTro = [
-  { value: 1, label: "Admin" },
-  { value: 2, label: "Bán hàng" },
-  { value: 3, label: "Kho" },
-];
+function apDungDuLieuQr(rawValue: string) {
+  loiTrang.value = "";
+
+  // Try to parse as CCCD format first (separated by '|')
+  if (rawValue.includes("|")) {
+    const parts = rawValue.split("|");
+    if (parts.length >= 6) {
+      form.value.cccd = parts[0] || form.value.cccd;
+      form.value.hoTen = parts[2] || form.value.hoTen;
+      
+      const rawNgaySinh = parts[3];
+      if (rawNgaySinh && rawNgaySinh.length === 8) {
+        // ddmmyyyy -> yyyy-MM-dd
+        form.value.ngaySinh = `${rawNgaySinh.substring(4,8)}-${rawNgaySinh.substring(2,4)}-${rawNgaySinh.substring(0,2)}`;
+      }
+      
+      form.value.gioiTinh = parts[4] === "Nữ" ? "Nữ" : "Nam";
+      form.value.diaChiCuThe = parts[5] || form.value.diaChiCuThe;
+      
+      moQuetQr.value = false;
+      thongBao.value = "Đã điền thông tin từ CCCD.";
+      setTimeout(() => {
+        thongBao.value = "";
+      }, 3000);
+      return;
+    }
+  }
+
+  // Fallback to JSON logic
+  let parsed: Record<string, any> | null = null;
+  try {
+    parsed = JSON.parse(rawValue);
+  } catch {
+    loiTrang.value = "Mã QR không đúng định dạng CCCD hoặc dữ liệu hợp lệ.";
+    return;
+  }
+
+  if (!parsed || parsed.type !== "sportshoe-employee") {
+    loiTrang.value = "Mã QR này không phải dữ liệu nhân viên SportShoe.";
+    return;
+  }
+
+  form.value.hoTen = String(parsed.hoTen ?? form.value.hoTen ?? "");
+  form.value.email = String(parsed.email ?? form.value.email ?? "");
+  form.value.sdt = String(parsed.sdt ?? form.value.sdt ?? "");
+  form.value.cccd = String(parsed.cccd ?? form.value.cccd ?? "");
+  form.value.gioiTinh = parsed.gioiTinh === "Nữ" ? "Nữ" : "Nam";
+  form.value.ngaySinh = String(parsed.ngaySinh ?? form.value.ngaySinh ?? "");
+  form.value.tinhThanh = String(parsed.tinhThanh ?? form.value.tinhThanh ?? "");
+  form.value.quanHuyen = String(parsed.quanHuyen ?? form.value.quanHuyen ?? "");
+  form.value.xaPhuong = String(parsed.xaPhuong ?? form.value.xaPhuong ?? "");
+  form.value.diaChiCuThe = String(parsed.diaChiCuThe ?? form.value.diaChiCuThe ?? "");
+  form.value.vaiTro = Number(parsed.vaiTro ?? form.value.vaiTro ?? 2);
+
+  if (laMoi && parsed.matKhau) {
+    form.value.matKhau = String(parsed.matKhau);
+  }
+
+  moQuetQr.value = false;
+  thongBao.value = "Đã điền thông tin từ mã QR.";
+  setTimeout(() => {
+    thongBao.value = "";
+  }, 3000);
+}
 
 onMounted(taiChiTiet);
 </script>
 
 <template>
-  <div class="space-y-5">
-    <!-- Header -->
-    <section class="flex items-center gap-4">
-      <button
-        @click="router.push({ name: 'admin-nhan-vien' })"
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
-      >
-        <ArrowLeft class="h-5 w-5" />
-      </button>
-      <div>
-        <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
+  <div class="space-y-6">
+    <section class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <button
+          type="button"
+          @click="router.push({ name: 'admin-nhan-vien' })"
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+        >
+          <ArrowLeft class="h-5 w-5" />
+        </button>
+        <h1 class="text-[28px] font-bold tracking-tight text-slate-900">
           {{ laMoi ? "Thêm nhân viên mới" : "Chi tiết nhân viên" }}
         </h1>
-        <p class="text-sm text-slate-400">{{ laMoi ? "Điền thông tin nhân viên mới vào form bên dưới." : `Mã: ${nhanVien?.ma ?? '...'}` }}</p>
       </div>
+
+      <button
+        type="button"
+        @click="moQuetQr = true"
+        class="admin-btn-soft h-12 min-w-[148px] rounded-[18px] px-5 text-[15px] font-semibold"
+      >
+        <QrCode class="h-4 w-4" />
+        Quét QR
+      </button>
     </section>
 
-    <!-- Loading -->
-    <div v-if="dangTai" class="rounded-[24px] border bg-white p-10 text-center text-slate-400 text-sm">Đang tải...</div>
+    <div
+      v-if="dangTai"
+      class="rounded-[28px] border border-slate-200 bg-white px-6 py-16 text-center text-sm text-slate-400 shadow-sm"
+    >
+      Đang tải thông tin nhân viên...
+    </div>
 
     <template v-else>
-      <!-- Notification -->
-      <div v-if="thongBao" class="rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-sm font-semibold text-emerald-700">✓ {{ thongBao }}</div>
-      <div v-if="loiTrang" class="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
+      <div
+        v-if="thongBao"
+        class="rounded-[20px] border border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-700"
+      >
+        {{ thongBao }}
+      </div>
+      <div
+        v-if="loiTrang"
+        class="rounded-[20px] border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700"
+      >
+        {{ loiTrang }}
+      </div>
 
-      <div class="flex flex-col-reverse xl:grid gap-5 xl:grid-cols-[320px_1fr]">
-        
-        <!-- Sidebar - moved to the left -->
-        <div class="space-y-4">
-          <!-- Avatar card -->
-          <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm text-center">
-            <div class="relative inline-block cursor-pointer" @click="($refs.fileInputAvatar as HTMLInputElement)?.click()" title="Bấm để thay đổi hình ảnh">
-              <img
-                :src="form.hinhAnh || nhanVien?.hinhAnh || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(form.hoTen || nhanVien?.hoTen || 'NV') + '&background=f1f5f9&color=475569&size=128'"
-                class="mx-auto h-32 w-32 rounded-full object-cover ring-4 ring-slate-100 hover:opacity-80 transition"
+      <div class="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
+          <h2 class="text-[18px] font-bold text-slate-900">Thông tin nhân viên</h2>
+          <div class="mt-7 h-px bg-slate-200"></div>
+
+          <div class="pt-10">
+            <div class="flex justify-center">
+              <button
+                type="button"
+                @click="fileInputAvatar?.click()"
+                class="relative flex h-[194px] w-[194px] items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-200 bg-slate-50 text-center transition hover:border-slate-300 hover:bg-slate-100"
+              >
+                <img
+                  v-if="form.hinhAnh"
+                  :src="form.hinhAnh"
+                  alt="Ảnh nhân viên"
+                  class="h-full w-full object-cover"
+                />
+                <span v-else class="text-[18px] font-medium text-slate-400">Chọn ảnh</span>
+                <span
+                  v-if="dangUpload"
+                  class="absolute inset-0 flex items-center justify-center bg-white/80 text-sm font-semibold text-slate-600"
+                >
+                  Đang tải...
+                </span>
+              </button>
+              <input
+                ref="fileInputAvatar"
+                type="file"
+                accept="image/*,.jpg,.jpeg,.png,.gif,.webp"
+                class="hidden"
+                @change="xuLyUploadAnh"
               />
-              <input type="file" ref="fileInputAvatar" @change="xuLyUploadAnh" accept="image/*,.jpg,.jpeg,.png,.gif,.webp" class="hidden" />
-              <div v-if="dangUpload" class="absolute inset-0 flex items-center justify-center rounded-full bg-white/70">
-                <span class="text-xs font-bold text-slate-600">Đang tải...</span>
-              </div>
             </div>
-            <p class="mt-4 text-base font-bold text-slate-800">{{ form.hoTen || nhanVien?.hoTen || "Nhân viên mới" }}</p>
-            <p class="text-sm text-slate-400">{{ form.email || nhanVien?.email || "Chưa cập nhật email" }}</p>
-            
-            <div v-if="!laMoi" class="mt-2">
-              <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="nhanVien?.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
-                {{ nhanVien?.tenTrangThai }}
+
+            <label class="mt-10 block space-y-2">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Họ và tên <span class="text-rose-500">*</span>
               </span>
-            </div>
-            <p v-else class="mt-2 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
+              <input
+                v-model="form.hoTen"
+                type="text"
+                placeholder="Nhập họ và tên"
+                :class="[
+                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
+                  loiForm.hoTen ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-rose-300',
+                ]"
+              />
+              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
+            </label>
           </div>
+        </section>
 
-          <!-- Các chức năng phụ (chỉ hiện khi sửa) -->
-          <template v-if="!laMoi">
-            <!-- Đổi mật khẩu -->
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 class="mb-3 text-sm font-bold text-slate-800">Đổi mật khẩu</h3>
-              <div v-if="!showDoiMatKhau">
-                <button @click="showDoiMatKhau = true" class="w-full rounded-2xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Đổi mật khẩu</button>
+        <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
+          <h2 class="text-[18px] font-bold text-slate-900 text-black">Thông tin chi tiết</h2>
+          <div class="mt-7 h-px bg-slate-200"></div>
+
+          <div class="mt-10 grid gap-x-6 gap-y-7 xl:grid-cols-12" style="color: black;">
+            <label class="space-y-2 xl:col-span-6">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Số cccd <span class="text-rose-500">*</span>
+              </span>
+              <input
+                v-model="form.cccd"
+                type="text"
+                placeholder="Nhập số CCCD"
+                :class="[
+                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
+                  loiForm.cccd ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-amber-300',
+                ]"
+              />
+              <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
+            </label>
+
+            <div class="space-y-2 xl:col-span-6">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Giới tính <span class="text-rose-500">*</span>
+              </span>
+              <div class="flex h-14 items-center gap-8 px-1 text-[17px] text-slate-700">
+                <label class="inline-flex items-center gap-3">
+                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-cyan-600" />
+                  <span>Nam</span>
+                </label>
+                <label class="inline-flex items-center gap-3">
+                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-cyan-600" />
+                  <span>Nữ</span>
+                </label>
               </div>
-              <div v-else class="space-y-3">
-                <input v-model="matKhauMoi" type="password" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)" class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" />
-                <div class="flex gap-2">
-                  <button @click="doiMatKhau" :disabled="dangLuu" class="flex-1 rounded-2xl bg-rose-500 py-2 text-xs font-bold text-white hover:bg-rose-600 transition">Xác nhận</button>
-                  <button @click="showDoiMatKhau = false; matKhauMoi = ''" class="flex-1 rounded-2xl border py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 transition">Hủy</button>
-                </div>
-              </div>
             </div>
 
-            <!-- Đổi trạng thái -->
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm space-y-2">
-              <h3 class="mb-3 text-sm font-bold text-slate-800">Trạng thái tài khoản</h3>
-              <button
-                v-if="nhanVien?.trangThai === 1"
-                @click="doiTrangThai(0)"
-                class="w-full rounded-2xl bg-rose-50 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-100 transition"
-              >🔒 Khóa tài khoản</button>
-              <button
-                v-else
-                @click="doiTrangThai(1)"
-                class="w-full rounded-2xl bg-emerald-50 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-100 transition"
-              >✓ Kích hoạt tài khoản</button>
-            </div>
-          </template>
-        </div>
-
-        <!-- Main form -->
-        <section class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-500">
-              <User class="h-5 w-5" />
-            </div>
-            <div>
-              <h2 class="text-base font-bold text-slate-800">Thông tin cơ bản</h2>
-              <p class="text-sm text-slate-400">Họ tên, email, liên hệ và vai trò trong hệ thống.</p>
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="space-y-2">
-              <span class="text-[13px] font-semibold text-slate-500">Họ và tên <span class="text-rose-500">*</span></span>
-              <input v-model="form.hoTen" type="text" placeholder="Nhập họ tên" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.hoTen ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
-              <p v-if="loiForm.hoTen" class="text-xs text-rose-500 mt-1">{{ loiForm.hoTen }}</p>
+            <label class="space-y-2 xl:col-span-6">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Ngày sinh <span class="text-rose-500">*</span>
+              </span>
+              <input
+                v-model="form.ngaySinh"
+                type="date"
+                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+              />
             </label>
 
-            <label class="space-y-2">
-              <span class="text-[13px] font-semibold text-slate-500">Email <span class="text-rose-500">*</span></span>
-              <input v-model="form.email" type="email" placeholder="Nhập email" :disabled="!laMoi" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.email ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300', !laMoi ? 'cursor-not-allowed opacity-60 text-slate-500' : '']" />
-              <p v-if="loiForm.email" class="text-xs text-rose-500 mt-1">{{ loiForm.email }}</p>
+            <label class="space-y-2 xl:col-span-6">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Email <span class="text-rose-500">*</span>
+              </span>
+              <input
+                v-model="form.email"
+                type="email"
+                placeholder="Nhập email"
+                :class="[
+                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
+                  loiForm.email ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-slate-300',
+                ]"
+              />
+              <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
             </label>
 
-            <label class="space-y-2" v-if="laMoi">
-              <span class="text-[13px] font-semibold text-slate-500">Mật khẩu <span class="text-rose-500">*</span></span>
-              <input v-model="form.matKhau" type="password" placeholder="Tối thiểu 6 ký tự" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.matKhau ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
-              <p v-if="loiForm.matKhau" class="text-xs text-rose-500 mt-1">{{ loiForm.matKhau }}</p>
-            </label>
-
-            <label class="space-y-2">
-              <span class="text-[13px] font-semibold text-slate-500">Số điện thoại</span>
-              <input v-model="form.sdt" type="tel" placeholder="Nhập SĐT" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition" />
-            </label>
-
-            <label class="space-y-2">
-              <span class="text-[13px] font-semibold text-slate-500">Vai trò <span class="text-rose-500">*</span></span>
-              <select v-model="form.vaiTro" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition">
-                <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">{{ vt.label }}</option>
+            <label class="space-y-2 xl:col-span-4">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Tỉnh/Thành phố <span class="text-rose-500">*</span>
+              </span>
+              <select
+                v-model="form.tinhThanh"
+                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+              >
+                <option value="">Chọn tỉnh thành</option>
+                <option v-for="item in dsTinhThanh" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
             </label>
+
+            <label class="space-y-2 xl:col-span-4">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Quận/Huyện <span class="text-rose-500">*</span>
+              </span>
+              <select
+                v-model="form.quanHuyen"
+                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+              >
+                <option value="">Chọn quận huyện</option>
+                <option v-for="item in dsQuanHuyen" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+
+            <label class="space-y-2 xl:col-span-4">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Xã/Phường/Thị trấn <span class="text-rose-500">*</span>
+              </span>
+              <select
+                v-model="form.xaPhuong"
+                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+              >
+                <option value="">Chọn xã phường</option>
+                <option v-for="item in dsXaPhuong" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+
+            <label class="space-y-2 xl:col-span-6">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Số điện thoại <span class="text-rose-500">*</span>
+              </span>
+              <input
+                v-model="form.sdt"
+                type="tel"
+                placeholder="Nhập số điện thoại"
+                :class="[
+                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
+                  loiForm.sdt ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-slate-300',
+                ]"
+              />
+              <p v-if="loiForm.sdt" class="text-xs text-rose-500">{{ loiForm.sdt }}</p>
+            </label>
+
+            <label class="space-y-2 xl:col-span-6">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Vai trò <span class="text-rose-500">*</span>
+              </span>
+              <select
+                v-model="form.vaiTro"
+                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+              >
+                <option v-for="item in dsVaiTro" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+
+            <label class="space-y-2 xl:col-span-12">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Địa chỉ cụ thể <span class="text-rose-500">*</span>
+              </span>
+              <input
+                v-model="form.diaChiCuThe"
+                type="text"
+                placeholder="Nhập địa chỉ cụ thể"
+                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300"
+              />
+            </label>
+
+            <label v-if="laMoi" class="space-y-2 xl:col-span-12">
+              <span class="text-[18px] font-semibold tracking-[0.06em] text-black">
+                Mật khẩu <span class="text-rose-500">*</span>
+              </span>
+              <input
+                v-model="form.matKhau"
+                type="password"
+                placeholder="Tối thiểu 6 ký tự"
+                :class="[
+                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
+                  loiForm.matKhau ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-slate-300',
+                ]"
+              />
+              <p v-if="loiForm.matKhau" class="text-xs text-rose-500">{{ loiForm.matKhau }}</p>
+            </label>
           </div>
 
-          <label class="space-y-2 block mb-6">
-            <span class="text-[13px] font-semibold text-slate-500">Địa chỉ</span>
-            <input v-model="form.diaChi" type="text" placeholder="Nhập địa chỉ" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition" />
-          </label>
-
-          <!-- Actions -->
-          <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-            <button @click="luu" :disabled="dangLuu" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
+          <div class="mt-10 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-6">
+            <button
+              @click="luu"
+              :disabled="dangLuu"
+              class="admin-btn-primary h-12 rounded-[18px] px-6 text-[15px] font-semibold"
+            >
               <Save class="h-4 w-4" />
-              {{ dangLuu ? "Đang lưu..." : (laMoi ? "Tạo nhân viên" : "Lưu thay đổi") }}
+              {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
             </button>
-            <button @click="router.push({ name: 'admin-nhan-vien' })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
+            <button
+              type="button"
+              @click="router.push({ name: 'admin-nhan-vien' })"
+              class="admin-btn-soft h-12 rounded-[18px] px-6 text-[15px] font-semibold"
+            >
+              Hủy
+            </button>
           </div>
         </section>
       </div>
+
+      <section v-if="!laMoi" class="grid gap-6 xl:grid-cols-2">
+        <div class="rounded-[28px] border border-slate-200 bg-white px-8 py-7 shadow-sm">
+          <h3 class="text-[18px] font-bold text-slate-900">Đổi mật khẩu</h3>
+          <div class="mt-6 space-y-4">
+            <template v-if="showDoiMatKhau">
+              <input
+                v-model="matKhauMoi"
+                type="password"
+                placeholder="Mật khẩu mới tối thiểu 6 ký tự"
+                class="h-12 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[16px] text-slate-700 outline-none focus:border-slate-300"
+              />
+              <div class="flex gap-3">
+                <button @click="doiMatKhau" :disabled="dangLuu" class="admin-btn-primary h-11 rounded-[16px] px-5">
+                  Xác nhận
+                </button>
+                <button
+                  type="button"
+                  @click="showDoiMatKhau = false; matKhauMoi = ''"
+                  class="admin-btn-soft h-11 rounded-[16px] px-5"
+                >
+                  Hủy
+                </button>
+              </div>
+            </template>
+            <button
+              v-else
+              type="button"
+              @click="showDoiMatKhau = true"
+              class="admin-btn-soft h-11 rounded-[16px] px-5"
+            >
+              Đổi mật khẩu
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-[28px] border border-slate-200 bg-white px-8 py-7 shadow-sm">
+          <h3 class="text-[18px] font-bold text-slate-900">Trạng thái tài khoản</h3>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button
+              v-if="nhanVien?.trangThai === 1"
+              type="button"
+              @click="doiTrangThai(0)"
+              class="h-11 rounded-[16px] bg-rose-50 px-5 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+            >
+              Khóa tài khoản
+            </button>
+            <button
+              v-else
+              type="button"
+              @click="doiTrangThai(1)"
+              class="h-11 rounded-[16px] bg-emerald-50 px-5 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-100"
+            >
+              Kích hoạt tài khoản
+            </button>
+            <button
+              type="button"
+              @click="xoaNhanVienHienTai"
+              class="h-11 rounded-[16px] border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+            >
+              Xóa nhân viên
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <BanHangQrScannerModal
+        :open="moQuetQr"
+        chip-label="Quét QR nhân viên"
+        title="Dùng camera để nhận dữ liệu nhân viên"
+        loading-text="Đang bật camera để quét mã QR nhân viên..."
+        fallback-helper-text="Đưa mã QR nhân viên vào giữa khung quét để tự động điền biểu mẫu."
+        manual-section-title="Dữ liệu quét thủ công"
+        manual-section-description="Bạn có thể dán chuỗi JSON nhân viên nếu camera chưa đọc được mã QR."
+        manual-label="Dữ liệu nhân viên"
+        manual-placeholder='Ví dụ: {"type":"sportshoe-employee","hoTen":"Trần Thị Thu Thủy"}'
+        confirm-button-label="Dùng dữ liệu này"
+        retry-button-label="Quét lại"
+        camera-hint="Ưu tiên camera sau để quét mã QR nhân viên"
+        @close="moQuetQr = false"
+        @scan="apDungDuLieuQr"
+      />
     </template>
   </div>
 </template>

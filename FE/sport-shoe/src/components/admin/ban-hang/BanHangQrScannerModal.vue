@@ -7,6 +7,50 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  chipLabel: {
+    type: String,
+    default: "Quét QR sản phẩm",
+  },
+  title: {
+    type: String,
+    default: "Dùng camera để nhận mã sản phẩm",
+  },
+  loadingText: {
+    type: String,
+    default: "Đang bật camera để quét mã sản phẩm...",
+  },
+  fallbackHelperText: {
+    type: String,
+    default: "Đưa QR hoặc mã vạch sản phẩm vào giữa khung quét.",
+  },
+  manualSectionTitle: {
+    type: String,
+    default: "Mã quét thủ công",
+  },
+  manualSectionDescription: {
+    type: String,
+    default: "Dùng khi camera chưa nhận được QR hoặc bạn muốn dán mã SKU / mã biến thể.",
+  },
+  manualLabel: {
+    type: String,
+    default: "Mã sản phẩm",
+  },
+  manualPlaceholder: {
+    type: String,
+    default: "Ví dụ: G49760-MS001-44-5816",
+  },
+  confirmButtonLabel: {
+    type: String,
+    default: "Dùng mã này để tìm sản phẩm",
+  },
+  retryButtonLabel: {
+    type: String,
+    default: "Quét lại",
+  },
+  cameraHint: {
+    type: String,
+    default: "Ưu tiên camera sau nếu thiết bị có hỗ trợ",
+  },
 });
 
 const emit = defineEmits(["close", "scan"]);
@@ -46,7 +90,7 @@ const canUseCamera = computed(
 
 const helperText = computed(() => {
   if (loadingCamera.value) {
-    return "Đang bật camera để quét mã sản phẩm...";
+    return props.loadingText;
   }
 
   if (scannerError.value) {
@@ -59,7 +103,7 @@ const helperText = computed(() => {
       : "Trình duyệt này sẽ dùng chế độ quét tương thích để nhận QR.";
   }
 
-  return "Đưa QR hoặc mã vạch sản phẩm vào giữa khung quét.";
+  return props.fallbackHelperText;
 });
 
 async function taoBarcodeDetector() {
@@ -252,7 +296,7 @@ async function batCamera() {
     scannerError.value =
       error instanceof Error
         ? error.message
-        : "Không thể bật camera để quét mã sản phẩm.";
+        : "Không thể bật camera để quét mã.";
   } finally {
     loadingCamera.value = false;
   }
@@ -265,7 +309,7 @@ function dongModal() {
 function xacNhanMaThuCong() {
   const value = manualCode.value.trim();
   if (!value) {
-    scannerError.value = "Vui lòng quét hoặc nhập mã sản phẩm.";
+    scannerError.value = "Vui lòng quét hoặc nhập mã.";
     return;
   }
 
@@ -316,10 +360,10 @@ onBeforeUnmount(() => {
                 class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-600"
               >
                 <QrCode :size="16" />
-                Quét QR sản phẩm
+                {{ chipLabel }}
               </div>
               <h2 class="mt-3 text-2xl font-black text-slate-900">
-                Dùng camera để nhận mã sản phẩm
+                {{ title }}
               </h2>
               <p class="mt-2 text-sm text-slate-500">
                 {{ helperText }}
@@ -369,7 +413,7 @@ onBeforeUnmount(() => {
               <div class="mt-4 flex items-center justify-between gap-3">
                 <div class="inline-flex items-center gap-2 text-sm text-slate-200">
                   <Camera :size="16" />
-                  Ưu tiên camera sau nếu thiết bị có hỗ trợ
+                  {{ cameraHint }}
                 </div>
 
                 <button
@@ -378,27 +422,27 @@ onBeforeUnmount(() => {
                   @click="thuLai"
                 >
                   <RefreshCw :size="15" />
-                  Quét lại
+                  {{ retryButtonLabel }}
                 </button>
               </div>
             </div>
 
             <div class="space-y-4 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
               <div>
-                <h3 class="text-lg font-black text-slate-900">Mã quét thủ công</h3>
+                <h3 class="text-lg font-black text-slate-900">{{ manualSectionTitle }}</h3>
                 <p class="mt-1 text-sm text-slate-500">
-                  Dùng khi camera chưa nhận được QR hoặc bạn muốn dán mã SKU / mã biến thể.
+                  {{ manualSectionDescription }}
                 </p>
               </div>
 
               <label class="block">
                 <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Mã sản phẩm
+                  {{ manualLabel }}
                 </span>
                 <textarea
                   v-model="manualCode"
                   rows="5"
-                  placeholder="Ví dụ: G49760-MS001-44-5816"
+                  :placeholder="manualPlaceholder"
                   class="w-full rounded-[24px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-200"
                 />
               </label>
@@ -416,7 +460,7 @@ onBeforeUnmount(() => {
                 @click="xacNhanMaThuCong"
               >
                 <QrCode :size="16" />
-                Dùng mã này để tìm sản phẩm
+                {{ confirmButtonLabel }}
               </button>
             </div>
           </div>

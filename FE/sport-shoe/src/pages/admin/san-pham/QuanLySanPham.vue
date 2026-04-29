@@ -1149,7 +1149,7 @@ onMounted(async () => {
                     <button
                       @click="goToVariants(item)"
                       title="Quản lý biến thể"
-                      class="admin-table-action text-violet-500 hover:text-violet-600"
+                      class="admin-table-action text-slate-600 hover:text-slate-900"
                     >
                       <Eye :size="14" />
                     </button>

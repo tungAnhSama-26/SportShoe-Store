@@ -8,6 +8,7 @@ import {
 import { useAdminSession } from "../../../composable/useAdminSession";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 import {
@@ -18,8 +19,6 @@ import {
   RotateCcw,
   Search,
   Users,
-  ToggleLeft,
-  ToggleRight,
 } from "lucide-vue-next";
 
 const router = useRouter();
@@ -147,6 +146,8 @@ watch(
   { deep: true },
 );
 
+const dangDoiTrangThai = ref<string | null>(null);
+
 async function capNhatTrangThai(nv: any) {
   // Kiểm tra quyền: Chỉ Admin mới được đổi trạng thái
   if (adminSession.value.vaiTro !== "Quản trị viên") {
@@ -167,6 +168,7 @@ async function capNhatTrangThai(nv: any) {
 
   if (!window.confirm(message)) return;
 
+  dangDoiTrangThai.value = nv.id;
   try {
     await doiTrangThaiNhanVien(nv.id, nv.trangThai === 1 ? 0 : 1);
     await taiDanhSach();
@@ -174,6 +176,8 @@ async function capNhatTrangThai(nv: any) {
     window.alert(
       getDisplayErrorMessage(e, "Không thể cập nhật trạng thái nhân viên"),
     );
+  } finally {
+    dangDoiTrangThai.value = null;
   }
 }
 
@@ -375,42 +379,24 @@ onMounted(taiDanhSach);
                   {{ nv.tenTrangThai }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-2">
+              <td class="rounded-r-2xl px-4 py-3 align-top text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <AdminQuickStatusAction
+                    v-if="adminSession.vaiTro === 'Quản trị viên'"
+                    :loading="dangDoiTrangThai === nv.id"
+                    :disabled="nv.tenVaiTro === 'Admin'"
+                    :disabled-title="'Không thể đổi trạng thái Admin'"
+                    :action-label="nv.trangThai === 1 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
+                    :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
+                    @toggle="capNhatTrangThai(nv)"
+                  />
                   <button
                     type="button"
                     @click="xemChiTiet(nv.id)"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
+                    class="admin-table-action text-slate-600 hover:text-slate-900"
                     title="Xem chi tiết"
                   >
-                    <Eye class="h-4 w-4" />
-                  </button>
-                  <button
-                    v-if="adminSession.vaiTro === 'Quản trị viên'"
-                    :disabled="nv.tenVaiTro === 'Admin'"
-                    type="button"
-                    @click="capNhatTrangThai(nv)"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition"
-                    :class="[
-                      nv.trangThai === 1
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                        : 'bg-rose-50 text-rose-600 hover:bg-rose-100',
-                      nv.tenVaiTro === 'Admin'
-                        ? 'opacity-40 cursor-not-allowed'
-                        : '',
-                    ]"
-                    :title="
-                      nv.tenVaiTro === 'Admin'
-                        ? 'Không thể đổi trạng thái Admin'
-                        : nv.trangThai === 1
-                          ? 'Cho nghỉ làm'
-                          : 'Kích hoạt nhân viên'
-                    "
-                  >
-                    <component
-                      :is="nv.trangThai === 1 ? ToggleRight : ToggleLeft"
-                      class="h-5 w-5"
-                    />
+                    <Eye :size="14" />
                   </button>
                 </div>
               </td>

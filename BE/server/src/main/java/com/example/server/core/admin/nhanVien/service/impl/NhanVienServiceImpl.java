@@ -9,6 +9,7 @@ import com.example.server.core.admin.nhanVien.service.NhanVienService;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
 import com.example.server.repository.NhanVienRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +23,11 @@ import java.util.UUID;
 public class NhanVienServiceImpl implements NhanVienService {
 
     private final NhanVienRepository nhanVienRepository;
-    public NhanVienServiceImpl(NhanVienRepository nhanVienRepository) {
+    private final EmailService emailService;
+
+    public NhanVienServiceImpl(NhanVienRepository nhanVienRepository, EmailService emailService) {
         this.nhanVienRepository = nhanVienRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -68,7 +72,20 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setVaiTro(request.vaiTro());
         nv.setTrangThai(1);
         nv.setNgayTao(Instant.now());
-        return toItem(nhanVienRepository.save(nv));
+
+        NhanVien saved = nhanVienRepository.save(nv);
+        try {
+            emailService.sendRegistrationEmail(
+                    saved.getEmail(),
+                    saved.getHoTen(),
+                    saved.getMa(),
+                    request.matKhau()
+            );
+        } catch (Exception exception) {
+            System.err.println("Khong the gui email tai khoan nhan vien: " + exception.getMessage());
+        }
+
+        return toItem(saved);
     }
 
     @Override

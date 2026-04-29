@@ -2,10 +2,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Eye, FileSpreadsheet, Filter, Lock, Plus, RotateCcw, Search, Unlock, Users
+  Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Users
 } from "lucide-vue-next";
 import { doiTrangThaiKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
@@ -246,30 +247,21 @@ onMounted(taiDanhSach);
                   {{ kh.tenTrangThai }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="inline-flex items-center gap-2">
+              <td class="rounded-r-2xl px-4 py-3 align-top text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <AdminQuickStatusAction
+                    :loading="dangDoiTrangThai === kh.id"
+                    :action-label="kh.trangThai === 1 ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'"
+                    :intent="kh.trangThai === 1 ? 'deactivate' : 'activate'"
+                    @toggle="toggleTrangThai(kh)"
+                  />
                   <button
                     type="button"
                     @click="xemChiTiet(kh.id)"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-500"
+                    class="admin-table-action text-slate-600 hover:text-slate-900"
                     title="Xem chi tiết"
                   >
-                    <Eye class="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    @click="toggleTrangThai(kh)"
-                    :disabled="dangDoiTrangThai === kh.id"
-                    :title="kh.trangThai === 1 ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'"
-                    :class="[
-                      'inline-flex h-10 w-10 items-center justify-center rounded-full transition disabled:opacity-50',
-                      kh.trangThai === 1
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-rose-50 hover:text-rose-500'
-                        : 'bg-rose-50 text-rose-500 hover:bg-emerald-50 hover:text-emerald-600'
-                    ]"
-                  >
-                    <Unlock v-if="kh.trangThai === 1" class="h-4 w-4" />
-                    <Lock v-else class="h-4 w-4" />
+                    <Eye :size="14" />
                   </button>
                 </div>
               </td>
