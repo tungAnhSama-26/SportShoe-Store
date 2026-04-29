@@ -36,6 +36,7 @@ public class KhachHangServiceImpl implements KhachHangService {
             DiaChiKhachHangRepository diaChiKhachHangRepository,
             EmailService emailService
     ) {
+
         this.khachHangRepository = khachHangRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
         this.emailService = emailService;
@@ -127,7 +128,6 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgayCapNhat(Instant.now());
         return toKhachHangResponse(khachHangRepository.save(kh));
     }
-
     @Override
     @Transactional
     public KhachHangResponse doiMatKhau(UUID id, DoiMatKhauRequest request) {
@@ -136,7 +136,6 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgayCapNhat(Instant.now());
         return toKhachHangResponse(khachHangRepository.save(kh));
     }
-
     @Override
     @Transactional
     public void xoaKhachHang(UUID id) {
@@ -164,11 +163,9 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Transactional
     public DiaChiResponse themDiaChi(UUID khachHangId, DiaChiRequest request) {
         KhachHang kh = findKhachHang(khachHangId);
-        
         if (request.laMacDinh()) {
             resetDefaultAddress(khachHangId);
         }
-
         DiaChiKhachHang dc = new DiaChiKhachHang();
         mapDiaChi(dc, request);
         dc.setKhachHang(kh);
@@ -177,16 +174,13 @@ public class KhachHangServiceImpl implements KhachHangService {
 
         return toDiaChiResponse(diaChiKhachHangRepository.save(dc));
     }
-
     @Override
     @Transactional
     public DiaChiResponse capNhatDiaChi(Integer diaChiId, DiaChiRequest request) {
         DiaChiKhachHang dc = findDiaChi(diaChiId);
-        
         if (request.laMacDinh()) {
             resetDefaultAddress(dc.getKhachHang().getId());
         }
-
         mapDiaChi(dc, request);
         ensureAddressAuditFields(dc);
         dc.setNgayCapNhat(Instant.now());
