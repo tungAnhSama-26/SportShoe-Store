@@ -13,7 +13,7 @@
 [INFO] 
 [INFO] --- compiler:3.14.1:compile (default-compile) @ server ---
 [INFO] Recompiling the module because of changed source code.
-[INFO] Compiling 161 source files with javac [debug parameters release 17] to target\classes
+[INFO] Compiling 164 source files with javac [debug parameters release 17] to target\classes
 [WARNING] /C:/Users/tunga/OneDrive/Desktop/SportShoe-Store/BE/server/src/main/java/com/example/server/infrastructure/JacksonConfig.java:[14,12] org.springframework.http.converter.json.Jackson2ObjectMapperBuilder in org.springframework.http.converter.json has been deprecated and marked for removal
 [WARNING] /C:/Users/tunga/OneDrive/Desktop/SportShoe-Store/BE/server/src/main/java/com/example/server/infrastructure/JacksonConfig.java:[14,12] org.springframework.http.converter.json.Jackson2ObjectMapperBuilder in org.springframework.http.converter.json has been deprecated and marked for removal
 [WARNING] /C:/Users/tunga/OneDrive/Desktop/SportShoe-Store/BE/server/src/main/java/com/example/server/infrastructure/JacksonConfig.java:[14,12] org.springframework.http.converter.json.Jackson2ObjectMapperBuilder in org.springframework.http.converter.json has been deprecated and marked for removal
@@ -43,23 +43,23 @@
 
  :: Spring Boot ::                (v4.0.5)
 
-2026-04-23T23:50:19.963+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : Starting ServerApplication using Java 17.0.12 with PID 17084 (C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server\target\classes started by tunga in C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server)
-2026-04-23T23:50:19.966+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-04-23T23:50:20.007+07:00  INFO 17084 --- [server] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
-2026-04-23T23:50:20.009+07:00  INFO 17084 --- [server] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
-2026-04-23T23:50:20.590+07:00  INFO 17084 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-04-23T23:50:20.801+07:00  INFO 17084 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 201 ms. Found 27 JPA repository interfaces.
-2026-04-23T23:50:21.375+07:00  INFO 17084 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
-2026-04-23T23:50:21.388+07:00  INFO 17084 --- [server] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-04-23T23:50:21.388+07:00  INFO 17084 --- [server] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.20]
-2026-04-23T23:50:21.421+07:00  INFO 17084 --- [server] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1411 ms
-2026-04-23T23:50:21.572+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
-2026-04-23T23:50:21.630+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.7.Final
-2026-04-23T23:50:21.992+07:00  INFO 17084 --- [server] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-04-23T23:50:22.020+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-04-23T23:50:22.221+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: 14391870-05d2-4838-80c6-788dc2bcd7ac
-2026-04-23T23:50:22.225+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-04-23T23:50:22.318+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+2026-04-29T16:08:04.797+07:00  INFO 6956 --- [server] [  restartedMain] com.example.server.ServerApplication     : Starting ServerApplication using Java 17.0.12 with PID 6956 (C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server\target\classes started by tunga in C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server)
+2026-04-29T16:08:04.800+07:00  INFO 6956 --- [server] [  restartedMain] com.example.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-04-29T16:08:04.836+07:00  INFO 6956 --- [server] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-04-29T16:08:04.836+07:00  INFO 6956 --- [server] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-04-29T16:08:05.394+07:00  INFO 6956 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-29T16:08:05.512+07:00  INFO 6956 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 110 ms. Found 27 JPA repository interfaces.
+2026-04-29T16:08:05.989+07:00  INFO 6956 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-04-29T16:08:06.001+07:00  INFO 6956 --- [server] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-29T16:08:06.001+07:00  INFO 6956 --- [server] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.20]
+2026-04-29T16:08:06.036+07:00  INFO 6956 --- [server] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1198 ms
+2026-04-29T16:08:06.184+07:00  INFO 6956 --- [server] [  restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-04-29T16:08:06.236+07:00  INFO 6956 --- [server] [  restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.7.Final
+2026-04-29T16:08:06.589+07:00  INFO 6956 --- [server] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-29T16:08:06.617+07:00  INFO 6956 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-29T16:08:06.841+07:00  INFO 6956 --- [server] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: 9b107d57-7f61-474a-90dd-f08d7865ff9c
+2026-04-29T16:08:06.843+07:00  INFO 6956 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-29T16:08:06.907+07:00  INFO 6956 --- [server] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
 	Database JDBC URL [jdbc:sqlserver://localhost:1433;concatNullYieldsNull=ON;quotedIdentifier=ON;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;vectorTypeSupport=v1;cacheBulkCopyMetadata=false;bulkCopyForBatchInsertAllowEncryptedValueModifications=false;bulkCopyForBatchInsertTableLock=false;bulkCopyForBatchInsertKeepNulls=false;bulkCopyForBatchInsertKeepIdentity=false;bulkCopyForBatchInsertFireTriggers=false;bulkCopyForBatchInsertCheckConstraints=false;bulkCopyForBatchInsertBatchSize=0;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=giay;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;]
 	Database driver: Microsoft JDBC Driver 13.2 for SQL Server
 	Database dialect: SQLServerDialect
@@ -71,181 +71,15 @@
 	Pool: DataSourceConnectionProvider
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2026-04-23T23:50:23.463+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-04-23T23:50:23.474+07:00  INFO 17084 --- [server] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-04-23T23:50:23.572+07:00  INFO 17084 --- [server] [  restartedMain] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
-2026-04-23T23:50:26.439+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
-2026-04-23T23:50:26.440+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@528d3a52]]
-2026-04-23T23:50:26.441+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
-2026-04-23T23:50:26.453+07:00  INFO 17084 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
-2026-04-23T23:50:26.460+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : Started ServerApplication in 6.816 seconds (process running for 7.179)
-2026-04-23T23:50:36.344+07:00  INFO 17084 --- [server] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-04-23T23:50:36.344+07:00  INFO 17084 --- [server] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-2026-04-23T23:50:36.346+07:00  INFO 17084 --- [server] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
-2026-04-23T23:50:36.686+07:00  WARN 17084 --- [server] [nio-8080-exec-1] ration$PageModule$WarningLoggingModifier : Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
-	For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
-	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
-
-2026-04-23T23:51:00.021+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:51:00.043+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:51:00.280+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:51:26.447+07:00  INFO 17084 --- [server] [MessageBroker-2] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 3, active threads = 1, queued tasks = 1, completed tasks = 1]
-2026-04-23T23:52:00.006+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:52:00.025+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:52:00.181+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:53:00.003+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:53:00.024+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:53:00.172+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:54:00.006+07:00  INFO 17084 --- [server] [MessageBroker-3] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:54:00.011+07:00  INFO 17084 --- [server] [MessageBroker-3] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:54:00.140+07:00  INFO 17084 --- [server] [MessageBroker-3] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:55:00.009+07:00  INFO 17084 --- [server] [MessageBroker-5] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:55:00.026+07:00  INFO 17084 --- [server] [MessageBroker-5] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:55:00.157+07:00  INFO 17084 --- [server] [MessageBroker-5] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:56:00.011+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:56:00.032+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:56:00.167+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:57:00.005+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:57:00.025+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:57:00.180+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:58:00.014+07:00  INFO 17084 --- [server] [MessageBroker-7] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:58:00.031+07:00  INFO 17084 --- [server] [MessageBroker-7] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:58:00.146+07:00  INFO 17084 --- [server] [MessageBroker-7] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-23T23:59:00.014+07:00  INFO 17084 --- [server] [MessageBroker-5] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-23T23:59:00.021+07:00  INFO 17084 --- [server] [MessageBroker-5] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-23T23:59:00.140+07:00  INFO 17084 --- [server] [MessageBroker-5] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:00:00.007+07:00  INFO 17084 --- [server] [MessageBroker-6] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:00:00.021+07:00  INFO 17084 --- [server] [MessageBroker-6] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:00:00.136+07:00  INFO 17084 --- [server] [MessageBroker-6] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:01:00.004+07:00  INFO 17084 --- [server] [MessageBroker-6] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:01:00.023+07:00  INFO 17084 --- [server] [MessageBroker-6] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:01:00.135+07:00  INFO 17084 --- [server] [MessageBroker-6] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:01:38.062+07:00  WARN 17084 --- [server] [nio-8080-exec-4] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [jakarta.validation.ConstraintViolationException: Validation failed for classes [com.example.server.entity.PhieuGiamGiaKhachHang] during persist time for groups [jakarta.validation.groups.Default, ]<EOL>List of constraint violations:[<EOL>?ConstraintViolationImpl{interpolatedMessage='must not be null', propertyPath=ngayTao, rootBeanClass=class com.example.server.entity.PhieuGiamGiaKhachHang, messageTemplate='{jakarta.validation.constraints.NotNull.message}'}<EOL>]]
-2026-04-24T00:02:00.006+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:02:00.014+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:02:00.129+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:03:00.010+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:03:00.029+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:03:00.135+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:04:00.014+07:00  INFO 17084 --- [server] [essageBroker-11] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:04:00.022+07:00  INFO 17084 --- [server] [essageBroker-11] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:04:00.115+07:00  INFO 17084 --- [server] [essageBroker-11] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:04:38.121+07:00  WARN 17084 --- [server] [nio-8080-exec-3] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [jakarta.validation.ConstraintViolationException: Validation failed for classes [com.example.server.entity.PhieuGiamGiaKhachHang] during persist time for groups [jakarta.validation.groups.Default, ]<EOL>List of constraint violations:[<EOL>?ConstraintViolationImpl{interpolatedMessage='must not be null', propertyPath=ngayTao, rootBeanClass=class com.example.server.entity.PhieuGiamGiaKhachHang, messageTemplate='{jakarta.validation.constraints.NotNull.message}'}<EOL>]]
-2026-04-24T00:05:00.005+07:00  INFO 17084 --- [server] [essageBroker-11] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:05:00.013+07:00  INFO 17084 --- [server] [essageBroker-11] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:05:00.128+07:00  INFO 17084 --- [server] [essageBroker-11] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:05:51.278+07:00  WARN 17084 --- [server] [nio-8080-exec-5] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [jakarta.validation.ConstraintViolationException: Validation failed for classes [com.example.server.entity.PhieuGiamGiaKhachHang] during persist time for groups [jakarta.validation.groups.Default, ]<EOL>List of constraint violations:[<EOL>?ConstraintViolationImpl{interpolatedMessage='must not be null', propertyPath=ngayTao, rootBeanClass=class com.example.server.entity.PhieuGiamGiaKhachHang, messageTemplate='{jakarta.validation.constraints.NotNull.message}'}<EOL>]]
-2026-04-24T00:06:00.002+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:06:00.009+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:06:00.119+07:00  INFO 17084 --- [server] [MessageBroker-2] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:06:49.322+07:00  INFO 17084 --- [server] [   File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 1 class path change (0 additions, 1 deletion, 0 modifications)
-2026-04-24T00:06:49.333+07:00  INFO 17084 --- [server] [       Thread-1] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
-2026-04-24T00:06:49.364+07:00  INFO 17084 --- [server] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
-2026-04-24T00:06:49.367+07:00  INFO 17084 --- [server] [       Thread-1] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopping...
-2026-04-24T00:06:49.367+07:00  INFO 17084 --- [server] [       Thread-1] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@528d3a52]]
-2026-04-24T00:06:49.367+07:00  INFO 17084 --- [server] [       Thread-1] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopped.
-2026-04-24T00:06:49.370+07:00  INFO 17084 --- [server] [       Thread-1] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
-2026-04-24T00:06:49.373+07:00  INFO 17084 --- [server] [       Thread-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
-2026-04-24T00:06:49.380+07:00  INFO 17084 --- [server] [       Thread-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v4.0.5)
-
-2026-04-24T00:06:49.467+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : Starting ServerApplication using Java 17.0.12 with PID 17084 (C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server\target\classes started by tunga in C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server)
-2026-04-24T00:06:49.468+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-04-24T00:06:49.715+07:00  INFO 17084 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-04-24T00:06:49.774+07:00  INFO 17084 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 55 ms. Found 27 JPA repository interfaces.
-2026-04-24T00:06:49.852+07:00  INFO 17084 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
-2026-04-24T00:06:49.853+07:00  INFO 17084 --- [server] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-04-24T00:06:49.854+07:00  INFO 17084 --- [server] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.20]
-2026-04-24T00:06:49.865+07:00  INFO 17084 --- [server] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 395 ms
-2026-04-24T00:06:49.899+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
-2026-04-24T00:06:49.923+07:00  INFO 17084 --- [server] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-04-24T00:06:49.923+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
-2026-04-24T00:06:49.941+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection ConnectionID:11 ClientConnectionId: 362ed4ee-b523-4991-a741-b042c7491ce6
-2026-04-24T00:06:49.941+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
-2026-04-24T00:06:49.959+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
-	Database JDBC URL [jdbc:sqlserver://localhost:1433;concatNullYieldsNull=ON;quotedIdentifier=ON;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;vectorTypeSupport=v1;cacheBulkCopyMetadata=false;bulkCopyForBatchInsertAllowEncryptedValueModifications=false;bulkCopyForBatchInsertTableLock=false;bulkCopyForBatchInsertKeepNulls=false;bulkCopyForBatchInsertKeepIdentity=false;bulkCopyForBatchInsertFireTriggers=false;bulkCopyForBatchInsertCheckConstraints=false;bulkCopyForBatchInsertBatchSize=0;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=giay;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;]
-	Database driver: Microsoft JDBC Driver 13.2 for SQL Server
-	Database dialect: SQLServerDialect
-	Database version: 16.0
-	Default catalog/schema: giay/dbo
-	Autocommit mode: undefined/unknown
-	Isolation level: READ_COMMITTED [default READ_COMMITTED]
-	JDBC fetch size: 128
-	Pool: DataSourceConnectionProvider
-	Minimum pool size: undefined/unknown
-	Maximum pool size: undefined/unknown
-2026-04-24T00:06:50.210+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-04-24T00:06:50.212+07:00  INFO 17084 --- [server] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-04-24T00:06:50.850+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
-2026-04-24T00:06:50.850+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@40b7ab16]]
-2026-04-24T00:06:50.851+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
-2026-04-24T00:06:50.853+07:00  INFO 17084 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
-2026-04-24T00:06:50.857+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : Started ServerApplication in 1.418 seconds (process running for 991.575)
-2026-04-24T00:06:50.858+07:00  INFO 17084 --- [server] [  restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation unchanged
-2026-04-24T00:06:52.392+07:00  INFO 17084 --- [server] [   File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 1 class path change (1 addition, 0 deletions, 0 modifications)
-2026-04-24T00:06:52.395+07:00  INFO 17084 --- [server] [       Thread-5] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
-2026-04-24T00:06:52.434+07:00  INFO 17084 --- [server] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
-2026-04-24T00:06:52.435+07:00  INFO 17084 --- [server] [       Thread-5] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopping...
-2026-04-24T00:06:52.436+07:00  INFO 17084 --- [server] [       Thread-5] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@40b7ab16]]
-2026-04-24T00:06:52.436+07:00  INFO 17084 --- [server] [       Thread-5] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopped.
-2026-04-24T00:06:52.438+07:00  INFO 17084 --- [server] [       Thread-5] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
-2026-04-24T00:06:52.439+07:00  INFO 17084 --- [server] [       Thread-5] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Shutdown initiated...
-2026-04-24T00:06:52.442+07:00  INFO 17084 --- [server] [       Thread-5] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Shutdown completed.
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v4.0.5)
-
-2026-04-24T00:06:52.534+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : Starting ServerApplication using Java 17.0.12 with PID 17084 (C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server\target\classes started by tunga in C:\Users\tunga\OneDrive\Desktop\SportShoe-Store\BE\server)
-2026-04-24T00:06:52.534+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-04-24T00:06:52.842+07:00  INFO 17084 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-04-24T00:06:52.922+07:00  INFO 17084 --- [server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 78 ms. Found 27 JPA repository interfaces.
-2026-04-24T00:06:52.999+07:00  INFO 17084 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
-2026-04-24T00:06:52.999+07:00  INFO 17084 --- [server] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-04-24T00:06:52.999+07:00  INFO 17084 --- [server] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.20]
-2026-04-24T00:06:53.011+07:00  INFO 17084 --- [server] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 475 ms
-2026-04-24T00:06:53.047+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
-2026-04-24T00:06:53.067+07:00  INFO 17084 --- [server] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-04-24T00:06:53.069+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
-2026-04-24T00:06:53.086+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection ConnectionID:21 ClientConnectionId: d944905d-1c8b-4fef-9659-e7605922ab27
-2026-04-24T00:06:53.087+07:00  INFO 17084 --- [server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
-2026-04-24T00:06:53.091+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
-	Database JDBC URL [jdbc:sqlserver://localhost:1433;concatNullYieldsNull=ON;quotedIdentifier=ON;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;vectorTypeSupport=v1;cacheBulkCopyMetadata=false;bulkCopyForBatchInsertAllowEncryptedValueModifications=false;bulkCopyForBatchInsertTableLock=false;bulkCopyForBatchInsertKeepNulls=false;bulkCopyForBatchInsertKeepIdentity=false;bulkCopyForBatchInsertFireTriggers=false;bulkCopyForBatchInsertCheckConstraints=false;bulkCopyForBatchInsertBatchSize=0;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=giay;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;]
-	Database driver: Microsoft JDBC Driver 13.2 for SQL Server
-	Database dialect: SQLServerDialect
-	Database version: 16.0
-	Default catalog/schema: giay/dbo
-	Autocommit mode: undefined/unknown
-	Isolation level: READ_COMMITTED [default READ_COMMITTED]
-	JDBC fetch size: 128
-	Pool: DataSourceConnectionProvider
-	Minimum pool size: undefined/unknown
-	Maximum pool size: undefined/unknown
-2026-04-24T00:06:53.288+07:00  INFO 17084 --- [server] [  restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-04-24T00:06:53.289+07:00  INFO 17084 --- [server] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-04-24T00:06:54.158+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
-2026-04-24T00:06:54.159+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@1b1e58ab]]
-2026-04-24T00:06:54.159+07:00  INFO 17084 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
-2026-04-24T00:06:54.162+07:00  INFO 17084 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
-2026-04-24T00:06:54.166+07:00  INFO 17084 --- [server] [  restartedMain] com.example.server.ServerApplication     : Started ServerApplication in 1.665 seconds (process running for 994.885)
-2026-04-24T00:06:54.168+07:00  INFO 17084 --- [server] [  restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation unchanged
-2026-04-24T00:07:00.009+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:07:00.031+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:07:00.133+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
-2026-04-24T00:07:54.157+07:00  INFO 17084 --- [server] [MessageBroker-2] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 3, active threads = 1, queued tasks = 1, completed tasks = 1]
-2026-04-24T00:08:00.009+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
-2026-04-24T00:08:00.028+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 12 bi?n th? s?n ph?m...
-2026-04-24T00:08:00.132+07:00  INFO 17084 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
+2026-04-29T16:08:08.037+07:00  INFO 6956 --- [server] [  restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-29T16:08:08.043+07:00  INFO 6956 --- [server] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-29T16:08:08.102+07:00  INFO 6956 --- [server] [  restartedMain] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-29T16:08:10.093+07:00  INFO 6956 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-04-29T16:08:10.095+07:00  INFO 6956 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@ec14149]]
+2026-04-29T16:08:10.096+07:00  INFO 6956 --- [server] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-04-29T16:08:10.104+07:00  INFO 6956 --- [server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-04-29T16:08:10.109+07:00  INFO 6956 --- [server] [  restartedMain] com.example.server.ServerApplication     : Started ServerApplication in 5.62 seconds (process running for 5.966)
+2026-04-29T16:09:00.022+07:00  INFO 6956 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : B?t ??u quét và ??ng b? giá bán khuy?n mãi...
+2026-04-29T16:09:00.170+07:00  INFO 6956 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ?ang ??ng b? giá cho 26 bi?n th? s?n ph?m...
+2026-04-29T16:09:00.624+07:00  INFO 6956 --- [server] [MessageBroker-1] c.e.s.i.scheduler.DiscountScheduler      : ??ng b? giá bán hoàn t?t.
+2026-04-29T16:09:10.105+07:00  INFO 6956 --- [server] [MessageBroker-2] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 3, active threads = 1, queued tasks = 1, completed tasks = 1]

@@ -19,8 +19,8 @@ import ChiTietNhanVien from "../pages/admin/nhan-vien/ChiTietNhanVien.vue";
 import QuanLyKhachHang from "../pages/admin/khach-hang/QuanLyKhachHang.vue";
 import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
 import ChiTietPhieuGiamGia from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue";
+import ChiTietPhieuGiamGiaKhachHang from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGiaKhachHang.vue";
 import ChiTietDotGiamGia from "../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue";
-import ChiTietDotGiamGiaSanPham from "../pages/admin/khuyen-mai/ChiTietDotGiamGiaSanPham.vue";
 
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
@@ -107,6 +107,11 @@ const router = createRouter({
           component: PhieuGiamGia
         },
         {
+          path: "phieu-giam-gia-khach-hang",
+          name: "admin-phieu-giam-gia-khach-hang",
+          component: PhieuGiamGia
+        },
+        {
           path: "phieu-giam-gia/them",
           name: "admin-phieu-giam-gia-them",
           component: ChiTietPhieuGiamGia
@@ -119,12 +124,12 @@ const router = createRouter({
         {
           path: "phieu-giam-gia-khach-hang/them",
           name: "admin-phieu-giam-gia-khach-hang-them",
-          redirect: "/admin/phieu-giam-gia"
+          component: ChiTietPhieuGiamGiaKhachHang
         },
         {
           path: "phieu-giam-gia-khach-hang/:id",
           name: "admin-phieu-giam-gia-khach-hang-chi-tiet",
-          redirect: "/admin/phieu-giam-gia"
+          component: ChiTietPhieuGiamGiaKhachHang
         },
         {
           path: "hoa-don",
@@ -171,6 +176,11 @@ const router = createRouter({
           component: DotGiamGia
         },
         {
+          path: "dot-giam-gia-san-pham",
+          name: "admin-dot-giam-gia-san-pham",
+          redirect: "/admin/dot-giam-gia"
+        },
+        {
           path: "dot-giam-gia/them",
           name: "admin-dot-giam-gia-them",
           component: ChiTietDotGiamGia
@@ -183,12 +193,12 @@ const router = createRouter({
         {
           path: "dot-giam-gia-san-pham/them",
           name: "admin-dot-giam-gia-san-pham-them",
-          component: ChiTietDotGiamGiaSanPham
+          redirect: "/admin/dot-giam-gia"
         },
         {
           path: "dot-giam-gia-san-pham/:id",
           name: "admin-dot-giam-gia-san-pham-chi-tiet",
-          component: ChiTietDotGiamGiaSanPham
+          redirect: "/admin/dot-giam-gia"
         },
         {
           path: "nhan-vien",

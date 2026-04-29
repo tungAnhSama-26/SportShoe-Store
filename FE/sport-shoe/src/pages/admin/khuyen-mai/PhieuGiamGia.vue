@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   CheckCircle2, CircleX, Edit, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, Ticket, Trash2
 } from "lucide-vue-next";
@@ -18,9 +18,18 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const router = useRouter();
+const route = useRoute();
 const dangTai = ref(false);
 const loiTrang = ref("");
-const activeTab = ref("phieu");
+
+function resolveActiveTab() {
+  if (route.name === "admin-phieu-giam-gia-khach-hang" || route.query.tab === "khach-hang") {
+    return "khach-hang";
+  }
+  return "phieu";
+}
+
+const activeTab = ref(resolveActiveTab());
 const toast = ref({
   hienThi: false,
   loai: "success",
@@ -55,7 +64,9 @@ const ToastIcon = computed(() => {
 function hienThiThongBao(loai, tieuDe, noiDung = "") {
   if (toastTimer) clearTimeout(toastTimer);
   toast.value = { hienThi: true, loai, tieuDe, noiDung };
-  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+  toastTimer = setTimeout(() => {
+    toast.value.hienThi = false;
+  }, 3200);
 }
 
 const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loai: "" });
@@ -103,12 +114,12 @@ function loaiGiamText(loai) {
 
 function formatGiaTri(giaTri, loai) {
   if (!giaTri) return "0";
-  return Number(loai) === 1 ? `${giaTri}%` : `${Number(giaTri).toLocaleString('vi-VN')}đ`;
+  return Number(loai) === 1 ? `${giaTri}%` : `${Number(giaTri).toLocaleString("vi-VN")}đ`;
 }
 
 function formatTien(tien) {
   if (!tien) return "0đ";
-  return `${Number(tien).toLocaleString('vi-VN')}đ`;
+  return `${Number(tien).toLocaleString("vi-VN")}đ`;
 }
 
 function toDisplayDate(value) {
@@ -117,7 +128,7 @@ function toDisplayDate(value) {
 }
 
 function formatCurrency(value) {
-    return new Intl.NumberFormat("vi-VN").format(value || 0) + " đ";
+  return new Intl.NumberFormat("vi-VN").format(value || 0) + " đ";
 }
 
 watch(activeTab, (newTab) => {
@@ -145,6 +156,16 @@ watch(boLocKh, () => {
   clearTimeout(timer);
   timer = setTimeout(() => { trangHienTaiKh.value = 1; taiDanhSachKh(); }, 300);
 }, { deep: true });
+
+watch(
+  () => [route.name, route.query.tab],
+  () => {
+    const nextTab = resolveActiveTab();
+    if (nextTab !== activeTab.value) {
+      activeTab.value = nextTab;
+    }
+  }
+);
 
 async function taiDanhSach() {
   dangTai.value = true;
@@ -198,29 +219,33 @@ function lamMoiBoLoc() {
 }
 
 async function nhanhDoiTrangThai(item) {
-    try {
-        const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
-        await updatePhieuGiamGia(item.id, { ...item, trangThai: nextStatus });
-        alert("Cập nhật thành công");
-        taiDanhSach();
-    } catch (e) {
-        alert(e.message || "Thất bại");
-    }
+  try {
+    const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
+    await updatePhieuGiamGia(item.id, { ...item, trangThai: nextStatus });
+    alert("Cập nhật thành công");
+    taiDanhSach();
+  } catch (e) {
+    alert(e.message || "Thất bại");
+  }
 }
 
 async function nhanhDoiTrangThaiKh(item) {
-    try {
-        const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
-        await updatePhieuGiamGiaKhachHang(item.id, { ...item, trangThai: nextStatus });
-        alert("Cập nhật thành công");
-        taiDanhSachKh();
-    } catch (e) {
-        alert(e.message || "Thất bại");
-    }
+  try {
+    const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
+    await updatePhieuGiamGiaKhachHang(item.id, { ...item, trangThai: nextStatus });
+    alert("Cập nhật thành công");
+    taiDanhSachKh();
+  } catch (e) {
+    alert(e.message || "Thất bại");
+  }
 }
 
 function openCreateModal() {
-  router.push({ name: "admin-phieu-giam-gia-them" });
+  router.push({
+    name: activeTab.value === "khach-hang"
+      ? "admin-phieu-giam-gia-khach-hang-them"
+      : "admin-phieu-giam-gia-them"
+  });
 }
 
 function openEditModal(target, itemArg) {
@@ -236,7 +261,7 @@ function openEditModal(target, itemArg) {
 }
 
 async function removeItem(item) {
-  if (!confirm(`Bạn có chắc muốn xóa phiếu này?`)) return;
+  if (!confirm("Bạn có chắc muốn xóa phiếu này?")) return;
   try {
     await deletePhieuGiamGia(item.id);
     taiDanhSach();
@@ -282,42 +307,44 @@ async function xuatExcel() {
         rows,
       });
     } else {
-        const data = await getPhieuGiamGiaKhachHangList({
-            keyword: boLocKh.value.keyword || undefined,
-            trangThai: boLocKh.value.trangThai !== "" ? Number(boLocKh.value.trangThai) : undefined,
-            pageNo: 0,
-            pageSize: 1000,
-        });
+      const data = await getPhieuGiamGiaKhachHangList({
+        keyword: boLocKh.value.keyword || undefined,
+        trangThai: boLocKh.value.trangThai !== "" ? Number(boLocKh.value.trangThai) : undefined,
+        pageNo: 0,
+        pageSize: 1000,
+      });
 
-        const rows = data?.content || [];
-        if (!rows.length) {
-            window.alert("Không có dữ liệu để xuất Excel.");
-            return;
-        }
+      const rows = data?.content || [];
+      if (!rows.length) {
+        window.alert("Không có dữ liệu để xuất Excel.");
+        return;
+      }
 
-        exportRowsToExcel({
-            filename: "quan-ly-phieu-khach-hang",
-            sheetName: "PhieuKhachHang",
-            columns: [
-                { label: "STT", value: (_, index) => index + 1 },
-                { label: "Phiếu giảm giá", key: "maPhieuGiamGia" },
-                { label: "Khách hàng", key: "tenKhachHang" },
-                { label: "Email", key: "email" },
-                { label: "Ngày tặng", value: (row) => toDisplayDate(row.ngayTao) },
-                { label: "Ngày dùng", value: (row) => toDisplayDate(row.ngaySuDung) },
-                { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
-            ],
-            rows,
-        });
+      exportRowsToExcel({
+        filename: "quan-ly-phieu-khach-hang",
+        sheetName: "PhieuKhachHang",
+        columns: [
+          { label: "STT", value: (_, index) => index + 1 },
+          { label: "Phiếu giảm giá", key: "maPhieuGiamGia" },
+          { label: "Khách hàng", key: "tenKhachHang" },
+          { label: "Email", key: "email" },
+          { label: "Ngày tặng", value: (row) => toDisplayDate(row.ngayTao) },
+          { label: "Ngày dùng", value: (row) => toDisplayDate(row.ngaySuDung) },
+          { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+        ],
+        rows,
+      });
     }
   } catch (error) {
     window.alert(error?.message || "Xuất Excel thất bại.");
   }
 }
 
-
-
 onMounted(() => {
+  if (activeTab.value === "khach-hang") {
+    taiDanhSachKh();
+    return;
+  }
   taiDanhSach();
 });
 </script>
@@ -375,15 +402,15 @@ onMounted(() => {
         </div>
 
         <div class="flex flex-wrap items-center gap-3 justify-end">
-            <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
-              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-            </button>
-            <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
-              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-            </button>
-            <button @click="router.push({ name: 'admin-phieu-giam-gia-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]">
-              <Plus class="h-4 w-4" /> Tạo phiếu mới
-            </button>
+          <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
+            <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
+          </button>
+          <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
+            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+          </button>
+          <button @click="openCreateModal" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]">
+            <Plus class="h-4 w-4" /> {{ activeTab === "phieu" ? "Tạo phiếu mới" : "Tặng phiếu khách hàng" }}
+          </button>
         </div>
       </div>
     </section>
@@ -435,7 +462,7 @@ onMounted(() => {
                 <div v-if="item.giamToiDa > 0" class="mt-0.5 text-[12px] font-medium text-slate-500" title="Giảm tối đa">Tối đa: {{ formatTien(item.giamToiDa) }}</div>
               </td>
               <td class="px-4 py-3 font-medium text-slate-700">
-                {{ item.giaTri }}{{ Number(item.loai) === 1 ? '%' : ' đ' }}
+                {{ item.giaTri }}{{ Number(item.loai) === 1 ? "%" : " đ" }}
               </td>
               <td class="px-4 py-3 font-medium">{{ item.soLuong }}</td>
               <td class="px-4 py-3">
@@ -530,4 +557,3 @@ onMounted(() => {
     </section>
   </div>
 </template>
-

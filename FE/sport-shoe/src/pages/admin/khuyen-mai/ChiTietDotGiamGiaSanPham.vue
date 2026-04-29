@@ -164,7 +164,7 @@ async function submitForm() {
       hienThiThongBao("success", "Cập nhật thành công");
     }
     setTimeout(() => {
-      router.push({ name: "admin-dot-giam-gia", query: { tab: 'san-pham' } });
+      router.push({ name: "admin-dot-giam-gia-san-pham" });
     }, 1000);
   } catch (error) {
     const fieldErrors = getFieldErrors(error);
@@ -214,7 +214,7 @@ onMounted(taiDuLieu);
     <!-- Header -->
     <section class="flex items-center gap-4">
       <button
-        @click="router.push({ name: 'admin-dot-giam-gia', query: { tab: 'san-pham' } })"
+        @click="router.push({ name: 'admin-dot-giam-gia-san-pham' })"
         class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-5 w-5" />

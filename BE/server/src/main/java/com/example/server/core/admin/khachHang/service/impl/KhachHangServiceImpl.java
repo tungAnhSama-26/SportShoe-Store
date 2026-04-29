@@ -12,6 +12,7 @@ import com.example.server.entity.DiaChiKhachHang;
 import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
 import com.example.server.repository.DiaChiKhachHangRepository;
 import com.example.server.repository.KhachHangRepository;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,16 @@ public class KhachHangServiceImpl implements KhachHangService {
 
     private final KhachHangRepository khachHangRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+    private final EmailService emailService;
 
-    public KhachHangServiceImpl(KhachHangRepository khachHangRepository, DiaChiKhachHangRepository diaChiKhachHangRepository) {
+    public KhachHangServiceImpl(
+            KhachHangRepository khachHangRepository,
+            DiaChiKhachHangRepository diaChiKhachHangRepository,
+            EmailService emailService
+    ) {
         this.khachHangRepository = khachHangRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -74,7 +81,21 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setTrangThai(1);
         kh.setNgayTao(Instant.now());
 
-        return toKhachHangResponse(khachHangRepository.save(kh));
+        KhachHang saved = khachHangRepository.save(kh);
+        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            try {
+                emailService.sendRegistrationEmail(
+                        saved.getEmail(),
+                        saved.getHoTen(),
+                        saved.getTenDangNhap(),
+                        request.matKhau()
+                );
+            } catch (Exception exception) {
+                System.err.println("Khong the gui email tai khoan khach hang: " + exception.getMessage());
+            }
+        }
+
+        return toKhachHangResponse(saved);
     }
 
     @Override
@@ -167,6 +188,7 @@ public class KhachHangServiceImpl implements KhachHangService {
         }
 
         mapDiaChi(dc, request);
+        ensureAddressAuditFields(dc);
         dc.setNgayCapNhat(Instant.now());
 
         return toDiaChiResponse(diaChiKhachHangRepository.save(dc));
@@ -196,6 +218,7 @@ public class KhachHangServiceImpl implements KhachHangService {
     public void datMacDinhDiaChi(Integer diaChiId) {
         DiaChiKhachHang dc = findDiaChi(diaChiId);
         resetDefaultAddress(dc.getKhachHang().getId());
+        ensureAddressAuditFields(dc);
         dc.setLaMacDinh(true);
         dc.setNgayCapNhat(Instant.now());
         diaChiKhachHangRepository.save(dc);
@@ -216,10 +239,24 @@ public class KhachHangServiceImpl implements KhachHangService {
     private void resetDefaultAddress(UUID khachHangId) {
         List<DiaChiKhachHang> ds = diaChiKhachHangRepository.findByKhachHangIdOrderByLaMacDinhDesc(khachHangId);
         for (DiaChiKhachHang dc : ds) {
-            if (dc.getLaMacDinh()) {
+            if (Boolean.TRUE.equals(dc.getLaMacDinh())) {
+                ensureAddressAuditFields(dc);
                 dc.setLaMacDinh(false);
+                dc.setNgayCapNhat(Instant.now());
                 diaChiKhachHangRepository.save(dc);
             }
+        }
+    }
+
+    private void ensureAddressAuditFields(DiaChiKhachHang dc) {
+        if (dc.getNgayTao() == null) {
+            dc.setNgayTao(Instant.now());
+        }
+        if (dc.getTrangThai() == null) {
+            dc.setTrangThai(1);
+        }
+        if (dc.getLaMacDinh() == null) {
+            dc.setLaMacDinh(false);
         }
     }
 
@@ -230,7 +267,7 @@ public class KhachHangServiceImpl implements KhachHangService {
         dc.setQuanHuyen(request.quanHuyen());
         dc.setPhuongXa(request.phuongXa());
         dc.setDiaChiCuThe(request.diaChiCuThe().trim());
-        dc.setLaMacDinh(request.laMacDinh());
+        dc.setLaMacDinh(Boolean.TRUE.equals(request.laMacDinh()));
     }
 
     private boolean matchKeyword(String keyword, KhachHang kh) {
