@@ -172,11 +172,7 @@ public class AuthController {
                 kh.getTrangThai(),
                 kh.getTrangThai() == 1 ? "Đang hoạt động" : "Ngừng hoạt động",
                 kh.getNgayTao(),
-<<<<<<< HEAD
-                null
-=======
                 diaChiMacDinh
->>>>>>> 2db35d8b0bf0af53fc337e5ed4c37d33cdf2f08c
         );
     }
 }
