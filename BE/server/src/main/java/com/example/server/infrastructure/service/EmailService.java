@@ -2,6 +2,7 @@ package com.example.server.infrastructure.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -15,22 +16,25 @@ import java.nio.file.Paths;
 @Service
 public class EmailService {
 
-    private static final String SYSTEM_LOGIN_URL = "http://localhost:5173/login";
+    private static final String SYSTEM_LOGIN_URL = "http://localhost:3000/login";
     private static final String LOGO_CONTENT_ID = "sportshoe-logo";
     private static final Path LOGO_PATH = Paths.get(
             "..", "..", "FE", "sport-shoe", "src", "assets", "logo", "delete-background-logo.png"
     ).normalize().toAbsolutePath();
 
     private final JavaMailSender mailSender;
+    private final String fromAddress;
 
-    public EmailService(JavaMailSender mailSender) {
+    public EmailService(JavaMailSender mailSender, @Value("${spring.mail.username:}") String fromAddress) {
         this.mailSender = mailSender;
+        this.fromAddress = fromAddress;
     }
 
     public void sendRegistrationEmail(String to, String fullName, String username, String password) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            applyFrom(helper);
             helper.setTo(to);
             helper.setSubject("SportShoe Internal - Tài khoản hệ thống của bạn");
             helper.setText(buildRegistrationEmailHtml(fullName, username, password), true);
@@ -43,6 +47,7 @@ public class EmailService {
 
     public void sendOtpEmail(String to, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
+        applyFrom(message);
         message.setTo(to);
         message.setSubject("Mã xác nhận quên mật khẩu - SportShoe");
         message.setText(String.format(
@@ -55,6 +60,18 @@ public class EmailService {
                 otp
         ));
         mailSender.send(message);
+    }
+
+    private void applyFrom(MimeMessageHelper helper) throws MessagingException {
+        if (fromAddress != null && !fromAddress.isBlank()) {
+            helper.setFrom(fromAddress.trim());
+        }
+    }
+
+    private void applyFrom(SimpleMailMessage message) {
+        if (fromAddress != null && !fromAddress.isBlank()) {
+            message.setFrom(fromAddress.trim());
+        }
     }
 
     private String buildRegistrationEmailHtml(String fullName, String username, String password) {

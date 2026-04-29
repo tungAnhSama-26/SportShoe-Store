@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, MapPin, Save, User } from "lucide-vue-next";
 import {
@@ -18,6 +18,7 @@ const router = useRouter();
 
 const id = route.params.id as string | undefined;
 const laMoi = !id;
+const CUSTOMER_CREATE_TOAST_KEY = "admin-khach-hang-toast";
 
 const dangTai = ref(false);
 const dangLuu = ref(false);
@@ -174,7 +175,19 @@ async function luu() {
         matKhau: form.value.matKhau,
       });
       await themDiaChi(result.id, formDiaChi.value);
-      router.push({ name: "admin-khach-hang" });
+      if (typeof window !== "undefined") {
+        const emailDaNhap = form.value.email.trim();
+        window.sessionStorage.setItem(
+          CUSTOMER_CREATE_TOAST_KEY,
+          JSON.stringify({
+            loai: "success",
+            tieuDe: "Đã tạo khách hàng mới",
+            noiDung: emailDaNhap ? `Email đã lưu: ${emailDaNhap}` : "Khách hàng này chưa có email.",
+          }),
+        );
+      }
+      await router.push({ name: "admin-khach-hang" });
+      await nextTick();
     } else {
       const updated = await capNhatKhachHang(id!, {
         hoTen: form.value.hoTen,

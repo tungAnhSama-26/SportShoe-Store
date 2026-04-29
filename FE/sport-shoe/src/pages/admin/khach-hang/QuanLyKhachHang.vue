@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onActivated, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package,
@@ -16,17 +16,55 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const router = useRouter();
+const CUSTOMER_CREATE_TOAST_KEY = "admin-khach-hang-toast";
 
 const danhSach = ref([]);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const boLoc = ref({ keyword: "", trangThai: "" });
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
   { label: "Hoạt động", value: "1" },
   { label: "Khóa", value: "0" },
 ];
+
+function hienThiThongBao(loai: "success" | "error", tieuDe: string, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => {
+    toast.value.hienThi = false;
+    toastTimer = null;
+  }, 3200);
+}
+
+function taiThongBaoDieuHuong() {
+  if (typeof window === "undefined") return;
+  const raw = window.sessionStorage.getItem(CUSTOMER_CREATE_TOAST_KEY);
+  if (!raw) return;
+  window.sessionStorage.removeItem(CUSTOMER_CREATE_TOAST_KEY);
+
+  try {
+    const payload = JSON.parse(raw);
+    const noiDung = typeof payload?.noiDung === "string"
+      ? payload.noiDung.replace(/^Email đã lưu:\s*/i, "Đã gửi thông tin đăng nhập tới email: ")
+      : "";
+    hienThiThongBao(
+      payload?.loai === "error" ? "error" : "success",
+      payload?.tieuDe || "Thao tác thành công",
+      noiDung,
+    );
+  } catch {
+    hienThiThongBao("success", "Đã tạo khách hàng mới");
+  }
+}
 
 function mauTrangThai(trangThai: number) {
   return trangThai === 1 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600";
@@ -284,6 +322,7 @@ async function moSuaDiaChiModal(dc: any) {
 
 async function luuDiaChiModal() {
   const f = formDiaChi.value;
+  const dangSua = Boolean(diaChiDangSua.value);
   if (!f.hoTen || !f.sdt || !f.tinhThanh || !f.quanHuyen || !f.phuongXa || !f.diaChiCuThe) {
     loiDiaChi.value = "Vui lòng điền đầy đủ thông tin địa chỉ.";
     return;
@@ -301,6 +340,14 @@ async function luuDiaChiModal() {
     if (f.laMacDinh) capNhatDiaChiMacDinhTrongBang(khModalDiaChi.value.id);
     hienFormDiaChi.value = false;
     diaChiDangSua.value = null;
+    hienThiThongBao(
+      "success",
+      f.laMacDinh
+        ? "Đã lưu địa chỉ mặc định"
+        : dangSua
+          ? "Đã cập nhật địa chỉ"
+          : "Đã thêm địa chỉ mới"
+    );
   } catch (e) {
     loiDiaChi.value = getDisplayErrorMessage(e, "Không thể lưu địa chỉ.");
   } finally {
@@ -314,6 +361,7 @@ async function xoaDiaChiModal(diaChiId: number) {
     await xoaDiaChi(diaChiId);
     await taiDsModalDiaChi(khModalDiaChi.value.id);
     capNhatDiaChiMacDinhTrongBang(khModalDiaChi.value.id);
+    hienThiThongBao("success", "Đã xóa địa chỉ");
   } catch { loiDiaChi.value = "Không thể xóa địa chỉ."; }
 }
 
@@ -322,6 +370,7 @@ async function datMacDinhModal(diaChiId: number) {
     await datMacDinhDiaChi(diaChiId);
     await taiDsModalDiaChi(khModalDiaChi.value.id);
     capNhatDiaChiMacDinhTrongBang(khModalDiaChi.value.id);
+    hienThiThongBao("success", "Đã cập nhật địa chỉ mặc định");
   } catch { loiDiaChi.value = "Không thể đặt địa chỉ mặc định."; }
 }
 
@@ -359,11 +408,54 @@ function xemChiTietDon(id: number) {
   router.push({ name: "admin-hoa-don-chi-tiet", params: { id } });
 }
 
-onMounted(taiDanhSach);
+onMounted(() => {
+  taiDanhSach();
+  taiThongBaoDieuHuong();
+});
+
+onActivated(() => {
+  taiThongBaoDieuHuong();
+});
 </script>
 
 <template>
   <div class="space-y-5">
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toast.loai === 'success' ? 'border-emerald-100' : 'border-rose-100'"
+      >
+        <div class="flex gap-3 p-4">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            :class="toast.loai === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'"
+          >
+            <CheckCircle2 class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
+            @click="toast.hienThi = false"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toast.loai === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></div>
+      </div>
+    </Transition>
+
     <!-- Header -->
     <section>
       <h1 class="admin-page-title text-[30px]">Quản lý khách hàng</h1>

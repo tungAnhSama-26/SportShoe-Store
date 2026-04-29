@@ -1,13 +1,13 @@
 <script setup>
-import { onMounted, reactive, ref, computed } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Users, Search, CheckSquare, Square, CheckCircle2, CircleX, X } from "lucide-vue-next";
+import { ArrowLeft, CheckCircle2, CircleX, Save, Users, X } from "lucide-vue-next";
 import {
   createPhieuGiamGiaKhachHang,
+  getEmailSuggestions,
   getPhieuGiamGiaKhachHangDetail,
-  updatePhieuGiamGiaKhachHang,
   getPhieuGiamGiaList,
-  getEmailSuggestions
+  updatePhieuGiamGiaKhachHang
 } from "../../../services/khuyen-mai";
 import { layChiTietKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
@@ -57,7 +57,9 @@ const ToastIcon = computed(() => {
 function hienThiThongBao(loai, tieuDe, noiDung = "") {
   if (toastTimer) clearTimeout(toastTimer);
   toast.value = { hienThi: true, loai, tieuDe, noiDung };
-  toastTimer = setTimeout(() => { toast.value.hienThi = false; }, 3200);
+  toastTimer = setTimeout(() => {
+    toast.value.hienThi = false;
+  }, 3200);
 }
 
 const phieuOptions = ref([]);
@@ -86,7 +88,7 @@ async function taiDuLieu() {
   dangTai.value = true;
   try {
     const dataOpts = await getPhieuGiamGiaList({ pageNo: 0, pageSize: 1000, trangThai: 1 });
-    phieuOptions.value = (dataOpts?.content || []).filter(opt => Number(opt.loaiPhieu) === 2);
+    phieuOptions.value = (dataOpts?.content || []).filter((opt) => Number(opt.loaiPhieu) === 2);
     await taiKhachHang();
 
     const emails = await getEmailSuggestions();
@@ -104,13 +106,13 @@ async function taiDuLieu() {
         try {
           const kh = await layChiTietKhachHang(detail.khachHangId);
           form.email = kh?.email || "";
-        } catch (e) {
-          console.error("Lỗi tải email khách hàng:", e);
+        } catch (error) {
+          console.error("Lỗi tải email khách hàng:", error);
         }
       }
     }
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể tải dữ liệu phiếu giảm giá khách hàng");
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải dữ liệu phiếu giảm giá khách hàng");
   } finally {
     dangTai.value = false;
   }
@@ -128,7 +130,7 @@ async function submitForm() {
     formErrors.email = "Vui lòng chọn ít nhất một khách hàng để tặng phiếu";
     isValid = false;
   }
-  if (!laMoi && (!form.email || !form.email.includes('@'))) {
+  if (!laMoi && (!form.email || !form.email.includes("@"))) {
     formErrors.email = "Email khách hàng chưa đúng định dạng";
     isValid = false;
   }
@@ -137,32 +139,35 @@ async function submitForm() {
 
   saving.value = true;
   loiTrang.value = "";
+
   try {
     if (laMoi) {
       let successCount = 0;
       let failCount = 0;
       let firstErrorMessage = "";
+
       for (const email of dsEmailChon.value) {
         try {
-          await createPhieuGiamGiaKhachHang({ 
-            phieuGiamGiaId: Number(form.phieuGiamGiaId), 
-            email: email,
+          await createPhieuGiamGiaKhachHang({
+            phieuGiamGiaId: Number(form.phieuGiamGiaId),
+            email,
             ngaySuDung: form.ngaySuDung || null,
             trangThai: Number(form.trangThai),
             ngayTao: getToday()
           });
           successCount++;
-        } catch (e) {
+        } catch (error) {
           failCount++;
           if (!firstErrorMessage) {
-            firstErrorMessage = getDisplayErrorMessage(e, "Không thể tặng phiếu cho một số khách hàng đã chọn");
+            firstErrorMessage = getDisplayErrorMessage(error, "Không thể tặng phiếu cho một số khách hàng đã chọn");
           }
         }
       }
+
       if (successCount > 0 && failCount === 0) {
         hienThiThongBao("success", "Tặng phiếu thành công", `Đã tặng cho ${successCount} khách hàng`);
         setTimeout(() => {
-          router.push({ name: "admin-phieu-giam-gia", query: { tab: "khach-hang" } });
+          router.push({ name: "admin-phieu-giam-gia-khach-hang" });
         }, 1500);
         return;
       }
@@ -170,27 +175,26 @@ async function submitForm() {
       if (successCount > 0) {
         hienThiThongBao("warning", "Tặng phiếu hoàn tất một phần", `Thành công: ${successCount}, Thất bại: ${failCount}`);
         setTimeout(() => {
-          router.push({ name: "admin-phieu-giam-gia", query: { tab: "khach-hang" } });
+          router.push({ name: "admin-phieu-giam-gia-khach-hang" });
         }, 1500);
         return;
       }
 
       hienThiThongBao("error", "Tặng phiếu thất bại", firstErrorMessage || `Thất bại: ${failCount}`);
       return;
-    } else {
-      const payload = {
-        phieuGiamGiaId: Number(form.phieuGiamGiaId),
-        email: form.email.trim(),
-        ngaySuDung: form.ngaySuDung || null,
-        trangThai: Number(form.trangThai)
-      };
-      await updatePhieuGiamGiaKhachHang(id, payload);
-      hienThiThongBao("success", "Cập nhật thành công");
-      setTimeout(() => {
-        router.push({ name: "admin-phieu-giam-gia", query: { tab: "khach-hang" } });
-      }, 1500);
-      return;
     }
+
+    const payload = {
+      phieuGiamGiaId: Number(form.phieuGiamGiaId),
+      email: form.email.trim(),
+      ngaySuDung: form.ngaySuDung || null,
+      trangThai: Number(form.trangThai)
+    };
+    await updatePhieuGiamGiaKhachHang(id, payload);
+    hienThiThongBao("success", "Cập nhật thành công");
+    setTimeout(() => {
+      router.push({ name: "admin-phieu-giam-gia-khach-hang" });
+    }, 1500);
   } catch (error) {
     const fieldErrors = getFieldErrors(error);
     Object.assign(formErrors, fieldErrors);
@@ -212,8 +216,8 @@ async function taiKhachHang() {
     } else {
       danhSachKh.value = [];
     }
-  } catch (e) {
-    console.error("Lỗi tải khách hàng:", e);
+  } catch (error) {
+    console.error("Lỗi tải khách hàng:", error);
     danhSachKh.value = [];
   }
 }
@@ -227,9 +231,9 @@ function toggleEmail(email) {
 function chonTatCa() {
   if (dsEmailChon.value.length === danhSachKh.value.length) {
     dsEmailChon.value = [];
-  } else {
-    dsEmailChon.value = danhSachKh.value.map(kh => kh.email).filter(e => e);
+    return;
   }
+  dsEmailChon.value = danhSachKh.value.map((kh) => kh.email).filter((email) => email);
 }
 
 let searchTimer;
@@ -243,7 +247,6 @@ onMounted(taiDuLieu);
 
 <template>
   <div class="space-y-5 pb-10">
-    <!-- Toast Notification -->
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="translate-y-3 opacity-0"
@@ -273,10 +276,9 @@ onMounted(taiDuLieu);
       </div>
     </Transition>
 
-    <!-- Header -->
     <section class="flex items-center gap-4">
       <button
-        @click="router.push({ name: 'admin-phieu-giam-gia', query: { tab: 'khach-hang' } })"
+        @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang' })"
         class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-5 w-5" />
@@ -312,15 +314,15 @@ onMounted(taiDuLieu);
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Email khách hàng <span class="text-rose-500">*</span></label>
-          <input 
-            v-model="form.email" 
-            type="email" 
-            list="email-suggestions" 
+          <input
+            v-model="form.email"
+            type="email"
+            list="email-suggestions"
             placeholder="Ví dụ: customer@example.com"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" 
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
           />
           <datalist id="email-suggestions">
-            <option v-for="em in emailOptions" :key="em" :value="em"></option>
+            <option v-for="email in emailOptions" :key="email" :value="email"></option>
           </datalist>
           <p v-if="formErrors.email" class="text-xs text-rose-500 mt-1">{{ formErrors.email }}</p>
         </div>
@@ -339,15 +341,13 @@ onMounted(taiDuLieu);
         </div>
       </div>
 
-      <!-- Actions -->
       <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center">
         <button @click="submitForm" :disabled="saving" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60 whitespace-nowrap">
           <Save class="h-4 w-4" />
           {{ saving ? "Đang lưu..." : "Lưu dữ liệu" }}
         </button>
-        <button @click="router.push({ name: 'admin-phieu-giam-gia', query: { tab: 'khach-hang' } })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 whitespace-nowrap">Hủy</button>
+        <button @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang' })" class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 whitespace-nowrap">Hủy</button>
       </div>
     </section>
   </div>
 </template>
-
