@@ -26,4 +26,5 @@ public interface KhachHangService {
     DiaChiResponse themDiaChi(UUID khachHangId, DiaChiRequest request);
     DiaChiResponse capNhatDiaChi(Integer diaChiId, DiaChiRequest request);
     void xoaDiaChi(Integer diaChiId);
+    void datMacDinhDiaChi(Integer diaChiId);
 }

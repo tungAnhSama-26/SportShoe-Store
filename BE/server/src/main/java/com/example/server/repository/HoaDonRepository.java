@@ -3,6 +3,7 @@ package com.example.server.repository;
 import com.example.server.entity.HoaDon;
 import java.util.List;
 import java.time.Instant;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -46,4 +47,15 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             where hd.id = :id
             """)
     java.util.Optional<HoaDon> findDetailById(@Param("id") Integer id);
+
+    @Query("""
+            select distinct hd
+            from HoaDon hd
+            left join fetch hd.khachHang kh
+            left join fetch hd.nhanVien nv
+            left join fetch hd.phieuGiamGia pgg
+            where kh.id = :khachHangId
+            order by hd.ngayTao desc
+            """)
+    List<HoaDon> findByKhachHangId(@Param("khachHangId") UUID khachHangId);
 }

@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/request/DotGiamGiaRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/request/DotGiamGiaRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/request/PhieuGiamGiaRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/request/PhieuGiamGiaRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/response/QuanLyDotGiamGiaResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/response/QuanLyDotGiamGiaResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/response/QuanLyPhieuGiamGiaResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/dto/response/QuanLyPhieuGiamGiaResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/service/DotGiamGiaService.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/service/DotGiamGiaService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/service/PhieuGiamGiaService.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/quanlykhuyenmai/service/PhieuGiamGiaService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/repository/PhieuGiamGiaKhachHangRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/repository/PhieuGiamGiaKhachHangRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khuyen-mai/ChiTietDotGiamGia.vue" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khuyen-mai/ChiTietDotGiamGia.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue" afterDir="false" />
-    </list>
+    <list default="true" id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -23,9 +13,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 2
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
   <component name="ProjectId" id="3Cfmfa7JILsgmcMHr13soFcKn4x" />
   <component name="ProjectViewState">
     <option name="showLibraryContents" value="true" />
@@ -34,7 +24,7 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "bui-hiep",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "D:/SportShoe-Store/BE",
     "node.js.detected.package.eslint": "true",

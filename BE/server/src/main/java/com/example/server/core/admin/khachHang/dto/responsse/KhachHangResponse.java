@@ -14,5 +14,6 @@ public record KhachHangResponse(
         String hinhAnh,
         Integer trangThai,
         String tenTrangThai,
-        Instant ngayTao
+        Instant ngayTao,
+        String diaChiMacDinh
 ) {}
