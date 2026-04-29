@@ -87,6 +87,14 @@ export function xoaDiaChi(diaChiId) {
   return request(`/admin/khach-hang/dia-chi/${diaChiId}`, { method: "DELETE" });
 }
 
+export function datMacDinhDiaChi(diaChiId) {
+  return request(`/admin/khach-hang/dia-chi/${diaChiId}/mac-dinh`, { method: "PATCH" });
+}
+
+export function layHoaDonTheoKhachHang(khachHangId) {
+  return request(`/admin/khach-hang/${khachHangId}/hoa-don`);
+}
+
 export async function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);

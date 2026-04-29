@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -40,6 +41,7 @@ public class KhachHangServiceImpl implements KhachHangService {
         return khachHangRepository.findAll().stream()
                 .filter(kh -> matchKeyword(kw, kh))
                 .filter(kh -> trangThai == null || trangThai.equals(kh.getTrangThai()))
+                .sorted(Comparator.comparing(KhachHang::getNgayTao, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toKhachHangResponse)
                 .toList();
     }
@@ -174,7 +176,29 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Transactional
     public void xoaDiaChi(Integer diaChiId) {
         DiaChiKhachHang dc = findDiaChi(diaChiId);
+        boolean laMacDinh = Boolean.TRUE.equals(dc.getLaMacDinh());
+        UUID khachHangId = dc.getKhachHang().getId();
         diaChiKhachHangRepository.delete(dc);
+        diaChiKhachHangRepository.flush();
+
+        if (laMacDinh) {
+            List<DiaChiKhachHang> remaining = diaChiKhachHangRepository.findByKhachHangIdOrderByLaMacDinhDesc(khachHangId);
+            if (!remaining.isEmpty()) {
+                DiaChiKhachHang newDefault = remaining.get(0);
+                newDefault.setLaMacDinh(true);
+                diaChiKhachHangRepository.save(newDefault);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void datMacDinhDiaChi(Integer diaChiId) {
+        DiaChiKhachHang dc = findDiaChi(diaChiId);
+        resetDefaultAddress(dc.getKhachHang().getId());
+        dc.setLaMacDinh(true);
+        dc.setNgayCapNhat(Instant.now());
+        diaChiKhachHangRepository.save(dc);
     }
 
     // --- Helpers ---
@@ -228,6 +252,10 @@ public class KhachHangServiceImpl implements KhachHangService {
     }
 
     private KhachHangResponse toKhachHangResponse(KhachHang kh) {
+        String diaChiMacDinh = diaChiKhachHangRepository
+                .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId())
+                .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
+                .orElse(null);
         return new KhachHangResponse(
                 kh.getId(),
                 kh.getTenDangNhap(),
@@ -238,7 +266,8 @@ public class KhachHangServiceImpl implements KhachHangService {
                 kh.getHinhAnh(),
                 kh.getTrangThai(),
                 kh.getTrangThai() == 1 ? "Hoạt động" : "Khóa",
-                kh.getNgayTao()
+                kh.getNgayTao(),
+                diaChiMacDinh
         );
     }
 
