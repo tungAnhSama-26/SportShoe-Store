@@ -8,6 +8,7 @@ import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResp
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 public interface QuanLyHoaDonService {
 
@@ -26,4 +27,6 @@ public interface QuanLyHoaDonService {
     HoaDonDetailResponse capNhatSanPhamHoaDon(Integer id, CapNhatSanPhamHoaDonRequest request);
 
     TinhPhiVanChuyenGhnResponse tinhVaCapNhatPhiVanChuyenGhn(Integer id, TinhPhiVanChuyenGhnRequest request);
+
+    List<HoaDonSummaryResponse> layDanhSachHoaDonTheoKhachHang(UUID khachHangId);
 }
