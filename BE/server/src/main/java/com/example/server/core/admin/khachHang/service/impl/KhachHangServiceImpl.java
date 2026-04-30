@@ -15,6 +15,8 @@ import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.repository.DiaChiKhachHangRepository;
 import com.example.server.repository.KhachHangRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ import java.util.UUID;
 
 @Service
 public class KhachHangServiceImpl implements KhachHangService {
+    private static final Logger log = LoggerFactory.getLogger(KhachHangServiceImpl.class);
 
     private final KhachHangRepository khachHangRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
@@ -91,7 +94,11 @@ public class KhachHangServiceImpl implements KhachHangService {
                         request.matKhau()
                 );
             } catch (Exception exception) {
-                System.err.println("Khong the gui email tai khoan khach hang: " + exception.getMessage());
+                log.warn(
+                        "Khong the gui email tai khoan khach hang toi {}",
+                        saved.getEmail(),
+                        exception
+                );
             }
         }
 

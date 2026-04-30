@@ -142,7 +142,9 @@ async function taiLienKetKhachHangTheoPhieu(maPhieu) {
     pageSize: 1000
   });
 
-  lienKetKhachHangHienTai.value = (data?.content || []).filter((item) => item?.email);
+  lienKetKhachHangHienTai.value = (data?.content || []).filter(
+    (item) => item?.maPhieuGiamGia === maPhieu && item?.email
+  );
   dsEmailChon.value = lienKetKhachHangHienTai.value.map((item) => item.email);
   dongBoSoLuongPhieuCaNhan();
 }
@@ -250,14 +252,15 @@ async function dongBoKhachHangPhieuCaNhan(phieuId, maPhieu) {
   const emailsCanThem = [...emailsDaChon].filter((email) => !emailHienTai.has(email));
   const lienKetCanXoa = lienKetHienTai.filter((item) => !emailsDaChon.has(item.email));
 
-  await Promise.all([
-    ...emailsCanThem.map((email) => createPhieuGiamGiaKhachHang({
+  await Promise.all(
+    emailsCanThem.map((email) => createPhieuGiamGiaKhachHang({
       phieuGiamGiaId: phieuId,
       email,
       trangThai: 1
-    })),
-    ...lienKetCanXoa.map((item) => deletePhieuGiamGiaKhachHang(item.id))
-  ]);
+    }))
+  );
+
+  await Promise.all(lienKetCanXoa.map((item) => deletePhieuGiamGiaKhachHang(item.id)));
 
   await taiLienKetKhachHangTheoPhieu(maPhieu);
 }
@@ -422,7 +425,7 @@ onMounted(taiChiTiet);
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Mã phiếu <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
+            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
             <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-rose-500">
               <RefreshCcw class="h-4 w-4" />
             </button>
@@ -432,7 +435,7 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Tên phiếu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Giảm giá hè 2024" />
+          <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Giảm giá hè 2024" />
           <p v-if="formErrors.ten" class="mt-1 text-xs text-rose-500">{{ formErrors.ten }}</p>
         </div>
 
@@ -441,11 +444,11 @@ onMounted(taiChiTiet);
           <div class="flex gap-6 pt-2">
             <label class="group flex cursor-pointer items-center gap-2">
               <input type="radio" v-model="form.loaiPhieu" value="1" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-medium text-slate-600">Công khai</span>
+              <span class="text-sm font-normal text-slate-600">Công khai</span>
             </label>
             <label class="group flex cursor-pointer items-center gap-2">
               <input type="radio" v-model="form.loaiPhieu" value="2" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-medium text-slate-600">Cá nhân</span>
+              <span class="text-sm font-normal text-slate-600">Cá nhân</span>
             </label>
           </div>
         </div>
@@ -455,11 +458,11 @@ onMounted(taiChiTiet);
           <div class="flex gap-6 pt-2">
             <label class="group flex cursor-pointer items-center gap-2">
               <input type="radio" v-model="form.loai" value="1" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-medium text-slate-600">Phần trăm (%)</span>
+              <span class="text-sm font-normal text-slate-600">Phần trăm (%)</span>
             </label>
             <label class="group flex cursor-pointer items-center gap-2">
               <input type="radio" v-model="form.loai" value="2" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-medium text-slate-600">Tiền mặt (VNĐ)</span>
+              <span class="text-sm font-normal text-slate-600">Tiền mặt (VNĐ)</span>
             </label>
           </div>
         </div>
@@ -467,7 +470,7 @@ onMounted(taiChiTiet);
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
+            <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{{ form.loai === '1' ? '%' : 'VNĐ' }}</span>
           </div>
           <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTri }}</p>
@@ -475,13 +478,13 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giá trị đơn tối thiểu (VNĐ)</label>
-          <input :value="form.giaTriToiThieu" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
+          <input :value="form.giaTriToiThieu" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
           <p v-if="formErrors.giaTriToiThieu" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTriToiThieu }}</p>
         </div>
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giảm tối đa (VNĐ)</label>
-          <input :value="form.giamToiDa" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
+          <input :value="form.giamToiDa" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
         </div>
 
         <div class="min-w-0 space-y-2">
@@ -491,7 +494,7 @@ onMounted(taiChiTiet);
             type="number"
             min="1"
             :readonly="form.loaiPhieu === '2'"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
             :class="form.loaiPhieu === '2' ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100' : ''"
           />
           <p v-if="form.loaiPhieu === '2'" class="text-xs text-slate-400">Tự động bằng số khách hàng đã chọn.</p>
@@ -500,19 +503,19 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày bắt đầu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ngayBatDau" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.ngayBatDau" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
           <p v-if="formErrors.ngayBatDau" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayBatDau }}</p>
         </div>
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày kết thúc <span class="text-rose-500">*</span></label>
-          <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
           <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayKetThuc }}</p>
         </div>
 
         <div v-if="!laMoi" class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
+          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Đang hoạt động</option>
             <option value="0">Ngưng hoạt động</option>
           </select>
@@ -532,7 +535,7 @@ onMounted(taiChiTiet);
 
         <div class="relative">
           <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input v-model="searchKh" type="text" placeholder="Tìm theo tên hoặc số điện thoại..." @input="handleSearch" class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300" />
+          <input v-model="searchKh" type="text" placeholder="Tìm theo tên hoặc số điện thoại..." @input="handleSearch" class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300" />
         </div>
 
         <div class="custom-scrollbar max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm">

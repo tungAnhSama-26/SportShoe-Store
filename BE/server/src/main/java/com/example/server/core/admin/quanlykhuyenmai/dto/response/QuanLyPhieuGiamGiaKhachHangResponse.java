@@ -22,6 +22,7 @@ public class QuanLyPhieuGiamGiaKhachHangResponse {
     private String tenPhieuGiamGia;
 
     private String tenKhachHang;
+    private String email;
 
     private LocalDate ngaySuDung;
 
@@ -36,6 +37,7 @@ public class QuanLyPhieuGiamGiaKhachHangResponse {
             String maPhieuGiamGia,
             String tenPhieuGiamGia,
             String tenKhachHang,
+            String email,
             Instant ngaySuDung,
             Integer trangThai,
             Instant ngayTao
@@ -46,6 +48,7 @@ public class QuanLyPhieuGiamGiaKhachHangResponse {
         this.maPhieuGiamGia = maPhieuGiamGia;
         this.tenPhieuGiamGia = tenPhieuGiamGia;
         this.tenKhachHang = tenKhachHang;
+        this.email = email;
         this.ngaySuDung = toLocalDate(ngaySuDung);
         this.trangThai = trangThai;
         this.ngayTao = toLocalDate(ngayTao);

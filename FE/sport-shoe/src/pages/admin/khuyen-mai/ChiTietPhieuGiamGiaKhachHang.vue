@@ -84,6 +84,19 @@ function resetErrors() {
   Object.keys(formErrors).forEach((key) => delete formErrors[key]);
 }
 
+function layDanhSachEmailDuocTang() {
+  const emailsDaChon = dsEmailChon.value
+    .map((email) => String(email || "").trim())
+    .filter(Boolean);
+
+  if (emailsDaChon.length) {
+    return Array.from(new Set(emailsDaChon));
+  }
+
+  const emailNhapTay = String(form.email || "").trim();
+  return emailNhapTay ? [emailNhapTay] : [];
+}
+
 async function taiDuLieu() {
   dangTai.value = true;
   try {
@@ -99,10 +112,11 @@ async function taiDuLieu() {
       Object.assign(form, {
         id: detail.id,
         phieuGiamGiaId: detail.phieuGiamGiaId ? String(detail.phieuGiamGiaId) : "",
+        email: detail.email || "",
         ngaySuDung: detail.ngaySuDung ? detail.ngaySuDung.slice(0, 10) : "",
         trangThai: String(detail.trangThai ?? 1)
       });
-      if (detail.khachHangId) {
+      if (!detail.email && detail.khachHangId) {
         try {
           const kh = await layChiTietKhachHang(detail.khachHangId);
           form.email = kh?.email || "";
@@ -121,13 +135,18 @@ async function taiDuLieu() {
 async function submitForm() {
   resetErrors();
   let isValid = true;
+  const emailsDuocTang = laMoi ? layDanhSachEmailDuocTang() : [];
 
   if (!form.phieuGiamGiaId) {
     formErrors.phieuGiamGiaId = "Vui lòng chọn phiếu giảm giá cá nhân";
     isValid = false;
   }
-  if (laMoi && dsEmailChon.value.length === 0) {
-    formErrors.email = "Vui lòng chọn ít nhất một khách hàng để tặng phiếu";
+  if (laMoi && emailsDuocTang.length === 0) {
+    formErrors.email = "Vui lòng nhập email hoặc chọn ít nhất một khách hàng để tặng phiếu";
+    isValid = false;
+  }
+  if (laMoi && emailsDuocTang.some((email) => !email.includes("@"))) {
+    formErrors.email = "Email khách hàng chưa đúng định dạng";
     isValid = false;
   }
   if (!laMoi && (!form.email || !form.email.includes("@"))) {
@@ -146,7 +165,7 @@ async function submitForm() {
       let failCount = 0;
       let firstErrorMessage = "";
 
-      for (const email of dsEmailChon.value) {
+      for (const email of emailsDuocTang) {
         try {
           await createPhieuGiamGiaKhachHang({
             phieuGiamGiaId: Number(form.phieuGiamGiaId),
@@ -305,7 +324,7 @@ onMounted(taiDuLieu);
       <div class="grid gap-6 md:grid-cols-2">
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Chọn phiếu giảm giá <span class="text-rose-500">*</span></label>
-          <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
+          <select v-model="form.phieuGiamGiaId" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="">-- Chọn một phiếu --</option>
             <option v-for="opt in phieuOptions" :key="opt.id" :value="String(opt.id)">{{ opt.ten }} ({{ opt.ma }})</option>
           </select>
@@ -319,7 +338,7 @@ onMounted(taiDuLieu);
             type="email"
             list="email-suggestions"
             placeholder="Ví dụ: customer@example.com"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
           />
           <datalist id="email-suggestions">
             <option v-for="email in emailOptions" :key="email" :value="email"></option>
@@ -329,12 +348,12 @@ onMounted(taiDuLieu);
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Ngày sử dụng</label>
-          <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.ngaySuDung" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
         </div>
 
         <div class="space-y-2">
           <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
+          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
             <option value="1">Kích hoạt</option>
             <option value="0">Tắt</option>
           </select>
