@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search } from "lucide-vue-next";
@@ -166,7 +166,7 @@ onMounted(taiDanhSach);
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input v-model="boLoc.keyword" type="text" placeholder="Mã, tên, mô tả..." class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              <input v-model="boLoc.keyword" type="text" placeholder="Mã, tên..." class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
             </div>
           </div>
 
@@ -220,12 +220,22 @@ onMounted(taiDanhSach);
       <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[900px] w-full border-separate border-spacing-y-2 text-sm">
+        <table class="min-w-[1100px] w-full table-fixed border-separate border-spacing-y-2 text-sm">
+          <colgroup>
+            <col class="w-[70px]" />
+            <col class="w-[180px]" />
+            <col class="w-[260px]" />
+            <col class="w-[120px]" />
+            <col class="w-[150px]" />
+            <col class="w-[150px]" />
+            <col class="w-[140px]" />
+            <col class="w-[130px]" />
+          </colgroup>
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
-              <th class="bg-slate-100 px-4 py-3">Tên / Mô tả</th>
+              <th class="bg-slate-100 px-4 py-3">Tên</th>
               <th class="bg-slate-100 px-4 py-3">Giá trị</th>
               <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
               <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
@@ -243,9 +253,8 @@ onMounted(taiDanhSach);
             <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200">
               <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
               <td class="px-4 py-3 font-bold tracking-tight text-slate-900">{{ item.ma }}</td>
-              <td class="px-4 py-3">
-                <div class="font-bold text-slate-900">{{ item.ten }}</div>
-                <div class="mt-0.5 max-w-[200px] truncate text-xs font-normal text-slate-500">{{ item.moTa || "—" }}</div>
+              <td class="px-4 py-3 align-top">
+                <div class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900">{{ item.ten }}</div>
               </td>
               <td class="px-4 py-3 font-bold text-slate-800">
                 {{ item.giaTriGiam }}{{ Number(item.loaiGiam) === 1 ? "%" : " đ" }}
@@ -291,3 +300,4 @@ onMounted(taiDanhSach);
     </section>
   </div>
 </template>
+

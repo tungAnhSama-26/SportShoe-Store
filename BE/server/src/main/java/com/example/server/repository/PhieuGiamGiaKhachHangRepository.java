@@ -17,11 +17,14 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
 
     boolean existsByPhieuGiamGiaId(Integer phieuGiamGiaId);
 
+    long countByPhieuGiamGiaId(Integer phieuGiamGiaId);
+
     Optional<PhieuGiamGiaKhachHang> findByPhieuGiamGiaIdAndKhachHangId(Integer phieuGiamGiaId, UUID khachHangId);
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaKhachHangResponse(
     phieuGGKH.id,phieuGGKH.phieuGiamGia.id,phieuGGKH.khachHang.id,phieuGGKH.phieuGiamGia.ma,phieuGGKH.phieuGiamGia.ten,phieuGGKH.khachHang.hoTen,
+    phieuGGKH.khachHang.email,
     phieuGGKH.ngaySuDung,phieuGGKH.trangThai,phieuGGKH.ngayTao
     )
     FROM PhieuGiamGiaKhachHang phieuGGKH JOIN KhachHang khachHang
@@ -32,6 +35,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaKhachHangResponse(
     phieuGGKH.id,phieuGGKH.phieuGiamGia.id,phieuGGKH.khachHang.id,phieuGGKH.phieuGiamGia.ma,phieuGGKH.phieuGiamGia.ten,phieuGGKH.khachHang.hoTen,
+    phieuGGKH.khachHang.email,
     phieuGGKH.ngaySuDung,phieuGGKH.trangThai,phieuGGKH.ngayTao
     )
     FROM PhieuGiamGiaKhachHang phieuGGKH JOIN KhachHang khachHang
@@ -43,6 +47,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaKhachHangResponse(
     phieuGGKH.id,phieuGGKH.phieuGiamGia.id,phieuGGKH.khachHang.id,phieuGGKH.phieuGiamGia.ma,phieuGGKH.phieuGiamGia.ten,phieuGGKH.khachHang.hoTen,
+    phieuGGKH.khachHang.email,
     phieuGGKH.ngaySuDung,phieuGGKH.trangThai,phieuGGKH.ngayTao
     )
     FROM PhieuGiamGiaKhachHang phieuGGKH JOIN KhachHang khachHang
@@ -53,6 +58,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaKhachHangResponse(
     phieuGGKH.id,phieuGGKH.phieuGiamGia.id,phieuGGKH.khachHang.id,phieuGGKH.phieuGiamGia.ma,phieuGGKH.phieuGiamGia.ten,phieuGGKH.khachHang.hoTen,
+    phieuGGKH.khachHang.email,
     phieuGGKH.ngaySuDung,phieuGGKH.trangThai,phieuGGKH.ngayTao
     )
     FROM PhieuGiamGiaKhachHang phieuGGKH JOIN KhachHang khachHang

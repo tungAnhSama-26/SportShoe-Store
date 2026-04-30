@@ -5,6 +5,7 @@ import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGia
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.PhieuGiamGia;
 import com.example.server.entity.PhieuGiamGiaKhachHang;
+import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
@@ -23,6 +24,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PhieuGiamGiaKhachHangService {
+
+    private static final int LOAI_PHIEU_CA_NHAN = 2;
 
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
@@ -46,10 +49,9 @@ public class PhieuGiamGiaKhachHangService {
     }
 
     public PhieuGiamGiaKhachHang add(PhieuGiamGiaKhachHangRequest request) {
-        PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(request.getPhieuGiamGiaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
-        KhachHang khachHang = khachHangRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay khach hang voi email nay"));
+        PhieuGiamGia phieuGiamGia = getPhieuGiamGia(request.getPhieuGiamGiaId());
+        KhachHang khachHang = getKhachHangByEmail(request.getEmail());
+        validateLienKet(phieuGiamGia, khachHang, null);
 
         PhieuGiamGiaKhachHang phieuGiamGiaKhachHang = new PhieuGiamGiaKhachHang();
         phieuGiamGiaKhachHang.setPhieuGiamGia(phieuGiamGia);
@@ -65,10 +67,9 @@ public class PhieuGiamGiaKhachHangService {
         PhieuGiamGiaKhachHang phieuGiamGiaKhachHang = phieuGiamGiaKhachHangRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia khach hang"));
 
-        PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(request.getPhieuGiamGiaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
-        KhachHang khachHang = khachHangRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay khach hang voi email nay"));
+        PhieuGiamGia phieuGiamGia = getPhieuGiamGia(request.getPhieuGiamGiaId());
+        KhachHang khachHang = getKhachHangByEmail(request.getEmail());
+        validateLienKet(phieuGiamGia, khachHang, phieuGiamGiaKhachHang);
 
         phieuGiamGiaKhachHang.setPhieuGiamGia(phieuGiamGia);
         phieuGiamGiaKhachHang.setKhachHang(khachHang);
@@ -89,6 +90,46 @@ public class PhieuGiamGiaKhachHangService {
 
     private Instant toInstant(LocalDate value) {
         return value == null ? null : value.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    }
+
+    private PhieuGiamGia getPhieuGiamGia(Integer phieuGiamGiaId) {
+        return phieuGiamGiaRepository.findById(phieuGiamGiaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
+    }
+
+    private KhachHang getKhachHangByEmail(String email) {
+        String normalizedEmail = email == null ? "" : email.trim();
+        return khachHangRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay khach hang voi email nay"));
+    }
+
+    private void validateLienKet(
+            PhieuGiamGia phieuGiamGia,
+            KhachHang khachHang,
+            PhieuGiamGiaKhachHang lienKetHienTai
+    ) {
+        if (phieuGiamGia.getLoaiPhieu() == null || phieuGiamGia.getLoaiPhieu() != LOAI_PHIEU_CA_NHAN) {
+            throw new BusinessException("Chi co the tang phieu ca nhan cho khach hang.");
+        }
+
+        Integer lienKetHienTaiId = lienKetHienTai == null ? null : lienKetHienTai.getId();
+        var lienKetTrung = phieuGiamGiaKhachHangRepository.findByPhieuGiamGiaIdAndKhachHangId(
+                phieuGiamGia.getId(),
+                khachHang.getId()
+        );
+        if (lienKetTrung.isPresent() && !lienKetTrung.get().getId().equals(lienKetHienTaiId)) {
+            throw new BusinessException("Khach hang nay da duoc tang phieu nay.");
+        }
+
+        long soLienKetHienTai = phieuGiamGiaKhachHangRepository.countByPhieuGiamGiaId(phieuGiamGia.getId());
+        boolean giuNguyenSlotPhieu = lienKetHienTai != null
+                && lienKetHienTai.getPhieuGiamGia() != null
+                && phieuGiamGia.getId().equals(lienKetHienTai.getPhieuGiamGia().getId());
+        long tongLienKetSauCapNhat = giuNguyenSlotPhieu ? soLienKetHienTai : soLienKetHienTai + 1;
+
+        if (phieuGiamGia.getSoLuong() != null && tongLienKetSauCapNhat > phieuGiamGia.getSoLuong()) {
+            throw new BusinessException("Phieu nay da duoc tang het so luong.");
+        }
     }
 
     public List<String> getEmailSuggestions() {

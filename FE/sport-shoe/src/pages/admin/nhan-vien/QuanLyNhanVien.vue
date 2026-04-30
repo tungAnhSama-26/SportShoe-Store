@@ -42,12 +42,6 @@ const dsTrangThai = [
   { label: "Khóa", value: "0", color: "bg-rose-50 text-rose-600" },
 ];
 
-const mauVaiTro = {
-  Admin: "bg-violet-50 text-violet-700",
-  "Bán hàng": "bg-sky-50 text-sky-700",
-  Kho: "bg-amber-50 text-amber-700",
-};
-
 function mauTrangThai(trangThai: number) {
   return trangThai === 1
     ? "bg-emerald-50 text-emerald-600"
@@ -358,15 +352,8 @@ onMounted(taiDanhSach);
               </td>
               <td class="px-4 py-3 text-slate-600">{{ nv.email }}</td>
               <td class="px-4 py-3 text-slate-600">{{ nv.sdt || "—" }}</td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="
-                    mauVaiTro[nv.tenVaiTro] || 'bg-slate-50 text-slate-600'
-                  "
-                >
-                  {{ nv.tenVaiTro }}
-                </span>
+              <td class="px-4 py-3 text-slate-600">
+                {{ nv.tenVaiTro || "—" }}
               </td>
               <td class="px-4 py-3 text-slate-600">
                 {{ dinhDangNgay(nv.ngayTao) }}
