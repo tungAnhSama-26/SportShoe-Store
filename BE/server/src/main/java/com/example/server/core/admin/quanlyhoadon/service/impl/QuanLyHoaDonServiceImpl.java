@@ -47,7 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
     private static final int KENH_BAN_TAI_QUAY = 1;
-        private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_DA_XAC_NHAN = 9;
     private static final int TRANG_THAI_CHO_GIAO_HANG = 2;
     private static final int TRANG_THAI_DANG_VAN_CHUYEN = 3;
     private static final int TRANG_THAI_DA_GIAO_HANG = 4;
@@ -185,11 +186,12 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
 
         switch (trangThai) {
             case "Chờ xác nhận" -> hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
-            case "Chờ giao hàng" -> {
+            case "Đã xác nhận" -> hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
+            case "Chờ lấy hàng" -> {
                 hoaDon.setTrangThai(TRANG_THAI_CHO_GIAO_HANG);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
             }
-            case "Đang vận chuyển" -> {
+            case "Chờ giao hàng" -> {
                 hoaDon.setTrangThai(TRANG_THAI_DANG_VAN_CHUYEN);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_DANG_GIAO);
                 if (vanChuyen.getNgayGui() == null) {
@@ -483,8 +485,9 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
         if (hoaDon.getTrangThai() != null) {
             switch (hoaDon.getTrangThai()) {
                 case TRANG_THAI_CHO_XAC_NHAN: return "Chờ xác nhận";
-                case TRANG_THAI_CHO_GIAO_HANG: return "Chờ giao hàng";
-                case TRANG_THAI_DANG_VAN_CHUYEN: return "Đang vận chuyển";
+                case TRANG_THAI_DA_XAC_NHAN: return "Đã xác nhận";
+                case TRANG_THAI_CHO_GIAO_HANG: return "Chờ lấy hàng";
+                case TRANG_THAI_DANG_VAN_CHUYEN: return "Chờ giao hàng";
                 case TRANG_THAI_DA_GIAO_HANG: return "Đã giao hàng";
                 case TRANG_THAI_HOAN_THANH: return "Hoàn thành";
                 case TRANG_THAI_HUY: return "Hủy";
@@ -539,8 +542,9 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
         String normalized = normalizeLabel(trangThai);
         return switch (normalized) {
             case "Chờ xác nhận" -> TRANG_THAI_CHO_XAC_NHAN;
-            case "Chờ giao hàng" -> TRANG_THAI_CHO_GIAO_HANG;
-            case "Đang vận chuyển" -> TRANG_THAI_DANG_VAN_CHUYEN;
+            case "Đã xác nhận" -> TRANG_THAI_DA_XAC_NHAN;
+            case "Chờ lấy hàng" -> TRANG_THAI_CHO_GIAO_HANG;
+            case "Chờ giao hàng" -> TRANG_THAI_DANG_VAN_CHUYEN;
             case "Đã giao hàng" -> TRANG_THAI_DA_GIAO_HANG;
             case "Hoàn thành" -> TRANG_THAI_HOAN_THANH;
             case "Hủy" -> TRANG_THAI_HUY;

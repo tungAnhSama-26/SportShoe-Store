@@ -8,6 +8,7 @@ import {
   CircleCheck,
   CircleX,
   ClipboardList,
+  ClipboardCheck,
   Flag,
   History,
   Hourglass,
@@ -79,10 +80,11 @@ const danhSachSanPhamUpdate = ref<
 
 const cacBuocCoDinh = [
   { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
-  { id: 2, key: "Chờ giao hàng", ten: "Chờ Giao Hàng", icon: markRaw(Package) },
-  { id: 3, key: "Đang vận chuyển", ten: "Đang Vận Chuyển", icon: markRaw(Truck) },
-  { id: 4, key: "Đã giao hàng", ten: "Đã Giao Hàng", icon: markRaw(CircleCheck) },
-  { id: 5, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
+  { id: 2, key: "Đã xác nhận", ten: "Đã Xác Nhận", icon: markRaw(ClipboardCheck) },
+  { id: 3, key: "Chờ lấy hàng", ten: "Chờ Lấy Hàng", icon: markRaw(Package) },
+  { id: 4, key: "Chờ giao hàng", ten: "Chờ Giao Hàng", icon: markRaw(Truck) },
+  { id: 5, key: "Đã giao hàng", ten: "Đã Giao Hàng", icon: markRaw(CircleCheck) },
+  { id: 6, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
 ];
 
 const cacBuocYeuCauHuy = [
@@ -103,7 +105,7 @@ const cacBuoc = computed(() => {
   if (laDonTaiQuay.value) {
     return [
       { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
-      { id: 5, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
+      { id: 6, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
     ];
   }
   return cacBuocCoDinh;
@@ -149,10 +151,11 @@ const buocHienTai = computed(() => {
   if (!hoaDon.value) return 0;
   const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
   if (stt === "chờ xác nhận" || stt === "cho_xac_nhan") return 1;
-  if (stt === "chờ giao hàng" || stt === "đã xác nhận" || stt === "cho_giao_hang") return 2;
-  if (stt === "đang vận chuyển" || stt === "chờ vận chuyển" || stt === "dang_van_chuyen") return 3;
-  if (stt === "đã giao hàng" || stt === "vận chuyển" || stt === "da_giao_hang") return 4;
-  if (stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh") return 5;
+  if (stt === "đã xác nhận" || stt === "da_xac_nhan") return 2;
+  if (stt === "chờ lấy hàng" || stt === "cho_lay_hang" || stt === "cho_giao_hang") return 3;
+  if (stt === "chờ giao hàng" || stt === "đang vận chuyển" || stt === "chờ vận chuyển" || stt === "dang_van_chuyen") return 4;
+  if (stt === "đã giao hàng" || stt === "vận chuyển" || stt === "da_giao_hang") return 5;
+  if (stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh") return 6;
   return 0;
 });
 
@@ -440,8 +443,9 @@ async function handleSaveSanPham() {
 
 const danhSachTrangThaiHienThi = [
   { key: "Chờ xác nhận", label: "Chờ xác nhận" },
+  { key: "Đã xác nhận", label: "Đã xác nhận" },
+  { key: "Chờ lấy hàng", label: "Chờ lấy hàng" },
   { key: "Chờ giao hàng", label: "Chờ giao hàng" },
-  { key: "Đang vận chuyển", label: "Đang vận chuyển" },
   { key: "Đã giao hàng", label: "Đã giao hàng" },
   { key: "Hoàn thành", label: "Hoàn thành" },
   { key: "Yêu cầu hủy", label: "Yêu cầu hủy" },
@@ -454,8 +458,9 @@ const indexTrangThaiHienTai = computed(() => {
   let normalizedStt = hoaDon.value.trangThai;
   
   if (currentStt === 'chờ xác nhận' || currentStt === 'cho_xac_nhan') normalizedStt = "Chờ xác nhận";
-  else if (currentStt === 'chờ giao hàng' || currentStt === 'đã xác nhận' || currentStt === 'cho_giao_hang') normalizedStt = "Chờ giao hàng";
-  else if (currentStt === 'đang vận chuyển' || currentStt === 'chờ vận chuyển' || currentStt === 'dang_van_chuyen') normalizedStt = "Đang vận chuyển";
+  else if (currentStt === 'đã xác nhận' || currentStt === 'da_xac_nhan') normalizedStt = "Đã xác nhận";
+  else if (currentStt === 'chờ lấy hàng' || currentStt === 'cho_lay_hang' || currentStt === 'cho_giao_hang') normalizedStt = "Chờ lấy hàng";
+  else if (currentStt === 'chờ giao hàng' || currentStt === 'đang vận chuyển' || currentStt === 'chờ vận chuyển' || currentStt === 'dang_van_chuyen') normalizedStt = "Chờ giao hàng";
   else if (currentStt === 'đã giao hàng' || currentStt === 'vận chuyển' || currentStt === 'da_giao_hang') normalizedStt = "Đã giao hàng";
   else if (currentStt === 'hoàn thành' || currentStt === 'đã hoàn thành' || currentStt === 'hoan_thanh') normalizedStt = "Hoàn thành";
   else if (currentStt === 'yêu cầu hủy' || currentStt === 'yeu_cau_huy') normalizedStt = "Yêu cầu hủy";
@@ -495,8 +500,9 @@ watch(hienModalThongTin, (val) => {
   const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
   let defaultStt = hoaDon.value.trangThai;
   if (stt === 'chờ xác nhận' || stt === 'cho_xac_nhan') defaultStt = "Chờ xác nhận";
-  else if (stt === 'chờ giao hàng' || stt === 'đã xác nhận' || stt === 'cho_giao_hang') defaultStt = "Chờ giao hàng";
-  else if (stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Đang vận chuyển";
+  else if (stt === 'đã xác nhận' || stt === 'da_xac_nhan') defaultStt = "Đã xác nhận";
+  else if (stt === 'chờ lấy hàng' || stt === 'cho_lay_hang' || stt === 'cho_giao_hang') defaultStt = "Chờ lấy hàng";
+  else if (stt === 'chờ giao hàng' || stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Chờ giao hàng";
   else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
   else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
   else if (stt === 'yêu cầu hủy' || stt === 'yeu_cau_huy') defaultStt = "Yêu cầu hủy";
@@ -687,13 +693,7 @@ onMounted(taiChiTiet);
                   class="flex h-[58px] w-[58px] items-center justify-center overflow-visible rounded-full border-[2.5px] transition-all"
                   :class="lopVongTrangThai(buoc)"
                 >
-                  <Hourglass v-if="buoc.id === 1" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
-                  <Package v-else-if="buoc.id === 2" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
-                  <Truck v-else-if="buoc.id === 3" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
-                  <CircleCheck v-else-if="buoc.id === 4" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
-                  <Flag v-else-if="buoc.id === 5" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
-                  <CircleX v-else-if="buoc.id === 6" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
-                  <TriangleAlert v-else-if="buoc.id === 7" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
+                  <component :is="buoc.icon" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                 </div>
                 <p class="mt-3 text-[13px] font-semibold" :class="lopTenTrangThai(buoc)">{{ buoc.ten }}</p>
                 <div class="mt-1 min-h-[32px]">
@@ -873,19 +873,14 @@ onMounted(taiChiTiet);
           </button>
 
           <button
+            v-if="!donDaHoanThanh"
             type="button"
             @click="moModalThongTin"
-            :disabled="donDaHoanThanh"
-            :title="donDaHoanThanh ? 'Đơn hàng đã hoàn thành, không thể chỉnh sửa.' : ''"
-            class="flex h-10 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:shadow-none"
-            :class="donDaHoanThanh ? 'bg-slate-300 hover:bg-slate-300' : 'bg-amber-500 hover:bg-amber-600'"
+            class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
           >
             <Pencil class="h-4 w-4" />
             Chỉnh Sửa Đơn Hàng
           </button>
-          <p v-if="donDaHoanThanh" class="text-center text-xs font-medium text-slate-400">
-            Đơn hàng đã hoàn thành nên không thể chỉnh sửa.
-          </p>
         </div>
       </section>
 

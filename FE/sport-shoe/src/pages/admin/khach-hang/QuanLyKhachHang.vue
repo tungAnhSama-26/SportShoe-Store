@@ -85,9 +85,10 @@ function dinhDangTien(n: number) {
 function mauTrangThaiDon(trangThai: string) {
   const map: Record<string, string> = {
     "Hoàn thành": "bg-emerald-50 text-emerald-600",
-    "Đang vận chuyển": "bg-sky-50 text-sky-600",
+    "Chờ giao hàng": "bg-sky-50 text-sky-600",
     "Chờ xác nhận": "bg-amber-50 text-amber-600",
-    "Chờ giao hàng": "bg-violet-50 text-violet-600",
+    "Đã xác nhận": "bg-orange-50 text-orange-600",
+    "Chờ lấy hàng": "bg-violet-50 text-violet-600",
     "Đã giao hàng": "bg-teal-50 text-teal-600",
     "Hủy": "bg-rose-50 text-rose-600",
     "Yêu cầu hủy": "bg-orange-50 text-orange-600",
