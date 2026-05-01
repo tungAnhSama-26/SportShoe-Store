@@ -9,7 +9,7 @@ import {
   getDotGiamGiaSanPhamList,
   syncDotGiamGiaSanPham
 } from "../../../services/khuyen-mai";
-import { layDanhSachGiay, layBienThe } from "../../../services/san-pham-api";
+import { chiTietGiay, layDanhSachGiay, layBienThe } from "../../../services/san-pham-api";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const route = useRoute();
@@ -81,20 +81,153 @@ function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
 }
 
+function resolveProductImage(product) {
+  if (product?.hinhAnh) {
+    return product.hinhAnh;
+  }
+
+  if (Array.isArray(product?.hinhAnhs) && product.hinhAnhs.length) {
+    return product.hinhAnhs.find((item) => item?.laHinhChinh)?.url || product.hinhAnhs[0]?.url || "";
+  }
+
+  return "";
+}
+
 function normalizeVariantForSelection(variant, product = null) {
+  const variantId = variant?.giayChiTietId ?? variant?.idChiTietSanPham ?? variant?.chiTietId ?? variant?.id ?? null;
   return {
     ...variant,
-    id: variant?.id ?? variant?.idChiTietSanPham ?? null,
+    linkId: variant?.giayChiTietId != null ? variant?.id ?? null : variant?.linkId ?? null,
+    id: variantId,
+    giayChiTietId: variantId,
+    maSanPham: variant?.maSanPham || product?.ma || "",
     tenSanPham: variant?.tenSanPham || variant?.tenGiay || product?.ten || "",
     maBienThe: variant?.maBienThe || variant?.maChiTietSanPham || variant?.sku || variant?.ma || "",
     giaBan: Number(variant?.giaBan ?? variant?.gia ?? 0),
     giaGoc: Number(variant?.giaGoc ?? variant?.giaBan ?? variant?.gia ?? 0),
     mauSac: variant?.mauSac || variant?.tenMauSac || "",
     kichCo: variant?.kichCo || variant?.tenKichCo || "",
-    hinhAnh: variant?.hinhAnh || product?.hinhAnh || "",
+    thuongHieu: variant?.thuongHieu || product?.thuongHieu || "",
+    hinhAnh: variant?.hinhAnh || resolveProductImage(product),
     giayId: variant?.giayId || variant?.idGiay || product?.id || null,
     sku: variant?.sku || variant?.maBienThe || variant?.maChiTietSanPham || variant?.ma || "",
+    soLuong: Number(variant?.soLuong ?? variant?.soLuongTon ?? 0),
   };
+}
+
+function hopNhatBienThe(existing, incoming) {
+  return {
+    ...existing,
+    ...incoming,
+    linkId: incoming?.linkId ?? existing?.linkId ?? null,
+    id: incoming?.id ?? existing?.id ?? null,
+    giayChiTietId: incoming?.giayChiTietId ?? existing?.giayChiTietId ?? incoming?.id ?? existing?.id ?? null,
+    giayId: incoming?.giayId ?? existing?.giayId ?? null,
+    maSanPham: incoming?.maSanPham || existing?.maSanPham || "",
+    tenSanPham: incoming?.tenSanPham || existing?.tenSanPham || "",
+    maBienThe: incoming?.maBienThe || existing?.maBienThe || "",
+    giaBan: Number(incoming?.giaBan ?? existing?.giaBan ?? 0),
+    giaGoc: Number(incoming?.giaGoc ?? existing?.giaGoc ?? incoming?.giaBan ?? existing?.giaBan ?? 0),
+    mauSac: incoming?.mauSac || existing?.mauSac || "",
+    kichCo: incoming?.kichCo || existing?.kichCo || "",
+    thuongHieu: incoming?.thuongHieu || existing?.thuongHieu || "",
+    hinhAnh: incoming?.hinhAnh || existing?.hinhAnh || "",
+    sku: incoming?.sku || existing?.sku || "",
+    soLuong: Number(incoming?.soLuong ?? existing?.soLuong ?? 0),
+  };
+}
+
+function dedupeSelectedVariants(items) {
+  const selectedMap = new Map();
+
+  for (const item of items) {
+    const normalized = normalizeVariantForSelection(item);
+    const variantId = Number(normalized.id);
+    if (!Number.isInteger(variantId) || variantId <= 0) {
+      continue;
+    }
+
+    const current = selectedMap.get(variantId);
+    selectedMap.set(
+      variantId,
+      current ? hopNhatBienThe(current, normalized) : normalized,
+    );
+  }
+
+  return Array.from(selectedMap.values());
+}
+
+function dongBoBienTheDaChonTheoDanhSachSanPham(products) {
+  if (!selectedVariants.value.length) {
+    return;
+  }
+
+  const variantLookup = new Map();
+  for (const product of products) {
+    for (const variant of product.bienThes || []) {
+      const normalized = normalizeVariantForSelection(variant, product);
+      const variantId = Number(normalized.id);
+      if (Number.isInteger(variantId) && variantId > 0) {
+        variantLookup.set(variantId, normalized);
+      }
+    }
+  }
+
+  selectedVariants.value = dedupeSelectedVariants(
+    selectedVariants.value.map((variant) => {
+      const variantId = Number(variant?.id);
+      return variantLookup.get(variantId) ?? variant;
+    }),
+  );
+}
+
+async function taiSanPhamDaChonConThieu(items) {
+  if (!selectedVariants.value.length || searchSP.value.trim()) {
+    return items;
+  }
+
+  const existingProductIds = new Set(
+    items
+      .map((item) => Number(item?.id))
+      .filter((productId) => Number.isInteger(productId) && productId > 0),
+  );
+
+  const missingProductIds = Array.from(
+    new Set(
+      selectedVariants.value
+        .map((variant) => Number(variant?.giayId))
+        .filter((productId) => Number.isInteger(productId) && productId > 0 && !existingProductIds.has(productId)),
+    ),
+  );
+
+  if (!missingProductIds.length) {
+    return items;
+  }
+
+  const extraProducts = (await Promise.all(
+    missingProductIds.map(async (productId) => {
+      try {
+        const [productDetail, variants] = await Promise.all([
+          chiTietGiay(productId),
+          layBienThe(productId),
+        ]);
+
+        return {
+          id: productId,
+          ten: productDetail?.ten || "",
+          ma: productDetail?.ma || "",
+          thuongHieu: productDetail?.thuongHieu || "",
+          hinhAnh: resolveProductImage(productDetail),
+          bienThes: (variants || []).map((variant) => normalizeVariantForSelection(variant, productDetail)),
+        };
+      } catch (error) {
+        console.error("Khong the tai san pham da chon:", error);
+        return null;
+      }
+    }),
+  )).filter(Boolean);
+
+  return [...extraProducts, ...items];
 }
 
 function tinhGiaGiam(giaGoc) {
@@ -110,7 +243,7 @@ async function taiDanhSachSP() {
   dangTaiSP.value = true;
   try {
     const res = await layDanhSachGiay({ keyword: searchSP.value, page: 0, size: 50 });
-    const items = res?.content || res?.items || [];
+    const items = [...(res?.content || res?.items || [])];
     
     // Load variants for each product to allow selection
     for (const item of items) {
@@ -123,7 +256,9 @@ async function taiDanhSachSP() {
             }
         }
     }
-    danhSachSP.value = items;
+    const mergedItems = await taiSanPhamDaChonConThieu(items);
+    danhSachSP.value = mergedItems;
+    dongBoBienTheDaChonTheoDanhSachSanPham(mergedItems);
   } catch (e) {
     console.error("Lỗi tải sản phẩm:", e);
   } finally {
@@ -138,20 +273,24 @@ watch(searchSP, () => {
 });
 
 function isVariantSelected(variantId) {
-  return selectedVariants.value.some(v => v.id === variantId);
+  return selectedVariants.value.some(v => Number(v.id) === Number(variantId));
 }
 
 function toggleVariant(variant, product) {
-  const index = selectedVariants.value.findIndex(v => v.id === variant.id);
+  const normalized = normalizeVariantForSelection(variant, product);
+  const index = selectedVariants.value.findIndex(v => Number(v.id) === Number(normalized.id));
   if (index === -1) {
-    selectedVariants.value.push(normalizeVariantForSelection(variant, product));
+    selectedVariants.value = dedupeSelectedVariants([...selectedVariants.value, normalized]);
   } else {
     selectedVariants.value.splice(index, 1);
+    selectedVariants.value = dedupeSelectedVariants(selectedVariants.value);
   }
 }
 
 function removeSelectedVariant(variantId) {
-  selectedVariants.value = selectedVariants.value.filter(v => v.id !== variantId);
+  selectedVariants.value = dedupeSelectedVariants(
+    selectedVariants.value.filter(v => Number(v.id) !== Number(variantId)),
+  );
 }
 
 function moChiTietSanPham(giayId, variantId) {
@@ -169,7 +308,7 @@ async function taiChiTiet() {
     if (!form.ma) {
       taoMaNgauNhien();
     }
-    taiDanhSachSP();
+    await taiDanhSachSP();
     return;
   }
   dangTai.value = true;
@@ -189,11 +328,13 @@ async function taiChiTiet() {
 
     // Load selected variants for this campaign
     const spList = await getDotGiamGiaSanPhamList();
-    selectedVariants.value = spList
-      .filter(item => String(item.dotGiamGiaId) === String(id))
-      .map((item) => normalizeVariantForSelection(item));
+    selectedVariants.value = dedupeSelectedVariants(
+      spList
+        .filter(item => String(item.dotGiamGiaId) === String(id))
+        .map((item) => normalizeVariantForSelection(item)),
+    );
 
-    taiDanhSachSP();
+    await taiDanhSachSP();
   } catch (e) {
     loiTrang.value = getDisplayErrorMessage(e, "Không thể tải chi tiết đợt giảm giá");
   } finally {
@@ -251,9 +392,11 @@ async function submitForm() {
 
     await syncDotGiamGiaSanPham({
       dotGiamGiaId: Number(campaignId),
-      giayChiTietIds: selectedVariants.value
-        .map((variant) => Number(variant?.id))
-        .filter((variantId) => Number.isInteger(variantId) && variantId > 0)
+      giayChiTietIds: Array.from(new Set(
+        selectedVariants.value
+          .map((variant) => Number(variant?.id))
+          .filter((variantId) => Number.isInteger(variantId) && variantId > 0)
+      ))
     });
 
     alert(laMoi ? "Thêm đợt giảm giá thành công" : "Cập nhật thành công");

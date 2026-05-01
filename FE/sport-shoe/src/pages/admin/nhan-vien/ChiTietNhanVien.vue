@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, QrCode, Save } from "lucide-vue-next";
-import BanHangQrScannerModal from "../../../components/admin/ban-hang/BanHangQrScannerModal.vue";
+import { ArrowLeft, Save } from "lucide-vue-next";
 import {
   capNhatNhanVien,
   doiMatKhauNhanVien,
@@ -13,6 +12,7 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import { clearEmployeeQrDraft, readEmployeeQrDraft } from "../../../utils/employee-qr";
 
 const route = useRoute();
 const router = useRouter();
@@ -27,9 +27,9 @@ const loiTrang = ref("");
 const thongBao = ref("");
 const nhanVien = ref<any>(null);
 const fileInputAvatar = ref<HTMLInputElement | null>(null);
-const moQuetQr = ref(false);
 const matKhauMoi = ref("");
 const showDoiMatKhau = ref(false);
+const daApDungDuLieuQr = ref(false);
 
 const loiForm = ref({
   hoTen: "",
@@ -255,6 +255,74 @@ function gopDiaChi() {
   return diaChiFull;
 }
 
+const tomTatDiaChiQr = computed(() => gopDiaChi() || form.value.diaChiCuThe.trim() || "Chua co dia chi.");
+
+function chonGiaTriQr(giaTriMoi: unknown, giaTriHienTai = "") {
+  const daLamSach = String(giaTriMoi ?? "").trim();
+  return daLamSach || String(giaTriHienTai ?? "");
+}
+
+function hienThongBaoTam(thongDiep: string) {
+  thongBao.value = thongDiep;
+  setTimeout(() => {
+    thongBao.value = "";
+  }, 3000);
+}
+
+async function apDungMaDiaChiDaQuet(duLieuQr: Record<string, any>) {
+  const maTinhThanh = String(duLieuQr.tinhThanh ?? "").trim();
+  const maQuanHuyen = String(duLieuQr.quanHuyen ?? "").trim();
+  const maXaPhuong = String(duLieuQr.xaPhuong ?? "").trim();
+
+  form.value.tinhThanh = maTinhThanh;
+
+  if (!maTinhThanh) {
+    form.value.quanHuyen = "";
+    form.value.xaPhuong = "";
+    dsQuanHuyen.value = [];
+    dsXaPhuong.value = [];
+    return;
+  }
+
+  try {
+    const responseTinh = await fetch(`https://provinces.open-api.vn/api/p/${maTinhThanh}?depth=2`);
+    const dataTinh = await responseTinh.json();
+    dsQuanHuyen.value = Array.isArray(dataTinh.districts)
+      ? dataTinh.districts.map((district: any) => ({
+          value: district.code.toString(),
+          label: district.name,
+        }))
+      : [];
+  } catch (error) {
+    console.error("Không thể tải quận huyện từ dữ liệu QR", error);
+    dsQuanHuyen.value = [];
+  }
+
+  form.value.quanHuyen = maQuanHuyen;
+
+  if (!maQuanHuyen) {
+    form.value.xaPhuong = "";
+    dsXaPhuong.value = [];
+    return;
+  }
+
+  try {
+    const responseHuyen = await fetch(`https://provinces.open-api.vn/api/d/${maQuanHuyen}?depth=2`);
+    const dataHuyen = await responseHuyen.json();
+    dsXaPhuong.value = Array.isArray(dataHuyen.wards)
+      ? dataHuyen.wards.map((ward: any) => ({
+          value: ward.code.toString(),
+          label: ward.name,
+        }))
+      : [];
+  } catch (error) {
+    console.error("Không thể tải xã phường từ dữ liệu QR", error);
+    dsXaPhuong.value = [];
+  }
+
+  form.value.xaPhuong = maXaPhuong;
+}
+
 async function taiChiTiet() {
   if (laMoi) return;
   dangTai.value = true;
@@ -266,12 +334,12 @@ async function taiChiTiet() {
       email: data.email ?? "",
       matKhau: "",
       sdt: data.sdt ?? "",
+      cccd: data.cccd ?? "",
+      gioiTinh: data.gioiTinh ?? "Nam",
+      ngaySinh: data.ngaySinh ?? "",
       diaChiCuThe: data.diaChi ?? "",
       hinhAnh: data.hinhAnh ?? "",
       vaiTro: data.vaiTro ?? 2,
-      cccd: "",
-      gioiTinh: "Nam",
-      ngaySinh: "",
       tinhThanh: "",
       quanHuyen: "",
       xaPhuong: "",
@@ -329,6 +397,9 @@ async function luu() {
     email: form.value.email.trim(),
     ...(laMoi ? { matKhau: form.value.matKhau } : {}),
     sdt: form.value.sdt.trim() || undefined,
+    cccd: form.value.cccd.trim() || undefined,
+    gioiTinh: form.value.gioiTinh || undefined,
+    ngaySinh: form.value.ngaySinh || undefined,
     diaChi: gopDiaChi() || form.value.diaChiCuThe.trim() || undefined,
     hinhAnh: form.value.hinhAnh || undefined,
     vaiTro: form.value.vaiTro,
@@ -420,72 +491,50 @@ async function xuLyUploadAnh(event: Event) {
   }
 }
 
-function apDungDuLieuQr(rawValue: string) {
-  loiTrang.value = "";
+async function apDungDuLieuNhanVienDaQuet() {
+  if (!laMoi && route.query.fromQr !== "1") return;
 
-  // Try to parse as CCCD format first (separated by '|')
-  if (rawValue.includes("|")) {
-    const parts = rawValue.split("|");
-    if (parts.length >= 6) {
-      form.value.cccd = parts[0] || form.value.cccd;
-      form.value.hoTen = parts[2] || form.value.hoTen;
-      
-      const rawNgaySinh = parts[3];
-      if (rawNgaySinh && rawNgaySinh.length === 8) {
-        // ddmmyyyy -> yyyy-MM-dd
-        form.value.ngaySinh = `${rawNgaySinh.substring(4,8)}-${rawNgaySinh.substring(2,4)}-${rawNgaySinh.substring(0,2)}`;
-      }
-      
-      form.value.gioiTinh = parts[4] === "Nữ" ? "Nữ" : "Nam";
-      form.value.diaChiCuThe = parts[5] || form.value.diaChiCuThe;
-      
-      moQuetQr.value = false;
-      thongBao.value = "Đã điền thông tin từ CCCD.";
-      setTimeout(() => {
-        thongBao.value = "";
-      }, 3000);
-      return;
-    }
-  }
-
-  // Fallback to JSON logic
-  let parsed: Record<string, any> | null = null;
-  try {
-    parsed = JSON.parse(rawValue);
-  } catch {
-    loiTrang.value = "Mã QR không đúng định dạng CCCD hoặc dữ liệu hợp lệ.";
+  const duLieuQr = readEmployeeQrDraft();
+  if (!duLieuQr) {
+    daApDungDuLieuQr.value = false;
     return;
   }
 
-  if (!parsed || parsed.type !== "sportshoe-employee") {
-    loiTrang.value = "Mã QR này không phải dữ liệu nhân viên SportShoe.";
-    return;
+  form.value.hoTen = chonGiaTriQr(duLieuQr.hoTen, form.value.hoTen);
+  form.value.email = chonGiaTriQr(duLieuQr.email, form.value.email);
+  form.value.sdt = chonGiaTriQr(duLieuQr.sdt, form.value.sdt);
+  form.value.cccd = chonGiaTriQr(duLieuQr.cccd, form.value.cccd);
+  form.value.gioiTinh = chonGiaTriQr(duLieuQr.gioiTinh, form.value.gioiTinh || "Nam");
+  form.value.ngaySinh = chonGiaTriQr(duLieuQr.ngaySinh, form.value.ngaySinh);
+  form.value.diaChiCuThe = chonGiaTriQr(duLieuQr.diaChiCuThe, form.value.diaChiCuThe);
+  form.value.vaiTro = Number(duLieuQr.vaiTro ?? form.value.vaiTro ?? 2) || 2;
+
+  if (duLieuQr.matKhau) {
+    form.value.matKhau = String(duLieuQr.matKhau);
   }
 
-  form.value.hoTen = String(parsed.hoTen ?? form.value.hoTen ?? "");
-  form.value.email = String(parsed.email ?? form.value.email ?? "");
-  form.value.sdt = String(parsed.sdt ?? form.value.sdt ?? "");
-  form.value.cccd = String(parsed.cccd ?? form.value.cccd ?? "");
-  form.value.gioiTinh = parsed.gioiTinh === "Nữ" ? "Nữ" : "Nam";
-  form.value.ngaySinh = String(parsed.ngaySinh ?? form.value.ngaySinh ?? "");
-  form.value.tinhThanh = String(parsed.tinhThanh ?? form.value.tinhThanh ?? "");
-  form.value.quanHuyen = String(parsed.quanHuyen ?? form.value.quanHuyen ?? "");
-  form.value.xaPhuong = String(parsed.xaPhuong ?? form.value.xaPhuong ?? "");
-  form.value.diaChiCuThe = String(parsed.diaChiCuThe ?? form.value.diaChiCuThe ?? "");
-  form.value.vaiTro = Number(parsed.vaiTro ?? form.value.vaiTro ?? 2);
+  await apDungMaDiaChiDaQuet(duLieuQr);
 
-  if (laMoi && parsed.matKhau) {
-    form.value.matKhau = String(parsed.matKhau);
-  }
-
-  moQuetQr.value = false;
-  thongBao.value = "Đã điền thông tin từ mã QR.";
-  setTimeout(() => {
-    thongBao.value = "";
-  }, 3000);
+  daApDungDuLieuQr.value = true;
+  clearEmployeeQrDraft();
+  hienThongBaoTam(
+    String(
+      laMoi
+        ? duLieuQr.sourceMessage ?? "Da dien thong tin tu ma QR."
+        : "Da match nhan vien tu CCCD vua quet va dien du lieu vao form.",
+    ),
+  );
 }
 
-onMounted(taiChiTiet);
+onMounted(async () => {
+  if (laMoi) {
+    await apDungDuLieuNhanVienDaQuet();
+    return;
+  }
+
+  await taiChiTiet();
+  await apDungDuLieuNhanVienDaQuet();
+});
 </script>
 
 <template>
@@ -503,15 +552,6 @@ onMounted(taiChiTiet);
           {{ laMoi ? "Thêm nhân viên mới" : "Chi tiết nhân viên" }}
         </h1>
       </div>
-
-      <button
-        type="button"
-        @click="moQuetQr = true"
-        class="admin-btn-soft h-12 min-w-[148px] rounded-[18px] px-5 text-[15px] font-semibold"
-      >
-        <QrCode class="h-4 w-4" />
-        Quét QR
-      </button>
     </section>
 
     <div
@@ -528,6 +568,41 @@ onMounted(taiChiTiet);
       >
         {{ thongBao }}
       </div>
+      <section
+        v-if="daApDungDuLieuQr"
+        class="rounded-[24px] border border-sky-100 bg-sky-50 px-5 py-5 text-slate-700 shadow-sm"
+      >
+        <p class="text-sm font-semibold text-sky-700">Da nhan du lieu tu CCCD</p>
+        <p class="mt-1 text-sm text-slate-600">
+          {{
+            laMoi
+              ? "Thong tin quet duoc da duoc dien vao form. Kiem tra lai, bo sung email, so dien thoai va mat khau roi luu."
+              : "Thong tin quet duoc da duoc doi chieu voi nhan vien hien co va dien vao form. Kiem tra lai roi luu."
+          }}
+        </p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div class="rounded-[18px] bg-white px-4 py-3">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Ho ten</p>
+            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.hoTen || "Chua co" }}</p>
+          </div>
+          <div class="rounded-[18px] bg-white px-4 py-3">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">CCCD</p>
+            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.cccd || "Chua co" }}</p>
+          </div>
+          <div class="rounded-[18px] bg-white px-4 py-3">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Ngay sinh</p>
+            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.ngaySinh || "Chua co" }}</p>
+          </div>
+          <div class="rounded-[18px] bg-white px-4 py-3">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Gioi tinh</p>
+            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.gioiTinh || "Chua co" }}</p>
+          </div>
+          <div class="rounded-[18px] bg-white px-4 py-3 md:col-span-2 xl:col-span-1">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Dia chi</p>
+            <p class="mt-2 text-sm font-semibold text-slate-900">{{ tomTatDiaChiQr }}</p>
+          </div>
+        </div>
+      </section>
       <div
         v-if="loiTrang"
         class="rounded-[20px] border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700"
@@ -832,23 +907,6 @@ onMounted(taiChiTiet);
           </div>
         </div>
       </section>
-
-      <BanHangQrScannerModal
-        :open="moQuetQr"
-        chip-label="Quét QR nhân viên"
-        title="Dùng camera để nhận dữ liệu nhân viên"
-        loading-text="Đang bật camera để quét mã QR nhân viên..."
-        fallback-helper-text="Đưa mã QR nhân viên vào giữa khung quét để tự động điền biểu mẫu."
-        manual-section-title="Dữ liệu quét thủ công"
-        manual-section-description="Bạn có thể dán chuỗi JSON nhân viên nếu camera chưa đọc được mã QR."
-        manual-label="Dữ liệu nhân viên"
-        manual-placeholder='Ví dụ: {"type":"sportshoe-employee","hoTen":"Trần Thị Thu Thủy"}'
-        confirm-button-label="Dùng dữ liệu này"
-        retry-button-label="Quét lại"
-        camera-hint="Ưu tiên camera sau để quét mã QR nhân viên"
-        @close="moQuetQr = false"
-        @scan="apDungDuLieuQr"
-      />
     </template>
   </div>
 </template>

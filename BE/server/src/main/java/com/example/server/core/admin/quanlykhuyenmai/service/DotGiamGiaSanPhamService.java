@@ -120,15 +120,22 @@ public class DotGiamGiaSanPhamService {
 
         // 1. Lấy danh sách ID đã có
         List<DotGiamGiaSanPham> currentLinks = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(request.getDotGiamGiaId());
-        Set<Integer> currentVariantIds = currentLinks.stream()
-                .map(l -> l.getGiayChiTiet().getId())
-                .collect(Collectors.toSet());
-
-        Set<Integer> targetVariantIds = new HashSet<>(request.getGiayChiTietIds());
+        Set<Integer> targetVariantIds = request.getGiayChiTietIds() == null
+                ? new HashSet<>()
+                : request.getGiayChiTietIds().stream()
+                .filter(variantId -> variantId != null && variantId > 0)
+                .collect(Collectors.toCollection(HashSet::new));
 
         // 2. Xóa những cái không còn trong list mới
+        Set<Integer> seenVariantIds = new HashSet<>();
         List<DotGiamGiaSanPham> toDelete = currentLinks.stream()
-                .filter(l -> !targetVariantIds.contains(l.getGiayChiTiet().getId()))
+                .filter(l -> {
+                    Integer currentVariantId = l.getGiayChiTiet().getId();
+                    if (!targetVariantIds.contains(currentVariantId)) {
+                        return true;
+                    }
+                    return !seenVariantIds.add(currentVariantId);
+                })
                 .toList();
         
         if (!toDelete.isEmpty()) {
@@ -136,6 +143,14 @@ public class DotGiamGiaSanPhamService {
         }
 
         // 3. Thêm những cái mới
+        Set<Integer> deletedLinkIds = toDelete.stream()
+                .map(DotGiamGiaSanPham::getId)
+                .collect(Collectors.toSet());
+        Set<Integer> currentVariantIds = currentLinks.stream()
+                .filter(l -> !deletedLinkIds.contains(l.getId()))
+                .map(l -> l.getGiayChiTiet().getId())
+                .collect(Collectors.toSet());
+
         for (Integer vId : targetVariantIds) {
             if (!currentVariantIds.contains(vId)) {
                 GiayChiTiet gct = giayChiTietRepository.findById(vId)

@@ -12,6 +12,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -48,6 +49,18 @@ public class NhanVien {
     @Size(max = 20)
     @Column(name = "sdt", length = 20)
     private String sdt;
+
+    @Size(max = 12)
+    @Column(name = "cccd", length = 12)
+    private String cccd;
+
+    @Size(max = 10)
+    @Nationalized
+    @Column(name = "gioi_tinh", length = 10)
+    private String gioiTinh;
+
+    @Column(name = "ngay_sinh")
+    private LocalDate ngaySinh;
 
     @Size(max = 200)
     @Nationalized
