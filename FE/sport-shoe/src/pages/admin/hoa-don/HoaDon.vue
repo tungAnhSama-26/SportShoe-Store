@@ -21,8 +21,9 @@ import { getDisplayErrorMessage } from "../../../utils/error-message";
 type TrangThaiLoc =
   | "Tất cả"
   | "Chờ xác nhận"
+  | "Đã xác nhận"
+  | "Chờ lấy hàng"
   | "Chờ giao hàng"
-  | "Đang vận chuyển"
   | "Đã giao hàng"
   | "Hoàn thành"
   | "Hủy"
@@ -49,8 +50,9 @@ const trangThaiDangChon = ref<TrangThaiLoc>("Tất cả");
 const dsTrangThai: TrangThaiLoc[] = [
   "Tất cả",
   "Chờ xác nhận",
+  "Đã xác nhận",
+  "Chờ lấy hàng",
   "Chờ giao hàng",
-  "Đang vận chuyển",
   "Đã giao hàng",
   "Hoàn thành",
   "Hủy",
@@ -63,8 +65,9 @@ const denNgayPicker = ref<HTMLInputElement | null>(null);
 
 const mauTrangThai: Record<string, string> = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
-  "Chờ giao hàng": "bg-blue-50 text-blue-600",
-  "Đang vận chuyển": "bg-violet-50 text-violet-600",
+  "Đã xác nhận": "bg-orange-50 text-orange-600",
+  "Chờ lấy hàng": "bg-blue-50 text-blue-600",
+  "Chờ giao hàng": "bg-violet-50 text-violet-600",
   "Đã giao hàng": "bg-cyan-50 text-cyan-600",
   "Hoàn thành": "bg-emerald-50 text-emerald-600",
   Hủy: "bg-stone-100 text-stone-600",
