@@ -49,41 +49,53 @@ public class NhanVienServiceImpl implements NhanVienService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public NhanVienResponse layTheoCccd(String cccd) {
+        return toItem(findNhanVienTheoCccd(cccd));
+    }
+
+    @Override
     @Transactional
     public NhanVienResponse taoNhanVien(TaoNhanVienRequest request) {
-        if (nhanVienRepository.existsByEmail(request.email())) {
-            throw new BusinessException("Email đã được sử dụng");
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+        if (nhanVienRepository.existsByEmail(normalizedEmail)) {
+            throw new BusinessException("Email da duoc su dung");
         }
+
+        String normalizedCccd = normalizeCccd(request.cccd());
+        if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
+            throw new BusinessException("CCCD da duoc su dung");
+        }
+
         NhanVien nv = new NhanVien();
         nv.setId(UUID.randomUUID());
-        
+
         String generatedMa;
         do {
             generatedMa = "NV" + String.format("%05d", new java.util.Random().nextInt(99999));
         } while (nhanVienRepository.existsByMa(generatedMa));
-        
+
         nv.setMa(generatedMa);
         nv.setHoTen(request.hoTen().trim());
-        nv.setEmail(request.email().trim().toLowerCase(Locale.ROOT));
+        nv.setEmail(normalizedEmail);
         nv.setMatKhau(request.matKhau());
-        nv.setSdt(request.sdt());
-        nv.setDiaChi(request.diaChi());
-        nv.setHinhAnh(request.hinhAnh());
+        nv.setSdt(normalizeOptional(request.sdt()));
+        nv.setCccd(normalizedCccd);
+        nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
+        nv.setNgaySinh(request.ngaySinh());
+        nv.setDiaChi(normalizeOptional(request.diaChi()));
+        nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(request.vaiTro());
         nv.setTrangThai(1);
         nv.setNgayTao(Instant.now());
 
         NhanVien saved = nhanVienRepository.save(nv);
-        try {
-            emailService.sendRegistrationEmail(
-                    saved.getEmail(),
-                    saved.getHoTen(),
-                    saved.getMa(),
-                    request.matKhau()
-            );
-        } catch (Exception exception) {
-            System.err.println("Khong the gui email tai khoan nhan vien: " + exception.getMessage());
-        }
+        emailService.sendRegistrationEmail(
+                saved.getEmail(),
+                saved.getHoTen(),
+                saved.getMa(),
+                request.matKhau()
+        );
 
         return toItem(saved);
     }
@@ -92,16 +104,31 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Transactional
     public NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request) {
         NhanVien nv = findNhanVien(id);
-        // Check email uniqueness (skip self)
-        nhanVienRepository.findByEmail(request.email().trim().toLowerCase(Locale.ROOT))
+
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+        nhanVienRepository.findByEmail(normalizedEmail)
                 .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> { throw new BusinessException("Email đã được sử dụng"); });
+                .ifPresent(existing -> {
+                    throw new BusinessException("Email da duoc su dung");
+                });
+
+        String normalizedCccd = normalizeCccd(request.cccd());
+        if (normalizedCccd != null) {
+            nhanVienRepository.findByCccd(normalizedCccd)
+                    .filter(existing -> !existing.getId().equals(id))
+                    .ifPresent(existing -> {
+                        throw new BusinessException("CCCD da duoc su dung");
+                    });
+        }
 
         nv.setHoTen(request.hoTen().trim());
-        nv.setEmail(request.email().trim().toLowerCase(Locale.ROOT));
-        nv.setSdt(request.sdt());
-        nv.setDiaChi(request.diaChi());
-        nv.setHinhAnh(request.hinhAnh());
+        nv.setEmail(normalizedEmail);
+        nv.setSdt(normalizeOptional(request.sdt()));
+        nv.setCccd(normalizedCccd);
+        nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
+        nv.setNgaySinh(request.ngaySinh());
+        nv.setDiaChi(normalizeOptional(request.diaChi()));
+        nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(request.vaiTro());
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
@@ -112,7 +139,7 @@ public class NhanVienServiceImpl implements NhanVienService {
     public NhanVienResponse doiTrangThai(UUID id, DoiTrangThaiRequest request) {
         NhanVien nv = findNhanVien(id);
         if (request.trangThai() != 0 && request.trangThai() != 1) {
-            throw new BusinessException("Trạng thái không hợp lệ");
+            throw new BusinessException("Trang thai khong hop le");
         }
         nv.setTrangThai(request.trangThai());
         nv.setNgayCapNhat(Instant.now());
@@ -135,29 +162,55 @@ public class NhanVienServiceImpl implements NhanVienService {
         nhanVienRepository.delete(nv);
     }
 
-    // ---- helpers ----
-
     private NhanVien findNhanVien(UUID id) {
         return nhanVienRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Nhan vien khong ton tai"));
+    }
+
+    private NhanVien findNhanVienTheoCccd(String cccd) {
+        String normalizedCccd = normalizeCccd(cccd);
+        if (normalizedCccd == null) {
+            throw new ResourceNotFoundException("Nhan vien khong ton tai");
+        }
+        return nhanVienRepository.findByCccd(normalizedCccd)
+                .orElseThrow(() -> new ResourceNotFoundException("Nhan vien khong ton tai"));
     }
 
     private boolean matchKeyword(String keyword, NhanVien nv) {
-        if (keyword == null || keyword.isBlank()) return true;
+        if (keyword == null || keyword.isBlank()) {
+            return true;
+        }
         String ten = normalize(nv.getHoTen());
         String ma = normalize(nv.getMa());
         String email = normalize(nv.getEmail());
         String sdt = nv.getSdt() != null ? nv.getSdt() : "";
-        return (ten != null && ten.contains(keyword)) ||
-               (ma != null && ma.contains(keyword)) ||
-               (email != null && email.contains(keyword)) ||
-               sdt.contains(keyword);
+        String cccd = nv.getCccd() != null ? nv.getCccd() : "";
+        return (ten != null && ten.contains(keyword))
+                || (ma != null && ma.contains(keyword))
+                || (email != null && email.contains(keyword))
+                || sdt.contains(keyword)
+                || cccd.contains(keyword);
     }
 
     private String normalize(String value) {
-        if (value == null) return null;
-        String s = value.trim().toLowerCase(Locale.ROOT);
-        return s.isBlank() ? null : s;
+        if (value == null) {
+            return null;
+        }
+        String resolved = value.trim().toLowerCase(Locale.ROOT);
+        return resolved.isBlank() ? null : resolved;
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String resolved = value.trim();
+        return resolved.isBlank() ? null : resolved;
+    }
+
+    private String normalizeCccd(String value) {
+        String resolved = normalizeOptional(value);
+        return resolved == null ? null : resolved.replaceAll("\\s+", "");
     }
 
     private NhanVienResponse toItem(NhanVien nv) {
@@ -167,23 +220,28 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getHoTen(),
                 nv.getEmail(),
                 nv.getSdt(),
+                nv.getCccd(),
+                nv.getGioiTinh(),
+                nv.getNgaySinh(),
                 nv.getDiaChi(),
                 nv.getHinhAnh(),
                 nv.getVaiTro(),
                 mapVaiTro(nv.getVaiTro()),
                 nv.getTrangThai(),
-                nv.getTrangThai() == 1 ? "Hoạt động" : "Khóa",
+                nv.getTrangThai() == 1 ? "Hoat dong" : "Khoa",
                 nv.getNgayTao()
         );
     }
 
     private String mapVaiTro(Integer vaiTro) {
-        if (vaiTro == null) return "Không xác định";
+        if (vaiTro == null) {
+            return "Khong xac dinh";
+        }
         return switch (vaiTro) {
             case 1 -> "Admin";
-            case 2 -> "Bán hàng";
+            case 2 -> "Ban hang";
             case 3 -> "Kho";
-            default -> "Không xác định";
+            default -> "Khong xac dinh";
         };
     }
 }

@@ -1,6 +1,16 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { Camera, QrCode, RefreshCw, X } from "lucide-vue-next";
+
+const DEFAULT_SCAN_FORMATS = [
+  "qr_code",
+  "code_128",
+  "code_39",
+  "ean_13",
+  "ean_8",
+  "upc_a",
+  "upc_e",
+];
 
 const props = defineProps({
   open: {
@@ -51,6 +61,46 @@ const props = defineProps({
     type: String,
     default: "Ưu tiên camera sau nếu thiết bị có hỗ trợ",
   },
+  showManualSection: {
+    type: Boolean,
+    default: true,
+  },
+  closeOnScan: {
+    type: Boolean,
+    default: true,
+  },
+  forceCompatibilityScanner: {
+    type: Boolean,
+    default: false,
+  },
+  scanFormats: {
+    type: Array,
+    default: () => [
+      "qr_code",
+      "code_128",
+      "code_39",
+      "ean_13",
+      "ean_8",
+      "upc_a",
+      "upc_e",
+    ],
+  },
+  externalError: {
+    type: String,
+    default: "",
+  },
+  showRetryButton: {
+    type: Boolean,
+    default: true,
+  },
+  showHeaderContent: {
+    type: Boolean,
+    default: true,
+  },
+  showCameraHint: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(["close", "scan"]);
@@ -67,16 +117,8 @@ let detectIntervalId = null;
 let isDetecting = false;
 let zxingReaderInstance = null;
 let zxingControls = null;
-
-const SCAN_FORMATS = [
-  "qr_code",
-  "code_128",
-  "code_39",
-  "ean_13",
-  "ean_8",
-  "upc_a",
-  "upc_e",
-];
+let lastScannedValue = "";
+let lastScannedAt = 0;
 
 const hasBarcodeDetectorSupport = computed(
   () => typeof window !== "undefined" && "BarcodeDetector" in window,
@@ -88,16 +130,24 @@ const canUseCamera = computed(
     Boolean(navigator.mediaDevices?.getUserMedia),
 );
 
+const activeScanFormats = computed(() =>
+  Array.isArray(props.scanFormats) && props.scanFormats.length
+    ? props.scanFormats
+    : DEFAULT_SCAN_FORMATS,
+);
+
+const mergedError = computed(() => props.externalError || scannerError.value);
+
 const helperText = computed(() => {
   if (loadingCamera.value) {
     return props.loadingText;
   }
 
-  if (scannerError.value) {
-    return scannerError.value;
+  if (mergedError.value) {
+    return mergedError.value;
   }
 
-  if (!hasBarcodeDetectorSupport.value) {
+  if (!hasBarcodeDetectorSupport.value || props.forceCompatibilityScanner) {
     return usingCompatibilityScanner.value
       ? "Đang dùng chế độ quét tương thích cho trình duyệt hiện tại."
       : "Trình duyệt này sẽ dùng chế độ quét tương thích để nhận QR.";
@@ -106,6 +156,26 @@ const helperText = computed(() => {
   return props.fallbackHelperText;
 });
 
+function layThongBaoLoiCamera(error, fallbackMessage) {
+  const errorName = typeof error?.name === "string" ? error.name : "";
+  const errorMessage =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+
+  if (errorName === "NotAllowedError" || /permission denied/i.test(errorMessage)) {
+    return "Trinh duyet dang chan quyen camera. Bam bieu tuong canh dia chi, mo Site settings, cho phep Camera roi tai lai trang.";
+  }
+
+  if (errorName === "NotFoundError") {
+    return "Khong tim thay camera tren thiet bi nay.";
+  }
+
+  if (errorName === "NotReadableError") {
+    return "Camera dang duoc ung dung khac su dung. Hay tat app dang chiem camera roi thu lai.";
+  }
+
+  return error instanceof Error ? error.message : fallbackMessage;
+}
+
 async function taoBarcodeDetector() {
   const DetectorClass = window.BarcodeDetector;
   if (!DetectorClass) {
@@ -113,11 +183,11 @@ async function taoBarcodeDetector() {
   }
 
   if (typeof DetectorClass.getSupportedFormats !== "function") {
-    return new DetectorClass({ formats: SCAN_FORMATS });
+    return new DetectorClass({ formats: activeScanFormats.value });
   }
 
   const supportedFormats = await DetectorClass.getSupportedFormats();
-  const preferredFormats = SCAN_FORMATS.filter((format) =>
+  const preferredFormats = activeScanFormats.value.filter((format) =>
     supportedFormats.includes(format),
   );
 
@@ -160,6 +230,26 @@ function dungCamera() {
   usingCompatibilityScanner.value = false;
   isDetecting = false;
   loadingCamera.value = false;
+  lastScannedValue = "";
+  lastScannedAt = 0;
+}
+
+function xuLyKetQuaQuet(rawValue, controls = null) {
+  if (!props.closeOnScan) {
+    const now = Date.now();
+    if (rawValue === lastScannedValue && now - lastScannedAt < 1500) {
+      return;
+    }
+    lastScannedValue = rawValue;
+    lastScannedAt = now;
+    emit("scan", rawValue);
+    return;
+  }
+
+  manualCode.value = rawValue;
+  controls?.stop?.();
+  emit("scan", rawValue);
+  emit("close");
 }
 
 async function quetMa() {
@@ -181,16 +271,14 @@ async function quetMa() {
       .find(Boolean);
 
     if (rawValue) {
-      manualCode.value = rawValue;
-      emit("scan", rawValue);
-      emit("close");
+      xuLyKetQuaQuet(rawValue);
     }
   } catch (error) {
     if (!scannerError.value) {
-      scannerError.value =
-        error instanceof Error
-          ? error.message
-          : "Không thể đọc mã QR từ camera lúc này.";
+      scannerError.value = layThongBaoLoiCamera(
+        error,
+        "Khong the doc ma QR tu camera luc nay.",
+      );
     }
   } finally {
     isDetecting = false;
@@ -218,7 +306,7 @@ async function batCamera() {
       return;
     }
 
-    if (!hasBarcodeDetectorSupport.value) {
+    if (!hasBarcodeDetectorSupport.value || props.forceCompatibilityScanner) {
       const [{ BrowserMultiFormatReader }, zxingLibrary] =
         await Promise.all([
           import("@zxing/browser"),
@@ -226,17 +314,28 @@ async function batCamera() {
         ]);
 
       const { BarcodeFormat } = zxingLibrary;
+      const barcodeFormatMap = {
+        qr_code: BarcodeFormat.QR_CODE,
+        code_128: BarcodeFormat.CODE_128,
+        code_39: BarcodeFormat.CODE_39,
+        ean_13: BarcodeFormat.EAN_13,
+        ean_8: BarcodeFormat.EAN_8,
+        upc_a: BarcodeFormat.UPC_A,
+        upc_e: BarcodeFormat.UPC_E,
+        pdf417: BarcodeFormat.PDF_417,
+        data_matrix: BarcodeFormat.DATA_MATRIX,
+        aztec: BarcodeFormat.AZTEC,
+      };
+
+      const possibleFormats = activeScanFormats.value
+        .map((format) => barcodeFormatMap[format])
+        .filter(Boolean);
 
       const hints = new Map();
-      hints.set(zxingLibrary.DecodeHintType.POSSIBLE_FORMATS, [
-        BarcodeFormat.QR_CODE,
-        BarcodeFormat.CODE_128,
-        BarcodeFormat.CODE_39,
-        BarcodeFormat.EAN_13,
-        BarcodeFormat.EAN_8,
-        BarcodeFormat.UPC_A,
-        BarcodeFormat.UPC_E,
-      ]);
+      if (possibleFormats.length) {
+        hints.set(zxingLibrary.DecodeHintType.POSSIBLE_FORMATS, possibleFormats);
+      }
+      hints.set(zxingLibrary.DecodeHintType.TRY_HARDER, true);
 
       zxingReaderInstance = new BrowserMultiFormatReader(hints);
       usingCompatibilityScanner.value = true;
@@ -252,10 +351,7 @@ async function batCamera() {
         (result, error, controls) => {
           const rawValue = result?.getText?.().trim();
           if (rawValue) {
-            manualCode.value = rawValue;
-            controls?.stop?.();
-            emit("scan", rawValue);
-            emit("close");
+            xuLyKetQuaQuet(rawValue, controls);
             return;
           }
 
@@ -266,10 +362,10 @@ async function batCamera() {
             !(error instanceof zxingLibrary.FormatException) &&
             !scannerError.value
           ) {
-            scannerError.value =
-              error instanceof Error
-                ? error.message
-                : "Không thể đọc mã QR từ camera lúc này.";
+            scannerError.value = layThongBaoLoiCamera(
+              error,
+              "Khong the doc ma QR tu camera luc nay.",
+            );
           }
         },
       );
@@ -293,10 +389,10 @@ async function batCamera() {
     }, 350);
   } catch (error) {
     dungCamera();
-    scannerError.value =
-      error instanceof Error
-        ? error.message
-        : "Không thể bật camera để quét mã.";
+    scannerError.value = layThongBaoLoiCamera(
+      error,
+      "Khong the bat camera de quet ma.",
+    );
   } finally {
     loadingCamera.value = false;
   }
@@ -314,10 +410,14 @@ function xacNhanMaThuCong() {
   }
 
   emit("scan", value);
-  emit("close");
+
+  if (props.closeOnScan) {
+    emit("close");
+  }
 }
 
 async function thuLai() {
+  manualCode.value = "";
   dungCamera();
   await batCamera();
 }
@@ -332,7 +432,18 @@ watch(
       return;
     }
 
+    await nextTick();
     await batCamera();
+  },
+  { immediate: true, flush: "post" },
+);
+
+watch(
+  () => props.externalError,
+  (value) => {
+    if (value) {
+      scannerError.value = "";
+    }
   },
 );
 
@@ -353,9 +464,14 @@ onBeforeUnmount(() => {
           class="w-full max-w-3xl overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]"
         >
           <div
-            class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5"
+            :class="[
+              'flex items-start gap-4 px-6 pt-5',
+              props.showHeaderContent
+                ? 'justify-between border-b border-slate-100 pb-5'
+                : 'justify-end pb-0',
+            ]"
           >
-            <div>
+            <div v-if="props.showHeaderContent">
               <div
                 class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-600"
               >
@@ -379,7 +495,12 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <div class="grid gap-5 p-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div
+            :class="[
+              'grid gap-5 p-6',
+              props.showManualSection ? 'lg:grid-cols-[1.2fr_0.8fr]' : '',
+            ]"
+          >
             <div
               class="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top,#111827_0%,#0f172a_55%,#020617_100%)] p-4 text-white"
             >
@@ -410,13 +531,20 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div class="mt-4 flex items-center justify-between gap-3">
-                <div class="inline-flex items-center gap-2 text-sm text-slate-200">
+              <div
+                v-if="props.showCameraHint || props.showRetryButton"
+                class="mt-4 flex items-center justify-between gap-3"
+              >
+                <div
+                  v-if="props.showCameraHint"
+                  class="inline-flex items-center gap-2 text-sm text-slate-200"
+                >
                   <Camera :size="16" />
                   {{ cameraHint }}
                 </div>
 
                 <button
+                  v-if="props.showRetryButton"
                   type="button"
                   class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                   @click="thuLai"
@@ -425,9 +553,19 @@ onBeforeUnmount(() => {
                   {{ retryButtonLabel }}
                 </button>
               </div>
+
+              <p
+                v-if="mergedError && !props.showManualSection"
+                class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+              >
+                {{ mergedError }}
+              </p>
             </div>
 
-            <div class="space-y-4 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+            <div
+              v-if="props.showManualSection"
+              class="space-y-4 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5"
+            >
               <div>
                 <h3 class="text-lg font-black text-slate-900">{{ manualSectionTitle }}</h3>
                 <p class="mt-1 text-sm text-slate-500">
@@ -448,10 +586,10 @@ onBeforeUnmount(() => {
               </label>
 
               <p
-                v-if="scannerError"
+                v-if="mergedError"
                 class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
               >
-                {{ scannerError }}
+                {{ mergedError }}
               </p>
 
               <button

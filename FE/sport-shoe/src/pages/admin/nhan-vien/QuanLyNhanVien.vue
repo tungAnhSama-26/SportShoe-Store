@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   Filter,
   Plus,
+  QrCode,
   RotateCcw,
   Search,
   Users,
@@ -104,6 +105,10 @@ function xemChiTiet(id: string) {
 
 function themMoi() {
   router.push({ name: "admin-nhan-vien-them" });
+}
+
+function quetQrNhanVien() {
+  router.push({ name: "admin-nhan-vien-quet-qr" });
 }
 
 function xuatExcel() {
@@ -226,6 +231,9 @@ onMounted(taiDanhSach);
             </button>
             <button @click="xuatExcel" class="admin-btn-soft">
               <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+            </button>
+            <button @click="quetQrNhanVien" class="admin-btn-soft">
+              <QrCode class="h-4 w-4" /> Quét QR nhân viên
             </button>
             <button @click="themMoi" class="admin-btn-primary">
               <Plus class="h-4 w-4" /> Thêm nhân viên

@@ -13,6 +13,7 @@ import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.DiaChiKhachHangRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -68,6 +69,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Transactional
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
         if (khachHangRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email đã được sử dụng");
@@ -94,11 +96,7 @@ public class AuthController {
 
         khachHangRepository.save(kh);
 
-        try {
-            emailService.sendCustomerRegistrationEmail(kh.getEmail(), kh.getHoTen(), kh.getTenDangNhap(), password);
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
-        }
+        emailService.sendCustomerRegistrationEmail(kh.getEmail(), kh.getHoTen(), kh.getTenDangNhap(), password);
 
         return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công. Vui lòng kiểm tra email.", null));
     }
@@ -119,13 +117,8 @@ public class AuthController {
         }
 
         String otp = String.format("%06d", new Random().nextInt(999999));
+        emailService.sendOtpEmail(kh.getEmail(), otp);
         otpStorage.put(request.account(), otp);
-
-        try {
-            emailService.sendOtpEmail(kh.getEmail(), otp);
-        } catch (Exception e) {
-            throw new BusinessException("Gửi mã xác nhận thất bại: " + e.getMessage());
-        }
 
         return ResponseEntity.ok(ApiResponse.success("Mã xác nhận đã được gửi đến email của bạn.", null));
     }

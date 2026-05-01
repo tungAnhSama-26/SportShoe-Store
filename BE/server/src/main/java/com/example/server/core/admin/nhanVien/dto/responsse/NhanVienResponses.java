@@ -1,6 +1,7 @@
 package com.example.server.core.admin.nhanVien.dto.responsse;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public final class NhanVienResponses {
@@ -13,6 +14,9 @@ public final class NhanVienResponses {
             String hoTen,
             String email,
             String sdt,
+            String cccd,
+            String gioiTinh,
+            LocalDate ngaySinh,
             String diaChi,
             String hinhAnh,
             Integer vaiTro,

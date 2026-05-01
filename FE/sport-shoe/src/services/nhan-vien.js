@@ -1,4 +1,5 @@
 import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8080/api/v1";
@@ -10,11 +11,13 @@ async function request(path, init) {
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw createRequestError(
+    const requestError = createRequestError(
       payload.message,
-      "Không thể hoàn tất thao tác nhân viên lúc này. Vui lòng thử lại.",
+      "Khong the hoan tat thao tac nhan vien luc nay. Vui long thu lai.",
       payload.errors,
     );
+    requestError.status = response.status;
+    throw requestError;
   }
   return payload.data;
 }
@@ -30,6 +33,10 @@ export function layDanhSachNhanVien(filters) {
 
 export function layChiTietNhanVien(id) {
   return request(`/admin/nhan-vien/${id}`);
+}
+
+export function layNhanVienTheoCccd(cccd) {
+  return request(`/admin/nhan-vien/cccd/${encodeURIComponent(String(cccd ?? "").trim())}`);
 }
 
 export function taoNhanVien(payload) {
@@ -74,7 +81,7 @@ export async function uploadFile(file) {
   const result = await response.json();
   if (!response.ok) {
     throw new Error(
-      sanitizeErrorMessage(result.message, "Không thể tải ảnh nhân viên lên lúc này"),
+      sanitizeErrorMessage(result.message, "Khong the tai anh nhan vien len luc nay"),
     );
   }
   return result.data.url;

@@ -9,5 +9,7 @@ import java.util.UUID;
 public interface NhanVienRepository extends JpaRepository<NhanVien, UUID> {
     boolean existsByMa(String ma);
     boolean existsByEmail(String email);
+    boolean existsByCccd(String cccd);
     Optional<NhanVien> findByEmail(String email);
+    Optional<NhanVien> findByCccd(String cccd);
 }
