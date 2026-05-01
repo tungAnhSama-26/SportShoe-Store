@@ -16,7 +16,6 @@ import ChiTietSanPhamForm from "../pages/admin/san-pham/ChiTietSanPhamForm.vue";
 import DotGiamGia from "../pages/admin/khuyen-mai/DotGiamGia.vue";
 import QuanLyNhanVien from "../pages/admin/nhan-vien/QuanLyNhanVien.vue";
 import ChiTietNhanVien from "../pages/admin/nhan-vien/ChiTietNhanVien.vue";
-import QuetQrNhanVien from "../pages/admin/nhan-vien/QuetQrNhanVien.vue";
 import QuanLyKhachHang from "../pages/admin/khach-hang/QuanLyKhachHang.vue";
 import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
 import ChiTietPhieuGiamGia from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue";
@@ -210,11 +209,6 @@ const router = createRouter({
           path: "nhan-vien/them",
           name: "admin-nhan-vien-them",
           component: ChiTietNhanVien
-        },
-        {
-          path: "nhan-vien/quet-qr",
-          name: "admin-nhan-vien-quet-qr",
-          component: QuetQrNhanVien
         },
         {
           path: "nhan-vien/:id",

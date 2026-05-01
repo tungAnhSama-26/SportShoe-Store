@@ -16,7 +16,6 @@ import {
   FileSpreadsheet,
   Filter,
   Plus,
-  QrCode,
   RotateCcw,
   Search,
   Users,
@@ -107,10 +106,6 @@ function themMoi() {
   router.push({ name: "admin-nhan-vien-them" });
 }
 
-function quetQrNhanVien() {
-  router.push({ name: "admin-nhan-vien-quet-qr" });
-}
-
 function xuatExcel() {
   if (!danhSach.value.length) {
     window.alert("Không có dữ liệu để xuất Excel.");
@@ -124,6 +119,7 @@ function xuatExcel() {
       { label: "STT", value: (_, index) => index + 1 },
       { label: "Mã NV", key: "ma" },
       { label: "Họ tên", key: "hoTen" },
+      { label: "CCCD", value: (row) => row.cccd || "—" },
       { label: "Email", key: "email" },
       { label: "Số điện thoại", value: (row) => row.sdt || "—" },
       { label: "Vai trò", value: (row) => row.tenVaiTro || "—" },
@@ -219,7 +215,7 @@ onMounted(taiDanhSach);
               <input
                 v-model="boLoc.keyword"
                 type="text"
-                placeholder="Tìm theo mã, họ tên, email, SĐT..."
+                placeholder="Tìm theo mã, họ tên, CCCD, email, SĐT..."
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
@@ -232,9 +228,7 @@ onMounted(taiDanhSach);
             <button @click="xuatExcel" class="admin-btn-soft">
               <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
             </button>
-            <button @click="quetQrNhanVien" class="admin-btn-soft">
-              <QrCode class="h-4 w-4" /> Quét QR nhân viên
-            </button>
+ 
             <button @click="themMoi" class="admin-btn-primary">
               <Plus class="h-4 w-4" /> Thêm nhân viên
             </button>
@@ -303,7 +297,7 @@ onMounted(taiDanhSach);
 
       <div class="overflow-x-auto">
         <table
-          class="min-w-[900px] w-full border-separate border-spacing-y-2 text-sm"
+          class="min-w-[1040px] w-full border-separate border-spacing-y-2 text-sm"
         >
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
@@ -311,6 +305,7 @@ onMounted(taiDanhSach);
               <th class="bg-slate-100 px-4 py-3">Ảnh</th>
               <th class="bg-slate-100 px-4 py-3">Mã NV</th>
               <th class="bg-slate-100 px-4 py-3">Họ tên</th>
+              <th class="bg-slate-100 px-4 py-3">CCCD</th>
               <th class="bg-slate-100 px-4 py-3">Email</th>
               <th class="bg-slate-100 px-4 py-3">Số điện thoại</th>
               <th class="bg-slate-100 px-4 py-3">Vai trò</th>
@@ -323,12 +318,12 @@ onMounted(taiDanhSach);
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="10" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
                 Đang tải dữ liệu nhân viên...
               </td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="10" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
                 Không có nhân viên phù hợp.
               </td>
             </tr>
@@ -357,6 +352,9 @@ onMounted(taiDanhSach);
               </td>
               <td class="px-4 py-3 font-semibold text-slate-800">
                 {{ nv.hoTen }}
+              </td>
+              <td class="px-4 py-3 font-mono text-slate-600">
+                {{ nv.cccd || "—" }}
               </td>
               <td class="px-4 py-3 text-slate-600">{{ nv.email }}</td>
               <td class="px-4 py-3 text-slate-600">{{ nv.sdt || "—" }}</td>
