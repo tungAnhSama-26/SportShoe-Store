@@ -198,6 +198,9 @@ function xuLyMaQuet(value) {
 
     <BanHangQrScannerModal
       :open="showQrScanner"
+      :show-manual-section="false"
+      :show-camera-hint="false"
+      :show-retry-button="false"
       @close="dongQuetQr"
       @scan="xuLyMaQuet"
     />

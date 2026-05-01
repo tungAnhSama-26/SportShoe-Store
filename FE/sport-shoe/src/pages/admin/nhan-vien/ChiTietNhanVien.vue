@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Save } from "lucide-vue-next";
 import {
@@ -12,7 +12,6 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
-import { clearEmployeeQrDraft, readEmployeeQrDraft } from "../../../utils/employee-qr";
 
 const route = useRoute();
 const router = useRouter();
@@ -29,7 +28,6 @@ const nhanVien = ref<any>(null);
 const fileInputAvatar = ref<HTMLInputElement | null>(null);
 const matKhauMoi = ref("");
 const showDoiMatKhau = ref(false);
-const daApDungDuLieuQr = ref(false);
 
 const loiForm = ref({
   hoTen: "",
@@ -255,20 +253,6 @@ function gopDiaChi() {
   return diaChiFull;
 }
 
-const tomTatDiaChiQr = computed(() => gopDiaChi() || form.value.diaChiCuThe.trim() || "Chua co dia chi.");
-
-function chonGiaTriQr(giaTriMoi: unknown, giaTriHienTai = "") {
-  const daLamSach = String(giaTriMoi ?? "").trim();
-  return daLamSach || String(giaTriHienTai ?? "");
-}
-
-function hienThongBaoTam(thongDiep: string) {
-  thongBao.value = thongDiep;
-  setTimeout(() => {
-    thongBao.value = "";
-  }, 3000);
-}
-
 async function apDungMaDiaChiDaQuet(duLieuQr: Record<string, any>) {
   const maTinhThanh = String(duLieuQr.tinhThanh ?? "").trim();
   const maQuanHuyen = String(duLieuQr.quanHuyen ?? "").trim();
@@ -491,55 +475,16 @@ async function xuLyUploadAnh(event: Event) {
   }
 }
 
-async function apDungDuLieuNhanVienDaQuet() {
-  if (!laMoi && route.query.fromQr !== "1") return;
-
-  const duLieuQr = readEmployeeQrDraft();
-  if (!duLieuQr) {
-    daApDungDuLieuQr.value = false;
-    return;
-  }
-
-  form.value.hoTen = chonGiaTriQr(duLieuQr.hoTen, form.value.hoTen);
-  form.value.email = chonGiaTriQr(duLieuQr.email, form.value.email);
-  form.value.sdt = chonGiaTriQr(duLieuQr.sdt, form.value.sdt);
-  form.value.cccd = chonGiaTriQr(duLieuQr.cccd, form.value.cccd);
-  form.value.gioiTinh = chonGiaTriQr(duLieuQr.gioiTinh, form.value.gioiTinh || "Nam");
-  form.value.ngaySinh = chonGiaTriQr(duLieuQr.ngaySinh, form.value.ngaySinh);
-  form.value.diaChiCuThe = chonGiaTriQr(duLieuQr.diaChiCuThe, form.value.diaChiCuThe);
-  form.value.vaiTro = Number(duLieuQr.vaiTro ?? form.value.vaiTro ?? 2) || 2;
-
-  if (duLieuQr.matKhau) {
-    form.value.matKhau = String(duLieuQr.matKhau);
-  }
-
-  await apDungMaDiaChiDaQuet(duLieuQr);
-
-  daApDungDuLieuQr.value = true;
-  clearEmployeeQrDraft();
-  hienThongBaoTam(
-    String(
-      laMoi
-        ? duLieuQr.sourceMessage ?? "Da dien thong tin tu ma QR."
-        : "Da match nhan vien tu CCCD vua quet va dien du lieu vao form.",
-    ),
-  );
-}
-
 onMounted(async () => {
-  if (laMoi) {
-    await apDungDuLieuNhanVienDaQuet();
-    return;
+  if (!laMoi) {
+    await taiChiTiet();
   }
-
-  await taiChiTiet();
-  await apDungDuLieuNhanVienDaQuet();
 });
 </script>
 
 <template>
   <div class="space-y-6">
-    <section class="flex items-center justify-between gap-4">
+    <section class="flex items-center gap-4">
       <div class="flex items-center gap-4">
         <button
           type="button"
@@ -552,6 +497,7 @@ onMounted(async () => {
           {{ laMoi ? "Thêm nhân viên mới" : "Chi tiết nhân viên" }}
         </h1>
       </div>
+
     </section>
 
     <div
@@ -568,41 +514,6 @@ onMounted(async () => {
       >
         {{ thongBao }}
       </div>
-      <section
-        v-if="daApDungDuLieuQr"
-        class="rounded-[24px] border border-sky-100 bg-sky-50 px-5 py-5 text-slate-700 shadow-sm"
-      >
-        <p class="text-sm font-semibold text-sky-700">Da nhan du lieu tu CCCD</p>
-        <p class="mt-1 text-sm text-slate-600">
-          {{
-            laMoi
-              ? "Thong tin quet duoc da duoc dien vao form. Kiem tra lai, bo sung email, so dien thoai va mat khau roi luu."
-              : "Thong tin quet duoc da duoc doi chieu voi nhan vien hien co va dien vao form. Kiem tra lai roi luu."
-          }}
-        </p>
-        <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <div class="rounded-[18px] bg-white px-4 py-3">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Ho ten</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.hoTen || "Chua co" }}</p>
-          </div>
-          <div class="rounded-[18px] bg-white px-4 py-3">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">CCCD</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.cccd || "Chua co" }}</p>
-          </div>
-          <div class="rounded-[18px] bg-white px-4 py-3">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Ngay sinh</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.ngaySinh || "Chua co" }}</p>
-          </div>
-          <div class="rounded-[18px] bg-white px-4 py-3">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Gioi tinh</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ form.gioiTinh || "Chua co" }}</p>
-          </div>
-          <div class="rounded-[18px] bg-white px-4 py-3 md:col-span-2 xl:col-span-1">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Dia chi</p>
-            <p class="mt-2 text-sm font-semibold text-slate-900">{{ tomTatDiaChiQr }}</p>
-          </div>
-        </div>
-      </section>
       <div
         v-if="loiTrang"
         class="rounded-[20px] border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700"
@@ -908,5 +819,6 @@ onMounted(async () => {
         </div>
       </section>
     </template>
+
   </div>
 </template>
