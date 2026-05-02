@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, FileSpreadsheet, Filter, Package, Plus, RotateCcw, Search } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
@@ -38,6 +38,7 @@ const toast = reactive({
 const pageSizeOptions = [5, 10, 20, 50]
 let toastTimer = null
 let latestLoadRequestId = 0
+let keywordSearchTimer = null
 
 function showToast(message, type = 'success') {
   if (toastTimer) clearTimeout(toastTimer)
@@ -145,6 +146,14 @@ function resetFilters() {
   loadData(0)
 }
 
+function scheduleKeywordSearch() {
+  if (keywordSearchTimer) clearTimeout(keywordSearchTimer)
+  keywordSearchTimer = setTimeout(() => {
+    loadData(0)
+    keywordSearchTimer = null
+  }, 300)
+}
+
 function goToForm() {
   router.push({ name: 'admin-chi-tiet-san-pham-new' })
 }
@@ -250,7 +259,6 @@ async function xuatExcel() {
         { label: 'Tên sản phẩm', key: 'ten' },
         { label: 'Thương hiệu', key: 'thuongHieu' },
         { label: 'Loại giày', key: 'loaiGiay' },
-        { label: 'Chất liệu', value: (row) => row.chatLieu || '—' },
         { label: 'Tổng tồn', value: (row) => row.tongSoLuong || 0 },
         { label: 'Giá bán', value: (row) => giaHienThi(row) },
         { label: 'Trạng thái', value: (row) => trangThaiLabel(row.trangThai) }
@@ -277,8 +285,16 @@ onMounted(async () => {
   await loadData(0)
 })
 
+watch(
+  () => filters.keyword,
+  () => {
+    scheduleKeywordSearch()
+  }
+)
+
 onUnmounted(() => {
   if (toastTimer) clearTimeout(toastTimer)
+  if (keywordSearchTimer) clearTimeout(keywordSearchTimer)
 })
 </script>
 
@@ -385,19 +401,19 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-[980px] w-full border-separate border-spacing-y-2 text-sm">
+      <div class="overflow-hidden rounded-[24px] border border-slate-100">
+        <table class="w-full table-auto border-separate border-spacing-0 text-sm">
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã sản phẩm</th>
-              <th class="bg-slate-100 px-4 py-3">Tên sản phẩm</th>
-              <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
-              <th class="bg-slate-100 px-4 py-3">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3">Số lượng</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+              <th class="w-14 rounded-tl-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
+              <th class="w-28 bg-slate-100 px-3 py-3 whitespace-nowrap">Mã SP</th>
+              <th class="bg-slate-100 px-3 py-3 whitespace-nowrap">Tên SP</th>
+              <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Thương hiệu</th>
+              <th class="w-24 bg-slate-100 px-3 py-3 whitespace-nowrap">Loại giày</th>
+              <th class="w-20 bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Số lượng</th>
+              <th class="w-36 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
+              <th class="w-28 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="w-24 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -412,26 +428,33 @@ onUnmounted(() => {
               :key="item.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500">
+              <td class="rounded-l-2xl px-3 py-4 align-middle font-semibold text-slate-500">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ item.ma }}</td>
-              <td class="px-4 py-4">
-                <p class="font-semibold text-slate-800">{{ item.ten }}</p>
-                <p class="mt-1 text-xs text-slate-400">{{ item.chatLieu || 'Chưa có chất liệu' }}</p>
+              <td class="px-3 py-4 align-middle font-semibold text-slate-800 break-words">{{ item.ma }}</td>
+              <td class="px-3 py-4 align-middle">
+                <p class="break-words font-semibold leading-6 text-slate-800" :title="item.ten">{{ item.ten }}</p>
               </td>
-              <td class="px-4 py-4 text-slate-600">{{ item.thuongHieu || '—' }}</td>
-              <td class="px-4 py-4 text-slate-600">{{ item.loaiGiay || '—' }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-700">
+              <td class="px-3 py-4 align-middle">
+                <p class="break-words text-sm text-slate-700">{{ item.thuongHieu || '—' }}</p>
+              </td>
+              <td class="px-3 py-4 align-middle">
+                <p class="break-words text-sm text-slate-700">{{ item.loaiGiay || '—' }}</p>
+              </td>
+              <td class="px-2 py-4 align-middle text-center font-semibold text-slate-700">
                 {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">{{ giaHienThi(item) }}</td>
-              <td class="px-4 py-4 whitespace-nowrap">
+              <td class="px-2 py-4 align-middle font-semibold text-slate-800 whitespace-nowrap">
+                <div class="flex min-h-[48px] items-center whitespace-nowrap">
+                  {{ giaHienThi(item).replace(' đ - ', '\u00A0đ\u00A0-\u00A0').replace(/ đ$/u, '\u00A0đ') }}
+                </div>
+              </td>
+              <td class="px-2 py-4 align-middle">
                 <span class="inline-flex min-w-max whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
                   {{ trangThaiLabel(item.trangThai) }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-4 text-center">
+              <td class="rounded-r-2xl px-3 py-4 align-middle text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AdminQuickStatusAction
                     :loading="isUpdatingStatus(item.id)"

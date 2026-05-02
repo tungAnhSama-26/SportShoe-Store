@@ -95,7 +95,7 @@ function validate() {
     : generateHexColorFromText(form.ten)
   if (!form.ma.trim()) errors.ma = 'Vui lòng nhập mã màu sắc'
   if (!form.ten.trim()) errors.ten = 'Vui lòng nhập tên màu sắc'
-  if (!isValidHexColor(form.maMauHex)) errors.maMauHex = 'Mã HEX màu sắc phải theo dạng #RRGGBB, ví dụ #FF5733'
+  if (!isValidHexColor(form.maMauHex)) errors.maMauHex = 'Mã màu chưa đúng định dạng, vui lòng nhập lại'
   return Object.keys(errors).length === 0
 }
 

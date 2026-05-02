@@ -71,7 +71,6 @@ const toast = reactive({
   type: "success",
 });
 let toastTimer = null;
-let redirectTimer = null;
 
 const productForm = reactive({
   ten: "",
@@ -97,6 +96,7 @@ const variantBuilder = reactive({
 });
 
 const variantErrors = reactive({});
+const variantItemErrors = reactive({});
 const generatedVariants = ref([]);
 const openVariantDropdown = ref(null);
 const mauSacSearch = ref("");
@@ -472,10 +472,21 @@ async function handleInlineCreateAttribute(type, rawValue) {
     assignQuickCreatedValue(type, created.id);
     showToast("Đã thêm thuộc tính mới vào form");
   } catch (error) {
-    showToast(
-      getDisplayErrorMessage(error, "Không thể thêm nhanh thuộc tính"),
-      "error",
+    const fallbackMessage = getDisplayErrorMessage(
+      error,
+      "Không thể thêm nhanh thuộc tính",
     );
+    const normalizedErrorText = String(error?.message || fallbackMessage || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    const duplicateColorMessage =
+      type === "mauSac" &&
+      (normalizedErrorText.includes("ton tai") ||
+        normalizedErrorText.includes("da ton tai"))
+        ? "Màu sắc đã tồn tại trong hệ thống, vui lòng thử lại"
+        : fallbackMessage;
+    showToast(duplicateColorMessage, "error");
   } finally {
     inlineCreatingType.value = null;
   }
@@ -575,7 +586,7 @@ function validateQuickCreateForm() {
     const normalizedSize = normalizeSizeValue(quickCreateForm.giaTri);
     if (!normalizedSize) {
       quickCreateErrors.giaTri =
-        "Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42";
+        "Kích cỡ chưa đúng định dạng, vui lòng nhập lại";
       return false;
     }
 
@@ -648,7 +659,7 @@ function validateQuickCreateForm() {
         : generateHexColorFromText(quickCreateForm.ten);
       if (!isValidHexColor(quickCreateForm.maMauHex)) {
         quickCreateErrors.maMauHex =
-          "Mã HEX màu sắc phải theo dạng #RRGGBB, ví dụ #FF5733";
+          "Mã màu chưa đúng định dạng, vui lòng nhập lại";
       }
       break;
     case "kichCo":
@@ -686,7 +697,7 @@ async function handleQuickCreateSave() {
         : null;
 
     if (quickCreateType.value === "kichCo" && !normalizedSize) {
-      throw new Error("Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42");
+      throw new Error("Kích cỡ chưa đúng định dạng, vui lòng nhập lại");
     }
 
     switch (quickCreateType.value) {
@@ -770,10 +781,16 @@ async function handleQuickCreateSave() {
     const fieldErrors = getFieldErrors(error);
     Object.assign(quickCreateErrors, fieldErrors);
     if (!Object.keys(fieldErrors).length) {
-      showToast(
-        getDisplayErrorMessage(error, "Không thể thêm nhanh thuộc tính"),
-        "error",
+      const fallbackMessage = getDisplayErrorMessage(
+        error,
+        "Không thể thêm nhanh thuộc tính",
       );
+      const duplicateColorMessage =
+        quickCreateType.value === "mauSac" &&
+        /đã tồn tại|da ton tai/i.test(fallbackMessage)
+          ? "Màu sắc đã tồn tại trong hệ thống, vui lòng thử lại"
+          : fallbackMessage;
+      showToast(duplicateColorMessage, "error");
     }
   } finally {
     quickCreateSaving.value = false;
@@ -833,7 +850,6 @@ const representativeGeneratedVariants = computed(() => {
 
   return Array.from(groupedVariants.values());
 });
-
 
 const createdVariantsByColor = computed(() => {
   const groupedVariants = new Map();
@@ -901,9 +917,27 @@ function clearVariantErrors() {
   Object.keys(variantErrors).forEach((key) => delete variantErrors[key]);
 }
 
+function clearVariantItemErrors() {
+  Object.keys(variantItemErrors).forEach(
+    (key) => delete variantItemErrors[key],
+  );
+}
+
 function parseVariantNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function setVariantItemFieldError(key, field, message) {
+  if (!key || !field || !message) return;
+
+  if (!variantItemErrors[key]) {
+    variantItemErrors[key] = {};
+  }
+
+  if (!variantItemErrors[key][field]) {
+    variantItemErrors[key][field] = message;
+  }
 }
 
 function assignVariantDefaultFieldErrors() {
@@ -922,6 +956,14 @@ function assignVariantDefaultFieldErrors() {
   if (parseVariantNumber(variantBuilder.giaBan) < 0) {
     variantErrors.giaBan = "Giá bán mặc định không được âm";
   }
+
+  if (
+    parseVariantNumber(variantBuilder.giaGoc) > 0 &&
+    parseVariantNumber(variantBuilder.giaBan) >
+      parseVariantNumber(variantBuilder.giaGoc)
+  ) {
+    variantErrors.giaBan = "Giá bán mặc định không được lớn hơn giá gốc";
+  }
 }
 
 function resetVariantBuilder() {
@@ -936,6 +978,7 @@ function resetVariantBuilder() {
   mauSacSearch.value = "";
   kichCoSearch.value = "";
   clearVariantErrors();
+  clearVariantItemErrors();
 }
 
 function resetProductForm() {
@@ -1001,18 +1044,92 @@ function kichCoLabel(id) {
   );
 }
 
+function hasOptionId(options, value) {
+  if (value == null || value === "") return true;
+  return (options || []).some((item) => Number(item.id) === Number(value));
+}
+
+function isValidGender(value) {
+  return value == null || [1, 2, 3].includes(Number(value));
+}
+
 function validateProductForm() {
   clearProductErrors();
-  if (!productForm.ten.trim()) productErrors.ten = "Vui lòng nhập tên sản phẩm";
-  if (!productForm.thuongHieuId)
+
+  const productName = productForm.ten.trim();
+  const productDescription = productForm.moTa.trim();
+
+  if (!productName) {
+    productErrors.ten = "Vui lòng nhập tên sản phẩm";
+  } else if (productName.length < 3) {
+    productErrors.ten = "Tên sản phẩm phải có ít nhất 3 ký tự";
+  } else if (productName.length > 300) {
+    productErrors.ten = "Tên sản phẩm không được vượt quá 300 ký tự";
+  }
+
+  if (!productForm.thuongHieuId) {
     productErrors.thuongHieuId = "Vui lòng chọn thương hiệu cho sản phẩm";
-  if (!productForm.loaiGiayId)
+  } else if (
+    !hasOptionId(danhMuc.value?.thuongHieu, productForm.thuongHieuId)
+  ) {
+    productErrors.thuongHieuId = "Thương hiệu đã chọn không hợp lệ";
+  }
+
+  if (!productForm.loaiGiayId) {
     productErrors.loaiGiayId = "Vui lòng chọn loại giày cho sản phẩm";
+  } else if (!hasOptionId(danhMuc.value?.loaiGiay, productForm.loaiGiayId)) {
+    productErrors.loaiGiayId = "Loại giày đã chọn không hợp lệ";
+  }
+
+  if (!isValidGender(productForm.gioiTinh)) {
+    productErrors.gioiTinh = "Giới tính chỉ được phép là Nam, Nữ hoặc Unisex";
+  }
+
+  if (
+    productForm.chatLieuGiayId != null &&
+    !hasOptionId(danhMuc.value?.chatLieuGiay, productForm.chatLieuGiayId)
+  ) {
+    productErrors.chatLieuGiayId = "Chất liệu đã chọn không còn hợp lệ";
+  }
+
+  if (
+    productForm.deGiayId != null &&
+    !hasOptionId(danhMuc.value?.deGiay, productForm.deGiayId)
+  ) {
+    productErrors.deGiayId = "Đế giày đã chọn không còn hợp lệ";
+  }
+
+  if (
+    productForm.coGiayId != null &&
+    !hasOptionId(danhMuc.value?.coGiay, productForm.coGiayId)
+  ) {
+    productErrors.coGiayId = "Cổ giày đã chọn không còn hợp lệ";
+  }
+
+  if (
+    productForm.congNgheDemId != null &&
+    !hasOptionId(danhMuc.value?.congNgheDem, productForm.congNgheDemId)
+  ) {
+    productErrors.congNgheDemId = "Công nghệ đệm đã chọn không hợp lệ";
+  }
+
+  if (
+    productForm.trongLuongId != null &&
+    !hasOptionId(danhMuc.value?.trongLuong, productForm.trongLuongId)
+  ) {
+    productErrors.trongLuongId = "Trọng lượng đã chọn không hợp lệ";
+  }
+
+  if (productDescription.length > 2000) {
+    productErrors.moTa = "Mô tả không được vượt quá 2000 ký tự";
+  }
+
   return Object.keys(productErrors).length === 0;
 }
 
 function validateVariantBuilder() {
   clearVariantErrors();
+  clearVariantItemErrors();
   if (!variantBuilder.mauSacIds.length)
     variantErrors.mauSacIds =
       "Vui lòng chọn ít nhất một màu sắc để tạo biến thể";
@@ -1061,10 +1178,14 @@ function generateVariants() {
   }));
 
   delete variantErrors.generated;
-  return showToast(`Đã tạo thành công ${generatedVariants.value.length} chi tiết sản phẩm`);
+  clearVariantItemErrors();
+  return showToast(
+    `Đã tạo thành công ${generatedVariants.value.length} chi tiết sản phẩm`,
+  );
 }
 
 function removeGeneratedVariant(key) {
+  delete variantItemErrors[key];
   generatedVariants.value = generatedVariants.value.filter(
     (item) => item.key !== key,
   );
@@ -1118,11 +1239,7 @@ function clearSelectedValues(field) {
 
 function applyGeneratedDefaults() {
   assignVariantDefaultFieldErrors();
-  if (
-    variantErrors.soLuong ||
-    variantErrors.giaGoc ||
-    variantErrors.giaBan
-  ) {
+  if (variantErrors.soLuong || variantErrors.giaGoc || variantErrors.giaBan) {
     variantErrors.generated =
       "Vui lòng sửa các giá trị mặc định đang bị âm trước khi áp dụng";
     return;
@@ -1149,7 +1266,6 @@ function syncDraftColorImagesWithGeneratedVariants() {
   );
 }
 
-
 function relatedCreatedVariants(mauSacId) {
   return createdVariantsByColor.value.get(Number(mauSacId) || mauSacId) || [];
 }
@@ -1164,7 +1280,6 @@ function setCreatedImageManagerRef(mauSacId, instance) {
   delete createdImageManagerRefs.value[colorKey];
 }
 
-
 function updateDraftImagesForColor(mauSacId, nextImages) {
   draftColorImages.value = {
     ...draftColorImages.value,
@@ -1172,16 +1287,10 @@ function updateDraftImagesForColor(mauSacId, nextImages) {
   };
 }
 
-function clearRedirectTimer() {
-  if (!redirectTimer) {
-    return;
-  }
-
-  clearTimeout(redirectTimer);
-  redirectTimer = null;
-}
-
-function navigateToVariantScreen(giayId = currentProductId.value, chiTietId = null) {
+function navigateToVariantScreen(
+  giayId = currentProductId.value,
+  chiTietId = null,
+) {
   if (giayId) {
     const query = { giayId: String(giayId) };
 
@@ -1200,27 +1309,20 @@ function navigateToVariantScreen(giayId = currentProductId.value, chiTietId = nu
 }
 
 function closeRedirectPopup() {
-  clearRedirectTimer();
   redirectPopup.show = false;
 }
 
-function scheduleVariantRedirect({
+function openRedirectPopup({
   giayId = currentProductId.value,
   chiTietId = null,
-  title = "Lưu ảnh thành công",
-  message = "Đang chuyển sang màn biến thể sản phẩm.",
+  title = "Đã lưu chi tiết sản phẩm",
+  message = "Bạn có muốn chuyển sang màn biến thể sản phẩm để kiểm tra danh sách vừa tạo không?",
 } = {}) {
-  clearRedirectTimer();
-  showCreatedImagesModal.value = false;
   redirectPopup.show = true;
   redirectPopup.title = title;
   redirectPopup.message = message;
   redirectPopup.giayId = giayId;
   redirectPopup.chiTietId = chiTietId;
-  redirectTimer = setTimeout(() => {
-    closeRedirectPopup();
-    navigateToVariantScreen(giayId, chiTietId);
-  }, 1400);
 }
 
 function handleRedirectNow() {
@@ -1230,25 +1332,14 @@ function handleRedirectNow() {
   navigateToVariantScreen(targetGiayId, targetChiTietId);
 }
 
-function handleCreatedImageSaved(variant) {
-  scheduleVariantRedirect({
-    giayId: currentProductId.value,
-    chiTietId: variant?.id ?? null,
-    message: "Ảnh chi tiết sản phẩm đã được lưu. Đang chuyển sang màn biến thể sản phẩm.",
-  });
-}
-
 function validateGeneratedVariants() {
   delete variantErrors.generated;
+  clearVariantItemErrors();
   assignVariantDefaultFieldErrors();
 
-  if (
-    variantErrors.soLuong ||
-    variantErrors.giaGoc ||
-    variantErrors.giaBan
-  ) {
+  if (variantErrors.soLuong || variantErrors.giaGoc || variantErrors.giaBan) {
     variantErrors.generated =
-      "Vui lòng sửa các giá trị mặc định đang bị âm trước khi lưu";
+      "Vui lòng sửa các giá trị mặc định chưa hợp lệ trước khi lưu";
     return false;
   }
 
@@ -1258,14 +1349,66 @@ function validateGeneratedVariants() {
     return false;
   }
 
-  const hasInvalid = generatedVariants.value.some(
-    (item) =>
-      Number(item.soLuong) < 0 ||
-      Number(item.giaGoc) < 0 ||
-      Number(item.giaBan) <= 0,
-  );
+  const seenCombinations = new Set();
+  let hasInvalid = false;
+
+  generatedVariants.value.forEach((item) => {
+    const variantKey = item.key || `${item.mauSacId}-${item.kichCoId}`;
+    const quantity = Number(item.soLuong);
+    const originalPrice = Number(item.giaGoc);
+    const sellingPrice = Number(item.giaBan);
+    const combinationKey = `${item.mauSacId}-${item.kichCoId}`;
+
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      setVariantItemFieldError(
+        variantKey,
+        "soLuong",
+        "Số lượng tồn phải là số nguyên từ 0 trở lên",
+      );
+      hasInvalid = true;
+    }
+
+    if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
+      setVariantItemFieldError(variantKey, "giaGoc", "Giá gốc phải lớn hơn 0");
+      hasInvalid = true;
+    }
+
+    if (!Number.isFinite(sellingPrice) || sellingPrice <= 0) {
+      setVariantItemFieldError(variantKey, "giaBan", "Giá bán phải lớn hơn 0");
+      hasInvalid = true;
+    } else if (
+      Number.isFinite(originalPrice) &&
+      originalPrice > 0 &&
+      sellingPrice > originalPrice
+    ) {
+      setVariantItemFieldError(
+        variantKey,
+        "giaBan",
+        "Giá bán không được lớn hơn giá gốc",
+      );
+      hasInvalid = true;
+    }
+
+    if (seenCombinations.has(combinationKey)) {
+      variantErrors.generated =
+        "Danh sách chi tiết sản phẩm đang bị trùng màu sắc và kích cỡ";
+      hasInvalid = true;
+      return;
+    }
+
+    seenCombinations.add(combinationKey);
+  });
 
   if (hasInvalid) {
+    if (!variantErrors.generated) {
+      variantErrors.generated =
+        "Vui lòng kiểm tra lại số lượng tồn, giá gốc và giá bán của từng chi tiết sản phẩm";
+    }
+
+    return false;
+  }
+
+  if (Object.keys(variantItemErrors).length) {
     variantErrors.generated =
       "Vui lòng kiểm tra lại số lượng tồn, giá gốc và giá bán của từng chi tiết sản phẩm";
     return false;
@@ -1341,6 +1484,80 @@ function buildGeneratedVariantPayload() {
     giaGoc: Number(item.giaGoc),
     giaBan: Number(item.giaBan),
   }));
+}
+
+function applyBackendFieldErrors(fieldErrors) {
+  clearVariantItemErrors();
+
+  const productFieldKeys = new Set([
+    "ten",
+    "thuongHieuId",
+    "loaiGiayId",
+    "gioiTinh",
+    "chatLieuGiayId",
+    "moTa",
+    "deGiayId",
+    "coGiayId",
+    "congNgheDemId",
+    "trongLuongId",
+    "giayId",
+  ]);
+
+  Object.entries(fieldErrors || {}).forEach(([fieldName, message]) => {
+    if (!message) return;
+
+    const generatedVariantFieldMatch = fieldName.match(
+      /^bienThes\[(\d+)\]\.(.+)$/,
+    );
+    if (generatedVariantFieldMatch) {
+      const variantIndex = Number(generatedVariantFieldMatch[1]);
+      const variantField = generatedVariantFieldMatch[2];
+      const targetVariant = generatedVariants.value[variantIndex];
+
+      if (
+        targetVariant &&
+        ["soLuong", "giaGoc", "giaBan"].includes(variantField)
+      ) {
+        setVariantItemFieldError(
+          targetVariant.key ||
+            `${targetVariant.mauSacId}-${targetVariant.kichCoId}`,
+          variantField,
+          message,
+        );
+      } else if (!variantErrors.generated) {
+        variantErrors.generated = message;
+      }
+
+      return;
+    }
+
+    if (fieldName === "bienThes") {
+      variantErrors.generated = message;
+      return;
+    }
+
+    if (productFieldKeys.has(fieldName)) {
+      productErrors[fieldName] = message;
+      return;
+    }
+
+    if (
+      [
+        "mauSacIds",
+        "kichCoIds",
+        "soLuong",
+        "giaGoc",
+        "giaBan",
+        "generated",
+      ].includes(fieldName)
+    ) {
+      variantErrors[fieldName] = message;
+    }
+  });
+
+  if (Object.keys(variantItemErrors).length && !variantErrors.generated) {
+    variantErrors.generated = "Vui lòng kiểm tra lại các dòng biến thể";
+  }
 }
 
 async function loadDanhMuc() {
@@ -1449,6 +1666,7 @@ async function handleSave() {
     currentProduct.value = response.giay;
     currentProductId.value = response.giay.id;
     createdVariants.value = response.bienThes || [];
+    const firstCreatedVariant = createdVariants.value[0] || null;
 
     let syncedImageCount = 0;
     let imageSyncError = null;
@@ -1474,7 +1692,7 @@ async function handleSave() {
       showToast(
         getDisplayErrorMessage(
           imageSyncError,
-          "Đã lưu sản phẩm và CTSP nhưng chưa đồng bộ hết ảnh theo màu",
+          "Đã lưu sản phẩm và chi tiết sản phẩm nhưng chưa đồng bộ hết ảnh theo màu",
         ),
         "error",
       );
@@ -1485,18 +1703,29 @@ async function handleSave() {
       showToast(
         `Lưu sản phẩm, CTSP và ${syncedImageCount} ảnh theo màu thành công`,
       );
+      openRedirectPopup({
+        giayId: response.giay.id,
+        chiTietId: firstCreatedVariant?.id ?? null,
+        title: "Đã lưu chi tiết sản phẩm",
+        message:
+          "Sản phẩm chi tiết đã được tạo thành công. Bạn có muốn sang màn biến thể sản phẩm để kiểm tra danh sách vừa thêm không?",
+      });
       return;
     }
 
     showToast("Lưu sản phẩm và chi tiết sản phẩm thành công");
+    openRedirectPopup({
+      giayId: response.giay.id,
+      chiTietId: firstCreatedVariant?.id ?? null,
+      title: "Đã lưu chi tiết sản phẩm",
+      message:
+        "Sản phẩm chi tiết đã được tạo thành công. Bạn có muốn sang màn biến thể sản phẩm để kiểm tra danh sách vừa thêm không?",
+    });
   } catch (error) {
     const fieldErrors = getFieldErrors(error);
-    Object.assign(productErrors, fieldErrors);
-    Object.assign(variantErrors, fieldErrors);
-    if (fieldErrors.bienThes && !variantErrors.generated) {
-      variantErrors.generated = fieldErrors.bienThes;
-    }
-    if (!Object.keys(fieldErrors).length) {
+    if (Object.keys(fieldErrors).length) {
+      applyBackendFieldErrors(fieldErrors);
+    } else {
       showToast(
         getDisplayErrorMessage(error, "Không thể lưu sản phẩm và biến thể"),
         "error",
@@ -1810,7 +2039,9 @@ onBeforeUnmount(() => {
                 "
                 @click="toggleVariantDropdown('mauSac')"
               >
-                <span class="min-w-0 flex-1 text-left leading-5 whitespace-normal break-words">
+                <span
+                  class="min-w-0 flex-1 text-left leading-5 whitespace-normal break-words"
+                >
                   {{ mauSacSummary }}
                 </span>
                 <ChevronDown :size="16" class="mt-0.5 shrink-0" />
@@ -1920,7 +2151,9 @@ onBeforeUnmount(() => {
                 "
                 @click="toggleVariantDropdown('kichCo')"
               >
-                <span class="min-w-0 flex-1 text-left leading-5 whitespace-normal break-words">
+                <span
+                  class="min-w-0 flex-1 text-left leading-5 whitespace-normal break-words"
+                >
                   {{ kichCoSummary }}
                 </span>
                 <ChevronDown :size="16" class="mt-0.5 shrink-0" />
@@ -2064,7 +2297,9 @@ onBeforeUnmount(() => {
           <BienTheImageManager
             v-for="item in representativeCreatedVariants"
             :key="item.id"
-            :ref="(instance) => setCreatedImageManagerRef(item.mauSacId, instance)"
+            :ref="
+              (instance) => setCreatedImageManagerRef(item.mauSacId, instance)
+            "
             :variant="item"
             :related-variants="relatedCreatedVariants(item.mauSacId)"
             display-mode="color"
@@ -2236,4 +2471,3 @@ onBeforeUnmount(() => {
   transform: translateY(-8px);
 }
 </style>
-

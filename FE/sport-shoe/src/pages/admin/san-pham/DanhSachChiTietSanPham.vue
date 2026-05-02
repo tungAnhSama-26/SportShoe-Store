@@ -44,6 +44,7 @@ const toast = reactive({
 const pageSizeOptions = [5, 10, 20, 50]
 let toastTimer = null
 let latestLoadRequestId = 0
+let keywordSearchTimer = null
 
 const selectedGiayId = computed(() => {
   const raw = Array.isArray(route.query.giayId) ? route.query.giayId[0] : route.query.giayId
@@ -232,6 +233,14 @@ function resetFilters() {
   loadData(0)
 }
 
+function scheduleKeywordSearch() {
+  if (keywordSearchTimer) clearTimeout(keywordSearchTimer)
+  keywordSearchTimer = setTimeout(() => {
+    loadData(0)
+    keywordSearchTimer = null
+  }, 300)
+}
+
 function clearProductFilter() {
   router.replace({ name: 'admin-bien-the-san-pham' })
 }
@@ -380,6 +389,13 @@ watch(
   }
 )
 
+watch(
+  () => filters.keyword,
+  () => {
+    scheduleKeywordSearch()
+  }
+)
+
 onMounted(async () => {
   await loadDanhMuc()
   await syncSelectedProduct()
@@ -388,6 +404,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   closeToast()
+  if (keywordSearchTimer) clearTimeout(keywordSearchTimer)
 })
 </script>
 
@@ -498,31 +515,29 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-[1180px] w-full border-separate border-spacing-y-2 text-sm">
+      <div class="overflow-hidden rounded-[24px] border border-slate-100">
+        <table class="w-full table-auto border-separate border-spacing-0 text-sm">
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3 whitespace-nowrap">STT</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã SP</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã CTSP</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Ảnh</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Tên sản phẩm</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Màu sắc</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Kích cỡ</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Loại giày</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Tồn kho</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giảm %</th>
-              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Hành động</th>
+              <th class="w-12 rounded-tl-2xl bg-slate-100 px-2.5 py-3 whitespace-nowrap">STT</th>
+              <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã SP</th>
+              <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã CTSP</th>
+              <th class="w-16 bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Ảnh</th>
+              <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Màu sắc</th>
+              <th class="w-16 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Kích cỡ</th>
+              <th class="w-18 bg-slate-100 px-2 py-3 whitespace-nowrap text-center">Số lượng</th>
+              <th class="w-32 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
+              <th class="w-18 bg-slate-100 px-2 py-3 whitespace-nowrap text-center">Giảm</th>
+              <th class="w-24 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="w-24 rounded-tr-2xl bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="13" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!items.length">
-              <td colspan="13" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
             </tr>
             <tr
               v-for="(item, index) in items"
@@ -532,48 +547,51 @@ onUnmounted(() => {
                 isFocusedVariant(item) ? 'bg-rose-50 ring-2 ring-rose-200' : 'bg-white ring-1 ring-slate-100'
               ]"
             >
-              <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-500 whitespace-nowrap">
+              <td class="rounded-l-2xl px-2.5 py-4 align-middle font-semibold text-slate-500 whitespace-nowrap">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-              <td class="px-4 py-4 font-bold text-slate-950 whitespace-nowrap">{{ item.maSanPham }}</td>
-              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.maChiTietSanPham }}</td>
-              <td class="px-4 py-4">
-                <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+              <td class="px-2.5 py-4 align-middle font-bold text-slate-950 break-all">
+                {{ item.maSanPham }}
+              </td>
+              <td class="px-2.5 py-4 align-middle font-bold text-slate-900 break-all">
+                {{ item.maChiTietSanPham }}
+              </td>
+              <td class="px-2.5 py-4 align-middle">
+                <div class="mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                   <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                   <Images class="h-4 w-4 text-slate-300" v-else />
                 </div>
               </td>
-              <td class="px-4 py-4">
-                <p class="font-semibold text-slate-800">{{ item.tenSanPham }}</p>
-                <p class="mt-1 text-xs text-slate-400 font-medium">{{ item.sku }}</p>
-              </td>
-              <td class="px-4 py-4">
-                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              <td class="px-2.5 py-4 align-middle">
+                <div class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
                   <span
                     class="h-2.5 w-2.5 rounded-full border border-black/5"
                     :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                   ></span>
-                  {{ item.mauSac }}
+                  <span class="whitespace-normal break-words">{{ item.mauSac }}</span>
                 </div>
               </td>
-              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">{{ item.kichCo }}</td>
-              <td class="px-4 py-4 text-slate-800 whitespace-nowrap">{{ item.loaiGiay || '—' }}</td>
-              <td class="px-4 py-4 font-bold text-slate-900 whitespace-nowrap">
+              <td class="px-2.5 py-4 align-middle font-bold text-slate-900 whitespace-nowrap">
+                {{ item.kichCo }}
+              </td>
+              <td class="px-2 py-4 align-middle text-center font-bold text-slate-900 whitespace-nowrap">
                 {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-4 py-4 whitespace-nowrap">
-                <p class="font-semibold" :class="isDiscounted(item) ? 'text-rose-600' : 'text-slate-800'">
-                  {{ formatCurrency(item.giaBan) }} đ
-                </p>
-                <p v-if="isDiscounted(item)" class="mt-1 text-xs text-slate-400 line-through">
-                  {{ formatCurrency(item.giaGoc) }} đ
-                </p>
+              <td class="px-2 py-4 align-middle whitespace-nowrap">
+                <div class="flex min-h-[48px] flex-col justify-center">
+                  <p class="font-semibold" :class="isDiscounted(item) ? 'text-rose-600' : 'text-slate-800'">
+                    {{ formatCurrency(item.giaBan) }} đ
+                  </p>
+                  <p v-if="isDiscounted(item)" class="mt-1 text-xs text-slate-400 line-through">
+                    {{ formatCurrency(item.giaGoc) }} đ
+                  </p>
+                </div>
               </td>
-              <td class="px-4 py-4 whitespace-nowrap">
+              <td class="px-2 py-4 align-middle text-center">
                 <button
                   v-if="item.dotGiamGiaId"
                   type="button"
-                  class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                  class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
                   :title="discountTitle(item)"
                   @click="openDiscountDetail(item)"
                 >
@@ -582,12 +600,12 @@ onUnmounted(() => {
                 </button>
                 <span v-else class="text-xs text-slate-400">—</span>
               </td>
-              <td class="px-4 py-4">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap" :class="bienTheTrangThaiClass(item)">
+              <td class="px-2 py-4 align-middle">
+                <span class="inline-flex rounded-full px-2.5 py-1 text-center text-xs font-semibold whitespace-normal" :class="bienTheTrangThaiClass(item)">
                   {{ bienTheTrangThaiLabel(item) }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-4 text-center">
+              <td class="rounded-r-2xl px-2.5 py-4 align-middle text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AdminQuickStatusAction
                     :loading="isUpdatingStatus(item.id)"

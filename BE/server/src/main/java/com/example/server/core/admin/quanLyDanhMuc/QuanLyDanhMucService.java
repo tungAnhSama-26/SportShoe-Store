@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuanLyDanhMucService {
 
     private static final Pattern KICH_CO_PATTERN = Pattern.compile(
-            "^(?:(EU|US|UK|CM)\\s*)?(\\d{1,2})(?:([.]\\d{1,2})|(\\s+[12]/3))?$",
+            "^(?:(EU)\\s*)?(\\d{1,2})([.]5)?$",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -530,7 +530,7 @@ public class QuanLyDanhMucService {
 
         var matcher = KICH_CO_PATTERN.matcher(normalized);
         if (!matcher.matches()) {
-            throw new BusinessException("Kích cỡ chỉ hỗ trợ dạng như 42, 40.5 hoặc EU42");
+            throw new BusinessException("Kích cỡ chưa đúng định dạng, vui lòng nhập lại");
         }
 
         int baseValue = Integer.parseInt(matcher.group(2));
@@ -540,9 +540,8 @@ public class QuanLyDanhMucService {
 
         String prefix = matcher.group(1) != null ? matcher.group(1).toUpperCase() + " " : "";
         String decimal = matcher.group(3) != null ? matcher.group(3) : "";
-        String fraction = matcher.group(4) != null ? " " + matcher.group(4).trim() : "";
 
-        return (prefix + baseValue + decimal + fraction).trim();
+        return (prefix + baseValue + decimal).trim();
     }
 
     private static boolean hasText(String s) {

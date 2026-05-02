@@ -63,7 +63,7 @@ function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
   const normalizedSize = normalizeSizeValue(form.giaTri)
   if (!normalizedSize) {
-    errors.giaTri = 'Vui lòng nhập kích cỡ theo dạng 42, 40.5 hoặc EU42'
+    errors.giaTri = 'Kích cỡ chưa đúng định dạng, vui lòng nhập lại'
     return false
   }
 
