@@ -97,7 +97,7 @@ record MauSacResponse(
 record MauSacRequest(
         @NotBlank String ma,
         @NotBlank String ten,
-        @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Mã màu HEX không hợp lệ (VD: #RRGGBB)") String maMauHex
+        @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Mã màu chưa đúng định dạng, vui lòng nhập lại") String maMauHex
 ) {}
 
 // ─── Kích Cỡ ─────────────────────────────────────────────────────────────────

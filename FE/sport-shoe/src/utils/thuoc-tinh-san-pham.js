@@ -1,6 +1,6 @@
 const DEFAULT_COLOR_HEX = '#94A3B8'
-const SIZE_PREFIXES = ['EU', 'US', 'UK', 'CM']
-const SIZE_VALUE_PATTERN = /^(?:(EU|US|UK|CM)\s*)?(\d{1,2})(?:([.]\d{1,2})|(\s+[12]\/3))?$/i
+const SIZE_PREFIXES = ['EU']
+const SIZE_VALUE_PATTERN = /^(?:(EU)\s*)?(\d{1,2})(?:([.]5))?$/i
 
 const COLOR_PRESETS = [
   { keywords: ['den', 'black'], hex: '#111827' },
@@ -137,7 +137,7 @@ export function normalizeSizeValue(value) {
     return ''
   }
 
-  const suffix = matched[3] || (matched[4] ? ` ${matched[4].trim()}` : '')
+  const suffix = matched[3] || ''
   return `${prefix}${baseValue}${suffix}`.trim()
 }
 

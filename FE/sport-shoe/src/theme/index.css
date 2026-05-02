@@ -333,13 +333,13 @@
   border-bottom-right-radius: 1rem;
 }
 
-/* Keep table text larger and on one line; horizontal scroll handles overflow. */
+/* Keep table text larger and allow wrapping; price cells can remain no-wrap when needed. */
 table th,
 table td {
   font-size: 1rem !important;
   font-weight: 400 !important;
   line-height: 1.45 !important;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 table th *,
@@ -355,4 +355,8 @@ table td * {
   white-space: normal !important;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+.table-text-nowrap {
+  white-space: nowrap !important;
 }

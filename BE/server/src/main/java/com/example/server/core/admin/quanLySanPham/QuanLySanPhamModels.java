@@ -1,11 +1,14 @@
 package com.example.server.core.admin.quanLySanPham;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -171,75 +174,75 @@ record HinhAnhGiayResponse(
 // ─── Requests ────────────────────────────────────────────────────────────────
 
 record TaoGiayRequest(
-        String ma,
-        @NotBlank String ten,
-        @NotNull Integer thuongHieuId,
-        @NotNull Integer loaiGiayId,
-        Integer gioiTinh,
+        @Size(max = 100) String ma,
+        @NotBlank @Size(min = 3, max = 300) String ten,
+        @NotNull @Positive Integer thuongHieuId,
+        @NotNull @Positive Integer loaiGiayId,
+        @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        Integer chatLieuGiayId,
-        String moTa,
-        Integer deGiayId,
-        Integer coGiayId,
-        Integer congNgheDemId,
-        Integer trongLuongId
+        @Positive Integer chatLieuGiayId,
+        @Size(max = 2000) String moTa,
+        @Positive Integer deGiayId,
+        @Positive Integer coGiayId,
+        @Positive Integer congNgheDemId,
+        @Positive Integer trongLuongId
 ) {}
 
 record CapNhatGiayRequest(
-        @NotBlank String ten,
-        @NotNull Integer thuongHieuId,
-        @NotNull Integer loaiGiayId,
-        Integer gioiTinh,
+        @NotBlank @Size(min = 3, max = 300) String ten,
+        @NotNull @Positive Integer thuongHieuId,
+        @NotNull @Positive Integer loaiGiayId,
+        @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        Integer chatLieuGiayId,
-        String moTa,
-        Integer deGiayId,
-        Integer coGiayId,
-        Integer congNgheDemId,
-        Integer trongLuongId
+        @Positive Integer chatLieuGiayId,
+        @Size(max = 2000) String moTa,
+        @Positive Integer deGiayId,
+        @Positive Integer coGiayId,
+        @Positive Integer congNgheDemId,
+        @Positive Integer trongLuongId
 ) {}
 
 record TaoChiTietSanPhamRequest(
-        Integer giayId,
-        String ten,
-        Integer thuongHieuId,
-        Integer loaiGiayId,
-        Integer gioiTinh,
+        @Positive Integer giayId,
+        @Size(min = 3, max = 300) String ten,
+        @Positive Integer thuongHieuId,
+        @Positive Integer loaiGiayId,
+        @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        Integer chatLieuGiayId,
-        String moTa,
-        Integer deGiayId,
-        Integer coGiayId,
-        Integer congNgheDemId,
-        Integer trongLuongId,
-        @NotNull Integer mauSacId,
-        @NotNull Integer kichCoId,
+        @Positive Integer chatLieuGiayId,
+        @Size(max = 2000) String moTa,
+        @Positive Integer deGiayId,
+        @Positive Integer coGiayId,
+        @Positive Integer congNgheDemId,
+        @Positive Integer trongLuongId,
+        @NotNull @Positive Integer mauSacId,
+        @NotNull @Positive Integer kichCoId,
         @NotNull @Min(0) Integer soLuong,
-        @NotNull BigDecimal giaGoc,
-        @NotNull BigDecimal giaBan
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaGoc,
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaBan
 ) {}
 
 record TaoChiTietSanPhamHangLoatItemRequest(
-        @NotNull Integer mauSacId,
-        @NotNull Integer kichCoId,
+        @NotNull @Positive Integer mauSacId,
+        @NotNull @Positive Integer kichCoId,
         @NotNull @Min(0) Integer soLuong,
-        @NotNull BigDecimal giaGoc,
-        @NotNull BigDecimal giaBan
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaGoc,
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaBan
 ) {}
 
 record TaoChiTietSanPhamHangLoatRequest(
-        Integer giayId,
-        String ten,
-        Integer thuongHieuId,
-        Integer loaiGiayId,
-        Integer gioiTinh,
+        @Positive Integer giayId,
+        @Size(min = 3, max = 300) String ten,
+        @Positive Integer thuongHieuId,
+        @Positive Integer loaiGiayId,
+        @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        Integer chatLieuGiayId,
-        String moTa,
-        Integer deGiayId,
-        Integer coGiayId,
-        Integer congNgheDemId,
-        Integer trongLuongId,
+        @Positive Integer chatLieuGiayId,
+        @Size(max = 2000) String moTa,
+        @Positive Integer deGiayId,
+        @Positive Integer coGiayId,
+        @Positive Integer congNgheDemId,
+        @Positive Integer trongLuongId,
         @NotEmpty java.util.List<@Valid TaoChiTietSanPhamHangLoatItemRequest> bienThes
 ) {}
 
@@ -248,17 +251,17 @@ record DoiTrangThaiRequest(@NotNull @Min(0) @Max(2) Integer trangThai) {}
 record DoiTrangThaiBienTheRequest(@NotNull Integer kichHoat) {}
 
 record TaoBienTheRequest(
-        @NotNull Integer mauSacId,
-        @NotNull Integer kichCoId,
+        @NotNull @Positive Integer mauSacId,
+        @NotNull @Positive Integer kichCoId,
         @NotNull @Min(0) Integer soLuong,
-        @NotNull BigDecimal giaGoc,
-        @NotNull BigDecimal giaBan
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaGoc,
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaBan
 ) {}
 
 record CapNhatBienTheRequest(
         @NotNull @Min(0) Integer soLuong,
-        @NotNull BigDecimal giaGoc,
-        @NotNull BigDecimal giaBan,
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaGoc,
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 16, fraction = 2) BigDecimal giaBan,
         @NotNull Integer kichHoat
 ) {}
 

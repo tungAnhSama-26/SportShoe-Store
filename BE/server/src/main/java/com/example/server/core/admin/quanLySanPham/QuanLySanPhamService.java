@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanLySanPham;
 import com.example.server.entity.*;
 import com.example.server.infrastructure.api.PageResponse;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.exception.ErrorCode;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.*;
 import com.example.server.utils.GiaySpecifications;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +30,13 @@ public class QuanLySanPhamService {
     private static final int TRANG_THAI_NGUNG_KINH_DOANH = 0;
     private static final int TRANG_THAI_KINH_DOANH = 1;
     private static final int TRANG_THAI_HET_HANG = 2;
+    private static final int GIOI_TINH_NAM = 1;
+    private static final int GIOI_TINH_NU = 2;
+    private static final int GIOI_TINH_UNISEX = 3;
+    private static final int MIN_PRODUCT_NAME_LENGTH = 3;
+    private static final int MAX_PRODUCT_NAME_LENGTH = 300;
+    private static final int MAX_PRODUCT_DESCRIPTION_LENGTH = 2000;
+    private static final BigDecimal MIN_PRICE = new BigDecimal("0.01");
 
     private record ActiveDiscountInfo(
             Integer dotGiamGiaId,
@@ -328,6 +337,21 @@ public class QuanLySanPhamService {
 
     @Transactional
     public GiayDetailResponse taoGiay(TaoGiayRequest req) {
+        validateProductPayload(
+                null,
+                true,
+                req.ten(),
+                req.thuongHieuId(),
+                req.loaiGiayId(),
+                req.gioiTinh(),
+                req.moTa(),
+                req.chatLieuGiayId(),
+                req.deGiayId(),
+                req.coGiayId(),
+                req.congNgheDemId(),
+                req.trongLuongId()
+        );
+
         String maGiay = hasText(req.ma()) ? req.ma().trim().toUpperCase() : taoMaGiayTuDong();
         if (giayRepository.existsByMaIgnoreCase(maGiay)) {
             throw new BusinessException("Mã giày '" + maGiay + "' đã tồn tại");
@@ -344,7 +368,7 @@ public class QuanLySanPhamService {
         giay.setLoaiGiay(loaiGiay);
         giay.setGioiTinh(req.gioiTinh());
         giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
-        giay.setMoTa(req.moTa());
+        giay.setMoTa(trimToNull(req.moTa()));
         giay.setTrangThai(TRANG_THAI_KINH_DOANH);
         giay.setNgayTao(Instant.now());
         giay = giayRepository.save(giay);
@@ -369,6 +393,20 @@ public class QuanLySanPhamService {
     @Transactional
     public TaoChiTietSanPhamResponse taoChiTietSanPham(TaoChiTietSanPhamRequest req) {
         boolean taoMoiSanPham = req.giayId() == null;
+        validateProductPayload(
+                req.giayId(),
+                taoMoiSanPham,
+                req.ten(),
+                req.thuongHieuId(),
+                req.loaiGiayId(),
+                req.gioiTinh(),
+                req.moTa(),
+                req.chatLieuGiayId(),
+                req.deGiayId(),
+                req.coGiayId(),
+                req.congNgheDemId(),
+                req.trongLuongId()
+        );
 
         GiayDetailResponse giayDetail;
         if (taoMoiSanPham) {
@@ -399,6 +437,16 @@ public class QuanLySanPhamService {
         } else {
             giayDetail = chiTietGiay(req.giayId());
         }
+
+        validateVariantPayload(
+                giayDetail.id(),
+                req.mauSacId(),
+                req.kichCoId(),
+                req.soLuong(),
+                req.giaGoc(),
+                req.giaBan(),
+                null
+        );
 
         BienTheResponse bienThe = taoBienThe(giayDetail.id(), new TaoBienTheRequest(
                 req.mauSacId(),
@@ -418,6 +466,20 @@ public class QuanLySanPhamService {
     @Transactional
     public TaoChiTietSanPhamHangLoatResponse taoChiTietSanPhamHangLoat(TaoChiTietSanPhamHangLoatRequest req) {
         boolean taoMoiSanPham = req.giayId() == null;
+        validateProductPayload(
+                req.giayId(),
+                taoMoiSanPham,
+                req.ten(),
+                req.thuongHieuId(),
+                req.loaiGiayId(),
+                req.gioiTinh(),
+                req.moTa(),
+                req.chatLieuGiayId(),
+                req.deGiayId(),
+                req.coGiayId(),
+                req.congNgheDemId(),
+                req.trongLuongId()
+        );
 
         GiayDetailResponse giayDetail;
         if (taoMoiSanPham) {
@@ -448,6 +510,8 @@ public class QuanLySanPhamService {
         } else {
             giayDetail = chiTietGiay(req.giayId());
         }
+
+        validateBatchVariantPayload(giayDetail.id(), req.bienThes());
 
         Set<String> seenCombinations = new HashSet<>();
         List<BienTheResponse> createdVariants = new ArrayList<>();
@@ -475,6 +539,21 @@ public class QuanLySanPhamService {
 
     @Transactional
     public GiayDetailResponse capNhatGiay(Integer id, CapNhatGiayRequest req) {
+        validateProductPayload(
+                id,
+                true,
+                req.ten(),
+                req.thuongHieuId(),
+                req.loaiGiayId(),
+                req.gioiTinh(),
+                req.moTa(),
+                req.chatLieuGiayId(),
+                req.deGiayId(),
+                req.coGiayId(),
+                req.congNgheDemId(),
+                req.trongLuongId()
+        );
+
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
         var thuongHieu = thuongHieuRepository.findById(req.thuongHieuId())
@@ -487,7 +566,7 @@ public class QuanLySanPhamService {
         giay.setLoaiGiay(loaiGiay);
         giay.setGioiTinh(req.gioiTinh());
         giay.setChatLieu(resolveChatLieuText(req.chatLieu(), req.chatLieuGiayId() != null ? chatLieuGiayRepository.findById(req.chatLieuGiayId()).orElse(null) : null));
-        giay.setMoTa(req.moTa());
+        giay.setMoTa(trimToNull(req.moTa()));
         giay.setNgayCapNhat(Instant.now());
 
         var gtt = giayThuocTinhRepository.findByGiayId(id).orElseGet(() -> {
@@ -567,6 +646,16 @@ public class QuanLySanPhamService {
 
     @Transactional
     public BienTheResponse taoBienThe(Integer giayId, TaoBienTheRequest req) {
+        validateVariantPayload(
+                giayId,
+                req.mauSacId(),
+                req.kichCoId(),
+                req.soLuong(),
+                req.giaGoc(),
+                req.giaBan(),
+                null
+        );
+
         var giay = giayRepository.findById(giayId)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + giayId + " không tồn tại"));
         var mauSac = mauSacRepository.findById(req.mauSacId())
@@ -599,6 +688,8 @@ public class QuanLySanPhamService {
 
     @Transactional
     public BienTheResponse capNhatBienThe(Integer id, CapNhatBienTheRequest req) {
+        validateVariantUpdatePayload(req);
+
         var gct = giayChiTietRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
         gct.setSoLuong(req.soLuong());
@@ -730,6 +821,289 @@ public class QuanLySanPhamService {
     }
 
     // ─── Utils ───────────────────────────────────────────────────────────────
+
+    private void validateProductPayload(
+            Integer giayId,
+            boolean requireProductFields,
+            String ten,
+            Integer thuongHieuId,
+            Integer loaiGiayId,
+            Integer gioiTinh,
+            String moTa,
+            Integer chatLieuGiayId,
+            Integer deGiayId,
+            Integer coGiayId,
+            Integer congNgheDemId,
+            Integer trongLuongId
+    ) {
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        if (giayId != null && !giayRepository.existsById(giayId)) {
+            putError(errors, "giayId", "Sản phẩm không tồn tại");
+        }
+
+        if (requireProductFields) {
+            String normalizedTen = trimToNull(ten);
+            if (normalizedTen == null) {
+                putError(errors, "ten", "Vui lòng nhập tên sản phẩm");
+            } else {
+                if (normalizedTen.length() < MIN_PRODUCT_NAME_LENGTH) {
+                    putError(errors, "ten", "Tên sản phẩm phải có ít nhất 3 ký tự");
+                }
+                if (normalizedTen.length() > MAX_PRODUCT_NAME_LENGTH) {
+                    putError(errors, "ten", "Tên sản phẩm không được vượt quá 300 ký tự");
+                }
+            }
+
+            if (thuongHieuId == null) {
+                putError(errors, "thuongHieuId", "Vui lòng chọn thương hiệu cho sản phẩm");
+            } else if (!thuongHieuRepository.existsById(thuongHieuId)) {
+                putError(errors, "thuongHieuId", "Thương hiệu đã chọn không tồn tại");
+            }
+
+            if (loaiGiayId == null) {
+                putError(errors, "loaiGiayId", "Vui lòng chọn loại giày cho sản phẩm");
+            } else if (!loaiGiayRepository.existsById(loaiGiayId)) {
+                putError(errors, "loaiGiayId", "Loại giày đã chọn không tồn tại");
+            }
+        }
+
+        if (gioiTinh != null && !isGioiTinhHopLe(gioiTinh)) {
+            putError(errors, "gioiTinh", "Giới tính chỉ được phép là Nam, Nữ hoặc Unisex");
+        }
+
+        String normalizedDescription = trimToNull(moTa);
+        if (normalizedDescription != null && normalizedDescription.length() > MAX_PRODUCT_DESCRIPTION_LENGTH) {
+            putError(errors, "moTa", "Mô tả không được vượt quá 2000 ký tự");
+        }
+
+        validateOptionalReference(
+                errors,
+                "chatLieuGiayId",
+                chatLieuGiayId,
+                chatLieuGiayId == null || chatLieuGiayRepository.existsById(chatLieuGiayId),
+                "Chất liệu giày"
+        );
+        validateOptionalReference(
+                errors,
+                "deGiayId",
+                deGiayId,
+                deGiayId == null || deGiayRepository.existsById(deGiayId),
+                "Đế giày"
+        );
+        validateOptionalReference(
+                errors,
+                "coGiayId",
+                coGiayId,
+                coGiayId == null || coGiayRepository.existsById(coGiayId),
+                "Cổ giày"
+        );
+        validateOptionalReference(
+                errors,
+                "congNgheDemId",
+                congNgheDemId,
+                congNgheDemId == null || congNgheDemRepository.existsById(congNgheDemId),
+                "Công nghệ đệm"
+        );
+        validateOptionalReference(
+                errors,
+                "trongLuongId",
+                trongLuongId,
+                trongLuongId == null || trongLuongRepository.existsById(trongLuongId),
+                "Trọng lượng"
+        );
+
+        throwValidationErrors(errors);
+    }
+
+    private void validateBatchVariantPayload(Integer giayId, List<TaoChiTietSanPhamHangLoatItemRequest> bienThes) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        if (bienThes == null || bienThes.isEmpty()) {
+            putError(errors, "bienThes", "Vui lòng tạo ít nhất một chi tiết sản phẩm");
+            throwValidationErrors(errors);
+            return;
+        }
+
+        Set<String> seenCombinations = new HashSet<>();
+        for (int index = 0; index < bienThes.size(); index++) {
+            TaoChiTietSanPhamHangLoatItemRequest item = bienThes.get(index);
+            String prefix = "bienThes[" + index + "].";
+            validateVariantPayload(
+                    errors,
+                    giayId,
+                    item.mauSacId(),
+                    item.kichCoId(),
+                    item.soLuong(),
+                    item.giaGoc(),
+                    item.giaBan(),
+                    prefix
+            );
+
+            if (item.mauSacId() != null && item.kichCoId() != null) {
+                String combinationKey = item.mauSacId() + "-" + item.kichCoId();
+                if (!seenCombinations.add(combinationKey)) {
+                    putError(errors, "bienThes", "Danh sách chi tiết sản phẩm đang bị trùng màu sắc và kích cỡ");
+                    putError(errors, prefix + "kichCoId", "Biến thể màu sắc và kích cỡ này đang bị trùng trong danh sách");
+                }
+            }
+        }
+
+        throwValidationErrors(errors);
+    }
+
+    private void validateVariantPayload(
+            Integer giayId,
+            Integer mauSacId,
+            Integer kichCoId,
+            Integer soLuong,
+            BigDecimal giaGoc,
+            BigDecimal giaBan,
+            String prefix
+    ) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        validateVariantPayload(errors, giayId, mauSacId, kichCoId, soLuong, giaGoc, giaBan, prefix);
+        throwValidationErrors(errors);
+    }
+
+    private void validateVariantPayload(
+            Map<String, String> errors,
+            Integer giayId,
+            Integer mauSacId,
+            Integer kichCoId,
+            Integer soLuong,
+            BigDecimal giaGoc,
+            BigDecimal giaBan,
+            String prefix
+    ) {
+        String mauSacKey = fieldKey(prefix, "mauSacId");
+        String kichCoKey = fieldKey(prefix, "kichCoId");
+        String soLuongKey = fieldKey(prefix, "soLuong");
+        String giaGocKey = fieldKey(prefix, "giaGoc");
+        String giaBanKey = fieldKey(prefix, "giaBan");
+
+        if (mauSacId == null) {
+            putError(errors, mauSacKey, "Vui lòng chọn màu sắc");
+        } else if (!mauSacRepository.existsById(mauSacId)) {
+            putError(errors, mauSacKey, "Màu sắc đã chọn không tồn tại");
+        }
+
+        if (kichCoId == null) {
+            putError(errors, kichCoKey, "Vui lòng chọn kích cỡ");
+        } else if (!kichCoRepository.existsById(kichCoId)) {
+            putError(errors, kichCoKey, "Kích cỡ đã chọn không tồn tại");
+        }
+
+        if (soLuong == null) {
+            putError(errors, soLuongKey, "Vui lòng nhập số lượng tồn");
+        } else if (soLuong < 0) {
+            putError(errors, soLuongKey, "Số lượng tồn không được âm");
+        }
+
+        if (giaGoc == null) {
+            putError(errors, giaGocKey, "Vui lòng nhập giá gốc");
+        } else if (giaGoc.compareTo(MIN_PRICE) < 0) {
+            putError(errors, giaGocKey, "Giá gốc phải lớn hơn 0");
+        }
+
+        if (giaBan == null) {
+            putError(errors, giaBanKey, "Vui lòng nhập giá bán");
+        } else if (giaBan.compareTo(MIN_PRICE) < 0) {
+            putError(errors, giaBanKey, "Giá bán phải lớn hơn 0");
+        }
+
+        if (giaGoc != null && giaBan != null && giaBan.compareTo(giaGoc) > 0) {
+            putError(errors, giaBanKey, "Giá bán không được lớn hơn giá gốc");
+        }
+
+        if (
+                giayId != null
+                        && mauSacId != null
+                        && kichCoId != null
+                        && giayRepository.existsById(giayId)
+                        && giayChiTietRepository.existsByGiayIdAndMauSacIdAndKichCoId(giayId, mauSacId, kichCoId)
+        ) {
+            putError(errors, kichCoKey, "Biến thể màu sắc và kích cỡ này đã tồn tại trong sản phẩm");
+        }
+    }
+
+    private void validateVariantUpdatePayload(CapNhatBienTheRequest req) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        if (req.soLuong() == null) {
+            putError(errors, "soLuong", "Vui lòng nhập số lượng tồn");
+        } else if (req.soLuong() < 0) {
+            putError(errors, "soLuong", "Số lượng tồn không được âm");
+        }
+
+        if (req.giaGoc() == null) {
+            putError(errors, "giaGoc", "Vui lòng nhập giá gốc");
+        } else if (req.giaGoc().compareTo(MIN_PRICE) < 0) {
+            putError(errors, "giaGoc", "Giá gốc phải lớn hơn 0");
+        }
+
+        if (req.giaBan() == null) {
+            putError(errors, "giaBan", "Vui lòng nhập giá bán");
+        } else if (req.giaBan().compareTo(MIN_PRICE) < 0) {
+            putError(errors, "giaBan", "Giá bán phải lớn hơn 0");
+        }
+
+        if (req.giaGoc() != null && req.giaBan() != null && req.giaBan().compareTo(req.giaGoc()) > 0) {
+            putError(errors, "giaBan", "Giá bán không được lớn hơn giá gốc");
+        }
+
+        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
+            putError(errors, "kichHoat", "Trạng thái chi tiết sản phẩm không hợp lệ");
+        }
+
+        throwValidationErrors(errors);
+    }
+
+    private void validateOptionalReference(
+            Map<String, String> errors,
+            String fieldName,
+            Integer value,
+            boolean exists,
+            String label
+    ) {
+        if (value != null && !exists) {
+            putError(errors, fieldName, label + " đã chọn không tồn tại");
+        }
+    }
+
+    private void throwValidationErrors(Map<String, String> errors) {
+        if (errors != null && !errors.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Dữ liệu đầu vào không hợp lệ",
+                    errors
+            );
+        }
+    }
+
+    private void putError(Map<String, String> errors, String fieldName, String message) {
+        if (fieldName == null || fieldName.isBlank() || message == null || message.isBlank()) {
+            return;
+        }
+        errors.putIfAbsent(fieldName, message);
+    }
+
+    private String fieldKey(String prefix, String fieldName) {
+        return prefix == null || prefix.isBlank() ? fieldName : prefix + fieldName;
+    }
+
+    private boolean isGioiTinhHopLe(Integer gioiTinh) {
+        return gioiTinh == GIOI_TINH_NAM
+                || gioiTinh == GIOI_TINH_NU
+                || gioiTinh == GIOI_TINH_UNISEX;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
 
     private void updateTrangThaiTuSoLuong(Integer giayId) {
         var giay = giayRepository.findById(giayId).orElse(null);
