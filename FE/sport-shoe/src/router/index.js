@@ -152,13 +152,28 @@ const router = createRouter({
           component: DanhSachSanPham
         },
         {
+          path: "san-pham/them",
+          name: "admin-san-pham-them",
+          component: ChiTietSanPhamForm
+        },
+        {
+          path: "chi-tiet-san-pham/new",
+          name: "admin-chi-tiet-san-pham-new",
+          component: ChiTietSanPhamForm
+        },
+        {
           path: "bien-the-san-pham",
           name: "admin-bien-the-san-pham",
           component: DanhSachChiTietSanPham
         },
         {
-          path: "chi-tiet-san-pham/new",
-          name: "admin-chi-tiet-san-pham-new",
+          path: "bien-the-san-pham/them",
+          name: "admin-bien-the-san-pham-them",
+          component: ChiTietSanPhamForm
+        },
+        {
+          path: "chi-tiet-san-pham/:giayId(\\d+)",
+          name: "admin-chi-tiet-san-pham",
           component: ChiTietSanPhamForm
         },
         { path: "loai-giay", name: "admin-loai-giay", component: LoaiGiay },

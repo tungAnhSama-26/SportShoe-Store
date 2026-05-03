@@ -155,7 +155,7 @@ function scheduleKeywordSearch() {
 }
 
 function goToForm() {
-  router.push({ name: 'admin-chi-tiet-san-pham-new' })
+  router.push({ name: 'admin-san-pham-them' })
 }
 
 function goToChiTietList(item) {
@@ -402,18 +402,17 @@ onUnmounted(() => {
       </div>
 
       <div class="overflow-hidden rounded-[24px] border border-slate-100">
-        <table class="w-full table-auto border-separate border-spacing-0 text-sm">
+        <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="w-14 rounded-tl-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
-              <th class="w-28 bg-slate-100 px-3 py-3 whitespace-nowrap">Mã SP</th>
-              <th class="bg-slate-100 px-3 py-3 whitespace-nowrap">Tên SP</th>
-              <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Thương hiệu</th>
-              <th class="w-24 bg-slate-100 px-3 py-3 whitespace-nowrap">Loại giày</th>
-              <th class="w-20 bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Số lượng</th>
-              <th class="w-36 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
-              <th class="w-28 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
-              <th class="w-24 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+              <th class="w-16 rounded-tl-2xl bg-slate-100 px-4 py-3">STT</th>
+              <th class="w-28 bg-slate-100 px-4 py-3">Mã SP</th>
+              <th class="bg-slate-100 px-4 py-3">Tên SP</th>
+              <th class="w-44 bg-slate-100 px-4 py-3">Thương hiệu</th>
+              <th class="w-24 bg-slate-100 px-4 py-3 text-center">Tồn</th>
+              <th class="w-44 bg-slate-100 px-4 py-3">Giá bán</th>
+              <th class="w-36 bg-slate-100 px-4 py-3">Trạng thái</th>
+              <th class="w-28 rounded-tr-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -428,33 +427,37 @@ onUnmounted(() => {
               :key="item.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-3 py-4 align-middle font-semibold text-slate-500">
+              <td class="rounded-l-2xl px-4 py-4 align-top font-semibold text-slate-500">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-              <td class="px-3 py-4 align-middle font-semibold text-slate-800 break-words">{{ item.ma }}</td>
-              <td class="px-3 py-4 align-middle">
-                <p class="break-words font-semibold leading-6 text-slate-800" :title="item.ten">{{ item.ten }}</p>
+              <td class="px-4 py-4 align-top font-semibold text-slate-800">{{ item.ma }}</td>
+              <td class="px-4 py-4 align-top max-w-[340px] whitespace-normal break-normal">
+                <p class="text-xs font-semibold leading-tight text-slate-800" :title="item.ten">{{ item.ten }}</p>
               </td>
-              <td class="px-3 py-4 align-middle">
-                <p class="break-words text-sm text-slate-700">{{ item.thuongHieu || '—' }}</p>
+              <td class="px-4 py-4 align-top">
+                <p class="break-words text-sm font-semibold text-slate-800">{{ item.thuongHieu || '—' }}</p>
               </td>
-              <td class="px-3 py-4 align-middle">
-                <p class="break-words text-sm text-slate-700">{{ item.loaiGiay || '—' }}</p>
-              </td>
-              <td class="px-2 py-4 align-middle text-center font-semibold text-slate-700">
+              <td class="px-4 py-4 text-center font-semibold text-slate-700">
                 {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
               </td>
-              <td class="px-2 py-4 align-middle font-semibold text-slate-800 whitespace-nowrap">
-                <div class="flex min-h-[48px] items-center whitespace-nowrap">
-                  {{ giaHienThi(item).replace(' đ - ', '\u00A0đ\u00A0-\u00A0').replace(/ đ$/u, '\u00A0đ') }}
+              <td class="px-4 py-4 font-semibold text-slate-800">
+                <div class="flex flex-col gap-1">
+                  <template v-if="item.giaMin != null && item.giaMax != null && item.giaMin !== item.giaMax">
+                    <span class="whitespace-nowrap">{{ formatCurrency(item.giaMin) }} đ</span>
+                    <span class="whitespace-nowrap">- {{ formatCurrency(item.giaMax) }} đ</span>
+                  </template>
+                  <template v-else>
+                    <span class="whitespace-nowrap">{{ giaHienThi(item) }}</span>
+                    <span class="text-transparent">-</span>
+                  </template>
                 </div>
               </td>
-              <td class="px-2 py-4 align-middle">
+              <td class="px-4 py-4">
                 <span class="inline-flex min-w-max whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
                   {{ trangThaiLabel(item.trangThai) }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-3 py-4 align-middle text-center">
+              <td class="rounded-r-2xl px-4 py-4 text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AdminQuickStatusAction
                     :loading="isUpdatingStatus(item.id)"
