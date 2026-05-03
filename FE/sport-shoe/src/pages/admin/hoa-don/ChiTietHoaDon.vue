@@ -688,14 +688,14 @@ onMounted(taiChiTiet);
                 :style="{ left: (100 / cacBuocHienThi.length / 2) + '%', right: (100 / cacBuocHienThi.length / 2) + '%' }"
               ></div>
 
-              <div v-for="buoc in cacBuocHienThi" :key="buoc.id" class="relative z-10 flex flex-col items-center text-center w-32">
+              <div v-for="buoc in cacBuocHienThi" :key="buoc.id" class="relative z-10 flex w-32 flex-col items-center text-center">
                 <div
                   class="flex h-[58px] w-[58px] items-center justify-center overflow-visible rounded-full border-[2.5px] transition-all"
                   :class="lopVongTrangThai(buoc)"
                 >
                   <component :is="buoc.icon" class="h-[22px] w-[22px] block shrink-0" stroke-width="2.25" />
                 </div>
-                <p class="mt-3 text-[13px] font-semibold" :class="lopTenTrangThai(buoc)">{{ buoc.ten }}</p>
+                <p class="mt-3 whitespace-nowrap text-[12px] font-semibold" :class="lopTenTrangThai(buoc)">{{ buoc.ten }}</p>
                 <div class="mt-1 min-h-[32px]">
                   <p v-if="buoc.thoiGian" class="text-[11px] leading-4 text-slate-400">
                     {{ dinhDangGio(buoc.thoiGian) }} {{ dinhDangNgay(buoc.thoiGian) }}

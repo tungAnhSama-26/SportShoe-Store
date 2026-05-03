@@ -40,6 +40,7 @@ const {
   setCreatedImageManagerRef,
   validateProductForm,
   buildCreateProductPayload,
+  regenerateDraftProductCode,
 } = useProductForm();
 
 const {
@@ -89,6 +90,18 @@ function handleDocumentClick(event) {
   }
 }
 
+function normalizeErrorText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+function isDuplicateProductCodeError(error) {
+  const message = normalizeErrorText(getDisplayErrorMessage(error, ''))
+  return message.includes('ma giay') && message.includes('da ton tai')
+}
+
 // Handle save
 async function handleSave() {
   if (!validateProductForm()) {
@@ -104,13 +117,22 @@ async function handleSave() {
   saving.value = true;
 
   try {
-    const productPayload = buildCreateProductPayload();
-
     let productResult;
     if (isExistingProduct.value) {
-      productResult = await api.capNhatGiay(currentProductId.value, productPayload);
+      productResult = await api.capNhatGiay(currentProductId.value, buildCreateProductPayload());
     } else {
-      productResult = await api.taoGiay(productPayload);
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          productResult = await api.taoGiay(buildCreateProductPayload());
+          break;
+        } catch (error) {
+          if (attempt < 2 && isDuplicateProductCodeError(error)) {
+            regenerateDraftProductCode();
+            continue;
+          }
+          throw error;
+        }
+      }
     }
 
     const variantsPayload = generatedVariants.value.map((variant) => ({
@@ -159,9 +181,7 @@ onBeforeUnmount(() => {
     </section>
 
     <template v-else>
-      <section
-        class="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"
-      >
+      <section class="space-y-6">
         <ProductFormSection
           :product-form="productForm"
           :product-errors="productErrors"

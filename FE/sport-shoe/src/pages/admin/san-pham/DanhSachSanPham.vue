@@ -61,6 +61,12 @@ function giaHienThi(item) {
   return `${formatCurrency(item.giaMin)} đ - ${formatCurrency(item.giaMax)} đ`
 }
 
+function giaBangHienThi(item) {
+  return giaHienThi(item)
+    .replace(' đ - ', '\u00A0\u0111\u00A0-\u00A0')
+    .replace(/ \u0111$/u, '\u00A0\u0111')
+}
+
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
@@ -404,15 +410,15 @@ onUnmounted(() => {
       <div class="overflow-hidden rounded-[24px] border border-slate-100">
         <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
+            <tr class="text-left text-[13px] font-bold text-slate-950">
               <th class="w-16 rounded-tl-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="w-28 bg-slate-100 px-4 py-3">Mã SP</th>
               <th class="bg-slate-100 px-4 py-3">Tên SP</th>
-              <th class="w-44 bg-slate-100 px-4 py-3">Thương hiệu</th>
+              <th class="w-40 bg-slate-100 px-4 py-3">Thương hiệu</th>
               <th class="w-24 bg-slate-100 px-4 py-3 text-center">Tồn</th>
-              <th class="w-44 bg-slate-100 px-4 py-3">Giá bán</th>
+              <th class="w-52 bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
               <th class="w-36 bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="w-28 rounded-tr-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+              <th class="w-32 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -441,15 +447,8 @@ onUnmounted(() => {
                 {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">
-                <div class="flex flex-col gap-1">
-                  <template v-if="item.giaMin != null && item.giaMax != null && item.giaMin !== item.giaMax">
-                    <span class="whitespace-nowrap">{{ formatCurrency(item.giaMin) }} đ</span>
-                    <span class="whitespace-nowrap">- {{ formatCurrency(item.giaMax) }} đ</span>
-                  </template>
-                  <template v-else>
-                    <span class="whitespace-nowrap">{{ giaHienThi(item) }}</span>
-                    <span class="text-transparent">-</span>
-                  </template>
+                <div class="flex min-h-[48px] items-center whitespace-nowrap text-[13px] leading-5">
+                  {{ giaBangHienThi(item) }}
                 </div>
               </td>
               <td class="px-4 py-4">
@@ -457,7 +456,7 @@ onUnmounted(() => {
                   {{ trangThaiLabel(item.trangThai) }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-4 text-center">
+              <td class="rounded-r-2xl px-3 py-4 text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AdminQuickStatusAction
                     :loading="isUpdatingStatus(item.id)"
