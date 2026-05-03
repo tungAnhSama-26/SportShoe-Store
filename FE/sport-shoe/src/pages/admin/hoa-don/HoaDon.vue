@@ -415,11 +415,11 @@ onMounted(taiDanhSach);
           :key="item.ten"
           type="button"
           @click="trangThaiDangChon = item.ten"
-          class="rounded-2xl px-4 py-2 text-sm font-medium transition"
+          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition"
           :class="trangThaiDangChon === item.ten ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'"
         >
           {{ item.ten }}
-          <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{{ item.tong }}</span>
+          <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500">{{ item.tong }}</span>
         </button>
       </div>
 
@@ -427,10 +427,21 @@ onMounted(taiDanhSach);
         {{ loiTrang }}
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-[1080px] w-full border-separate border-spacing-y-2 text-sm">
+      <div class="overflow-hidden">
+        <table class="w-full table-fixed border-separate border-spacing-y-2 text-[13px]">
+          <colgroup>
+            <col class="w-[5%]" />
+            <col class="w-[17%]" />
+            <col class="w-[12%]" />
+            <col class="w-[12%]" />
+            <col class="w-[11%]" />
+            <col class="w-[13%]" />
+            <col class="w-[10%]" />
+            <col class="w-[10%]" />
+            <col class="w-[10%]" />
+          </colgroup>
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
+            <tr class="text-left text-[12px] font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã hóa đơn</th>
               <th class="bg-slate-100 px-4 py-3">Mã nhân viên</th>
@@ -439,7 +450,7 @@ onMounted(taiDanhSach);
               <th class="bg-slate-100 px-4 py-3">Ngày tạo</th>
               <th class="bg-slate-100 px-4 py-3">Loại đơn</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+              <th class="rounded-r-2xl bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -452,7 +463,7 @@ onMounted(taiDanhSach);
             <tr
               v-for="(hoaDon, index) in danhSachPhanTrang"
               :key="hoaDon.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
+              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 [&>td]:whitespace-nowrap [&>td]:px-3 [&>td]:py-3.5"
             >
               <td class="rounded-l-2xl px-4 py-4 font-semibold">
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
@@ -463,20 +474,20 @@ onMounted(taiDanhSach);
               <td class="px-4 py-4 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
               <td class="px-4 py-4">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
               <td class="px-4 py-4">{{ hoaDon.loaiDon }}</td>
-              <td class="px-4 py-4">
+              <td class="px-3 py-4 text-center">
                 <span
-                  class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                  class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-semibold"
                   :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
                 >
                   {{ hoaDon.trangThai }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-4 text-center">
-                <div class="flex items-center justify-center gap-2">
+              <td class="rounded-r-2xl px-2.5 py-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
                   <button
                     type="button"
                     @click="xuatHoaDonPdf(hoaDon.id)"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600"
+                    class="hidden"
                     :title="dangXuatPdfId === hoaDon.id ? 'Đang xuất PDF' : 'Xuất PDF'"
                     :disabled="dangXuatPdfId === hoaDon.id"
                   >

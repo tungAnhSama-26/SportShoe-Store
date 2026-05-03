@@ -1,18 +1,6 @@
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as api from '../services/san-pham-api.ts'
-import {
-  chatLieuGiayApi,
-  coGiayApi,
-  congNgheDemApi,
-  deGiayApi,
-  kichCoApi,
-  loaiGiayApi,
-  mauSacApi,
-  thuongHieuApi,
-  trongLuongApi,
-} from '../services/danh-muc-api.ts'
-import { getDisplayErrorMessage, getFieldErrors } from '../utils/error-message.js'
 
 export function useProductForm() {
   const route = useRoute()
@@ -23,6 +11,7 @@ export function useProductForm() {
   const saving = ref(false)
   const currentProduct = ref(null)
   const currentProductId = ref(null)
+  const draftProductCode = ref('')
   const createdVariants = ref([])
   const draftColorImages = ref({})
   const createdImageManagerRefs = ref({})
@@ -55,7 +44,7 @@ export function useProductForm() {
     currentProductId.value ? 'CHỈNH SỬA CHI TIẾT SẢN PHẨM' : 'THÊM CHI TIẾT SẢN PHẨM'
   )
 
-  const productCode = computed(() => currentProduct.value?.ma || '(Tự sinh)')
+  const productCode = computed(() => currentProduct.value?.ma || draftProductCode.value)
 
   const isExistingProduct = computed(() => Boolean(currentProductId.value))
 
@@ -81,6 +70,15 @@ export function useProductForm() {
 
   function normalizeNullableNumber(value) {
     return value == null || value === '' ? null : Number(value)
+  }
+
+  function taoMaGiayDuKien() {
+    return `G${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`
+  }
+
+  function regenerateDraftProductCode() {
+    draftProductCode.value = taoMaGiayDuKien()
+    return draftProductCode.value
   }
 
   function clearProductErrors() {
@@ -155,6 +153,7 @@ export function useProductForm() {
 
   function buildCreateProductPayload() {
     return {
+      ma: currentProductId.value ? undefined : draftProductCode.value,
       ten: productForm.ten.trim(),
       thuongHieuId: Number(productForm.thuongHieuId),
       loaiGiayId: Number(productForm.loaiGiayId),
@@ -204,6 +203,7 @@ export function useProductForm() {
     }
 
     currentProductId.value = giayId
+    draftProductCode.value = ''
     createdVariants.value = []
     const detail = await api.chiTietGiay(giayId)
     currentProduct.value = detail
@@ -211,6 +211,10 @@ export function useProductForm() {
   }
 
   function resetProductForm() {
+    if (!currentProductId.value) {
+      regenerateDraftProductCode()
+    }
+
     productForm.ten = ''
     productForm.thuongHieuId = null
     productForm.loaiGiayId = null
@@ -310,7 +314,6 @@ export function useProductForm() {
   }
 
   return {
-    // Reactive data
     danhMuc,
     loadingInit,
     saving,
@@ -323,19 +326,16 @@ export function useProductForm() {
     redirectPopup,
     productForm,
     productErrors,
-
-    // Computed
     pageTitle,
     productCode,
     isExistingProduct,
     representativeCreatedVariants,
-
-    // Methods
     loadInitialData,
     goBack,
     handleGoBack,
     setCreatedImageManagerRef,
     validateProductForm,
     buildCreateProductPayload,
+    regenerateDraftProductCode,
   }
 }
