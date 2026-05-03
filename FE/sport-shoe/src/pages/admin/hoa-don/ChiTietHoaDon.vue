@@ -27,7 +27,7 @@ import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhi
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
-import logoGhn from "../../../assets/logo/Logo-GHN-Blue-Orange.png";
+import logoGhn from "../../../constants/logoGhn";
 
 const route = useRoute();
 const router = useRouter();
