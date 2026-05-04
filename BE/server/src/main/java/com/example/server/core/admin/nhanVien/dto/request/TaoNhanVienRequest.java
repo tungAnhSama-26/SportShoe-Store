@@ -11,7 +11,6 @@ import java.time.LocalDate;
 public record TaoNhanVienRequest(
         @NotBlank @Size(max = 100) String hoTen,
         @NotBlank @Email @Size(max = 100) String email,
-        @NotBlank @Size(min = 6) String matKhau,
         @Size(max = 20) String sdt,
         @Pattern(regexp = "^\\d{12}$", message = "CCCD phai gom dung 12 chu so") String cccd,
         @Size(max = 10) String gioiTinh,
