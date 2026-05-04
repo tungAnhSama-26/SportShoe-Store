@@ -12,6 +12,8 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import BanHangQrScannerModal from "../../../components/admin/ban-hang/BanHangQrScannerModal.vue";
+import { QrCode } from "lucide-vue-next";
 
 const route = useRoute();
 const router = useRouter();
@@ -28,11 +30,51 @@ const nhanVien = ref<any>(null);
 const fileInputAvatar = ref<HTMLInputElement | null>(null);
 const matKhauMoi = ref("");
 const showDoiMatKhau = ref(false);
+const showScanner = ref(false);
+const scannedCccd = ref("");
+
+function fixGarbledText(str) {
+  try {
+    const bytes = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) {
+      bytes[i] = str.charCodeAt(i);
+    }
+    const decoder = new TextDecoder("utf-8");
+    const decoded = decoder.decode(bytes);
+    return decoded.includes("") ? str : decoded;
+  } catch (e) {
+    return str;
+  }
+}
+
+function handleCccdScan(rawValue) {
+  if (!rawValue) return;
+  const fixedValue = fixGarbledText(rawValue);
+  const parts = fixedValue.split("|");
+  if (parts.length >= 6) {
+    scannedCccd.value = parts[0];
+    form.value.cccd = parts[0];
+    form.value.hoTen = parts[2] || form.value.hoTen;
+    if (parts[3] && parts[3].length === 8) {
+      const day = parts[3].substring(0, 2);
+      const month = parts[3].substring(2, 4);
+      const year = parts[3].substring(4, 8);
+      form.value.ngaySinh = `${year}-${month}-${day}`;
+    }
+    form.value.gioiTinh = parts[4] || form.value.gioiTinh;
+    form.value.diaChiCuThe = parts[5] || form.value.diaChiCuThe;
+    thongBao.value = "Đã điền thông tin từ CCCD thành công!";
+    setTimeout(() => { thongBao.value = ""; }, 3000);
+  } else {
+    scannedCccd.value = fixedValue;
+    thongBao.value = "Mã QR không đúng định dạng CCCD chuẩn, chỉ nhận diện được chuỗi văn bản.";
+    setTimeout(() => { thongBao.value = ""; }, 3000);
+  }
+}
 
 const loiForm = ref({
   hoTen: "",
   email: "",
-  matKhau: "",
   cccd: "",
   sdt: "",
 });
@@ -316,7 +358,6 @@ async function taiChiTiet() {
     form.value = {
       hoTen: data.hoTen ?? "",
       email: data.email ?? "",
-      matKhau: "",
       sdt: data.sdt ?? "",
       cccd: data.cccd ?? "",
       gioiTinh: data.gioiTinh ?? "Nam",
@@ -336,7 +377,7 @@ async function taiChiTiet() {
 }
 
 async function luu() {
-  loiForm.value = { hoTen: "", email: "", matKhau: "", cccd: "", sdt: "" };
+  loiForm.value = { hoTen: "", email: "", cccd: "", sdt: "" };
   let hasError = false;
 
   if (!form.value.hoTen.trim()) {
@@ -351,9 +392,8 @@ async function luu() {
     loiForm.value.email = "Email nhân viên chưa đúng định dạng.";
     hasError = true;
   }
-
-  if (!/^\d{12}$/.test(form.value.cccd.trim())) {
-    loiForm.value.cccd = "CCCD phải gồm đúng 12 chữ số.";
+  if (!form.value.cccd || !/^\d{12}$/.test(form.value.cccd.trim())) {
+    loiForm.value.cccd = "Vui lòng quét CCCD (gồm 12 chữ số).";
     hasError = true;
   }
 
@@ -361,15 +401,6 @@ async function luu() {
     loiForm.value.sdt = "Số điện thoại phải gồm đúng 10 chữ số.";
     hasError = true;
   }
-
-  if (laMoi && !form.value.matKhau.trim()) {
-    loiForm.value.matKhau = "Vui lòng nhập mật khẩu cho nhân viên mới.";
-    hasError = true;
-  } else if (laMoi && form.value.matKhau.trim().length < 6) {
-    loiForm.value.matKhau = "Mật khẩu nhân viên phải có ít nhất 6 ký tự.";
-    hasError = true;
-  }
-
   if (hasError) return;
 
   dangLuu.value = true;
@@ -379,7 +410,6 @@ async function luu() {
   const payload = {
     hoTen: form.value.hoTen.trim(),
     email: form.value.email.trim(),
-    ...(laMoi ? { matKhau: form.value.matKhau } : {}),
     sdt: form.value.sdt.trim() || undefined,
     cccd: form.value.cccd.trim() || undefined,
     gioiTinh: form.value.gioiTinh || undefined,
@@ -523,7 +553,9 @@ onMounted(async () => {
 
       <div class="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
         <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
-          <h2 class="text-[18px] font-bold text-slate-900">Thông tin nhân viên</h2>
+          <div class="flex items-center justify-between">
+            <h2 class="text-[18px] font-bold text-slate-900">Thông tin nhân viên</h2>
+          </div>
           <div class="mt-7 h-px bg-slate-200"></div>
 
           <div class="pt-10">
@@ -579,21 +611,42 @@ onMounted(async () => {
           <div class="mt-7 h-px bg-slate-200"></div>
 
           <div class="mt-10 grid gap-x-6 gap-y-7 xl:grid-cols-12" style="color: black;">
-            <label class="space-y-2 xl:col-span-6">
+
+            <div class="space-y-2 xl:col-span-12">
               <span class="text-[18px] tracking-[0.06em] text-black">
-                Số cccd <span class="text-rose-500">*</span>
+                Số CCCD <span class="text-rose-500">*</span>
               </span>
-              <input
-                v-model="form.cccd"
-                type="text"
-                placeholder="Nhập số CCCD"
-                :class="[
-                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
-                  loiForm.cccd ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-amber-300',
-                ]"
-              />
-              <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
-            </label>
+              <div v-if="!form.cccd" class="flex flex-col items-start gap-2">
+                <button
+                  type="button"
+                  @click="showScanner = true"
+                  :class="[
+                    'inline-flex h-14 items-center gap-3 rounded-[18px] border px-6 text-[17px] font-medium transition',
+                    loiForm.cccd ? 'border-rose-400 bg-rose-50 text-rose-600 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                  ]"
+                >
+                  <QrCode class="h-5 w-5" />
+                  Bấm vào đây để quét CCCD
+                </button>
+                <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
+              </div>
+              <div v-else-if="form.cccd" class="flex items-center gap-4">
+                <div class="flex h-14 items-center rounded-[18px] border border-emerald-200 bg-emerald-50 px-5 text-[17px] font-mono font-semibold text-emerald-700">
+                  {{ form.cccd }}
+                </div>
+                <button
+                  type="button"
+                  @click="showScanner = true"
+                  class="inline-flex h-10 items-center gap-2 rounded-[14px] bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                >
+                  <QrCode class="h-4 w-4" />
+                  Quét lại
+                </button>
+              </div>
+              <div v-else class="flex h-14 items-center rounded-[18px] border border-slate-200 bg-slate-50 px-5 text-[17px] font-mono text-slate-500">
+                Chưa có thông tin
+              </div>
+            </div>
 
             <div class="space-y-2 xl:col-span-6">
               <span class="text-[18px] tracking-[0.06em] text-black">
@@ -717,21 +770,7 @@ onMounted(async () => {
               />
             </label>
 
-            <label v-if="laMoi" class="space-y-2 xl:col-span-12">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Mật khẩu <span class="text-rose-500">*</span>
-              </span>
-              <input
-                v-model="form.matKhau"
-                type="password"
-                placeholder="Tối thiểu 6 ký tự"
-                :class="[
-                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
-                  loiForm.matKhau ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-slate-300',
-                ]"
-              />
-              <p v-if="loiForm.matKhau" class="text-xs text-rose-500">{{ loiForm.matKhau }}</p>
-            </label>
+
           </div>
 
           <div class="mt-10 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-6">
@@ -820,5 +859,17 @@ onMounted(async () => {
       </section>
     </template>
 
+    <BanHangQrScannerModal
+      :open="showScanner"
+      title="Quét mã QR trên thẻ CCCD"
+      chip-label="Quét CCCD"
+      loading-text="Đang bật camera..."
+      fallback-helper-text="Đưa mã QR trên thẻ CCCD vào giữa khung quét"
+      manual-section-title="Không quét được?"
+      manual-section-description="Tính năng nhập tay đã bị vô hiệu hóa cho CCCD."
+      :show-manual-section="false"
+      @close="showScanner = false"
+      @scan="handleCccdScan"
+    />
   </div>
 </template>

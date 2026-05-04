@@ -67,6 +67,8 @@ public class NhanVienServiceImpl implements NhanVienService {
             throw new BusinessException("CCCD da duoc su dung");
         }
 
+
+
         NhanVien nv = new NhanVien();
         nv.setId(UUID.randomUUID());
 
@@ -78,7 +80,8 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setMa(generatedMa);
         nv.setHoTen(request.hoTen().trim());
         nv.setEmail(normalizedEmail);
-        nv.setMatKhau(request.matKhau());
+        String randomMatKhau = UUID.randomUUID().toString().substring(0, 8);
+        nv.setMatKhau(randomMatKhau);
         nv.setSdt(normalizeOptional(request.sdt()));
         nv.setCccd(normalizedCccd);
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
@@ -94,7 +97,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 saved.getEmail(),
                 saved.getHoTen(),
                 saved.getMa(),
-                request.matKhau()
+                randomMatKhau
         );
 
         return toItem(saved);
@@ -120,6 +123,8 @@ public class NhanVienServiceImpl implements NhanVienService {
                         throw new BusinessException("CCCD da duoc su dung");
                     });
         }
+
+
 
         nv.setHoTen(request.hoTen().trim());
         nv.setEmail(normalizedEmail);
