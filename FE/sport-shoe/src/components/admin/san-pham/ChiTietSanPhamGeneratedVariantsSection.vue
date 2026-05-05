@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Package2, Save, Trash2 } from "lucide-vue-next";
+import { Package2, Save, Trash2, TriangleAlert, X } from "lucide-vue-next";
 import BienTheImageManager from "./BienTheImageManager.vue";
 import AdminFormattedNumberInput from "../../common/AdminFormattedNumberInput.vue";
 import {
@@ -55,6 +55,7 @@ const saveButtonLabel = computed(() => {
 });
 
 const draftImageManagerRefs = ref({});
+const showSaveConfirmModal = ref(false);
 
 function parseNumericValue(value) {
   const parsed = Number(value);
@@ -129,6 +130,31 @@ const hasGeneratedVariantFieldErrors = computed(() =>
   ),
 );
 
+const saveConfirmationDetails = computed(() => {
+  const variantCount = props.generatedVariants.length;
+  const colorCount = props.representativeGeneratedVariants.length;
+  const imageColorCount = Object.values(props.draftColorImages || {}).filter(
+    (images) => Array.isArray(images) && images.length,
+  ).length;
+
+  const lines = [
+    `Bạn sắp lưu ${variantCount} biến thể cho sản phẩm này.`,
+    `Tổng số màu được tạo: ${colorCount}.`,
+  ];
+
+  if (imageColorCount > 0) {
+    lines.push(`Ảnh theo màu sẽ được áp cho ${imageColorCount} nhóm màu.`);
+  }
+
+  return {
+    title: props.isExistingProduct
+      ? "Xác nhận thêm chi tiết sản phẩm"
+      : "Xác nhận lưu sản phẩm",
+    description: "Kiểm tra nhanh thông tin trước khi hệ thống tạo biến thể.",
+    lines,
+  };
+});
+
 function fieldErrorClass(errorMessage) {
   return errorMessage
     ? "border-rose-300 bg-rose-50"
@@ -190,7 +216,8 @@ function handleApplyDefaults() {
 }
 
 function resolveColorHex(group) {
-  const explicitHex = group?.maMauHex || group?.variants?.find((item) => item?.maMauHex)?.maMauHex;
+  const explicitHex =
+    group?.maMauHex || group?.variants?.find((item) => item?.maMauHex)?.maMauHex;
   if (isValidHexColor(explicitHex)) {
     return String(explicitHex).toUpperCase();
   }
@@ -204,6 +231,16 @@ function formatColorName(value) {
   return normalized.charAt(0).toLocaleUpperCase("vi-VN") + normalized.slice(1);
 }
 
+function closeSaveConfirmModal() {
+  if (props.saving) return;
+  showSaveConfirmModal.value = false;
+}
+
+function confirmSave() {
+  showSaveConfirmModal.value = false;
+  emit("save");
+}
+
 async function handleSaveClick() {
   if (hasDefaultFieldErrors.value || hasGeneratedVariantFieldErrors.value) {
     emit("error", "Vui lòng sửa các giá trị âm trước khi lưu.");
@@ -215,7 +252,7 @@ async function handleSaveClick() {
     return;
   }
 
-  emit("save");
+  showSaveConfirmModal.value = true;
 }
 </script>
 
@@ -478,5 +515,71 @@ async function handleSaveClick() {
         {{ saveButtonLabel }}
       </button>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="showSaveConfirmModal"
+        class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4"
+        @click.self="closeSaveConfirmModal"
+      >
+        <div class="w-full max-w-lg overflow-hidden rounded-[28px] bg-white shadow-2xl">
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div class="flex items-start gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                <TriangleAlert :size="22" />
+              </div>
+
+              <div>
+                <h3 class="text-xl font-black text-slate-900">
+                  {{ saveConfirmationDetails.title }}
+                </h3>
+                <p class="mt-1 text-sm text-slate-500">
+                  {{ saveConfirmationDetails.description }}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+              @click="closeSaveConfirmModal"
+            >
+              <X :size="16" />
+            </button>
+          </div>
+
+          <div class="space-y-3 px-6 py-5">
+            <div
+              v-for="(line, index) in saveConfirmationDetails.lines"
+              :key="`save-confirm-line-${index}`"
+              class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"
+            >
+              {{ line }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+            <button
+              type="button"
+              class="admin-btn-soft"
+              :disabled="saving"
+              @click="closeSaveConfirmModal"
+            >
+              Xem lại
+            </button>
+
+            <button
+              type="button"
+              class="admin-btn-primary disabled:opacity-60"
+              :disabled="saving"
+              @click="confirmSave"
+            >
+              <Save :size="16" />
+              Xác nhận lưu
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>

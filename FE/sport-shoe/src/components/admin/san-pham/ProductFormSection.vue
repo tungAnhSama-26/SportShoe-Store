@@ -76,7 +76,10 @@ const congNgheDemOptions = computed(() => {
 const trongLuongOptions = computed(() => {
   return (props.danhMuc?.trongLuong || []).map(item => ({
     value: item.id,
-    label: item.ten
+    label: item.giaTri != null ? `${item.giaTri} g` : item.ma,
+    description: null,
+    searchText: `${item.giaTri ?? ''} ${item.ma ?? ''}`,
+    createMatchText: `${item.giaTri ?? ''}`
   }))
 })
 

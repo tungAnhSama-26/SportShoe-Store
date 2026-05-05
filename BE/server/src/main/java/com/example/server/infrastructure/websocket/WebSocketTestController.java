@@ -1,6 +1,6 @@
 package com.example.server.infrastructure.websocket;
 
-import com.example.server.infrastructure.AppProperties;
+import com.example.server.infrastructure.config.AppProperties;
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

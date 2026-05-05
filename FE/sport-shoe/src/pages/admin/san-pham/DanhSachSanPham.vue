@@ -70,7 +70,7 @@ function giaBangHienThi(item) {
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
-  return 'Ngừng kinh doanh'
+  return 'Ngừng bán'
 }
 
 function trangThaiClass(value) {
@@ -265,7 +265,7 @@ async function xuatExcel() {
         { label: 'Tên sản phẩm', key: 'ten' },
         { label: 'Thương hiệu', key: 'thuongHieu' },
         { label: 'Loại giày', key: 'loaiGiay' },
-        { label: 'Tổng tồn', value: (row) => row.tongSoLuong || 0 },
+        { label: 'Số lượng', value: (row) => row.tongSoLuong || 0 },
         { label: 'Giá bán', value: (row) => giaHienThi(row) },
         { label: 'Trạng thái', value: (row) => trangThaiLabel(row.trangThai) }
       ],
@@ -390,7 +390,7 @@ onUnmounted(() => {
               <option :value="null">Tất cả trạng thái</option>
               <option :value="1">Kinh doanh</option>
               <option :value="2">Hết hàng</option>
-              <option :value="0">Ngừng kinh doanh</option>
+              <option :value="0">Ngừng bán</option>
             </select>
           </label>
         </div>
@@ -417,8 +417,8 @@ onUnmounted(() => {
               <th class="w-40 bg-slate-100 px-4 py-3">Thương hiệu</th>
               <th class="w-24 bg-slate-100 px-4 py-3 text-center">Tồn</th>
               <th class="w-52 bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
-              <th class="w-36 bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="w-32 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+              <th class="w-44 bg-slate-100 px-4 py-3">Trạng thái</th>
+              <th class="w-40 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -451,13 +451,17 @@ onUnmounted(() => {
                   {{ giaBangHienThi(item) }}
                 </div>
               </td>
-              <td class="px-4 py-4">
-                <span class="inline-flex min-w-max whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
+              <td class="px-4 py-4 whitespace-nowrap">
+                <span
+                  class="inline-flex min-w-max whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold"
+                  :class="trangThaiClass(item.trangThai)"
+                  :title="trangThaiLabel(item.trangThai)"
+                >
                   {{ trangThaiLabel(item.trangThai) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-3 py-4 text-center">
-                <div class="flex items-center justify-center gap-1">
+                <div class="flex items-center justify-center gap-2">
                   <AdminQuickStatusAction
                     :loading="isUpdatingStatus(item.id)"
                     :disabled="isUpdatingStatus(item.id) || !canQuickToggleProduct(item)"

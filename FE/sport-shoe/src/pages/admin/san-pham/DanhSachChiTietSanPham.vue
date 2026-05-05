@@ -349,7 +349,7 @@ async function xuatExcel() {
         { label: 'Loại giày', key: 'loaiGiay' },
         { label: 'Màu sắc', key: 'mauSac' },
         { label: 'Kích cỡ', key: 'kichCo' },
-        { label: 'Tồn kho', value: (row) => row.soLuong || 0 },
+        { label: 'Số lượng', value: (row) => row.soLuong || 0 },
         { label: 'Giá bán', value: (row) => formatCurrency(row.giaBan) },
         { label: 'Trạng thái', value: (row) => bienTheTrangThaiLabel(row) }
       ],

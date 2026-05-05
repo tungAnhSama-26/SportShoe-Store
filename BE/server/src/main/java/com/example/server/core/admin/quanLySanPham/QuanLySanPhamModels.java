@@ -204,6 +204,7 @@ record CapNhatGiayRequest(
 
 record TaoChiTietSanPhamRequest(
         @Positive Integer giayId,
+        @Size(max = 100) String ma,
         @Size(min = 3, max = 300) String ten,
         @Positive Integer thuongHieuId,
         @Positive Integer loaiGiayId,
@@ -232,6 +233,7 @@ record TaoChiTietSanPhamHangLoatItemRequest(
 
 record TaoChiTietSanPhamHangLoatRequest(
         @Positive Integer giayId,
+        @Size(max = 100) String ma,
         @Size(min = 3, max = 300) String ten,
         @Positive Integer thuongHieuId,
         @Positive Integer loaiGiayId,

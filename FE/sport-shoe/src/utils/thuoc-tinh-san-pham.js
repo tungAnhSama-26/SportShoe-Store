@@ -29,6 +29,42 @@ export function normalizeAttributeText(value) {
     .trim()
 }
 
+export function normalizeRequiredText(value) {
+  return String(value ?? '').trim()
+}
+
+export function normalizeOptionalText(value) {
+  const normalized = normalizeRequiredText(value)
+  return normalized || null
+}
+
+export function exceedsMaxLength(value, maxLength) {
+  return normalizeRequiredText(value).length > maxLength
+}
+
+export function isValidWebsiteUrl(value) {
+  const normalized = normalizeOptionalText(value)
+
+  if (!normalized) {
+    return true
+  }
+
+  try {
+    const url = new URL(normalized)
+    return ['http:', 'https:'].includes(url.protocol) && Boolean(url.host)
+  } catch {
+    return false
+  }
+}
+
+export function createAttributeCodeSeed() {
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(-4)
+    .padStart(4, '0')
+}
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
 }
@@ -101,17 +137,33 @@ export function generateHexColorFromText(value) {
 }
 
 export function generateColorAttributeCode(value, seed = '') {
+  return generateAttributeCode(value, 'MS', 'MAU', seed)
+}
+
+export function generateAttributeCode(value, prefix = 'DM', fallback = 'ITEM', seed = '') {
   const normalized = normalizeAttributeText(value)
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '')
     .slice(0, 6)
+  const normalizedFallback = String(fallback || 'ITEM')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6) || 'ITEM'
 
-  const suffix = String(seed || Date.now().toString(36).toUpperCase().slice(-4))
+  const suffix = String(seed || createAttributeCodeSeed())
     .replace(/[^A-Z0-9]/g, '')
     .slice(-4)
     .padStart(4, '0')
 
-  return `MS${normalized || 'MAU'}${suffix}`
+  return `${prefix}${normalized || normalizedFallback}${suffix}`
+}
+
+export function generateWeightAttributeCode(value, seed = '') {
+  const normalized = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 4)
+
+  return generateAttributeCode(normalized ? `${normalized}G` : '', 'TL', 'GRAM', seed)
 }
 
 export function normalizeSizeValue(value) {

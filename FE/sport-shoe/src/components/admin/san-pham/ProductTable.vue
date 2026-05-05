@@ -63,7 +63,7 @@ function giaHienThi(item) {
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
-  return 'Ngừng kinh doanh'
+  return 'Ngừng bán'
 }
 
 function trangThaiClass(value) {
@@ -127,7 +127,7 @@ function handlePageSizeChange(size) {
             <th class="w-24 bg-slate-100 px-3 py-3 whitespace-nowrap">Loại giày</th>
             <th class="w-20 bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Số lượng</th>
             <th class="w-36 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
-            <th class="w-28 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
+            <th class="w-32 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
             <th class="w-24 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
           </tr>
         </thead>
@@ -165,7 +165,11 @@ function handlePageSizeChange(size) {
               </div>
             </td>
             <td class="px-2 py-4 align-middle">
-              <span class="inline-flex min-w-max whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="trangThaiClass(item.trangThai)">
+              <span
+                class="inline-flex max-w-[92px] overflow-hidden truncate whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
+                :class="trangThaiClass(item.trangThai)"
+                :title="trangThaiLabel(item.trangThai)"
+              >
                 {{ trangThaiLabel(item.trangThai) }}
               </span>
             </td>

@@ -134,6 +134,13 @@ function handleCreate() {
   emit('create', value)
 }
 
+function handleSearchKeydown(event) {
+  if (event.key !== 'Enter') return
+  if (!showCreateOption.value || props.creating) return
+  event.preventDefault()
+  handleCreate()
+}
+
 function handleDocumentClick(event) {
   if (!rootRef.value?.contains(event.target)) {
     closeDropdown()
@@ -191,7 +198,7 @@ onBeforeUnmount(() => {
             type="text"
             :placeholder="searchPlaceholder"
             class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-            @keydown.stop
+            @keydown.stop="handleSearchKeydown"
           />
         </div>
       </div>

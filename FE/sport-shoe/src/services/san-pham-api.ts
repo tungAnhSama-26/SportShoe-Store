@@ -210,6 +210,7 @@ export interface CapNhatGiayRequest {
 
 export interface TaoChiTietSanPhamRequest {
   giayId?: number
+  ma?: string
   ten?: string
   thuongHieuId?: number
   loaiGiayId?: number
@@ -238,6 +239,7 @@ export interface TaoChiTietSanPhamHangLoatItemRequest {
 
 export interface TaoChiTietSanPhamHangLoatRequest {
   giayId?: number
+  ma?: string
   ten?: string
   thuongHieuId?: number
   loaiGiayId?: number

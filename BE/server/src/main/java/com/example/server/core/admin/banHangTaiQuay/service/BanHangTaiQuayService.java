@@ -71,7 +71,12 @@ public class BanHangTaiQuayService {
     private static final int TRANG_THAI_PHIEU_HOAT_DONG = 1;
     private static final int TRANG_THAI_PHIEU_THEO_KH_DA_DUNG = 0;
     private static final int TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG = 1;
-    private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
+    private static final String DIA_CHI_TAI_QUAY = "Mua tại quầy";
+    private static final String DIA_CHI_TAI_QUAY_KHONG_DAU = "Mua tai quay";
+    private static final String GHI_CHU_TAO_HOA_DON_TAI_QUAY = "Hóa đơn chờ tạo từ màn hình bán hàng tại quầy";
+    private static final String KHACH_VANG_LAI = "Khách vãng lai";
+    private static final String KHONG_CO = "Không có";
+    private static final String KHONG_CO_KHONG_DAU = "Khong co";
     private static final String MA_HOA_DON_TAM_PREFIX = "HD";
 
     private final KhachHangRepository khachHangRepository;
@@ -276,7 +281,7 @@ public class BanHangTaiQuayService {
                 request.thongTinGiaoHang(),
                 request.items(),
                 TRANG_THAI_HOA_DON_CHO_XAC_NHAN,
-                "Hoa don cho tao tu man hinh ban hang tai quay"
+                GHI_CHU_TAO_HOA_DON_TAI_QUAY
         );
         luuLichSuHoaDon(savedHoaDon, TRANG_THAI_HOA_DON_CHO_XAC_NHAN, savedHoaDon.getGhiChu());
         List<HoaDonChiTiet> savedItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(savedHoaDon.getId());
@@ -921,7 +926,7 @@ public class BanHangTaiQuayService {
                 soDienThoaiMacDinh
         );
 
-        if (giaoHang && (soDienThoaiNguoiNhan == null || soDienThoaiNguoiNhan.isBlank() || "Khong co".equalsIgnoreCase(soDienThoaiNguoiNhan))) {
+        if (giaoHang && (soDienThoaiNguoiNhan == null || soDienThoaiNguoiNhan.isBlank() || laGiaTriKhongCo(soDienThoaiNguoiNhan))) {
             throw new BusinessException("Vui long nhap so dien thoai nguoi nhan");
         }
 
@@ -1037,7 +1042,7 @@ public class BanHangTaiQuayService {
         if (tenKhachHang != null && !tenKhachHang.isBlank()) {
             return tenKhachHang.trim();
         }
-        return "Khach le";
+        return KHACH_VANG_LAI;
     }
 
     private String laySoDienThoai(KhachHang khachHang, String soDienThoai) {
@@ -1047,33 +1052,66 @@ public class BanHangTaiQuayService {
         if (soDienThoai != null && !soDienThoai.isBlank()) {
             return soDienThoai.trim();
         }
-        return "Khong co";
+        return KHONG_CO;
     }
 
     private String resolveTenKhachHangHoaDon(HoaDon hoaDon) {
         if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getHoTen() != null && !hoaDon.getKhachHang().getHoTen().isBlank()) {
             return hoaDon.getKhachHang().getHoTen();
         }
-        return hoaDon.getTenNguoiNhan();
+        return normalizeLegacyDisplayValue(hoaDon.getTenNguoiNhan());
     }
 
     private String resolveSoDienThoaiKhachHangHoaDon(HoaDon hoaDon) {
         if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getSdt() != null && !hoaDon.getKhachHang().getSdt().isBlank()) {
             return hoaDon.getKhachHang().getSdt();
         }
-        return hoaDon.getSdtNguoiNhan();
+        return normalizeLegacyDisplayValue(hoaDon.getSdtNguoiNhan());
     }
 
     private ThongTinGiaoHangTaiQuayResponse mapThongTinGiaoHangHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null && !DIA_CHI_TAI_QUAY.equalsIgnoreCase(hoaDon.getDiaChiGiaoHang());
+        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null && !laDiaChiTaiQuay(hoaDon.getDiaChiGiaoHang());
         return new ThongTinGiaoHangTaiQuayResponse(
                 giaoHang,
-                hoaDon.getTenNguoiNhan(),
-                hoaDon.getSdtNguoiNhan(),
-                giaoHang ? hoaDon.getDiaChiGiaoHang() : "",
+                normalizeLegacyDisplayValue(hoaDon.getTenNguoiNhan()),
+                normalizeLegacyDisplayValue(hoaDon.getSdtNguoiNhan()),
+                giaoHang ? normalizeLegacyDisplayValue(hoaDon.getDiaChiGiaoHang()) : "",
                 vanChuyen != null ? defaultMoney(vanChuyen.getPhiVanChuyen()) : BigDecimal.ZERO,
                 vanChuyen != null ? vanChuyen.getDonViVanChuyen() : null
         );
+    }
+
+    private boolean laDiaChiTaiQuay(String diaChi) {
+        String normalized = normalizeTextKey(diaChi);
+        return normalized.equals(normalizeTextKey(DIA_CHI_TAI_QUAY))
+                || normalized.equals(normalizeTextKey(DIA_CHI_TAI_QUAY_KHONG_DAU));
+    }
+
+    private boolean laGiaTriKhongCo(String value) {
+        String normalized = normalizeTextKey(value);
+        return normalized.equals(normalizeTextKey(KHONG_CO))
+                || normalized.equals(normalizeTextKey(KHONG_CO_KHONG_DAU));
+    }
+
+    private String normalizeLegacyDisplayValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return switch (normalizeTextKey(value)) {
+            case "mua tai quay" -> DIA_CHI_TAI_QUAY;
+            case "khong co" -> KHONG_CO;
+            case "khach le", "khach vang lai" -> KHACH_VANG_LAI;
+            case "hoa don cho tao tu man hinh ban hang tai quay" -> GHI_CHU_TAO_HOA_DON_TAI_QUAY;
+            default -> value;
+        };
+    }
+
+    private String normalizeTextKey(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private BigDecimal defaultMoney(BigDecimal value) {

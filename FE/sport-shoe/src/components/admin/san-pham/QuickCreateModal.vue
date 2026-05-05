@@ -45,7 +45,7 @@ function handleInput(field, value) {
               <h2 class="text-xl font-black text-slate-900">
                 {{ definition.title }}
               </h2>
-              <p class="mt-1 text-sm text-slate-500">
+              <p v-if="definition.description" class="mt-1 text-sm text-slate-500">
                 {{ definition.description }}
               </p>
             </div>
@@ -70,26 +70,22 @@ function handleInput(field, value) {
                   {{ field.label }}
                 </label>
 
-                <div v-if="field.type === 'color'" class="flex items-center gap-3">
-                  <input
-                    :value="form[field.key]"
-                    type="color"
-                    class="h-11 w-16 rounded-2xl border border-slate-200 bg-white p-1"
-                    @input="handleInput(field.key, String($event.target.value || '').toUpperCase())"
-                  />
-                  <input
-                    :value="form[field.key]"
-                    type="text"
-                    maxlength="7"
-                    class="h-11 flex-1 rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                    :class="
-                      errors[field.key]
-                        ? 'border-rose-300 bg-rose-50'
-                        : 'border-slate-200 bg-slate-50'
-                    "
-                    placeholder="#000000"
-                    @input="handleInput(field.key, String($event.target.value || '').toUpperCase())"
-                  />
+                <div v-if="field.type === 'color'" class="flex flex-col gap-3">
+                  <div class="flex items-center gap-3">
+                    <input
+                      :value="form[field.key]"
+                      type="color"
+                      class="h-11 w-16 rounded-2xl border border-slate-200 bg-white p-1"
+                      @input="handleInput(field.key, String($event.target.value || '').toUpperCase())"
+                    />
+                    <input
+                      :value="form[field.key]"
+                      type="text"
+                      readonly
+                      class="h-11 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none"
+                      placeholder="#000000"
+                    />
+                  </div>
                 </div>
 
                 <input
@@ -97,11 +93,15 @@ function handleInput(field, value) {
                   :value="form[field.key]"
                   :type="field.type || 'text'"
                   :min="field.min"
+                  :readonly="field.readonly"
+                  :disabled="saving"
                   class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                   :class="[
                     errors[field.key]
                       ? 'border-rose-300 bg-rose-50'
-                      : 'border-slate-200 bg-slate-50',
+                      : field.readonly
+                        ? 'border-slate-200 bg-slate-100 text-slate-500'
+                        : 'border-slate-200 bg-slate-50',
                     field.uppercase ? 'uppercase' : '',
                   ]"
                   :placeholder="field.placeholder"
@@ -117,6 +117,10 @@ function handleInput(field, value) {
                 </p>
               </div>
             </div>
+
+            <p v-if="errors.general" class="mt-4 text-sm text-rose-500">
+              {{ errors.general }}
+            </p>
           </div>
 
           <div class="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
@@ -131,7 +135,7 @@ function handleInput(field, value) {
               @click="$emit('save')"
             >
               <Save :size="16" />
-              {{ saving ? "Đang thêm..." : "Thêm vào form" }}
+              {{ saving ? 'Đang thêm...' : 'Thêm vào form' }}
             </button>
           </div>
         </div>
