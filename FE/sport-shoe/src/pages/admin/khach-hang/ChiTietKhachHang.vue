@@ -25,6 +25,15 @@ const dangLuu = ref(false);
 const dangUpload = ref(false);
 const loiTrang = ref("");
 const loiForm = ref({ tenDangNhap: "", hoTen: "", email: "", matKhau: "" });
+
+function taoMatKhauNgauNhien(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!';
+  let result = '';
+  for (let i = 0; i < 10; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 const thongBao = ref("");
 const khachHang = ref(null);
 
@@ -98,11 +107,22 @@ async function onHuyenChange(code: number | null) {
 watch(() => form.value.hoTen, (v) => { if (laMoi) formDiaChi.value.hoTen = v; });
 watch(() => form.value.sdt, (v) => { if (laMoi) formDiaChi.value.sdt = v; });
 
+// Tự động tạo tên đăng nhập từ phần trước @ của email
+watch(() => form.value.email, (email) => {
+  if (!laMoi) return;
+  const atIndex = email.indexOf('@');
+  form.value.tenDangNhap = atIndex > 0 ? email.substring(0, atIndex) : '';
+});
+
 const matKhauMoi = ref("");
 const showDoiMatKhau = ref(false);
 
 async function taiChiTiet() {
-  if (laMoi) { await taiDsTinh(); return; }
+  if (laMoi) {
+    form.value.matKhau = taoMatKhauNgauNhien();
+    await taiDsTinh();
+    return;
+  }
   dangTai.value = true;
   try {
     const data = await layChiTietKhachHang(id!);
@@ -141,20 +161,12 @@ async function luu() {
   loiForm.value = { tenDangNhap: "", hoTen: "", email: "", matKhau: "" };
   let hasError = false;
 
-  if (laMoi && !form.value.tenDangNhap.trim()) {
-    loiForm.value.tenDangNhap = "Vui lòng nhập tên đăng nhập cho khách hàng.";
-    hasError = true;
-  }
   if (!form.value.hoTen.trim()) {
     loiForm.value.hoTen = "Vui lòng nhập họ tên khách hàng.";
     hasError = true;
   }
   if (form.value.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
     loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
-    hasError = true;
-  }
-  if (laMoi && !form.value.matKhau.trim()) {
-    loiForm.value.matKhau = "Vui lòng nhập mật khẩu cho khách hàng mới.";
     hasError = true;
   }
   if (laMoi && !validateDiaChi()) hasError = true;
@@ -177,12 +189,16 @@ async function luu() {
       await themDiaChi(result.id, formDiaChi.value);
       if (typeof window !== "undefined") {
         const emailDaNhap = form.value.email.trim();
+        const matKhauDaTao = form.value.matKhau;
+        const tenDangNhapDaTao = form.value.tenDangNhap;
         window.sessionStorage.setItem(
           CUSTOMER_CREATE_TOAST_KEY,
           JSON.stringify({
             loai: "success",
             tieuDe: "Đã tạo khách hàng mới",
-            noiDung: emailDaNhap ? `Email đã lưu: ${emailDaNhap}` : "Khách hàng này chưa có email.",
+            noiDung: emailDaNhap
+              ? `Email đã lưu: ${emailDaNhap} | Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`
+              : `Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`,
           }),
         );
       }
@@ -348,12 +364,6 @@ onMounted(taiChiTiet);
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-              <label class="space-y-2" v-if="laMoi">
-                <span class="text-[13px] font-semibold text-slate-500">Tên đăng nhập <span class="text-rose-500">*</span></span>
-                <input v-model="form.tenDangNhap" type="text" placeholder="Nhập tên đăng nhập" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.tenDangNhap ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
-                <p v-if="loiForm.tenDangNhap" class="text-xs text-rose-500">{{ loiForm.tenDangNhap }}</p>
-              </label>
-
               <label class="space-y-2">
                 <span class="text-[13px] font-semibold text-slate-500">Họ và tên <span class="text-rose-500">*</span></span>
                 <input v-model="form.hoTen" type="text" placeholder="Nhập họ tên" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.hoTen ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
@@ -375,13 +385,8 @@ onMounted(taiChiTiet);
                 <span class="text-[13px] font-semibold text-slate-500">Ngày sinh</span>
                 <input v-model="form.ngaySinh" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition" />
               </label>
-
-              <label class="space-y-2" v-if="laMoi">
-                <span class="text-[13px] font-semibold text-slate-500">Mật khẩu <span class="text-rose-500">*</span></span>
-                <input v-model="form.matKhau" type="password" placeholder="Tối thiểu 6 ký tự" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.matKhau ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
-                <p v-if="loiForm.matKhau" class="text-xs text-rose-500">{{ loiForm.matKhau }}</p>
-              </label>
             </div>
+
 
             <!-- Nút Lưu thay đổi chỉ hiện ở đây khi chỉnh sửa -->
             <div v-if="!laMoi" class="flex items-center gap-3 pt-4 border-t border-slate-100">
