@@ -1,6 +1,6 @@
 package com.example.server.utils;
 
-import com.example.server.infrastructure.AppProperties;
+import com.example.server.infrastructure.config.AppProperties;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

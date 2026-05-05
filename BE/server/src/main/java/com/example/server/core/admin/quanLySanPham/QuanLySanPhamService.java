@@ -421,7 +421,7 @@ public class QuanLySanPhamService {
             }
 
             giayDetail = taoGiay(new TaoGiayRequest(
-                    taoMaGiayTuDong(),
+                    req.ma(),
                     req.ten().trim(),
                     req.thuongHieuId(),
                     req.loaiGiayId(),
@@ -494,7 +494,7 @@ public class QuanLySanPhamService {
             }
 
             giayDetail = taoGiay(new TaoGiayRequest(
-                    taoMaGiayTuDong(),
+                    req.ma(),
                     req.ten().trim(),
                     req.thuongHieuId(),
                     req.loaiGiayId(),

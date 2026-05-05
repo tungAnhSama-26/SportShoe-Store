@@ -1,10 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import {
-  DEFAULT_COLOR_HEX,
-  generateColorAttributeCode,
   generateHexColorFromText,
   isValidHexColor,
-  normalizeSizeValue,
 } from '../utils/thuoc-tinh-san-pham.js'
 
 export function useVariantBuilder() {
@@ -65,29 +62,40 @@ export function useVariantBuilder() {
 
   function validateVariantBuilder() {
     clearVariantErrors()
-    if (!variantBuilder.mauSacIds.length)
+
+    if (!variantBuilder.mauSacIds.length) {
       variantErrors.mauSacIds = 'Vui lòng chọn ít nhất một màu sắc để tạo biến thể'
-    if (!variantBuilder.kichCoIds.length)
+    }
+
+    if (!variantBuilder.kichCoIds.length) {
       variantErrors.kichCoIds = 'Vui lòng chọn ít nhất một kích cỡ để tạo biến thể'
+    }
+
     assignVariantDefaultFieldErrors()
     return Object.keys(variantErrors).length === 0
   }
 
-  function mauSacLabel(danhMuc, id) {
-    return danhMuc?.mauSac?.find((item) => item.id === Number(id))?.ten || `Màu #${id}`
+  function findCategoryItem(categories, key, id) {
+    return (categories?.[key] || []).find((item) => Number(item.id) === Number(id)) || null
   }
 
-  function mauSacHex(danhMuc, id) {
-    const hexColor = danhMuc?.mauSac?.find((item) => item.id === Number(id))?.maMauHex
-    return isValidHexColor(hexColor) ? String(hexColor).toUpperCase() : generateHexColorFromText(mauSacLabel(danhMuc, id))
+  function mauSacLabel(categories, id) {
+    return findCategoryItem(categories, 'mauSac', id)?.ten || `Màu #${id}`
   }
 
-  function kichCoLabel(danhMuc, id) {
-    return danhMuc?.kichCo?.find((item) => item.id === Number(id))?.giaTri || `Size #${id}`
+  function mauSacHex(categories, id) {
+    const hexColor = findCategoryItem(categories, 'mauSac', id)?.maMauHex
+    return isValidHexColor(hexColor)
+      ? String(hexColor).toUpperCase()
+      : generateHexColorFromText(mauSacLabel(categories, id))
   }
 
-  function generateVariants() {
-    if (!validateVariantBuilder()) return
+  function kichCoLabel(categories, id) {
+    return findCategoryItem(categories, 'kichCo', id)?.giaTri || `Size #${id}`
+  }
+
+  function generateVariants(categories) {
+    if (!validateVariantBuilder()) return null
 
     const existingMap = new Map(
       generatedVariants.value.map((item) => [
@@ -100,14 +108,15 @@ export function useVariantBuilder() {
       variantBuilder.kichCoIds.map((kichCoId) => {
         const key = `${mauSacId}-${kichCoId}`
         const existingVariant = existingMap.get(key)
+
         return (
           existingVariant || {
             key,
             mauSacId: Number(mauSacId),
-            mauSac: mauSacLabel(null, mauSacId), // We'll need to pass danhMuc
-            maMauHex: mauSacHex(null, mauSacId), // We'll need to pass danhMuc
+            mauSac: mauSacLabel(categories, mauSacId),
+            maMauHex: mauSacHex(categories, mauSacId),
             kichCoId: Number(kichCoId),
-            kichCo: kichCoLabel(null, kichCoId), // We'll need to pass danhMuc
+            kichCo: kichCoLabel(categories, kichCoId),
             soLuong: Number(variantBuilder.soLuong),
             giaGoc: Number(variantBuilder.giaGoc),
             giaBan: Number(variantBuilder.giaBan),
@@ -118,13 +127,15 @@ export function useVariantBuilder() {
 
     generatedVariants.value = generatedVariants.value.map((item) => ({
       ...item,
+      mauSac: mauSacLabel(categories, item.mauSacId),
       maMauHex: isValidHexColor(item.maMauHex)
         ? String(item.maMauHex).toUpperCase()
-        : mauSacHex(null, item.mauSacId), // We'll need to pass danhMuc
+        : mauSacHex(categories, item.mauSacId),
+      kichCo: kichCoLabel(categories, item.kichCoId),
     }))
 
     delete variantErrors.generated
-    return 'Đã tạo thành công ' + generatedVariants.value.length + ' chi tiết sản phẩm'
+    return `Đã tạo thành công ${generatedVariants.value.length} chi tiết sản phẩm`
   }
 
   function removeGeneratedVariant(key) {
@@ -151,6 +162,17 @@ export function useVariantBuilder() {
     variantBuilder[field] = []
   }
 
+  function appendSelectedValue(field, id) {
+    const numericId = Number(id)
+    const currentValues = Array.isArray(variantBuilder[field]) ? variantBuilder[field] : []
+
+    if (currentValues.includes(numericId)) {
+      return
+    }
+
+    variantBuilder[field] = [...currentValues, numericId]
+  }
+
   function applyGeneratedDefaults() {
     assignVariantDefaultFieldErrors()
     if (variantErrors.soLuong || variantErrors.giaGoc || variantErrors.giaBan) {
@@ -174,7 +196,6 @@ export function useVariantBuilder() {
   }
 
   return {
-    // Reactive data
     variantBuilder,
     variantErrors,
     generatedVariants,
@@ -182,17 +203,14 @@ export function useVariantBuilder() {
     kichCoSearch,
     openVariantDropdown,
     draftColorImages,
-
-    // Computed
     representativeGeneratedVariants,
-
-    // Methods
     generateVariants,
     applyGeneratedDefaults,
     removeGeneratedVariant,
     toggleVariantDropdown,
     toggleSelectedValue,
     clearSelectedValues,
+    appendSelectedValue,
     updateDraftImagesForColor,
   }
 }

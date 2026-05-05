@@ -102,7 +102,7 @@ function handleFilterChange() {
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả trạng thái</option>
-            <option :value="0">Ngừng kinh doanh</option>
+            <option :value="0">Ngừng bán</option>
             <option :value="1">Kinh doanh</option>
             <option :value="2">Hết hàng</option>
           </select>

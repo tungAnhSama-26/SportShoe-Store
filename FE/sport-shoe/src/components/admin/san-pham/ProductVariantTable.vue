@@ -1,5 +1,5 @@
 <script setup>
-import { Eye, Layers3, Tag, Images } from 'lucide-vue-next'
+import { Eye, Images, Layers3, Tag } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 
@@ -44,6 +44,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'toggle-status',
+  'open-discount-detail',
   'open-qr',
   'refresh',
   'update:current-page',
@@ -88,6 +89,7 @@ function formatDiscountPercent(item) {
       return formatPercentValue((giaTriGiam / giaGoc) * 100)
     }
   }
+
   if (giaGoc <= 0 || giaBan >= giaGoc) return '—'
 
   return formatPercentValue(((giaGoc - giaBan) / giaGoc) * 100)
@@ -136,7 +138,6 @@ function handlePageSizeChange(size) {
 
 function openDiscountDetail(item) {
   if (!item?.dotGiamGiaId) return
-  // Assuming router is available, but since it's a component, emit event
   emit('open-discount-detail', item)
 }
 </script>
@@ -160,12 +161,12 @@ function openDiscountDetail(item) {
             <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã SP</th>
             <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã CTSP</th>
             <th class="w-16 bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Ảnh</th>
-            <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Màu sắc</th>
+            <th class="w-32 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Màu sắc</th>
             <th class="w-16 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Kích cỡ</th>
-            <th class="w-18 bg-slate-100 px-2 py-3 whitespace-nowrap text-center">Số lượng</th>
+            <th class="w-18 bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Số lượng</th>
             <th class="w-32 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
-            <th class="w-18 bg-slate-100 px-2 py-3 whitespace-nowrap text-center">Giảm</th>
-            <th class="w-24 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
+            <th class="w-18 bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Giảm</th>
+            <th class="w-28 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
             <th class="w-24 rounded-tr-2xl bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
           </tr>
         </thead>
@@ -199,13 +200,16 @@ function openDiscountDetail(item) {
                 <Images class="h-4 w-4 text-slate-300" v-else />
               </div>
             </td>
-            <td class="px-2.5 py-4 align-middle">
-              <div class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+            <td class="px-2.5 py-4 align-middle whitespace-nowrap">
+              <div
+                class="inline-flex min-w-max items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+                :title="item.mauSac"
+              >
                 <span
                   class="h-2.5 w-2.5 rounded-full border border-black/5"
                   :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                 ></span>
-                <span class="whitespace-normal break-words">{{ item.mauSac }}</span>
+                <span class="whitespace-nowrap">{{ item.mauSac }}</span>
               </div>
             </td>
             <td class="px-2.5 py-4 align-middle font-bold text-slate-900 whitespace-nowrap">
@@ -238,7 +242,11 @@ function openDiscountDetail(item) {
               <span v-else class="text-xs text-slate-400">—</span>
             </td>
             <td class="px-2 py-4 align-middle">
-              <span class="inline-flex rounded-full px-2.5 py-1 text-center text-xs font-semibold whitespace-normal" :class="bienTheTrangThaiClass(item)">
+              <span
+                class="inline-flex max-w-[92px] overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-center text-xs font-semibold"
+                :class="bienTheTrangThaiClass(item)"
+                :title="bienTheTrangThaiLabel(item)"
+              >
                 {{ bienTheTrangThaiLabel(item) }}
               </span>
             </td>
@@ -274,9 +282,9 @@ function openDiscountDetail(item) {
       :page-size-options="pageSizeOptions"
       :total-items="totalItems"
       :total-pages="totalPages"
-      zero-based
       compact
       show-refresh
+      zero-based
       @refresh="$emit('refresh', currentPage)"
       @update:current-page="$emit('update:current-page', $event)"
       @update:page-size="handlePageSizeChange"

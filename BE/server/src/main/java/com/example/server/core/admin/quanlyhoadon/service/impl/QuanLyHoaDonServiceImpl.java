@@ -58,11 +58,15 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private static final int TRANG_THAI_CAN_HOAN_TIEN = 8;
     
     private static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
-private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
-private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
-private static final int TRANG_THAI_THANH_TOAN_THANH_CONG = 1;
-private static final int TRANG_THAI_HINH_ANH_HOAT_DONG = 1;
-private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
+    private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
+    private static final int TRANG_THAI_VAN_CHUYEN_HOAN_THANH = 3;
+    private static final int TRANG_THAI_THANH_TOAN_THANH_CONG = 1;
+    private static final int TRANG_THAI_HINH_ANH_HOAT_DONG = 1;
+    private static final String DIA_CHI_TAI_QUAY = "Mua tại quầy";
+    private static final String DIA_CHI_TAI_QUAY_KHONG_DAU = "Mua tai quay";
+    private static final String GHI_CHU_TAO_HOA_DON_TAI_QUAY = "Hóa đơn chờ tạo từ màn hình bán hàng tại quầy";
+    private static final String KHACH_VANG_LAI = "Khách vãng lai";
+    private static final String KHONG_CO = "Không có";
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
@@ -409,9 +413,9 @@ private static final String DIA_CHI_TAI_QUAY = "Mua tai quay";
                 lichSu.getId(),
                 lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : "Hệ thống",
                 lichSu.getNhanVien() != null ? lichSu.getNhanVien().getHoTen() : "Hệ thống",
-                lichSu.getTrangThai(),
+                normalizeLegacyDisplayValue(lichSu.getTrangThai()),
                 lichSu.getNgayTao(),
-                lichSu.getGhiChu()
+                normalizeLegacyDisplayValue(lichSu.getGhiChu())
         );
     }
 
@@ -568,7 +572,7 @@ private boolean isTaiQuay(Integer kenhBan) {
 
 private boolean isDonGiaoHang(HoaDon hoaDon) {
     String diaChi = safeValue(hoaDon.getDiaChiGiaoHang());
-    return !diaChi.isBlank() && !DIA_CHI_TAI_QUAY.equalsIgnoreCase(diaChi.trim());
+    return !diaChi.isBlank() && !laDiaChiTaiQuay(diaChi);
 }
 
     private String resolveTenKhachHang(HoaDon hoaDon) {
@@ -580,7 +584,7 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
 
     private String resolveEmail(KhachHang khachHang) {
         if (khachHang == null || khachHang.getEmail() == null || khachHang.getEmail().isBlank()) {
-            return "Không có";
+            return KHONG_CO;
         }
         return khachHang.getEmail();
     }
@@ -643,11 +647,38 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
         return value == null ? "" : value.trim();
     }
 
+    private boolean laDiaChiTaiQuay(String diaChi) {
+        String normalized = normalizeTextKey(diaChi);
+        return normalized.equals(normalizeTextKey(DIA_CHI_TAI_QUAY))
+                || normalized.equals(normalizeTextKey(DIA_CHI_TAI_QUAY_KHONG_DAU));
+    }
+
+    private String normalizeLegacyDisplayValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return switch (normalizeTextKey(value)) {
+            case "mua tai quay" -> DIA_CHI_TAI_QUAY;
+            case "khong co" -> KHONG_CO;
+            case "khach le", "khach vang lai" -> KHACH_VANG_LAI;
+            case "hoa don cho tao tu man hinh ban hang tai quay" -> GHI_CHU_TAO_HOA_DON_TAI_QUAY;
+            default -> value;
+        };
+    }
+
+    private String normalizeTextKey(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
     private BigDecimal defaultMoney(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
     }
 
     private String safeValue(String value) {
-        return value == null ? "" : value;
+        return value == null ? "" : normalizeLegacyDisplayValue(value);
     }
 }
