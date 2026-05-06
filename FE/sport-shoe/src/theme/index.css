@@ -64,6 +64,15 @@
     letter-spacing: -0.02em;
   }
 
+  .admin-content {
+    min-width: 0;
+  }
+
+  .admin-content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .admin-content h2,
   .admin-content h3 {
     font-weight: 500 !important;
@@ -359,4 +368,43 @@ table td * {
 
 .table-text-nowrap {
   white-space: nowrap !important;
+}
+
+.admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-scroll > table {
+  width: 100%;
+}
+
+@media (max-width: 1279px) {
+  .danh-muc-table,
+  .admin-table {
+    min-width: 760px;
+  }
+
+  .admin-table--wide {
+    min-width: 960px;
+  }
+}
+
+@media (max-width: 767px) {
+  .danh-muc-table,
+  .admin-table {
+    min-width: 640px;
+  }
+
+  .admin-table--wide {
+    min-width: 760px;
+  }
+
+  .admin-table--compact {
+    min-width: 560px;
+  }
 }

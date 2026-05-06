@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
     <SidebarAdmin />
     <div class="flex-1 flex min-w-0 flex-col">
       <HeaderAdmin />
-      <main class="admin-content flex-1 overflow-x-hidden p-4 lg:p-6">
+      <main class="admin-content flex-1 w-full min-w-0 overflow-x-hidden p-4 lg:p-6">
         <router-view />
       </main>
     </div>
