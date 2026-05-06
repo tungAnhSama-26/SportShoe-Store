@@ -116,8 +116,8 @@ function handlePageSizeChange(size) {
       </div>
     </div>
 
-    <div class="overflow-hidden rounded-[24px] border border-slate-100">
-      <table class="w-full table-auto border-separate border-spacing-0 text-sm">
+    <div class="admin-table-scroll rounded-[24px] border border-slate-100">
+      <table class="min-w-[980px] w-full table-auto border-separate border-spacing-0 text-sm">
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950">
             <th class="w-14 rounded-tl-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>

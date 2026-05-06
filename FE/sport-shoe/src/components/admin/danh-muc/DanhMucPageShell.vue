@@ -141,7 +141,7 @@ function onKeywordInput(event) {
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="admin-table-scroll">
         <slot name="table" />
       </div>
 

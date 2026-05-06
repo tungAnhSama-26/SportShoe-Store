@@ -427,8 +427,8 @@ onMounted(taiDanhSach);
         {{ loiTrang }}
       </div>
 
-      <div class="overflow-hidden">
-        <table class="w-full table-fixed border-separate border-spacing-y-2 text-[13px]">
+      <div class="admin-table-scroll">
+        <table class="min-w-[1040px] w-full table-fixed border-separate border-spacing-y-2 text-[13px]">
           <colgroup>
             <col class="w-[5%]" />
             <col class="w-[17%]" />

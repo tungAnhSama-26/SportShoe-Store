@@ -407,8 +407,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-[24px] border border-slate-100">
-        <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
+      <div class="admin-table-scroll rounded-[24px] border border-slate-100">
+        <table class="min-w-[980px] w-full table-fixed border-separate border-spacing-0 text-sm">
           <thead>
             <tr class="text-left text-[13px] font-bold text-slate-950">
               <th class="w-16 rounded-tl-2xl bg-slate-100 px-4 py-3">STT</th>
