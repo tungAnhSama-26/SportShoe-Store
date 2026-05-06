@@ -154,20 +154,33 @@ function openDiscountDetail(item) {
     </div>
 
     <div class="admin-table-scroll rounded-[24px] border border-slate-100">
-      <table class="min-w-[1100px] w-full table-auto border-separate border-spacing-0 text-sm">
+      <table class="min-w-[1120px] w-full table-fixed border-separate border-spacing-0 text-sm">
+        <colgroup>
+          <col class="w-[4.5%]" />
+          <col class="w-[9%]" />
+          <col class="w-[11%]" />
+          <col class="w-[7%]" />
+          <col class="w-[14%]" />
+          <col class="w-[7%]" />
+          <col class="w-[8%]" />
+          <col class="w-[15%]" />
+          <col class="w-[7.5%]" />
+          <col class="w-[10.5%]" />
+          <col class="w-[6.5%]" />
+        </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950">
-            <th class="w-12 rounded-tl-2xl bg-slate-100 px-2.5 py-3 whitespace-nowrap">STT</th>
-            <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã SP</th>
-            <th class="w-24 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã CTSP</th>
-            <th class="w-16 bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Ảnh</th>
-            <th class="w-32 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Màu sắc</th>
-            <th class="w-16 bg-slate-100 px-2.5 py-3 whitespace-nowrap">Kích cỡ</th>
-            <th class="w-18 bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Số lượng</th>
-            <th class="w-32 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
-            <th class="w-18 bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Giảm</th>
-            <th class="w-28 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
-            <th class="w-24 rounded-tr-2xl bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
+            <th class="rounded-tl-2xl bg-slate-100 px-2.5 py-3 whitespace-nowrap">STT</th>
+            <th class="bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã SP</th>
+            <th class="bg-slate-100 px-2.5 py-3 whitespace-nowrap">Mã CTSP</th>
+            <th class="bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Ảnh</th>
+            <th class="bg-slate-100 px-2.5 py-3 whitespace-nowrap">Màu sắc</th>
+            <th class="bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Kích cỡ</th>
+            <th class="bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Số lượng</th>
+            <th class="bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
+            <th class="bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Giảm</th>
+            <th class="bg-slate-100 px-2 py-3 text-center whitespace-nowrap">Trạng thái</th>
+            <th class="rounded-tr-2xl bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -188,10 +201,10 @@ function openDiscountDetail(item) {
             <td class="rounded-l-2xl px-2.5 py-4 align-middle font-semibold text-slate-500 whitespace-nowrap">
               {{ currentPage * pageSize + index + 1 }}
             </td>
-            <td class="px-2.5 py-4 align-middle font-bold text-slate-950 break-all">
+            <td class="px-2.5 py-4 align-middle font-bold text-slate-950 break-words">
               {{ item.maSanPham }}
             </td>
-            <td class="px-2.5 py-4 align-middle font-bold text-slate-900 break-all">
+            <td class="px-2.5 py-4 align-middle font-bold text-slate-900 break-words">
               {{ item.maChiTietSanPham }}
             </td>
             <td class="px-2.5 py-4 align-middle">
@@ -200,26 +213,26 @@ function openDiscountDetail(item) {
                 <Images class="h-4 w-4 text-slate-300" v-else />
               </div>
             </td>
-            <td class="px-2.5 py-4 align-middle whitespace-nowrap">
+            <td class="px-2.5 py-4 align-middle">
               <div
-                class="inline-flex min-w-max items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+                class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
                 :title="item.mauSac"
               >
                 <span
                   class="h-2.5 w-2.5 rounded-full border border-black/5"
                   :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                 ></span>
-                <span class="whitespace-nowrap">{{ item.mauSac }}</span>
+                <span class="truncate whitespace-nowrap">{{ item.mauSac }}</span>
               </div>
             </td>
-            <td class="px-2.5 py-4 align-middle font-bold text-slate-900 whitespace-nowrap">
+            <td class="px-2.5 py-4 align-middle text-center font-bold text-slate-900 whitespace-nowrap">
               {{ item.kichCo }}
             </td>
             <td class="px-2 py-4 align-middle text-center font-bold text-slate-900 whitespace-nowrap">
               {{ Number(item.soLuong || 0).toLocaleString('vi-VN') }}
             </td>
-            <td class="px-2 py-4 align-middle whitespace-nowrap">
-              <div class="flex min-h-[48px] flex-col justify-center">
+            <td class="px-2 py-4 align-middle">
+              <div class="flex min-h-[56px] flex-col justify-center leading-6">
                 <p class="font-semibold" :class="isDiscounted(item) ? 'text-rose-600' : 'text-slate-800'">
                   {{ formatCurrency(item.giaBan) }} đ
                 </p>
@@ -241,9 +254,9 @@ function openDiscountDetail(item) {
               </button>
               <span v-else class="text-xs text-slate-400">—</span>
             </td>
-            <td class="px-2 py-4 align-middle">
+            <td class="px-2 py-4 align-middle text-center">
               <span
-                class="inline-flex max-w-[92px] overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1 text-center text-xs font-semibold"
+                class="inline-flex min-w-[108px] items-center justify-center overflow-hidden truncate whitespace-nowrap rounded-full px-2 py-1.5 text-center text-xs font-semibold"
                 :class="bienTheTrangThaiClass(item)"
                 :title="bienTheTrangThaiLabel(item)"
               >

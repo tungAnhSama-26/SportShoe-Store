@@ -56,6 +56,40 @@ function dinhDangNgay(ngay: string) {
   }).format(new Date(ngay));
 }
 
+function chuanHoaChuoi(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
+}
+
+function hienThiVaiTro(nv: any) {
+  const normalizedRole = chuanHoaChuoi(nv?.tenVaiTro);
+  if (normalizedRole.includes("admin") || normalizedRole.includes("quan tri")) {
+    return "Admin";
+  }
+  if (normalizedRole.includes("ban hang") || Number(nv?.vaiTro) === 2) {
+    return "Bán hàng";
+  }
+  if (normalizedRole.includes("kho") || Number(nv?.vaiTro) === 3) {
+    return "Kho";
+  }
+  return nv?.tenVaiTro || "—";
+}
+
+function hienThiTrangThai(nv: any) {
+  const normalizedStatus = chuanHoaChuoi(nv?.tenTrangThai);
+  if (normalizedStatus.includes("hoat dong") || Number(nv?.trangThai) === 1) {
+    return "Hoạt động";
+  }
+  if (normalizedStatus.includes("khoa") || Number(nv?.trangThai) === 0) {
+    return "Khóa";
+  }
+  return nv?.tenTrangThai || "—";
+}
+
 // Phân trang
 const soPhanTuMotTrang = ref(5);
 const trangHienTai = ref(1);
@@ -119,12 +153,10 @@ function xuatExcel() {
       { label: "STT", value: (_, index) => index + 1 },
       { label: "Mã NV", key: "ma" },
       { label: "Họ tên", key: "hoTen" },
-      { label: "CCCD", value: (row) => row.cccd || "—" },
       { label: "Email", key: "email" },
       { label: "Số điện thoại", value: (row) => row.sdt || "—" },
-      { label: "Vai trò", value: (row) => row.tenVaiTro || "—" },
-      { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
-      { label: "Trạng thái", value: (row) => row.tenTrangThai || "—" },
+      { label: "Vai trò", value: (row) => hienThiVaiTro(row) },
+      { label: "Trạng thái", value: (row) => hienThiTrangThai(row) },
     ],
     rows: danhSach.value,
   });
@@ -215,7 +247,7 @@ onMounted(taiDanhSach);
               <input
                 v-model="boLoc.keyword"
                 type="text"
-                placeholder="Tìm theo mã, họ tên, CCCD, email, SĐT..."
+                placeholder="Tìm theo mã, họ tên, email, SĐT..."
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
@@ -297,33 +329,31 @@ onMounted(taiDanhSach);
 
       <div class="overflow-x-auto">
         <table
-          class="min-w-[1040px] w-full border-separate border-spacing-y-2 text-sm"
+          class="w-full table-fixed border-separate border-spacing-y-2 text-sm"
         >
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Ảnh</th>
-              <th class="bg-slate-100 px-4 py-3">Mã NV</th>
-              <th class="bg-slate-100 px-4 py-3">Họ tên</th>
-              <th class="bg-slate-100 px-4 py-3">CCCD</th>
-              <th class="bg-slate-100 px-4 py-3">Email</th>
-              <th class="bg-slate-100 px-4 py-3">Số điện thoại</th>
-              <th class="bg-slate-100 px-4 py-3">Vai trò</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày tạo</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">
+              <th class="w-14 rounded-l-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
+              <th class="w-16 bg-slate-100 px-3 py-3 whitespace-nowrap">Ảnh</th>
+              <th class="w-24 bg-slate-100 px-3 py-3 whitespace-nowrap">Mã NV</th>
+              <th class="w-[20%] bg-slate-100 px-3 py-3 whitespace-nowrap">Họ tên</th>
+              <th class="w-[24%] bg-slate-100 px-3 py-3 whitespace-nowrap">Email</th>
+              <th class="w-36 bg-slate-100 px-3 py-3 whitespace-nowrap">Số điện thoại</th>
+              <th class="w-28 bg-slate-100 px-3 py-3 whitespace-nowrap">Vai trò</th>
+              <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="w-24 rounded-r-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">
                 Hành động
               </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                 Đang tải dữ liệu nhân viên...
               </td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                 Không có nhân viên phù hợp.
               </td>
             </tr>
@@ -332,10 +362,10 @@ onMounted(taiDanhSach);
               :key="nv.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-4 py-3 font-semibold">
+              <td class="rounded-l-2xl px-3 py-3 font-semibold">
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
-              <td class="px-4 py-3">
+              <td class="px-3 py-3">
                 <img
                   :src="
                     nv.hinhAnh ||
@@ -347,33 +377,41 @@ onMounted(taiDanhSach);
                   class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
                 />
               </td>
-              <td class="px-4 py-3 font-semibold text-slate-800">
-                {{ nv.ma }}
+              <td class="px-3 py-3 font-semibold text-slate-800">
+                <div class="truncate" :title="nv.ma">
+                  {{ nv.ma }}
+                </div>
               </td>
-              <td class="px-4 py-3 font-semibold text-slate-800">
-                {{ nv.hoTen }}
+              <td class="px-3 py-3 font-semibold text-slate-800">
+                <div class="truncate" :title="nv.hoTen">
+                  {{ nv.hoTen }}
+                </div>
               </td>
-              <td class="px-4 py-3 font-mono text-slate-600">
-                {{ nv.cccd || "—" }}
+              <td class="px-3 py-3 text-slate-600">
+                <div class="truncate" :title="nv.email">
+                  {{ nv.email }}
+                </div>
               </td>
-              <td class="px-4 py-3 text-slate-600">{{ nv.email }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ nv.sdt || "—" }}</td>
-              <td class="px-4 py-3 text-slate-600">
-                {{ nv.tenVaiTro || "—" }}
+              <td class="px-3 py-3 text-slate-600">
+                <div class="truncate" :title="nv.sdt || '—'">
+                  {{ nv.sdt || "—" }}
+                </div>
               </td>
-              <td class="px-4 py-3 text-slate-600">
-                {{ dinhDangNgay(nv.ngayTao) }}
+              <td class="px-3 py-3 text-slate-600">
+                <div class="truncate" :title="hienThiVaiTro(nv)">
+                  {{ hienThiVaiTro(nv) }}
+                </div>
               </td>
-              <td class="px-4 py-3">
+              <td class="px-3 py-3">
                 <span
-                  class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                  class="inline-flex min-w-[104px] justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold"
                   :class="mauTrangThai(nv.trangThai)"
                 >
-                  {{ nv.tenTrangThai }}
+                  {{ hienThiTrangThai(nv) }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-3 align-top text-center">
-                <div class="flex items-center justify-center gap-1">
+              <td class="rounded-r-2xl px-3 py-3 align-top text-center">
+                <div class="flex items-center justify-center gap-0.5">
                   <AdminQuickStatusAction
                     v-if="adminSession.vaiTro === 'Quản trị viên'"
                     :loading="dangDoiTrangThai === nv.id"

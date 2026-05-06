@@ -884,54 +884,52 @@ onMounted(taiChiTiet);
         </div>
       </section>
 
-      <section class="grid gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
-        <div class="rounded-[26px] border border-slate-200 bg-white px-5 py-4 shadow-sm xl:col-span-2">
+      <section class="grid gap-3">
+        <div class="rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm">
           <div class="mb-4 flex items-center justify-between gap-4">
-            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-              <Package class="h-4.5 w-4.5 text-slate-500" />
+            <h2 class="flex items-center gap-2 text-base font-semibold text-slate-700">
+              <Package class="h-5 w-5 text-slate-500" />
               Danh Sách Sản Phẩm ({{ hoaDon.sanPham?.length || 0 }})
             </h2>
           </div>
 
           <div class="overflow-x-auto">
-            <table class="min-w-[980px] w-full text-sm">
+            <table class="w-full table-auto text-[15px]">
               <thead>
-                <tr class="bg-slate-100 text-left text-[11px] font-bold tracking-wide text-slate-950">
-                  <th class="rounded-l-2xl px-4 py-3">STT</th>
-                  <th class="px-4 py-3">Ảnh</th>
-                  <th class="px-4 py-3">Sản Phẩm</th>
-                  <th class="px-4 py-3">Màu Sắc</th>
-                  <th class="px-4 py-3">Số Lượng</th>
-                  <th class="px-4 py-3">Thời Gian</th>
-                  <th class="px-4 py-3">Đơn Giá</th>
-                  <th class="rounded-r-2xl px-4 py-3">Tổng Tiền</th>
+                <tr class="bg-slate-100 text-left text-xs font-bold tracking-wide text-slate-950">
+                  <th class="rounded-l-2xl px-5 py-3.5">STT</th>
+                  <th class="px-5 py-3.5">Ảnh</th>
+                  <th class="px-5 py-3.5">Sản Phẩm</th>
+                  <th class="px-5 py-3.5">Màu Sắc</th>
+                  <th class="px-5 py-3.5">Số Lượng</th>
+                  <th class="px-5 py-3.5">Thời Gian</th>
+                  <th class="px-5 py-3.5">Đơn Giá</th>
+                  <th class="rounded-r-2xl px-5 py-3.5">Tổng Tiền</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(item, index) in hoaDon.sanPham" :key="item.id" class="border-b border-slate-100 last:border-b-0">
-                  <td class="px-4 py-5 font-semibold text-slate-600">{{ index + 1 }}</td>
-                  <td class="px-4 py-5">
-                    <img :src="item.hinhAnh || 'https://via.placeholder.com/72x72?text=Shoe'" class="h-12 w-12 rounded-xl object-cover" />
+                  <td class="px-5 py-6 font-semibold text-slate-600">{{ index + 1 }}</td>
+                  <td class="px-5 py-6">
+                    <img :src="item.hinhAnh || 'https://via.placeholder.com/72x72?text=Shoe'" class="h-14 w-14 rounded-xl object-cover" />
                   </td>
-                  <td class="px-4 py-5">
-                    <p class="font-semibold text-slate-800">{{ vietHoaChuCaiDau(item.tenSanPham) }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ item.phanLoai }}</p>
+                  <td class="px-5 py-6">
+                    <p class="text-base font-semibold text-slate-800">{{ vietHoaChuCaiDau(item.tenSanPham) }}</p>
+                    <p class="mt-1 text-sm text-slate-400">{{ item.phanLoai }}</p>
                   </td>
-                  <td class="px-4 py-5 text-slate-600">{{ item.mauSac }}</td>
-                  <td class="px-4 py-5 font-semibold text-slate-700">{{ item.soLuong }}</td>
-                  <td class="px-4 py-5">
-                    <p class="text-xs font-semibold text-slate-700">{{ dinhDangGio(hoaDon.ngayTao) }}</p>
-                    <p class="text-xs text-slate-400">{{ dinhDangNgay(hoaDon.ngayTao) }}</p>
+                  <td class="px-5 py-6 text-slate-600">{{ item.mauSac }}</td>
+                  <td class="px-5 py-6 font-semibold text-slate-700">{{ item.soLuong }}</td>
+                  <td class="px-5 py-6">
+                    <p class="text-sm font-semibold text-slate-700">{{ dinhDangGio(hoaDon.ngayTao) }}</p>
+                    <p class="text-sm text-slate-400">{{ dinhDangNgay(hoaDon.ngayTao) }}</p>
                   </td>
-                  <td class="px-4 py-5 font-semibold text-[#B82220]">{{ dinhDangTien(item.donGia) }}</td>
-                  <td class="px-4 py-5 font-semibold text-[#B82220]">{{ dinhDangTien(item.thanhTien) }}</td>
+                  <td class="px-5 py-6 font-semibold text-[#B82220]">{{ dinhDangTien(item.donGia) }}</td>
+                  <td class="px-5 py-6 font-semibold text-[#B82220]">{{ dinhDangTien(item.thanhTien) }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-
-        <div></div>
       </section>
     </template>
 
