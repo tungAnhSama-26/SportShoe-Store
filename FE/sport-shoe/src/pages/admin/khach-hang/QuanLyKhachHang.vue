@@ -169,7 +169,6 @@ function xuatExcel() {
       { label: "Họ tên", key: "hoTen" },
       { label: "Email", value: (row) => row.email || "—" },
       { label: "Số điện thoại", value: (row) => row.sdt || "—" },
-      { label: "Địa chỉ mặc định", value: (row) => row.diaChiMacDinh || "—" },
       { label: "Trạng thái", value: (row) => row.tenTrangThai || "—" },
     ],
     rows: danhSach.value,
@@ -513,55 +512,66 @@ onActivated(() => {
       <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-[960px] w-full border-separate border-spacing-y-2 text-sm">
+        <table class="w-full table-fixed border-separate border-spacing-y-2 text-sm">
           <thead>
             <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Ảnh</th>
-              <th class="bg-slate-100 px-4 py-3">Tên đăng nhập</th>
-              <th class="bg-slate-100 px-4 py-3">Họ tên</th>
-              <th class="bg-slate-100 px-4 py-3">Email</th>
-              <th class="bg-slate-100 px-4 py-3">Số điện thoại</th>
-              <th class="bg-slate-100 px-4 py-3">Địa chỉ mặc định</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+              <th class="w-14 rounded-l-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
+              <th class="w-16 bg-slate-100 px-3 py-3 whitespace-nowrap">Ảnh</th>
+              <th class="w-44 bg-slate-100 px-3 py-3 whitespace-nowrap">Tên đăng nhập</th>
+              <th class="w-52 bg-slate-100 px-3 py-3 whitespace-nowrap">Họ tên</th>
+              <th class="w-64 bg-slate-100 px-3 py-3 whitespace-nowrap">Email</th>
+              <th class="w-36 bg-slate-100 px-3 py-3 whitespace-nowrap">Số điện thoại</th>
+              <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="w-32 rounded-r-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
             </tr>
             <tr
               v-for="(kh, index) in danhSachPhanTrang"
               :key="kh.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
-              <td class="px-4 py-3">
+              <td class="rounded-l-2xl px-3 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
+              <td class="px-3 py-3">
                 <img
                   :src="kh.hinhAnh || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(kh.hoTen) + '&background=f1f5f9&color=475569&size=64'"
                   :alt="kh.hoTen"
                   class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
                 />
               </td>
-              <td class="px-4 py-3 font-semibold text-slate-800">{{ kh.tenDangNhap }}</td>
-              <td class="px-4 py-3 font-semibold text-slate-800">{{ kh.hoTen }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ kh.email || '—' }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ kh.sdt || '—' }}</td>
-              <td class="px-4 py-3 text-slate-500 max-w-[200px]">
-                <span v-if="kh.diaChiMacDinh" class="line-clamp-2 text-xs leading-relaxed">{{ kh.diaChiMacDinh }}</span>
-                <span v-else class="text-slate-300 italic text-xs">Chưa có địa chỉ</span>
+              <td class="px-3 py-3 font-semibold text-slate-800 whitespace-nowrap">
+                <div class="truncate whitespace-nowrap" :title="kh.tenDangNhap">
+                  {{ kh.tenDangNhap }}
+                </div>
               </td>
-              <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(kh.trangThai)">
+              <td class="px-3 py-3 font-semibold text-slate-800 whitespace-nowrap">
+                <div class="whitespace-nowrap" :title="kh.hoTen">
+                  {{ kh.hoTen }}
+                </div>
+              </td>
+              <td class="px-3 py-3 text-[13px] text-slate-600 whitespace-nowrap">
+                <div class="truncate whitespace-nowrap" :title="kh.email || '—'">
+                  {{ kh.email || '—' }}
+                </div>
+              </td>
+              <td class="px-3 py-3 text-slate-600 whitespace-nowrap">
+                <div class="whitespace-nowrap" :title="kh.sdt || '—'">
+                  {{ kh.sdt || '—' }}
+                </div>
+              </td>
+              <td class="px-3 py-3">
+                <span class="inline-flex min-w-[104px] justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold" :class="mauTrangThai(kh.trangThai)">
                   {{ kh.tenTrangThai }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-1">
+              <td class="rounded-r-2xl px-3 py-3 text-center">
+                <div class="flex items-center justify-center gap-0.5">
                   <AdminQuickStatusAction
                     :loading="dangDoiTrangThai === kh.id"
                     :action-label="kh.trangThai === 1 ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'"

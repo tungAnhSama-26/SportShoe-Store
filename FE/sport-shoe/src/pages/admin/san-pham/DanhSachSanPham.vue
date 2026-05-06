@@ -61,12 +61,6 @@ function giaHienThi(item) {
   return `${formatCurrency(item.giaMin)} đ - ${formatCurrency(item.giaMax)} đ`
 }
 
-function giaBangHienThi(item) {
-  return giaHienThi(item)
-    .replace(' đ - ', '\u00A0\u0111\u00A0-\u00A0')
-    .replace(/ \u0111$/u, '\u00A0\u0111')
-}
-
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
@@ -408,25 +402,35 @@ onUnmounted(() => {
       </div>
 
       <div class="admin-table-scroll rounded-[24px] border border-slate-100">
-        <table class="min-w-[980px] w-full table-fixed border-separate border-spacing-0 text-sm">
+        <table class="min-w-[960px] w-full table-fixed border-separate border-spacing-0 text-sm">
+          <colgroup>
+            <col class="w-[5.5%]" />
+            <col class="w-[10%]" />
+            <col class="w-[27%]" />
+            <col class="w-[13%]" />
+            <col class="w-[8%]" />
+            <col class="w-[17%]" />
+            <col class="w-[11%]" />
+            <col class="w-[8.5%]" />
+          </colgroup>
           <thead>
             <tr class="text-left text-[13px] font-bold text-slate-950">
-              <th class="w-16 rounded-tl-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="w-28 bg-slate-100 px-4 py-3">Mã SP</th>
+              <th class="rounded-tl-2xl bg-slate-100 px-4 py-3 whitespace-nowrap">STT</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Mã SP</th>
               <th class="bg-slate-100 px-4 py-3">Tên SP</th>
-              <th class="w-40 bg-slate-100 px-4 py-3">Thương hiệu</th>
-              <th class="w-24 bg-slate-100 px-4 py-3 text-center">Tồn</th>
-              <th class="w-52 bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
-              <th class="w-44 bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="w-40 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Thương hiệu</th>
+              <th class="bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Tồn</th>
+              <th class="bg-slate-100 px-4 py-3 whitespace-nowrap">Giá bán</th>
+              <th class="bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Trạng thái</th>
+              <th class="rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="!items.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Chưa có sản phẩm nào</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Chưa có sản phẩm nào</td>
             </tr>
             <tr
               v-for="(item, index) in items"
@@ -436,24 +440,24 @@ onUnmounted(() => {
               <td class="rounded-l-2xl px-4 py-4 align-top font-semibold text-slate-500">
                 {{ currentPage * pageSize + index + 1 }}
               </td>
-              <td class="px-4 py-4 align-top font-semibold text-slate-800">{{ item.ma }}</td>
-              <td class="px-4 py-4 align-top max-w-[340px] whitespace-normal break-normal">
-                <p class="text-xs font-semibold leading-tight text-slate-800" :title="item.ten">{{ item.ten }}</p>
+              <td class="px-4 py-4 align-top font-semibold text-slate-800 break-words">{{ item.ma }}</td>
+              <td class="px-4 py-4 align-top">
+                <p class="font-semibold leading-7 text-slate-800" :title="item.ten">{{ item.ten }}</p>
               </td>
               <td class="px-4 py-4 align-top">
-                <p class="break-words text-sm font-semibold text-slate-800">{{ item.thuongHieu || '—' }}</p>
+                <p class="break-words font-semibold leading-7 text-slate-800">{{ item.thuongHieu || '—' }}</p>
               </td>
-              <td class="px-4 py-4 text-center font-semibold text-slate-700">
+              <td class="px-4 py-4 text-center font-semibold text-slate-700 whitespace-nowrap">
                 {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
               </td>
               <td class="px-4 py-4 font-semibold text-slate-800">
-                <div class="flex min-h-[48px] items-center whitespace-nowrap text-[13px] leading-5">
-                  {{ giaBangHienThi(item) }}
+                <div class="flex min-h-[56px] items-center text-[15px] leading-7">
+                  {{ giaHienThi(item) }}
                 </div>
               </td>
-              <td class="px-4 py-4 whitespace-nowrap">
+              <td class="px-4 py-4 text-center whitespace-nowrap">
                 <span
-                  class="inline-flex min-w-max whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold"
+                  class="inline-flex min-w-[118px] items-center justify-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold"
                   :class="trangThaiClass(item.trangThai)"
                   :title="trangThaiLabel(item.trangThai)"
                 >
