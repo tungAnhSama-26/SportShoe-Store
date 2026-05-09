@@ -414,14 +414,14 @@ onMounted(taiDanhSach);
                     :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
                   />
-                  <button
+                  <!-- <button
                     type="button"
                     @click="quanLyLichLam(nv.id)"
                     class="admin-table-action text-violet-500 hover:text-violet-700"
                     title="Quản lý lịch làm"
                   >
                     <CalendarDays :size="14" />
-                  </button>
+                  </button> -->
                   <button
                     type="button"
                     @click="xemChiTiet(nv.id)"
