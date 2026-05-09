@@ -67,6 +67,10 @@ public class PhieuGiamGiaKhachHangService {
         PhieuGiamGiaKhachHang phieuGiamGiaKhachHang = phieuGiamGiaKhachHangRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia khach hang"));
 
+        if (phieuGiamGiaKhachHang.getTrangThai() != null && (phieuGiamGiaKhachHang.getTrangThai() == 0 || phieuGiamGiaKhachHang.getTrangThai() == 2)) {
+            throw new BusinessException("Không thể chỉnh sửa liên kết phiếu đã ngừng hoạt động hoặc hết hạn.");
+        }
+
         PhieuGiamGia phieuGiamGia = getPhieuGiamGia(request.getPhieuGiamGiaId());
         KhachHang khachHang = getKhachHangByEmail(request.getEmail());
         validateLienKet(phieuGiamGia, khachHang, phieuGiamGiaKhachHang);
