@@ -7,10 +7,30 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer> {
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE DotGiamGia d 
+        SET d.kichHoat = CASE 
+            WHEN d.ngayKetThuc < CURRENT_DATE THEN 2 
+            WHEN d.ngayBatDau > CURRENT_DATE THEN 4 
+            ELSE 1 
+        END 
+        WHERE d.kichHoat != 0 
+        AND d.kichHoat != CASE 
+            WHEN d.ngayKetThuc < CURRENT_DATE THEN 2 
+            WHEN d.ngayBatDau > CURRENT_DATE THEN 4 
+            ELSE 1 
+        END
+    """)
+    int capNhatTrangThaiTuDong();
 
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaResponse(

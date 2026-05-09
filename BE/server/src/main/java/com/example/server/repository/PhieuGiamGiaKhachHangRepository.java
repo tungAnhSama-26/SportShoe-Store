@@ -10,8 +10,10 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiamGiaKhachHang, Integer> {
 
@@ -71,4 +73,18 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
             @Param("keyword") String keyword, 
             @Param("trangThai") Integer trangThai, 
             Pageable pageable);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE PhieuGiamGiaKhachHang pgk
+        SET pgk.trangThai = (
+            SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id
+        )
+        WHERE pgk.trangThai != 0 
+          AND pgk.trangThai != (
+            SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id
+        )
+    """)
+    void dongBoTrangThaiTuPhieuGiamGia();
 }

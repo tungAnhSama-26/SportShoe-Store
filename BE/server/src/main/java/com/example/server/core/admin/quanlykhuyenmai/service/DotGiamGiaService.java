@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanlykhuyenmai.service;
 import com.example.server.core.admin.quanlykhuyenmai.dto.request.DotGiamGiaRequest;
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaResponse;
 import com.example.server.entity.DotGiamGia;
+import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DotGiamGiaRepository;
 import com.example.server.repository.DotGiamGiaSanPhamRepository;
@@ -55,6 +56,10 @@ public class DotGiamGiaService {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
 
+        if (dotGiamGia.getKichHoat() != null && (dotGiamGia.getKichHoat() == 0 || dotGiamGia.getKichHoat() == 2)) {
+            throw new BusinessException("Không thể chỉnh sửa đợt giảm giá đã ngừng hoạt động hoặc hết hạn.");
+        }
+
         mapRequestToEntity(request, dotGiamGia);
         DotGiamGia saved = dotGiamGiaRepository.save(dotGiamGia);
 
@@ -76,8 +81,23 @@ public class DotGiamGiaService {
         dotGiamGia.setNgayBatDau(request.getNgayBatDau());
         dotGiamGia.setNgayKetThuc(request.getNgayKetThuc());
         
-        // Handle defaults for NotNull fields
-        dotGiamGia.setKichHoat(request.getKichHoat() == null ? 1 : request.getKichHoat());
+        // Tự động tính toán trạng thái
+        Integer currentStatus = dotGiamGia.getKichHoat();
+        if (currentStatus != null && currentStatus == 0) {
+            dotGiamGia.setKichHoat(0);
+        } else {
+            java.time.LocalDate now = java.time.LocalDate.now();
+            java.time.LocalDate start = dotGiamGia.getNgayBatDau();
+            java.time.LocalDate end = dotGiamGia.getNgayKetThuc();
+            
+            if (end != null && end.isBefore(now)) {
+                dotGiamGia.setKichHoat(2); // Hết hạn
+            } else if (start != null && start.isAfter(now)) {
+                dotGiamGia.setKichHoat(4); // Sắp diễn ra
+            } else {
+                dotGiamGia.setKichHoat(1); // Hoạt động
+            }
+        }
         
         if (dotGiamGia.getNgayTao() == null) {
             dotGiamGia.setNgayTao(request.getNgayTao() == null ? java.time.LocalDate.now() : request.getNgayTao());

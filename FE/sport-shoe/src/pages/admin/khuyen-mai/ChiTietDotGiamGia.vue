@@ -65,6 +65,8 @@ const form = reactive({
   ngayBatDau: "", ngayKetThuc: "", kichHoat: "1"
 });
 
+const isReadOnly = computed(() => !laMoi && (Number(form.kichHoat) === 0 || Number(form.kichHoat) === 2));
+
 const searchSP = ref("");
 const danhSachSP = ref([]);
 const selectedVariants = ref([]);
@@ -272,6 +274,21 @@ watch(searchSP, () => {
   searchTimer = setTimeout(taiDanhSachSP, 400);
 });
 
+watch(() => form.giaTriGiam, (newVal) => {
+  if (newVal === "" || newVal === null || newVal === undefined) {
+    delete formErrors.giaTriGiam;
+    return;
+  }
+  const val = Number(newVal);
+  if (val <= 0) {
+    formErrors.giaTriGiam = "Giá trị giảm phải lớn hơn 0%";
+  } else if (val > 100) {
+    formErrors.giaTriGiam = "Phần trăm giảm không được vượt quá 100%";
+  } else {
+    delete formErrors.giaTriGiam;
+  }
+});
+
 function isVariantSelected(variantId) {
   return selectedVariants.value.some(v => Number(v.id) === Number(variantId));
 }
@@ -308,6 +325,7 @@ async function taiChiTiet() {
     if (!form.ma) {
       taoMaNgauNhien();
     }
+    form.ngayBatDau = getToday();
     await taiDanhSachSP();
     return;
   }
@@ -356,8 +374,21 @@ async function submitForm() {
     formErrors.giaTriGiam = "Phần trăm giảm không được vượt quá 100%";
     isValid = false;
   }
-  if (!form.ngayBatDau) { formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng"; isValid = false; }
-  if (!form.ngayKetThuc) { formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng"; isValid = false; }
+  if (!form.ngayBatDau) { 
+    formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng"; 
+    isValid = false; 
+  } else if (laMoi && form.ngayBatDau < getToday()) {
+    formErrors.ngayBatDau = "Ngày bắt đầu không được chọn trong quá khứ";
+    isValid = false;
+  }
+
+  if (!form.ngayKetThuc) { 
+    formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng"; 
+    isValid = false; 
+  } else if (form.ngayKetThuc < getToday()) {
+    formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
+    isValid = false;
+  }
 
   if (form.ngayBatDau && form.ngayKetThuc && form.ngayBatDau > form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
@@ -377,7 +408,7 @@ async function submitForm() {
       giaTriGiam: Number(form.giaTriGiam),
       ngayBatDau: form.ngayBatDau,
       ngayKetThuc: form.ngayKetThuc,
-      kichHoat: Number(form.kichHoat),
+      kichHoat: laMoi ? undefined : form.kichHoat,
       ngayTao: dangTaoMoi ? getToday() : undefined,
       ngayCapNhat: !dangTaoMoi ? getToday() : undefined
     };
@@ -462,11 +493,16 @@ onMounted(taiChiTiet);
       class="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}
     </div>
 
+    <div v-if="isReadOnly" class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700">
+      Đợt giảm giá này đã hết hạn hoặc ngừng hoạt động nên chỉ có thể xem chi tiết.
+    </div>
+
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
       <!-- Cột trái: Thông tin đợt giảm -->
       <div class="xl:col-span-4 space-y-6">
         <section class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-          <div class="flex items-center gap-3">
+          <fieldset :disabled="isReadOnly" class="space-y-6">
+            <div class="flex items-center gap-3">
             <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
               <Tag class="h-5 w-5" />
             </div>
@@ -479,8 +515,8 @@ onMounted(taiChiTiet);
             <div class="space-y-2">
               <label class="text-[13px] font-semibold text-slate-500">Mã đợt <span class="text-rose-500">*</span></label>
               <div class="relative">
-                <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: SUMMER2024" />
-                <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors">
+                <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100" placeholder="Ví dụ: SUMMER2024" />
+                <button v-if="!isReadOnly" @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors">
                   <RefreshCcw class="h-4 w-4" />
                 </button>
               </div>
@@ -497,7 +533,7 @@ onMounted(taiChiTiet);
               <div class="space-y-2">
                 <label class="text-[13px] font-semibold text-slate-500">Giá trị giảm (%) <span class="text-rose-500">*</span></label>
                 <div class="relative">
-                  <input v-model="form.giaTriGiam" type="number" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="0" />
+                  <input v-model="form.giaTriGiam" type="number" min="1" max="100" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="0" />
                   <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
                 </div>
                 <p v-if="formErrors.giaTriGiam" class="text-xs text-rose-500 mt-1">{{ formErrors.giaTriGiam }}</p>
@@ -512,17 +548,9 @@ onMounted(taiChiTiet);
               </div>
               <div class="space-y-2">
                 <label class="text-[13px] font-semibold text-slate-500">Đến ngày <span class="text-rose-500">*</span></label>
-                <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+                <input v-model="form.ngayKetThuc" :min="form.ngayBatDau || getToday()" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
                 <p v-if="formErrors.ngayKetThuc" class="text-xs text-rose-500 mt-1">{{ formErrors.ngayKetThuc }}</p>
               </div>
-            </div>
-
-            <div v-if="!laMoi" class="space-y-2">
-              <label class="text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-              <select v-model="form.kichHoat" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
-                <option value="1">Kích hoạt</option>
-                <option value="0">Tắt</option>
-              </select>
             </div>
 
             <div class="space-y-2">
@@ -530,13 +558,14 @@ onMounted(taiChiTiet);
               <textarea v-model="form.moTa" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Nhập mô tả..."></textarea>
             </div>
           </div>
+          </fieldset>
 
           <div class="pt-4 flex flex-col gap-3">
-            <button @click="submitForm" :disabled="saving" class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
+            <button v-if="!isReadOnly" @click="submitForm" :disabled="saving" class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
               <Save class="h-4 w-4" />
               {{ saving ? "Đang lưu..." : (laMoi ? "Tạo đợt giảm giá" : "Lưu thay đổi") }}
             </button>
-            <button @click="router.push({ name: 'admin-dot-giam-gia' })" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
+            <button @click="router.push({ name: 'admin-dot-giam-gia' })" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">{{ isReadOnly ? "Quay lại" : "Hủy" }}</button>
           </div>
         </section>
       </div>
@@ -558,9 +587,9 @@ onMounted(taiChiTiet);
           <div class="mb-4 flex gap-3">
             <div class="relative flex-1">
               <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-500" />
-              <input v-model="searchSP" @keyup.enter="taiDanhSachSP" type="text" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="h-11 w-full rounded-2xl border border-rose-100 bg-rose-50/40 pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" />
+              <input v-model="searchSP" :disabled="isReadOnly" @keyup.enter="taiDanhSachSP" type="text" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="h-11 w-full rounded-2xl border border-rose-100 bg-rose-50/40 pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100" />
             </div>
-            <button @click="taiDanhSachSP" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white shadow-[0_12px_24px_rgba(244,63,94,0.22)] transition hover:bg-rose-600">
+            <button v-if="!isReadOnly" @click="taiDanhSachSP" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white shadow-[0_12px_24px_rgba(244,63,94,0.22)] transition hover:bg-rose-600">
               <Search class="h-4 w-4" />
               Tìm kiếm
             </button>
@@ -582,9 +611,9 @@ onMounted(taiChiTiet);
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div v-for="bt in sp.bienThes" :key="bt.id" class="flex items-center justify-between rounded-xl bg-white p-3 border border-slate-50 shadow-sm transition hover:shadow-md">
+                  <div v-for="bt in sp.bienThes" :key="bt.id" class="flex items-center justify-between rounded-xl bg-white p-3 border border-slate-50 shadow-sm transition hover:shadow-md" :class="isReadOnly ? 'opacity-70' : ''">
                     <div class="flex items-center gap-3">
-                      <button @click="toggleVariant(bt, sp)" class="h-6 w-6 flex items-center justify-center transition" :title="isVariantSelected(bt.id) ? 'Bỏ chọn' : 'Chọn'">
+                      <button :disabled="isReadOnly" @click="toggleVariant(bt, sp)" class="h-6 w-6 flex items-center justify-center transition disabled:cursor-not-allowed" :title="isVariantSelected(bt.id) ? 'Bỏ chọn' : 'Chọn'">
                         <CheckSquare v-if="isVariantSelected(bt.id)" class="h-5 w-5 text-rose-500" />
                         <Square v-else class="h-5 w-5 text-slate-300" />
                       </button>
@@ -658,7 +687,7 @@ onMounted(taiChiTiet);
                       <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-rose-500" @click="moChiTietSanPham(v.giayId, v.id)">
                         <ArrowUpRight class="h-4 w-4" />
                       </button>
-                      <button @click="removeSelectedVariant(v.id)" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition">
+                      <button v-if="!isReadOnly" @click="removeSelectedVariant(v.id)" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition">
                         <X class="h-4 w-4" />
                       </button>
                     </div>

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search } from "lucide-vue-next";
@@ -22,7 +22,9 @@ const totalItems = ref(0);
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
   { label: "Kích hoạt", value: "1" },
-  { label: "Tắt", value: "0" },
+  { label: "Ngừng hoạt động", value: "0" },
+  { label: "Hết hạn", value: "2" },
+  { label: "Sắp diễn ra", value: "4" },
 ];
 
 const dsLoaiGiam = [
@@ -32,13 +34,17 @@ const dsLoaiGiam = [
 ];
 
 function mauTrangThai(trangThai) {
-  return Number(trangThai) === 1
-    ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"
-    : "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+  if (Number(trangThai) === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
+  if (Number(trangThai) === 2) return "bg-slate-100 text-slate-500 ring-1 ring-slate-200";
+  if (Number(trangThai) === 4) return "bg-sky-50 text-sky-600 ring-1 ring-sky-100";
+  return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
 function statusText(value) {
-  return Number(value) === 1 ? "Kích hoạt" : "Tắt";
+  if (Number(value) === 1) return "Kích hoạt";
+  if (Number(value) === 2) return "Hết hạn";
+  if (Number(value) === 4) return "Sắp diễn ra";
+  return "Ngừng hoạt động";
 }
 
 function toDisplayDate(value) {
@@ -75,8 +81,7 @@ function lamMoiBoLoc() {
 
 async function nhanhDoiTrangThai(item) {
   try {
-    const nextStatus = Number(item.kichHoat) === 1 ? 0 : 1;
-    await updateDotGiamGia(item.id, { ...item, kichHoat: nextStatus });
+    await updateDotGiamGia(item.id, { ...item, kichHoat: 0 });
     await taiDanhSach();
   } catch (error) {
     window.alert(getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đợt giảm giá"));
@@ -270,9 +275,11 @@ onMounted(taiDanhSach);
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :action-label="Number(item.kichHoat) === 1 ? 'Tắt đợt giảm giá' : 'Kích hoạt đợt giảm giá'"
-                    :confirm-message="`Bạn có chắc chắn muốn ${Number(item.kichHoat) === 1 ? 'tắt' : 'kích hoạt'} đợt giảm giá này không?`"
-                    :intent="Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'"
+                    :disabled="Number(item.kichHoat) === 0"
+                    disabled-title="Không thể thao tác trên đợt giảm giá đã ngừng hoạt động"
+                    action-label="Tắt đợt giảm giá"
+                    confirm-message="Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?"
+                    intent="deactivate"
                     @toggle="nhanhDoiTrangThai(item)"
                   />
                   <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xem chi tiết">

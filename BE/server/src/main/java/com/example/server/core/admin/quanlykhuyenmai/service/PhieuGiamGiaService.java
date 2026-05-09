@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanlykhuyenmai.service;
 import com.example.server.core.admin.quanlykhuyenmai.dto.request.PhieuGiamGiaRequest;
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse;
 import com.example.server.entity.PhieuGiamGia;
+import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.PhieuGiamGiaRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,10 @@ public class PhieuGiamGiaService {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
 
+        if (phieuGiamGia.getTrangThai() != null && (phieuGiamGia.getTrangThai() == 0 || phieuGiamGia.getTrangThai() == 2)) {
+            throw new BusinessException("Không thể chỉnh sửa phiếu giảm giá đã ngừng hoạt động hoặc hết hạn.");
+        }
+
         mapRequestToEntity(request, phieuGiamGia);
 
         return phieuGiamGiaRepository.save(phieuGiamGia);
@@ -70,7 +75,28 @@ public class PhieuGiamGiaService {
         
         // Handle defaults for NotNull fields to prevent validation errors
         phieuGiamGia.setSoLuongDaDung(request.getSoLuongDaDung() == null ? 0 : request.getSoLuongDaDung());
-        phieuGiamGia.setTrangThai(request.getTrangThai() == null ? 1 : request.getTrangThai());
+        
+        // Tự động tính toán trạng thái
+        Integer currentStatus = phieuGiamGia.getTrangThai();
+        if (currentStatus != null && currentStatus == 0) {
+            phieuGiamGia.setTrangThai(0);
+        } else {
+            Instant now = Instant.now();
+            Instant start = phieuGiamGia.getNgayBatDau();
+            Instant end = phieuGiamGia.getNgayKetThuc();
+            int soLuongDaDung = phieuGiamGia.getSoLuongDaDung();
+            int soLuong = phieuGiamGia.getSoLuong();
+            
+            if (end != null && end.isBefore(now)) {
+                phieuGiamGia.setTrangThai(2); // Hết hạn
+            } else if (soLuongDaDung >= soLuong) {
+                phieuGiamGia.setTrangThai(3); // Hết số lượng
+            } else if (start != null && start.isAfter(now)) {
+                phieuGiamGia.setTrangThai(4); // Sắp diễn ra
+            } else {
+                phieuGiamGia.setTrangThai(1); // Hoạt động
+            }
+        }
         
         if (phieuGiamGia.getNgayTao() == null) {
             phieuGiamGia.setNgayTao(request.getNgayTao() == null ? Instant.now() : toInstant(request.getNgayTao()));

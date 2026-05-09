@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="" />
+    <list default="true" id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/BE/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/BE/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/.idea/dataSources/d7b0a813-1a85-49ea-bef6-ab9cc0fa2830.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/BE/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,9 +28,9 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "bui-hiep",
+    "git-widget-placeholder": "Nghiem-huy",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/SportShoe-Store/BE",
+    "last_opened_file_path": "D:/SportShoe-Store/BE/server",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -52,6 +56,7 @@
       <option name="presentableId" value="Default" />
       <updated>1776785102416</updated>
       <workItem from="1776785103553" duration="539000" />
+      <workItem from="1778032390230" duration="16000" />
     </task>
     <servers />
   </component>
