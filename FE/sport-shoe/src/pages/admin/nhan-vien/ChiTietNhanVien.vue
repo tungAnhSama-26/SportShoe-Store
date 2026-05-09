@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save } from "lucide-vue-next";
+import { ArrowLeft, Camera, ImageUp, Save, ScanLine, X } from "lucide-vue-next";
+
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import {
   capNhatNhanVien,
   doiMatKhauNhanVien,
@@ -12,6 +14,118 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+
+// QR Scanner - dùng @zxing/browser
+const dangQuet = ref(false);
+const loiCamera = ref('');
+const videoRef = ref<HTMLVideoElement | null>(null);
+const fileInputQr = ref<HTMLInputElement | null>(null);
+const tabQuet = ref<'camera' | 'upload'>('camera'); // tab active trong modal
+const dangQuetFile = ref(false);
+const thongBaoQrOk = ref('');
+let zxingReader: BrowserMultiFormatReader | null = null;
+
+async function batDauQuet() {
+  loiCamera.value = '';
+  dungQuet();
+  dangQuet.value = true;
+  tabQuet.value = 'camera';
+  await nextTick();
+  try {
+    if (!videoRef.value) throw new Error('Không tìm thấy video element');
+    zxingReader = new BrowserMultiFormatReader();
+
+    // Constraints đơn giản - bỏ min để tránh lỗi tương thích trên PC/laptop
+    const constraints: MediaStreamConstraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      }
+    };
+
+    await zxingReader.decodeFromConstraints(
+      constraints,
+      videoRef.value,
+      (result, err) => {
+        if (result) {
+          xuLyKetQuaQr(result.getText());
+        }
+        if (err && err.name !== 'NotFoundException') {
+          console.warn('[ZXing scan error]', err);
+        }
+      }
+    );
+  } catch (e: any) {
+    console.error('[batDauQuet]', e);
+    const msg = String(e?.message ?? '');
+    if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')) {
+      loiCamera.value = 'Vui lòng cho phép truy cập camera và thử lại.';
+    } else {
+      loiCamera.value = 'Không thể mở camera. Hãy kiểm tra quyền truy cập hoặc chuyển sang tab "Tải ảnh lên".';
+    }
+    // KHÔNG đặt dangQuet.value = false - giữ modal mở để hiển thị lỗi
+    // Người dùng có thể đọc lỗi và chuyển sang tab upload
+    zxingReader = null;
+  }
+}
+
+async function quetQrTuAnh(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (!target.files?.length) return;
+  loiCamera.value = '';
+  dangQuetFile.value = true;
+  try {
+    const url = URL.createObjectURL(target.files[0]);
+    const reader = new BrowserMultiFormatReader();
+    const result = await reader.decodeFromImageUrl(url);
+    URL.revokeObjectURL(url);
+    xuLyKetQuaQr(result.getText());
+  } catch (e: any) {
+    console.error('[quetQrTuAnh]', e);
+    loiCamera.value = 'Không tìm thấy mã QR trong ảnh. Hãy chụp rõ mặt sau CCCD và thử lại.';
+  } finally {
+    dangQuetFile.value = false;
+    if (fileInputQr.value) fileInputQr.value.value = '';
+  }
+}
+
+function xuLyKetQuaQr(raw: string) {
+  dungQuet();
+  try {
+    // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
+    const parts = raw.split('|');
+    if (parts.length >= 3) {
+      if (parts[0]) form.value.cccd = parts[0].trim();
+      if (parts[2]) form.value.hoTen = parts[2].trim();
+      if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
+      if (parts[4]) {
+        const gt = parts[4].trim().toLowerCase();
+        form.value.gioiTinh = (gt === 'nam' || gt === '0') ? 'Nam' : 'Nữ';
+      }
+      if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
+    } else {
+      form.value.cccd = raw.trim();
+    }
+    thongBaoQrOk.value = '✓ Quét CCCD thành công! Thông tin đã được điền tự động.';
+    setTimeout(() => { thongBaoQrOk.value = ''; }, 4000);
+  } catch {
+    form.value.cccd = raw.trim();
+  }
+}
+
+function formatNgaySinh(ddmmyyyy: string) {
+  if (!ddmmyyyy || ddmmyyyy.length !== 8) return '';
+  return `${ddmmyyyy.slice(4,8)}-${ddmmyyyy.slice(2,4)}-${ddmmyyyy.slice(0,2)}`;
+}
+
+function dungQuet() {
+  dangQuet.value = false;
+  try {
+    zxingReader?.reset();
+  } catch { /* ignore */ }
+  zxingReader = null;
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +147,7 @@ const loiForm = ref({
   hoTen: "",
   email: "",
   sdt: "",
+  cccd: "",
 });
 
 const form = ref({
@@ -40,6 +155,7 @@ const form = ref({
   email: "",
   matKhau: "",
   sdt: "",
+  cccd: "",
   diaChiCuThe: "",
   hinhAnh: "",
   vaiTro: 2,
@@ -314,6 +430,7 @@ async function taiChiTiet() {
       hoTen: data.hoTen ?? "",
       email: data.email ?? "",
       sdt: data.sdt ?? "",
+      cccd: data.cccd ?? "",
       gioiTinh: data.gioiTinh ?? "Nam",
       ngaySinh: data.ngaySinh ?? "",
       diaChiCuThe: data.diaChi ?? "",
@@ -331,7 +448,7 @@ async function taiChiTiet() {
 }
 
 async function luu() {
-  loiForm.value = { hoTen: "", email: "", sdt: "" };
+  loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "" };
   let hasError = false;
 
   if (!form.value.hoTen.trim()) {
@@ -351,6 +468,11 @@ async function luu() {
     loiForm.value.sdt = "Số điện thoại phải gồm đúng 10 chữ số.";
     hasError = true;
   }
+
+  if (laMoi && !form.value.cccd.trim()) {
+    loiForm.value.cccd = "Vui lòng nhập hoặc quét số CCCD.";
+    hasError = true;
+  }
   if (hasError) return;
 
   dangLuu.value = true;
@@ -361,6 +483,7 @@ async function luu() {
     hoTen: form.value.hoTen.trim(),
     email: form.value.email.trim(),
     sdt: form.value.sdt.trim() || undefined,
+    cccd: form.value.cccd.trim() || undefined,
     gioiTinh: form.value.gioiTinh || undefined,
     ngaySinh: form.value.ngaySinh || undefined,
     diaChi: gopDiaChi() || form.value.diaChiCuThe.trim() || undefined,
@@ -459,6 +582,10 @@ onMounted(async () => {
     await taiChiTiet();
   }
 });
+
+onUnmounted(() => {
+  dungQuet();
+});
 </script>
 
 <template>
@@ -503,7 +630,7 @@ onMounted(async () => {
       <div class="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
         <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
           <div class="flex items-center justify-between">
-            <h2 class="text-[18px] font-bold text-slate-900">Thông tin nhân viên</h2>
+            <h2 class="text-base font-bold text-slate-800">Thông tin nhân viên</h2>
           </div>
           <div class="mt-7 h-px bg-slate-200"></div>
 
@@ -537,17 +664,15 @@ onMounted(async () => {
               />
             </div>
 
-            <label class="mt-10 block space-y-2">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Họ và tên <span class="text-rose-500">*</span>
-              </span>
+            <label class="mt-8 block space-y-1.5">
+              <span class="text-[13px] font-semibold text-slate-500">Họ và tên <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.hoTen"
                 type="text"
                 placeholder="Nhập họ và tên"
                 :class="[
-                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
-                  loiForm.hoTen ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-rose-300',
+                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
+                  loiForm.hoTen ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-rose-300',
                 ]"
               />
               <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
@@ -556,153 +681,231 @@ onMounted(async () => {
         </section>
 
         <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
-          <h2 class="text-[18px] font-bold text-slate-900 text-black">Thông tin chi tiết</h2>
+          <h2 class="text-base font-bold text-slate-800">Thông tin chi tiết</h2>
           <div class="mt-7 h-px bg-slate-200"></div>
 
-          <div class="mt-10 grid gap-x-6 gap-y-7 xl:grid-cols-12" style="color: black;">
-            <div class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Giới tính <span class="text-rose-500">*</span>
+          <!-- QR Scanner Modal -->
+          <Teleport to="body">
+            <div v-show="dangQuet" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+              <div class="relative w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl mx-4">
+
+                <!-- Header -->
+                <div class="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 class="text-[18px] font-bold text-slate-900">Quét mã QR CCCD</h3>
+                    <p class="mt-0.5 text-[13px] text-slate-400">Hướng camera vào mặt sau CCCD</p>
+                  </div>
+                  <button type="button" @click="dungQuet"
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                    <X class="h-4 w-4" />
+                  </button>
+                </div>
+
+                <!-- Tab chọn camera / upload -->
+                <div class="mb-4 flex gap-2 rounded-[14px] bg-slate-100 p-1">
+                  <button type="button" @click="tabQuet = 'camera'"
+                    :class="['flex flex-1 items-center justify-center gap-2 rounded-[11px] py-2 text-[13px] font-semibold transition',
+                      tabQuet === 'camera' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+                    <Camera class="h-4 w-4" /> Dùng camera
+                  </button>
+                  <button type="button" @click="tabQuet = 'upload'"
+                    :class="['flex flex-1 items-center justify-center gap-2 rounded-[11px] py-2 text-[13px] font-semibold transition',
+                      tabQuet === 'upload' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+                    <ImageUp class="h-4 w-4" /> Tải ảnh lên
+                  </button>
+                </div>
+
+                <!-- Tab Camera -->
+                <div v-show="tabQuet === 'camera'">
+                  <div class="relative overflow-hidden rounded-[18px] bg-black" style="aspect-ratio:4/3">
+                    <video ref="videoRef" class="h-full w-full object-cover" autoplay playsinline muted></video>
+                    <!-- Khung quét overlay -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div class="relative h-48 w-64">
+                        <span class="absolute top-0 left-0 h-8 w-8 border-t-[3px] border-l-[3px] border-white rounded-tl-md"></span>
+                        <span class="absolute top-0 right-0 h-8 w-8 border-t-[3px] border-r-[3px] border-white rounded-tr-md"></span>
+                        <span class="absolute bottom-0 left-0 h-8 w-8 border-b-[3px] border-l-[3px] border-white rounded-bl-md"></span>
+                        <span class="absolute bottom-0 right-0 h-8 w-8 border-b-[3px] border-r-[3px] border-white rounded-br-md"></span>
+                        <div class="scan-line"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-if="!loiCamera" class="mt-3 text-center text-[13px] text-slate-500">🔍 Đang tìm mã QR... Giữ camera ổn định</p>
+                </div>
+
+                <!-- Tab Upload ảnh -->
+                <div v-show="tabQuet === 'upload'" class="flex flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-slate-200 bg-slate-50 py-10 gap-4">
+                  <ImageUp class="h-10 w-10 text-slate-300" />
+                  <p class="text-[14px] text-slate-500 text-center px-4">Chụp ảnh mặt sau CCCD rõ nét rồi tải lên để quét QR</p>
+                  <button type="button" @click="fileInputQr?.click()"
+                    :disabled="dangQuetFile"
+                    class="flex items-center gap-2 rounded-[14px] bg-slate-800 px-5 py-2.5 text-[14px] font-semibold text-white hover:bg-slate-700 transition disabled:opacity-60">
+                    <ImageUp class="h-4 w-4" />
+                    {{ dangQuetFile ? 'Đang xử lý...' : 'Chọn ảnh CCCD' }}
+                  </button>
+                  <input ref="fileInputQr" type="file" accept="image/*" class="hidden" @change="quetQrTuAnh" />
+                </div>
+
+                <!-- Lỗi chung -->
+                <div v-if="loiCamera" class="mt-4 rounded-[14px] bg-rose-50 px-4 py-3 text-[13px] font-medium text-rose-600">
+                  ⚠️ {{ loiCamera }}
+                </div>
+              </div>
+            </div>
+          </Teleport>
+
+          <!-- CCCD Field -->
+          <div class="mt-6 space-y-1.5">
+            <span class="text-[13px] font-semibold text-slate-500">Số CCCD <span class="text-rose-500">*</span></span>
+            <div class="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                @click="batDauQuet"
+                :class="[
+                  'flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition whitespace-nowrap',
+                  loiForm.cccd ? 'border-rose-400 bg-rose-50 text-rose-600 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                ]"
+              >
+                <ScanLine class="h-4 w-4" />
+                {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
+              </button>
+              <span v-if="form.cccd" class="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+                ✓ {{ form.cccd }}
               </span>
-              <div class="flex h-14 items-center gap-8 px-1 text-[17px] text-slate-700">
-                <label class="inline-flex items-center gap-3">
-                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-cyan-600" />
+              <span v-else class="text-sm text-slate-400 italic">Chưa quét CCCD</span>
+            </div>
+            <!-- Toast thành công sau khi quét -->
+            <div v-if="thongBaoQrOk" class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-[13px] font-medium text-emerald-700">
+              {{ thongBaoQrOk }}
+            </div>
+            <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
+          </div>
+
+          <div class="mt-5 grid gap-x-5 gap-y-4 xl:grid-cols-12">
+            <div class="space-y-1.5 xl:col-span-4">
+              <span class="text-[13px] font-semibold text-slate-500">Giới tính <span class="text-rose-500">*</span></span>
+              <div class="flex h-11 items-center gap-6 px-1 text-sm text-slate-700">
+                <label class="inline-flex items-center gap-2">
+                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-rose-500" />
                   <span>Nam</span>
                 </label>
-                <label class="inline-flex items-center gap-3">
-                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-cyan-600" />
+                <label class="inline-flex items-center gap-2">
+                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-rose-500" />
                   <span>Nữ</span>
                 </label>
               </div>
             </div>
 
-            <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px]  tracking-[0.06em] text-black">
-                Ngày sinh <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-4">
+              <span class="text-[13px] font-semibold text-slate-500">Ngày sinh <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.ngaySinh"
                 type="date"
-                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </label>
 
-            <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Email <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-4">
+              <span class="text-[13px] font-semibold text-slate-500">Email <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.email"
                 type="email"
                 placeholder="Nhập email"
                 :class="[
-                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
-                  loiForm.email ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-slate-300',
+                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
+                  loiForm.email ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-rose-300',
                 ]"
               />
               <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
             </label>
 
-            <label class="space-y-2 xl:col-span-4">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Tỉnh/Thành phố <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-4">
+              <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.tinhThanh"
-                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
               >
                 <option value="">Chọn tỉnh thành</option>
                 <option v-for="item in dsTinhThanh" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
             </label>
 
-            <label class="space-y-2 xl:col-span-4">
-              <span class="text-[18px]  tracking-[0.06em] text-black">
-                Quận/Huyện <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-4">
+              <span class="text-[13px] font-semibold text-slate-500">Quận/Huyện <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.quanHuyen"
-                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
               >
                 <option value="">Chọn quận huyện</option>
                 <option v-for="item in dsQuanHuyen" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
             </label>
 
-            <label class="space-y-2 xl:col-span-4">
-              <span class="text-[18px]  tracking-[0.06em] text-black">
-                Xã/Phường/Thị trấn <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-4">
+              <span class="text-[13px] font-semibold text-slate-500">Xã/Phường/Thị trấn <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.xaPhuong"
-                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
               >
                 <option value="">Chọn xã phường</option>
                 <option v-for="item in dsXaPhuong" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
             </label>
 
-            <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px]  tracking-[0.06em] text-black">
-                Số điện thoại <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-6">
+              <span class="text-[13px] font-semibold text-slate-500">Số điện thoại <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.sdt"
                 type="tel"
                 placeholder="Nhập số điện thoại"
                 :class="[
-                  'h-14 w-full rounded-[18px] border bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400',
-                  loiForm.sdt ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200 focus:border-slate-300',
+                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
+                  loiForm.sdt ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-rose-300',
                 ]"
               />
               <p v-if="loiForm.sdt" class="text-xs text-rose-500">{{ loiForm.sdt }}</p>
             </label>
 
-            <label class="space-y-2 xl:col-span-6">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Vai trò <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-6">
+              <span class="text-[13px] font-semibold text-slate-500">Vai trò <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.vaiTro"
-                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition focus:border-slate-300"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
               >
                 <option v-for="item in dsVaiTro" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
             </label>
 
-            <label class="space-y-2 xl:col-span-12">
-              <span class="text-[18px] tracking-[0.06em] text-black">
-                Địa chỉ cụ thể <span class="text-rose-500">*</span>
-              </span>
+            <label class="space-y-1.5 xl:col-span-12">
+              <span class="text-[13px] font-semibold text-slate-500">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.diaChiCuThe"
                 type="text"
                 placeholder="Nhập địa chỉ cụ thể"
-                class="h-14 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[17px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
               />
             </label>
-
-
-          </div>
-
-          <div class="mt-10 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-6">
-            <button
-              @click="luu"
-              :disabled="dangLuu"
-              class="admin-btn-primary h-12 rounded-[18px] px-6 text-[15px] font-semibold"
-            >
-              <Save class="h-4 w-4" />
-              {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
-            </button>
-            <button
-              type="button"
-              @click="router.push({ name: 'admin-nhan-vien' })"
-              class="admin-btn-soft h-12 rounded-[18px] px-6 text-[15px] font-semibold"
-            >
-              Hủy
-            </button>
           </div>
         </section>
+      </div>
+
+      <!-- Buttons cuối trang -->
+      <div class="flex flex-wrap items-center justify-end gap-3 rounded-[28px] border border-slate-200 bg-white px-8 py-5 shadow-sm">
+        <button
+          type="button"
+          @click="router.push({ name: 'admin-nhan-vien' })"
+          class="admin-btn-soft h-12 rounded-[18px] px-8 text-[15px] font-semibold"
+        >
+          Hủy
+        </button>
+        <button
+          @click="luu"
+          :disabled="dangLuu"
+          class="admin-btn-primary h-12 rounded-[18px] px-8 text-[15px] font-semibold"
+        >
+          <Save class="h-4 w-4" />
+          {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
+        </button>
       </div>
 
       <section v-if="!laMoi" class="grid gap-6 xl:grid-cols-2">
@@ -772,3 +975,26 @@ onMounted(async () => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #0ea5e9, #38bdf8, transparent);
+  border-radius: 2px;
+  animation: scanMove 2s linear infinite;
+  box-shadow: 0 0 8px 2px rgba(56, 189, 248, 0.6);
+}
+
+@keyframes scanMove {
+  0%   { top: 0%; opacity: 1; }
+  48%  { top: 100%; opacity: 1; }
+  50%  { top: 100%; opacity: 0; }
+  52%  { top: 0%;   opacity: 0; }
+  54%  { top: 0%;   opacity: 1; }
+  100% { top: 100%; opacity: 1; }
+}
+</style>
