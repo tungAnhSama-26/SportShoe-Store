@@ -8,8 +8,10 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Integer> {
 
@@ -84,4 +86,27 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             @Param("tuNgay") java.time.Instant tuNgay, 
             @Param("denNgay") java.time.Instant denNgay, 
             Pageable pageable);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE PhieuGiamGia p
+        SET p.trangThai = 
+            CASE 
+                WHEN p.ngayKetThuc < CURRENT_TIMESTAMP THEN 2
+                WHEN p.soLuongDaDung >= p.soLuong THEN 3
+                WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
+                ELSE 1
+            END
+        WHERE p.trangThai != 0 
+          AND p.trangThai != (
+              CASE 
+                  WHEN p.ngayKetThuc < CURRENT_TIMESTAMP THEN 2
+                  WHEN p.soLuongDaDung >= p.soLuong THEN 3
+                  WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
+                  ELSE 1
+              END
+          )
+    """)
+    void capNhatTrangThaiTuDong();
 }

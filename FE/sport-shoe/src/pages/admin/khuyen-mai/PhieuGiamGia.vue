@@ -124,6 +124,9 @@ const dsTrangThai = [
   { label: "Tất cả", value: "" },
   { label: "Đang hoạt động", value: "1" },
   { label: "Ngưng hoạt động", value: "0" },
+  { label: "Hết hạn", value: "2" },
+  { label: "Hết số lượng", value: "3" },
+  { label: "Sắp diễn ra", value: "4" },
 ];
 
 const dsLoai = [
@@ -133,13 +136,21 @@ const dsLoai = [
 ];
 
 function mauTrangThai(trangThai) {
-  return Number(trangThai) === 1
-    ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"
-    : "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+  const status = Number(trangThai);
+  if (status === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
+  if (status === 2) return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
+  if (status === 3) return "bg-orange-50 text-orange-600 ring-1 ring-orange-200";
+  if (status === 4) return "bg-blue-50 text-blue-600 ring-1 ring-blue-200";
+  return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
 function statusText(value) {
-  return Number(value) === 1 ? "Đang hoạt động" : "Ngưng hoạt động";
+  const status = Number(value);
+  if (status === 1) return "Đang hoạt động";
+  if (status === 2) return "Hết hạn";
+  if (status === 3) return "Hết số lượng";
+  if (status === 4) return "Sắp diễn ra";
+  return "Ngưng hoạt động";
 }
 
 function loaiGiamText(loai) {
@@ -320,8 +331,9 @@ function lamMoiBoLoc() {
 }
 
 async function nhanhDoiTrangThai(item) {
+  if (Number(item.trangThai) === 0) return;
   try {
-    const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
+    const nextStatus = 0;
     await updatePhieuGiamGia(item.id, { ...item, trangThai: nextStatus });
     hienThiThongBao("success", "Cập nhật phiếu thành công");
     taiDanhSach();
@@ -338,8 +350,9 @@ async function nhanhDoiTrangThai(item) {
 }
 
 async function nhanhDoiTrangThaiKh(item) {
+  if (Number(item.trangThai) === 0) return;
   try {
-    const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
+    const nextStatus = 0;
     await updatePhieuGiamGiaKhachHang(item.id, {
       ...item,
       trangThai: nextStatus,
@@ -686,10 +699,7 @@ onMounted(() => {
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
               <th class="bg-slate-100 px-4 py-3">Hình thức</th>
-              <th class="bg-slate-100 px-4 py-3">Loại giảm</th>
               <th class="bg-slate-100 px-4 py-3">Giá trị giảm</th>
-              <th class="bg-slate-100 px-4 py-3">Đơn tối thiểu</th>
-              <th class="bg-slate-100 px-4 py-3">Giảm tối đa</th>
               <th class="bg-slate-100 px-4 py-3">Số lượng</th>
               <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
               <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
@@ -701,12 +711,12 @@ onMounted(() => {
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="13" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="10" class="py-10 text-center text-sm text-slate-400">
                 Đang tải...
               </td>
             </tr>
             <tr v-else-if="!danhSach.length">
-              <td colspan="13" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="10" class="py-10 text-center text-sm text-slate-400">
                 Không có dữ liệu.
               </td>
             </tr>
@@ -723,12 +733,7 @@ onMounted(() => {
               </td>
               <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
               <td class="px-4 py-3">{{ loaiPhieuText(item.loaiPhieu) }}</td>
-              <td class="px-4 py-3">{{ loaiGiamText(item.loai) }}</td>
               <td class="px-4 py-3">{{ formatGiaTri(item.giaTri, item.loai) }}</td>
-              <td class="px-4 py-3">{{ formatTien(item.giaTriToiThieu) }}</td>
-              <td class="px-4 py-3">
-                {{ Number(item.giamToiDa) > 0 ? formatTien(item.giamToiDa) : "Không giới hạn" }}
-              </td>
               <td class="px-4 py-3">{{ item.soLuong }}</td>
               <td class="px-4 py-3">{{ toDisplayDate(item.ngayBatDau) }}</td>
               <td class="px-4 py-3">{{ toDisplayDate(item.ngayKetThuc) }}</td>
@@ -744,13 +749,11 @@ onMounted(() => {
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :action-label="
-                      Number(item.trangThai) === 1
-                        ? 'Tắt phiếu'
-                        : 'Kích hoạt phiếu'
-                    "
-                    :confirm-message="`Bạn có chắc chắn muốn ${Number(item.trangThai) === 1 ? 'tắt' : 'kích hoạt'} phiếu này không?`"
-                    :intent="Number(item.trangThai) === 1 ? 'deactivate' : 'activate'"
+                    :disabled="Number(item.trangThai) === 0"
+                    disabled-title="Không thể thao tác trên phiếu đã ngừng hoạt động"
+                    action-label="Tắt phiếu"
+                    confirm-message="Bạn có chắc chắn muốn tắt phiếu này không?"
+                    intent="deactivate"
                     @toggle="nhanhDoiTrangThai(item)"
                   />
                   <button
@@ -829,13 +832,11 @@ onMounted(() => {
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :action-label="
-                      Number(item.trangThai) === 1
-                        ? 'Tắt liên kết'
-                        : 'Kích hoạt liên kết'
-                    "
-                    :confirm-message="`Bạn có chắc chắn muốn ${Number(item.trangThai) === 1 ? 'tắt' : 'kích hoạt'} liên kết này không?`"
-                    :intent="Number(item.trangThai) === 1 ? 'deactivate' : 'activate'"
+                    :disabled="Number(item.trangThai) === 0"
+                    disabled-title="Không thể thao tác trên phiếu đã ngừng hoạt động"
+                    action-label="Tắt liên kết"
+                    confirm-message="Bạn có chắc chắn muốn tắt liên kết này không?"
+                    intent="deactivate"
                     @toggle="nhanhDoiTrangThaiKh(item)"
                   />
                   <button

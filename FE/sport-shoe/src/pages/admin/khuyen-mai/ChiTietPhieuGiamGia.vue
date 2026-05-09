@@ -78,6 +78,8 @@ const form = reactive({
   trangThai: "1"
 });
 
+const isReadOnly = computed(() => !laMoi && (Number(form.trangThai) === 0 || Number(form.trangThai) === 2));
+
 const searchKh = ref("");
 const danhSachKh = ref([]);
 const dsEmailChon = ref([]);
@@ -198,6 +200,35 @@ watch(dsEmailChon, () => {
   }
 }, { deep: true });
 
+watch(() => form.giaTri, (newVal) => {
+  if (newVal === "" || newVal === null || newVal === undefined) {
+    delete formErrors.giaTri;
+    return;
+  }
+  if (Number(form.loai) === 1) {
+    const val = Number(newVal);
+    if (val <= 0) {
+      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0%";
+    } else if (val > 100) {
+      formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
+    } else {
+      delete formErrors.giaTri;
+    }
+  } else {
+    const val = parseVndNumber(newVal);
+    if (val <= 0) {
+      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
+    } else {
+      delete formErrors.giaTri;
+    }
+  }
+});
+
+watch(() => form.loai, () => {
+  delete formErrors.giaTri;
+  form.giaTri = "";
+});
+
 async function taiChiTiet() {
   await taiDanhSachKh();
 
@@ -205,6 +236,7 @@ async function taiChiTiet() {
     if (!form.ma) {
       taoMaNgauNhien();
     }
+    form.ngayBatDau = getToday();
     return;
   }
 
@@ -277,12 +309,21 @@ async function submitForm() {
     formErrors.ten = "Vui lòng nhập tên phiếu giảm giá";
     isValid = false;
   }
-  if (!form.giaTri || parseVndNumber(form.giaTri) <= 0) {
-    formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
-    isValid = false;
-  } else if (Number(form.loai) === 1 && parseVndNumber(form.giaTri) > 100) {
-    formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
-    isValid = false;
+  if (Number(form.loai) === 1) {
+    const val = Number(form.giaTri);
+    if (!form.giaTri || val <= 0) {
+      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
+      isValid = false;
+    } else if (val > 100) {
+      formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
+      isValid = false;
+    }
+  } else {
+    const val = parseVndNumber(form.giaTri);
+    if (!form.giaTri || val <= 0) {
+      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
+      isValid = false;
+    }
   }
   if (form.giaTriToiThieu && parseVndNumber(form.giaTriToiThieu) < 1) {
     formErrors.giaTriToiThieu = "Giá trị đơn tối thiểu phải lớn hơn 0";
@@ -295,9 +336,16 @@ async function submitForm() {
   if (!form.ngayBatDau) {
     formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
     isValid = false;
+  } else if (laMoi && form.ngayBatDau < getToday()) {
+    formErrors.ngayBatDau = "Ngày bắt đầu không được chọn trong quá khứ";
+    isValid = false;
   }
+
   if (!form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
+    isValid = false;
+  } else if (form.ngayKetThuc < getToday()) {
+    formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
     isValid = false;
   }
   if (form.ngayBatDau && form.ngayKetThuc && form.ngayBatDau > form.ngayKetThuc) {
@@ -327,7 +375,7 @@ async function submitForm() {
       ngayBatDau: form.ngayBatDau,
       ngayKetThuc: form.ngayKetThuc,
       soLuong: Number(form.soLuong),
-      trangThai: Number(form.trangThai),
+      trangThai: laMoi ? undefined : form.trangThai,
       ngayTao: laMoi ? getToday() : undefined,
       ngayCapNhat: !laMoi ? getToday() : undefined
     };
@@ -410,9 +458,14 @@ onMounted(taiChiTiet);
     </section>
 
     <div v-if="loiTrang" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
+    
+    <div v-if="isReadOnly" class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700">
+      Phiếu giảm giá này đã hết hạn hoặc ngừng hoạt động nên chỉ có thể xem chi tiết.
+    </div>
 
     <section class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex items-center gap-3">
+      <fieldset :disabled="isReadOnly" class="space-y-6">
+        <div class="flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
           <Ticket class="h-5 w-5" />
         </div>
@@ -425,8 +478,8 @@ onMounted(taiChiTiet);
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Mã phiếu <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: VOUCHER2024" />
-            <button @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-rose-500">
+            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100" placeholder="Ví dụ: VOUCHER2024" />
+            <button v-if="!isReadOnly" @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-rose-500">
               <RefreshCcw class="h-4 w-4" />
             </button>
           </div>
@@ -470,7 +523,7 @@ onMounted(taiChiTiet);
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
+            <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" :min="form.loai === '1' ? '1' : undefined" :max="form.loai === '1' ? '100' : undefined" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{{ form.loai === '1' ? '%' : 'VNĐ' }}</span>
           </div>
           <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTri }}</p>
@@ -509,16 +562,8 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày kết thúc <span class="text-rose-500">*</span></label>
-          <input v-model="form.ngayKetThuc" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.ngayKetThuc" type="date" :min="form.ngayBatDau || getToday()" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
           <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayKetThuc }}</p>
-        </div>
-
-        <div v-if="!laMoi" class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Trạng thái <span class="text-rose-500">*</span></label>
-          <select v-model="form.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white">
-            <option value="1">Đang hoạt động</option>
-            <option value="0">Ngưng hoạt động</option>
-          </select>
         </div>
       </div>
 
@@ -528,7 +573,7 @@ onMounted(taiChiTiet);
             <Users class="h-5 w-5 text-rose-500" />
             <span class="text-sm font-bold">Chọn khách hàng mục tiêu</span>
           </div>
-          <button type="button" @click="chonTatCa" class="text-xs font-semibold text-rose-500 transition-colors hover:text-rose-600">
+          <button v-if="!isReadOnly" type="button" @click="chonTatCa" class="text-xs font-semibold text-rose-500 transition-colors hover:text-rose-600">
             {{ danhSachKh.length > 0 && danhSachKh.every((kh) => dsEmailChon.includes(kh.email)) ? "Bỏ chọn tất cả" : "Chọn tất cả trang này" }}
           </button>
         </div>
@@ -571,13 +616,14 @@ onMounted(taiChiTiet);
         </div>
         <p v-if="formErrors.email" class="text-xs text-rose-500">{{ formErrors.email }}</p>
       </div>
+      </fieldset>
 
       <div class="flex items-center gap-3 border-t border-slate-100 pt-6">
-        <button @click="submitForm" :disabled="saving" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
+        <button v-if="!isReadOnly" @click="submitForm" :disabled="saving" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
           <Save class="h-4 w-4" />
           {{ saving ? "Đang lưu..." : (laMoi ? "Tạo phiếu giảm giá" : "Lưu thay đổi") }}
         </button>
-        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="whitespace-nowrap rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">Hủy</button>
+        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="whitespace-nowrap rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">{{ isReadOnly ? "Quay lại" : "Hủy" }}</button>
       </div>
     </section>
   </div>

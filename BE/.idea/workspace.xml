@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../database/sua_trang_thai_hoa_don.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/d7b0a813-1a85-49ea-bef6-ab9cc0fa2830.xml" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,10 +44,10 @@
     "Spring Boot.ServerApplication.executor": "Run",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "deletionFromPopupRequiresConfirmation": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "Nghiem-huy",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/tunga/OneDrive/Desktop/SportShoe-Store/BE",
+    "last_opened_file_path": "D:/SportShoe-Store",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -68,11 +68,12 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.32098.37" />
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.32098.37" />
+        <option value="bundled-jdk-9823dce3aa75-84258761d1cc-intellij.indexing.shared.core-IU-243.28141.18" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-IU-243.28141.18" />
       </set>
     </attachedChunks>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="9f3f6da4-9503-455d-aeb1-430091daf2f0" name="Changes" comment="" />
@@ -86,6 +87,7 @@
       <workItem from="1775840265730" duration="275000" />
       <workItem from="1776694343699" duration="489000" />
       <workItem from="1776777784040" duration="30000" />
+      <workItem from="1778032207056" duration="181000" />
     </task>
     <servers />
   </component>
