@@ -1,4 +1,5 @@
 import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
+import { getAuthHeaders } from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
 
@@ -6,6 +7,7 @@ async function request(path, init) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
       ...init?.headers
     },
     ...init
