@@ -461,7 +461,10 @@ onBeforeUnmount(() => {
         @click.self="dongModal"
       >
         <div
-          class="w-full max-w-3xl overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]"
+          :class="[
+            'w-full overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]',
+            props.showManualSection ? 'max-w-3xl' : 'max-w-5xl',
+          ]"
         >
           <div
             :class="[
@@ -502,14 +505,20 @@ onBeforeUnmount(() => {
             ]"
           >
             <div
-              class="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top,#111827_0%,#0f172a_55%,#020617_100%)] p-4 text-white"
+              :class="[
+                'overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top,#111827_0%,#0f172a_55%,#020617_100%)] text-white',
+                props.showManualSection ? 'p-4' : 'p-5',
+              ]"
             >
               <div
                 class="relative overflow-hidden rounded-[24px] border border-white/10 bg-black/40"
               >
                 <video
                   ref="videoRef"
-                  class="aspect-[4/3] w-full object-cover"
+                  :class="[
+                    'w-full object-cover',
+                    props.showManualSection ? 'aspect-[4/3]' : 'aspect-[16/10] min-h-[420px] md:min-h-[520px]',
+                  ]"
                   playsinline
                   muted
                   autoplay
@@ -519,7 +528,10 @@ onBeforeUnmount(() => {
                   class="pointer-events-none absolute inset-0 flex items-center justify-center"
                 >
                   <div
-                    class="h-48 w-48 rounded-[32px] border-2 border-white/80 shadow-[0_0_0_9999px_rgba(2,6,23,0.24)]"
+                    :class="[
+                      'rounded-[32px] border-2 border-white/80 shadow-[0_0_0_9999px_rgba(2,6,23,0.24)]',
+                      props.showManualSection ? 'h-48 w-48' : 'h-64 w-64 md:h-72 md:w-72',
+                    ]"
                   />
                 </div>
 
@@ -566,15 +578,20 @@ onBeforeUnmount(() => {
               v-if="props.showManualSection"
               class="space-y-4 rounded-[28px] border border-slate-200 bg-slate-50/80 p-5"
             >
-              <div>
-                <h3 class="text-lg font-black text-slate-900">{{ manualSectionTitle }}</h3>
-                <p class="mt-1 text-sm text-slate-500">
+              <div v-if="manualSectionTitle || manualSectionDescription">
+                <h3 v-if="manualSectionTitle" class="text-lg font-black text-slate-900">
+                  {{ manualSectionTitle }}
+                </h3>
+                <p v-if="manualSectionDescription" class="mt-1 text-sm text-slate-500">
                   {{ manualSectionDescription }}
                 </p>
               </div>
 
               <label class="block">
-                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <span
+                  v-if="manualLabel"
+                  class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400"
+                >
                   {{ manualLabel }}
                 </span>
                 <textarea

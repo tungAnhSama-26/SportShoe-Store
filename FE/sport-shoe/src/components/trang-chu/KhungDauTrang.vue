@@ -45,7 +45,7 @@ onUnmounted(() => {
         : 'border-slate-200/80 bg-white/88 backdrop-blur',
     ]"
   >
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 lg:px-10">
+    <div class="mx-auto flex max-w-7xl items-center gap-4 px-6 py-3 lg:px-10">
       <!-- Mobile Menu Button -->
       <button @click="toggleMenu" class="flex text-slate-900 transition md:hidden" aria-label="Menu">
         <svg v-if="!menuMo" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -57,7 +57,7 @@ onUnmounted(() => {
       </button>
 
       <!-- Logo -->
-      <router-link to="/" class="flex items-center gap-3">
+      <router-link to="/" class="flex shrink-0 items-center gap-3">
         <img :src="logoChinh" :alt="thuongHieu" class="h-10 w-auto object-contain md:h-12" />
       </router-link>
 
@@ -76,28 +76,28 @@ onUnmounted(() => {
       </div>
 
       <!-- Desktop Nav -->
-      <nav class="hidden items-center gap-7 text-[12px] font-semibold text-slate-800 md:flex">
-        <router-link :to="{ path: '/' }" class="transition hover:text-red-600">Trang chủ</router-link>
-        <router-link :to="{ path: '/', hash: '#bo-suu-tap' }" class="transition hover:text-red-600">Danh mục</router-link>
-        <router-link :to="{ path: '/', hash: '#noi-bat' }" class="transition hover:text-red-600">Nổi bật</router-link>
-        <router-link :to="{ path: '/', hash: '#gia-tri' }" class="transition hover:text-red-600">Giới thiệu</router-link>
+      <nav class="hidden min-w-0 flex-1 items-center justify-center gap-5 whitespace-nowrap text-[12px] font-semibold leading-[1.35] text-slate-800 lg:gap-7 md:flex">
+        <router-link :to="{ path: '/' }" class="shrink-0 transition hover:text-red-600">Trang chủ</router-link>
+        <router-link :to="{ path: '/', hash: '#bo-suu-tap' }" class="shrink-0 transition hover:text-red-600">Danh mục</router-link>
+        <router-link :to="{ path: '/', hash: '#noi-bat' }" class="shrink-0 transition hover:text-red-600">Nổi bật</router-link>
+        <router-link :to="{ path: '/', hash: '#gia-tri' }" class="shrink-0 transition hover:text-red-600">Giới thiệu</router-link>
       </nav>
 
       <!-- Desktop Actions -->
-      <div class="hidden items-center gap-4 md:flex">
-        <button class="text-slate-900 transition hover:text-red-600" aria-label="Tìm kiếm">
+      <div class="ml-auto hidden shrink-0 items-center gap-4 md:flex">
+        <button class="inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-red-600" aria-label="Tìm kiếm">
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
         </button>
-        <button class="text-slate-900 transition hover:text-red-600" aria-label="Tài khoản">
+        <button class="inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-red-600" aria-label="Tài khoản">
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21a8 8 0 1 0-16 0" />
             <circle cx="12" cy="7" r="4" />
           </svg>
         </button>
-        <button class="relative text-slate-900 transition hover:text-red-600" aria-label="Giỏ hàng">
+        <button class="relative inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-red-600" aria-label="Giỏ hàng">
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="9" cy="20" r="1" />
             <circle cx="18" cy="20" r="1" />

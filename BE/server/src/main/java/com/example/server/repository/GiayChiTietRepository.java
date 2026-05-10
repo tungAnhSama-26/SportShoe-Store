@@ -61,7 +61,8 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
 
     @Query("""
             select gct.giay.id, min(gct.giaBan), count(gct), sum(gct.soLuong), max(gct.giaBan),
-                   sum(case when gct.giaBan < gct.giaGoc then 1 else 0 end)
+                   sum(case when gct.giaBan < gct.giaGoc then 1 else 0 end),
+                   min(gct.giaGoc), max(gct.giaGoc)
             from GiayChiTiet gct
             where gct.giay.id in :ids and (gct.kichHoat = 1 or gct.kichHoat = 2)
             group by gct.giay.id

@@ -34,6 +34,12 @@ import TrongLuong from "../pages/admin/danh-muc/TrongLuong.vue";
 import Login from "../pages/login/Login.vue";
 import Register from "../pages/register/Register.vue";
 import ForgotPassword from "../pages/login/ForgotPassword.vue";
+import PvfLayout from "../layouts/pvf/PvfLayout.vue";
+import PvfLeaveRequestList from "../pages/pvf/leave-requests/PvfLeaveRequestList.vue";
+import PvfLeaveRequestDeletedList from "../pages/pvf/leave-requests/PvfLeaveRequestDeletedList.vue";
+import PvfLeaveRequestDetail from "../pages/pvf/leave-requests/PvfLeaveRequestDetail.vue";
+import PvfLeaveRequestCreate from "../pages/pvf/leave-requests/PvfLeaveRequestCreate.vue";
+import PvfLeaveRequestEdit from "../pages/pvf/leave-requests/PvfLeaveRequestEdit.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -85,6 +91,41 @@ const router = createRouter({
           path: "gioi-thieu",
           name: "gioi-thieu",
           component: GioiThieu
+        }
+      ]
+    },
+    {
+      path: "/dao-tao-pvf",
+      component: PvfLayout,
+      children: [
+        {
+          path: "",
+          redirect: "/dao-tao-pvf/don-xin-phep-nghi-hoc"
+        },
+        {
+          path: "don-xin-phep-nghi-hoc",
+          name: "pvf-don-xin-phep-nghi-hoc",
+          component: PvfLeaveRequestList
+        },
+        {
+          path: "don-xin-phep-nghi-hoc/da-xoa",
+          name: "pvf-don-xin-phep-nghi-hoc-da-xoa",
+          component: PvfLeaveRequestDeletedList
+        },
+        {
+          path: "don-xin-phep-nghi-hoc/them-moi",
+          name: "pvf-don-xin-phep-nghi-hoc-them-moi",
+          component: PvfLeaveRequestCreate
+        },
+        {
+          path: "don-xin-phep-nghi-hoc/:id/chinh-sua",
+          name: "pvf-don-xin-phep-nghi-hoc-chinh-sua",
+          component: PvfLeaveRequestEdit
+        },
+        {
+          path: "don-xin-phep-nghi-hoc/:id",
+          name: "pvf-don-xin-phep-nghi-hoc-chi-tiet",
+          component: PvfLeaveRequestDetail
         }
       ]
     },
