@@ -33,8 +33,31 @@ import MauSac from "../pages/admin/danh-muc/MauSac.vue";
 import KichCo from "../pages/admin/danh-muc/KichCo.vue";
 import TrongLuong from "../pages/admin/danh-muc/TrongLuong.vue";
 import Login from "../pages/login/Login.vue";
+import AdminLogin from "../pages/login/AdminLogin.vue";
 import Register from "../pages/register/Register.vue";
 import ForgotPassword from "../pages/login/ForgotPassword.vue";
+import { getCurrentAdminUser, hasRequiredAdminCccd, isAdminAuthenticated, isAdminRole } from "../services/auth";
+
+const STAFF_ALLOWED_ADMIN_PATHS = [
+  "/admin/ban-hang",
+  "/admin/hoa-don",
+  "/admin/khach-hang",
+  "/admin/lich-lam-viec",
+  "/admin/chat"
+];
+
+function isStaffAllowedPath(path) {
+  return STAFF_ALLOWED_ADMIN_PATHS.some((allowedPath) => path.startsWith(allowedPath));
+}
+
+function ownEmployeeProfilePath() {
+  const id = getCurrentAdminUser()?.id;
+  return id ? `/admin/nhan-vien/${id}` : "/admin/login";
+}
+
+function isOwnEmployeeProfile(path) {
+  return path === ownEmployeeProfilePath();
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -52,6 +75,11 @@ const router = createRouter({
       path: "/login",
       name: "login",
       component: Login
+    },
+    {
+      path: "/admin/login",
+      name: "admin-login",
+      component: AdminLogin
     },
     {
       path: "/register",
@@ -260,7 +288,44 @@ const router = createRouter({
     }
   ]
 });
-var stdin_default = router;
-export {
-  stdin_default as default
-};
+
+router.beforeEach((to) => {
+  if (to.name === "admin-login") {
+    return true;
+  }
+
+  if (!to.path.startsWith("/admin")) {
+    return true;
+  }
+
+  if (!isAdminAuthenticated()) {
+    return { path: "/admin/login", query: { redirect: to.fullPath } };
+  }
+
+  if (!hasRequiredAdminCccd() && !isOwnEmployeeProfile(to.path)) {
+    return {
+      path: ownEmployeeProfilePath(),
+      query: { requireCccd: "1", redirect: to.fullPath }
+    };
+  }
+
+  if (!hasRequiredAdminCccd() && isOwnEmployeeProfile(to.path)) {
+    return true;
+  }
+
+  if (isAdminRole()) {
+    return true;
+  }
+
+  if (to.path === "/admin" || to.path === "/admin/") {
+    return "/admin/ban-hang";
+  }
+
+  if (!isStaffAllowedPath(to.path)) {
+    return "/admin/ban-hang";
+  }
+
+  return true;
+});
+
+export default router;

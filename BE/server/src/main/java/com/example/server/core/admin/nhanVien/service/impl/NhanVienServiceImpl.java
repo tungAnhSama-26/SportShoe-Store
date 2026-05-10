@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -38,6 +39,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 .filter(nv -> matchKeyword(kw, nv))
                 .filter(nv -> vaiTro == null || vaiTro.equals(nv.getVaiTro()))
                 .filter(nv -> trangThai == null || trangThai.equals(nv.getTrangThai()))
+                .sorted(Comparator.comparing(NhanVien::getNgayTao, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(this::toItem)
                 .toList();
     }
@@ -61,6 +63,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException("Email da duoc su dung");
         }
+        String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail);
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
@@ -78,6 +81,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         } while (nhanVienRepository.existsByMa(generatedMa));
 
         nv.setMa(generatedMa);
+        nv.setTenDangNhap(generatedTenDangNhap);
         nv.setHoTen(request.hoTen().trim());
         nv.setEmail(normalizedEmail);
         String randomMatKhau = UUID.randomUUID().toString().substring(0, 8);
@@ -96,7 +100,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         emailService.sendRegistrationEmail(
                 saved.getEmail(),
                 saved.getHoTen(),
-                saved.getMa(),
+                saved.getTenDangNhap(),
                 randomMatKhau
         );
 
@@ -107,6 +111,13 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Transactional
     public NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request) {
         NhanVien nv = findNhanVien(id);
+
+        String normalizedTenDangNhap = normalizeRequired(request.tenDangNhap(), "Ten dang nhap khong duoc de trong");
+        nhanVienRepository.findByTenDangNhapIgnoreCase(normalizedTenDangNhap)
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new BusinessException("Ten dang nhap da duoc su dung");
+                });
 
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         nhanVienRepository.findByEmail(normalizedEmail)
@@ -126,6 +137,7 @@ public class NhanVienServiceImpl implements NhanVienService {
 
 
 
+        nv.setTenDangNhap(normalizedTenDangNhap);
         nv.setHoTen(request.hoTen().trim());
         nv.setEmail(normalizedEmail);
         nv.setSdt(normalizeOptional(request.sdt()));
@@ -205,6 +217,28 @@ public class NhanVienServiceImpl implements NhanVienService {
         return resolved.isBlank() ? null : resolved;
     }
 
+    private String normalizeRequired(String value, String message) {
+        String resolved = normalize(value);
+        if (resolved == null) {
+            throw new BusinessException(message);
+        }
+        return resolved;
+    }
+
+    private String generateTenDangNhapFromEmail(String email) {
+        String baseUsername = email.split("@")[0].trim().toLowerCase(Locale.ROOT);
+        if (baseUsername.isBlank()) {
+            throw new BusinessException("Email khong hop le de tao ten dang nhap");
+        }
+
+        String username = baseUsername;
+        int counter = 1;
+        while (nhanVienRepository.existsByTenDangNhapIgnoreCase(username)) {
+            username = baseUsername + counter++;
+        }
+        return username;
+    }
+
     private String normalizeOptional(String value) {
         if (value == null) {
             return null;
@@ -222,6 +256,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         return new NhanVienResponse(
                 nv.getId(),
                 nv.getMa(),
+                nv.getTenDangNhap(),
                 nv.getHoTen(),
                 nv.getEmail(),
                 nv.getSdt(),

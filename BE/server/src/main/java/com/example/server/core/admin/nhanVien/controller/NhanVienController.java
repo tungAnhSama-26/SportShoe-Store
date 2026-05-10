@@ -7,9 +7,13 @@ import com.example.server.core.admin.nhanVien.dto.request.TaoNhanVienRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.NhanVienResponses.NhanVienResponse;
 import com.example.server.core.admin.nhanVien.service.NhanVienService;
 import com.example.server.infrastructure.api.ApiResponse;
+import com.example.server.infrastructure.security.AdminPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,6 +43,7 @@ public class NhanVienController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<NhanVienResponse>> layChiTiet(@PathVariable UUID id) {
+        assertCanAccessProfile(id);
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay chi tiet nhan vien thanh cong",
                 nhanVienService.layChiTiet(id)
@@ -68,6 +73,7 @@ public class NhanVienController {
             @PathVariable UUID id,
             @Valid @RequestBody CapNhatNhanVienRequest request
     ) {
+        assertCanAccessProfile(id);
         return ResponseEntity.ok(ApiResponse.success(
                 "Cap nhat nhan vien thanh cong",
                 nhanVienService.capNhatNhanVien(id, request)
@@ -100,5 +106,15 @@ public class NhanVienController {
     public ResponseEntity<ApiResponse<Void>> xoaNhanVien(@PathVariable UUID id) {
         nhanVienService.xoaNhanVien(id);
         return ResponseEntity.ok(ApiResponse.success("Xoa nhan vien thanh cong", null));
+    }
+
+    private void assertCanAccessProfile(UUID employeeId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = authentication != null ? authentication.getPrincipal() : null;
+        if (principal instanceof AdminPrincipal adminPrincipal
+                && !"ADMIN".equals(adminPrincipal.role())
+                && !adminPrincipal.id().equals(employeeId)) {
+            throw new AccessDeniedException("Nhan vien chi duoc cap nhat thong tin cua chinh minh");
+        }
     }
 }

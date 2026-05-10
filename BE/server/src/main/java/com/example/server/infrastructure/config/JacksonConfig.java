@@ -1,6 +1,7 @@
 package com.example.server.infrastructure.config;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.TimeZone;
 import org.springframework.context.annotation.Bean;
@@ -16,5 +17,10 @@ public class JacksonConfig {
                 .modules(new JavaTimeModule())
                 .timeZone(TimeZone.getTimeZone("Asia/Bangkok"))
                 .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
+
+    @Bean
+    public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
+        return builder.build();
     }
 }

@@ -8,6 +8,7 @@ import {
   isSidebarOpen,
   toggleSidebar
 } from "../../composable/useSidebar";
+import { useAdminSession } from "../../composable/useAdminSession";
 import {
   Award,
   BadgePercent,
@@ -31,6 +32,8 @@ import {
   Weight
 } from "lucide-vue-next";
 const route = useRoute();
+const { adminSession } = useAdminSession();
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
 const isActive = (path) => route.path.startsWith(path);
 const checkThuocTinhActive = (newPath) => {
   const routes = [
@@ -152,7 +155,7 @@ function subItemClass(active) {
     </div>
 
     <nav class="mt-6 flex-1 space-y-1 overflow-x-hidden overflow-y-auto" :class="compactMode ? 'px-2' : 'px-4'">
-      <router-link to="/admin/thong-ke" :title="compactMode ? 'T\u1ed5ng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
+      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'T\u1ed5ng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
         <LayoutDashboard :class="navIconClass(isActive('/admin/thong-ke'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">T&#7893;ng quan</span>
       </router-link>
@@ -167,7 +170,7 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; h&#243;a &#273;&#417;n</span>
       </router-link>
 
-      <div class="space-y-1">
+      <div v-if="laAdmin" class="space-y-1">
         <button
           type="button"
           :title="compactMode ? 'Qu\u1ea3n l\u00fd s\u1ea3n ph\u1ea9m' : undefined"
@@ -202,7 +205,7 @@ function subItemClass(active) {
         </div>
       </div>
 
-      <div class="space-y-1">
+      <div v-if="laAdmin" class="space-y-1">
         <button
           type="button"
           :title="compactMode ? 'Danh s\u00e1ch thu\u1ed9c t\u00ednh' : undefined"
@@ -265,7 +268,7 @@ function subItemClass(active) {
         </div>
       </div>
 
-      <div class="space-y-1">
+      <div v-if="laAdmin" class="space-y-1">
         <button
           type="button"
           :title="compactMode ? 'Qu\u1ea3n l\u00fd gi\u1ea3m gi\u00e1' : undefined"
@@ -305,7 +308,7 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; kh&#225;ch h&#224;ng</span>
       </router-link>
 
-      <router-link to="/admin/nhan-vien" :title="compactMode ? 'Qu\u1ea3n l\u00fd nh\u00e2n vi\u00ean' : undefined" :class="navItemClass(isActive('/admin/nhan-vien'))">
+      <router-link v-if="laAdmin" to="/admin/nhan-vien" :title="compactMode ? 'Qu\u1ea3n l\u00fd nh\u00e2n vi\u00ean' : undefined" :class="navItemClass(isActive('/admin/nhan-vien'))">
         <UserRoundCog :class="navIconClass(isActive('/admin/nhan-vien'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; nh&#226;n vi&#234;n</span>
       </router-link>
