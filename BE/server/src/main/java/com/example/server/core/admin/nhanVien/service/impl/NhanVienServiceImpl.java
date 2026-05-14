@@ -61,13 +61,13 @@ public class NhanVienServiceImpl implements NhanVienService {
     public NhanVienResponse taoNhanVien(TaoNhanVienRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
-            throw new BusinessException("Email da duoc su dung");
+            throw new BusinessException("Email đã được sử dụng");
         }
         String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail);
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
-            throw new BusinessException("CCCD da duoc su dung");
+            throw new BusinessException("CCCD đã được sử dụng");
         }
 
 
@@ -123,7 +123,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         nhanVienRepository.findByEmail(normalizedEmail)
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
-                    throw new BusinessException("Email da duoc su dung");
+                    throw new BusinessException("Email đã được sử dụng");
                 });
 
         String normalizedCccd = normalizeCccd(request.cccd());
@@ -131,7 +131,7 @@ public class NhanVienServiceImpl implements NhanVienService {
             nhanVienRepository.findByCccd(normalizedCccd)
                     .filter(existing -> !existing.getId().equals(id))
                     .ifPresent(existing -> {
-                        throw new BusinessException("CCCD da duoc su dung");
+                        throw new BusinessException("CCCD đã được sử dụng");
                     });
         }
 
@@ -156,7 +156,7 @@ public class NhanVienServiceImpl implements NhanVienService {
     public NhanVienResponse doiTrangThai(UUID id, DoiTrangThaiRequest request) {
         NhanVien nv = findNhanVien(id);
         if (request.trangThai() != 0 && request.trangThai() != 1) {
-            throw new BusinessException("Trang thai khong hop le");
+            throw new BusinessException("Trạng thái không hợp lệ");
         }
         nv.setTrangThai(request.trangThai());
         nv.setNgayCapNhat(Instant.now());
@@ -181,16 +181,16 @@ public class NhanVienServiceImpl implements NhanVienService {
 
     private NhanVien findNhanVien(UUID id) {
         return nhanVienRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhan vien khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
     }
 
     private NhanVien findNhanVienTheoCccd(String cccd) {
         String normalizedCccd = normalizeCccd(cccd);
         if (normalizedCccd == null) {
-            throw new ResourceNotFoundException("Nhan vien khong ton tai");
+            throw new ResourceNotFoundException("Nhân viên không tồn tại");
         }
         return nhanVienRepository.findByCccd(normalizedCccd)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhan vien khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
     }
 
     private boolean matchKeyword(String keyword, NhanVien nv) {
@@ -268,20 +268,20 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getVaiTro(),
                 mapVaiTro(nv.getVaiTro()),
                 nv.getTrangThai(),
-                nv.getTrangThai() == 1 ? "Hoat dong" : "Khoa",
+                nv.getTrangThai() == 1 ? "Đang làm" : "Nghỉ làm",
                 nv.getNgayTao()
         );
     }
 
     private String mapVaiTro(Integer vaiTro) {
         if (vaiTro == null) {
-            return "Khong xac dinh";
+            return "Không xác định";
         }
         return switch (vaiTro) {
             case 1 -> "Admin";
-            case 2 -> "Ban hang";
+            case 2 -> "Bán hàng";
             case 3 -> "Kho";
-            default -> "Khong xac dinh";
+            default -> "Không xác định";
         };
     }
 }
