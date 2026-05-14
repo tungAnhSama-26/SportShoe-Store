@@ -55,6 +55,8 @@ record GiayListItemResponse(
         String hinhAnh,
         BigDecimal giaMin,
         BigDecimal giaMax,
+        BigDecimal giaGocMin,
+        BigDecimal giaGocMax,
         Long tongBienThe,
         Long tongSoLuong,
         Instant ngayTao,
