@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import FormHeader from '../../../components/admin/san-pham/FormHeader.vue'
 import ProductFormSection from '../../../components/admin/san-pham/ProductFormSection.vue'
@@ -724,9 +724,7 @@ async function handleSave() {
     clearSavedDraftImages(createdVariants.value)
 
     if (syncedDraftImages) {
-      showToast('Luu san pham va dong bo anh thanh cong!', 'success')
-      return
-      showToast('LÆ°u sáº£n pháº©m vÃ  Ä‘á»“ng bá»™ áº£nh thÃ nh cÃ´ng!', 'success')
+      showToast('Lưu sản phẩm và đồng bộ ảnh thành công!', 'success')
       return
     }
     showToast('Lưu sản phẩm thành công!', 'success')
