@@ -34,3 +34,7 @@ build/
 
 ### Local Config ###
 src/main/resources/application-local.properties
+
+### Skills ###
+skills/
+skill/

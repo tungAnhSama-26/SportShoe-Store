@@ -66,11 +66,24 @@ async function batDauQuet() {
 
 function xuLyKetQuaQr(raw: string) {
   dungQuet();
+  const resolvedRaw = raw.trim();
+  loiForm.value.cccd = "";
+  loiCamera.value = "";
   try {
+    if (isVneIdSecureQr(resolvedRaw)) {
+      loiForm.value.cccd = "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+      return;
+    }
+
     // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
-    const parts = raw.split('|');
+    const parts = resolvedRaw.split('|');
     if (parts.length >= 3) {
-      if (parts[0]) form.value.cccd = parts[0].trim();
+      const scannedCccd = parts[0]?.trim() ?? "";
+      if (!/^\d{12}$/.test(scannedCccd)) {
+        loiForm.value.cccd = "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+        return;
+      }
+      form.value.cccd = scannedCccd;
       if (parts[2]) form.value.hoTen = parts[2].trim();
       if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
       if (parts[4]) {
@@ -78,19 +91,46 @@ function xuLyKetQuaQr(raw: string) {
         form.value.gioiTinh = (gt === 'nam' || gt === '0') ? 'Nam' : 'Nữ';
       }
       if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
+    } else if (/^\d{12}$/.test(resolvedRaw)) {
+      form.value.cccd = resolvedRaw;
     } else {
-      form.value.cccd = raw.trim();
+      loiForm.value.cccd = "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+      return;
     }
     thongBaoQrOk.value = 'Đã điền thông tin từ CCCD';
     setTimeout(() => { thongBaoQrOk.value = ''; }, 4000);
   } catch {
-    form.value.cccd = raw.trim();
+    loiForm.value.cccd = "Không thể đọc dữ liệu CCCD từ mã QR này.";
   }
+}
+
+function isVneIdSecureQr(raw: string) {
+  return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw)
+    || raw.length > 100;
 }
 
 function formatNgaySinh(ddmmyyyy: string) {
   if (!ddmmyyyy || ddmmyyyy.length !== 8) return '';
   return `${ddmmyyyy.slice(4,8)}-${ddmmyyyy.slice(2,4)}-${ddmmyyyy.slice(0,2)}`;
+}
+
+function syncCurrentAdminCccd(updated: any) {
+  if (typeof window === "undefined" || !updated?.id) return;
+
+  const storageKeys = ["adminUser", "sport-shoe-admin-session"];
+  for (const key of storageKeys) {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const current = JSON.parse(raw);
+      if (String(current?.id) === String(updated.id)) {
+        const next = { ...current, cccd: updated.cccd ?? "" };
+        window.localStorage.setItem(key, JSON.stringify(next));
+      }
+    } catch {
+      // Ignore stale localStorage values.
+    }
+  }
 }
 
 function dungQuet() {
@@ -126,6 +166,7 @@ const loiForm = ref({
 
 const form = ref({
   hoTen: "",
+  tenDangNhap: "",
   email: "",
   matKhau: "",
   sdt: "",
@@ -402,7 +443,9 @@ async function taiChiTiet() {
     nhanVien.value = data;
     form.value = {
       hoTen: data.hoTen ?? "",
+      tenDangNhap: data.tenDangNhap ?? "",
       email: data.email ?? "",
+      matKhau: "",
       sdt: data.sdt ?? "",
       cccd: data.cccd ?? "",
       gioiTinh: data.gioiTinh ?? "Nam",
@@ -443,10 +486,6 @@ async function luu() {
     hasError = true;
   }
 
-  if (laMoi && !form.value.cccd.trim()) {
-    loiForm.value.cccd = "Vui lòng nhập hoặc quét số CCCD.";
-    hasError = true;
-  }
   if (hasError) return;
 
   dangLuu.value = true;
@@ -464,6 +503,9 @@ async function luu() {
     hinhAnh: form.value.hinhAnh || undefined,
     vaiTro: form.value.vaiTro,
   };
+  if (!laMoi) {
+    payload.tenDangNhap = form.value.tenDangNhap.trim();
+  }
 
   try {
     if (laMoi) {
@@ -474,6 +516,12 @@ async function luu() {
 
     const updated = await capNhatNhanVien(id!, payload);
     nhanVien.value = updated;
+    syncCurrentAdminCccd(updated);
+    if (route.query.requireCccd === "1" && /^\d{12}$/.test(String(updated.cccd ?? ""))) {
+      const redirectPath = typeof route.query.redirect === "string" ? route.query.redirect : "/admin";
+      router.push(redirectPath.startsWith("/admin") ? redirectPath : "/admin");
+      return;
+    }
     thongBao.value = "Đã lưu thay đổi thành công.";
     setTimeout(() => {
       thongBao.value = "";
@@ -710,7 +758,7 @@ onUnmounted(() => {
 
           <!-- CCCD Field -->
           <div class="mt-6 space-y-1.5">
-            <span class="text-[13px] font-semibold text-slate-500">Số CCCD <span class="text-rose-500">*</span></span>
+            <span class="text-[13px] font-semibold text-slate-500">Số CCCD</span>
             <div class="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
@@ -723,10 +771,6 @@ onUnmounted(() => {
                 <ScanLine class="h-4 w-4" />
                 {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
               </button>
-              <span v-if="form.cccd" class="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-                ✓ {{ form.cccd }}
-              </span>
-
             </div>
             <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>

@@ -3,6 +3,7 @@ import { computed, readonly, ref } from "vue";
 const SESSION_STORAGE_NOTICE_KEY = "sport-shoe-admin-role-notice";
 const STORAGE_KEYS = [
   "sport-shoe-admin-session",
+  "adminUser",
   "sport-shoe-session",
   "sport-shoe-user",
   "adminSession",
@@ -83,7 +84,6 @@ function normalizeSession(candidate) {
       candidate.tenDangNhap,
       candidate.username,
       candidate.userName,
-      candidate.email,
       DEFAULT_SESSION.tenTaiKhoan,
     ),
     vaiTro: normalizeRole(

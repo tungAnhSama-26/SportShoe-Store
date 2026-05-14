@@ -1,4 +1,5 @@
 import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
+import { getAuthHeaders } from './auth'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
 const BASE = `${API_BASE_URL}/admin/danh-muc`
 
@@ -56,7 +57,7 @@ export interface TrongLuongItem {
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...init?.headers },
     ...init,
   })
   if (!res.ok) {
@@ -103,6 +104,7 @@ export const thuongHieuApi = {
 
     const response = await fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
+      headers: getAuthHeaders(),
       body: formData
     })
 

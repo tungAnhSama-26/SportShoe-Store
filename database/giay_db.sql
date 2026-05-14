@@ -28,6 +28,7 @@ GO
 CREATE TABLE nhan_vien (
     id            UNIQUEIDENTIFIER NOT NULL CONSTRAINT pk_nhan_vien PRIMARY KEY DEFAULT NEWID(),
     ma            VARCHAR(20)      NOT NULL,
+    ten_dang_nhap VARCHAR(50)      NOT NULL,
     ho_ten        NVARCHAR(100)    NOT NULL,
     email         VARCHAR(100)     NOT NULL,
     hinh_anh NVARCHAR(500) NULL,
@@ -41,6 +42,7 @@ CREATE TABLE nhan_vien (
     ngay_tao      DATETIME2        NOT NULL CONSTRAINT df_nhan_vien_ngay_tao   DEFAULT SYSDATETIME(),
     ngay_cap_nhat DATETIME2        NULL,
     CONSTRAINT uq_nhan_vien_ma         UNIQUE (ma),
+    CONSTRAINT uq_nhan_vien_ten_dang_nhap UNIQUE (ten_dang_nhap),
     CONSTRAINT uq_nhan_vien_email      UNIQUE (email),
     CONSTRAINT ck_nhan_vien_trang_thai CHECK  (trang_thai IN (0, 1)),
     CONSTRAINT ck_nhan_vien_vai_tro    CHECK  (vai_tro    IN (1, 2, 3))
@@ -701,15 +703,15 @@ GO
 -- =============================================
 -- [01] nhan_vien
 -- =============================================
-INSERT INTO nhan_vien (ma, ho_ten, email, mat_khau, sdt, dia_chi, vai_tro, trang_thai)
+INSERT INTO nhan_vien (ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, dia_chi, vai_tro, trang_thai)
 VALUES 
-('NV001', N'Nguyễn Văn An', 'an.nguyen@giay.com', 'hashedpass123', '0912345678', N'Hà Nội', 1, 1),   -- Admin
-('NV002', N'Trần Thị Bình', 'binh.tran@giay.com', 'hashedpass123', '0987654321', N'Hồ Chí Minh', 2, 1), -- Nhân viên
-('NV003', N'Lê Hoàng Cường', 'cuong.le@giay.com', 'hashedpass123', '0978123456', N'Đà Nẵng', 2, 1),    -- Nhân viên
-('NV004', N'Phạm Thị Dung', 'dung.pham@giay.com', 'hashedpass123', '0901234567', N'Hà Nội', 2, 1),     -- Nhân viên
-('NV005', N'Hoàng Minh Đức', 'duc.hoang@giay.com', 'hashedpass123', '0934567890', N'Hồ Chí Minh', 1, 1),-- Admin
-('NV006', N'Vũ Thị Hương', 'huong.vu@giay.com', 'hashedpass123', '0918765432', N'Cần Thơ', 2, 1),      -- Nhân viên
-('NV007', N'Đặng Văn Khải', 'khai.dang@giay.com', 'hashedpass123', '0945678901', N'Hà Nội', 2, 1);     -- Nhân viên
+('NV001', 'nv001', N'Nguyễn Văn An', 'an.nguyen@giay.com', 'hashedpass123', '0912345678', N'Hà Nội', 1, 1),   -- Admin
+('NV002', 'nv002', N'Trần Thị Bình', 'binh.tran@giay.com', 'hashedpass123', '0987654321', N'Hồ Chí Minh', 2, 1), -- Nhân viên
+('NV003', 'nv003', N'Lê Hoàng Cường', 'cuong.le@giay.com', 'hashedpass123', '0978123456', N'Đà Nẵng', 2, 1),    -- Nhân viên
+('NV004', 'nv004', N'Phạm Thị Dung', 'dung.pham@giay.com', 'hashedpass123', '0901234567', N'Hà Nội', 2, 1),     -- Nhân viên
+('NV005', 'nv005', N'Hoàng Minh Đức', 'duc.hoang@giay.com', 'hashedpass123', '0934567890', N'Hồ Chí Minh', 1, 1),-- Admin
+('NV006', 'nv006', N'Vũ Thị Hương', 'huong.vu@giay.com', 'hashedpass123', '0918765432', N'Cần Thơ', 2, 1),      -- Nhân viên
+('NV007', 'nv007', N'Đặng Văn Khải', 'khai.dang@giay.com', 'hashedpass123', '0945678901', N'Hà Nội', 2, 1);     -- Nhân viên
 GO
 
 -- =============================================

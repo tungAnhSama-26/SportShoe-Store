@@ -331,6 +331,42 @@ input::-ms-clear {
   text-decoration: underline;
 }
 
+.admin-login-page .login-box {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(145deg, rgba(116, 24, 24, 0.96), rgba(40, 40, 40, 0.92));
+}
+
+.admin-login-kicker {
+  margin: 0 0 4px;
+  text-align: center;
+  color: rgba(255, 218, 182, 0.9);
+  font-size: clamp(11px, 0.85vw, 13px);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.admin-login-note {
+  margin: -2px 0 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: clamp(11px, 0.86vw, 13px);
+  line-height: 1.5;
+}
+
+.admin-login-switch {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(11px, 0.9vw, 13px);
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.admin-login-switch:hover {
+  color: #fff;
+}
+
 .primary-login:hover,
 .google-login:hover {
   transform: translateY(-1px);

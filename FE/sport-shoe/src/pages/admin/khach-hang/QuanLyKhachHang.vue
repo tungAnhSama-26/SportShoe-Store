@@ -470,32 +470,25 @@ onActivated(() => {
         <h2 class="admin-section-title">Bộ lọc</h2>
       </div>
 
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div class="min-w-0 flex-1">
-            <div class="relative max-w-3xl">
-              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                v-model="boLoc.keyword"
-                type="text"
-                placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              />
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-            <button @click="lamMoiBoLoc" class="admin-btn-soft"><RotateCcw class="h-4 w-4" /> Đặt lại</button>
-            <button @click="xuatExcel" class="admin-btn-soft"><FileSpreadsheet class="h-4 w-4" /> Xuất Excel</button>
-            <button @click="themMoi" class="admin-btn-primary"><Plus class="h-4 w-4" /> Thêm khách hàng</button>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="relative">
+            <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="boLoc.keyword"
+              type="text"
+              placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
           </div>
         </div>
-        <div class="grid gap-4 md:max-w-sm">
-          <label class="space-y-2">
-            <span class="admin-filter-label mb-1">Trạng thái</span>
-            <select v-model="boLoc.trangThai" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
-            </select>
-          </label>
+        <select v-model="boLoc.trangThai" class="h-11 w-40 shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
+          <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
+        </select>
+        <div class="flex items-center gap-3">
+          <button @click="lamMoiBoLoc" class="admin-btn-soft"><RotateCcw class="h-4 w-4" /> Đặt lại</button>
+          <button @click="xuatExcel" class="admin-btn-soft"><FileSpreadsheet class="h-4 w-4" /> Xuất Excel</button>
+          <button @click="themMoi" class="admin-btn-primary"><Plus class="h-4 w-4" /> Thêm khách hàng</button>
         </div>
       </div>
     </section>
