@@ -52,9 +52,10 @@ public class PhieuGiamGiaService {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
 
-        if (phieuGiamGia.getTrangThai() != null && (phieuGiamGia.getTrangThai() == 0 || phieuGiamGia.getTrangThai() == 2)) {
-            throw new BusinessException("Không thể chỉnh sửa phiếu giảm giá đã ngừng hoạt động hoặc hết hạn.");
+        if (phieuGiamGia.getTrangThai() != null && phieuGiamGia.getTrangThai() == 2) {
+            throw new BusinessException("Không thể chỉnh sửa phiếu giảm giá đã hết hạn.");
         }
+        // Cho phép toggle trangThai 0 <-> 1 (ngừng/kích hoạt)
 
         mapRequestToEntity(request, phieuGiamGia);
 
@@ -77,8 +78,9 @@ public class PhieuGiamGiaService {
         phieuGiamGia.setSoLuongDaDung(request.getSoLuongDaDung() == null ? 0 : request.getSoLuongDaDung());
         
         // Tự động tính toán trạng thái
-        Integer currentStatus = phieuGiamGia.getTrangThai();
-        if (currentStatus != null && currentStatus == 0) {
+        Integer requestedStatus = request.getTrangThai();
+        if (requestedStatus != null && requestedStatus == 0) {
+            // FE yêu cầu ngừng hoạt động
             phieuGiamGia.setTrangThai(0);
         } else {
             Instant now = Instant.now();

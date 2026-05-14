@@ -75,15 +75,20 @@ function handleInput(field, value) {
                     <input
                       :value="form[field.key]"
                       type="color"
-                      class="h-11 w-16 rounded-2xl border border-slate-200 bg-white p-1"
+                      class="h-11 w-16 cursor-pointer rounded-2xl border border-slate-200 bg-white p-1"
                       @input="handleInput(field.key, String($event.target.value || '').toUpperCase())"
                     />
                     <input
                       :value="form[field.key]"
                       type="text"
-                      readonly
-                      class="h-11 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none"
+                      class="h-11 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300 uppercase"
                       placeholder="#000000"
+                      maxlength="7"
+                      @input="e => {
+                        let val = e.target.value.trim().toUpperCase()
+                        if (val && !val.startsWith('#')) val = '#' + val
+                        handleInput(field.key, val)
+                      }"
                     />
                   </div>
                 </div>
