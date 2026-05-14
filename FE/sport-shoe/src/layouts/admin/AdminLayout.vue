@@ -58,7 +58,11 @@ onBeforeUnmount(() => {
     <div class="flex-1 flex min-w-0 flex-col">
       <HeaderAdmin />
       <main class="admin-content flex-1 w-full min-w-0 overflow-x-hidden p-4 lg:p-6">
-        <router-view />
+        <RouterView v-slot="{ Component, route }">
+          <Transition name="page-fade">
+            <component :is="Component" :key="route.fullPath" />
+          </Transition>
+        </RouterView>
       </main>
     </div>
 
@@ -89,3 +93,35 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.page-fade-enter-active {
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.page-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: absolute;
+  width: 100%;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+.page-fade-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-fade-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+</style>

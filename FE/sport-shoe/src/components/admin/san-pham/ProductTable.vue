@@ -54,10 +54,65 @@ function formatCurrency(value) {
   return Number(value || 0).toLocaleString('vi-VN')
 }
 
+function formatPriceRange(minValue, maxValue) {
+  if (minValue == null && maxValue == null) return 'Chưa có giá'
+  if (minValue === maxValue || maxValue == null) return `${formatCurrency(minValue)} đ`
+  return `${formatCurrency(minValue)} đ - ${formatCurrency(maxValue)} đ`
+}
+
+function formatPriceParts(minValue, maxValue) {
+  if (minValue == null && maxValue == null) {
+    return {
+      start: 'Chưa có giá',
+      end: '',
+      isRange: false
+    }
+  }
+
+  const startText = `${formatCurrency(minValue ?? maxValue)} đ`
+  const endText = `${formatCurrency(maxValue ?? minValue)} đ`
+
+  if (minValue === maxValue || maxValue == null) {
+    return {
+      start: startText,
+      end: '',
+      isRange: false
+    }
+  }
+
+  return {
+    start: startText,
+    end: endText,
+    isRange: true
+  }
+}
+
 function giaHienThi(item) {
-  if (item.giaMin == null && item.giaMax == null) return 'Chưa có giá'
-  if (item.giaMin === item.giaMax || item.giaMax == null) return `${formatCurrency(item.giaMin)} đ`
-  return `${formatCurrency(item.giaMin)} đ - ${formatCurrency(item.giaMax)} đ`
+  return formatPriceRange(item.giaMin, item.giaMax)
+}
+
+function giaGocHienThi(item) {
+  return formatPriceRange(item.giaGocMin, item.giaGocMax)
+}
+
+function giaTrongBang(item) {
+  return formatPriceParts(item.giaMin, item.giaMax)
+}
+
+function giaGocTrongBang(item) {
+  return formatPriceParts(item.giaGocMin, item.giaGocMax)
+}
+
+function hasOriginalPrice(item) {
+  if (!item?.coGiamGia) return false
+  if (item.giaGocMin == null && item.giaGocMax == null) return false
+
+  const currentMin = Number(item.giaMin ?? 0)
+  const currentMax = Number(item.giaMax ?? item.giaMin ?? 0)
+  const originalMin = Number(item.giaGocMin ?? 0)
+  const originalMax = Number(item.giaGocMax ?? item.giaGocMin ?? 0)
+
+  return originalMin !== currentMin || originalMax !== currentMax
 }
 
 function trangThaiLabel(value) {
@@ -159,9 +214,20 @@ function handlePageSizeChange(size) {
             <td class="px-2 py-4 align-middle text-center font-semibold text-slate-700">
               {{ Number(item.tongSoLuong || 0).toLocaleString('vi-VN') }}
             </td>
-            <td class="px-2 py-4 align-middle font-semibold text-slate-800 whitespace-nowrap">
-              <div class="flex min-h-[48px] items-center whitespace-nowrap">
-                {{ giaHienThi(item).replace(' đ - ', '\u00A0đ\u00A0-\u00A0').replace(/ đ$/u, '\u00A0đ') }}
+            <td class="px-2 py-4 align-middle font-semibold text-slate-800">
+              <div class="flex min-h-[56px] flex-col justify-center gap-1.5 leading-5">
+                <div>
+                  <div
+                    class="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] font-semibold text-slate-800"
+                  >
+                    <span class="whitespace-nowrap">{{ giaTrongBang(item).start }}</span>
+                  </div>
+                </div>
+                <div v-if="hasOriginalPrice(item)">
+                  <div class="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs font-medium text-slate-400 line-through">
+                    <span class="whitespace-nowrap">{{ giaGocTrongBang(item).start }}</span>
+                  </div>
+                </div>
               </div>
             </td>
             <td class="px-2 py-4 align-middle">

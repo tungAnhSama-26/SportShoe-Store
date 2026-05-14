@@ -115,7 +115,7 @@ function taoMaNgauNhien() {
 
 function dongBoSoLuongPhieuCaNhan() {
   if (form.loaiPhieu === "2") {
-    form.soLuong = String(dsEmailChon.value.length);
+    form.soLuong = String(Math.max(1, dsEmailChon.value.length));
   }
 }
 
