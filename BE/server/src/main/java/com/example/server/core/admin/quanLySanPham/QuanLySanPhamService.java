@@ -192,6 +192,8 @@ public class QuanLySanPhamService {
         Long tongSoLuong = agg != null ? (Long) agg[3] : 0L;
         BigDecimal giaMax = agg != null ? (BigDecimal) agg[4] : null;
         Long countGiamGia = agg != null ? (Long) agg[5] : 0L;
+        BigDecimal giaGocMin = agg != null ? (BigDecimal) agg[6] : null;
+        BigDecimal giaGocMax = agg != null ? (BigDecimal) agg[7] : null;
         return new GiayListItemResponse(
                 g.getId(), g.getMa(), g.getTen(),
                 g.getLoaiGiay().getTen(), g.getThuongHieu().getTen(),
@@ -202,7 +204,7 @@ public class QuanLySanPhamService {
                 toTrongLuongLabel(gtt),
                 g.getGioiTinh(), g.getTrangThai(),
                 imgMap.get(g.getId()),
-                giaMin, giaMax, tongBienThe, tongSoLuong,
+                giaMin, giaMax, giaGocMin, giaGocMax, tongBienThe, tongSoLuong,
                 g.getNgayTao(),
                 countGiamGia > 0
         );

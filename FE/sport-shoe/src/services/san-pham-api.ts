@@ -51,6 +51,8 @@ export interface GiayListItem {
   hinhAnh?: string
   giaMin?: number
   giaMax?: number
+  giaGocMin?: number
+  giaGocMax?: number
   tongBienThe?: number
   tongSoLuong?: number
   ngayTao: string

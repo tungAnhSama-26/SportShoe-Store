@@ -14,6 +14,8 @@ import {
   Tag,
   X,
 } from "lucide-vue-next";
+import { ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X } from "lucide-vue-next";
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import {
   createDotGiamGia,
   getDotGiamGiaDetail,
@@ -99,6 +101,29 @@ const isReadOnly = computed(
 const searchSP = ref("");
 const danhSachSP = ref([]);
 const selectedVariants = ref([]);
+const blockedVariantIds = ref(new Set());
+const trangBienThe = ref(1);
+const soHangMoiTrang = ref(5);
+const pageSizeOptions = [5, 10, 20, 50, 100];
+
+const tatCaBienThe = computed(() => {
+  const result = [];
+  for (const sp of danhSachSP.value) {
+    for (const bt of sp.bienThes || []) {
+      result.push({ ...bt, _sp: sp });
+    }
+  }
+  return result.sort((a, b) =>
+    (a._sp?.ten || a.tenSanPham || '').localeCompare(b._sp?.ten || b.tenSanPham || '', 'vi')
+  );
+});
+
+const tongSoTrang = computed(() => Math.max(1, Math.ceil(tatCaBienThe.value.length / soHangMoiTrang.value)));
+
+const bienTheTrang = computed(() => {
+  const start = (trangBienThe.value - 1) * soHangMoiTrang.value;
+  return tatCaBienThe.value.slice(start, start + soHangMoiTrang.value);
+});
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
@@ -351,6 +376,7 @@ async function taiDanhSachSP() {
 let searchTimer;
 watch(searchSP, () => {
   clearTimeout(searchTimer);
+  trangBienThe.value = 1;
   searchTimer = setTimeout(taiDanhSachSP, 400);
 });
 
@@ -374,6 +400,34 @@ watch(
 
 function isVariantSelected(variantId) {
   return selectedVariants.value.some((v) => Number(v.id) === Number(variantId));
+}
+
+function isVariantBlocked(variantId) {
+  return blockedVariantIds.value.has(Number(variantId));
+}
+
+const tatCaCoTheChon = computed(() =>
+  tatCaBienThe.value.filter(bt => !isVariantBlocked(bt.id))
+);
+
+const tatCaDaChon = computed(() =>
+  tatCaCoTheChon.value.length > 0 &&
+  tatCaCoTheChon.value.every(bt => isVariantSelected(bt.id))
+);
+
+const motSoDaChon = computed(() =>
+  !tatCaDaChon.value &&
+  tatCaCoTheChon.value.some(bt => isVariantSelected(bt.id))
+);
+
+function toggleChonTatCa() {
+  if (tatCaDaChon.value) {
+    tatCaCoTheChon.value.forEach(bt => removeSelectedVariant(bt.id));
+  } else {
+    tatCaCoTheChon.value.forEach(bt => {
+      if (!isVariantSelected(bt.id)) toggleVariant(bt, bt._sp);
+    });
+  }
 }
 
 function toggleVariant(variant, product) {
@@ -414,6 +468,15 @@ async function taiChiTiet() {
       taoMaNgauNhien();
     }
     form.ngayBatDau = getToday();
+    // Load blocked variants (đã thuộc đợt khác) ngay cả khi tạo mới
+    try {
+      const spList = await getDotGiamGiaSanPhamList();
+      blockedVariantIds.value = new Set(
+        spList
+          .map(item => Number(item.giayChiTietId ?? item.id))
+          .filter(v => Number.isInteger(v) && v > 0)
+      );
+    } catch { /* bỏ qua nếu lỗi */ }
     await taiDanhSachSP();
     return;
   }
@@ -438,6 +501,14 @@ async function taiChiTiet() {
       spList
         .filter((item) => String(item.dotGiamGiaId) === String(id))
         .map((item) => normalizeVariantForSelection(item)),
+    );
+
+    // Chặn các biến thể đã thuộc đợt giảm giá khác
+    blockedVariantIds.value = new Set(
+      spList
+        .filter(item => String(item.dotGiamGiaId) !== String(id))
+        .map(item => Number(item.giayChiTietId ?? item.id))
+        .filter(v => Number.isInteger(v) && v > 0)
     );
 
     await taiDanhSachSP();
@@ -792,9 +863,8 @@ onMounted(taiChiTiet);
 
       <!-- Cột phải: Chọn sản phẩm -->
       <div class="xl:col-span-8 space-y-6">
-        <section
-          class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-6"
-        >
+        <section class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+          <!-- Header -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div
@@ -803,247 +873,96 @@ onMounted(taiChiTiet);
                 <Search class="h-5 w-5" />
               </div>
               <div>
-                <h2 class="text-base font-bold text-slate-800">
-                  Chọn sản phẩm áp dụng
-                </h2>
+                <h2 class="text-base font-bold text-slate-800">Chọn sản phẩm áp dụng</h2>
+                <p class="text-[13px] text-slate-400">Đã chọn {{ selectedVariants.length }} biến thể</p>
               </div>
             </div>
           </div>
 
-          <div class="mb-4 flex gap-3">
+          <!-- Tìm kiếm -->
+          <div class="flex gap-3">
             <div class="relative flex-1">
-              <Search
-                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-500"
-              />
-              <input
-                v-model="searchSP"
-                :disabled="isReadOnly"
-                @keyup.enter="taiDanhSachSP"
-                type="text"
-                placeholder="Tìm theo tên hoặc mã sản phẩm..."
-                class="h-11 w-full rounded-2xl border border-rose-100 bg-rose-50/40 pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100"
-              />
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-500" />
+              <input v-model="searchSP" :disabled="isReadOnly" @keyup.enter="taiDanhSachSP" type="text" placeholder="Tìm theo tên hoặc mã sản phẩm..." class="h-11 w-full rounded-2xl border border-rose-100 bg-rose-50/40 pl-11 pr-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100" />
             </div>
-            <button
-              v-if="!isReadOnly"
-              @click="taiDanhSachSP"
-              class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white shadow-[0_12px_24px_rgba(244,63,94,0.22)] transition hover:bg-rose-600"
-            >
+            <button v-if="!isReadOnly" @click="taiDanhSachSP" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white transition hover:bg-rose-600">
               <Search class="h-4 w-4" />
               Tìm kiếm
             </button>
           </div>
 
-          <div class="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-            <div v-if="dangTaiSP" class="py-10 text-center text-slate-400">
-              Đang tải sản phẩm...
-            </div>
-            <div
-              v-else-if="!danhSachSP.length"
-              class="py-10 text-center text-slate-400"
-            >
-              Không tìm thấy sản phẩm nào.
-            </div>
-            <div v-else class="space-y-4">
-              <div
-                v-for="sp in danhSachSP"
-                :key="sp.id"
-                class="rounded-2xl border border-slate-100 p-4 transition hover:border-rose-100 hover:bg-rose-50/10"
-              >
-                <div
-                  class="flex items-center gap-4 cursor-pointer"
-                  @click="toggleProductExpansion(sp.id)"
-                >
-                  <div class="flex-1 min-w-0">
-                    <p class="font-normal text-slate-800 truncate">
-                      {{ sp.ten }}
-                    </p>
-                    <p class="text-xs text-slate-400">
-                      {{ sp.ma }} • {{ sp.thuongHieu }}
-                    </p>
-                  </div>
-                  <div class="text-slate-400">
-                    <svg
-                      v-if="expandedProducts.has(sp.id)"
-                      class="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M5 15l7-7 7 7"
-                      ></path>
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 9l-7 7-7-7"
-                      ></path>
-                    </svg>
-                  </div>
-                </div>
-
-                <div
-                  v-if="expandedProducts.has(sp.id)"
-                  class="mt-4 grid grid-cols-1 gap-2"
-                >
-                  <div
-                    v-for="bt in sp.bienThes"
-                    :key="bt.id"
-                    class="flex items-center justify-between rounded-xl bg-white p-3 border border-slate-50 shadow-sm transition hover:shadow-md"
-                    :class="isReadOnly ? 'opacity-70' : ''"
-                  >
-                    <div class="flex items-center gap-3">
-                      <button
-                        :disabled="isReadOnly"
-                        @click.stop="toggleVariant(bt, sp)"
-                        class="h-6 w-6 flex items-center justify-center transition disabled:cursor-not-allowed"
-                        :title="isVariantSelected(bt.id) ? 'Bỏ chọn' : 'Chọn'"
-                      >
-                        <CheckSquare
-                          v-if="isVariantSelected(bt.id)"
-                          class="h-5 w-5 text-rose-500"
-                        />
-                        <Square v-else class="h-5 w-5 text-slate-300" />
-                      </button>
-                      <div class="text-[13px] font-normal text-slate-700">
-                        Màu: {{ bt.mauSac }} | Kích cỡ: {{ bt.kichCo }}
-                      </div>
-                    </div>
-                    <div class="text-right">
-                      <p class="text-[13px] font-normal text-slate-900">
-                        {{ formatCurrency(bt.giaBan) }}
-                      </p>
-                      <p class="text-[10px] text-slate-400">
-                        Kho: {{ bt.soLuong }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Section: Danh sách sản phẩm được chọn (Dưới cùng) -->
-        <section
-          class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-6"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div
-                class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500"
-              >
-                <CheckSquare class="h-5 w-5" />
-              </div>
-              <div>
-                <h2 class="text-base font-bold text-slate-800">
-                  Sản phẩm đã chọn ({{ selectedVariants.length }})
-                </h2>
-              </div>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table
-              class="w-full text-sm text-left border-separate border-spacing-y-2"
-            >
-              <thead>
-                <tr
-                  class="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 rounded-xl"
-                >
-                  <th class="px-4 py-3 first:rounded-l-xl">Ảnh</th>
-                  <th class="px-4 py-3">Tên sản phẩm / SKU</th>
-                  <th class="px-4 py-3">Giá bán</th>
-                  <th class="px-4 py-3">Màu sắc / Kích cỡ</th>
-                  <th class="px-4 py-3 last:rounded-r-xl text-center">
-                    Hành động
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="!selectedVariants.length">
-                  <td
-                    colspan="5"
-                    class="py-10 text-center text-slate-400 italic"
-                  >
-                    Chưa có sản phẩm nào được chọn.
-                  </td>
-                </tr>
-                <tr
-                  v-for="v in selectedVariants"
-                  :key="v.id"
-                  class="bg-white ring-1 ring-slate-100 shadow-sm rounded-2xl transition hover:ring-rose-200"
-                >
-                  <td class="px-4 py-3 first:rounded-l-2xl">
-                    <div
-                      class="h-10 w-10 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden"
-                    >
-                      <img
-                        v-if="v.hinhAnh"
-                        :src="v.hinhAnh"
-                        class="h-full w-full object-cover"
+          <!-- Danh sách biến thể - 1 bảng duy nhất -->
+          <div>
+            <div v-if="dangTaiSP" class="py-10 text-center text-slate-400">Đang tải sản phẩm...</div>
+            <div v-else-if="!tatCaBienThe.length" class="py-10 text-center text-slate-400">Không tìm thấy sản phẩm nào.</div>
+            <template v-else>
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-[11px] font-semibold text-slate-400 border-b border-slate-100">
+                    <th class="px-3 py-2 text-left w-8">
+                      <input
+                        type="checkbox"
+                        class="h-3.5 w-3.5 accent-rose-500 cursor-pointer"
+                        :checked="tatCaDaChon"
+                        :indeterminate="motSoDaChon"
+                        :disabled="isReadOnly || tatCaCoTheChon.length === 0"
+                        @change="toggleChonTatCa"
                       />
-                    </div>
-                  </td>
-                  <td class="px-4 py-3">
-                    <p class="font-normal text-slate-800">{{ v.tenSanPham }}</p>
-                    <p class="text-[10px] text-slate-400">
-                      {{ v.sku || v.maBienThe }}
-                    </p>
-                  </td>
-                  <td class="px-4 py-3 font-normal">
-                    <div v-if="Number(form.giaTriGiam) > 0">
-                      <span class="text-rose-600">{{
-                        formatCurrency(tinhGiaGiam(v.giaGoc || v.giaBan))
-                      }}</span>
-                      <span
-                        class="text-[10px] text-slate-400 line-through block font-normal"
-                        >{{ formatCurrency(v.giaGoc || v.giaBan) }}</span
-                      >
-                    </div>
-                    <div v-else>{{ formatCurrency(v.giaBan) }}</div>
-                  </td>
-                  <td class="px-4 py-3">
-                    <span
-                      class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-600"
-                    >
-                      {{ v.mauSac || "Chưa có màu" }} /
-                      {{ v.kichCo || "Chưa có kích cỡ" }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 last:rounded-r-2xl text-center">
-                    <div class="flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-rose-500"
-                        @click="moChiTietSanPham(v.giayId, v.id)"
-                      >
-                        <ArrowUpRight class="h-4 w-4" />
+                    </th>
+                    <th class="px-3 py-2 text-left w-8">STT</th>
+                    <th class="px-3 py-2 text-left w-12">Ảnh</th>
+                    <th class="px-3 py-2 text-left">Tên sản phẩm</th>
+                    <th class="px-3 py-2 text-left">Màu sắc</th>
+                    <th class="px-3 py-2 text-left">Kích cỡ</th>
+                    <th class="px-3 py-2 text-left">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(bt, idx) in bienTheTrang" :key="bt.id"
+                    class="border-b border-slate-50 last:border-0 transition"
+                    :class="[
+                      isVariantBlocked(bt.id) ? 'opacity-40 pointer-events-none bg-slate-50' :
+                      isVariantSelected(bt.id) ? 'bg-rose-50/30' :
+                      'hover:bg-slate-50'
+                    ]"
+                  >
+                    <td class="px-3 py-2.5">
+                      <button :disabled="isReadOnly || isVariantBlocked(bt.id)" @click="toggleVariant(bt, bt._sp)" class="flex items-center justify-center disabled:cursor-not-allowed">
+                        <CheckSquare v-if="isVariantSelected(bt.id)" class="h-4 w-4 text-rose-500" />
+                        <Square v-else class="h-4 w-4 text-slate-300" />
                       </button>
-                      <button
-                        v-if="!isReadOnly"
-                        @click="removeSelectedVariant(v.id)"
-                        class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition"
-                      >
-                        <X class="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                    <td class="px-3 py-2.5 text-slate-400 text-xs">{{ (trangBienThe - 1) * soHangMoiTrang + idx + 1 }}</td>
+                    <td class="px-3 py-2.5">
+                      <div class="h-9 w-9 rounded-lg bg-slate-100 overflow-hidden border border-slate-100">
+                        <img v-if="bt.hinhAnh || bt._sp?.hinhAnh" :src="bt.hinhAnh || bt._sp?.hinhAnh" class="h-full w-full object-cover" />
+                      </div>
+                    </td>
+                    <td class="px-3 py-2.5 text-slate-600">{{ bt._sp?.ten || bt.tenSanPham }}</td>
+                    <td class="px-3 py-2.5 text-slate-600">{{ bt.mauSac }}</td>
+                    <td class="px-3 py-2.5 text-slate-600">{{ bt.kichCo }}</td>
+                    <td class="px-3 py-2.5">
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        :class="bt.soLuong > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400'">
+                        {{ bt.soLuong > 0 ? 'Còn hàng' : 'Hết hàng' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Phân trang -->
+              <AdminTableFooter
+                :current-page="trangBienThe"
+                :page-size="soHangMoiTrang"
+                :page-size-options="pageSizeOptions"
+                :total-items="tatCaBienThe.length"
+                :total-pages="tongSoTrang"
+                compact
+                @update:current-page="trangBienThe = $event"
+                @update:page-size="soHangMoiTrang = $event; trangBienThe = 1"
+              />
+            </template>
           </div>
         </section>
       </div>

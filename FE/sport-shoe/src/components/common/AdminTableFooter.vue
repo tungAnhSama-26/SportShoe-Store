@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-vue-next";
+import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw } from "lucide-vue-next";
 
 const props = defineProps({
   currentPage: {
@@ -52,38 +52,31 @@ const pageItems = computed(() => {
   const total = normalizedTotalPages.value;
   const current = Math.min(Math.max(displayPage.value, 1), Math.max(total, 1));
 
-  if (!total) {
-    return [];
+  if (!total) return [];
+  if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const items = [];
+
+  // Luôn hiện 5 trang xung quanh current
+  let start = Math.max(1, current - 2);
+  let end = Math.min(total, start + 4);
+  if (end - start < 4) start = Math.max(1, end - 4);
+
+  if (start > 1) {
+    items.push(1);
+    if (start > 2) items.push('ellipsis-left');
   }
 
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, index) => index + 1);
-  }
+  for (let p = start; p <= end; p++) items.push(p);
 
-  const items = [1];
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
+  if (end < total) items.push('ellipsis-right');
 
-  if (start > 2) {
-    items.push("ellipsis-left");
-  }
-
-  for (let page = start; page <= end; page += 1) {
-    items.push(page);
-  }
-
-  if (end < total - 1) {
-    items.push("ellipsis-right");
-  }
-
-  items.push(total);
   return items;
 });
 
 function changePage(nextPage) {
   const total = normalizedTotalPages.value;
   if (!total) return;
-
   const boundedPage = Math.min(Math.max(nextPage, 1), total);
   emit("update:currentPage", props.zeroBased ? boundedPage - 1 : boundedPage);
 }
@@ -140,8 +133,21 @@ function itemKey(item, index) {
 
       <div
         class="flex items-center"
-        :class="props.compact ? 'gap-2' : 'gap-1.5'"
+        :class="props.compact ? 'gap-1.5' : 'gap-1.5'"
       >
+        <!-- Trang đầu -->
+        <button
+          type="button"
+          class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          :class="props.compact ? 'rounded-2xl' : 'rounded-xl'"
+          :disabled="displayPage <= 1"
+          title="Trang đầu"
+          @click="changePage(1)"
+        >
+          <ChevronFirst class="h-4 w-4" />
+        </button>
+
+        <!-- Trang trước -->
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
@@ -153,35 +159,41 @@ function itemKey(item, index) {
         </button>
 
         <template v-if="props.compact">
-          <button
-            type="button"
-            class="flex h-9 min-w-9 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 px-3 text-sm font-semibold text-violet-600"
-            disabled
-          >
-            {{ displayPage }}
-          </button>
+          <template v-for="(item, index) in pageItems" :key="itemKey(item, index)">
+            <button
+              v-if="String(item).startsWith('ellipsis')"
+              type="button"
+              class="flex h-9 min-w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+              @click="changePage(item === 'ellipsis-left' ? displayPage - 5 : displayPage + 5)"
+            >...</button>
+            <button
+              v-else
+              type="button"
+              class="flex h-9 min-w-9 items-center justify-center rounded-2xl px-3 text-sm font-semibold transition"
+              :class="Number(item) === displayPage ? 'border border-violet-200 bg-violet-50 text-violet-600' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
+              @click="changePage(Number(item))"
+            >{{ item }}</button>
+          </template>
         </template>
         <template v-else>
           <template v-for="(item, index) in pageItems" :key="itemKey(item, index)">
-            <span
+            <button
               v-if="String(item).startsWith('ellipsis')"
-              class="px-2 text-sm text-slate-400"
-            >
-              ...
-            </span>
-
+              type="button"
+              class="flex h-9 min-w-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+              @click="changePage(item === 'ellipsis-left' ? displayPage - 5 : displayPage + 5)"
+            >...</button>
             <button
               v-else
               type="button"
               class="flex h-9 min-w-9 items-center justify-center rounded-xl px-3 text-sm font-semibold transition"
               :class="Number(item) === displayPage ? 'bg-rose-500 text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
               @click="changePage(Number(item))"
-            >
-              {{ item }}
-            </button>
+            >{{ item }}</button>
           </template>
         </template>
 
+        <!-- Trang sau -->
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
@@ -190,6 +202,18 @@ function itemKey(item, index) {
           @click="changePage(displayPage + 1)"
         >
           <ChevronRight class="h-4 w-4" />
+        </button>
+
+        <!-- Trang cuối -->
+        <button
+          type="button"
+          class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          :class="props.compact ? 'rounded-2xl' : 'rounded-xl'"
+          :disabled="displayPage >= normalizedTotalPages"
+          title="Trang cuối"
+          @click="changePage(normalizedTotalPages)"
+        >
+          <ChevronLast class="h-4 w-4" />
         </button>
       </div>
     </div>
