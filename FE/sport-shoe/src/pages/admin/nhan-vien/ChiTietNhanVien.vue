@@ -726,7 +726,7 @@ onUnmounted(() => {
               <span v-if="form.cccd" class="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-sm font-semibold text-emerald-700">
                 ✓ {{ form.cccd }}
               </span>
-              <span v-else class="text-sm text-slate-400 italic">Chưa quét CCCD</span>
+
             </div>
             <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>

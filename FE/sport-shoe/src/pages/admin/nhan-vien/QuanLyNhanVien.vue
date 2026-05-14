@@ -12,6 +12,7 @@ import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusA
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 import {
+  CalendarDays,
   Eye,
   FileSpreadsheet,
   Filter,
@@ -140,6 +141,10 @@ function themMoi() {
   router.push({ name: "admin-nhan-vien-them" });
 }
 
+function quanLyLichLam(id: string) {
+  router.push({ name: "admin-nhan-vien-lich-lam", params: { id } });
+}
+
 function xuatExcel() {
   if (!danhSach.value.length) {
     window.alert("Không có dữ liệu để xuất Excel.");
@@ -220,88 +225,76 @@ onMounted(taiDanhSach);
       </h1>
     </section>
 
-    <!-- Bộ lọc -->
-    <section
-      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
-    >
-      <div class="mb-5 flex items-center gap-3">
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
-        >
-          <Filter class="h-5 w-5" />
-        </div>
-        <div>
-          <h2 class="admin-section-title">Bộ lọc</h2>
-        </div>
-      </div>
+    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+  <!-- Tiêu đề bộ lọc -->
+  <div class="mb-5 flex items-center gap-3">
+    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+      <Filter class="h-5 w-5" />
+    </div>
+    <h2 class="admin-section-title">Bộ lọc</h2>
+  </div>
 
-      <div class="flex flex-col gap-4">
-        <div
-          class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"
-        >
-          <div class="min-w-0 flex-1">
-            <div class="relative max-w-3xl">
-              <Search
-                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                v-model="boLoc.keyword"
-                type="text"
-                placeholder="Tìm theo mã, họ tên, email, SĐT..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              />
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-            <button @click="lamMoiBoLoc" class="admin-btn-soft">
-              <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-            </button>
-            <button @click="xuatExcel" class="admin-btn-soft">
-              <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-            </button>
- 
-            <button @click="themMoi" class="admin-btn-primary">
-              <Plus class="h-4 w-4" /> Thêm nhân viên
-            </button>
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2 xl:max-w-2xl">
-          <label class="space-y-2">
-            <span class="admin-filter-label mb-1"
-              >Vai trò</span
-            >
-            <select
-              v-model="boLoc.vaiTro"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-            >
-              <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">
-                {{ vt.label }}
-              </option>
-            </select>
-          </label>
-
-          <label class="space-y-2">
-            <span class="admin-filter-label mb-1"
-              >Trạng thái</span
-            >
-            <select
-              v-model="boLoc.trangThai"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-            >
-              <option
-                v-for="tt in dsTrangThai"
-                :key="tt.value"
-                :value="tt.value"
-              >
-                {{ tt.label }}
-              </option>
-            </select>
-          </label>
+  <div class="flex flex-col gap-5">
+    <!-- HÀNG 1: CHỨA TẤT CẢ CÁC Ô NHẬP LIỆU (Search + Vai Trò + Trạng Thái) -->
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 items-end">
+      <!-- Ô Tìm kiếm (Chiếm 6 cột trên màn hình lớn) -->
+      <div class="lg:col-span-6">
+        <div class="relative">
+          <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            v-model="boLoc.keyword"
+            type="text"
+            placeholder="Tìm theo mã, họ tên, email, SĐT..."
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+          />
         </div>
       </div>
-    </section>
+
+      <!-- Ô Vai trò (Chiếm 3 cột) -->
+      <div class="lg:col-span-3">
+        <select
+          v-model="boLoc.vaiTro"
+          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+        >
+          <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">
+            {{ vt.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Ô Trạng thái (Chiếm 3 cột) -->
+      <div class="lg:col-span-3">
+        <select
+          v-model="boLoc.trangThai"
+          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+        >
+          <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">
+            {{ tt.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- HÀNG 2: CHỨA CÁC NÚT BẤM - CĂN PHẢI -->
+    <div class="flex flex-wrap items-center justify-end gap-3">
+      <button @click="lamMoiBoLoc" class="admin-btn-soft">
+        <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
+      </button>
+      <button @click="xuatExcel" class="admin-btn-soft">
+        <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
+      </button>
+      <!-- <button
+        @click="router.push({ name: 'admin-nhan-vien-lich-lam' })"
+        class="admin-btn-soft"
+      >
+        <CalendarDays class="h-4 w-4" /> Quản lý lịch làm
+      </button> -->
+      <button @click="themMoi" class="admin-btn-primary">
+        <Plus class="h-4 w-4" /> Thêm nhân viên
+      </button>
+    </div>
+  </div>
+</section>
 
     <!-- Danh sách -->
     <section
@@ -421,6 +414,14 @@ onMounted(taiDanhSach);
                     :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
                   />
+                  <!-- <button
+                    type="button"
+                    @click="quanLyLichLam(nv.id)"
+                    class="admin-table-action text-violet-500 hover:text-violet-700"
+                    title="Quản lý lịch làm"
+                  >
+                    <CalendarDays :size="14" />
+                  </button> -->
                   <button
                     type="button"
                     @click="xemChiTiet(nv.id)"
