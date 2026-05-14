@@ -4,13 +4,18 @@ import com.example.server.core.client.auth.dto.request.LoginRequest;
 import com.example.server.core.client.auth.dto.request.RegisterRequest;
 import com.example.server.core.client.auth.dto.request.ForgotPasswordRequest;
 import com.example.server.core.client.auth.dto.request.ResetPasswordRequest;
+import com.example.server.core.client.auth.dto.response.AdminLoginResponse;
 import com.example.server.core.admin.khachHang.dto.responsse.KhachHangResponse;
 import com.example.server.entity.KhachHang;
+import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.security.AdminPrincipal;
+import com.example.server.infrastructure.security.JwtService;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.DiaChiKhachHangRepository;
+import com.example.server.repository.NhanVienRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +38,23 @@ public class AuthController {
     private final KhachHangRepository khachHangRepository;
     private final EmailService emailService;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+    private final NhanVienRepository nhanVienRepository;
+    private final JwtService jwtService;
     
     private static final Map<String, String> otpStorage = new ConcurrentHashMap<>();
 
-    public AuthController(KhachHangRepository khachHangRepository, EmailService emailService, DiaChiKhachHangRepository diaChiKhachHangRepository) {
+    public AuthController(
+            KhachHangRepository khachHangRepository,
+            EmailService emailService,
+            DiaChiKhachHangRepository diaChiKhachHangRepository,
+            NhanVienRepository nhanVienRepository,
+            JwtService jwtService
+    ) {
         this.khachHangRepository = khachHangRepository;
         this.emailService = emailService;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
+        this.nhanVienRepository = nhanVienRepository;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
@@ -65,6 +80,52 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Đăng nhập thành công",
                 toKhachHangResponse(kh)
+        ));
+    }
+
+    @PostMapping("/admin/login")
+    public ResponseEntity<ApiResponse<AdminLoginResponse>> adminLogin(@Valid @RequestBody LoginRequest request) {
+        String username = request.username().trim();
+        Optional<NhanVien> nvOptional = nhanVienRepository.findByTenDangNhapIgnoreCase(username);
+
+        if (nvOptional.isEmpty()) {
+            throw new BusinessException("Tài khoản hoặc mật khẩu không chính xác");
+        }
+
+        NhanVien nhanVien = nvOptional.get();
+        if (!nhanVien.getMatKhau().equals(request.password())) {
+            throw new BusinessException("Tài khoản hoặc mật khẩu không chính xác");
+        }
+
+        if (nhanVien.getTrangThai() == null || nhanVien.getTrangThai() != 1) {
+            throw new BusinessException("Tài khoản nhân viên đã bị khóa");
+        }
+
+        String role = isAdmin(nhanVien) ? "ADMIN" : "STAFF";
+        String token = jwtService.generateToken(new AdminPrincipal(
+                nhanVien.getId(),
+                nhanVien.getMa(),
+                nhanVien.getTenDangNhap(),
+                nhanVien.getHoTen(),
+                nhanVien.getVaiTro(),
+                role
+        ));
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đăng nhập admin thành công",
+                new AdminLoginResponse(
+                        token,
+                        "Bearer",
+                        nhanVien.getId(),
+                        nhanVien.getMa(),
+                        nhanVien.getTenDangNhap(),
+                        nhanVien.getHoTen(),
+                        nhanVien.getEmail(),
+                        nhanVien.getCccd(),
+                        nhanVien.getVaiTro(),
+                        isAdmin(nhanVien) ? "Quản trị viên" : "Nhân viên",
+                        nhanVien.getHinhAnh()
+                )
         ));
     }
 
@@ -167,5 +228,9 @@ public class AuthController {
                 kh.getNgayTao(),
                 diaChiMacDinh
         );
+    }
+
+    private boolean isAdmin(NhanVien nhanVien) {
+        return nhanVien.getVaiTro() != null && nhanVien.getVaiTro() == 1;
     }
 }

@@ -1,4 +1,5 @@
 import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
+import { getAuthHeaders } from './auth'
 const BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -284,7 +285,7 @@ export interface ThemHinhAnhRequest {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...init?.headers },
     ...init,
   })
   if (!res.ok) {
@@ -410,6 +411,7 @@ export async function uploadFile(file: File): Promise<string> {
 
   const response = await fetch(`${BASE}/upload`, {
     method: 'POST',
+    headers: getAuthHeaders(),
     body: formData
   })
 

@@ -11,6 +11,7 @@ public final class NhanVienResponses {
     public record NhanVienResponse(
             UUID id,
             String ma,
+            String tenDangNhap,
             String hoTen,
             String email,
             String sdt,

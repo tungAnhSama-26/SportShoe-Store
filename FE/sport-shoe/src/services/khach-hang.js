@@ -1,11 +1,12 @@
 import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
+import { getAuthHeaders } from "./auth";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8080/api/v1";
 
 async function request(path, init) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders(), ...(init?.headers ?? {}) },
     ...init,
   });
   const payload = await response.json();
@@ -100,6 +101,7 @@ export async function uploadFile(file) {
   formData.append("file", file);
   const response = await fetch(`${API_BASE_URL}/upload`, {
     method: "POST",
+    headers: getAuthHeaders(),
     body: formData,
   });
   const result = await response.json();
