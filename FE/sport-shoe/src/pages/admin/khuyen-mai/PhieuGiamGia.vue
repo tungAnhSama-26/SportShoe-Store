@@ -124,7 +124,7 @@ const dsTrangThai = [
   { label: "Tất cả", value: "" },
   { label: "Đang hoạt động", value: "1" },
   { label: "Ngưng hoạt động", value: "0" },
-  { label: "Hết hạn", value: "2" },
+  { label: "Hết hạn", value: "het_han" },
   { label: "Hết số lượng", value: "3" },
   { label: "Sắp diễn ra", value: "4" },
 ];
@@ -135,7 +135,15 @@ const dsLoai = [
   { label: "Tiền mặt", value: "2" },
 ];
 
-function mauTrangThai(trangThai) {
+function isHetHan(ngayKetThuc) {
+  if (!ngayKetThuc) return false;
+  const homNay = new Date();
+  homNay.setHours(0, 0, 0, 0);
+  return new Date(ngayKetThuc) < homNay;
+}
+
+function mauTrangThai(trangThai, ngayKetThuc) {
+  if (isHetHan(ngayKetThuc)) return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
   const status = Number(trangThai);
   if (status === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
   if (status === 2) return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
@@ -144,7 +152,8 @@ function mauTrangThai(trangThai) {
   return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
-function statusText(value) {
+function statusText(value, ngayKetThuc) {
+  if (isHetHan(ngayKetThuc)) return "Hết hạn";
   const status = Number(value);
   if (status === 1) return "Đang hoạt động";
   if (status === 2) return "Hết hạn";
@@ -260,21 +269,43 @@ async function taiDanhSach() {
   loiTrang.value = "";
 
   try {
+    // "het_han" là filter FE tự xử lý, không gửi lên backend
+    const isFilterHetHan = boLoc.value.trangThai === "het_han";
+
     const data = await getPhieuGiamGiaList({
       keyword: boLoc.value.keyword || undefined,
-      trangThai:
-        boLoc.value.trangThai !== ""
-          ? Number(boLoc.value.trangThai)
-          : undefined,
+      trangThai: (!isFilterHetHan && boLoc.value.trangThai !== "")
+        ? Number(boLoc.value.trangThai)
+        : undefined,
       loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
       pageNo: trangHienTai.value - 1,
-      pageSize: soPhanTuMotTrang.value,
+      pageSize: isFilterHetHan ? 1000 : soPhanTuMotTrang.value,
     });
-    danhSach.value = data?.content || [];
-    tongSoTrang.value = data?.totalPages || 1;
-    totalItems.value = data?.totalElements || 0;
+
+    let items = data?.content || [];
+
+    if (isFilterHetHan) {
+      // Lọc FE: chỉ lấy phiếu quá ngày kết thúc
+      items = items.filter(item => isHetHan(item.ngayKetThuc));
+    } else if (boLoc.value.trangThai === "1") {
+      // Đang hoạt động: loại bỏ phiếu đã hết hạn theo ngày
+      items = items.filter(item => !isHetHan(item.ngayKetThuc));
+    }
+
+    tongSoTrang.value = Math.max(1, Math.ceil(items.length / soPhanTuMotTrang.value));
+    totalItems.value = items.length;
+    const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
+    danhSach.value = isFilterHetHan || boLoc.value.trangThai === "1"
+      ? items.slice(start, start + soPhanTuMotTrang.value)
+      : items;
+
+    if (!isFilterHetHan && boLoc.value.trangThai !== "1") {
+      danhSach.value = items;
+      tongSoTrang.value = data?.totalPages || 1;
+      totalItems.value = data?.totalElements || 0;
+    }
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(
       error,
@@ -331,20 +362,30 @@ function lamMoiBoLoc() {
 }
 
 async function nhanhDoiTrangThai(item) {
-  if (Number(item.trangThai) === 0) return;
+  if (isHetHan(item.ngayKetThuc)) return;
   try {
-    const nextStatus = 0;
-    await updatePhieuGiamGia(item.id, { ...item, trangThai: nextStatus });
+    const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
+    await updatePhieuGiamGia(item.id, {
+      ma: item.ma,
+      ten: item.ten,
+      loai: item.loai,
+      loaiPhieu: item.loaiPhieu,
+      giaTri: item.giaTri,
+      giaTriToiThieu: item.giaTriToiThieu || null,
+      giamToiDa: item.giamToiDa || null,
+      ngayBatDau: item.ngayBatDau,
+      ngayKetThuc: item.ngayKetThuc,
+      soLuong: item.soLuong,
+      soLuongDaDung: item.soLuongDaDung || 0,
+      trangThai: nextStatus,
+    });
     hienThiThongBao("success", "Cập nhật phiếu thành công");
-    taiDanhSach();
+    await taiDanhSach();
   } catch (error) {
     hienThiThongBao(
       "error",
       "Cập nhật thất bại",
-      getDisplayErrorMessage(
-        error,
-        "Không thể thay đổi trạng thái phiếu giảm giá",
-      ),
+      getDisplayErrorMessage(error, "Không thể thay đổi trạng thái phiếu giảm giá"),
     );
   }
 }
@@ -688,35 +729,32 @@ onMounted(() => {
         {{ loiTrang }}
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="w-full">
         <table
           v-if="activeTab === 'phieu'"
-          class="min-w-[1400px] w-full border-separate border-spacing-y-2 text-sm"
+          class="w-full border-separate border-spacing-y-2 text-sm"
         >
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
+            <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
               <th class="bg-slate-100 px-4 py-3">Hình thức</th>
               <th class="bg-slate-100 px-4 py-3">Giá trị giảm</th>
-              <th class="bg-slate-100 px-4 py-3">Số lượng</th>
               <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
               <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">
-                Hành động
-              </th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="10" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                 Đang tải...
               </td>
             </tr>
             <tr v-else-if="!danhSach.length">
-              <td colspan="10" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                 Không có dữ liệu.
               </td>
             </tr>
@@ -732,28 +770,27 @@ onMounted(() => {
                 {{ item.ma }}
               </td>
               <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
-              <td class="px-4 py-3">{{ loaiPhieuText(item.loaiPhieu) }}</td>
-              <td class="px-4 py-3">{{ formatGiaTri(item.giaTri, item.loai) }}</td>
-              <td class="px-4 py-3">{{ item.soLuong }}</td>
-              <td class="px-4 py-3">{{ toDisplayDate(item.ngayBatDau) }}</td>
-              <td class="px-4 py-3">{{ toDisplayDate(item.ngayKetThuc) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">{{ loaiPhieuText(item.loaiPhieu) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">{{ formatGiaTri(item.giaTri, item.loai) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">{{ toDisplayDate(item.ngayBatDau) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">{{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
                 <span
                   class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="mauTrangThai(item.trangThai)"
+                  :class="mauTrangThai(item.trangThai, item.ngayKetThuc)"
                 >
-                  {{ statusText(item.trangThai) }}
+                  {{ statusText(item.trangThai, item.ngayKetThuc) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="Number(item.trangThai) === 0"
-                    disabled-title="Không thể thao tác trên phiếu đã ngừng hoạt động"
-                    action-label="Tắt phiếu"
-                    confirm-message="Bạn có chắc chắn muốn tắt phiếu này không?"
-                    intent="deactivate"
+                    :disabled="isHetHan(item.ngayKetThuc)"
+                    :disabled-title="'Phiếu đã hết hạn, không thể thay đổi trạng thái'"
+                    :action-label="Number(item.trangThai) === 1 ? 'Ngừng hoạt động' : 'Kích hoạt'"
+                    :confirm-message="Number(item.trangThai) === 1 ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?' : 'Bạn có chắc chắn muốn kích hoạt phiếu này không?'"
+                    :intent="Number(item.trangThai) === 1 ? 'deactivate' : 'activate'"
                     @toggle="nhanhDoiTrangThai(item)"
                   />
                   <button
