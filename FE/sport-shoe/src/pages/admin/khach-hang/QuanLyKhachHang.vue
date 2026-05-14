@@ -511,26 +511,25 @@ onActivated(() => {
 
       <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
-      <div class="overflow-x-auto">
+      <div class="w-full">
         <table class="w-full table-fixed border-separate border-spacing-y-2 text-sm">
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="w-14 rounded-l-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
-              <th class="w-16 bg-slate-100 px-3 py-3 whitespace-nowrap">Ảnh</th>
-              <th class="w-44 bg-slate-100 px-3 py-3 whitespace-nowrap">Tên đăng nhập</th>
-              <th class="w-52 bg-slate-100 px-3 py-3 whitespace-nowrap">Họ tên</th>
-              <th class="w-64 bg-slate-100 px-3 py-3 whitespace-nowrap">Email</th>
-              <th class="w-36 bg-slate-100 px-3 py-3 whitespace-nowrap">Số điện thoại</th>
-              <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Trạng thái</th>
-              <th class="w-32 rounded-r-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+            <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap">
+              <th class="w-[5%] rounded-l-2xl bg-slate-100 px-3 py-3">STT</th>
+              <th class="w-[15%] bg-slate-100 px-3 py-3">Tên đăng nhập</th>
+              <th class="w-[18%] bg-slate-100 px-3 py-3">Họ tên</th>
+              <th class="w-[25%] bg-slate-100 px-3 py-3">Email</th>
+              <th class="w-[13%] bg-slate-100 px-3 py-3">Số điện thoại</th>
+              <th class="w-[11%] bg-slate-100 px-3 py-3">Trạng thái</th>
+              <th class="w-[13%] rounded-r-2xl bg-slate-100 px-3 py-3 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
+              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
+              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
             </tr>
             <tr
               v-for="(kh, index) in danhSachPhanTrang"
@@ -538,17 +537,8 @@ onActivated(() => {
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
               <td class="rounded-l-2xl px-3 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
-              <td class="px-3 py-3">
-                <img
-                  :src="kh.hinhAnh || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(kh.hoTen) + '&background=f1f5f9&color=475569&size=64'"
-                  :alt="kh.hoTen"
-                  class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
-                />
-              </td>
-              <td class="px-3 py-3 font-semibold text-slate-800 whitespace-nowrap">
-                <div class="truncate whitespace-nowrap" :title="kh.tenDangNhap">
-                  {{ kh.tenDangNhap }}
-                </div>
+              <td class="px-3 py-3 font-semibold text-slate-800">
+                <div class="truncate" :title="kh.tenDangNhap">{{ kh.tenDangNhap }}</div>
               </td>
               <td class="px-3 py-3 font-semibold text-slate-800 whitespace-nowrap">
                 <div class="whitespace-nowrap" :title="kh.hoTen">

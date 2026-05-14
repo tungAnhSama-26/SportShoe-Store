@@ -550,13 +550,12 @@ onMounted(taiChiTiet);
             class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
             :class="form.loaiPhieu === '2' ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100' : ''"
           />
-          <p v-if="form.loaiPhieu === '2'" class="text-xs text-slate-400">Tự động bằng số khách hàng đã chọn.</p>
           <p v-if="formErrors.soLuong" class="mt-1 text-xs text-rose-500">{{ formErrors.soLuong }}</p>
         </div>
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày bắt đầu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ngayBatDau" type="date" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
+          <input v-model="form.ngayBatDau" type="date" readonly class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm font-normal text-slate-500 outline-none cursor-not-allowed" />
           <p v-if="formErrors.ngayBatDau" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayBatDau }}</p>
         </div>
 

@@ -503,9 +503,9 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="admin-table-scroll rounded-[24px] border border-slate-100">
+      <div class="rounded-[24px] border border-slate-100">
         <table
-          class="min-w-[960px] w-full table-fixed border-separate border-spacing-0 text-sm"
+          class="w-full table-fixed border-separate border-spacing-0 text-sm"
         >
           <colgroup>
             <col class="w-[5.5%]" />

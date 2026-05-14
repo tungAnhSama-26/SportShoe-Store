@@ -23,7 +23,7 @@ const dsTrangThai = [
   { label: "Tất cả", value: "" },
   { label: "Kích hoạt", value: "1" },
   { label: "Ngừng hoạt động", value: "0" },
-  { label: "Hết hạn", value: "2" },
+  { label: "Hết hạn", value: "het_han" },
   { label: "Sắp diễn ra", value: "4" },
 ];
 
@@ -33,14 +33,23 @@ const dsLoaiGiam = [
   { label: "Tiền mặt", value: "2" },
 ];
 
-function mauTrangThai(trangThai) {
+function isHetHan(ngayKetThuc) {
+  if (!ngayKetThuc) return false;
+  const homNay = new Date();
+  homNay.setHours(0, 0, 0, 0);
+  return new Date(ngayKetThuc) < homNay;
+}
+
+function mauTrangThai(trangThai, ngayKetThuc) {
+  if (isHetHan(ngayKetThuc)) return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
   if (Number(trangThai) === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
   if (Number(trangThai) === 2) return "bg-slate-100 text-slate-500 ring-1 ring-slate-200";
   if (Number(trangThai) === 4) return "bg-sky-50 text-sky-600 ring-1 ring-sky-100";
   return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
-function statusText(value) {
+function statusText(value, ngayKetThuc) {
+  if (isHetHan(ngayKetThuc)) return "Hết hạn";
   if (Number(value) === 1) return "Kích hoạt";
   if (Number(value) === 2) return "Hết hạn";
   if (Number(value) === 4) return "Sắp diễn ra";
@@ -56,18 +65,39 @@ async function taiDanhSach() {
   dangTai.value = true;
   loiTrang.value = "";
   try {
+    const isFilterHetHan = boLoc.value.trangThai === "het_han";
+    const isFilterKichHoat = boLoc.value.trangThai === "1";
+
     const data = await getDotGiamGiaList({
       keyword: boLoc.value.keyword || undefined,
-      trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
+      trangThai: (!isFilterHetHan && boLoc.value.trangThai !== "")
+        ? Number(boLoc.value.trangThai)
+        : undefined,
       loaiGiam: boLoc.value.loaiGiam !== "" ? Number(boLoc.value.loaiGiam) : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
       pageNo: trangHienTai.value - 1,
-      pageSize: soPhanTuMotTrang.value
+      pageSize: (isFilterHetHan || isFilterKichHoat) ? 1000 : soPhanTuMotTrang.value
     });
-    danhSach.value = data?.content || [];
-    tongSoTrang.value = data?.totalPages || 1;
-    totalItems.value = data?.totalElements || 0;
+
+    let items = data?.content || [];
+
+    if (isFilterHetHan) {
+      items = items.filter(item => isHetHan(item.ngayKetThuc));
+    } else if (isFilterKichHoat) {
+      items = items.filter(item => !isHetHan(item.ngayKetThuc));
+    }
+
+    if (isFilterHetHan || isFilterKichHoat) {
+      tongSoTrang.value = Math.max(1, Math.ceil(items.length / soPhanTuMotTrang.value));
+      totalItems.value = items.length;
+      const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
+      danhSach.value = items.slice(start, start + soPhanTuMotTrang.value);
+    } else {
+      danhSach.value = items;
+      tongSoTrang.value = data?.totalPages || 1;
+      totalItems.value = data?.totalElements || 0;
+    }
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể tải danh sách đợt giảm giá");
   } finally {
@@ -80,8 +110,10 @@ function lamMoiBoLoc() {
 }
 
 async function nhanhDoiTrangThai(item) {
+  if (isHetHan(item.ngayKetThuc)) return;
   try {
-    await updateDotGiamGia(item.id, { ...item, kichHoat: 0 });
+    const nextStatus = Number(item.kichHoat) === 1 ? 0 : 1;
+    await updateDotGiamGia(item.id, { ...item, kichHoat: nextStatus });
     await taiDanhSach();
   } catch (error) {
     window.alert(getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đợt giảm giá"));
@@ -224,20 +256,20 @@ onMounted(taiDanhSach);
 
       <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-[1100px] w-full table-fixed border-separate border-spacing-y-2 text-sm">
+      <div class="w-full">
+        <table class="w-full table-fixed border-separate border-spacing-y-2 text-xs">
           <colgroup>
-            <col class="w-[70px]" />
-            <col class="w-[180px]" />
-            <col class="w-[260px]" />
-            <col class="w-[120px]" />
-            <col class="w-[150px]" />
-            <col class="w-[150px]" />
+            <col class="w-[5%]" />
+            <col class="w-[15%]" />
+            <col class="w-[25%]" />
+            <col class="w-[10%]" />
+            <col class="w-[13%]" />
+            <col class="w-[13%]" />
             <col class="w-[140px]" />
-            <col class="w-[130px]" />
+            <col class="w-[14%]" />
           </colgroup>
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
+            <tr class="text-left text-xs font-bold text-slate-950 [&>th]:whitespace-nowrap">
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên</th>
@@ -267,19 +299,19 @@ onMounted(taiDanhSach);
               <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
               <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.kichHoat)">
-                  {{ statusText(item.kichHoat) }}
+                <span class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.kichHoat, item.ngayKetThuc)">
+                  {{ statusText(item.kichHoat, item.ngayKetThuc) }}
                 </span>
               </td>
               <td class="rounded-r-2xl px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="Number(item.kichHoat) === 0"
-                    disabled-title="Không thể thao tác trên đợt giảm giá đã ngừng hoạt động"
-                    action-label="Tắt đợt giảm giá"
-                    confirm-message="Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?"
-                    intent="deactivate"
+                    :disabled="isHetHan(item.ngayKetThuc)"
+                    :disabled-title="'Đợt giảm giá đã hết hạn, không thể thay đổi trạng thái'"
+                    :action-label="Number(item.kichHoat) === 1 ? 'Ngừng hoạt động' : 'Kích hoạt'"
+                    :confirm-message="Number(item.kichHoat) === 1 ? 'Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?' : 'Bạn có chắc chắn muốn kích hoạt đợt giảm giá này không?'"
+                    :intent="Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'"
                     @toggle="nhanhDoiTrangThai(item)"
                   />
                   <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xem chi tiết">
