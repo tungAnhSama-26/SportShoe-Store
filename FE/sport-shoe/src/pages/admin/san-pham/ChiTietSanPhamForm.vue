@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import FormHeader from '../../../components/admin/san-pham/FormHeader.vue'
 import ProductFormSection from '../../../components/admin/san-pham/ProductFormSection.vue'
@@ -226,6 +226,63 @@ function isDuplicateProductCodeError(error) {
   return message.includes('ma giay') && message.includes('da ton tai')
 }
 
+function isDuplicateAttributeErrorMessage(message) {
+  return normalizeErrorText(message).includes('da ton tai')
+}
+
+function getQuickCreateDuplicateValue(type) {
+  if (type === 'mauSac') {
+    return normalizeRequiredText(quickCreateForm.ten)
+  }
+
+  if (type === 'kichCo') {
+    return normalizeSizeValue(quickCreateForm.giaTri) || String(quickCreateForm.giaTri || '').trim()
+  }
+
+  return ''
+}
+
+function setQuickCreateDuplicateError(type, value) {
+  if (type === 'mauSac') {
+    quickCreateErrors.ten = `Màu sắc "${value}" đã tồn tại trong hệ thống`
+    return
+  }
+
+  if (type === 'kichCo') {
+    quickCreateErrors.giaTri = `Kích cỡ "${value}" đã tồn tại trong hệ thống`
+  }
+}
+
+function applyQuickCreateRequestError(type, error) {
+  const fieldErrors = getFieldErrors(error)
+
+  if (fieldErrors.ma && isDuplicateAttributeErrorMessage(fieldErrors.ma)) {
+    setQuickCreateDuplicateError(type, getQuickCreateDuplicateValue(type))
+    return
+  }
+
+  if (fieldErrors.giaTri && isDuplicateAttributeErrorMessage(fieldErrors.giaTri)) {
+    setQuickCreateDuplicateError(type, getQuickCreateDuplicateValue(type))
+    return
+  }
+
+  if (Object.keys(fieldErrors).length) {
+    Object.assign(quickCreateErrors, fieldErrors)
+    return
+  }
+
+  const message = getDisplayErrorMessage(error, '')
+  if (isDuplicateAttributeErrorMessage(message)) {
+    setQuickCreateDuplicateError(type, getQuickCreateDuplicateValue(type))
+    return
+  }
+
+  quickCreateErrors.general = getDisplayErrorMessage(
+    error,
+    'Không thể thêm mới lúc này. Vui lòng kiểm tra lại thông tin vừa nhập.'
+  )
+}
+
 function normalizeWeightValue(value) {
   const matched = String(value ?? '').trim().match(/^(\d{1,4})(?:\s*(?:g|gram))?$/i)
 
@@ -444,9 +501,7 @@ async function handleQuickCreateSave() {
       const existingItem = findExistingInlineItem('mauSac', ten)
 
       if (existingItem) {
-        selectInlineCreatedItem('mauSac', existingItem)
-        closeQuickCreate()
-        showToast(`Đã chọn màu sắc "${existingItem.ten}"`, 'success')
+        setQuickCreateDuplicateError('mauSac', existingItem.ten)
         return
       }
 
@@ -484,9 +539,7 @@ async function handleQuickCreateSave() {
       const existingItem = findExistingInlineItem('kichCo', giaTri || quickCreateForm.giaTri)
 
       if (existingItem) {
-        selectInlineCreatedItem('kichCo', existingItem)
-        closeQuickCreate()
-        showToast(`Đã chọn kích cỡ "${existingItem.giaTri}"`, 'success')
+        setQuickCreateDuplicateError('kichCo', existingItem.giaTri)
         return
       }
 
@@ -509,8 +562,7 @@ async function handleQuickCreateSave() {
       showToast(`Đã thêm kích cỡ "${createdItem.giaTri}"`, 'success')
     }
   } catch (error) {
-    Object.assign(quickCreateErrors, getFieldErrors(error))
-    showToast(getDisplayErrorMessage(error), 'error')
+    applyQuickCreateRequestError(quickCreateType.value, error)
   } finally {
     quickCreateSaving.value = false
   }
@@ -672,9 +724,7 @@ async function handleSave() {
     clearSavedDraftImages(createdVariants.value)
 
     if (syncedDraftImages) {
-      showToast('Luu san pham va dong bo anh thanh cong!', 'success')
-      return
-      showToast('LÆ°u sáº£n pháº©m vÃ  Ä‘á»“ng bá»™ áº£nh thÃ nh cÃ´ng!', 'success')
+      showToast('Lưu sản phẩm và đồng bộ ảnh thành công!', 'success')
       return
     }
     showToast('Lưu sản phẩm thành công!', 'success')

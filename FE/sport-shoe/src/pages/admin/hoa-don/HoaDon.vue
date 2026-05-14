@@ -415,11 +415,11 @@ onMounted(taiDanhSach);
           :key="item.ten"
           type="button"
           @click="trangThaiDangChon = item.ten"
-          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition"
-          :class="trangThaiDangChon === item.ten ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'"
+          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
+          :class="trangThaiDangChon === item.ten ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:scale-[1.02]'"
         >
           {{ item.ten }}
-          <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500">{{ item.tong }}</span>
+          <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500 transition-all duration-200">{{ item.tong }}</span>
         </button>
       </div>
 
@@ -427,7 +427,8 @@ onMounted(taiDanhSach);
         {{ loiTrang }}
       </div>
 
-      <div class="admin-table-scroll">
+      <Transition name="tab-fade" mode="out-in">
+        <div :key="trangThaiDangChon" class="admin-table-scroll">
         <table class="min-w-[1040px] w-full table-fixed border-separate border-spacing-y-2 text-[13px]">
           <colgroup>
             <col class="w-[5%]" />
@@ -507,6 +508,7 @@ onMounted(taiDanhSach);
           </tbody>
         </table>
       </div>
+      </Transition>
 
       <AdminTableFooter
         :current-page="trangHienTai"
@@ -523,3 +525,19 @@ onMounted(taiDanhSach);
     </section>
   </div>
 </template>
+
+<style scoped>
+.tab-fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tab-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.tab-fade-leave-to {
+  opacity: 0;
+}
+</style>

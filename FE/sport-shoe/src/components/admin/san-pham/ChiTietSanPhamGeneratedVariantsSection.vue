@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Package2, Save, Trash2, TriangleAlert, X } from "lucide-vue-next";
+import { Package2, Save, Trash2, X } from "lucide-vue-next";
 import BienTheImageManager from "./BienTheImageManager.vue";
 import AdminFormattedNumberInput from "../../common/AdminFormattedNumberInput.vue";
 import {
@@ -138,19 +138,19 @@ const saveConfirmationDetails = computed(() => {
   ).length;
 
   const lines = [
-    `Bạn sắp lưu ${variantCount} biến thể cho sản phẩm này.`,
-    `Tổng số màu được tạo: ${colorCount}.`,
+    `${variantCount} biến thể sẽ được tạo.`,
+    `${colorCount} màu sắc.`,
   ];
 
   if (imageColorCount > 0) {
-    lines.push(`Ảnh theo màu sẽ được áp cho ${imageColorCount} nhóm màu.`);
+    lines.push(`${imageColorCount} nhóm màu có ảnh đính kèm.`);
   }
 
   return {
     title: props.isExistingProduct
-      ? "Xác nhận thêm chi tiết sản phẩm"
-      : "Xác nhận lưu sản phẩm",
-    description: "Kiểm tra nhanh thông tin trước khi hệ thống tạo biến thể.",
+      ? "Bạn có muốn thêm chi tiết sản phẩm không?"
+      : "Bạn có muốn lưu sản phẩm không?",
+    description: "Xem lại trước khi xác nhận.",
     lines,
   };
 });
@@ -517,69 +517,63 @@ async function handleSaveClick() {
     </div>
 
     <Teleport to="body">
-      <div
-        v-if="showSaveConfirmModal"
-        class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4"
-        @click.self="closeSaveConfirmModal"
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
       >
-        <div class="w-full max-w-lg overflow-hidden rounded-[28px] bg-white shadow-2xl">
-          <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <div class="flex items-start gap-3">
-              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                <TriangleAlert :size="22" />
+        <div
+          v-if="showSaveConfirmModal"
+          class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4"
+          @click.self="closeSaveConfirmModal"
+        >
+          <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+          >
+            <div v-if="showSaveConfirmModal" class="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl">
+
+              <!-- Header -->
+              <div class="px-6 pt-6 pb-5 flex items-center justify-between">
+                <h3 class="text-[17px] font-bold text-slate-900">{{ saveConfirmationDetails.title }}</h3>
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                  @click="closeSaveConfirmModal"
+                >
+                  <X :size="16" />
+                </button>
               </div>
 
-              <div>
-                <h3 class="text-xl font-black text-slate-900">
-                  {{ saveConfirmationDetails.title }}
-                </h3>
-                <p class="mt-1 text-sm text-slate-500">
-                  {{ saveConfirmationDetails.description }}
-                </p>
+              <!-- Actions -->
+              <div class="flex items-center gap-2 border-t border-slate-100 px-6 py-4">
+                <button
+                  type="button"
+                  class="flex-1 h-10 rounded-2xl border border-slate-200 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                  :disabled="saving"
+                  @click="closeSaveConfirmModal"
+                >
+                  Xem lại
+                </button>
+                <button
+                  type="button"
+                  class="flex-1 h-10 flex items-center justify-center gap-2 rounded-2xl bg-rose-500 text-[13px] font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
+                  :disabled="saving"
+                  @click="confirmSave"
+                >
+                  <Save :size="14" />
+                  Xác nhận lưu
+                </button>
               </div>
+
             </div>
-
-            <button
-              type="button"
-              class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
-              @click="closeSaveConfirmModal"
-            >
-              <X :size="16" />
-            </button>
-          </div>
-
-          <div class="space-y-3 px-6 py-5">
-            <div
-              v-for="(line, index) in saveConfirmationDetails.lines"
-              :key="`save-confirm-line-${index}`"
-              class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"
-            >
-              {{ line }}
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
-            <button
-              type="button"
-              class="admin-btn-soft"
-              :disabled="saving"
-              @click="closeSaveConfirmModal"
-            >
-              Xem lại
-            </button>
-
-            <button
-              type="button"
-              class="admin-btn-primary disabled:opacity-60"
-              :disabled="saving"
-              @click="confirmSave"
-            >
-              <Save :size="16" />
-              Xác nhận lưu
-            </button>
-          </div>
+          </Transition>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </section>
 </template>
