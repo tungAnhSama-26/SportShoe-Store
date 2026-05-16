@@ -22,8 +22,10 @@ const videoRef = ref<HTMLVideoElement | null>(null);
 const dangQuetFile = ref(false);
 const thongBaoQrOk = ref('');
 let zxingReader: BrowserMultiFormatReader | null = null;
+let daXuLyQr = false;
 
 async function batDauQuet() {
+  daXuLyQr = false;
   loiCamera.value = '';
   dungQuet();
   dangQuet.value = true;
@@ -65,6 +67,8 @@ async function batDauQuet() {
 }
 
 function xuLyKetQuaQr(raw: string) {
+  if (daXuLyQr) return;
+  daXuLyQr = true;
   dungQuet();
   const resolvedRaw = raw.trim();
   loiForm.value.cccd = "";
@@ -135,6 +139,11 @@ function syncCurrentAdminCccd(updated: any) {
 
 function dungQuet() {
   dangQuet.value = false;
+  // Explicitly stop all camera tracks
+  if (videoRef.value && videoRef.value.srcObject instanceof MediaStream) {
+    videoRef.value.srcObject.getTracks().forEach(track => track.stop());
+    videoRef.value.srcObject = null;
+  }
   try {
     zxingReader?.reset();
   } catch { /* ignore */ }
