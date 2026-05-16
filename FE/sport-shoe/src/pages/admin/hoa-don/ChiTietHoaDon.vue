@@ -174,6 +174,8 @@ const donDaHuy = computed(() => {
   return stt === "hủy" || stt === "huy" || stt === "đã hủy" || stt === "da_huy";
 });
 
+const donDaKetThuc = computed(() => donDaHoanThanh.value || donDaHuy.value);
+
 const toastClass = computed(() => {
   if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
   if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
@@ -214,11 +216,11 @@ function hienThiThongBao(loai: "success" | "warning" | "error", tieuDe: string, 
 }
 
 function thongBaoDonDaHoanThanh() {
-  hienThiThongBao("warning", "Đơn Hàng Đã Hoàn Thành", "Đơn hàng đã hoàn thành không thể thay đổi trạng thái");
+  hienThiThongBao("warning", "Đơn Hàng Đã Kết Thúc", "Đơn hàng đã hoàn thành hoặc bị hủy, không thể thực hiện thao tác này.");
 }
 
 function moModalThongTin() {
-  if (donDaHoanThanh.value) {
+  if (donDaKetThuc.value) {
     thongBaoDonDaHoanThanh();
     return;
   }
@@ -873,7 +875,7 @@ onMounted(taiChiTiet);
           </button>
 
           <button
-            v-if="!donDaHoanThanh"
+            v-if="!donDaKetThuc"
             type="button"
             @click="moModalThongTin"
             class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
