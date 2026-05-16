@@ -22,6 +22,7 @@ import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
 import ChiTietPhieuGiamGia from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue";
 import ChiTietPhieuGiamGiaKhachHang from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGiaKhachHang.vue";
 import ChiTietDotGiamGia from "../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue";
+import Profile from "../pages/admin/profile/Profile.vue";
 
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
@@ -51,12 +52,11 @@ function isStaffAllowedPath(path) {
 }
 
 function ownEmployeeProfilePath() {
-  const id = getCurrentAdminUser()?.id;
-  return id ? `/admin/nhan-vien/${id}` : "/admin/login";
+  return "/admin/profile";
 }
 
 function isOwnEmployeeProfile(path) {
-  return path === ownEmployeeProfilePath();
+  return path === "/admin/profile" || path.startsWith("/admin/profile");
 }
 
 const router = createRouter({
@@ -268,6 +268,11 @@ const router = createRouter({
           path: "nhan-vien/:id/lich-lam",
           name: "admin-nhan-vien-lich-lam-chi-tiet",
           component: QuanLyLichLam
+        },
+        {
+          path: "profile",
+          name: "admin-profile",
+          component: Profile
         },
         {
           path: "khach-hang",

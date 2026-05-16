@@ -17,15 +17,18 @@ import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.LichSuHoaDon;
+import com.example.server.entity.NhanVien;
 import com.example.server.entity.ThanhToan;
 import com.example.server.entity.VanChuyen;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.security.AdminPrincipal;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HinhAnhGiayRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichSuHoaDonRepository;
+import com.example.server.repository.NhanVienRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
@@ -40,6 +43,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +80,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final NhanVienRepository nhanVienRepository;
     private final GhnShippingService ghnShippingService;
 
     public QuanLyHoaDonServiceImpl(
@@ -85,6 +91,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             HinhAnhGiayRepository hinhAnhGiayRepository,
             LichSuHoaDonRepository lichSuHoaDonRepository,
             GiayChiTietRepository giayChiTietRepository,
+            NhanVienRepository nhanVienRepository,
             GhnShippingService ghnShippingService
     ) {
         this.hoaDonRepository = hoaDonRepository;
@@ -94,6 +101,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.nhanVienRepository = nhanVienRepository;
         this.ghnShippingService = ghnShippingService;
     }
 
@@ -237,13 +245,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             vanChuyenRepository.save(vanChuyen);
         }
 
-        LichSuHoaDon lichSu = new LichSuHoaDon();
-        lichSu.setHoaDon(hoaDon);
-        lichSu.setNhanVien(hoaDon.getNhanVien());
-        lichSu.setTrangThai(trangThai);
-        lichSu.setGhiChu(request.ghiChu());
-        lichSu.setNgayTao(Instant.now());
-        lichSuHoaDonRepository.save(lichSu);
+        ghiLichSuHoaDon(hoaDon, trangThai, request.ghiChu());
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -308,13 +310,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hoaDon);
 
-        LichSuHoaDon lichSu = new LichSuHoaDon();
-        lichSu.setHoaDon(hoaDon);
-        lichSu.setNhanVien(hoaDon.getNhanVien());
-        lichSu.setTrangThai("Cập nhật sản phẩm");
-        lichSu.setGhiChu("Thay đổi danh sách sản phẩm trong hóa đơn");
-        lichSu.setNgayTao(Instant.now());
-        lichSuHoaDonRepository.save(lichSu);
+        ghiLichSuHoaDon(hoaDon, "Cập nhật sản phẩm", "Thay đổi danh sách sản phẩm trong hóa đơn");
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -356,6 +352,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         );
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hoaDon);
+        ghiLichSuHoaDon(hoaDon, "Cập nhật phí vận chuyển", "Tính lại phí vận chuyển GHN");
 
         return phiGhn;
     }
@@ -417,6 +414,24 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 lichSu.getNgayTao(),
                 normalizeLegacyDisplayValue(lichSu.getGhiChu())
         );
+    }
+
+    private void ghiLichSuHoaDon(HoaDon hoaDon, String trangThai, String ghiChu) {
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hoaDon);
+        lichSu.setNhanVien(resolveNhanVienDangDangNhap(hoaDon));
+        lichSu.setTrangThai(trangThai);
+        lichSu.setGhiChu(ghiChu);
+        lichSu.setNgayTao(Instant.now());
+        lichSuHoaDonRepository.save(lichSu);
+    }
+
+    private NhanVien resolveNhanVienDangDangNhap(HoaDon hoaDon) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AdminPrincipal principal) {
+            return nhanVienRepository.findById(principal.id()).orElse(hoaDon.getNhanVien());
+        }
+        return hoaDon.getNhanVien();
     }
 
     private HoaDonPaymentHistoryResponse mapThanhToan(ThanhToan thanhToan) {
