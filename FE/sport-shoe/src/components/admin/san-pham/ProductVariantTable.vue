@@ -154,33 +154,33 @@ function openDiscountDetail(item) {
     </div>
 
     <div class="rounded-[24px] border border-slate-100">
-      <table class="w-full border-separate border-spacing-0 text-sm">
+      <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
           <col class="w-[4%]" />
           <col class="w-[8%]" />
-          <col class="w-[10%]" />
+          <col class="w-[9%]" />
           <col class="w-[6%]" />
-          <col class="w-[13%]" />
-          <col class="w-[7%]" />
-          <col class="w-[7%]" />
-          <col class="w-[10%]" />
-          <col class="w-[7%]" />
           <col class="w-[12%]" />
+          <col class="w-[7%]" />
+          <col class="w-[7%]" />
+          <col class="w-[11%]" />
           <col class="w-[8%]" />
+          <col class="w-[11%]" />
+          <col class="w-[9%]" />
         </colgroup>
         <thead>
-          <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap">
-            <th class="rounded-tl-2xl bg-slate-100 px-2.5 py-3">STT</th>
-            <th class="bg-slate-100 px-2.5 py-3">Mã SP</th>
-            <th class="bg-slate-100 px-2.5 py-3">Mã CTSP</th>
-            <th class="bg-slate-100 px-2.5 py-3 text-center">Ảnh</th>
-            <th class="bg-slate-100 px-2.5 py-3">Màu sắc</th>
-            <th class="bg-slate-100 px-2.5 py-3 text-center">Kích cỡ</th>
-            <th class="bg-slate-100 px-2 py-3 text-center">Số lượng</th>
-            <th class="bg-slate-100 px-2 py-3">Giá bán</th>
-            <th class="bg-slate-100 px-2 py-3 text-center">Giảm</th>
-            <th class="bg-slate-100 px-2 py-3 text-center">Trạng thái</th>
-            <th class="rounded-tr-2xl bg-slate-100 px-2.5 py-3 text-center">Hành động</th>
+          <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
+            <th class="rounded-tl-2xl bg-slate-100">STT</th>
+            <th class="bg-slate-100">Mã SP</th>
+            <th class="bg-slate-100">Mã CTSP</th>
+            <th class="bg-slate-100 text-center">Ảnh</th>
+            <th class="bg-slate-100">Màu sắc</th>
+            <th class="bg-slate-100 text-center">Kích cỡ</th>
+            <th class="bg-slate-100 text-center">Số lượng</th>
+            <th class="bg-slate-100">Giá bán</th>
+            <th class="bg-slate-100 text-center">Giảm</th>
+            <th class="bg-slate-100 text-center">Trạng thái</th>
+            <th class="rounded-tr-2xl bg-slate-100 text-center">Hành động</th>
           </tr>
         </thead>
         <tbody>
