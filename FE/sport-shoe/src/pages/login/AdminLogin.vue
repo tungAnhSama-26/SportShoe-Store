@@ -13,71 +13,73 @@
     <section class="login-stage" aria-label="SportShoe admin login">
       <div class="corner-logo">SPORTSHOE ADMIN</div>
 
-      <div class="shoe-panel" aria-hidden="true">
-        <div class="brand-repeat">
-          <span>ADMIN</span>
-          <span>SPORTSHOE</span>
-          <span>SYSTEM</span>
-          <span>SPORTSHOE</span>
+      <div class="login-content-wrapper">
+        <div class="shoe-panel" aria-hidden="true">
+          <div class="brand-repeat">
+            <span>SPORTSHOE</span>
+            <span>SPORTSHOE</span>
+            <span>SPORTSHOE</span>
+            <span>SPORTSHOE</span>
+          </div>
         </div>
-      </div>
 
-      <img
-        src="../../assets/login-shoe.png"
-        alt="SportShoe sneaker"
-        class="hero-shoe"
-        @error="handleImageError"
-      />
+        <img
+          src="../../assets/login-shoe.png"
+          alt="SportShoe sneaker"
+          class="hero-shoe"
+          @error="handleImageError"
+        />
 
-      <aside class="login-box">
-        <p class="admin-login-kicker">Hệ thống quản trị</p>
-        <h1 class="login-logo">SPORTSHOE</h1>
-        <h2 class="login-title">Đăng nhập hệ thống</h2>
+        <aside class="login-box">
+          <p class="admin-login-kicker">Hệ thống quản trị</p>
+          <h1 class="login-logo">SPORTSHOE</h1>
+          <h2 class="login-title">Đăng nhập hệ thống</h2>
 
-        <form class="login-form" @submit.prevent="handleLogin">
-          <label class="field">
-            <span>Tên đăng nhập</span>
-            <input
-              v-model="loginForm.username"
-              type="text"
-              placeholder="Ví dụ: nv001"
-              autocomplete="username"
-            />
-          </label>
-
-          <label class="field">
-            <span>Mật khẩu</span>
-            <div class="password-field">
+          <form class="login-form" @submit.prevent="handleLogin">
+            <label class="field">
+              <span>Tên đăng nhập</span>
               <input
-                v-model="loginForm.password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Nhập mật khẩu"
-                autocomplete="current-password"
+                v-model="loginForm.username"
+                type="text"
+                placeholder="Nhập tên đăng nhập"
+                autocomplete="username"
               />
-              <button
-                type="button"
-                class="password-toggle"
-                @click="showPassword = !showPassword"
-              >
-                <component :is="showPassword ? EyeOff : Eye" class="icon" />
-              </button>
-            </div>
-          </label>
+            </label>
 
-          <p class="admin-login-note">
-            Chỉ tài khoản nhân viên đang hoạt động mới được truy cập hệ thống admin.
-          </p>
+            <label class="field">
+              <span>Mật khẩu</span>
+              <div class="password-field">
+                <input
+                  v-model="loginForm.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="Nhập mật khẩu"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  @click="showPassword = !showPassword"
+                >
+                  <component :is="showPassword ? EyeOff : Eye" class="icon" />
+                </button>
+              </div>
+            </label>
 
-          <button type="submit" class="primary-login" :disabled="loading">
-            <span v-if="!loading">Đăng nhập hệ thống</span>
-            <span v-else class="loader"></span>
-          </button>
+            <p class="admin-login-note">
+              Chỉ tài khoản nhân viên đang hoạt động mới được truy cập hệ thống admin.
+            </p>
 
-          <router-link to="/login" class="admin-login-switch">
-            Đăng nhập tài khoản khách hàng
-          </router-link>
-        </form>
-      </aside>
+            <button type="submit" class="primary-login" :disabled="loading">
+              <span v-if="!loading">Đăng nhập hệ thống</span>
+              <span v-else class="loader"></span>
+            </button>
+
+            <router-link to="/login" class="admin-login-switch">
+              Đăng nhập tài khoản khách hàng
+            </router-link>
+          </form>
+        </aside>
+      </div>
     </section>
   </main>
 </template>
