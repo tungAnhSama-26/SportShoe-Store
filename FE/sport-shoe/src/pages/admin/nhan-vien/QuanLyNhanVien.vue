@@ -9,6 +9,10 @@ import { useAdminSession } from "../../../composable/useAdminSession";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
+import Card from "../../../components/ui/Card.vue";
+import Table from "../../../components/ui/Table.vue";
+import Button from "../../../components/ui/Button.vue";
+import Badge from "../../../components/ui/Badge.vue";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 import {
@@ -225,14 +229,15 @@ onMounted(taiDanhSach);
       </h1>
     </section>
 
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-  <!-- Tiêu đề bộ lọc -->
-  <div class="mb-5 flex items-center gap-3">
-    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
-      <Filter class="h-5 w-5" />
-    </div>
-    <h2 class="admin-section-title">Bộ lọc</h2>
-  </div>
+    <Card>
+      <template #header>
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+            <Filter class="h-5 w-5" />
+          </div>
+          <h2 class="admin-section-title">Bộ lọc</h2>
+        </div>
+      </template>
 
   <div class="flex flex-col gap-5">
     <!-- HÀNG 1: CHỨA TẤT CẢ CÁC Ô NHẬP LIỆU (Search + Vai Trò + Trạng Thái) -->
@@ -245,7 +250,7 @@ onMounted(taiDanhSach);
             v-model="boLoc.keyword"
             type="text"
             placeholder="Tìm theo mã, họ tên, email, SĐT..."
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
           />
         </div>
       </div>
@@ -254,7 +259,7 @@ onMounted(taiDanhSach);
       <div class="lg:col-span-3">
         <select
           v-model="boLoc.vaiTro"
-          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
         >
           <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">
             {{ vt.label }}
@@ -266,7 +271,7 @@ onMounted(taiDanhSach);
       <div class="lg:col-span-3">
         <select
           v-model="boLoc.trangThai"
-          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
         >
           <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">
             {{ tt.label }}
@@ -277,41 +282,38 @@ onMounted(taiDanhSach);
 
     <!-- HÀNG 2: CHỨA CÁC NÚT BẤM - CĂN PHẢI -->
     <div class="flex flex-wrap items-center justify-end gap-3">
-      <button @click="lamMoiBoLoc" class="admin-btn-soft">
-        <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-      </button>
-      <button @click="xuatExcel" class="admin-btn-soft">
-        <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-      </button>
-      <!-- <button
-        @click="router.push({ name: 'admin-nhan-vien-lich-lam' })"
-        class="admin-btn-soft"
-      >
-        <CalendarDays class="h-4 w-4" /> Quản lý lịch làm
-      </button> -->
-      <button @click="themMoi" class="admin-btn-primary">
-        <Plus class="h-4 w-4" /> Thêm nhân viên
-      </button>
+      <Button variant="soft" @click="lamMoiBoLoc">
+        <template #prefix><RotateCcw class="h-4 w-4" /></template>
+        Đặt lại bộ lọc
+      </Button>
+      <Button variant="soft" @click="xuatExcel">
+        <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+        Xuất Excel
+      </Button>
+      <Button variant="primary" @click="themMoi">
+        <template #prefix><Plus class="h-4 w-4" /></template>
+        Thêm nhân viên
+      </Button>
     </div>
   </div>
-</section>
+    </Card>
 
     <!-- Danh sách -->
-    <section
-      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
-    >
-      <div class="mb-5 flex items-center gap-3">
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-500"
-        >
-          <Users class="h-5 w-5" />
+    <Card>
+      <template #header>
+        <div class="mb-5 flex items-center gap-3">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary"
+          >
+            <Users class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="admin-section-title">
+              Danh sách nhân viên
+            </h2>
+          </div>
         </div>
-        <div>
-          <h2 class="admin-section-title">
-            Danh sách nhân viên
-          </h2>
-        </div>
-      </div>
+      </template>
 
       <div
         v-if="loiTrang"
@@ -320,26 +322,20 @@ onMounted(taiDanhSach);
         {{ loiTrang }}
       </div>
 
-      <div class="overflow-x-auto">
-        <table
-          class="w-full table-fixed border-separate border-spacing-y-2 text-sm"
-        >
-          <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="w-14 rounded-l-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
-              <th class="w-16 bg-slate-100 px-3 py-3 whitespace-nowrap">Ảnh</th>
-              <th class="w-24 bg-slate-100 px-3 py-3 whitespace-nowrap">Mã NV</th>
-              <th class="w-[20%] bg-slate-100 px-3 py-3 whitespace-nowrap">Họ tên</th>
-              <th class="w-[24%] bg-slate-100 px-3 py-3 whitespace-nowrap">Email</th>
-              <th class="w-36 bg-slate-100 px-3 py-3 whitespace-nowrap">Số điện thoại</th>
-              <th class="w-28 bg-slate-100 px-3 py-3 whitespace-nowrap">Vai trò</th>
-              <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Trạng thái</th>
-              <th class="w-24 rounded-r-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      <div class="admin-table-scroll">
+        <Table>
+          <template #header>
+              <th class="px-3 py-3 whitespace-nowrap">STT</th>
+              <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
+              <th class="px-3 py-3 whitespace-nowrap">Mã NV</th>
+              <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
+              <th class="px-3 py-3 whitespace-nowrap">Email</th>
+              <th class="px-3 py-3 whitespace-nowrap">Số điện thoại</th>
+              <th class="px-3 py-3 whitespace-nowrap">Vai trò</th>
+              <th class="px-3 py-3 whitespace-nowrap">Trạng thái</th>
+              <th class="px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+          </template>
+          <template #body>
             <tr v-if="dangTai">
               <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                 Đang tải dữ liệu nhân viên...
@@ -396,12 +392,9 @@ onMounted(taiDanhSach);
                 </div>
               </td>
               <td class="px-3 py-3">
-                <span
-                  class="inline-flex min-w-[104px] justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold"
-                  :class="mauTrangThai(nv.trangThai)"
-                >
+                <Badge :variant="nv.trangThai === 1 ? 'success' : 'danger'">
                   {{ hienThiTrangThai(nv) }}
-                </span>
+                </Badge>
               </td>
               <td class="rounded-r-2xl px-3 py-3 align-top text-center">
                 <div class="flex items-center justify-center gap-0.5">
@@ -433,22 +426,24 @@ onMounted(taiDanhSach);
                 </div>
               </td>
             </tr>
-          </tbody>
-        </table>
+          </template>
+        </Table>
       </div>
 
-      <AdminTableFooter
-        :current-page="trangHienTai"
-        :page-size="soPhanTuMotTrang"
-        :page-size-options="pageSizeOptions"
-        :total-items="danhSach.length"
-        :total-pages="tongSoTrang"
-        compact
-        show-refresh
-        @refresh="taiDanhSach"
-        @update:current-page="trangHienTai = $event"
-        @update:page-size="soPhanTuMotTrang = $event"
-      />
-    </section>
+      <template #footer>
+        <AdminTableFooter
+          :current-page="trangHienTai"
+          :page-size="soPhanTuMotTrang"
+          :page-size-options="pageSizeOptions"
+          :total-items="danhSach.length"
+          :total-pages="tongSoTrang"
+          compact
+          show-refresh
+          @refresh="taiDanhSach"
+          @update:current-page="trangHienTai = $event"
+          @update:page-size="soPhanTuMotTrang = $event"
+        />
+      </template>
+    </Card>
   </div>
 </template>

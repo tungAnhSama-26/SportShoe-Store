@@ -14,6 +14,10 @@ import * as api from "../../../services/san-pham-api";
 import AdminQrCodeModal from "../../../components/common/AdminQrCodeModal.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import Card from "../../../components/ui/Card.vue";
+import Table from "../../../components/ui/Table.vue";
+import Button from "../../../components/ui/Button.vue";
+import Badge from "../../../components/ui/Badge.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
@@ -381,24 +385,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div>
+    <div class="space-y-5">
     <section>
       <h1 class="admin-page-title text-[30px]">Quản lý sản phẩm</h1>
     </section>
 
-    <section
-      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
-    >
-      <div class="mb-5 flex items-center gap-3">
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
-        >
-          <Filter class="h-5 w-5" />
+    <Card>
+      <template #header>
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
+            <Filter class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="admin-section-title">Bộ lọc</h2>
+          </div>
         </div>
-        <div>
-          <h2 class="admin-section-title">Bộ lọc</h2>
-        </div>
-      </div>
+      </template>
 
       <div class="flex flex-col gap-4">
         <div
@@ -421,18 +424,18 @@ onUnmounted(() => {
           </label>
 
           <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-            <button type="button" class="admin-btn-soft" @click="resetFilters">
-              <RotateCcw class="h-4 w-4" />
+            <Button variant="soft" @click="resetFilters">
+              <template #prefix><RotateCcw class="h-4 w-4" /></template>
               Đặt lại
-            </button>
-            <button type="button" class="admin-btn-soft" @click="xuatExcel">
-              <FileSpreadsheet class="h-4 w-4" />
+            </Button>
+            <Button variant="soft" @click="xuatExcel">
+              <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
               Xuất Excel
-            </button>
-            <button type="button" class="admin-btn-primary" @click="goToForm">
-              <Plus class="h-4 w-4" />
+            </Button>
+            <Button variant="primary" @click="goToForm">
+              <template #prefix><Plus class="h-4 w-4" /></template>
               Thêm sản phẩm chi tiết
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -487,21 +490,19 @@ onUnmounted(() => {
           </label>
         </div>
       </div>
-    </section>
+    </Card>
 
-    <section
-      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
-    >
-      <div class="mb-5 flex items-center gap-3">
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]"
-        >
-          <Package class="h-5 w-5" />
+    <Card>
+      <template #header>
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
+            <Package class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="admin-section-title">Danh sách sản phẩm</h2>
+          </div>
         </div>
-        <div>
-          <h2 class="admin-section-title">Danh sách sản phẩm</h2>
-        </div>
-      </div>
+      </template>
 
       <div class="rounded-[24px] border border-slate-100">
         <table
@@ -596,13 +597,9 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-0 py-4 text-center whitespace-nowrap">
-                <span
-                  class="inline-flex min-w-[104px] items-center justify-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold"
-                  :class="trangThaiClass(item.trangThai)"
-                  :title="trangThaiLabel(item.trangThai)"
-                >
+                <Badge :variant="item.trangThai === 1 ? 'success' : item.trangThai === 2 ? 'warning' : 'danger'">
                   {{ trangThaiLabel(item.trangThai) }}
-                </span>
+                </Badge>
               </td>
               <td class="rounded-r-2xl px-4 py-4 text-center align-middle">
                 <div class="flex items-center justify-center gap-2">
@@ -632,20 +629,22 @@ onUnmounted(() => {
         </table>
       </div>
 
-      <AdminTableFooter
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :page-size-options="pageSizeOptions"
-        :total-items="totalItems"
-        :total-pages="totalPages"
-        zero-based
-        compact
-        show-refresh
-        @refresh="loadData(currentPage)"
-        @update:current-page="loadData"
-        @update:page-size="handlePageSizeChange"
-      />
-    </section>
+      <template #footer>
+        <AdminTableFooter
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-size-options="pageSizeOptions"
+          :total-items="totalItems"
+          :total-pages="totalPages"
+          zero-based
+          compact
+          show-refresh
+          @refresh="loadData(currentPage)"
+          @update:current-page="loadData"
+          @update:page-size="handlePageSizeChange"
+        />
+      </template>
+    </Card>
 
     <AdminQrCodeModal
       :open="showQrModal && !!selectedQrItem"
@@ -674,6 +673,7 @@ onUnmounted(() => {
         </div>
       </Transition>
     </Teleport>
+  </div>
   </div>
 </template>
 
