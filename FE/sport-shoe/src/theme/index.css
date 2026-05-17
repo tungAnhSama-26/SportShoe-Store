@@ -2,6 +2,16 @@
 @import "tailwindcss" source(none);
 @source "../**/*.{vue,js,ts}";
 
+@theme {
+  --color-primary: #cf1018;
+  --color-primary-hover: #a40d13;
+  --color-primary-light: rgba(207, 16, 24, 0.1);
+  --color-secondary: #ff6a00;
+  --color-black: #080808;
+  --color-background: #fff8f4;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", sans-serif;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {

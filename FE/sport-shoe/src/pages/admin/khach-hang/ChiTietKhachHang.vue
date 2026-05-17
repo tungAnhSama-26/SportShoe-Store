@@ -12,6 +12,8 @@ import {
   uploadFile
 } from "../../../services/khach-hang";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import Card from "../../../components/ui/Card.vue";
+import Button from "../../../components/ui/Button.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -279,12 +281,14 @@ onMounted(taiChiTiet);
   <div class="space-y-5">
     <!-- Header -->
     <section class="flex items-center gap-4">
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
+        class="rounded-full bg-slate-100 hover:bg-slate-200"
         @click="router.push({ name: 'admin-khach-hang' })"
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-5 w-5" />
-      </button>
+      </Button>
       <div>
         <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
           {{ laMoi ? "Thêm khách hàng mới" : "Chi tiết khách hàng" }}
@@ -304,7 +308,7 @@ onMounted(taiChiTiet);
         <!-- Sidebar -->
         <div class="space-y-4">
           <!-- Avatar -->
-          <div class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm text-center">
+          <Card class="text-center">
             <div class="relative inline-block cursor-pointer" @click="($refs.fileInputAvatar as HTMLInputElement)?.click()" title="Bấm để thay đổi hình ảnh">
               <img
                 :src="form.hinhAnh || khachHang?.hinhAnh || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(form.hoTen || khachHang?.hoTen || 'KH') + '&background=f1f5f9&color=475569&size=128'"
@@ -323,36 +327,36 @@ onMounted(taiChiTiet);
               </span>
             </div>
             <p v-else class="mt-2 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
-          </div>
+          </Card>
 
           <!-- Extra functions for edit mode -->
           <template v-if="!laMoi">
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+            <Card>
               <h3 class="mb-3 text-sm font-bold text-slate-800">Đổi mật khẩu</h3>
               <div v-if="!showDoiMatKhau">
-                <button @click="showDoiMatKhau = true" class="w-full rounded-2xl border border-slate-200 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Đổi mật khẩu</button>
+                <Button variant="outline" class="w-full justify-center" @click="showDoiMatKhau = true">Đổi mật khẩu</Button>
               </div>
               <div v-else class="space-y-3">
                 <input v-model="matKhauMoi" type="password" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)" class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" />
                 <div class="flex gap-2">
-                  <button @click="doiMatKhau" :disabled="dangLuu" class="flex-1 rounded-2xl bg-rose-500 py-2 text-xs font-bold text-white hover:bg-rose-600 transition">Xác nhận</button>
-                  <button @click="showDoiMatKhau = false; matKhauMoi = ''" class="flex-1 rounded-2xl border py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 transition">Hủy</button>
+                  <Button variant="primary" class="flex-1 justify-center" @click="doiMatKhau" :disabled="dangLuu">Xác nhận</Button>
+                  <Button variant="soft" class="flex-1 justify-center" @click="showDoiMatKhau = false; matKhauMoi = ''">Hủy</Button>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm space-y-2">
+            <Card class="space-y-2">
               <h3 class="mb-3 text-sm font-bold text-slate-800">Trạng thái tài khoản</h3>
-              <button v-if="khachHang?.trangThai === 1" @click="doiTrangThai(0)" class="w-full rounded-2xl bg-rose-50 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-100 transition">🔒 Khóa tài khoản</button>
-              <button v-else @click="doiTrangThai(1)" class="w-full rounded-2xl bg-emerald-50 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-100 transition">✓ Kích hoạt tài khoản</button>
-            </div>
+              <Button v-if="khachHang?.trangThai === 1" variant="soft" class="w-full justify-center text-rose-600 bg-rose-50 hover:bg-rose-100" @click="doiTrangThai(0)">🔒 Khóa tài khoản</Button>
+              <Button v-else variant="soft" class="w-full justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100" @click="doiTrangThai(1)">✓ Kích hoạt tài khoản</Button>
+            </Card>
           </template>
         </div>
 
         <!-- Main content -->
         <div class="space-y-5">
           <!-- Thông tin cơ bản -->
-          <section class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+          <Card class="space-y-5">
             <div class="flex items-center gap-3 mb-2">
               <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-500">
                 <User class="h-5 w-5" />
@@ -390,15 +394,15 @@ onMounted(taiChiTiet);
 
             <!-- Nút Lưu thay đổi chỉ hiện ở đây khi chỉnh sửa -->
             <div v-if="!laMoi" class="flex items-center gap-3 pt-4 border-t border-slate-100">
-              <button @click="luu" :disabled="dangLuu" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
-                <Save class="h-4 w-4" />
+              <Button variant="primary" class="px-6" @click="luu" :disabled="dangLuu">
+                <Save class="h-4 w-4 mr-2" />
                 {{ dangLuu ? "Đang lưu..." : "Lưu thay đổi" }}
-              </button>
+              </Button>
             </div>
-          </section>
+          </Card>
 
           <!-- Địa chỉ giao hàng (chỉ khi thêm mới) -->
-          <section v-if="laMoi" class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+          <Card v-if="laMoi" class="space-y-5">
             <div class="flex items-center gap-3 mb-2">
               <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-500">
                 <MapPin class="h-5 w-5" />
@@ -472,12 +476,12 @@ onMounted(taiChiTiet);
 
             <!-- Nút Tạo khách hàng nằm dưới cùng form địa chỉ -->
             <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-              <button @click="luu" :disabled="dangLuu" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
-                <Save class="h-4 w-4" />
+              <Button variant="primary" class="px-6" @click="luu" :disabled="dangLuu">
+                <Save class="h-4 w-4 mr-2" />
                 {{ dangLuu ? "Đang tạo..." : "Tạo khách hàng" }}
-              </button>
+              </Button>
             </div>
-          </section>
+          </Card>
         </div>
       </div>
     </template>

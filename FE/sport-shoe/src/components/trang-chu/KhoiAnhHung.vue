@@ -8,8 +8,8 @@ defineProps({
 </script>
 
 <template>
-  <section class="bg-[#fff8f4]">
-    <div class="w-full overflow-hidden bg-[#A00417]">
+  <section class="bg-background">
+    <div class="w-full overflow-hidden bg-black">
       <div class="relative min-h-[500px] lg:min-h-[620px]">
         <img
           src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1800&q=80"
@@ -23,7 +23,7 @@ defineProps({
             <span class="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-medium backdrop-blur-sm">
               Bộ sưu tập mới 2026
             </span>
-            <p class="mt-9 text-sm font-medium text-orange-200">Bước vào phong cách riêng</p>
+            <p class="mt-9 text-sm font-medium text-secondary">Bước vào phong cách riêng</p>
             <h1 class="mt-6 max-w-[9ch] text-[1.7rem] font-medium leading-[1.12] sm:max-w-[10ch] sm:text-[1.95rem] lg:max-w-[11ch] lg:text-[2.45rem]">
               Bứt phá phong cách với Sneaker mới
             </h1>
@@ -31,14 +31,14 @@ defineProps({
               <a
                 id="mua-ngay"
                 href="#bo-suu-tap"
-                class="inline-flex items-center gap-2 rounded-md bg-[#cf1018] px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#b30d14]"
+                class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-semibold text-white shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-primary/50"
               >
                 Mua ngay
                 <span aria-hidden="true">→</span>
               </a>
               <a
                 href="#noi-bat"
-                class="inline-flex items-center rounded-md border border-white/70 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-white/10"
+                class="inline-flex items-center rounded-xl border border-white/40 bg-white/5 px-5 py-2.5 text-[13px] font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:border-white/60"
               >
                 Khám phá bộ sưu tập
               </a>
@@ -46,8 +46,8 @@ defineProps({
 
             <div class="mt-8 grid max-w-xl grid-cols-3 gap-7 sm:gap-9">
               <div v-for="chiSo in thongKe" :key="chiSo.nhan">
-                <p class="text-base font-semibold text-[#ffb27d] sm:text-lg">{{ chiSo.so }}</p>
-                <p class="mt-2 whitespace-nowrap text-[11px] leading-5 text-white/80 sm:text-xs">{{ chiSo.nhan }}</p>
+                <p class="text-base font-semibold text-secondary sm:text-xl">{{ chiSo.so }}</p>
+                <p class="mt-2 whitespace-nowrap text-[11px] leading-5 text-slate-300 sm:text-xs">{{ chiSo.nhan }}</p>
               </div>
             </div>
           </div>
