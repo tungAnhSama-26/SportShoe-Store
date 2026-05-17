@@ -70,11 +70,22 @@
   position: relative;
   min-height: 100svh;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
   overflow: visible;
   border-radius: 4px;
   background: transparent;
   isolation: isolate;
-  --scale: 1.62;
+  --scale: 1.38;
+}
+
+.login-content-wrapper {
+  position: relative;
+  width: calc(700px * var(--scale));
+  height: calc(500px * var(--scale));
+  flex-shrink: 0;
 }
 
 .corner-logo {
@@ -91,8 +102,8 @@
 
 .shoe-panel {
   position: absolute;
-  left: calc(50% - (345px * var(--scale)));
-  top: calc(50% - (172px * var(--scale)));
+  left: calc(50% - (335px * var(--scale)));
+  top: calc(50% - (212px * var(--scale)));
   width: calc(412px * var(--scale));
   height: calc(432px * var(--scale));
   overflow: hidden;
@@ -102,21 +113,27 @@
     0 calc(28px * var(--scale)) calc(58px * var(--scale)) rgba(52, 10, 8, 0.44),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
   animation: panelIn 620ms ease both;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .brand-repeat {
   position: absolute;
-  inset: -8% -10% -8% 3%;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  color: rgba(255, 164, 150, 0.36);
-  font-weight: 900;
-  font-size: calc(44px * var(--scale));
-  letter-spacing: calc(12px * var(--scale));
-  line-height: 0.95;
+  align-items: center;
+  justify-content: space-evenly;
   user-select: none;
-  white-space: nowrap;
+  opacity: 0.35;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 900;
+  font-size: calc(38px * var(--scale));
+  letter-spacing: calc(12px * var(--scale));
+  margin-right: calc(-12px * var(--scale));
+  line-height: 1;
 }
 
 .brand-repeat span {
@@ -126,7 +143,7 @@
 .hero-shoe {
   position: absolute;
   left: calc(50% - (376px * var(--scale)));
-  top: calc(50% - (80px * var(--scale)));
+  top: calc(50% - (120px * var(--scale)));
   z-index: 30; /* Higher than login-box to show the toe on top */
   width: calc(485px * var(--scale));
   max-width: none;
@@ -137,15 +154,15 @@
 
 .login-box {
   position: absolute;
-  left: calc(50% - (42px * var(--scale)));
-  top: calc(50% - (140px * var(--scale)));
+  left: calc(50% - (32px * var(--scale)));
+  top: calc(50% - (160px * var(--scale)));
   z-index: 20; /* Ensure it's above the shoe */
   width: calc(380px * var(--scale));
-  min-height: calc(365px * var(--scale));
+  min-height: calc(340px * var(--scale));
   padding:
     calc(28px * var(--scale))
     calc(48px * var(--scale))
-    calc(36px * var(--scale));
+    calc(26px * var(--scale));
   border-radius: calc(28px * var(--scale));
   border: 1px solid rgba(255, 255, 255, 0.22);
   background:
@@ -313,7 +330,7 @@ input::-ms-clear {
 }
 
 .register-link {
-  margin-top: calc(15px * var(--scale));
+  margin-top: calc(20px * var(--scale));
   text-align: center;
   font-size: calc(10px * var(--scale));
   color: #ffffff; /* Use pure white for maximum sharpness */
@@ -347,7 +364,7 @@ input::-ms-clear {
 }
 
 .admin-login-note {
-  margin: -2px 0 0;
+  margin: calc(10px * var(--scale)) 0 calc(15px * var(--scale));
   color: rgba(255, 255, 255, 0.76);
   font-size: clamp(11px, 0.86vw, 13px);
   line-height: 1.5;
@@ -355,7 +372,8 @@ input::-ms-clear {
 
 .admin-login-switch {
   display: block;
-  margin-top: 2px;
+  margin-top: calc(16px * var(--scale));
+  margin-bottom: calc(5px * var(--scale));
   color: rgba(255, 255, 255, 0.88);
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 800;
@@ -402,6 +420,11 @@ input::-ms-clear {
   to { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 
+@keyframes shoeInMobile {
+  from { opacity: 0; transform: translate(-50%, 22px) scale(0.94); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
 @keyframes formIn {
   from { opacity: 0; transform: translateX(24px) scale(0.985); }
   to { opacity: 1; transform: translateX(0) scale(1); }
@@ -409,13 +432,13 @@ input::-ms-clear {
 
 @media (max-width: 1280px), (max-height: 760px) {
   .login-stage {
-    --scale: 1.34;
+    --scale: 1.15;
   }
 }
 
 @media (max-width: 1040px), (max-height: 640px) {
   .login-stage {
-    --scale: 1.12;
+    --scale: 1.0;
   }
 }
 
@@ -425,55 +448,88 @@ input::-ms-clear {
   }
 
   .login-stage {
-    min-height: 100svh;
-    padding: 18px;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    padding: 50px 20px 30px !important;
+    overflow-y: auto;
   }
 
   .corner-logo {
-    position: relative;
-    inset: auto;
-    display: inline-block;
-    margin-bottom: 18px;
-    font-size: 15px;
+    position: relative !important;
+    top: 0 !important;
+    left: auto !important;
+    width: 100% !important;
+    text-align: center !important;
+    padding: 30px 0 20px !important;
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    color: #fff !important;
+    display: block !important;
+    letter-spacing: 2px;
   }
 
   .shoe-panel,
-  .login-box {
+  .login-box,
+  .login-content-wrapper {
     --scale: 1;
   }
 
-  .shoe-panel {
-    position: relative;
-    left: auto;
-    top: auto;
+  .login-content-wrapper {
     width: 100%;
-    height: 300px;
-    border-radius: 26px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
   }
 
   .brand-repeat {
-    font-size: 44px;
-    letter-spacing: 10px;
+    padding-top: 80px !important;
+  }
+
+  .shoe-panel {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100%;
+    height: 220px;
+    border-radius: 26px;
+    overflow: hidden;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .brand-repeat {
+    position: absolute;
+    inset: 0;
+    margin: 0 !important;
+    padding: 0 0 0 6px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly !important;
+    font-size: 35px;
+    letter-spacing: 6px;
+    width: 100%;
+    opacity: 0.35;
   }
 
   .hero-shoe {
-    left: 50%;
-    top: 100px; /* Move it higher */
-    width: min(420px, 110vw); /* Scale it down slightly */
-    transform: translateX(-50%);
-  }
-
-  @keyframes shoeIn {
-    from { opacity: 0; transform: translate(-50%, 22px) scale(0.94); }
-    to { opacity: 1; transform: translateX(-50%) scale(1); }
+    position: absolute;
+    left: 50% !important;
+    top: 30px !important;
+    width: min(340px, 90vw) !important;
+    transform: translateX(-50%) !important;
+    z-index: 30;
+    animation: shoeInMobile 760ms cubic-bezier(.2,.8,.2,1) both !important;
   }
 
   .login-box {
     position: relative;
-    left: auto;
-    top: auto;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
     width: 100%;
-    min-height: auto;
     margin-top: -18px;
     padding: 30px 20px;
     border-radius: 26px;
