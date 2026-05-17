@@ -504,19 +504,34 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <Table>
-        <template #header>
-          <th class="px-4 py-3 whitespace-nowrap">STT</th>
-          <th class="px-4 py-3 whitespace-nowrap">Mã SP</th>
-          <th class="px-4 py-3">Tên SP</th>
-          <th class="px-4 py-3 whitespace-nowrap">Thương hiệu</th>
-          <th class="px-4 py-3 text-center whitespace-nowrap">Số lượng</th>
-          <th class="px-4 py-3 whitespace-nowrap">Giá bán</th>
-          <th class="px-0 py-3 text-center whitespace-nowrap">Trạng thái</th>
-          <th class="px-3 py-3 text-center whitespace-nowrap">Hành động</th>
-        </template>
-        <template #body>
-          <tr v-if="loading">
+      <div class="rounded-[24px] border border-slate-100">
+        <table
+          class="w-full table-fixed border-separate border-spacing-0 text-sm"
+        >
+          <colgroup>
+            <col class="w-[5%]" />
+            <col class="w-[9%]" />
+            <col class="w-[24%]" />
+            <col class="w-[12%]" />
+            <col class="w-[8%]" />
+            <col class="w-[15%]" />
+            <col class="w-[11%]" />
+            <col class="w-[8%]" />
+          </colgroup>
+          <thead>
+            <tr class="text-left text-[13px] font-bold text-slate-950 [&>th]:whitespace-nowrap">
+              <th class="rounded-tl-2xl bg-slate-100 px-4 py-3">STT</th>
+              <th class="bg-slate-100 px-4 py-3">Mã SP</th>
+              <th class="bg-slate-100 px-4 py-3">Tên SP</th>
+              <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
+              <th class="bg-slate-100 px-4 py-3 text-center">Số lượng</th>
+              <th class="bg-slate-100 px-4 py-3">Giá bán</th>
+              <th class="bg-slate-100 px-4 py-3 text-center">Trạng thái</th>
+              <th class="rounded-tr-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="loading">
               <td colspan="8" class="py-10 text-center text-sm text-slate-400">
                 Đang tải dữ liệu...
               </td>
@@ -549,14 +564,12 @@ onUnmounted(() => {
                   {{ item.ten }}
                 </p>
               </td>
-              <td class="px-4 py-4 align-top">
-                <p class="break-words font-semibold leading-7 text-slate-800">
+              <td class="px-4 py-4 align-middle">
+                <p class="font-semibold text-slate-800 whitespace-nowrap">
                   {{ item.thuongHieu || "—" }}
                 </p>
               </td>
-              <td
-                class="px-4 py-4 text-center font-semibold text-slate-700 whitespace-nowrap"
-              >
+              <td class="px-4 py-4 text-center align-middle font-semibold text-slate-700 whitespace-nowrap">
                 {{ Number(item.tongSoLuong || 0).toLocaleString("vi-VN") }}
               </td>
               <td class="pl-4 pr-0 py-4 font-semibold text-slate-800">
@@ -588,7 +601,7 @@ onUnmounted(() => {
                   {{ trangThaiLabel(item.trangThai) }}
                 </Badge>
               </td>
-              <td class="px-3 py-4 text-center">
+              <td class="rounded-r-2xl px-4 py-4 text-center align-middle">
                 <div class="flex items-center justify-center gap-2">
                   <AdminQuickStatusAction
                     :loading="isUpdatingStatus(item.id)"
@@ -612,8 +625,9 @@ onUnmounted(() => {
                 </div>
               </td>
             </tr>
-          </template>
-      </Table>
+          </tbody>
+        </table>
+      </div>
 
       <template #footer>
         <AdminTableFooter
