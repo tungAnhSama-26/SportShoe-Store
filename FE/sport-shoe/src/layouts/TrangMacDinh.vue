@@ -11,10 +11,10 @@ import { cuaHangUngDung } from "../stores/ung-dung";
       <router-view />
     </div>
 
-    <footer class="bg-[#080808] px-6 py-12 text-white lg:px-10">
+    <footer class="bg-black px-6 py-12 text-white lg:px-10">
       <div class="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1.4fr_0.7fr_0.7fr_1fr]">
         <div>
-          <a href="#trang-chu" class="inline-flex rounded-2xl bg-white p-3 shadow-[0_12px_30px_rgba(255,106,0,0.12)]">
+          <a href="#trang-chu" class="inline-flex rounded-2xl bg-white p-3 shadow-lg shadow-secondary/10">
             <img :src="logoChinh" :alt="cuaHangUngDung.thuongHieu" class="h-16 w-auto object-contain" />
           </a>
           <p class="mt-4 max-w-sm text-xs leading-6 text-slate-400">
@@ -49,22 +49,22 @@ import { cuaHangUngDung } from "../stores/ung-dung";
         <div>
           <p class="text-sm font-semibold text-white">Mua sắm</p>
           <div class="mt-4 space-y-2 text-xs text-slate-400">
-            <a href="#noi-bat" class="block hover:text-[#ff6a00]">Hàng mới</a>
-            <a href="#bo-suu-tap" class="block hover:text-[#ff6a00]">Nam</a>
-            <a href="#bo-suu-tap" class="block hover:text-[#ff6a00]">Nữ</a>
-            <a href="#bo-suu-tap" class="block hover:text-[#ff6a00]">Trẻ em</a>
-            <a href="#gia-tri" class="block hover:text-[#ff6a00]">Giảm giá</a>
+            <a href="#noi-bat" class="block hover:text-secondary transition-colors">Hàng mới</a>
+            <a href="#bo-suu-tap" class="block hover:text-secondary transition-colors">Nam</a>
+            <a href="#bo-suu-tap" class="block hover:text-secondary transition-colors">Nữ</a>
+            <a href="#bo-suu-tap" class="block hover:text-secondary transition-colors">Trẻ em</a>
+            <a href="#gia-tri" class="block hover:text-secondary transition-colors">Giảm giá</a>
           </div>
         </div>
 
         <div>
           <p class="text-sm font-semibold text-white">Hỗ trợ</p>
           <div class="mt-4 space-y-2 text-xs text-slate-400">
-            <a href="#" class="block hover:text-[#ff6a00]">Liên hệ</a>
-            <a href="#" class="block hover:text-[#ff6a00]">Thông tin giao hàng</a>
-            <a href="#" class="block hover:text-[#ff6a00]">Đổi trả</a>
-            <a href="#" class="block hover:text-[#ff6a00]">Hướng dẫn chọn size</a>
-            <a href="#" class="block hover:text-[#ff6a00]">FAQ</a>
+            <a href="#" class="block hover:text-secondary transition-colors">Liên hệ</a>
+            <a href="#" class="block hover:text-secondary transition-colors">Thông tin giao hàng</a>
+            <a href="#" class="block hover:text-secondary transition-colors">Đổi trả</a>
+            <a href="#" class="block hover:text-secondary transition-colors">Hướng dẫn chọn size</a>
+            <a href="#" class="block hover:text-secondary transition-colors">FAQ</a>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ import { cuaHangUngDung } from "../stores/ung-dung";
               placeholder="Email của bạn"
               class="w-full rounded-md border border-white/10 bg-[#111111] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500"
             />
-            <button class="rounded-md bg-gradient-to-r from-[#cf1018] to-[#ff6a00] px-4 py-2 text-xs font-semibold text-white">
+            <button class="rounded-md bg-gradient-to-r from-primary to-secondary px-4 py-2 text-xs font-semibold text-white transition-all hover:shadow-md hover:shadow-primary/20">
               Đăng ký
             </button>
           </div>
@@ -89,9 +89,9 @@ import { cuaHangUngDung } from "../stores/ung-dung";
       <div class="mx-auto mt-10 flex max-w-7xl flex-col gap-4 border-t border-white/10 pt-6 text-[11px] text-slate-500 md:flex-row md:items-center md:justify-between">
         <p>© 2025 Stride. Đã đăng ký mọi quyền.</p>
         <div class="flex flex-wrap items-center gap-4">
-          <a href="#" class="hover:text-[#ff6a00]">Chính sách bảo mật</a>
-          <a href="#" class="hover:text-[#ff6a00]">Điều khoản dịch vụ</a>
-          <a href="#" class="hover:text-[#ff6a00]">Chính sách cookie</a>
+          <a href="#" class="hover:text-secondary transition-colors">Chính sách bảo mật</a>
+          <a href="#" class="hover:text-secondary transition-colors">Điều khoản dịch vụ</a>
+          <a href="#" class="hover:text-secondary transition-colors">Chính sách cookie</a>
         </div>
       </div>
     </footer>

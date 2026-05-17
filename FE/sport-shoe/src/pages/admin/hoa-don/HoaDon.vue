@@ -14,6 +14,10 @@ import {
 } from "lucide-vue-next";
 import { layChiTietHoaDon, layDanhSachHoaDon } from "../../../services/hoa-don";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import Card from "../../../components/ui/Card.vue";
+import Table from "../../../components/ui/Table.vue";
+import Button from "../../../components/ui/Button.vue";
+import Badge from "../../../components/ui/Badge.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
@@ -71,8 +75,8 @@ const mauTrangThai: Record<string, string> = {
   "Đã giao hàng": "bg-cyan-50 text-cyan-600",
   "Hoàn thành": "bg-emerald-50 text-emerald-600",
   Hủy: "bg-stone-100 text-stone-600",
-  "Yêu cầu hủy": "bg-[#B82220]/5 text-[#B82220]",
-  "Cần hoàn tiền": "bg-[#B82220]/5 text-[#B82220]",
+  "Yêu cầu hủy": "bg-primary/5 text-primary",
+  "Cần hoàn tiền": "bg-primary/5 text-primary",
 };
 
 function dinhDangTien(value: number) {
@@ -288,15 +292,17 @@ onMounted(taiDanhSach);
       <h1 class="admin-page-title text-[30px]">Quản lý hóa đơn</h1>
     </section>
 
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="mb-5 flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
-          <Filter class="h-5 w-5" />
+    <Card>
+      <template #header>
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+            <Filter class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="admin-section-title">Bộ lọc</h2>
+          </div>
         </div>
-        <div>
-          <h2 class="admin-section-title">Bộ lọc</h2>
-        </div>
-      </div>
+      </template>
 
       <div class="flex flex-wrap items-end gap-3">
         <label class="min-w-[160px] flex-1 space-y-2">
@@ -307,7 +313,7 @@ onMounted(taiDanhSach);
               v-model="boLoc.keyword"
               type="text"
               placeholder="Tìm theo mã hóa đơn, mã/tên nhân viên, khách hàng..."
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-[#B82220]/40 focus:bg-white"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
             />
           </div>
         </label>
@@ -324,7 +330,7 @@ onMounted(taiDanhSach);
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#B82220]"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(tuNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -352,7 +358,7 @@ onMounted(taiDanhSach);
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#B82220]"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(denNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -381,33 +387,29 @@ onMounted(taiDanhSach);
         </label>
 
         <div class="flex shrink-0 items-center gap-3">
-          <button
-            type="button"
-            @click="lamMoiBoLoc"
-            class="admin-btn-soft flex h-11 items-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
-          >
-            <RotateCcw class="h-4 w-4" /> Đặt lại
-          </button>
-          <button
-            type="button"
-            @click="xuatExcel"
-            class="admin-btn-soft flex h-11 items-center gap-2 rounded-2xl px-5 text-sm font-semibold transition"
-          >
-            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-          </button>
+          <Button variant="soft" @click="lamMoiBoLoc">
+            <template #prefix><RotateCcw class="h-4 w-4" /></template>
+            Đặt lại
+          </Button>
+          <Button variant="soft" @click="xuatExcel">
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+            Xuất Excel
+          </Button>
         </div>
       </div>
-    </section>
+    </Card>
 
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="mb-5 flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
-          <FileText class="h-5 w-5" />
+    <Card>
+      <template #header>
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary">
+            <FileText class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="admin-section-title">Danh sách hóa đơn</h2>
+          </div>
         </div>
-        <div>
-          <h2 class="admin-section-title">Danh sách hóa đơn</h2>
-        </div>
-      </div>
+      </template>
 
       <div class="mb-4 flex flex-wrap gap-2">
         <button
@@ -429,32 +431,19 @@ onMounted(taiDanhSach);
 
       <Transition name="tab-fade" mode="out-in">
         <div :key="trangThaiDangChon" class="admin-table-scroll">
-        <table class="min-w-[1040px] w-full table-fixed border-separate border-spacing-y-2 text-[13px]">
-          <colgroup>
-            <col class="w-[5%]" />
-            <col class="w-[17%]" />
-            <col class="w-[12%]" />
-            <col class="w-[12%]" />
-            <col class="w-[11%]" />
-            <col class="w-[13%]" />
-            <col class="w-[10%]" />
-            <col class="w-[10%]" />
-            <col class="w-[10%]" />
-          </colgroup>
-          <thead>
-            <tr class="text-left text-[12px] font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã hóa đơn</th>
-              <th class="bg-slate-100 px-4 py-3">Mã nhân viên</th>
-              <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
-              <th class="bg-slate-100 px-4 py-3">Tổng tiền</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày tạo</th>
-              <th class="bg-slate-100 px-4 py-3">Loại đơn</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <template #header>
+              <th class="px-4 py-3">STT</th>
+              <th class="px-4 py-3">Mã hóa đơn</th>
+              <th class="px-4 py-3">Mã nhân viên</th>
+              <th class="px-4 py-3">Khách hàng</th>
+              <th class="px-4 py-3">Tổng tiền</th>
+              <th class="px-4 py-3">Ngày tạo</th>
+              <th class="px-4 py-3">Loại đơn</th>
+              <th class="px-4 py-3">Trạng thái</th>
+              <th class="px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
+          </template>
+          <template #body>
             <tr v-if="dangTai">
               <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu hóa đơn...</td>
             </tr>
@@ -497,7 +486,7 @@ onMounted(taiDanhSach);
                   <button
                     type="button"
                     @click="xemChiTiet(hoaDon.id)"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-[#B82220]/10 hover:text-[#B82220]"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary"
                     title="Xem chi tiết"
                   >
                     <Eye class="h-4 w-4" />
@@ -505,24 +494,26 @@ onMounted(taiDanhSach);
                 </div>
               </td>
             </tr>
-          </tbody>
-        </table>
+          </template>
+        </Table>
       </div>
       </Transition>
 
-      <AdminTableFooter
-        :current-page="trangHienTai"
-        :page-size="soPhanTuMotTrang"
-        :page-size-options="pageSizeOptions"
-        :total-items="danhSachHienThi.length"
-        :total-pages="tongSoTrang"
-        compact
-        show-refresh
-        @refresh="taiDanhSach"
-        @update:current-page="trangHienTai = $event"
-        @update:page-size="soPhanTuMotTrang = $event"
-      />
-    </section>
+      <template #footer>
+        <AdminTableFooter
+          :current-page="trangHienTai"
+          :page-size="soPhanTuMotTrang"
+          :page-size-options="pageSizeOptions"
+          :total-items="danhSachHienThi.length"
+          :total-pages="tongSoTrang"
+          compact
+          show-refresh
+          @refresh="taiDanhSach"
+          @update:current-page="trangHienTai = $event"
+          @update:page-size="soPhanTuMotTrang = $event"
+        />
+      </template>
+    </Card>
   </div>
 </template>
 

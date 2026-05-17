@@ -23,6 +23,8 @@ import {
   Tooltip
 } from "chart.js";
 import { Bar, Pie } from "vue-chartjs";
+import Card from "../../../components/ui/Card.vue";
+import Button from "../../../components/ui/Button.vue";
 import AppPagination from "../../../components/common/AppPagination.vue";
 import { layDashboardThongKe } from "../../../services/thong-ke";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
@@ -143,8 +145,8 @@ const summaryCards = computed(() => [
     label: "Khách mới",
     value: formatNumber(dashboard.value.tongQuan.khachMoi),
     icon: Users,
-    iconClass: "text-rose-600",
-    badgeClass: "bg-rose-50"
+    iconClass: "text-primary",
+    badgeClass: "bg-primary-light"
   }
 ]);
 
@@ -156,7 +158,7 @@ const salesChartData = computed(() => ({
     {
       label: "Sản phẩm bán được",
       data: dashboard.value.bieuDoBanHang.map((item) => item.soLuongBan ?? 0),
-      backgroundColor: "#ff6b6b",
+      backgroundColor: "#cf1018",
       borderRadius: 14,
       borderSkipped: false,
       maxBarThickness: 34
@@ -668,9 +670,9 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="rounded-[28px] border border-rose-100/70 bg-white p-5 shadow-sm">
+    <Card>
       <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-        <Filter class="h-4 w-4 text-rose-500" />
+        <Filter class="h-4 w-4 text-primary" />
         Bộ lọc thống kê
       </div>
 
@@ -689,7 +691,7 @@ onBeforeUnmount(() => {
             >
             <button
               type="button"
-              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-primary/50 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
               @click="openDatePicker('fromDate')"
             >
               <span class="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
@@ -716,7 +718,7 @@ onBeforeUnmount(() => {
             >
             <button
               type="button"
-              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-rose-200"
+              class="flex h-12 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-sm text-slate-700 transition hover:border-primary/50 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
               @click="openDatePicker('toDate')"
             >
               <span class="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
@@ -735,7 +737,7 @@ onBeforeUnmount(() => {
             <BarChart3 class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <select
               v-model="filters.periodType"
-              class="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-primary focus:bg-white"
               @change="onPeriodTypeChange"
             >
               <option v-for="option in PERIOD_OPTIONS" :key="option.value" :value="option.value">
@@ -751,7 +753,7 @@ onBeforeUnmount(() => {
             <Store class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <select
               v-model="filters.brandId"
-              class="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-primary focus:bg-white"
             >
               <option :value="null">Tất cả thương hiệu</option>
               <option v-for="brand in dashboard.thuongHieus" :key="brand.id" :value="brand.id">
@@ -769,7 +771,7 @@ onBeforeUnmount(() => {
               v-model="filters.keyword"
               type="text"
               placeholder="Mã hoặc tên sản phẩm"
-              class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-primary focus:bg-white"
               @input="scheduleDashboardFetch"
               @keyup.enter="onApplyFilters"
             >
@@ -779,7 +781,7 @@ onBeforeUnmount(() => {
         <div class="flex gap-3 md:col-span-2 xl:col-span-1 xl:self-end">
           <button
             type="button"
-            class="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-70"
+            class="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
             :disabled="isLoading"
             @click="onApplyFilters"
           >
@@ -797,7 +799,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </div>
-    </div>
+    </Card>
 
     <div v-if="errorMessage" class="rounded-[22px] border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
       {{ errorMessage }}
@@ -824,7 +826,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.65fr_1fr]">
-      <div class="rounded-[28px] border border-slate-100 bg-white p-6 shadow-sm">
+      <Card>
         <div class="mb-6 flex items-start justify-between gap-3">
           <div>
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -846,9 +848,9 @@ onBeforeUnmount(() => {
         >
           Chưa có dữ liệu bán hàng trong bộ lọc hiện tại.
         </div>
-      </div>
+      </Card>
 
-      <div class="rounded-[28px] border border-slate-100 bg-white p-6 shadow-sm">
+      <Card>
         <div class="mb-6">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <PieChart class="h-4 w-4 text-rose-500" />
@@ -887,10 +889,10 @@ onBeforeUnmount(() => {
         >
           Chưa có dữ liệu thương hiệu phù hợp.
         </div>
-      </div>
+      </Card>
     </div>
 
-    <div class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
+    <Card>
       <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -950,14 +952,14 @@ onBeforeUnmount(() => {
                 {{ size }} dòng
               </option>
             </select>
-            <button
-              type="button"
-              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            <Button
+              variant="outline"
+              class="inline-flex h-11 items-center justify-center gap-2 px-4"
               @click="resetEmployeeFilters"
             >
               <RefreshCw class="h-4 w-4" />
               Reset
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1030,9 +1032,9 @@ onBeforeUnmount(() => {
         :total-items="filteredEmployees.length"
         :page-size="employeeFilters.pageSize"
       />
-    </div>
+    </Card>
 
-    <div class="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
+    <Card>
       <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -1106,14 +1108,14 @@ onBeforeUnmount(() => {
                 {{ size }} dòng
               </option>
             </select>
-            <button
-              type="button"
-              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            <Button
+              variant="outline"
+              class="inline-flex h-11 items-center justify-center gap-2 px-4"
               @click="resetProductFilters"
             >
               <RefreshCw class="h-4 w-4" />
               Reset
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1198,6 +1200,6 @@ onBeforeUnmount(() => {
         :total-items="filteredProducts.length"
         :page-size="productFilters.pageSize"
       />
-    </div>
+    </Card>
   </div>
 </template>

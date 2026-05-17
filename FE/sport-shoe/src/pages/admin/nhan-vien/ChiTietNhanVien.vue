@@ -14,6 +14,8 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import Card from "../../../components/ui/Card.vue";
+import Button from "../../../components/ui/Button.vue";
 
 // QR Scanner - dùng @zxing/browser
 const dangQuet = ref(false);
@@ -637,12 +639,9 @@ onUnmounted(() => {
 
     </section>
 
-    <div
-      v-if="dangTai"
-      class="rounded-[28px] border border-slate-200 bg-white px-6 py-16 text-center text-sm text-slate-400 shadow-sm"
-    >
+    <Card v-if="dangTai" class="py-16 text-center text-sm text-slate-400">
       Đang tải thông tin nhân viên...
-    </div>
+    </Card>
 
     <template v-else>
       <!-- Toast quét QR thành công - hiển thị cố định trên cùng -->
@@ -667,7 +666,7 @@ onUnmounted(() => {
       </div>
 
       <div class="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
+        <Card>
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-slate-800">Thông tin nhân viên</h2>
           </div>
@@ -711,15 +710,15 @@ onUnmounted(() => {
                 placeholder="Nhập họ và tên"
                 :class="[
                   'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
-                  loiForm.hoTen ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-rose-300',
+                  loiForm.hoTen ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
                 ]"
               />
               <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
             </label>
           </div>
-        </section>
+        </Card>
 
-        <section class="rounded-[28px] border border-slate-200 bg-white px-8 py-9 shadow-sm">
+        <Card>
           <h2 class="text-base font-bold text-slate-800">Thông tin chi tiết</h2>
           <div class="mt-7 h-px bg-slate-200"></div>
 
@@ -789,11 +788,11 @@ onUnmounted(() => {
               <span class="text-[13px] font-semibold text-slate-500">Giới tính <span class="text-rose-500">*</span></span>
               <div class="flex h-11 items-center gap-6 px-1 text-sm text-slate-700">
                 <label class="inline-flex items-center gap-2">
-                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-rose-500" />
+                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-primary" />
                   <span>Nam</span>
                 </label>
                 <label class="inline-flex items-center gap-2">
-                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-rose-500" />
+                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-primary" />
                   <span>Nữ</span>
                 </label>
               </div>
@@ -804,7 +803,7 @@ onUnmounted(() => {
               <input
                 v-model="form.ngaySinh"
                 type="date"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
             </label>
 
@@ -816,7 +815,7 @@ onUnmounted(() => {
                 placeholder="Nhập email"
                 :class="[
                   'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
-                  loiForm.email ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-rose-300',
+                  loiForm.email ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
                 ]"
               />
               <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
@@ -826,7 +825,7 @@ onUnmounted(() => {
               <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.tinhThanh"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               >
                 <option value="">Chọn tỉnh thành</option>
                 <option v-for="item in dsTinhThanh" :key="item.value" :value="item.value">{{ item.label }}</option>
@@ -837,7 +836,7 @@ onUnmounted(() => {
               <span class="text-[13px] font-semibold text-slate-500">Quận/Huyện <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.quanHuyen"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               >
                 <option value="">Chọn quận huyện</option>
                 <option v-for="item in dsQuanHuyen" :key="item.value" :value="item.value">{{ item.label }}</option>
@@ -848,7 +847,7 @@ onUnmounted(() => {
               <span class="text-[13px] font-semibold text-slate-500">Xã/Phường/Thị trấn <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.xaPhuong"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               >
                 <option value="">Chọn xã phường</option>
                 <option v-for="item in dsXaPhuong" :key="item.value" :value="item.value">{{ item.label }}</option>
@@ -863,7 +862,7 @@ onUnmounted(() => {
                 placeholder="Nhập số điện thoại"
                 :class="[
                   'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
-                  loiForm.sdt ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-rose-300',
+                  loiForm.sdt ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
                 ]"
               />
               <p v-if="loiForm.sdt" class="text-xs text-rose-500">{{ loiForm.sdt }}</p>
@@ -873,7 +872,7 @@ onUnmounted(() => {
               <span class="text-[13px] font-semibold text-slate-500">Vai trò <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.vaiTro"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               >
                 <option v-for="item in dsVaiTro" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
@@ -885,34 +884,35 @@ onUnmounted(() => {
                 v-model="form.diaChiCuThe"
                 type="text"
                 placeholder="Nhập địa chỉ cụ thể"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 placeholder:text-slate-400 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               />
             </label>
           </div>
-        </section>
+        </Card>
       </div>
 
       <!-- Buttons cuối trang -->
-      <div class="flex flex-wrap items-center justify-end gap-3 rounded-[28px] border border-slate-200 bg-white px-8 py-5 shadow-sm">
-        <button
-          type="button"
+      <Card class="flex flex-wrap items-center justify-end gap-3">
+        <Button
+          variant="soft"
           @click="router.push({ name: 'admin-nhan-vien' })"
-          class="admin-btn-soft h-12 rounded-[18px] px-8 text-[15px] font-semibold"
+          class="h-12 px-8 text-[15px] font-semibold"
         >
           Hủy
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="primary"
           @click="luu"
           :disabled="dangLuu"
-          class="admin-btn-primary h-12 rounded-[18px] px-8 text-[15px] font-semibold"
+          class="h-12 px-8 text-[15px] font-semibold"
         >
           <Save class="h-4 w-4" />
           {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       <section v-if="!laMoi" class="grid gap-6 xl:grid-cols-2">
-        <div class="rounded-[28px] border border-slate-200 bg-white px-8 py-7 shadow-sm">
+        <Card>
           <h3 class="text-[18px] font-bold text-slate-900">Đổi mật khẩu</h3>
           <div class="mt-6 space-y-4">
             <template v-if="showDoiMatKhau">
@@ -923,57 +923,57 @@ onUnmounted(() => {
                 class="h-12 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[16px] text-slate-700 outline-none focus:border-slate-300"
               />
               <div class="flex gap-3">
-                <button @click="doiMatKhau" :disabled="dangLuu" class="admin-btn-primary h-11 rounded-[16px] px-5">
+                <Button variant="primary" @click="doiMatKhau" :disabled="dangLuu" class="h-11 px-5">
                   Xác nhận
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="soft"
                   @click="showDoiMatKhau = false; matKhauMoi = ''"
-                  class="admin-btn-soft h-11 rounded-[16px] px-5"
+                  class="h-11 px-5"
                 >
                   Hủy
-                </button>
+                </Button>
               </div>
             </template>
-            <button
+            <Button
               v-else
-              type="button"
+              variant="soft"
               @click="showDoiMatKhau = true"
-              class="admin-btn-soft h-11 rounded-[16px] px-5"
+              class="h-11 px-5"
             >
               Đổi mật khẩu
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
 
-        <div class="rounded-[28px] border border-slate-200 bg-white px-8 py-7 shadow-sm">
+        <Card>
           <h3 class="text-[18px] font-bold text-slate-900">Trạng thái tài khoản</h3>
           <div class="mt-6 flex flex-wrap gap-3">
-            <button
+            <Button
               v-if="nhanVien?.trangThai === 1"
-              type="button"
+              variant="danger"
               @click="doiTrangThai(0)"
-              class="h-11 rounded-[16px] bg-rose-50 px-5 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+              class="h-11 px-5"
             >
               Khóa tài khoản
-            </button>
-            <button
+            </Button>
+            <Button
               v-else
-              type="button"
+              variant="success"
               @click="doiTrangThai(1)"
-              class="h-11 rounded-[16px] bg-emerald-50 px-5 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-100"
+              class="h-11 px-5"
             >
               Kích hoạt tài khoản
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
               @click="xoaNhanVienHienTai"
-              class="h-11 rounded-[16px] border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+              class="h-11 px-5 text-rose-600 border-rose-200 hover:bg-rose-50"
             >
               Xóa nhân viên
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </section>
     </template>
   </div>

@@ -96,7 +96,7 @@ interface NhanVien {
 
 // Màu avatar theo vai trò
 const MAU_VAI_TRO: Record<number, string> = {
-  1: "bg-rose-500",
+  1: "bg-primary",
   2: "bg-emerald-500",
   3: "bg-sky-500",
 };
@@ -268,7 +268,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
             <span class="font-medium">Vai trò:</span>
             <select
               v-model="boLocVaiTro"
-              class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm outline-none focus:border-rose-300"
+              class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition"
             >
               <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">{{ vt.label }}</option>
             </select>
@@ -277,7 +277,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
           <button @click="tuanTruoc" class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
             <ChevronLeft class="h-4 w-4" />
           </button>
-          <button @click="homNay" class="rounded-xl bg-rose-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-rose-600">
+          <button @click="homNay" class="rounded-xl bg-primary px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm">
             Hôm nay
           </button>
           <button @click="tuanSau" class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
@@ -303,8 +303,8 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
                 <th
                   v-for="(ngay, i) in cacNgayTrongTuan"
                   :key="i"
-                  class="bg-slate-100 px-2 py-3 text-center text-xs font-bold text-slate-700"
-                  :class="{ 'bg-rose-50 text-rose-600': ngay.toDateString() === new Date().toDateString() }"
+                  class="bg-slate-100 px-2 py-3 text-center text-xs font-bold text-slate-700 transition"
+                  :class="{ 'bg-primary-light text-primary': ngay.toDateString() === new Date().toDateString() }"
                 >
                   <div>{{ NHAN_TUAN[i] }}</div>
                   <div class="font-normal text-slate-400">{{ formatNgay(ngay) }}</div>
@@ -432,12 +432,12 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
             <p class="text-xs font-semibold text-emerald-600">Nhân viên trực</p>
             <p class="mt-1 text-2xl font-bold text-emerald-700">{{ nvTruc }} / {{ tongNV }}</p>
           </div>
-          <div class="rounded-[20px] bg-rose-50 p-4 text-center">
-            <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-100 text-rose-500">
+          <div class="rounded-[20px] bg-primary-light p-4 text-center">
+            <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <CalendarDays class="h-5 w-5" />
             </div>
-            <p class="text-xs font-semibold text-rose-500">Ca chưa gắn</p>
-            <p class="mt-1 text-2xl font-bold text-rose-600">{{ String(caUnassigned).padStart(2, '0') }}</p>
+            <p class="text-xs font-semibold text-primary">Ca chưa gắn</p>
+            <p class="mt-1 text-2xl font-bold text-primary">{{ String(caUnassigned).padStart(2, '0') }}</p>
           </div>
         </div>
 
@@ -477,7 +477,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
               :key="ca.id"
               @click="modalCaChon = ca.id as CaLam"
               :class="['flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm font-semibold transition',
-                modalCaChon === ca.id ? 'border-rose-400 bg-rose-50' : 'border-slate-200 hover:border-slate-300']"
+                modalCaChon === ca.id ? 'border-primary/50 bg-primary-light text-primary' : 'border-slate-200 hover:border-slate-300']"
             >
               <div :class="['h-4 w-4 rounded-sm', ca.mau]" />
               <span>{{ ca.nhan }}</span>
@@ -504,7 +504,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
             <button @click="showModalThemCa = false" class="flex-1 rounded-2xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">
               Hủy
             </button>
-            <button @click="luuCa" class="flex-1 rounded-2xl bg-rose-500 py-2.5 text-sm font-bold text-white hover:bg-rose-600 transition">
+            <button @click="luuCa" class="flex-1 rounded-2xl bg-primary py-2.5 text-sm font-bold text-white hover:bg-primary-hover transition shadow-sm">
               Lưu ca
             </button>
           </div>
