@@ -88,7 +88,7 @@ const itemKey = (item, index) => `${item}-${index}`;
         <button
           v-else
           class="flex h-8 w-8 items-center justify-center rounded-[8px] border border-transparent text-[13px] font-semibold transition-colors"
-          :class="item === currentPage ? 'bg-[#ff5a5f] text-white shadow-sm shadow-red-200' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+          :class="item === currentPage ? 'bg-primary text-white shadow-sm shadow-primary/20' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
           @click="changePage(item)"
         >
           {{ item }}

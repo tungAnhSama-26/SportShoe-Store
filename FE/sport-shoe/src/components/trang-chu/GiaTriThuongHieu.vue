@@ -16,14 +16,14 @@ function laySvg(loai) {
 
 <template>
   <section id="gia-tri" class="bg-transparent px-6 py-10 lg:px-10 lg:py-12">
-    <div class="mx-auto grid max-w-7xl gap-8 border-t border-[#f0d2c9] pt-10 md:grid-cols-2 xl:grid-cols-4">
+    <div class="mx-auto grid max-w-7xl gap-8 border-t border-primary/20 pt-10 md:grid-cols-2 xl:grid-cols-4">
       <article v-for="muc in danhSach" :key="muc.tieuDe" class="text-center">
-        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#cf1018] to-[#ff6a00] text-white shadow-[0_10px_25px_rgba(207,16,24,0.24)]">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-white shadow-primary/20 shadow-lg">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path :d="laySvg(muc.bieuTuong)" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
-        <p class="mt-4 text-sm font-medium text-[#080808]">{{ muc.tieuDe }}</p>
+        <p class="mt-4 text-sm font-medium text-black">{{ muc.tieuDe }}</p>
         <p class="mt-2 text-xs text-slate-500">{{ muc.noiDung }}</p>
       </article>
     </div>

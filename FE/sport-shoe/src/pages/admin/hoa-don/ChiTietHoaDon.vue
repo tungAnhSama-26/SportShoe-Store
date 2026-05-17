@@ -23,6 +23,8 @@ import {
   User,
   X,
 } from "lucide-vue-next";
+import Card from "../../../components/ui/Card.vue";
+import Button from "../../../components/ui/Button.vue";
 import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn } from "../../../services/hoa-don";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
@@ -655,32 +657,34 @@ onMounted(taiChiTiet);
         </div>
       </div>
 
-      <button
-        type="button"
+      <Button
+        variant="soft"
         @click="router.push({ name: 'admin-hoa-don' })"
-        class="inline-flex h-10 items-center gap-2 rounded-full bg-slate-500 px-4 text-sm font-semibold text-white transition hover:bg-slate-600"
+        class="h-10"
       >
-        <ArrowLeft class="h-4 w-4" />
+        <template #prefix><ArrowLeft class="h-4 w-4" /></template>
         Quay Lại Danh Sách
-      </button>
+      </Button>
     </div>
 
-    <div v-if="dangTai" class="rounded-[28px] border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-sm">
+    <Card v-if="dangTai" class="p-10 text-center text-sm text-slate-400">
       Đang Tải Chi Tiết Hóa Đơn...
-    </div>
+    </Card>
 
-    <div v-else-if="loiTrang || !hoaDon" class="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
+    <Card v-else-if="loiTrang || !hoaDon" class="p-10 text-center">
       <h2 class="text-2xl font-bold text-slate-800">Không Tìm Thấy Hóa Đơn</h2>
       <p class="mt-3 text-sm text-slate-400">{{ loiTrang || "Hóa Đơn Không Tồn Tại." }}</p>
-    </div>
+    </Card>
 
     <template v-else>
       <section class="grid items-stretch gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
-        <div class="flex h-full flex-col rounded-[26px] border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-5 xl:col-span-2">
-          <div class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-            <ClipboardList class="h-4.5 w-4.5 text-slate-500" />
-            Trạng Thái Đơn Hàng
-          </div>
+        <Card class="flex h-full flex-col px-4 py-4 md:px-5 xl:col-span-2">
+          <template #header>
+            <div class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+              <ClipboardList class="h-4.5 w-4.5 text-slate-500" />
+              Trạng Thái Đơn Hàng
+            </div>
+          </template>
 
           <div class="relative mt-7 px-2 pt-2 flex justify-center">
             <div class="flex w-full items-start justify-around relative max-w-4xl">
@@ -724,22 +728,23 @@ onMounted(taiChiTiet);
           </div>
 
           <div class="mt-5 flex justify-end">
-            <button
-              type="button"
+            <Button
+              variant="primary"
               @click="hienModalLichSu = true"
-              class="inline-flex h-10 items-center gap-2 rounded-full bg-[#B82220] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#B82220]/90"
             >
-              <History class="h-4 w-4" />
+              <template #prefix><History class="h-4 w-4" /></template>
               Lịch Sử Thao Tác
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
 
-        <aside class="flex h-full flex-col rounded-[26px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-            <Banknote class="h-4.5 w-4.5 text-slate-500" />
-            Tổng Kết Thanh Toán
-          </h2>
+        <Card class="flex h-full flex-col px-5 py-4">
+          <template #header>
+            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+              <Banknote class="h-4.5 w-4.5 text-slate-500" />
+              Tổng Kết Thanh Toán
+            </h2>
+          </template>
 
           <div class="mt-4 flex-1 space-y-3 text-sm">
             <div class="flex items-center justify-between">
@@ -765,15 +770,17 @@ onMounted(taiChiTiet);
               </div>
             </div>
           </div>
-        </aside>
+        </Card>
       </section>
 
       <section class="grid gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
-        <div class="rounded-[26px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-            <User class="h-4.5 w-4.5 text-slate-500" />
-            Thông Tin Khách Hàng
-          </h2>
+        <Card class="px-5 py-4">
+          <template #header>
+            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+              <User class="h-4.5 w-4.5 text-slate-500" />
+              Thông Tin Khách Hàng
+            </h2>
+          </template>
 
           <div class="mt-4 space-y-4 text-sm">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -789,13 +796,15 @@ onMounted(taiChiTiet);
               <span class="font-semibold text-slate-700">{{ hoaDon.email || "—" }}</span>
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div class="rounded-[26px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-            <MapPin class="h-4.5 w-4.5 text-slate-500" />
-            Thông Tin Giao Hàng
-          </h2>
+        <Card class="px-5 py-4">
+          <template #header>
+            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+              <MapPin class="h-4.5 w-4.5 text-slate-500" />
+              Thông Tin Giao Hàng
+            </h2>
+          </template>
 
           <div class="mt-4 space-y-4 text-sm">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -811,14 +820,16 @@ onMounted(taiChiTiet);
               <span class="max-w-[58%] text-right font-semibold text-slate-700">{{ hoaDon.ghiChu || "—" }}</span>
             </div>
           </div>
-        </div>
+        </Card>
 
         <div class="space-y-3">
-          <div class="rounded-[26px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
-            <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-              <History class="h-4.5 w-4.5 text-slate-500" />
-              Lịch Sử Thanh Toán
-            </h2>
+          <Card class="px-5 py-4">
+            <template #header>
+              <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+                <History class="h-4.5 w-4.5 text-slate-500" />
+                Lịch Sử Thanh Toán
+              </h2>
+            </template>
 
             <div v-if="thanhToanGanNhat" class="mt-4 space-y-3 text-sm">
               <div class="flex items-center justify-between">
@@ -832,7 +843,7 @@ onMounted(taiChiTiet);
               </div>
             </div>
             <div v-else class="mt-4 text-sm text-slate-400">Chưa Có Lịch Sử Thanh Toán.</div>
-          </div>
+          </Card>
 
           <div
             v-if="donYeuCauHuy"
@@ -865,35 +876,35 @@ onMounted(taiChiTiet);
             </div>
           </div>
 
-          <button
-            type="button"
+          <Button
             @click="handlePrint"
-            class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+            class="w-full bg-sky-500 hover:bg-sky-600 text-white border-transparent"
           >
-            <Printer class="h-4 w-4" />
+            <template #prefix><Printer class="h-4 w-4" /></template>
             In Hóa Đơn
-          </button>
+          </Button>
 
-          <button
+          <Button
             v-if="!donDaKetThuc"
-            type="button"
             @click="moModalThongTin"
-            class="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-amber-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+            class="w-full bg-amber-500 hover:bg-amber-600 text-white border-transparent"
           >
-            <Pencil class="h-4 w-4" />
+            <template #prefix><Pencil class="h-4 w-4" /></template>
             Chỉnh Sửa Đơn Hàng
-          </button>
+          </Button>
         </div>
       </section>
 
       <section class="grid gap-3">
-        <div class="rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm">
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <h2 class="flex items-center gap-2 text-base font-semibold text-slate-700">
-              <Package class="h-5 w-5 text-slate-500" />
-              Danh Sách Sản Phẩm ({{ hoaDon.sanPham?.length || 0 }})
-            </h2>
-          </div>
+        <Card class="px-6 py-5">
+          <template #header>
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <h2 class="flex items-center gap-2 text-base font-semibold text-slate-700">
+                <Package class="h-5 w-5 text-slate-500" />
+                Danh Sách Sản Phẩm ({{ hoaDon.sanPham?.length || 0 }})
+              </h2>
+            </div>
+          </template>
 
           <div class="overflow-x-auto">
             <table class="w-full table-auto text-[15px]">
@@ -931,7 +942,7 @@ onMounted(taiChiTiet);
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </section>
     </template>
 
@@ -953,12 +964,12 @@ onMounted(taiChiTiet);
             ></textarea>
           </div>
           <div class="mt-7 flex gap-3">
-            <button @click="hienModalXacNhan = false" class="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
+            <Button @click="hienModalXacNhan = false" variant="soft" class="flex-1">
               Đóng
-            </button>
-            <button @click="handleXacNhanTrangThai" :disabled="dangCapNhat" class="flex-1 rounded-2xl bg-[#B82220] py-3 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:opacity-50">
+            </Button>
+            <Button @click="handleXacNhanTrangThai" :disabled="dangCapNhat" variant="primary" class="flex-1">
               {{ dangCapNhat ? "Đang Lưu..." : "Xác Nhận" }}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -980,22 +991,22 @@ onMounted(taiChiTiet);
           </div>
 
           <div class="mt-7 flex gap-3">
-            <button
-              type="button"
+            <Button
               @click="hienModalXacNhanHuy = false"
               :disabled="dangCapNhat"
-              class="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="soft"
+              class="flex-1"
             >
               Quay Lại
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               @click="handleXacNhanHuyDon"
               :disabled="dangCapNhat"
-              class="flex-1 rounded-2xl bg-[#B82220] py-3 text-sm font-semibold text-white transition hover:bg-[#B82220]/90 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="primary"
+              class="flex-1"
             >
               {{ dangCapNhat ? "Đang Hủy..." : "Xác Nhận Hủy" }}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1092,12 +1103,12 @@ onMounted(taiChiTiet);
                 <span class="text-[#B82220]">{{ dinhDangTien(danhSachSanPhamUpdate.reduce((t, i) => t + i.giaBan * i.soLuong, 0)) }}</span>
               </div>
               <div class="mt-5 flex gap-3">
-                <button @click="hienModalSanPham = false" class="flex-1 rounded-2xl bg-white py-3 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50">
+                <Button @click="hienModalSanPham = false" variant="soft" class="flex-1">
                   Đóng
-                </button>
-                <button @click="handleSaveSanPham" :disabled="dangCapNhat || donDaHoanThanh" class="flex-1 rounded-2xl bg-amber-500 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50">
+                </Button>
+                <Button @click="handleSaveSanPham" :disabled="dangCapNhat || donDaHoanThanh" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white border-transparent">
                   {{ dangCapNhat ? "Đang Lưu..." : "Lưu Thay Đổi" }}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1198,14 +1209,13 @@ onMounted(taiChiTiet);
                       <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <Button
                     @click="handleTinhPhiGhn"
                     :disabled="dangTinhPhiGhn || laDonTaiQuay || donDaHoanThanh"
-                    class="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    class="bg-rose-500 hover:bg-rose-600 text-white border-transparent rounded-full px-4 py-2 text-xs"
                   >
                     {{ dangTinhPhiGhn ? "Đang Tính..." : "Tự Tính Phí GHN" }}
-                  </button>
+                  </Button>
                 </div>
                 <div class="grid gap-3 md:grid-cols-2">
                   <div v-if="diaChiGhnDaDo" class="md:col-span-2 rounded-xl bg-white px-3 py-2 text-sm text-slate-600">
@@ -1244,12 +1254,12 @@ onMounted(taiChiTiet);
         </div>
 
         <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-          <button @click="hienModalThongTin = false" class="rounded-full bg-slate-500 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-slate-600">
+          <Button @click="hienModalThongTin = false" class="bg-slate-500 hover:bg-slate-600 text-white border-transparent rounded-full">
             Hủy
-          </button>
-          <button @click="handleLuuThongTin" :disabled="dangCapNhat || donDaHoanThanh" class="rounded-full bg-emerald-600 px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50">
+          </Button>
+          <Button @click="handleLuuThongTin" :disabled="dangCapNhat || donDaHoanThanh" class="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent rounded-full">
             {{ dangCapNhat ? 'Đang Lưu...' : 'Lưu' }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

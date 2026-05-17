@@ -79,54 +79,42 @@ watch(
   }
 );
 function toggleSanPham() {
-  if (compactMode.value) {
-    isSidebarCollapsed.value = false;
-    openSanPham.value = true;
-    return;
-  }
   openSanPham.value = !openSanPham.value;
 }
 function toggleThuocTinh() {
-  if (compactMode.value) {
-    isSidebarCollapsed.value = false;
-    openThuocTinh.value = true;
-    return;
-  }
   openThuocTinh.value = !openThuocTinh.value;
 }
 function toggleKhuyenMai() {
-  if (compactMode.value) {
-    isSidebarCollapsed.value = false;
-    openKhuyenMai.value = true;
-    return;
-  }
   openKhuyenMai.value = !openKhuyenMai.value;
 }
 function navItemClass(active) {
   return [
     "group flex min-w-0 items-center rounded-xl px-4 py-3 transition-colors",
     compactMode.value ? "justify-center px-3" : "",
-    active ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium" : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+    active ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary font-medium" : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
   ];
 }
 function navIconClass(active) {
   return [
     "h-5 w-5 shrink-0",
     compactMode.value ? "" : "mr-3",
-    active ? "text-red-500" : "text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300"
+    active ? "text-primary" : "text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300"
   ];
 }
 function subItemClass(active) {
   return [
-    "flex min-w-0 items-center rounded-xl border border-transparent px-4 py-2.5 text-[13px] font-normal transition-colors",
-    active ? "bg-[#ffcfd2] text-[#e0484d] border-red-100 shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+    "flex min-w-0 items-center rounded-xl border border-transparent transition-colors",
+    compactMode.value ? "justify-center px-3 py-2.5" : "px-4 py-2.5 text-[13px] font-normal",
+    active
+      ? "bg-primary/10 text-primary border-primary/20 shadow-sm"
+      : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700/50"
   ];
 }
 </script>
 
 <template>
   <aside
-    class="fixed top-0 z-50 flex h-screen shrink-0 flex-col border-r border-gray-100 bg-white transition-all duration-300 ease-in-out dark:border-slate-600/50 dark:bg-slate-700 lg:sticky"
+    class="fixed top-0 z-50 flex h-screen shrink-0 flex-col border-r border-gray-100 bg-white transition-[width,transform] duration-200 ease-out dark:border-slate-600/50 dark:bg-slate-700 lg:sticky"
     :class="
       isDesktopSidebar
         ? [compactMode ? 'w-[92px] translate-x-0' : 'w-[260px] translate-x-0']
@@ -140,13 +128,14 @@ function subItemClass(active) {
       <img
         :src="logoChinh"
         alt="Logo"
-        class="w-auto object-contain transition-all duration-300"
-        :class="compactMode ? 'h-10' : 'h-16'"
+        class="w-auto object-contain transition-[height,max-width] duration-200 ease-out"
+        :class="compactMode ? 'h-8 max-w-[48px]' : 'h-16 max-w-[180px]'"
       />
       <button
+        v-if="!compactMode"
         type="button"
         :title="compactMode ? '\u004d\u1edf r\u1ed9ng sidebar' : 'Thu g\u1ecdn sidebar'"
-        class="absolute top-2 text-gray-400 transition-colors hover:text-gray-600"
+        class="absolute top-2 text-gray-400 transition-colors hover:text-gray-600 focus:outline-none"
         :class="compactMode ? 'right-1/2 translate-x-1/2' : 'right-4'"
         @click="toggleSidebar"
       >
@@ -174,33 +163,33 @@ function subItemClass(active) {
         <button
           type="button"
           :title="compactMode ? 'Qu\u1ea3n l\u00fd s\u1ea3n ph\u1ea9m' : undefined"
-          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors"
+          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors focus:outline-none"
           :class="[
             compactMode ? 'justify-center px-3' : 'justify-between',
             isSanPhamActive
-              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium'
+              ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary font-medium'
               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
           ]"
           @click="toggleSanPham"
         >
-          <div class="flex min-w-0 flex-1 items-center">
+          <div class="flex items-center" :class="compactMode ? 'justify-center' : 'min-w-0 flex-1'">
             <Package :class="navIconClass(isSanPhamActive)" />
             <span v-if="!compactMode" class="truncate text-sm leading-tight">Qu&#7843;n l&#253; s&#7843;n ph&#7849;m</span>
           </div>
           <ChevronDown
             v-if="!compactMode"
             class="h-4 w-4 transition-transform duration-200"
-            :class="[openSanPham ? 'rotate-180 text-red-500' : 'text-gray-400']"
+            :class="[openSanPham ? 'rotate-180 text-primary' : 'text-gray-400']"
           />
         </button>
-        <div v-show="openSanPham && !compactMode" class="space-y-1 overflow-hidden pr-4 pl-[36px] transition-all duration-300">
-          <router-link to="/admin/san-pham" :class="subItemClass(isActive('/admin/san-pham'))">
-            <Package class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/san-pham') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">S&#7843;n ph&#7849;m</span>
+        <div v-show="openSanPham" class="space-y-1 overflow-hidden transition-all duration-300" :class="compactMode ? 'px-0 py-1' : 'pr-4 pl-[36px]'">
+          <router-link to="/admin/san-pham" :title="compactMode ? 'S\u1ea3n ph\u1ea9m' : undefined" :class="subItemClass(isActive('/admin/san-pham'))">
+            <Package class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/san-pham') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">S&#7843;n ph&#7849;m</span>
           </router-link>
-          <router-link to="/admin/bien-the-san-pham" :class="subItemClass(isActive('/admin/bien-the-san-pham'))">
-            <Layers class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/bien-the-san-pham') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">Bi&#7871;n th&#7875; s&#7843;n ph&#7849;m</span>
+          <router-link to="/admin/bien-the-san-pham" :title="compactMode ? 'Bi\u1ebfn th\u1ec3 s\u1ea3n ph\u1ea9m' : undefined" :class="subItemClass(isActive('/admin/bien-the-san-pham'))">
+            <Layers class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/bien-the-san-pham') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">Bi&#7871;n th&#7875; s&#7843;n ph&#7849;m</span>
           </router-link>
         </div>
       </div>
@@ -209,61 +198,61 @@ function subItemClass(active) {
         <button
           type="button"
           :title="compactMode ? 'Danh s\u00e1ch thu\u1ed9c t\u00ednh' : undefined"
-          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors"
+          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors focus:outline-none"
           :class="[
             compactMode ? 'justify-center px-3' : 'justify-between',
             isThuocTinhActive
-              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium'
+              ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary font-medium'
               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
           ]"
           @click="toggleThuocTinh"
         >
-          <div class="flex min-w-0 flex-1 items-center">
+          <div class="flex items-center" :class="compactMode ? 'justify-center' : 'min-w-0 flex-1'">
             <Box :class="navIconClass(isThuocTinhActive)" />
             <span v-if="!compactMode" class="truncate text-sm leading-tight">Danh s&#225;ch thu&#7897;c t&#237;nh</span>
           </div>
           <ChevronDown
             v-if="!compactMode"
             class="h-4 w-4 transition-transform duration-200"
-            :class="[openThuocTinh ? 'rotate-180 text-red-500' : 'text-gray-400']"
+            :class="[openThuocTinh ? 'rotate-180 text-primary' : 'text-gray-400']"
           />
         </button>
-        <div v-show="openThuocTinh && !compactMode" class="space-y-1 overflow-hidden pr-4 pl-[36px] transition-all duration-300">
-          <router-link to="/admin/loai-giay" :class="subItemClass(isActive('/admin/loai-giay'))">
-            <Box class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/loai-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">Lo&#7841;i gi&#224;y</span>
+        <div v-show="openThuocTinh" class="space-y-1 overflow-hidden transition-all duration-300" :class="compactMode ? 'px-0 py-1' : 'pr-4 pl-[36px]'">
+          <router-link to="/admin/loai-giay" :title="compactMode ? 'Lo\u1ea1i gi\u00e0y' : undefined" :class="subItemClass(isActive('/admin/loai-giay'))">
+            <Box class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/loai-giay') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">Lo&#7841;i gi&#224;y</span>
           </router-link>
-          <router-link to="/admin/thuong-hieu" :class="subItemClass(isActive('/admin/thuong-hieu'))">
-            <Award class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/thuong-hieu') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">Th&#432;&#417;ng hi&#7879;u</span>
+          <router-link to="/admin/thuong-hieu" :title="compactMode ? 'Th\u01b0\u01a1ng hi\u1ec7u' : undefined" :class="subItemClass(isActive('/admin/thuong-hieu'))">
+            <Award class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/thuong-hieu') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">Th&#432;&#417;ng hi&#7879;u</span>
           </router-link>
-          <router-link to="/admin/chat-lieu-giay" :class="subItemClass(isActive('/admin/chat-lieu-giay'))">
-            <Layers class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/chat-lieu-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">Ch&#7845;t li&#7879;u gi&#224;y</span>
+          <router-link to="/admin/chat-lieu-giay" :title="compactMode ? 'Ch\u1ea5t li\u1ec7u gi\u00e0y' : undefined" :class="subItemClass(isActive('/admin/chat-lieu-giay'))">
+            <Layers class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/chat-lieu-giay') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">Ch&#7845;t li&#7879;u gi&#224;y</span>
           </router-link>
-          <router-link to="/admin/de-giay" :class="subItemClass(isActive('/admin/de-giay'))">
-            <Footprints class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/de-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">&#272;&#7871; gi&#224;y</span>
+          <router-link to="/admin/de-giay" :title="compactMode ? '\u0110\u1ebf gi\u00e0y' : undefined" :class="subItemClass(isActive('/admin/de-giay'))">
+            <Footprints class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/de-giay') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">&#272;&#7871; gi&#224;y</span>
           </router-link>
-          <router-link to="/admin/co-giay" :class="subItemClass(isActive('/admin/co-giay'))">
-            <MoveVertical class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/co-giay') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">C&#7893; gi&#224;y</span>
+          <router-link to="/admin/co-giay" :title="compactMode ? 'C\u1ed5 gi\u00e0y' : undefined" :class="subItemClass(isActive('/admin/co-giay'))">
+            <MoveVertical class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/co-giay') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">C&#7893; gi&#224;y</span>
           </router-link>
-          <router-link to="/admin/cong-nghe-dem" :class="subItemClass(isActive('/admin/cong-nghe-dem'))">
-            <Feather class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/cong-nghe-dem') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">C&#244;ng ngh&#7879; &#273;&#7879;m</span>
+          <router-link to="/admin/cong-nghe-dem" :title="compactMode ? 'C\u00f4ng ngh\u1ec7 \u0111\u1ec7m' : undefined" :class="subItemClass(isActive('/admin/cong-nghe-dem'))">
+            <Feather class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/cong-nghe-dem') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">C&#244;ng ngh&#7879; &#273;&#7879;m</span>
           </router-link>
-          <router-link to="/admin/mau-sac" :class="subItemClass(isActive('/admin/mau-sac'))">
-            <Palette class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/mau-sac') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">M&#224;u s&#7855;c</span>
+          <router-link to="/admin/mau-sac" :title="compactMode ? 'M\u00e0u s\u1eafc' : undefined" :class="subItemClass(isActive('/admin/mau-sac'))">
+            <Palette class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/mau-sac') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">M&#224;u s&#7855;c</span>
           </router-link>
-          <router-link to="/admin/kich-co" :class="subItemClass(isActive('/admin/kich-co'))">
-            <Ruler class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/kich-co') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">K&#237;ch c&#7905;</span>
+          <router-link to="/admin/kich-co" :title="compactMode ? 'K\u00edch c\u1ee1' : undefined" :class="subItemClass(isActive('/admin/kich-co'))">
+            <Ruler class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/kich-co') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">K&#237;ch c&#7905;</span>
           </router-link>
-          <router-link to="/admin/trong-luong" :class="subItemClass(isActive('/admin/trong-luong'))">
-            <Weight class="mr-3 h-4 w-4 shrink-0" :class="isActive('/admin/trong-luong') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="min-w-0 truncate leading-tight">Tr&#7885;ng l&#432;&#7907;ng</span>
+          <router-link to="/admin/trong-luong" :title="compactMode ? 'Tr\u1ecdng l\u01b0\u1ee3ng' : undefined" :class="subItemClass(isActive('/admin/trong-luong'))">
+            <Weight class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/trong-luong') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">Tr&#7885;ng l&#432;&#7907;ng</span>
           </router-link>
         </div>
       </div>
@@ -272,33 +261,33 @@ function subItemClass(active) {
         <button
           type="button"
           :title="compactMode ? 'Qu\u1ea3n l\u00fd gi\u1ea3m gi\u00e1' : undefined"
-          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors"
+          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors focus:outline-none"
           :class="[
             compactMode ? 'justify-center px-3' : 'justify-between',
             isKhuyenMaiActive
-              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium'
+              ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary font-medium'
               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
           ]"
           @click="toggleKhuyenMai"
         >
-          <div class="flex min-w-0 flex-1 items-center">
+          <div class="flex items-center" :class="compactMode ? 'justify-center' : 'min-w-0 flex-1'">
             <BadgePercent :class="navIconClass(isKhuyenMaiActive)" />
             <span v-if="!compactMode" class="truncate text-sm leading-tight">Qu&#7843;n l&#253; gi&#7843;m gi&#225;</span>
           </div>
           <ChevronDown
             v-if="!compactMode"
             class="h-4 w-4 transition-transform duration-200"
-            :class="[openKhuyenMai ? 'rotate-180 text-red-500' : 'text-gray-400']"
+            :class="[openKhuyenMai ? 'rotate-180 text-primary' : 'text-gray-400']"
           />
         </button>
-        <div v-show="openKhuyenMai && !compactMode" class="space-y-1 overflow-hidden pr-4 pl-[36px] transition-all duration-300">
-          <router-link to="/admin/phieu-giam-gia" :class="subItemClass(isActive('/admin/phieu-giam-gia'))">
-            <Ticket class="mr-3 h-[18px] w-[18px] shrink-0" :class="isActive('/admin/phieu-giam-gia') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="leading-tight">Phiếu giảm giá</span>
+        <div v-show="openKhuyenMai" class="space-y-1 overflow-hidden transition-all duration-300" :class="compactMode ? 'px-0 py-1' : 'pr-4 pl-[36px]'">
+          <router-link to="/admin/phieu-giam-gia" :title="compactMode ? 'Phi\u1ebfu gi\u1ea3m gi\u00e1' : undefined" :class="subItemClass(isActive('/admin/phieu-giam-gia'))">
+            <Ticket class="h-[18px] w-[18px] shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/phieu-giam-gia') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="leading-tight">Phiếu giảm giá</span>
           </router-link>
-          <router-link to="/admin/dot-giam-gia" :class="subItemClass(isActive('/admin/dot-giam-gia'))">
-            <Tag class="mr-3 h-[18px] w-[18px] shrink-0" :class="isActive('/admin/dot-giam-gia') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'" />
-            <span class="leading-tight">Đợt giảm giá</span>
+          <router-link to="/admin/dot-giam-gia" :title="compactMode ? '\u0110\u1ee3t gi\u1ea3m gi\u00e1' : undefined" :class="subItemClass(isActive('/admin/dot-giam-gia'))">
+            <Tag class="h-[18px] w-[18px] shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/dot-giam-gia') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="leading-tight">Đợt giảm giá</span>
           </router-link>
         </div>
       </div>
