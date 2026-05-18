@@ -686,13 +686,15 @@ async function handleSave() {
   saving.value = true
 
   try {
-    const variantsPayload = generatedVariants.value.map((variant) => ({
-      mauSacId: variant.mauSacId,
-      kichCoId: variant.kichCoId,
-      soLuong: variant.soLuong,
-      giaGoc: variant.giaGoc,
-      giaBan: variant.giaBan
-    }))
+    const variantsPayload = generatedVariants.value
+      .filter((variant) => Number(variant.mauSacId) > 0 && Number(variant.kichCoId) > 0)
+      .map((variant) => ({
+        mauSacId: Number(variant.mauSacId),
+        kichCoId: Number(variant.kichCoId),
+        soLuong: variant.soLuong,
+        giaGoc: variant.giaGoc,
+        giaBan: variant.giaBan
+      }))
 
     let variantsResult
     if (isExistingProduct.value) {
