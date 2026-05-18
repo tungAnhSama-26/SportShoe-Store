@@ -85,7 +85,8 @@ function xuLyKetQuaQr(raw: string) {
     const parts = resolvedRaw.split('|');
     if (parts.length >= 3) {
       const scannedCccd = parts[0]?.trim() ?? "";
-      if (!/^\d{12}$/.test(scannedCccd)) {
+      // Chấp nhận cả 9 số (CMND cũ) và 12 số (CCCD mới)
+      if (!/^\d{9,12}$/.test(scannedCccd)) {
         loiForm.value.cccd = "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
         return;
       }
@@ -111,8 +112,8 @@ function xuLyKetQuaQr(raw: string) {
 }
 
 function isVneIdSecureQr(raw: string) {
-  return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw)
-    || raw.length > 100;
+  // Chỉ chặn JWT token (VNeID app), không chặn QR CCCD thẻ cứng
+  return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw);
 }
 
 function formatNgaySinh(ddmmyyyy: string) {
@@ -779,6 +780,7 @@ onUnmounted(() => {
                 <ScanLine class="h-4 w-4" />
                 {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
               </button>
+              <span v-if="form.cccd" class="text-sm font-semibold text-slate-800">{{ form.cccd }}</span>
             </div>
             <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>
