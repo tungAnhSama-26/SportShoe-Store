@@ -1,41 +1,15 @@
-import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
-import { getAuthHeaders } from "./auth";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
+import { apiRequest, buildQuery } from "./api-client";
 
 async function request(path, init) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-      ...init?.headers
-    },
-    ...init
-  });
-
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    throw createRequestError(
-      payload?.message,
+  return apiRequest(path, {
+    fallbackMessage:
       "Không thể hoàn tất thao tác khuyến mãi lúc này. Vui lòng thử lại.",
-      payload?.errors,
-    );
-  }
-
-  return payload?.data ?? payload;
+    ...init,
+  });
 }
 
 function toQuery(params) {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== null && value !== undefined && value !== "") {
-      query.set(key, String(value));
-    }
-  });
-  const result = query.toString();
-  return result ? `?${result}` : "";
+  return buildQuery(params);
 }
 
 function getDotGiamGiaList(filters) {

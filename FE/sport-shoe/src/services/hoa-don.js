@@ -1,29 +1,11 @@
-import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
-import { getAuthHeaders } from "./auth";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-  "http://localhost:8080/api/v1";
+import { apiRequest } from "./api-client";
 
 async function request(path, init) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-      ...(init?.headers ?? {}),
-    },
+  return apiRequest(path, {
+    fallbackMessage:
+      "Không thể hoàn tất thao tác hóa đơn lúc này. Vui lòng thử lại.",
     ...init,
   });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw createRequestError(
-      payload.message,
-      "Không thể hoàn tất thao tác hóa đơn lúc này. Vui lòng thử lại.",
-      payload.errors,
-    );
-  }
-  return payload.data;
 }
 
 export function layDanhSachHoaDon(filters) {
