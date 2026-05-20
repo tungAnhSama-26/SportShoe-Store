@@ -1,7 +1,5 @@
-import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
-import { getAuthHeaders } from './auth'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
-const BASE = `${API_BASE_URL}/admin/danh-muc`
+import { apiRequest, uploadFileRequest } from './api-client'
+const BASE = '/admin/danh-muc'
 
 export interface PageResponse<T> {
   items: T[]
@@ -56,20 +54,11 @@ export interface TrongLuongItem {
 // ─── Generic request helper ───────────────────────────────────────────────────
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...init?.headers },
+  return apiRequest(`${BASE}${path}`, {
+    fallbackMessage:
+      'Không thể hoàn tất thao tác danh mục lúc này. Vui lòng thử lại.',
     ...init,
   })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw createRequestError(
-      err.message || `HTTP ${res.status}`,
-      'Không thể hoàn tất thao tác danh mục lúc này. Vui lòng thử lại.',
-      err.errors
-    )
-  }
-  const json = await res.json()
-  return json.data
 }
 
 function buildListUrl(path: string, kw?: string, page = 0, size = 10) {
@@ -99,30 +88,7 @@ export const thuongHieuApi = {
     req<void>(`/thuong-hieu/${id}/trang-thai`, { method: 'PATCH', body: JSON.stringify({ trangThai }) }),
   delete: (id: number) => req<void>(`/thuong-hieu/${id}`, { method: 'DELETE' }),
   uploadFile: async (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: formData
-    })
-
-    const payload = await response.json().catch(() => ({}))
-    if (!response.ok) {
-      throw new Error(
-        sanitizeErrorMessage(
-          payload.message,
-          'Không thể tải ảnh thương hiệu lên lúc này'
-        )
-      )
-    }
-
-    if (!payload.data?.url) {
-      throw new Error('Không nhận được URL ảnh sau khi upload')
-    }
-
-    return payload.data.url as string
+    return uploadFileRequest(file, 'Không thể tải ảnh thương hiệu lên lúc này') as Promise<string>
   }
 }
 

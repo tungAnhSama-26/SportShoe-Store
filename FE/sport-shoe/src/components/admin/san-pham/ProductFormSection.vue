@@ -5,7 +5,18 @@ import AdminSearchableSelect from '../../../components/common/AdminSearchableSel
 const props = defineProps({
   productForm: {
     type: Object,
-    required: true
+    default: () => ({
+      ten: "",
+      thuongHieuId: null,
+      loaiGiayId: null,
+      gioiTinh: null,
+      chatLieuGiayId: null,
+      moTa: "",
+      deGiayId: null,
+      coGiayId: null,
+      congNgheDemId: null,
+      trongLuongId: null
+    })
   },
   productErrors: {
     type: Object,
@@ -31,7 +42,7 @@ const emit = defineEmits([
 ])
 
 const thuongHieuOptions = computed(() => {
-  return (props.danhMuc?.thuongHieu || []).map(item => ({
+  return (props.danhMuc?.thuongHieu || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.ten,
     subtitle: item.xuatXu ? `Xuất xứ: ${item.xuatXu}` : null
@@ -39,42 +50,42 @@ const thuongHieuOptions = computed(() => {
 })
 
 const loaiGiayOptions = computed(() => {
-  return (props.danhMuc?.loaiGiay || []).map(item => ({
+  return (props.danhMuc?.loaiGiay || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.ten
   }))
 })
 
 const chatLieuOptions = computed(() => {
-  return (props.danhMuc?.chatLieuGiay || []).map(item => ({
+  return (props.danhMuc?.chatLieuGiay || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.ten
   }))
 })
 
 const deGiayOptions = computed(() => {
-  return (props.danhMuc?.deGiay || []).map(item => ({
+  return (props.danhMuc?.deGiay || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.ten
   }))
 })
 
 const coGiayOptions = computed(() => {
-  return (props.danhMuc?.coGiay || []).map(item => ({
+  return (props.danhMuc?.coGiay || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.ten
   }))
 })
 
 const congNgheDemOptions = computed(() => {
-  return (props.danhMuc?.congNgheDem || []).map(item => ({
+  return (props.danhMuc?.congNgheDem || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.ten
   }))
 })
 
 const trongLuongOptions = computed(() => {
-  return (props.danhMuc?.trongLuong || []).map(item => ({
+  return (props.danhMuc?.trongLuong || []).filter(Boolean).map(item => ({
     value: item.id,
     label: item.giaTri != null ? `${item.giaTri} g` : item.ma,
     description: null,

@@ -1,0 +1,629 @@
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  huyHoaDonCho,
+  layChiTietHoaDonCho,
+  layDanhSachHoaDonCho,
+  thanhToanTaiQuay,
+  taoHoaDonCho
+} from "../../services/ban-hang-tai-quay";
+import {
+  GUEST_LABEL,
+  MAX_PENDING_INVOICES,
+} from "./constants";
+import { dinhDangTien } from "./money";
+import { usePosCart } from "./usePosCart";
+import { usePosCoupons } from "./usePosCoupons";
+import { usePosCustomers } from "./usePosCustomers";
+import { usePosPayment } from "./usePosPayment";
+import { usePosProducts } from "./usePosProducts";
+import { usePosShipping } from "./usePosShipping";
+
+function useBanHangTaiQuay() {
+  const pendingInvoices = ref([]);
+  const activePendingInvoice = ref(null);
+  const loadingPendingInvoices = ref(false);
+  const savingPendingInvoice = ref(false);
+  const cancelingPendingInvoice = ref(false);
+  const payingInvoice = ref(false);
+  const invoiceLoading = ref(false);
+  const pageError = ref("");
+  const successMessage = ref("");
+  const deliveryEnabled = ref(false);
+  const deliveryRecipientName = ref("");
+  const deliveryRecipientPhone = ref("");
+  const deliveryAddress = ref("");
+  const deliveryCarrier = ref("GHN");
+  const deliveryFee = ref(0);
+  const deliveryResolvedAddress = ref("");
+  const deliveryCalculated = ref(false);
+  const calculatingDeliveryFee = ref(false);
+  const deliveryConfig = ref({
+    serviceTypeId: 2,
+    length: 30,
+    width: 20,
+    height: 12,
+    weight: 500
+  });
+
+  const pendingInvoiceLimitReached = computed(
+    () => pendingInvoices.value.length >= MAX_PENDING_INVOICES
+  );
+  const canCreatePendingInvoice = computed(
+    () => !sanPhamValidationMessage.value &&
+      !savingPendingInvoice.value &&
+      !maPhieuChuaApDung.value &&
+      !pendingInvoiceLimitReached.value &&
+      coThongTinGiaoHangHopLe.value
+  );
+  const canPay = computed(() => {
+    if (sanPhamValidationMessage.value || payingInvoice.value || maPhieuChuaApDung.value || !coThongTinGiaoHangHopLe.value) {
+      return false;
+    }
+    if (paymentMethod.value === 1) {
+      return !paymentValidationMessage.value;
+    }
+    return true;
+  });
+  const {
+    customerKeyword,
+    customerResults,
+    selectedCustomer,
+    loadingCustomers,
+    showCustomerDropdown,
+    isGuestCustomer,
+    tenKhachHangHienThi,
+    soDienThoaiKhachHangHienThi,
+    fetchCustomers,
+    chonKhachHang,
+    boChonKhachHang,
+    chonKhachVangLai,
+    moDanhSachKhachHang,
+    dongDanhSachKhachHang,
+    clearCustomerTimer
+  } = usePosCustomers({
+    activePendingInvoice,
+    deliveryRecipientName,
+    deliveryRecipientPhone,
+    danhDauCanApDungLaiPhieu: markCouponDirty,
+    clearFeedback,
+    pageError
+  });
+
+  const daChonKhach = computed(
+    () => Boolean(selectedCustomer.value) || Boolean(activePendingInvoice.value) || isGuestCustomer.value
+  );
+
+  const {
+    cartItems,
+    tongSoLuong,
+    tongTien,
+    sanPhamValidationMessage,
+    validateCartItems,
+    taoDanhSachSanPhamThanhToan,
+    soLuongConLai,
+    themSanPham,
+    tangSoLuong,
+    giamSoLuong
+  } = usePosCart({
+    daChonKhach,
+    markShippingFeeDirty: syncShippingDirty,
+    capNhatTienKhachThanhToan: syncPaymentAmount,
+    danhDauCanApDungLaiPhieu: markCouponDirty,
+    syncProductAfterCartAdd,
+    pageError,
+    clearFeedback
+  });
+
+  const {
+    tenNguoiNhanGiaoHangHienThi,
+    soDienThoaiNguoiNhanGiaoHangHienThi,
+    phiVanChuyenHienThi,
+    coTheTinhPhiVanChuyen,
+    coThongTinGiaoHangHopLe,
+    shippingInfo,
+    markShippingFeeDirty,
+    buildShippingPayload,
+    updateShippingInfo,
+    handleCalculateShippingFee
+  } = usePosShipping({
+    deliveryEnabled,
+    deliveryRecipientName,
+    deliveryRecipientPhone,
+    deliveryAddress,
+    deliveryCarrier,
+    deliveryFee,
+    deliveryResolvedAddress,
+    deliveryCalculated,
+    calculatingDeliveryFee,
+    deliveryConfig,
+    selectedCustomer,
+    activePendingInvoice,
+    cartItems,
+    pageError
+  });
+
+  const {
+    couponCode,
+    appliedCoupon,
+    applyingCoupon,
+    couponResults,
+    loadingCoupons,
+    showCouponDropdown,
+    tienGiam,
+    tongTienSauGiamHienThi,
+    maPhieuChuaApDung,
+    coTheTimPhieu,
+    coTheApDungPhieu,
+    danhDauCanApDungLaiPhieu,
+    handleCouponFocus,
+    handleCouponBlur,
+    chonPhieuGiamGia,
+    handleApplyCoupon,
+    handleRemoveCoupon,
+    clearCouponTimers
+  } = usePosCoupons({
+    cartItems,
+    tongTien,
+    activePendingInvoice,
+    selectedCustomer,
+    layKhachHangIdHienTai,
+    taoDanhSachSanPhamThanhToan,
+    capNhatTienKhachThanhToan: syncPaymentAmount,
+    pageError,
+    successMessage,
+    clearFeedback
+  });
+
+  const khachCanTra = computed(() => tongTienSauGiamHienThi.value + phiVanChuyenHienThi.value);
+
+  const {
+    paymentMethod,
+    amountPaid,
+    paymentNote,
+    tienKhachThanhToan,
+    tienThua,
+    paymentValidationMessage,
+    capNhatTienKhachThanhToan,
+    validatePaymentInput,
+    handleAmountPaidInput
+  } = usePosPayment({
+    cartItems,
+    khachCanTra,
+    pageError
+  });
+
+  const {
+    productKeyword,
+    productVariantResults,
+    selectedProductDetail,
+    selectedColor,
+    selectedSize,
+    selectedQuantity,
+    loadingProducts,
+    showProductDropdown,
+    productSearchLabel,
+    productResults,
+    colorOptions,
+    sizeOptions,
+    selectedVariant,
+    chiTietDangChon,
+    hinhAnhDangChon,
+    soLuongTonKhaDungChiTiet,
+    soLuongTonSauKhiChon,
+    fetchProducts,
+    laySoLuongTonHienTai,
+    moChiTietSanPham,
+    dongChiTietSanPham,
+    handleProductQrScan,
+    chonMauSac,
+    chonKichCo,
+    giamSoLuongChiTiet,
+    tangSoLuongChiTiet,
+    moDanhSachSanPham,
+    dongDanhSachSanPham,
+    clearProductTimer
+  } = usePosProducts({
+    daChonKhach,
+    soLuongConLai,
+    themSanPham,
+    clearFeedback,
+    pageError,
+    successMessage
+  });
+
+  function clearFeedback() {
+    pageError.value = "";
+    successMessage.value = "";
+  }
+
+  function layKhachHangIdHienTai() {
+    if (selectedCustomer.value) {
+      return selectedCustomer.value.id;
+    }
+    if (isGuestCustomer.value) {
+      return null;
+    }
+    return activePendingInvoice.value?.khachHangId ?? null;
+  }
+
+  function syncShippingDirty() {
+    markShippingFeeDirty();
+  }
+
+  function markCouponDirty() {
+    danhDauCanApDungLaiPhieu();
+  }
+
+  function syncPaymentAmount(force = false) {
+    capNhatTienKhachThanhToan(force);
+  }
+
+  function syncProductAfterCartAdd({
+    preserveProductSearch = false,
+    scannedKeyword = "",
+    scannedProducts = [],
+  } = {}) {
+    productKeyword.value = preserveProductSearch ? scannedKeyword : "";
+    productVariantResults.value = preserveProductSearch ? scannedProducts : [];
+    selectedProductDetail.value = null;
+    selectedColor.value = "";
+    selectedSize.value = "";
+    selectedQuantity.value = 1;
+    showProductDropdown.value = false;
+  }
+
+  function resetDraft() {
+    selectedCustomer.value = null;
+    customerKeyword.value = "";
+    productKeyword.value = "";
+    couponCode.value = "";
+    customerResults.value = [];
+    productVariantResults.value = [];
+    couponResults.value = [];
+    selectedProductDetail.value = null;
+    selectedColor.value = "";
+    selectedSize.value = "";
+    selectedQuantity.value = 1;
+    cartItems.value = [];
+    activePendingInvoice.value = null;
+    appliedCoupon.value = null;
+    paymentMethod.value = 1;
+    amountPaid.value = "";
+    paymentNote.value = "";
+    deliveryEnabled.value = false;
+    deliveryRecipientName.value = "";
+    deliveryRecipientPhone.value = "";
+    deliveryAddress.value = "";
+    deliveryCarrier.value = "GHN";
+    deliveryFee.value = 0;
+    deliveryResolvedAddress.value = "";
+    deliveryCalculated.value = false;
+    calculatingDeliveryFee.value = false;
+    deliveryConfig.value = {
+      serviceTypeId: 2,
+      length: 30,
+      width: 20,
+      height: 12,
+      weight: 500
+    };
+    showCustomerDropdown.value = false;
+    showProductDropdown.value = false;
+    showCouponDropdown.value = false;
+    clearFeedback();
+    void fetchProducts("");
+  }
+
+  async function fetchPendingInvoices() {
+    loadingPendingInvoices.value = true;
+    try {
+      pendingInvoices.value = await layDanhSachHoaDonCho();
+    } catch (error) {
+      pageError.value = error instanceof Error
+        ? error.message
+        : "Không thể tải danh sách hóa đơn chờ";
+    } finally {
+      loadingPendingInvoices.value = false;
+    }
+  }
+
+  watch(pageError, (message) => {
+    if (!message) {
+      return;
+    }
+    window.alert(message);
+    pageError.value = "";
+  });
+
+  watch(successMessage, (message) => {
+    if (!message) {
+      return;
+    }
+    window.alert(message);
+    successMessage.value = "";
+  });
+
+  function themBienTheDangChon() {
+    if (!selectedVariant.value) {
+      pageError.value = "Vui lòng chọn màu sắc và kích cỡ phù hợp";
+      return;
+    }
+    themSanPham(selectedVariant.value, selectedQuantity.value);
+  }
+
+  function mapInvoiceToDraft(invoice) {
+    const thongTinTheoChiTietId = new Map(
+      productVariantResults.value.map((product) => [product.chiTietId, product])
+    );
+    const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
+
+    customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || GUEST_LABEL;
+    selectedCustomer.value = invoice.khachHangId
+      ? {
+        id: invoice.khachHangId,
+        hoTen: invoice.tenKhachHang,
+        sdt: invoice.soDienThoai,
+        email: null
+      }
+      : null;
+    cartItems.value = invoice.items.map((item) => {
+      const thongTinSanPham = thongTinTheoChiTietId.get(item.chiTietId);
+      return {
+        chiTietId: item.chiTietId,
+        maSanPham: item.maSanPham,
+        tenSanPham: item.tenSanPham,
+        sku: thongTinSanPham?.sku || "",
+        mauSac: thongTinSanPham?.mauSac || "",
+        kichCo: thongTinSanPham?.kichCo || "",
+        hinhAnh: thongTinSanPham?.hinhAnh || "",
+        soLuong: item.soLuong,
+        giaBan: item.giaBan,
+        soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
+      };
+    });
+    deliveryEnabled.value = Boolean(thongTinGiaoHang?.giaoHang);
+    deliveryRecipientName.value = thongTinGiaoHang?.tenNguoiNhan || "";
+    deliveryRecipientPhone.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
+    deliveryAddress.value = thongTinGiaoHang?.diaChiGiaoHang || "";
+    deliveryCarrier.value = thongTinGiaoHang?.donViVanChuyen || "GHN";
+    deliveryFee.value = Number(thongTinGiaoHang?.phiVanChuyen || 0);
+    deliveryResolvedAddress.value = "";
+    deliveryCalculated.value = deliveryEnabled.value;
+    deliveryConfig.value = {
+      serviceTypeId: 2,
+      length: 30,
+      width: 20,
+      height: 12,
+      weight: 500
+    };
+    couponCode.value = invoice.phieuGiamGia?.ma ?? "";
+    appliedCoupon.value = invoice.phieuGiamGia
+      ? {
+        id: 0,
+        ma: invoice.phieuGiamGia.ma,
+        ten: invoice.phieuGiamGia.ten,
+        loai: 0,
+        giaTri: 0,
+        giaTriToiThieu: null,
+        giamToiDa: null,
+        soTienGiam: invoice.tienGiam || invoice.phieuGiamGia.soTienGiam,
+        tongTienHang: invoice.tongTienHang || 0,
+        tongTienSauGiam: Math.max((invoice.tongTienHang || 0) - (invoice.tienGiam || 0), 0)
+      }
+      : null;
+    couponResults.value = [];
+    showCouponDropdown.value = false;
+    capNhatTienKhachThanhToan(true);
+  }
+
+  async function chonHoaDonCho(invoice) {
+    invoiceLoading.value = true;
+    pageError.value = "";
+    try {
+      await fetchProducts("");
+      const detail = await layChiTietHoaDonCho(invoice.id);
+      activePendingInvoice.value = invoice;
+      mapInvoiceToDraft(detail);
+    } catch (error) {
+      pageError.value = error instanceof Error ? error.message : "Không thể tải hóa đơn chờ";
+    } finally {
+      invoiceLoading.value = false;
+    }
+  }
+
+  async function handleCreatePendingInvoice() {
+    if (!validateCartItems()) {
+      return;
+    }
+    if (pendingInvoiceLimitReached.value) {
+      pageError.value = `Chỉ được tạo tối đa ${MAX_PENDING_INVOICES} hóa đơn chờ.`;
+      return;
+    }
+    if (!canCreatePendingInvoice.value) {
+      return;
+    }
+    savingPendingInvoice.value = true;
+    pageError.value = "";
+    successMessage.value = "";
+    try {
+      const createdInvoice = await taoHoaDonCho({
+        khachHangId: layKhachHangIdHienTai(),
+        tenKhachHang: tenKhachHangHienThi.value,
+        soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
+        maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
+        thongTinGiaoHang: buildShippingPayload(),
+        items: taoDanhSachSanPhamThanhToan()
+      });
+      successMessage.value = `Đã tạo hóa đơn chờ ${createdInvoice.ma}`;
+      await fetchPendingInvoices();
+      const matchedInvoice = pendingInvoices.value.find((invoice) => invoice.id === createdInvoice.id) ?? null;
+      activePendingInvoice.value = matchedInvoice;
+      mapInvoiceToDraft(createdInvoice);
+    } catch (error) {
+      pageError.value = error instanceof Error ? error.message : "Không thể tạo hóa đơn chờ";
+    } finally {
+      savingPendingInvoice.value = false;
+    }
+  }
+
+  async function handlePayNow() {
+    if (!validateCartItems() || !validatePaymentInput()) {
+      return;
+    }
+    if (!canPay.value) {
+      return;
+    }
+    payingInvoice.value = true;
+    pageError.value = "";
+    successMessage.value = "";
+    try {
+      const response = await thanhToanTaiQuay({
+        hoaDonId: activePendingInvoice.value?.id ?? null,
+        khachHangId: layKhachHangIdHienTai(),
+        tenKhachHang: tenKhachHangHienThi.value,
+        soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
+        maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
+        thongTinGiaoHang: buildShippingPayload(),
+        hinhThucThanhToan: paymentMethod.value,
+        tienKhachDua: paymentMethod.value === 1 ? tienKhachThanhToan.value : khachCanTra.value,
+        ghiChu: paymentNote.value,
+        items: taoDanhSachSanPhamThanhToan()
+      });
+      successMessage.value = `Đã thanh toán ${response.maHoaDon}`;
+      await fetchPendingInvoices();
+      resetDraft();
+    } catch (error) {
+      pageError.value = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
+    } finally {
+      payingInvoice.value = false;
+    }
+  }
+
+  async function handleCancelPendingInvoice() {
+    if (!activePendingInvoice.value || cancelingPendingInvoice.value) {
+      return;
+    }
+    cancelingPendingInvoice.value = true;
+    pageError.value = "";
+    successMessage.value = "";
+    try {
+      await huyHoaDonCho(activePendingInvoice.value.id);
+      successMessage.value = `Đã hủy hóa đơn chờ ${activePendingInvoice.value.ma}`;
+      await fetchPendingInvoices();
+      resetDraft();
+    } catch (error) {
+      pageError.value = error instanceof Error ? error.message : "Không thể hủy hóa đơn chờ";
+    } finally {
+      cancelingPendingInvoice.value = false;
+    }
+  }
+
+  function clearTimers() {
+    clearCustomerTimer();
+    clearProductTimer();
+    clearCouponTimers();
+  }
+
+  onMounted(async () => {
+    await fetchProducts("");
+    await fetchPendingInvoices();
+  });
+
+  onBeforeUnmount(() => {
+    clearTimers();
+  });
+
+  return {
+    MAX_PENDING_INVOICES,
+    pendingInvoices,
+    loadingPendingInvoices,
+    pendingInvoiceLimitReached,
+    activePendingInvoice,
+    customerKeyword,
+    loadingCustomers,
+    showCustomerDropdown,
+    customerResults,
+    tenKhachHangHienThi,
+    soDienThoaiKhachHangHienThi,
+    selectedCustomer,
+    isGuestCustomer,
+    productKeyword,
+    loadingProducts,
+    showProductDropdown,
+    productResults,
+    productSearchLabel,
+    cartItems,
+    selectedProductDetail,
+    chiTietDangChon,
+    hinhAnhDangChon,
+    soLuongTonSauKhiChon,
+    colorOptions,
+    sizeOptions,
+    selectedColor,
+    selectedSize,
+    selectedQuantity,
+    soLuongTonKhaDungChiTiet,
+    invoiceLoading,
+    tongSoLuong,
+    tongTienSauGiamHienThi,
+    tienGiam,
+    tongTien,
+    sanPhamValidationMessage,
+    couponCode,
+    coTheApDungPhieu,
+    applyingCoupon,
+    showCouponDropdown,
+    coTheTimPhieu,
+    loadingCoupons,
+    couponResults,
+    appliedCoupon,
+    maPhieuChuaApDung,
+    khachCanTra,
+    shippingInfo,
+    paymentMethod,
+    amountPaid,
+    paymentValidationMessage,
+    tienThua,
+    paymentNote,
+    canCreatePendingInvoice,
+    savingPendingInvoice,
+    canPay,
+    payingInvoice,
+    cancelingPendingInvoice,
+    dinhDangTien,
+    soLuongConLai,
+    resetDraft,
+    chonHoaDonCho,
+    moDanhSachKhachHang,
+    dongDanhSachKhachHang,
+    chonKhachHang,
+    chonKhachVangLai,
+    boChonKhachHang,
+    moDanhSachSanPham,
+    dongDanhSachSanPham,
+    moChiTietSanPham,
+    tangSoLuong,
+    giamSoLuong,
+    dongChiTietSanPham,
+    chonMauSac,
+    chonKichCo,
+    giamSoLuongChiTiet,
+    tangSoLuongChiTiet,
+    themBienTheDangChon,
+    handleProductQrScan,
+    handleCouponFocus,
+    handleCouponBlur,
+    handleApplyCoupon,
+    chonPhieuGiamGia,
+    handleRemoveCoupon,
+    updateShippingInfo,
+    handleCalculateShippingFee,
+    handleAmountPaidInput,
+    handleCreatePendingInvoice,
+    handlePayNow,
+    handleCancelPendingInvoice
+  };
+}
+
+export {
+  useBanHangTaiQuay
+};

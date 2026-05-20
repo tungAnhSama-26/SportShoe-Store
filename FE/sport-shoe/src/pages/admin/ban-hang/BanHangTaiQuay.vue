@@ -92,6 +92,19 @@ const {
   handlePayNow,
   handleCancelPendingInvoice
 } = useBanHangTaiQuay();
+
+import { onBeforeRouteLeave } from "vue-router";
+
+onBeforeRouteLeave(async (to, from, next) => {
+  if (cartItems.value && cartItems.value.length > 0 && !activePendingInvoice.value) {
+    try {
+      await handleCreatePendingInvoice();
+    } catch (error) {
+      console.error("Tự động tạo hóa đơn chờ khi chuyển trang thất bại:", error);
+    }
+  }
+  next();
+});
 </script>
 
 <template>
