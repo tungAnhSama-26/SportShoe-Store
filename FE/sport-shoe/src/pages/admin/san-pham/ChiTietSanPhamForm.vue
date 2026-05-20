@@ -1,5 +1,6 @@
 ﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import FormHeader from '../../../components/admin/san-pham/FormHeader.vue'
 import ProductFormSection from '../../../components/admin/san-pham/ProductFormSection.vue'
 import VariantBuilderSection from '../../../components/admin/san-pham/VariantBuilderSection.vue'
@@ -76,6 +77,7 @@ const {
 } = useVariantBuilder()
 
 const { toast, showToast } = useToast()
+const router = useRouter()
 
 const inlineCreatingType = ref(null)
 const quickCreateOpen = ref(false)
@@ -697,12 +699,14 @@ async function handleSave() {
       }))
 
     let variantsResult
+    let savedGiayId
     if (isExistingProduct.value) {
       await api.capNhatGiay(currentProductId.value, buildCreateProductPayload())
       variantsResult = await api.taoChiTietSanPhamHangLoat({
         giayId: currentProductId.value,
         bienThes: variantsPayload
       })
+      savedGiayId = currentProductId.value
     } else {
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
@@ -710,6 +714,7 @@ async function handleSave() {
             ...buildCreateProductPayload(),
             bienThes: variantsPayload
           })
+          savedGiayId = variantsResult?.giay?.id
           break
         } catch (error) {
           if (attempt < 2 && isDuplicateProductCodeError(error)) {
@@ -727,9 +732,19 @@ async function handleSave() {
 
     if (syncedDraftImages) {
       showToast('Lưu sản phẩm và đồng bộ ảnh thành công!', 'success')
-      return
+    } else {
+      showToast('Lưu sản phẩm thành công!', 'success')
     }
-    showToast('Lưu sản phẩm thành công!', 'success')
+
+    // Redirect về trang danh sách biến thể sản phẩm
+    if (savedGiayId) {
+      router.push({
+        name: 'admin-bien-the-san-pham',
+        query: { giayId: String(savedGiayId) }
+      })
+    } else {
+      router.push({ name: 'admin-bien-the-san-pham' })
+    }
   } catch (error) {
     console.error('Error saving product:', error)
     const firstFieldError = Object.values(getFieldErrors(error)).find(Boolean)
