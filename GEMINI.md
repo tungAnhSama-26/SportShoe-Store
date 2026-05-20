@@ -33,7 +33,7 @@ Backend:
 * JPA/Hibernate
 
 Database:
-* MySQL
+* SQL server
 
 Architecture style:
 * Clean architecture

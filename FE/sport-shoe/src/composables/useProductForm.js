@@ -87,7 +87,9 @@ export function useProductForm() {
 
   function hasOptionId(options, value) {
     if (value == null || value === '') return true
-    return (options || []).some((item) => Number(item.id) === Number(value))
+    const numValue = Number(value)
+    if (!Number.isInteger(numValue) || numValue <= 0) return false
+    return (options || []).some((item) => Number(item.id) === numValue)
   }
 
   function isValidGender(value) {
@@ -97,8 +99,8 @@ export function useProductForm() {
   function validateProductForm() {
     clearProductErrors()
 
-    const productName = productForm.ten.trim()
-    const productDescription = productForm.moTa.trim()
+    const productName = (productForm.ten || '').trim()
+    const productDescription = (productForm.moTa || '').trim()
 
     if (!productName) {
       productErrors.ten = 'Vui lòng nhập tên sản phẩm'
@@ -159,7 +161,7 @@ export function useProductForm() {
       loaiGiayId: Number(productForm.loaiGiayId),
       gioiTinh: normalizeNullableNumber(productForm.gioiTinh),
       chatLieuGiayId: normalizeNullableNumber(productForm.chatLieuGiayId),
-      moTa: productForm.moTa.trim() || undefined,
+      moTa: productForm.moTa ? productForm.moTa.trim() : undefined,
       deGiayId: normalizeNullableNumber(productForm.deGiayId),
       coGiayId: normalizeNullableNumber(productForm.coGiayId),
       congNgheDemId: normalizeNullableNumber(productForm.congNgheDemId),
