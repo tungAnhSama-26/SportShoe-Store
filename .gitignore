@@ -1,3 +1,6 @@
 ### Skills ###
 skills/
 skill/
+.codex-chrome-debug/
+docs/
+build/

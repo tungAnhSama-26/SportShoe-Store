@@ -1,50 +1,11 @@
-import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
-import { getAuthHeaders } from "./auth";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
-
-function firstFieldError(errors) {
-  if (!errors || typeof errors !== "object" || Array.isArray(errors)) {
-    return "";
-  }
-
-  return Object.values(errors).find((value) => typeof value === "string" && value.trim())?.trim() ?? "";
-}
+import { apiRequest } from "./api-client";
 
 async function request(path, init) {
-  let response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-        ...init?.headers ?? {}
-      },
-      ...init
-    });
-  } catch {
-    throw new Error("Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.");
-  }
-
-  const text = await response.text();
-  let payload = null;
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = null;
-    }
-  }
-
-  if (!response.ok) {
-    throw createRequestError(
-      firstFieldError(payload?.errors) || payload?.message,
-      "Khong the hoan tat thao tac ban hang tai quay luc nay. Vui long thu lai.",
-      payload?.errors,
-    );
-  }
-
-  return payload?.data ?? payload;
+  return apiRequest(path, {
+    fallbackMessage:
+      "Không thể hoàn tất thao tác bán hàng tại quầy lúc này. Vui lòng thử lại.",
+    ...init,
+  });
 }
 function timKhachHangTheoSoDienThoai(phone) {
   const params = new URLSearchParams();

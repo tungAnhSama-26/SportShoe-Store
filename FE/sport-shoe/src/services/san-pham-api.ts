@@ -1,6 +1,4 @@
-import { createRequestError, sanitizeErrorMessage } from '../utils/error-message'
-import { getAuthHeaders } from './auth'
-const BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080/api/v1'
+import { apiRequest, uploadFileRequest } from './api-client'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -284,20 +282,11 @@ export interface ThemHinhAnhRequest {
 // ─── API functions ────────────────────────────────────────────────────────────
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...init?.headers },
+  return apiRequest(path, {
+    fallbackMessage:
+      'Không thể hoàn tất thao tác sản phẩm lúc này. Vui lòng thử lại.',
     ...init,
   })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw createRequestError(
-      err.message || `HTTP ${res.status}`,
-      'Không thể hoàn tất thao tác sản phẩm lúc này. Vui lòng thử lại.',
-      err.errors
-    )
-  }
-  const json = await res.json()
-  return json.data
 }
 
 export function layDanhSachGiay(filters: GiayListFilters = {}): Promise<PageResponse<GiayListItem>> {
@@ -406,28 +395,5 @@ export function datHinhChinh(id: number): Promise<void> {
 }
 
 export async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await fetch(`${BASE}/upload`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: formData
-  })
-
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(
-      sanitizeErrorMessage(
-        payload.message,
-        'Không thể tải ảnh sản phẩm lên lúc này'
-      )
-    )
-  }
-
-  if (!payload.data?.url) {
-    throw new Error('Không nhận được URL ảnh sau khi upload')
-  }
-
-  return payload.data.url
+  return uploadFileRequest(file, 'Không thể tải ảnh sản phẩm lên lúc này') as Promise<string>
 }

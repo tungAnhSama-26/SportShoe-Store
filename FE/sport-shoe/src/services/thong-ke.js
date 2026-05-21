@@ -1,46 +1,10 @@
-import { sanitizeErrorMessage } from "../utils/error-message";
-import { getAuthHeaders } from "./auth";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8080/api/v1";
+import { apiRequest } from "./api-client";
 
 async function request(path, init) {
-  let response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-        ...(init?.headers ?? {})
-      },
-      ...init
-    });
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      throw error;
-    }
-    throw new Error("Không thể tải dữ liệu thống kê lúc này. Vui lòng thử lại sau.");
-  }
-
-  const text = await response.text();
-  let payload = null;
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = null;
-    }
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      sanitizeErrorMessage(
-        payload?.message,
-        "Không thể tải dữ liệu thống kê lúc này. Vui lòng thử lại sau.",
-      ),
-    );
-  }
-
-  return payload?.data ?? payload;
+  return apiRequest(path, {
+    fallbackMessage: "Không thể tải dữ liệu thống kê lúc này. Vui lòng thử lại sau.",
+    ...init,
+  });
 }
 
 function layDashboardThongKe(params = {}, init) {
