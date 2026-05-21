@@ -161,6 +161,7 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
                 <ScanLine class="h-4 w-4" />
                 {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
               </button>
+              <span v-if="form.cccd" class="text-sm font-semibold text-slate-800">{{ form.cccd }}</span>
             </div>
             <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>

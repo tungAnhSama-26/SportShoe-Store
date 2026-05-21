@@ -159,7 +159,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'thuongHieu'"
             @create="handleInlineCreateAttribute('thuongHieu', $event)"
-            @update:model-value="productForm.thuongHieuId = $event"
+            @update:model-value="productForm.thuongHieuId = $event ? Number($event) : null"
           />
           <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-rose-500">
             {{ productErrors.thuongHieuId }}
@@ -177,7 +177,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'loaiGiay'"
             @create="handleInlineCreateAttribute('loaiGiay', $event)"
-            @update:model-value="productForm.loaiGiayId = $event"
+            @update:model-value="productForm.loaiGiayId = $event ? Number($event) : null"
           />
           <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-rose-500">
             {{ productErrors.loaiGiayId }}
@@ -191,7 +191,7 @@ function handleInlineCreateAttribute(type, value) {
             :options="genderSearchOptions"
             placeholder="Tất cả"
             search-placeholder="Tìm giới tính..."
-            @update:model-value="productForm.gioiTinh = $event"
+            @update:model-value="productForm.gioiTinh = $event ? Number($event) : null"
           />
         </label>
 
@@ -205,7 +205,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'chatLieuGiay'"
             @create="handleInlineCreateAttribute('chatLieuGiay', $event)"
-            @update:model-value="productForm.chatLieuGiayId = $event"
+            @update:model-value="productForm.chatLieuGiayId = $event ? Number($event) : null"
           />
         </label>
 
@@ -219,7 +219,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'deGiay'"
             @create="handleInlineCreateAttribute('deGiay', $event)"
-            @update:model-value="productForm.deGiayId = $event"
+            @update:model-value="productForm.deGiayId = $event ? Number($event) : null"
           />
         </label>
 
@@ -233,7 +233,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'coGiay'"
             @create="handleInlineCreateAttribute('coGiay', $event)"
-            @update:model-value="productForm.coGiayId = $event"
+            @update:model-value="productForm.coGiayId = $event ? Number($event) : null"
           />
         </label>
 
@@ -247,7 +247,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'congNgheDem'"
             @create="handleInlineCreateAttribute('congNgheDem', $event)"
-            @update:model-value="productForm.congNgheDemId = $event"
+            @update:model-value="productForm.congNgheDemId = $event ? Number($event) : null"
           />
         </label>
 
@@ -261,7 +261,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'trongLuong'"
             @create="handleInlineCreateAttribute('trongLuong', $event)"
-            @update:model-value="productForm.trongLuongId = $event"
+            @update:model-value="productForm.trongLuongId = $event ? Number($event) : null"
           />
         </label>
       </div>
