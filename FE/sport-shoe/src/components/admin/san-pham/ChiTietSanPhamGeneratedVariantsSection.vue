@@ -11,7 +11,7 @@ import {
 const props = defineProps({
   generatedVariants: {
     type: Array,
-    required: true,
+    default: () => [],
   },
   representativeGeneratedVariants: {
     type: Array,
@@ -19,11 +19,15 @@ const props = defineProps({
   },
   variantBuilder: {
     type: Object,
-    required: true,
+    default: () => ({
+      soLuong: "",
+      giaGoc: "",
+      giaBan: ""
+    }),
   },
   variantErrors: {
     type: Object,
-    required: true,
+    default: () => ({}),
   },
   draftColorImages: {
     type: Object,

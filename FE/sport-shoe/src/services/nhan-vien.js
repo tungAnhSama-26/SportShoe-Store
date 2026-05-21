@@ -1,26 +1,11 @@
-import { createRequestError, sanitizeErrorMessage } from "../utils/error-message";
-import { getAuthHeaders } from "./auth";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-  "http://localhost:8080/api/v1";
+import { apiRequest, uploadFileRequest } from "./api-client";
 
 async function request(path, init) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...getAuthHeaders(), ...(init?.headers ?? {}) },
+  return apiRequest(path, {
+    fallbackMessage:
+      "Không thể hoàn tất thao tác nhân viên lúc này. Vui lòng thử lại.",
     ...init,
   });
-  const payload = await response.json();
-  if (!response.ok) {
-    const requestError = createRequestError(
-      payload.message,
-      "Khong the hoan tat thao tac nhan vien luc nay. Vui long thu lai.",
-      payload.errors,
-    );
-    requestError.status = response.status;
-    throw requestError;
-  }
-  return payload.data;
 }
 
 export function layDanhSachNhanVien(filters) {
@@ -73,18 +58,5 @@ export function xoaNhanVien(id) {
 }
 
 export async function uploadFile(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-  const response = await fetch(`${API_BASE_URL}/upload`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: formData,
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(
-      sanitizeErrorMessage(result.message, "Khong the tai anh nhan vien len luc nay"),
-    );
-  }
-  return result.data.url;
+  return uploadFileRequest(file, "Không thể tải ảnh nhân viên lên lúc này");
 }

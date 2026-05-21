@@ -6,7 +6,13 @@ import { normalizeAttributeText, normalizeSizeValue } from '../../../utils/thuoc
 const props = defineProps({
   variantBuilder: {
     type: Object,
-    required: true
+    default: () => ({
+      mauSacIds: [],
+      kichCoIds: [],
+      giaBan: "",
+      soLuong: "",
+      skuPrefix: ""
+    })
   },
   variantErrors: {
     type: Object,
@@ -49,7 +55,7 @@ const kichCoDropdownRef = ref(null)
 
 const selectedMauSacItems = computed(() => {
   const colorMap = new Map(
-    (props.danhMuc?.mauSac || []).map((item) => [Number(item.id), item])
+    (props.danhMuc?.mauSac || []).filter(Boolean).map((item) => [Number(item.id), item])
   )
 
   return props.variantBuilder.mauSacIds
@@ -59,7 +65,7 @@ const selectedMauSacItems = computed(() => {
 
 const selectedKichCoItems = computed(() => {
   const sizeMap = new Map(
-    (props.danhMuc?.kichCo || []).map((item) => [Number(item.id), item])
+    (props.danhMuc?.kichCo || []).filter(Boolean).map((item) => [Number(item.id), item])
   )
 
   return props.variantBuilder.kichCoIds
@@ -69,14 +75,14 @@ const selectedKichCoItems = computed(() => {
 
 const filteredMauSacItems = computed(() => {
   const search = props.mauSacSearch.toLowerCase()
-  return (props.danhMuc?.mauSac || []).filter((item) =>
+  return (props.danhMuc?.mauSac || []).filter(Boolean).filter((item) =>
     item.ten.toLowerCase().includes(search)
   )
 })
 
 const filteredKichCoItems = computed(() => {
   const search = props.kichCoSearch.toLowerCase()
-  return (props.danhMuc?.kichCo || []).filter((item) =>
+  return (props.danhMuc?.kichCo || []).filter(Boolean).filter((item) =>
     item.giaTri.toString().toLowerCase().includes(search)
   )
 })

@@ -1,24 +1,13 @@
-import { sanitizeErrorMessage } from "../utils/error-message";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-  "http://localhost:8080/api/v1";
+import { apiRequest, getAuthHeaders as getApiAuthHeaders } from "./api-client";
 
 export async function request(path, init) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  return apiRequest(path, {
+    authenticated: false,
+    fallbackMessage:
+      "Không thể hoàn tất thao tác đăng nhập lúc này. Vui lòng thử lại.",
+    unwrapData: false,
     ...init,
   });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(
-      sanitizeErrorMessage(
-        payload.message,
-        "Không thể hoàn tất thao tác đăng nhập lúc này. Vui lòng thử lại.",
-      ),
-    );
-  }
-  return payload; // Return full payload to get message and data
 }
 
 export async function login(username, password) {
@@ -83,8 +72,7 @@ export function getAdminToken() {
 }
 
 export function getAuthHeaders() {
-  const token = getAdminToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return getApiAuthHeaders();
 }
 
 export function isAdminAuthenticated() {
