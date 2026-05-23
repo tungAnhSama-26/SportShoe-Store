@@ -103,6 +103,22 @@ const genderSearchOptions = [
 function handleInlineCreateAttribute(type, value) {
   emit('inline-create-attribute', type, value)
 }
+
+function toNullableNumber(value) {
+  if (value == null || value === '') return null
+  if (typeof value === 'object') {
+    return toNullableNumber(value.id ?? value.value)
+  }
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function updateProductField(field, value, numeric = false) {
+  props.productForm[field] = numeric ? toNullableNumber(value) : value
+  if (props.productErrors?.[field]) {
+    delete props.productErrors[field]
+  }
+}
 </script>
 
 <template>
@@ -119,7 +135,7 @@ function handleInlineCreateAttribute(type, value) {
           <label class="block">
             <span class="mb-1 block text-[13px] font-semibold text-slate-500">Sản phẩm *</span>
             <input
-              v-model="productForm.ten"
+              :value="productForm.ten"
               type="text"
               class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
               :class="
@@ -128,6 +144,7 @@ function handleInlineCreateAttribute(type, value) {
                   : 'border-slate-200 bg-slate-50'
               "
               placeholder="Nhập tên sản phẩm..."
+              @input="updateProductField('ten', $event.target.value)"
             />
             <p v-if="productErrors.ten" class="mt-1 text-xs text-rose-500">
               {{ productErrors.ten }}
@@ -138,10 +155,11 @@ function handleInlineCreateAttribute(type, value) {
         <label class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Mô tả</span>
           <textarea
-            v-model="productForm.moTa"
+            :value="productForm.moTa"
             rows="5"
             class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
             placeholder="Mô tả sản phẩm"
+            @input="updateProductField('moTa', $event.target.value)"
           ></textarea>
         </label>
     </section>
@@ -159,7 +177,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'thuongHieu'"
             @create="handleInlineCreateAttribute('thuongHieu', $event)"
-            @update:model-value="productForm.thuongHieuId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('thuongHieuId', $event, true)"
           />
           <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-rose-500">
             {{ productErrors.thuongHieuId }}
@@ -177,7 +195,7 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'loaiGiay'"
             @create="handleInlineCreateAttribute('loaiGiay', $event)"
-            @update:model-value="productForm.loaiGiayId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('loaiGiayId', $event, true)"
           />
           <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-rose-500">
             {{ productErrors.loaiGiayId }}
@@ -191,8 +209,12 @@ function handleInlineCreateAttribute(type, value) {
             :options="genderSearchOptions"
             placeholder="Tất cả"
             search-placeholder="Tìm giới tính..."
-            @update:model-value="productForm.gioiTinh = $event != null && $event !== '' ? Number($event) : null"
+            :error="Boolean(productErrors.gioiTinh)"
+            @update:model-value="updateProductField('gioiTinh', $event, true)"
           />
+          <p v-if="productErrors.gioiTinh" class="mt-1 text-xs text-rose-500">
+            {{ productErrors.gioiTinh }}
+          </p>
         </div>
 
         <div class="block">
@@ -202,11 +224,15 @@ function handleInlineCreateAttribute(type, value) {
             :options="chatLieuOptions"
             placeholder="Chọn chất liệu giày..."
             search-placeholder="Tìm chất liệu..."
+            :error="Boolean(productErrors.chatLieuGiayId)"
             allow-create
             :creating="inlineCreatingType === 'chatLieuGiay'"
             @create="handleInlineCreateAttribute('chatLieuGiay', $event)"
-            @update:model-value="productForm.chatLieuGiayId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('chatLieuGiayId', $event, true)"
           />
+          <p v-if="productErrors.chatLieuGiayId" class="mt-1 text-xs text-rose-500">
+            {{ productErrors.chatLieuGiayId }}
+          </p>
         </div>
 
         <div class="block">
@@ -216,11 +242,15 @@ function handleInlineCreateAttribute(type, value) {
             :options="deGiayOptions"
             placeholder="Chọn đế giày..."
             search-placeholder="Tìm đế giày..."
+            :error="Boolean(productErrors.deGiayId)"
             allow-create
             :creating="inlineCreatingType === 'deGiay'"
             @create="handleInlineCreateAttribute('deGiay', $event)"
-            @update:model-value="productForm.deGiayId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('deGiayId', $event, true)"
           />
+          <p v-if="productErrors.deGiayId" class="mt-1 text-xs text-rose-500">
+            {{ productErrors.deGiayId }}
+          </p>
         </div>
 
         <div class="block">
@@ -230,11 +260,15 @@ function handleInlineCreateAttribute(type, value) {
             :options="coGiayOptions"
             placeholder="Chọn cổ giày..."
             search-placeholder="Tìm cổ giày..."
+            :error="Boolean(productErrors.coGiayId)"
             allow-create
             :creating="inlineCreatingType === 'coGiay'"
             @create="handleInlineCreateAttribute('coGiay', $event)"
-            @update:model-value="productForm.coGiayId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('coGiayId', $event, true)"
           />
+          <p v-if="productErrors.coGiayId" class="mt-1 text-xs text-rose-500">
+            {{ productErrors.coGiayId }}
+          </p>
         </div>
 
         <div class="block">
@@ -244,11 +278,15 @@ function handleInlineCreateAttribute(type, value) {
             :options="congNgheDemOptions"
             placeholder="Chọn công nghệ đệm..."
             search-placeholder="Tìm công nghệ đệm..."
+            :error="Boolean(productErrors.congNgheDemId)"
             allow-create
             :creating="inlineCreatingType === 'congNgheDem'"
             @create="handleInlineCreateAttribute('congNgheDem', $event)"
-            @update:model-value="productForm.congNgheDemId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('congNgheDemId', $event, true)"
           />
+          <p v-if="productErrors.congNgheDemId" class="mt-1 text-xs text-rose-500">
+            {{ productErrors.congNgheDemId }}
+          </p>
         </div>
 
         <div class="block">
@@ -258,11 +296,15 @@ function handleInlineCreateAttribute(type, value) {
             :options="trongLuongOptions"
             placeholder="Chọn trọng lượng..."
             search-placeholder="Tìm trọng lượng..."
+            :error="Boolean(productErrors.trongLuongId)"
             allow-create
             :creating="inlineCreatingType === 'trongLuong'"
             @create="handleInlineCreateAttribute('trongLuong', $event)"
-            @update:model-value="productForm.trongLuongId = $event != null && $event !== '' ? Number($event) : null"
+            @update:model-value="updateProductField('trongLuongId', $event, true)"
           />
+          <p v-if="productErrors.trongLuongId" class="mt-1 text-xs text-rose-500">
+            {{ productErrors.trongLuongId }}
+          </p>
         </div>
       </div>
     </div>

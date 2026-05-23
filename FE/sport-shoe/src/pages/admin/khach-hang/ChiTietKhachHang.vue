@@ -36,6 +36,46 @@ function taoMatKhauNgauNhien(): string {
   }
   return result;
 }
+
+function normalizeText(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function createUsernameSegment(value: string): string {
+  return normalizeText(value)
+    .normalize("NFD")
+    .replace(/[đĐ]/g, "d")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "")
+    .slice(0, 40);
+}
+
+function taoTenDangNhapKhachHang(): string {
+  const email = normalizeText(form.value.email).toLowerCase();
+  const emailBase = email.includes("@") ? email.split("@")[0] : "";
+  const phoneDigits = normalizeText(form.value.sdt).replace(/\D/g, "");
+  const nameBase = createUsernameSegment(form.value.hoTen);
+  const generated =
+    createUsernameSegment(emailBase) ||
+    (phoneDigits ? `kh${phoneDigits}` : "") ||
+    (nameBase ? `kh${nameBase}${Date.now().toString(36).slice(-6)}` : "");
+
+  return generated.slice(0, 50);
+}
+
+function buildDiaChiPayload() {
+  const f = formDiaChi.value;
+  return {
+    hoTen: normalizeText(f.hoTen),
+    sdt: normalizeText(f.sdt),
+    tinhThanh: normalizeText(f.tinhThanh),
+    quanHuyen: normalizeText(f.quanHuyen),
+    phuongXa: normalizeText(f.phuongXa),
+    diaChiCuThe: normalizeText(f.diaChiCuThe),
+    laMacDinh: Boolean(f.laMacDinh),
+  };
+}
 const thongBao = ref("");
 const khachHang = ref(null);
 
@@ -109,11 +149,10 @@ async function onHuyenChange(code: number | null) {
 watch(() => form.value.hoTen, (v) => { if (laMoi) formDiaChi.value.hoTen = v; });
 watch(() => form.value.sdt, (v) => { if (laMoi) formDiaChi.value.sdt = v; });
 
-// Tự động tạo tên đăng nhập từ phần trước @ của email
-watch(() => form.value.email, (email) => {
+// Tự động tạo tên đăng nhập cho khách hàng mới
+watch([() => form.value.email, () => form.value.sdt, () => form.value.hoTen], () => {
   if (!laMoi) return;
-  const atIndex = email.indexOf('@');
-  form.value.tenDangNhap = atIndex > 0 ? email.substring(0, atIndex) : '';
+  form.value.tenDangNhap = taoTenDangNhapKhachHang();
 });
 
 const matKhauMoi = ref("");
@@ -122,6 +161,7 @@ const showDoiMatKhau = ref(false);
 async function taiChiTiet() {
   if (laMoi) {
     form.value.matKhau = taoMatKhauNgauNhien();
+    form.value.tenDangNhap = taoTenDangNhapKhachHang();
     await taiDsTinh();
     return;
   }
@@ -162,16 +202,35 @@ function validateDiaChi(): boolean {
 async function luu() {
   loiForm.value = { tenDangNhap: "", hoTen: "", email: "", matKhau: "" };
   let hasError = false;
+  const hoTen = normalizeText(form.value.hoTen);
+  const email = normalizeText(form.value.email);
+  const sdt = normalizeText(form.value.sdt);
+  const ngaySinh = normalizeText(form.value.ngaySinh);
+  const hinhAnh = normalizeText(form.value.hinhAnh);
 
-  if (!form.value.hoTen.trim()) {
+  if (!hoTen) {
     loiForm.value.hoTen = "Vui lòng nhập họ tên khách hàng.";
     hasError = true;
   }
-  if (form.value.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
     hasError = true;
   }
-  if (laMoi && !validateDiaChi()) hasError = true;
+  if (laMoi) {
+    form.value.tenDangNhap = taoTenDangNhapKhachHang();
+    if (!form.value.tenDangNhap) {
+      loiForm.value.tenDangNhap = "Không thể tạo tên đăng nhập cho khách hàng.";
+      hasError = true;
+    }
+    if (!normalizeText(form.value.matKhau)) {
+      form.value.matKhau = taoMatKhauNgauNhien();
+    }
+    if (normalizeText(form.value.matKhau).length < 6) {
+      loiForm.value.matKhau = "Mật khẩu phải có ít nhất 6 ký tự.";
+      hasError = true;
+    }
+    if (!validateDiaChi()) hasError = true;
+  }
   if (hasError) return;
 
   dangLuu.value = true;
@@ -180,19 +239,19 @@ async function luu() {
   try {
     if (laMoi) {
       const result = await taoKhachHang({
-        tenDangNhap: form.value.tenDangNhap,
-        hoTen: form.value.hoTen,
-        email: form.value.email || undefined,
-        sdt: form.value.sdt || undefined,
-        ngaySinh: form.value.ngaySinh || undefined,
-        hinhAnh: form.value.hinhAnh || undefined,
-        matKhau: form.value.matKhau,
+        tenDangNhap: normalizeText(form.value.tenDangNhap),
+        hoTen,
+        email: email || undefined,
+        sdt: sdt || undefined,
+        ngaySinh: ngaySinh || undefined,
+        hinhAnh: hinhAnh || undefined,
+        matKhau: normalizeText(form.value.matKhau),
       });
-      await themDiaChi(result.id, formDiaChi.value);
+      await themDiaChi(result.id, buildDiaChiPayload());
       if (typeof window !== "undefined") {
-        const emailDaNhap = form.value.email.trim();
-        const matKhauDaTao = form.value.matKhau;
-        const tenDangNhapDaTao = form.value.tenDangNhap;
+        const emailDaNhap = email;
+        const matKhauDaTao = normalizeText(form.value.matKhau);
+        const tenDangNhapDaTao = normalizeText(form.value.tenDangNhap);
         const emailGuiThanhCong = result.emailDaGuiThanhCong !== false;
         const noiDungThanhCong = emailDaNhap
           ? `Đã gửi thông tin đăng nhập tới email: ${emailDaNhap} | Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`
@@ -218,11 +277,11 @@ async function luu() {
       await nextTick();
     } else {
       const updated = await capNhatKhachHang(id!, {
-        hoTen: form.value.hoTen,
-        email: form.value.email || undefined,
-        sdt: form.value.sdt || undefined,
-        ngaySinh: form.value.ngaySinh || undefined,
-        hinhAnh: form.value.hinhAnh || undefined,
+        hoTen,
+        email: email || undefined,
+        sdt: sdt || undefined,
+        ngaySinh: ngaySinh || undefined,
+        hinhAnh: hinhAnh || undefined,
       });
       khachHang.value = updated;
       thongBao.value = "Đã lưu thay đổi thành công!";

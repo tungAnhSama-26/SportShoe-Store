@@ -248,12 +248,12 @@ VALUES
 (N'DGG001', N'Summer Sneaker 10%', N'Giảm 10% cho giày lifestyle mùa hè.', 1, 10, '2026-05-01', '2026-06-30', 1),
 (N'DGG002', N'Clearance Tháng 3', N'Đợt giảm đã hết hạn.', 1, 15, '2026-03-01', '2026-03-31', 2),
 (N'DGG003', N'Back To School', N'Đợt giảm sắp bắt đầu.', 1, 12, '2026-06-01', '2026-08-31', 4),
-(N'DGG004', N'Flash Sale 200K', N'Giảm trực tiếp 200.000đ.', 2, 200000, '2026-05-10', '2026-05-20', 1),
+(N'DGG004', N'Flash Sale 20%', N'Giảm 20% cho sản phẩm Flash Sale.', 1, 20, '2026-05-10', '2026-05-20', 1),
 (N'DGG005', N'Running Week', N'Giảm 8% cho giày chạy bộ.', 1, 8, '2026-05-05', '2026-05-25', 1),
-(N'DGG006', N'Skate Day', N'Giảm 120.000đ cho giày skate.', 2, 120000, '2026-05-01', '2026-05-31', 1),
+(N'DGG006', N'Skate Day 10%', N'Giảm 10% cho giày skate.', 1, 10, '2026-05-01', '2026-05-31', 1),
 (N'DGG007', N'VIP Lifestyle', N'Đợt tạm dừng thủ công.', 1, 20, '2026-05-01', '2026-12-31', 0),
 (N'DGG008', N'Women Sport', N'Giảm 7% cho sản phẩm nữ.', 1, 7, '2026-05-12', '2026-07-12', 1),
-(N'DGG009', N'Local Brand Deal', N'Ưu đãi thương hiệu Việt.', 2, 90000, '2026-05-01', '2026-06-15', 1),
+(N'DGG009', N'Local Brand Deal 25%', N'Ưu đãi thương hiệu Việt giảm 25%.', 1, 25, '2026-05-01', '2026-06-15', 1),
 (N'DGG010', N'End Month Sale', N'Đợt giảm cuối tháng.', 1, 5, '2026-05-20', '2026-05-31', 4);
 GO
 

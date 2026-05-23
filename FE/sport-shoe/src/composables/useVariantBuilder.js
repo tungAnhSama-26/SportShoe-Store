@@ -38,26 +38,41 @@ export function useVariantBuilder() {
     Object.keys(variantErrors).forEach((key) => delete variantErrors[key])
   }
 
-  function assignVariantDefaultFieldErrors() {
+  function parseNumericValue(value) {
+    if (value === null || value === undefined || value === '') return 0
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  function assignVariantDefaultFieldErrors({ requirePrices = false } = {}) {
     delete variantErrors.soLuong
     delete variantErrors.giaGoc
     delete variantErrors.giaBan
 
-    if (variantBuilder.soLuong < 0) {
+    const soLuong = parseNumericValue(variantBuilder.soLuong)
+    const giaGoc = parseNumericValue(variantBuilder.giaGoc)
+    const giaBan = parseNumericValue(variantBuilder.giaBan)
+
+    if (soLuong < 0) {
       variantErrors.soLuong = 'Số lượng mặc định không được âm'
     }
 
-    if (variantBuilder.giaGoc < 0) {
+    if (giaGoc < 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định không được âm'
+    } else if (requirePrices && giaGoc <= 0) {
+      variantErrors.giaGoc = 'Giá gốc mặc định phải lớn hơn 0'
     }
 
-    if (variantBuilder.giaBan < 0) {
+    if (giaBan < 0) {
       variantErrors.giaBan = 'Giá bán mặc định không được âm'
+    } else if (requirePrices && giaBan <= 0) {
+      variantErrors.giaBan = 'Giá bán mặc định phải lớn hơn 0'
     }
 
-    if (variantBuilder.giaGoc > 0 && variantBuilder.giaBan > variantBuilder.giaGoc) {
-      variantErrors.giaBan = 'Giá bán mặc định không được lớn hơn giá gốc'
+    if (giaGoc > 0 && giaBan > 0 && giaGoc > giaBan) {
+      variantErrors.giaGoc = 'Giá gốc mặc định không được lớn hơn giá bán'
     }
+
   }
 
   function validateVariantBuilder() {
@@ -174,9 +189,9 @@ export function useVariantBuilder() {
   }
 
   function applyGeneratedDefaults() {
-    assignVariantDefaultFieldErrors()
+    assignVariantDefaultFieldErrors({ requirePrices: true })
     if (variantErrors.soLuong || variantErrors.giaGoc || variantErrors.giaBan) {
-      variantErrors.generated = 'Vui lòng sửa các giá trị mặc định đang bị âm trước khi áp dụng'
+      variantErrors.generated = 'Vui lòng sửa số lượng và giá mặc định trước khi áp dụng'
       return
     }
 

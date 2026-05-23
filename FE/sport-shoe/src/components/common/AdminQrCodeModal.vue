@@ -49,6 +49,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  discountBadge: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["close", "primary-action"]);
@@ -196,7 +200,7 @@ function downloadSvg() {
               >
                 <div
                   v-if="hasImage"
-                  class="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm"
+                  class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm"
                 >
                   <img
                     :src="imageUrl"
