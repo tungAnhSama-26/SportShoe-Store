@@ -18,7 +18,7 @@ export function useVariantBuilder() {
   const mauSacSearch = ref('')
   const kichCoSearch = ref('')
   const openVariantDropdown = ref(null)
-  const draftColorImages = ref({})
+  const draftVariantImages = ref({})
 
   const representativeGeneratedVariants = computed(() => {
     const groupedVariants = new Map()
@@ -188,10 +188,10 @@ export function useVariantBuilder() {
     })
   }
 
-  function updateDraftImagesForColor(mauSacId, nextImages) {
-    draftColorImages.value = {
-      ...draftColorImages.value,
-      [String(mauSacId)]: nextImages,
+  function updateDraftImagesForVariant(variantKey, nextImages) {
+    draftVariantImages.value = {
+      ...draftVariantImages.value,
+      [String(variantKey)]: nextImages,
     }
   }
 
@@ -202,7 +202,7 @@ export function useVariantBuilder() {
     mauSacSearch,
     kichCoSearch,
     openVariantDropdown,
-    draftColorImages,
+    draftVariantImages,
     representativeGeneratedVariants,
     generateVariants,
     applyGeneratedDefaults,
@@ -211,6 +211,6 @@ export function useVariantBuilder() {
     toggleSelectedValue,
     clearSelectedValues,
     appendSelectedValue,
-    updateDraftImagesForColor,
+    updateDraftImagesForVariant,
   }
 }

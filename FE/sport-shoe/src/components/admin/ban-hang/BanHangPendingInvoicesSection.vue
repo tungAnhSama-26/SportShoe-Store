@@ -34,7 +34,6 @@ const emit = defineEmits(["select-invoice"]);
     <div class="mb-4 flex items-center justify-between">
       <div>
         <h2 class="text-lg font-bold text-slate-900">Hóa đơn chờ</h2>
-        <p class="text-sm text-slate-500">Chọn nhanh để xem lại hóa đơn đang chờ xử lý.</p>
       </div>
       <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
         {{ loadingPendingInvoices ? "Đang tải..." : `${pendingInvoices.length}/${maxPendingInvoices} hóa đơn` }}

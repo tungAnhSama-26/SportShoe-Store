@@ -45,7 +45,7 @@ const emit = defineEmits([
 </script>
 
 <template>
-  <div class="grid gap-4 lg:grid-cols-2">
+  <div class="flex flex-col gap-4">
     <div class="relative">
       <label class="mb-2 block text-sm font-semibold text-slate-700">Tìm khách hàng theo tên hoặc số điện thoại</label>
       <div class="flex gap-3">
@@ -94,8 +94,7 @@ const emit = defineEmits([
     <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Khách được chọn</p>
-          <p class="mt-2 text-lg font-bold text-slate-900">{{ tenKhachHangHienThi }}</p>
+          <p class="text-lg font-bold text-slate-900">{{ tenKhachHangHienThi }}</p>
           <p class="mt-1 text-sm text-slate-500">{{ soDienThoaiKhachHangHienThi }}</p>
         </div>
         <button

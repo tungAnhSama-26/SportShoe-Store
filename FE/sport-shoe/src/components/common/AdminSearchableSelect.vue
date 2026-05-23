@@ -136,9 +136,16 @@ function handleCreate() {
 
 function handleSearchKeydown(event) {
   if (event.key !== 'Enter') return
-  if (!showCreateOption.value || props.creating) return
   event.preventDefault()
-  handleCreate()
+
+  if (filteredOptions.value.length > 0) {
+    selectValue(filteredOptions.value[0].value)
+    return
+  }
+
+  if (showCreateOption.value && !props.creating) {
+    handleCreate()
+  }
 }
 
 function handleDocumentClick(event) {
@@ -209,7 +216,7 @@ onBeforeUnmount(() => {
           type="button"
           class="mb-1 flex w-full items-center justify-between rounded-xl border border-dashed border-rose-200 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-100"
           :disabled="creating"
-          @click="handleCreate"
+          @mousedown.prevent="handleCreate"
         >
           <span class="truncate">
             {{ creating ? 'Đang thêm...' : `${createLabel} "${normalizedQuery}"` }}
@@ -221,7 +228,7 @@ onBeforeUnmount(() => {
           v-if="allowClear && modelValue != null"
           type="button"
           class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
-          @click="selectValue(null)"
+          @mousedown.prevent="selectValue(null)"
         >
           <span>{{ clearLabel }}</span>
           <Check :size="15" />
@@ -233,7 +240,7 @@ onBeforeUnmount(() => {
           type="button"
           class="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
           :class="option.value === modelValue ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
-          @click="selectValue(option.value)"
+          @mousedown.prevent="selectValue(option.value)"
         >
           <div class="min-w-0">
             <div class="flex items-center gap-2">

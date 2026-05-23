@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onActivated, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   doiTrangThaiNhanVien,
@@ -16,6 +16,7 @@ import Badge from "../../../components/ui/Badge.vue";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 import {
+  CheckCircle2,
   CalendarDays,
   Eye,
   FileSpreadsheet,
@@ -23,16 +24,26 @@ import {
   Plus,
   RotateCcw,
   Search,
+  TriangleAlert,
   Users,
+  X,
 } from "lucide-vue-next";
 
 const router = useRouter();
 const { adminSession } = useAdminSession();
+const EMPLOYEE_CREATE_TOAST_KEY = "admin-nhan-vien-toast";
 
 const danhSach = ref([]);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const boLoc = ref({ keyword: "", vaiTro: "", trangThai: "" });
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 const dsVaiTro = [
   { label: "Tất cả vai trò", value: "" },
@@ -59,6 +70,33 @@ function dinhDangNgay(ngay: string) {
     month: "2-digit",
     year: "numeric",
   }).format(new Date(ngay));
+}
+
+function hienThiThongBao(loai: "success" | "error", tieuDe: string, noiDung = "") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => {
+    toast.value.hienThi = false;
+    toastTimer = null;
+  }, 4200);
+}
+
+function taiThongBaoDieuHuong() {
+  if (typeof window === "undefined") return;
+  const raw = window.sessionStorage.getItem(EMPLOYEE_CREATE_TOAST_KEY);
+  if (!raw) return;
+  window.sessionStorage.removeItem(EMPLOYEE_CREATE_TOAST_KEY);
+
+  try {
+    const payload = JSON.parse(raw);
+    hienThiThongBao(
+      payload?.loai === "error" ? "error" : "success",
+      payload?.tieuDe || "Thao tác thành công",
+      typeof payload?.noiDung === "string" ? payload.noiDung : "",
+    );
+  } catch {
+    hienThiThongBao("success", "Đã tạo nhân viên mới");
+  }
 }
 
 function chuanHoaChuoi(value: unknown) {
@@ -217,11 +255,55 @@ async function capNhatTrangThai(nv: any) {
   }
 }
 
-onMounted(taiDanhSach);
+onMounted(() => {
+  taiThongBaoDieuHuong();
+  taiDanhSach();
+});
+
+onActivated(() => {
+  taiThongBaoDieuHuong();
+});
 </script>
 
 <template>
   <div class="space-y-5">
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toast.loai === 'success' ? 'border-emerald-100' : 'border-amber-100'"
+      >
+        <div class="flex gap-3 p-4">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            :class="toast.loai === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'"
+          >
+            <CheckCircle2 v-if="toast.loai === 'success'" class="h-5 w-5" />
+            <TriangleAlert v-else class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
+            @click="toast.hienThi = false"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toast.loai === 'success' ? 'bg-emerald-500' : 'bg-amber-500'"></div>
+      </div>
+    </Transition>
+
     <!-- Header -->
     <section>
       <h1 class="admin-page-title text-[30px]">

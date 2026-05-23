@@ -1,5 +1,5 @@
 <script setup>
-import { RotateCcw, FileSpreadsheet, Plus, Search, Filter } from 'lucide-vue-next'
+import { RotateCcw, FileSpreadsheet, Plus, Search, Filter, QrCode } from 'lucide-vue-next'
 
 const props = defineProps({
   filters: {
@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'clear-product-filter'])
+const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'clear-product-filter', 'open-scanner'])
 
 function handleKeywordEnter() {
   emit('load-data', 0)
@@ -48,9 +48,17 @@ function handleFilterChange() {
               v-model="filters.keyword"
               type="text"
               placeholder="Tìm theo mã SP / mã CTSP / tên sản phẩm..."
-              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-12 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @keyup.enter="handleKeywordEnter"
             />
+            <button
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
+              title="Quét QR / Mã vạch"
+              @click="$emit('open-scanner')"
+            >
+              <QrCode class="h-4 w-4" />
+            </button>
           </div>
         </label>
 

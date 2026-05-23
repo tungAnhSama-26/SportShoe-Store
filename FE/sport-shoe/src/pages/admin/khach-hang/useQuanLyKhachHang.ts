@@ -58,9 +58,7 @@ export function useQuanLyKhachHang() {
 
     try {
       const payload = JSON.parse(raw);
-      const noiDung = typeof payload?.noiDung === "string"
-        ? payload.noiDung.replace(/^Email đã lưu:\s*/i, "Đã gửi thông tin đăng nhập tới email: ")
-        : "";
+      const noiDung = typeof payload?.noiDung === "string" ? payload.noiDung : "";
       hienThiThongBao(
         payload?.loai === "error" ? "error" : "success",
         payload?.tieuDe || "Thao tác thành công",

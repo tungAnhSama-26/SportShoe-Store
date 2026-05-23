@@ -148,7 +148,7 @@ function handleInlineCreateAttribute(type, value) {
 
     <div class="mt-5 border-t border-slate-100 pt-5">
       <div class="grid gap-4 md:grid-cols-2">
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Thương hiệu *</span>
           <AdminSearchableSelect
             :model-value="productForm.thuongHieuId"
@@ -159,14 +159,14 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'thuongHieu'"
             @create="handleInlineCreateAttribute('thuongHieu', $event)"
-            @update:model-value="productForm.thuongHieuId = $event ? Number($event) : null"
+            @update:model-value="productForm.thuongHieuId = $event != null && $event !== '' ? Number($event) : null"
           />
           <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-rose-500">
             {{ productErrors.thuongHieuId }}
           </p>
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Loại giày *</span>
           <AdminSearchableSelect
             :model-value="productForm.loaiGiayId"
@@ -177,25 +177,25 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'loaiGiay'"
             @create="handleInlineCreateAttribute('loaiGiay', $event)"
-            @update:model-value="productForm.loaiGiayId = $event ? Number($event) : null"
+            @update:model-value="productForm.loaiGiayId = $event != null && $event !== '' ? Number($event) : null"
           />
           <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-rose-500">
             {{ productErrors.loaiGiayId }}
           </p>
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giới tính</span>
           <AdminSearchableSelect
             :model-value="productForm.gioiTinh"
             :options="genderSearchOptions"
             placeholder="Tất cả"
             search-placeholder="Tìm giới tính..."
-            @update:model-value="productForm.gioiTinh = $event ? Number($event) : null"
+            @update:model-value="productForm.gioiTinh = $event != null && $event !== '' ? Number($event) : null"
           />
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Chất liệu</span>
           <AdminSearchableSelect
             :model-value="productForm.chatLieuGiayId"
@@ -205,11 +205,11 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'chatLieuGiay'"
             @create="handleInlineCreateAttribute('chatLieuGiay', $event)"
-            @update:model-value="productForm.chatLieuGiayId = $event ? Number($event) : null"
+            @update:model-value="productForm.chatLieuGiayId = $event != null && $event !== '' ? Number($event) : null"
           />
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Đế giày</span>
           <AdminSearchableSelect
             :model-value="productForm.deGiayId"
@@ -219,11 +219,11 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'deGiay'"
             @create="handleInlineCreateAttribute('deGiay', $event)"
-            @update:model-value="productForm.deGiayId = $event ? Number($event) : null"
+            @update:model-value="productForm.deGiayId = $event != null && $event !== '' ? Number($event) : null"
           />
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Cổ giày</span>
           <AdminSearchableSelect
             :model-value="productForm.coGiayId"
@@ -233,11 +233,11 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'coGiay'"
             @create="handleInlineCreateAttribute('coGiay', $event)"
-            @update:model-value="productForm.coGiayId = $event ? Number($event) : null"
+            @update:model-value="productForm.coGiayId = $event != null && $event !== '' ? Number($event) : null"
           />
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Công nghệ đệm</span>
           <AdminSearchableSelect
             :model-value="productForm.congNgheDemId"
@@ -247,11 +247,11 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'congNgheDem'"
             @create="handleInlineCreateAttribute('congNgheDem', $event)"
-            @update:model-value="productForm.congNgheDemId = $event ? Number($event) : null"
+            @update:model-value="productForm.congNgheDemId = $event != null && $event !== '' ? Number($event) : null"
           />
-        </label>
+        </div>
 
-        <label class="block">
+        <div class="block">
           <span class="mb-1 block text-[13px] font-semibold text-slate-500">Trọng lượng</span>
           <AdminSearchableSelect
             :model-value="productForm.trongLuongId"
@@ -261,9 +261,9 @@ function handleInlineCreateAttribute(type, value) {
             allow-create
             :creating="inlineCreatingType === 'trongLuong'"
             @create="handleInlineCreateAttribute('trongLuong', $event)"
-            @update:model-value="productForm.trongLuongId = $event ? Number($event) : null"
+            @update:model-value="productForm.trongLuongId = $event != null && $event !== '' ? Number($event) : null"
           />
-        </label>
+        </div>
       </div>
     </div>
   </article>

@@ -79,9 +79,23 @@ export function usePosProducts({
     }
     return soLuongConLai(chiTietDangChon.value.chiTietId, chiTietDangChon.value.soLuongTon);
   });
+
   const soLuongTonSauKhiChon = computed(
     () => Math.max(soLuongTonKhaDungChiTiet.value - selectedQuantity.value, 0)
   );
+
+  const currentPage = ref(1);
+  const pageSize = 6;
+  const paginatedProducts = computed(() => {
+    const start = (currentPage.value - 1) * pageSize;
+    const end = start + pageSize;
+    return productResults.value.slice(start, end);
+  });
+  const totalPages = computed(() => Math.ceil(productResults.value.length / pageSize) || 1);
+
+  watch(productResults, () => {
+    currentPage.value = 1;
+  });
 
   async function fetchProducts(keyword) {
     loadingProducts.value = true;
@@ -285,6 +299,9 @@ export function usePosProducts({
     showProductDropdown,
     productSearchLabel,
     productResults,
+    paginatedProducts,
+    currentPage,
+    totalPages,
     relatedVariants,
     colorOptions,
     sizeOptions,

@@ -157,6 +157,7 @@ export function useChiTietNhanVien() {
 
   const id = route.params.id as string | undefined;
   const laMoi = !id;
+  const EMPLOYEE_CREATE_TOAST_KEY = "admin-nhan-vien-toast";
 
   const dangTai = ref(false);
   const dangLuu = ref(false);
@@ -520,7 +521,31 @@ export function useChiTietNhanVien() {
 
     try {
       if (laMoi) {
-        await taoNhanVien(payload);
+        const created = await taoNhanVien(payload);
+        if (typeof window !== "undefined") {
+          const emailGuiThanhCong = created.emailDaGuiThanhCong !== false;
+          const chiTietDangNhap = [
+            created.email
+              ? emailGuiThanhCong
+                ? `Đã gửi thông tin đăng nhập tới email: ${created.email}`
+                : `Email tài khoản: ${created.email}`
+              : "",
+            !emailGuiThanhCong && created.canhBaoEmail ? created.canhBaoEmail : "",
+            created.tenDangNhap ? `Tên đăng nhập: ${created.tenDangNhap}` : "",
+            created.matKhauTamThoi ? `Mật khẩu tạm thời: ${created.matKhauTamThoi}` : "",
+          ].filter(Boolean).join(" | ");
+
+          window.sessionStorage.setItem(
+            EMPLOYEE_CREATE_TOAST_KEY,
+            JSON.stringify({
+              loai: emailGuiThanhCong ? "success" : "error",
+              tieuDe: emailGuiThanhCong
+                ? "Đã tạo nhân viên mới"
+                : "Đã tạo nhân viên nhưng chưa gửi được email",
+              noiDung: chiTietDangNhap,
+            }),
+          );
+        }
         router.push({ name: "admin-nhan-vien" });
         return;
       }

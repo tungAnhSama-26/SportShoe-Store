@@ -277,9 +277,9 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
       <!-- Buttons cuối trang -->
       <Card class="flex flex-wrap items-center justify-end gap-3">
         <Button
-          variant="soft"
+          variant="outline"
           @click="router.push({ name: 'admin-nhan-vien' })"
-          class="h-12 px-8 text-[15px] font-semibold"
+          class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-8 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
         >
           Hủy
         </Button>
@@ -287,7 +287,7 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
           variant="primary"
           @click="luu"
           :disabled="dangLuu"
-          class="h-12 px-8 text-[15px] font-semibold"
+          class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-500 px-8 text-[15px] font-semibold text-white shadow-md shadow-red-500/25 transition hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save class="h-4 w-4" />
           {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}

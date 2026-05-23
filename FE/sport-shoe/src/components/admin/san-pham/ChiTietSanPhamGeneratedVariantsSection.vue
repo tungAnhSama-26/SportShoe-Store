@@ -29,7 +29,7 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
-  draftColorImages: {
+  draftVariantImages: {
     type: Object,
     default: () => ({}),
   },
@@ -136,18 +136,16 @@ const hasGeneratedVariantFieldErrors = computed(() =>
 
 const saveConfirmationDetails = computed(() => {
   const variantCount = props.generatedVariants.length;
-  const colorCount = props.representativeGeneratedVariants.length;
-  const imageColorCount = Object.values(props.draftColorImages || {}).filter(
+  const imageColorCount = Object.values(props.draftVariantImages || {}).filter(
     (images) => Array.isArray(images) && images.length,
   ).length;
 
   const lines = [
     `${variantCount} biến thể sẽ được tạo.`,
-    `${colorCount} màu sắc.`,
   ];
 
   if (imageColorCount > 0) {
-    lines.push(`${imageColorCount} nhóm màu có ảnh đính kèm.`);
+    lines.push(`${imageColorCount} biến thể có ảnh đính kèm.`);
   }
 
   return {
@@ -463,31 +461,30 @@ async function handleSaveClick() {
     </div>
 
     <div
-      v-if="representativeGeneratedVariants.length"
+      v-if="generatedVariants.length"
       class="mt-6 rounded-[24px] border border-rose-100 bg-rose-50/60 p-5"
     >
       <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 class="text-sm font-medium text-slate-600">
-            Ảnh sản phẩm theo màu
+            Ảnh sản phẩm chi tiết
           </h2>
           <p class="mt-1 text-sm text-slate-500">
-            Mỗi nhóm ảnh đại diện cho một màu và sẽ được áp cho toàn bộ kích cỡ
-            cùng màu sau khi lưu chi tiết sản phẩm.
+            Thêm ảnh cho từng kích cỡ của màu sắc (biến thể) nếu muốn.
           </p>
         </div>
       </div>
 
       <div class="mt-5 grid gap-5">
         <BienTheImageManager
-          v-for="item in representativeGeneratedVariants"
-          :key="`draft-color-${item.mauSacId}`"
-          :ref="(instance) => setDraftImageManagerRef(item.mauSacId, instance)"
+          v-for="item in generatedVariants"
+          :key="`draft-variant-${item.key}`"
+          :ref="(instance) => setDraftImageManagerRef(item.key, instance)"
           :variant="item"
-          :draft-images="draftImagesForColor(item.mauSacId)"
-          :related-variants="relatedVariants(item.mauSacId)"
-          display-mode="color"
-          @change-draft-images="handleDraftImagesChange(item.mauSacId, $event)"
+          :draft-images="draftImagesForVariant(item.key)"
+          :related-variants="[]"
+          display-mode="variant"
+          @change-draft-images="handleDraftImagesChange(item.key, $event)"
           @error="emit('error', $event)"
         />
       </div>

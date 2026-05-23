@@ -20,6 +20,9 @@ const {
   loadingProducts,
   showProductDropdown,
   productResults,
+  paginatedProducts,
+  currentPage,
+  totalPages,
   productSearchLabel,
   cartItems,
   selectedProductDetail,
@@ -125,7 +128,9 @@ onBeforeRouteLeave(async (to, from, next) => {
     :product-keyword="productKeyword"
     :loading-products="loadingProducts"
     :show-product-dropdown="showProductDropdown"
-    :product-results="productResults"
+    :product-results="paginatedProducts"
+    :current-page="currentPage"
+    :total-pages="totalPages"
     :product-search-label="productSearchLabel"
     :cart-items="cartItems"
     :selected-product-detail="selectedProductDetail"
@@ -176,11 +181,12 @@ onBeforeRouteLeave(async (to, from, next) => {
     @select-guest="chonKhachVangLai"
     @clear-customer="boChonKhachHang"
     @update:product-keyword="productKeyword = $event"
-     @focus-product="moDanhSachSanPham"
-     @blur-product="dongDanhSachSanPham"
-     @open-product="moChiTietSanPham"
-     @scan-product="handleProductQrScan"
-     @increase-item="tangSoLuong"
+    @update:current-page="currentPage = $event"
+    @focus-product="moDanhSachSanPham"
+    @blur-product="dongDanhSachSanPham"
+    @open-product="moChiTietSanPham"
+    @scan-product="handleProductQrScan"
+    @increase-item="tangSoLuong"
     @decrease-item="giamSoLuong"
     @close-product-detail="dongChiTietSanPham"
     @select-color="chonMauSac"

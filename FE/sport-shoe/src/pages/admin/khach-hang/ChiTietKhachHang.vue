@@ -193,14 +193,24 @@ async function luu() {
         const emailDaNhap = form.value.email.trim();
         const matKhauDaTao = form.value.matKhau;
         const tenDangNhapDaTao = form.value.tenDangNhap;
+        const emailGuiThanhCong = result.emailDaGuiThanhCong !== false;
+        const noiDungThanhCong = emailDaNhap
+          ? `Đã gửi thông tin đăng nhập tới email: ${emailDaNhap} | Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`
+          : `Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`;
+        const noiDungCanhBao = [
+          emailDaNhap ? `Email tài khoản: ${emailDaNhap}` : "",
+          result.canhBaoEmail || (emailDaNhap ? `Chưa gửi được email tới ${emailDaNhap}` : ""),
+          `Tên đăng nhập: ${tenDangNhapDaTao}`,
+          `Mật khẩu: ${matKhauDaTao}`,
+        ].filter(Boolean).join(" | ");
         window.sessionStorage.setItem(
           CUSTOMER_CREATE_TOAST_KEY,
           JSON.stringify({
-            loai: "success",
-            tieuDe: "Đã tạo khách hàng mới",
-            noiDung: emailDaNhap
-              ? `Email đã lưu: ${emailDaNhap} | Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`
-              : `Tên đăng nhập: ${tenDangNhapDaTao} | Mật khẩu: ${matKhauDaTao}`,
+            loai: emailGuiThanhCong ? "success" : "error",
+            tieuDe: emailGuiThanhCong
+              ? "Đã tạo khách hàng mới"
+              : "Đã tạo khách hàng nhưng chưa gửi được email",
+            noiDung: emailGuiThanhCong ? noiDungThanhCong : noiDungCanhBao,
           }),
         );
       }

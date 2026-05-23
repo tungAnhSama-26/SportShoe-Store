@@ -78,7 +78,7 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
         </tr>
         <tr v-if="!cartItems.length">
           <td colspan="5" class="px-5 py-14 text-center text-sm text-slate-400">
-            Chọn sản phẩm từ ô tìm kiếm để đưa vào hóa đơn.
+            Giỏ hàng trống.
           </td>
         </tr>
       </tbody>

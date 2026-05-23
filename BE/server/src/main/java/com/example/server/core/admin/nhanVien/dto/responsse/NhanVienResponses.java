@@ -24,6 +24,9 @@ public final class NhanVienResponses {
             String tenVaiTro,
             Integer trangThai,
             String tenTrangThai,
-            Instant ngayTao
+            Instant ngayTao,
+            String matKhauTamThoi,
+            Boolean emailDaGuiThanhCong,
+            String canhBaoEmail
     ) {}
 }

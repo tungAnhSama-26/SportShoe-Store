@@ -439,8 +439,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-3">
-          <label class="space-y-2">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <label class="min-w-0 space-y-2">
             <span class="admin-filter-label mb-1">Thương hiệu</span>
             <select
               v-model.number="filters.thuongHieuId"
@@ -458,7 +458,7 @@ onUnmounted(() => {
             </select>
           </label>
 
-          <label class="space-y-2">
+          <label class="min-w-0 space-y-2">
             <span class="admin-filter-label mb-1">Loại giày</span>
             <select
               v-model.number="filters.loaiGiayId"
@@ -475,7 +475,7 @@ onUnmounted(() => {
               </option>
             </select>
           </label>
-          <label class="space-y-2">
+          <label class="min-w-0 space-y-2">
             <span class="admin-filter-label mb-1">Trạng thái</span>
             <select
               v-model.number="filters.trangThai"
