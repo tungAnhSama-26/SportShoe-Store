@@ -236,9 +236,8 @@ CREATE TABLE dot_giam_gia (
     ngay_tao       DATETIME2     NOT NULL CONSTRAINT df_dgg_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat  DATETIME2     NULL,
     CONSTRAINT uq_dot_giam_gia_ma UNIQUE (ma),
-    CONSTRAINT ck_dot_giam_gia_loai CHECK (loai_giam IN (1, 2)),
-    CONSTRAINT ck_dot_giam_gia_gia_tri CHECK (gia_tri_giam > 0),
-    CONSTRAINT ck_dot_giam_gia_phan_tram CHECK (loai_giam <> 1 OR gia_tri_giam <= 100),
+    CONSTRAINT ck_dot_giam_gia_loai CHECK (loai_giam = 1),
+    CONSTRAINT ck_dot_giam_gia_gia_tri CHECK (gia_tri_giam > 0 AND gia_tri_giam <= 100),
     CONSTRAINT ck_dot_giam_gia_kich_hoat CHECK (kich_hoat IN (0, 1, 2, 4)),
     CONSTRAINT ck_dot_giam_gia_thoi_gian CHECK (
         ngay_ket_thuc IS NULL OR ngay_bat_dau IS NULL OR ngay_ket_thuc >= ngay_bat_dau
