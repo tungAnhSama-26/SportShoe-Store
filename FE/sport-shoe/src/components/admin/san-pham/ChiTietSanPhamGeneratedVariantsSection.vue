@@ -62,39 +62,71 @@ const draftImageManagerRefs = ref({});
 const showSaveConfirmModal = ref(false);
 
 function parseNumericValue(value) {
+  if (value === null || value === undefined || value === "") return 0;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function buildNegativeFieldError(label, value) {
-  return parseNumericValue(value) < 0 ? `${label} không được âm` : "";
+function buildNumberFieldError(label, value, { allowZero = true } = {}) {
+  const parsed = parseNumericValue(value);
+  if (parsed < 0) return `${label} không được âm`;
+  if (!allowZero && parsed <= 0) return `${label} phải lớn hơn 0`;
+  return "";
 }
 
 const defaultFieldErrors = computed(() => ({
-  soLuong: buildNegativeFieldError(
+  soLuong: buildNumberFieldError(
     "Số lượng mặc định",
     props.variantBuilder.soLuong,
   ),
-  giaGoc: buildNegativeFieldError(
-    "Giá gốc mặc định",
-    props.variantBuilder.giaGoc,
-  ),
-  giaBan: buildNegativeFieldError(
-    "Giá bán mặc định",
-    props.variantBuilder.giaBan,
-  ),
+  giaGoc: (() => {
+    const priceError = buildNumberFieldError(
+      "Giá gốc mặc định",
+      props.variantBuilder.giaGoc,
+      { allowZero: false },
+    );
+    if (priceError) return priceError;
+    const giaGoc = parseNumericValue(props.variantBuilder.giaGoc);
+    const giaBan = parseNumericValue(props.variantBuilder.giaBan);
+    return giaGoc > 0 && giaBan > 0 && giaGoc > giaBan
+      ? "Giá gốc mặc định không được lớn hơn giá bán mặc định"
+      : "";
+  })(),
+  giaBan: (() => {
+    const priceError = buildNumberFieldError(
+      "Giá bán mặc định",
+      props.variantBuilder.giaBan,
+      { allowZero: false },
+    );
+    return priceError;
+  })(),
 }));
 
 const generatedVariantFieldErrors = computed(() =>
   Object.fromEntries(
-    props.generatedVariants.map((item) => [
-      item.key,
-      {
-        soLuong: buildNegativeFieldError("Số lượng", item.soLuong),
-        giaGoc: buildNegativeFieldError("Giá gốc", item.giaGoc),
-        giaBan: buildNegativeFieldError("Giá bán", item.giaBan),
-      },
-    ]),
+    props.generatedVariants.map((item) => {
+      const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, {
+        allowZero: false,
+      });
+      const giaBanError = buildNumberFieldError("Giá bán", item.giaBan, {
+        allowZero: false,
+      });
+
+      return [
+        item.key,
+        {
+          soLuong: buildNumberFieldError("Số lượng", item.soLuong),
+          giaGoc:
+            giaGocError ||
+            (parseNumericValue(item.giaGoc) > 0 &&
+            parseNumericValue(item.giaBan) > 0 &&
+            parseNumericValue(item.giaGoc) > parseNumericValue(item.giaBan)
+              ? "Giá gốc không được lớn hơn giá bán"
+              : ""),
+          giaBan: giaBanError,
+        },
+      ];
+    }),
   ),
 );
 
@@ -167,33 +199,53 @@ function resolveFieldError(localError, parentError) {
   return localError || parentError || "";
 }
 
+function collectValidationMessages(errors, limit = 4) {
+  const messages = Object.values(errors || {})
+    .flatMap((value) => {
+      if (typeof value === "string") return [value];
+      if (value && typeof value === "object") return Object.values(value);
+      return [];
+    })
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => value.trim());
+
+  const uniqueMessages = [...new Set(messages)];
+  if (!uniqueMessages.length) return "";
+
+  const visibleMessages = uniqueMessages.slice(0, limit).join("; ");
+  const hiddenCount = uniqueMessages.length - limit;
+  return hiddenCount > 0
+    ? `${visibleMessages}; và ${hiddenCount} lỗi khác`
+    : visibleMessages;
+}
+
 function relatedVariants(mauSacId) {
   return props.generatedVariants.filter(
     (item) => Number(item.mauSacId) === Number(mauSacId),
   );
 }
 
-function draftImagesForColor(mauSacId) {
-  return props.draftColorImages[String(mauSacId)] || [];
+function draftImagesForVariant(variantKey) {
+  return props.draftVariantImages[String(variantKey)] || [];
 }
 
-function handleDraftImagesChange(mauSacId, images) {
-  emit("change-draft-images", { mauSacId, images });
+function handleDraftImagesChange(variantKey, images) {
+  emit("change-draft-images", { variantKey, images });
 }
 
-function setDraftImageManagerRef(mauSacId, instance) {
-  const colorKey = String(mauSacId);
+function setDraftImageManagerRef(variantKey, instance) {
+  const draftKey = String(variantKey);
   if (instance) {
-    draftImageManagerRefs.value[colorKey] = instance;
+    draftImageManagerRefs.value[draftKey] = instance;
     return;
   }
 
-  delete draftImageManagerRefs.value[colorKey];
+  delete draftImageManagerRefs.value[draftKey];
 }
 
 async function commitPendingDraftImages() {
-  for (const item of props.representativeGeneratedVariants) {
-    const manager = draftImageManagerRefs.value[String(item.mauSacId)];
+  for (const item of props.generatedVariants) {
+    const manager = draftImageManagerRefs.value[String(item.key)];
     if (!manager?.commitPendingForm) continue;
 
     const committed = await manager.commitPendingForm();
@@ -207,9 +259,12 @@ async function commitPendingDraftImages() {
 
 function handleApplyDefaults() {
   if (hasDefaultFieldErrors.value) {
+    const detailMessage = collectValidationMessages(defaultFieldErrors.value);
     emit(
       "error",
-      "Vui lòng sửa các giá trị mặc định đang bị âm trước khi áp dụng.",
+      detailMessage
+        ? `Vui lòng sửa giá trị mặc định: ${detailMessage}`
+        : "Vui lòng sửa số lượng và giá mặc định trước khi áp dụng.",
     );
     return;
   }
@@ -245,7 +300,16 @@ function confirmSave() {
 
 async function handleSaveClick() {
   if (hasDefaultFieldErrors.value || hasGeneratedVariantFieldErrors.value) {
-    emit("error", "Vui lòng sửa các giá trị âm trước khi lưu.");
+    const detailMessage = collectValidationMessages({
+      ...defaultFieldErrors.value,
+      ...generatedVariantFieldErrors.value,
+    });
+    emit(
+      "error",
+      detailMessage
+        ? `Vui lòng sửa biến thể: ${detailMessage}`
+        : "Vui lòng sửa số lượng và giá của biến thể trước khi lưu.",
+    );
     return;
   }
 

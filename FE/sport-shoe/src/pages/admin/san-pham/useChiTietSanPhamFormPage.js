@@ -38,6 +38,7 @@ export function useChiTietSanPhamFormPage() {
     loadingInit,
     saving,
     currentProductId,
+    existingProductVariants,
     createdVariants,
     createdImageManagerRefs,
     productForm,
@@ -582,18 +583,80 @@ export function useChiTietSanPhamFormPage() {
       Object.entries(draftVariantImages.value || {}).filter(([variantKey]) => !savedVariantKeys.has(variantKey))
     )
   }
+  function collectValidationMessages(errors, limit = 4) {
+    const messages = Object.values(errors || {})
+      .flatMap((value) => Array.isArray(value) ? value : [value])
+      .filter((value) => typeof value === 'string' && value.trim())
+      .map((value) => value.trim())
+
+    const uniqueMessages = [...new Set(messages)]
+    if (!uniqueMessages.length) {
+      return ''
+    }
+
+    const visibleMessages = uniqueMessages.slice(0, limit).join('; ')
+    const hiddenCount = uniqueMessages.length - limit
+    return hiddenCount > 0
+      ? `${visibleMessages}; và ${hiddenCount} lỗi khác`
+      : visibleMessages
+  }
+  function variantCombinationKey(variant) {
+    return `${Number(variant?.mauSacId || 0)}-${Number(variant?.kichCoId || 0)}`
+  }
+  function getVariantDisplayName(variant) {
+    const color = String(variant?.mauSac || '').trim() || `Màu #${variant?.mauSacId || '?'}`
+    const size = String(variant?.kichCo || '').trim() || `#${variant?.kichCoId || '?'}`
+    return `${color} / ${size}`
+  }
+  function splitNewAndExistingVariants(variants) {
+    if (!isExistingProduct.value) {
+      return { newVariants: variants, skippedVariants: [] }
+    }
+
+    const existingKeys = new Set(
+      (existingProductVariants.value || []).map((variant) => variantCombinationKey(variant))
+    )
+    return (variants || []).reduce(
+      (result, variant) => {
+        if (existingKeys.has(variantCombinationKey(variant))) {
+          result.skippedVariants.push(variant)
+        } else {
+          result.newVariants.push(variant)
+        }
+        return result
+      },
+      { newVariants: [], skippedVariants: [] }
+    )
+  }
   async function handleSave() {
     if (!validateProductForm()) {
-      showToast('Vui lòng sửa các lỗi trong form sản phẩm trước khi lưu', 'error')
+      const detailMessage = collectValidationMessages(productErrors)
+      showToast(
+        detailMessage
+          ? `Vui lòng sửa form sản phẩm: ${detailMessage}`
+          : 'Vui lòng sửa các lỗi trong form sản phẩm trước khi lưu',
+        'error'
+      )
       return
     }
     if (!generatedVariants.value.length) {
       showToast('Vui lòng tạo ít nhất một biến thể sản phẩm', 'error')
       return
     }
+    const { newVariants, skippedVariants } = splitNewAndExistingVariants(generatedVariants.value)
+    if (!newVariants.length) {
+      const skippedNames = skippedVariants.slice(0, 4).map(getVariantDisplayName).join('; ')
+      showToast(
+        skippedNames
+          ? `Các biến thể đã tồn tại, vui lòng chọn màu/size khác: ${skippedNames}`
+          : 'Các biến thể đã tạo đều đã tồn tại trong sản phẩm này',
+        'error'
+      )
+      return
+    }
     saving.value = true
     try {
-      const variantsPayload = generatedVariants.value.map((variant) => ({
+      const variantsPayload = newVariants.map((variant) => ({
         mauSacId: variant.mauSacId,
         kichCoId: variant.kichCoId,
         soLuong: variant.soLuong,
@@ -625,17 +688,25 @@ export function useChiTietSanPhamFormPage() {
         }
       }
       createdVariants.value = variantsResult?.bienThes || []
+      existingProductVariants.value = [
+        ...(existingProductVariants.value || []),
+        ...createdVariants.value
+      ]
       const syncedDraftImages = await syncDraftImagesToVariants(createdVariants.value)
       clearSavedDraftImages(createdVariants.value)
+      const skippedNames = skippedVariants.slice(0, 3).map(getVariantDisplayName).join('; ')
+      const skippedMessage = skippedVariants.length
+        ? ` Đã bỏ qua ${skippedVariants.length} biến thể đã tồn tại${skippedNames ? `: ${skippedNames}` : ''}.`
+        : ''
       if (syncedDraftImages) {
-        showToast('Lưu sản phẩm và đồng bộ ảnh thành công!', 'success')
+        showToast(`Lưu sản phẩm và đồng bộ ảnh thành công!${skippedMessage}`, 'success')
         return
       }
-      showToast('Lưu sản phẩm thành công!', 'success')
+      showToast(`Lưu sản phẩm thành công!${skippedMessage}`, 'success')
     } catch (error) {
       console.error('Error saving product:', error)
-      const firstFieldError = Object.values(getFieldErrors(error)).find(Boolean)
-      showToast(firstFieldError || getDisplayErrorMessage(error), 'error')
+      const fieldErrorSummary = collectValidationMessages(getFieldErrors(error))
+      showToast(fieldErrorSummary || getDisplayErrorMessage(error), 'error')
     } finally {
       saving.value = false
     }
@@ -651,5 +722,5 @@ export function useChiTietSanPhamFormPage() {
   onBeforeUnmount(() => {
     document.removeEventListener('mousedown', handleDocumentClick)
   })
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftColorImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForColor, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
 }

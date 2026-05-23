@@ -284,7 +284,7 @@ public class QuanLySanPhamService {
                 gct.getKichCo().getGiaTri(),
                 gct.getSoLuong(),
                 gct.getGiaGoc(),
-                gct.getGiaBan(),
+                activeDiscount != null ? activeDiscount.giaSauGiam() : gct.getGiaBan(),
                 gct.getKichHoat(),
                 imageMap.get(gct.getId()),
                 gct.getNgayTao(),
@@ -741,7 +741,9 @@ public class QuanLySanPhamService {
     private BienTheResponse toBienThe(GiayChiTiet gct, ActiveDiscountInfo activeDiscount) {
         return new BienTheResponse(
                 gct.getId(), gct.getMaBienThe(), gct.getSku(),
-                gct.getSoLuong(), gct.getGiaGoc(), gct.getGiaBan(), gct.getKichHoat(),
+                gct.getSoLuong(), gct.getGiaGoc(),
+                activeDiscount != null ? activeDiscount.giaSauGiam() : gct.getGiaBan(),
+                gct.getKichHoat(),
                 gct.getMauSac().getId(), gct.getMauSac().getTen(), gct.getMauSac().getMaMauHex(),
                 gct.getKichCo().getId(), gct.getKichCo().getGiaTri(),
                 gct.getNgayTao(), gct.getNgayCapNhat(),
@@ -1013,8 +1015,8 @@ public class QuanLySanPhamService {
             putError(errors, giaBanKey, "Giá bán phải lớn hơn 0");
         }
 
-        if (giaGoc != null && giaBan != null && giaBan.compareTo(giaGoc) > 0) {
-            putError(errors, giaBanKey, "Giá bán không được lớn hơn giá gốc");
+        if (giaGoc != null && giaBan != null && giaGoc.compareTo(giaBan) > 0) {
+            putError(errors, giaGocKey, "Giá gốc không được lớn hơn giá bán");
         }
 
         if (
@@ -1048,8 +1050,8 @@ public class QuanLySanPhamService {
             putError(errors, "giaBan", "Giá bán phải lớn hơn 0");
         }
 
-        if (req.giaGoc() != null && req.giaBan() != null && req.giaBan().compareTo(req.giaGoc()) > 0) {
-            putError(errors, "giaBan", "Giá bán không được lớn hơn giá gốc");
+        if (req.giaGoc() != null && req.giaBan() != null && req.giaGoc().compareTo(req.giaBan()) > 0) {
+            putError(errors, "giaGoc", "Giá gốc không được lớn hơn giá bán");
         }
 
         if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
@@ -1163,7 +1165,7 @@ public class QuanLySanPhamService {
                 continue;
             }
 
-            BigDecimal giaSauGiam = calculateDiscountedPrice(gct.getGiaGoc(), dotGiamGia);
+            BigDecimal giaSauGiam = calculateDiscountedPrice(gct.getGiaBan(), dotGiamGia);
             ActiveDiscountInfo current = result.get(gct.getId());
             if (current == null || giaSauGiam.compareTo(current.giaSauGiam()) < 0) {
                 result.put(

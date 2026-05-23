@@ -57,6 +57,14 @@ function isDiscounted(product) {
   return Boolean(product?.coGiamGia) || Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
 }
 
+function formatDiscountPercent(product) {
+  const giaGoc = Number(product?.giaGoc || 0);
+  const giaBan = Number(product?.giaBan || 0);
+  if (giaGoc <= 0 || giaBan >= giaGoc) return "";
+  const pct = ((giaGoc - giaBan) / giaGoc) * 100;
+  return pct % 1 === 0 ? `-${pct.toFixed(0)}%` : `-${pct.toFixed(1)}%`;
+}
+
 function moQuetQr() {
   showQrScanner.value = true;
 }
@@ -131,7 +139,7 @@ function xuLyMaQuet(value) {
                   v-if="isDiscounted(product)"
                   class="absolute left-2 top-2 inline-flex rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm"
                 >
-                  GIẢM GIÁ
+                  {{ formatDiscountPercent(product) || 'GIẢM GIÁ' }}
                 </span>
               </div>
 

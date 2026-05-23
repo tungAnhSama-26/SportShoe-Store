@@ -77,8 +77,21 @@ const normalizedOptions = computed(() =>
   }))
 )
 
+function isSameOptionValue(left, right) {
+  if (left == null || right == null) return false
+  if (left === right) return true
+
+  const leftNumber = Number(left)
+  const rightNumber = Number(right)
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+    return leftNumber === rightNumber
+  }
+
+  return String(left) === String(right)
+}
+
 const selectedOption = computed(() =>
-  normalizedOptions.value.find((item) => item.value === props.modelValue) || null
+  normalizedOptions.value.find((item) => isSameOptionValue(item.value, props.modelValue)) || null
 )
 
 const filteredOptions = computed(() => {
@@ -239,7 +252,7 @@ onBeforeUnmount(() => {
           :key="`${option.value}`"
           type="button"
           class="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
-          :class="option.value === modelValue ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
+          :class="isSameOptionValue(option.value, modelValue) ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
           @mousedown.prevent="selectValue(option.value)"
         >
           <div class="min-w-0">
@@ -255,7 +268,7 @@ onBeforeUnmount(() => {
               {{ option.description }}
             </p>
           </div>
-          <Check v-if="option.value === modelValue" :size="15" class="mt-0.5 shrink-0" />
+          <Check v-if="isSameOptionValue(option.value, modelValue)" :size="15" class="mt-0.5 shrink-0" />
         </button>
 
         <div

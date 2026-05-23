@@ -21,9 +21,10 @@ function getFirstFieldError(errors) {
     return "";
   }
 
-  return Object.values(errors)
-    .find((value) => typeof value === "string" && value.trim())
-    ?.trim() ?? "";
+  const entry = Object.entries(errors)
+    .find(([, value]) => typeof value === "string" && value.trim());
+
+  return entry ? sanitizeErrorMessage(entry[1], entry[1], entry[0]) : "";
 }
 
 function buildHeaders(init, authenticated) {

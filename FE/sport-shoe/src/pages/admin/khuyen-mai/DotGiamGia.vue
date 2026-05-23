@@ -12,7 +12,7 @@ const router = useRouter();
 
 const dangTai = ref(false);
 const loiTrang = ref("");
-const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" });
+const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "" });
 const danhSach = ref([]);
 const tongSoTrang = ref(1);
 const soPhanTuMotTrang = ref(5);
@@ -25,12 +25,6 @@ const dsTrangThai = [
   { label: "Ngừng hoạt động", value: "0" },
   { label: "Hết hạn", value: "het_han" },
   { label: "Sắp diễn ra", value: "4" },
-];
-
-const dsLoaiGiam = [
-  { label: "Tất cả", value: "" },
-  { label: "Phần trăm", value: "1" },
-  { label: "Tiền mặt", value: "2" },
 ];
 
 function isHetHan(ngayKetThuc) {
@@ -73,7 +67,6 @@ async function taiDanhSach() {
       trangThai: (!isFilterHetHan && boLoc.value.trangThai !== "")
         ? Number(boLoc.value.trangThai)
         : undefined,
-      loaiGiam: boLoc.value.loaiGiam !== "" ? Number(boLoc.value.loaiGiam) : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
       pageNo: trangHienTai.value - 1,
@@ -106,7 +99,7 @@ async function taiDanhSach() {
 }
 
 function lamMoiBoLoc() {
-  boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "", loaiGiam: "" };
+  boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "" };
 }
 
 async function nhanhDoiTrangThai(item) {
@@ -125,7 +118,6 @@ async function xuatExcel() {
     const data = await getDotGiamGiaList({
       keyword: boLoc.value.keyword || undefined,
       trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
-      loaiGiam: boLoc.value.loaiGiam !== "" ? Number(boLoc.value.loaiGiam) : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
       pageNo: 0,
@@ -145,8 +137,7 @@ async function xuatExcel() {
         { label: "STT", value: (_, index) => index + 1 },
         { label: "Mã", key: "ma" },
         { label: "Tên", key: "ten" },
-        { label: "Loại giảm", value: (row) => Number(row.loaiGiam) === 1 ? "Phần trăm" : "Tiền mặt" },
-        { label: "Giá trị", key: "giaTriGiam" },
+        { label: "Giá trị giảm", value: (row) => row.giaTriGiam + "%" },
         { label: "Ngày bắt đầu", value: (row) => toDisplayDate(row.ngayBatDau) },
         { label: "Ngày kết thúc", value: (row) => toDisplayDate(row.ngayKetThuc) },
         { label: "Trạng thái", value: (row) => statusText(row.kichHoat) },
@@ -198,7 +189,7 @@ onMounted(taiDanhSach);
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="space-y-2">
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
@@ -215,13 +206,6 @@ onMounted(taiDanhSach);
           <div class="space-y-2">
             <label class="admin-filter-label">Ngày kết thúc</label>
             <input v-model="boLoc.denNgay" type="date" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
-          </div>
-
-          <div class="space-y-2">
-            <label class="admin-filter-label">Hình thức</label>
-            <select v-model="boLoc.loaiGiam" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-              <option v-for="lg in dsLoaiGiam" :key="lg.value" :value="lg.value">{{ lg.label }}</option>
-            </select>
           </div>
 
           <div class="space-y-2">
@@ -294,7 +278,7 @@ onMounted(taiDanhSach);
                 <div class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900">{{ item.ten }}</div>
               </td>
               <td class="px-4 py-3 font-bold text-slate-800">
-                {{ item.giaTriGiam }}{{ Number(item.loaiGiam) === 1 ? "%" : " đ" }}
+                {{ item.giaTriGiam }}%
               </td>
               <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
               <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>

@@ -67,6 +67,12 @@ function formatCurrency(value) {
   return Number(value || 0).toLocaleString("vi-VN");
 }
 
+function normalizeFilterNumber(value) {
+  if (value === null || value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : undefined;
+}
+
 function formatPriceRange(minValue, maxValue) {
   if (minValue == null && maxValue == null) return "Chưa có giá";
   if (minValue === maxValue || maxValue == null)
@@ -192,9 +198,9 @@ async function loadData(page = 0) {
   try {
     const response = await api.layDanhSachGiay({
       keyword: filters.keyword.trim() || undefined,
-      thuongHieuId: filters.thuongHieuId,
-      loaiGiayId: filters.loaiGiayId,
-      trangThai: filters.trangThai,
+      thuongHieuId: normalizeFilterNumber(filters.thuongHieuId),
+      loaiGiayId: normalizeFilterNumber(filters.loaiGiayId),
+      trangThai: normalizeFilterNumber(filters.trangThai),
       page,
       size: pageSize.value,
     });
@@ -326,9 +332,9 @@ async function xuatExcel() {
   try {
     const response = await api.layDanhSachGiay({
       keyword: filters.keyword.trim() || undefined,
-      thuongHieuId: filters.thuongHieuId,
-      loaiGiayId: filters.loaiGiayId,
-      trangThai: filters.trangThai,
+      thuongHieuId: normalizeFilterNumber(filters.thuongHieuId),
+      loaiGiayId: normalizeFilterNumber(filters.loaiGiayId),
+      trangThai: normalizeFilterNumber(filters.trangThai),
       page: 0,
       size: Math.max(totalItems.value, pageSize.value),
     });
