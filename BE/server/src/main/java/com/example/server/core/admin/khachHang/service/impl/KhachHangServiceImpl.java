@@ -13,6 +13,7 @@ import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.service.EmailService;
+import com.example.server.infrastructure.service.EmailService.EmailDispatchResult;
 import com.example.server.repository.DiaChiKhachHangRepository;
 import com.example.server.repository.KhachHangRepository;
 import org.springframework.stereotype.Service;
@@ -82,8 +83,9 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgayTao(Instant.now());
 
         KhachHang saved = khachHangRepository.save(kh);
+        EmailDispatchResult emailDispatchResult = null;
         if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
-            emailService.sendCustomerRegistrationEmail(
+            emailDispatchResult = emailService.trySendCustomerRegistrationEmail(
                     saved.getEmail(),
                     saved.getHoTen(),
                     saved.getTenDangNhap(),
@@ -91,7 +93,7 @@ public class KhachHangServiceImpl implements KhachHangService {
             );
         }
 
-        return toKhachHangResponse(saved);
+        return toKhachHangResponse(saved, emailDispatchResult);
     }
 
     @Override
@@ -278,6 +280,10 @@ public class KhachHangServiceImpl implements KhachHangService {
     }
 
     private KhachHangResponse toKhachHangResponse(KhachHang kh) {
+        return toKhachHangResponse(kh, null);
+    }
+
+    private KhachHangResponse toKhachHangResponse(KhachHang kh, EmailDispatchResult emailDispatchResult) {
         String diaChiMacDinh = diaChiKhachHangRepository
                 .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId())
                 .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
@@ -293,7 +299,9 @@ public class KhachHangServiceImpl implements KhachHangService {
                 kh.getTrangThai(),
                 kh.getTrangThai() == 1 ? "Hoạt động" : "Khóa",
                 kh.getNgayTao(),
-                diaChiMacDinh
+                diaChiMacDinh,
+                emailDispatchResult != null ? emailDispatchResult.sent() : null,
+                emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null
         );
     }
 

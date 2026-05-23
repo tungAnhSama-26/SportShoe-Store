@@ -58,7 +58,7 @@ export function useChiTietSanPhamFormPage() {
     variantBuilder,
     variantErrors,
     generatedVariants,
-    draftColorImages,
+    draftVariantImages,
     mauSacSearch,
     kichCoSearch,
     openVariantDropdown,
@@ -70,7 +70,7 @@ export function useChiTietSanPhamFormPage() {
     toggleSelectedValue,
     clearSelectedValues,
     appendSelectedValue,
-    updateDraftImagesForColor
+    updateDraftImagesForVariant
   } = useVariantBuilder()
   const { toast, showToast } = useToast()
   const inlineCreatingType = ref(null)
@@ -414,7 +414,6 @@ export function useChiTietSanPhamFormPage() {
     const previousAutoHex = generateHexColorFromText(previousTen)
     Object.assign(quickCreateForm, nextForm)
     if (quickCreateType.value === 'mauSac') {
-      quickCreateForm.ten = normalizeRequiredText(quickCreateForm.ten)
       quickCreateForm.ma = generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
       if (!isValidHexColor(quickCreateForm.maMauHex)) {
         quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
@@ -526,6 +525,12 @@ export function useChiTietSanPhamFormPage() {
       showToast(message, 'success')
     }
   }
+  function draftImagesForVariant(variantKey) {
+    return draftVariantImages.value[String(variantKey)] || []
+  }
+  function handleDraftImagesChange(variantKey, images) {
+    updateDraftImagesForVariant(variantKey, images)
+  }
   function buildDraftImagePayload(image) {
     const url = String(image?.url || '').trim()
     if (!url) {
@@ -538,15 +543,18 @@ export function useChiTietSanPhamFormPage() {
     }
   }
   async function syncDraftImagesToVariants(variants) {
-    const draftEntries = Object.entries(draftColorImages.value || {}).filter(([, images]) =>
+    const draftEntries = Object.entries(draftVariantImages.value || {}).filter(([, images]) =>
       Array.isArray(images) && images.length
     )
     if (!draftEntries.length || !Array.isArray(variants) || !variants.length) {
       return false
     }
-    for (const [mauSacId, draftImages] of draftEntries) {
+    for (const [variantKey, draftImages] of draftEntries) {
+      const [mauSacIdStr, kichCoIdStr] = variantKey.split('-')
+      const mauSacId = Number(mauSacIdStr)
+      const kichCoId = Number(kichCoIdStr)
       const relatedVariants = variants.filter(
-        (variant) => Number(variant?.id) > 0 && Number(variant?.mauSacId) === Number(mauSacId)
+        (variant) => Number(variant?.id) > 0 && Number(variant?.mauSacId) === mauSacId && Number(variant?.kichCoId) === kichCoId
       )
       if (!relatedVariants.length) {
         continue
@@ -564,14 +572,14 @@ export function useChiTietSanPhamFormPage() {
     return true
   }
   function clearSavedDraftImages(variants) {
-    const savedColorIds = new Set(
-      (variants || []).map((item) => String(item?.mauSacId)).filter(Boolean)
+    const savedVariantKeys = new Set(
+      (variants || []).map((item) => `${item?.mauSacId}-${item?.kichCoId}`)
     )
-    if (!savedColorIds.size) {
+    if (!savedVariantKeys.size) {
       return
     }
-    draftColorImages.value = Object.fromEntries(
-      Object.entries(draftColorImages.value || {}).filter(([mauSacId]) => !savedColorIds.has(mauSacId))
+    draftVariantImages.value = Object.fromEntries(
+      Object.entries(draftVariantImages.value || {}).filter(([variantKey]) => !savedVariantKeys.has(variantKey))
     )
   }
   async function handleSave() {

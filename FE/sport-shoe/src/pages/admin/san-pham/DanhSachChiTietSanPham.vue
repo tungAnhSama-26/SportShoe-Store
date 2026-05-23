@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
+import BanHangQrScannerModal from '../../../components/admin/ban-hang/BanHangQrScannerModal.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import ProductVariantFilters from '../../../components/admin/san-pham/ProductVariantFilters.vue'
@@ -25,6 +26,8 @@ const selectedProduct = ref(null)
 const updatingStatusIds = reactive(new Set())
 const showQrModal = ref(false)
 const selectedQrItem = ref(null)
+
+const showScannerModal = ref(false)
 
 const filters = reactive({
   keyword: '',
@@ -242,6 +245,12 @@ function scheduleKeywordSearch() {
   }, 300)
 }
 
+function handleQrScan(code) {
+  filters.keyword = code
+  showScannerModal.value = false
+  loadData(0)
+}
+
 function clearProductFilter() {
   router.replace({ name: 'admin-bien-the-san-pham' })
 }
@@ -434,6 +443,7 @@ onUnmounted(() => {
       @go-to-form="goToForm"
       @load-data="loadData"
       @clear-product-filter="clearProductFilter"
+      @open-scanner="showScannerModal = true"
     />
 
     <ProductVariantTable
@@ -468,6 +478,12 @@ onUnmounted(() => {
       :primary-action-label="selectedQrItem?.primaryActionLabel"
       @close="closeQrModal"
       @primary-action="handleQrPrimaryAction"
+    />
+
+    <BanHangQrScannerModal
+      :open="showScannerModal"
+      @close="showScannerModal = false"
+      @scan="handleQrScan"
     />
 
     <Teleport to="body">

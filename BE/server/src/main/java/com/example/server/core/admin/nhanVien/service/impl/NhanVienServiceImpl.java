@@ -10,6 +10,7 @@ import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.service.EmailService;
+import com.example.server.infrastructure.service.EmailService.EmailDispatchResult;
 import com.example.server.repository.NhanVienRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,14 +98,14 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setNgayTao(Instant.now());
 
         NhanVien saved = nhanVienRepository.save(nv);
-        emailService.sendRegistrationEmail(
+        EmailDispatchResult emailDispatchResult = emailService.trySendRegistrationEmail(
                 saved.getEmail(),
                 saved.getHoTen(),
                 saved.getTenDangNhap(),
                 randomMatKhau
         );
 
-        return toItem(saved);
+        return toItem(saved, randomMatKhau, emailDispatchResult);
     }
 
     @Override
@@ -253,6 +254,10 @@ public class NhanVienServiceImpl implements NhanVienService {
     }
 
     private NhanVienResponse toItem(NhanVien nv) {
+        return toItem(nv, null, null);
+    }
+
+    private NhanVienResponse toItem(NhanVien nv, String matKhauTamThoi, EmailDispatchResult emailDispatchResult) {
         return new NhanVienResponse(
                 nv.getId(),
                 nv.getMa(),
@@ -269,7 +274,10 @@ public class NhanVienServiceImpl implements NhanVienService {
                 mapVaiTro(nv.getVaiTro()),
                 nv.getTrangThai(),
                 nv.getTrangThai() == 1 ? "Đang làm" : "Nghỉ làm",
-                nv.getNgayTao()
+                nv.getNgayTao(),
+                matKhauTamThoi,
+                emailDispatchResult != null ? emailDispatchResult.sent() : null,
+                emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null
         );
     }
 

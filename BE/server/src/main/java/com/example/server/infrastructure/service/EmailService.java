@@ -15,6 +15,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
+    public record EmailDispatchResult(boolean sent, String warningMessage) {
+        public static EmailDispatchResult success() {
+            return new EmailDispatchResult(true, null);
+        }
+
+        public static EmailDispatchResult failure(String warningMessage) {
+            return new EmailDispatchResult(false, warningMessage);
+        }
+    }
+
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private static final String SYSTEM_LOGIN_URL = "http://localhost:5173/login";
@@ -29,6 +39,13 @@ public class EmailService {
     }
 
     public void sendRegistrationEmail(String to, String fullName, String username, String password) {
+        EmailDispatchResult dispatchResult = trySendRegistrationEmail(to, fullName, username, password);
+        if (!dispatchResult.sent()) {
+            throw new BusinessException(dispatchResult.warningMessage());
+        }
+    }
+
+    public EmailDispatchResult trySendRegistrationEmail(String to, String fullName, String username, String password) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -37,8 +54,9 @@ public class EmailService {
             helper.setSubject("SportShoe Internal - Tài khoản hệ thống của bạn");
             helper.setText(buildRegistrationEmailHtml(fullName, username, password), true);
             mailSender.send(message);
+            return EmailDispatchResult.success();
         } catch (MessagingException | MailException exception) {
-            throw emailFailure(
+            return emailFailure(
                     "Không thể gửi email tài khoản nhân viên lúc này. Vui lòng thử lại.",
                     to,
                     exception
@@ -47,6 +65,13 @@ public class EmailService {
     }
 
     public void sendCustomerRegistrationEmail(String to, String fullName, String username, String password) {
+        EmailDispatchResult dispatchResult = trySendCustomerRegistrationEmail(to, fullName, username, password);
+        if (!dispatchResult.sent()) {
+            throw new BusinessException(dispatchResult.warningMessage());
+        }
+    }
+
+    public EmailDispatchResult trySendCustomerRegistrationEmail(String to, String fullName, String username, String password) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -55,8 +80,9 @@ public class EmailService {
             helper.setSubject("Chào mừng đến với SportShoe - Tài khoản của bạn");
             helper.setText(buildCustomerRegistrationEmailHtml(fullName, username, password), true);
             mailSender.send(message);
+            return EmailDispatchResult.success();
         } catch (MessagingException | MailException exception) {
-            throw emailFailure(
+            return emailFailure(
                     "Không thể gửi email tài khoản khách hàng lúc này. Vui lòng thử lại.",
                     to,
                     exception
@@ -81,11 +107,12 @@ public class EmailService {
             ));
             mailSender.send(message);
         } catch (MailException exception) {
-            throw emailFailure(
+            EmailDispatchResult dispatchResult = emailFailure(
                     "Không thể gửi mã xác nhận qua email lúc này. Vui lòng thử lại.",
                     to,
                     exception
             );
+            throw new BusinessException(dispatchResult.warningMessage());
         }
     }
 
@@ -419,9 +446,9 @@ public class EmailService {
                 .replace("__SYMBOL__", symbol);
     }
 
-    private BusinessException emailFailure(String userMessage, String recipient, Exception exception) {
+    private EmailDispatchResult emailFailure(String userMessage, String recipient, Exception exception) {
         log.error("Không thể gửi email tới {}", recipient, exception);
-        return new BusinessException(userMessage);
+        return EmailDispatchResult.failure(userMessage);
     }
 
     private String escapeHtml(String value) {

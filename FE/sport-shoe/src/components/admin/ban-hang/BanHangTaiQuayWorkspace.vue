@@ -1,6 +1,7 @@
 <script setup>
 import BanHangCartTable from "./BanHangCartTable.vue";
-import BanHangCustomerProductSection from "./BanHangCustomerProductSection.vue";
+import BanHangCustomerSection from "./BanHangCustomerSection.vue";
+import BanHangProductSection from "./BanHangProductSection.vue";
 import BanHangPendingInvoicesSection from "./BanHangPendingInvoicesSection.vue";
 import BanHangPaymentSection from "./BanHangPaymentSection.vue";
 import BanHangProductDetailModal from "./BanHangProductDetailModal.vue";
@@ -73,6 +74,14 @@ defineProps({
   productResults: {
     type: Array,
     default: () => []
+  },
+  currentPage: {
+    type: Number,
+    default: 1
+  },
+  totalPages: {
+    type: Number,
+    default: 1
   },
   productSearchLabel: {
     type: String,
@@ -250,6 +259,7 @@ const emit = defineEmits([
   "select-guest",
   "clear-customer",
   "update:productKeyword",
+  "update:currentPage",
   "focus-product",
   "blur-product",
   "open-product",
@@ -305,113 +315,135 @@ const emit = defineEmits([
     />
 
     <div class="grid gap-6 xl:grid-cols-[1.5fr_0.8fr]">
-      <section class="space-y-6 rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-        <BanHangCustomerProductSection
-          :customer-keyword="customerKeyword"
-          :loading-customers="loadingCustomers"
-          :show-customer-dropdown="showCustomerDropdown"
-          :customer-results="customerResults"
+      <div class="flex flex-col gap-6">
+        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <BanHangProductSection
+            :product-keyword="productKeyword"
+            :loading-products="loadingProducts"
+            :show-product-dropdown="showProductDropdown"
+            :product-results="productResults"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :product-search-label="productSearchLabel"
+            :dinh-dang-tien="dinhDangTien"
+            :so-luong-con-lai="soLuongConLai"
+            @update:product-keyword="emit('update:productKeyword', $event)"
+            @update:current-page="emit('update:currentPage', $event)"
+            @focus-product="emit('focus-product')"
+            @blur-product="emit('blur-product')"
+            @open-product="emit('open-product', $event)"
+            @scan-product="emit('scan-product', $event)"
+          />
+        </section>
+
+        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-slate-900">Giỏ hàng</h2>
+            <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+              {{ tongSoLuong }} sản phẩm
+            </span>
+          </div>
+
+          <BanHangCartTable
+            :cart-items="cartItems"
+            :dinh-dang-tien="dinhDangTien"
+            :so-luong-con-lai="soLuongConLai"
+            @increase-item="emit('increase-item', $event)"
+            @decrease-item="emit('decrease-item', $event)"
+          />
+        </section>
+      </div>
+
+      <div class="flex flex-col gap-6">
+        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <h2 class="mb-4 text-lg font-bold text-slate-900">Khách hàng</h2>
+          <BanHangCustomerSection
+            :customer-keyword="customerKeyword"
+            :loading-customers="loadingCustomers"
+            :show-customer-dropdown="showCustomerDropdown"
+            :customer-results="customerResults"
+            :ten-khach-hang-hien-thi="tenKhachHangHienThi"
+            :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
+            :selected-customer="selectedCustomer"
+            :is-guest-customer="isGuestCustomer"
+            @update:customer-keyword="emit('update:customerKeyword', $event)"
+            @focus-customer="emit('focus-customer')"
+            @blur-customer="emit('blur-customer')"
+            @select-customer="emit('select-customer', $event)"
+            @select-guest="emit('select-guest')"
+            @clear-customer="emit('clear-customer')"
+          />
+        </section>
+
+        <BanHangPaymentSection
+          :active-pending-invoice="activePendingInvoice"
+          :invoice-loading="invoiceLoading"
+          :tong-so-luong="tongSoLuong"
+          :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
+          :tien-giam="tienGiam"
+          :tong-tien="tongTien"
+          :san-pham-validation-message="sanPhamValidationMessage"
+          :coupon-code="couponCode"
+          :co-the-ap-dung-phieu="coTheApDungPhieu"
+          :applying-coupon="applyingCoupon"
+          :show-coupon-dropdown="showCouponDropdown"
+          :co-the-tim-phieu="coTheTimPhieu"
+          :loading-coupons="loadingCoupons"
+          :coupon-results="couponResults"
+          :applied-coupon="appliedCoupon"
+          :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
+          :khach-can-tra="khachCanTra"
+          :shipping-info="shippingInfo"
           :ten-khach-hang-hien-thi="tenKhachHangHienThi"
           :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
-          :selected-customer="selectedCustomer"
-          :is-guest-customer="isGuestCustomer"
-          :product-keyword="productKeyword"
-          :loading-products="loadingProducts"
-          :show-product-dropdown="showProductDropdown"
-          :product-results="productResults"
-          :product-search-label="productSearchLabel"
+          :payment-method="paymentMethod"
+          :amount-paid="amountPaid"
+          :payment-validation-message="paymentValidationMessage"
+          :tien-thua="tienThua"
+          :payment-note="paymentNote"
+          :can-create-pending-invoice="canCreatePendingInvoice"
+          :saving-pending-invoice="savingPendingInvoice"
+          :pending-invoice-limit-reached="pendingInvoiceLimitReached"
+          :can-pay="canPay"
+          :paying-invoice="payingInvoice"
+          :canceling-pending-invoice="cancelingPendingInvoice"
           :dinh-dang-tien="dinhDangTien"
-          :so-luong-con-lai="soLuongConLai"
-          @update:customer-keyword="emit('update:customerKeyword', $event)"
-          @focus-customer="emit('focus-customer')"
-          @blur-customer="emit('blur-customer')"
-          @select-customer="emit('select-customer', $event)"
-          @select-guest="emit('select-guest')"
-          @clear-customer="emit('clear-customer')"
-          @update:product-keyword="emit('update:productKeyword', $event)"
-          @focus-product="emit('focus-product')"
-          @blur-product="emit('blur-product')"
-          @open-product="emit('open-product', $event)"
-          @scan-product="emit('scan-product', $event)"
+          @update:coupon-code="emit('update:couponCode', $event)"
+          @focus-coupon="emit('focus-coupon')"
+          @blur-coupon="emit('blur-coupon')"
+          @apply-coupon="emit('apply-coupon')"
+          @select-coupon="emit('select-coupon', $event)"
+          @remove-coupon="emit('remove-coupon')"
+          @update-shipping="emit('update-shipping', $event)"
+          @calculate-shipping="emit('calculate-shipping')"
+          @update:payment-method="emit('update:paymentMethod', $event)"
+          @amount-input="emit('amount-input', $event)"
+          @update:payment-note="emit('update:paymentNote', $event)"
+          @create-pending-invoice="emit('create-pending-invoice')"
+          @pay-now="emit('pay-now')"
+          @cancel-pending-invoice="emit('cancel-pending-invoice')"
         />
-
-        <BanHangCartTable
-          :cart-items="cartItems"
-          :dinh-dang-tien="dinhDangTien"
-          :so-luong-con-lai="soLuongConLai"
-          @increase-item="emit('increase-item', $event)"
-          @decrease-item="emit('decrease-item', $event)"
-        />
-
-        <BanHangProductDetailModal
-          :selected-product-detail="selectedProductDetail"
-          :chi-tiet-dang-chon="chiTietDangChon"
-          :current-product-image="hinhAnhDangChon"
-          :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
-          :color-options="colorOptions"
-          :size-options="sizeOptions"
-          :selected-color="selectedColor"
-          :selected-size="selectedSize"
-          :selected-quantity="selectedQuantity"
-          :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
-          :dinh-dang-tien="dinhDangTien"
-          @close="emit('close-product-detail')"
-          @select-color="emit('select-color', $event)"
-          @select-size="emit('select-size', $event)"
-          @decrease-quantity="emit('decrease-quantity')"
-          @increase-quantity="emit('increase-quantity')"
-          @add-selected-variant="emit('add-selected-variant')"
-        />
-      </section>
-
-      <BanHangPaymentSection
-        :active-pending-invoice="activePendingInvoice"
-        :invoice-loading="invoiceLoading"
-        :tong-so-luong="tongSoLuong"
-        :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
-        :tien-giam="tienGiam"
-        :tong-tien="tongTien"
-        :san-pham-validation-message="sanPhamValidationMessage"
-        :coupon-code="couponCode"
-        :co-the-ap-dung-phieu="coTheApDungPhieu"
-        :applying-coupon="applyingCoupon"
-        :show-coupon-dropdown="showCouponDropdown"
-        :co-the-tim-phieu="coTheTimPhieu"
-        :loading-coupons="loadingCoupons"
-        :coupon-results="couponResults"
-        :applied-coupon="appliedCoupon"
-        :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
-        :khach-can-tra="khachCanTra"
-        :shipping-info="shippingInfo"
-        :ten-khach-hang-hien-thi="tenKhachHangHienThi"
-        :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
-        :payment-method="paymentMethod"
-        :amount-paid="amountPaid"
-        :payment-validation-message="paymentValidationMessage"
-        :tien-thua="tienThua"
-        :payment-note="paymentNote"
-        :can-create-pending-invoice="canCreatePendingInvoice"
-        :saving-pending-invoice="savingPendingInvoice"
-        :pending-invoice-limit-reached="pendingInvoiceLimitReached"
-        :can-pay="canPay"
-        :paying-invoice="payingInvoice"
-        :canceling-pending-invoice="cancelingPendingInvoice"
-        :dinh-dang-tien="dinhDangTien"
-        @update:coupon-code="emit('update:couponCode', $event)"
-        @focus-coupon="emit('focus-coupon')"
-        @blur-coupon="emit('blur-coupon')"
-        @apply-coupon="emit('apply-coupon')"
-        @select-coupon="emit('select-coupon', $event)"
-        @remove-coupon="emit('remove-coupon')"
-        @update-shipping="emit('update-shipping', $event)"
-        @calculate-shipping="emit('calculate-shipping')"
-        @update:payment-method="emit('update:paymentMethod', $event)"
-        @amount-input="emit('amount-input', $event)"
-        @update:payment-note="emit('update:paymentNote', $event)"
-        @create-pending-invoice="emit('create-pending-invoice')"
-        @pay-now="emit('pay-now')"
-        @cancel-pending-invoice="emit('cancel-pending-invoice')"
-      />
+      </div>
     </div>
+
+    <BanHangProductDetailModal
+      :selected-product-detail="selectedProductDetail"
+      :chi-tiet-dang-chon="chiTietDangChon"
+      :current-product-image="hinhAnhDangChon"
+      :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
+      :color-options="colorOptions"
+      :size-options="sizeOptions"
+      :selected-color="selectedColor"
+      :selected-size="selectedSize"
+      :selected-quantity="selectedQuantity"
+      :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
+      :dinh-dang-tien="dinhDangTien"
+      @close="emit('close-product-detail')"
+      @select-color="emit('select-color', $event)"
+      @select-size="emit('select-size', $event)"
+      @decrease-quantity="emit('decrease-quantity')"
+      @increase-quantity="emit('increase-quantity')"
+      @add-selected-variant="emit('add-selected-variant')"
+    />
   </div>
 </template>
