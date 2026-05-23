@@ -11,6 +11,7 @@ export function useProductForm() {
   const saving = ref(false)
   const currentProduct = ref(null)
   const currentProductId = ref(null)
+  const existingProductVariants = ref([])
   const draftProductCode = ref('')
   const createdVariants = ref([])
   const draftColorImages = ref({})
@@ -69,7 +70,12 @@ export function useProductForm() {
   }
 
   function normalizeNullableNumber(value) {
-    return value == null || value === '' ? null : Number(value)
+    if (value == null || value === '') return null
+    if (typeof value === 'object') {
+      return normalizeNullableNumber(value.id ?? value.value)
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
   }
 
   function taoMaGiayDuKien() {
@@ -85,11 +91,112 @@ export function useProductForm() {
     Object.keys(productErrors).forEach((key) => delete productErrors[key])
   }
 
+  function extractList(value) {
+    if (Array.isArray(value)) return value
+    if (Array.isArray(value?.items)) return value.items
+    if (Array.isArray(value?.content)) return value.content
+    if (Array.isArray(value?.data)) return value.data
+    return []
+  }
+
+  function readPositiveId(item, keys = ['id', 'value']) {
+    if (item == null || item === '') return null
+    if (typeof item !== 'object') {
+      const parsed = Number(item)
+      return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+    }
+
+    for (const key of keys) {
+      const parsed = Number(item[key])
+      if (Number.isInteger(parsed) && parsed > 0) {
+        return parsed
+      }
+    }
+    return null
+  }
+
+  function normalizeLookupText(value) {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+  }
+
+  function readLabel(item, keys = ['ten', 'label', 'name', 'giaTri', 'ma']) {
+    if (item == null) return ''
+    if (typeof item !== 'object') return String(item)
+    for (const key of keys) {
+      const value = item[key]
+      if (value != null && String(value).trim()) {
+        return String(value).trim()
+      }
+    }
+    return ''
+  }
+
+  function normalizeCategoryItems(value, idKeys, labelKeys) {
+    return extractList(value)
+      .filter(Boolean)
+      .map((item) => {
+        const id = readPositiveId(item, idKeys)
+        const label = readLabel(item, labelKeys)
+        return {
+          ...(typeof item === 'object' ? item : {}),
+          id,
+          ten: typeof item === 'object' && item.ten != null ? item.ten : label,
+        }
+      })
+      .filter((item) => item.id != null)
+  }
+
+  function normalizeCategories(categories = {}) {
+    return {
+      ...categories,
+      thuongHieu: normalizeCategoryItems(categories.thuongHieu, ['id', 'thuongHieuId', 'value'], ['ten', 'label', 'name']),
+      loaiGiay: normalizeCategoryItems(categories.loaiGiay, ['id', 'loaiGiayId', 'value'], ['ten', 'label', 'name']),
+      chatLieuGiay: normalizeCategoryItems(categories.chatLieuGiay, ['id', 'chatLieuGiayId', 'value'], ['ten', 'label', 'name', 'chatLieuGiay']),
+      deGiay: normalizeCategoryItems(categories.deGiay, ['id', 'deGiayId', 'value'], ['ten', 'label', 'name', 'deGiay']),
+      coGiay: normalizeCategoryItems(categories.coGiay, ['id', 'coGiayId', 'value'], ['ten', 'label', 'name', 'coGiay']),
+      congNgheDem: normalizeCategoryItems(categories.congNgheDem, ['id', 'congNgheDemId', 'value'], ['ten', 'label', 'name', 'congNgheDem']),
+      trongLuong: normalizeCategoryItems(categories.trongLuong, ['id', 'trongLuongId', 'value'], ['giaTri', 'ten', 'label', 'ma']),
+      mauSac: normalizeCategoryItems(categories.mauSac, ['id', 'mauSacId', 'value'], ['ten', 'label', 'name', 'mauSac']),
+      kichCo: normalizeCategoryItems(categories.kichCo, ['id', 'kichCoId', 'value'], ['giaTri', 'ten', 'label', 'kichCo']),
+    }
+  }
+
+  function resolveOptionId(options, value) {
+    const directId = readPositiveId(value)
+    if (directId != null && (options || []).some((item) => readPositiveId(item) === directId)) {
+      return directId
+    }
+
+    const lookup = normalizeLookupText(
+      typeof value === 'object'
+        ? readLabel(value)
+        : value
+    )
+    if (!lookup) return directId
+
+    return (options || []).find((item) => normalizeLookupText(readLabel(item)) === lookup)?.id ?? directId
+  }
+
+  function syncProductFormSelections() {
+    productForm.thuongHieuId = resolveOptionId(danhMuc.value?.thuongHieu, productForm.thuongHieuId)
+    productForm.loaiGiayId = resolveOptionId(danhMuc.value?.loaiGiay, productForm.loaiGiayId)
+    productForm.chatLieuGiayId = resolveOptionId(danhMuc.value?.chatLieuGiay, productForm.chatLieuGiayId)
+    productForm.deGiayId = resolveOptionId(danhMuc.value?.deGiay, productForm.deGiayId)
+    productForm.coGiayId = resolveOptionId(danhMuc.value?.coGiay, productForm.coGiayId)
+    productForm.congNgheDemId = resolveOptionId(danhMuc.value?.congNgheDem, productForm.congNgheDemId)
+    productForm.trongLuongId = resolveOptionId(danhMuc.value?.trongLuong, productForm.trongLuongId)
+    productForm.gioiTinh = normalizeNullableNumber(productForm.gioiTinh)
+  }
+
   function hasOptionId(options, value) {
     if (value == null || value === '') return true
-    const numValue = Number(value)
-    if (!Number.isInteger(numValue) || numValue <= 0) return false
-    return (options || []).some((item) => Number(item.id) === numValue)
+    const numValue = readPositiveId(value)
+    if (numValue == null) return false
+    return (options || []).some((item) => readPositiveId(item) === numValue)
   }
 
   function isValidGender(value) {
@@ -98,6 +205,7 @@ export function useProductForm() {
 
   function validateProductForm() {
     clearProductErrors()
+    syncProductFormSelections()
 
     const productName = (productForm.ten || '').trim()
     const productDescription = (productForm.moTa || '').trim()
@@ -171,19 +279,7 @@ export function useProductForm() {
 
   async function loadDanhMuc() {
     const categories = await api.layDanhMuc()
-
-    danhMuc.value = {
-      ...categories,
-      thuongHieu: categories.thuongHieu,
-      loaiGiay: categories.loaiGiay,
-      chatLieuGiay: categories.chatLieuGiay,
-      deGiay: categories.deGiay,
-      coGiay: categories.coGiay,
-      congNgheDem: categories.congNgheDem,
-      trongLuong: categories.trongLuong,
-      mauSac: categories.mauSac,
-      kichCo: categories.kichCo,
-    }
+    danhMuc.value = normalizeCategories(categories)
   }
 
   async function loadCurrentProduct() {
@@ -194,6 +290,7 @@ export function useProductForm() {
     if (!giayId) {
       currentProductId.value = null
       currentProduct.value = null
+      existingProductVariants.value = []
       createdVariants.value = []
       resetProductForm()
       showCreatedImagesModal.value = false
@@ -207,8 +304,12 @@ export function useProductForm() {
     currentProductId.value = giayId
     draftProductCode.value = ''
     createdVariants.value = []
-    const detail = await api.chiTietGiay(giayId)
+    const [detail, variants] = await Promise.all([
+      api.chiTietGiay(giayId),
+      api.layBienThe(giayId),
+    ])
     currentProduct.value = detail
+    existingProductVariants.value = Array.isArray(variants) ? variants : []
     hydrateProductForm(detail)
   }
 
@@ -321,6 +422,7 @@ export function useProductForm() {
     saving,
     currentProduct,
     currentProductId,
+    existingProductVariants,
     createdVariants,
     draftColorImages,
     createdImageManagerRefs,

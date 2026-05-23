@@ -17,8 +17,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import com.example.server.repository.GiayChiTietRepository;
@@ -57,6 +55,7 @@ public class DotGiamGiaSanPhamService {
         if (dgs != null) {
             Integer giayChiTietId = dgs.getGiayChiTiet().getId();
             dotGiamGiaSanPhamRepository.deleteById(id);
+            dotGiamGiaSanPhamRepository.flush();
             updateGiaBanForGiayChiTiet(giayChiTietId);
         }
     }
@@ -80,6 +79,7 @@ public class DotGiamGiaSanPhamService {
         dotGiamGiaSanPham.setNgayTao(request.getNgayTao());
 
         DotGiamGiaSanPham saved = dotGiamGiaSanPhamRepository.save(dotGiamGiaSanPham);
+        dotGiamGiaSanPhamRepository.flush();
         updateGiaBanForGiayChiTiet(gct.getId());
         return saved;
     }
@@ -109,6 +109,7 @@ public class DotGiamGiaSanPhamService {
         dotGiamGiaSanPham.setNgayTao(request.getNgayTao());
 
         DotGiamGiaSanPham saved = dotGiamGiaSanPhamRepository.save(dotGiamGiaSanPham);
+        dotGiamGiaSanPhamRepository.flush();
         updateGiaBanForGiayChiTiet(gct.getId());
         return saved;
     }
@@ -140,6 +141,7 @@ public class DotGiamGiaSanPhamService {
         
         if (!toDelete.isEmpty()) {
             dotGiamGiaSanPhamRepository.deleteAll(toDelete);
+            dotGiamGiaSanPhamRepository.flush();
         }
 
         // 3. Thêm những cái mới
@@ -151,11 +153,13 @@ public class DotGiamGiaSanPhamService {
                 .map(l -> l.getGiayChiTiet().getId())
                 .collect(Collectors.toSet());
 
+        // 3. Thêm những cái mới
+        List<DotGiamGiaSanPham> toInsert = new java.util.ArrayList<>();
         for (Integer vId : targetVariantIds) {
             if (!currentVariantIds.contains(vId)) {
                 GiayChiTiet gct = giayChiTietRepository.findById(vId)
                         .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the #" + vId));
-                
+
                 // Kiểm tra xem biến thể này có đang trong đợt khác không
                 List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(vId);
                 if (!actives.isEmpty()) {
@@ -167,56 +171,35 @@ public class DotGiamGiaSanPhamService {
                 dgs.setGiayChiTiet(gct);
                 dgs.setTrangThai(1);
                 dgs.setNgayTao(LocalDate.now());
-                dotGiamGiaSanPhamRepository.save(dgs);
+                toInsert.add(dgs);
             }
         }
+        if (!toInsert.isEmpty()) {
+            dotGiamGiaSanPhamRepository.saveAll(toInsert);
+        }
 
-        // 4. Cập nhật lại giá cho tất cả biến thể liên quan (cũ và mới)
+        // 4. Flush tất cả thay đổi (delete + insert) trước khi tính lại giá
+        dotGiamGiaSanPhamRepository.flush();
+
+        // 5. Cập nhật lại giá cho tất cả biến thể liên quan (cũ, mới và cả những biến thể bị tích bỏ)
+        Set<Integer> deletedVariantIds = toDelete.stream()
+                .map(l -> l.getGiayChiTiet().getId())
+                .collect(Collectors.toSet());
+
         Set<Integer> allAffectedIds = new HashSet<>(currentVariantIds);
         allAffectedIds.addAll(targetVariantIds);
-        
+        allAffectedIds.addAll(deletedVariantIds);
+
         for (Integer vId : allAffectedIds) {
             updateGiaBanForGiayChiTiet(vId);
         }
     }
 
     public void updateGiaBanForGiayChiTiet(Integer giayChiTietId) {
-        List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(giayChiTietId);
         GiayChiTiet gct = giayChiTietRepository.findById(giayChiTietId).orElse(null);
         if (gct == null) return;
 
-        LocalDate now = LocalDate.now();
-        BigDecimal bestGiaBan = gct.getGiaGoc();
-
-        if (activeDiscounts.isEmpty()) {
-            gct.setGiaBan(gct.getGiaGoc());
-            giayChiTietRepository.save(gct);
-            return;
-        }
-
-        for (DotGiamGiaSanPham dgs : activeDiscounts) {
-            DotGiamGia dg = dgs.getDotGiamGia();
-            if (dg.getKichHoat() == null || dg.getKichHoat() == 0) continue;
-            if (dg.getNgayBatDau() != null && now.isBefore(dg.getNgayBatDau())) continue;
-            if (dg.getNgayKetThuc() != null && now.isAfter(dg.getNgayKetThuc())) continue;
-
-            BigDecimal expectedGiaBan = gct.getGiaGoc();
-            if (dg.getLoaiGiam() == 1) { // percent
-                BigDecimal discountAmt = gct.getGiaGoc().multiply(dg.getGiaTriGiam()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-                expectedGiaBan = gct.getGiaGoc().subtract(discountAmt);
-            } else if (dg.getLoaiGiam() == 2) { // cash
-                expectedGiaBan = gct.getGiaGoc().subtract(dg.getGiaTriGiam());
-            }
-
-            if (expectedGiaBan.compareTo(BigDecimal.ZERO) < 0) {
-                expectedGiaBan = BigDecimal.ZERO;
-            }
-
-            if (expectedGiaBan.compareTo(bestGiaBan) < 0) {
-                bestGiaBan = expectedGiaBan;
-            }
-        }
-        gct.setGiaBan(bestGiaBan);
+        gct.setNgayCapNhat(Instant.now());
         giayChiTietRepository.save(gct);
     }
 }

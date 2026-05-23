@@ -1,5 +1,5 @@
 <script setup>
-import { Eye, Images, Layers3, Tag } from 'lucide-vue-next'
+import { Eye, Images, Layers3, Pencil, Tag } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 
@@ -44,6 +44,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'toggle-status',
+  'edit-variant',
   'open-discount-detail',
   'open-qr',
   'refresh',
@@ -208,7 +209,7 @@ function openDiscountDetail(item) {
               {{ item.maChiTietSanPham }}
             </td>
             <td class="px-2.5 py-4 align-middle">
-              <div class="mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+              <div class="relative mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <Images class="h-4 w-4 text-slate-300" v-else />
               </div>
@@ -242,6 +243,7 @@ function openDiscountDetail(item) {
               </div>
             </td>
             <td class="px-2 py-4 align-middle text-center">
+              <!-- Có campaign → clickable badge -->
               <button
                 v-if="item.dotGiamGiaId"
                 type="button"
@@ -252,6 +254,15 @@ function openDiscountDetail(item) {
                 <Tag class="h-3 w-3" />
                 {{ formatDiscountPercent(item) }}
               </button>
+              <!-- Không có campaign nhưng giá đã giảm → show badge tĩnh -->
+              <span
+                v-else-if="isDiscounted(item) && formatDiscountPercent(item) !== '—'"
+                class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500"
+                title="Giá bán thấp hơn giá gốc"
+              >
+                <Tag class="h-3 w-3" />
+                {{ formatDiscountPercent(item) }}
+              </span>
               <span v-else class="text-xs text-slate-400">—</span>
             </td>
             <td class="px-2 py-4 align-middle text-center whitespace-nowrap">
@@ -277,6 +288,14 @@ function openDiscountDetail(item) {
                 <button
                   type="button"
                   class="admin-table-action text-slate-600 hover:text-rose-500"
+                  title="Chỉnh sửa biến thể"
+                  @click="$emit('edit-variant', item)"
+                >
+                  <Pencil class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="admin-table-action text-slate-600 hover:text-rose-500"
                   title="Xem QR và thông tin chi tiết sản phẩm"
                   @click="$emit('open-qr', item)"
                 >
@@ -295,9 +314,9 @@ function openDiscountDetail(item) {
       :page-size-options="pageSizeOptions"
       :total-items="totalItems"
       :total-pages="totalPages"
+      zero-based
       compact
       show-refresh
-      zero-based
       @refresh="$emit('refresh', currentPage)"
       @update:current-page="$emit('update:current-page', $event)"
       @update:page-size="handlePageSizeChange"

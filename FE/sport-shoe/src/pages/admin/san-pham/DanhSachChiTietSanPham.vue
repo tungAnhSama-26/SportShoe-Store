@@ -9,8 +9,9 @@ import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusA
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import ProductVariantFilters from '../../../components/admin/san-pham/ProductVariantFilters.vue'
 import ProductVariantTable from '../../../components/admin/san-pham/ProductVariantTable.vue'
+import QuanLySanPhamBienTheFormModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheFormModal.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
-import { getDisplayErrorMessage } from '../../../utils/error-message'
+import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +39,25 @@ const filters = reactive({
 
 const showImageModal = ref(false)
 const selectedVariant = ref(null)
+const showEditVariantModal = ref(false)
+const editingVariant = ref(null)
+const savingVariant = ref(false)
+const bienTheForm = reactive({
+  soLuong: 0,
+  giaGoc: 0,
+  giaBan: 0,
+  kichHoat: 1
+})
+const bienTheErrors = reactive({})
+const bulkBienTheForm = reactive({
+  mauSacIds: [],
+  kichCoIds: [],
+  soLuong: 0,
+  giaGoc: 0,
+  giaBan: 0
+})
+const bulkBienTheErrors = reactive({})
+const generatedBulkBienThes = ref([])
 
 const toast = reactive({
   show: false,
@@ -68,6 +88,17 @@ const toastTitle = computed(() => {
   return 'Thao tác thành công'
 })
 
+const editingSelectedGiay = computed(() => {
+  if (selectedProduct.value) return selectedProduct.value
+  if (!editingVariant.value) return null
+
+  return {
+    id: editingVariant.value.giayId,
+    ten: editingVariant.value.tenSanPham,
+    ma: editingVariant.value.maSanPham
+  }
+})
+
 function showToast(message, type = 'success') {
   if (toastTimer) clearTimeout(toastTimer)
   toast.message = message
@@ -93,6 +124,20 @@ function isUpdatingStatus(id) {
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('vi-VN')
+}
+
+function clearBienTheErrors() {
+  Object.keys(bienTheErrors).forEach((key) => delete bienTheErrors[key])
+}
+
+function parsePositiveMoney(value) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function parseStock(value) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
 }
 
 function isDiscounted(item) {
@@ -277,6 +322,84 @@ function openImageModal(item) {
   showImageModal.value = true
 }
 
+function openEditVariantModal(item) {
+  editingVariant.value = item
+  bienTheForm.soLuong = Number(item.soLuong || 0)
+  bienTheForm.giaGoc = Number(item.giaGoc || 0)
+  bienTheForm.giaBan = Number(item.giaBan || 0)
+  bienTheForm.kichHoat = Number(item.kichHoat) === 2 ? 2 : 1
+  clearBienTheErrors()
+  showEditVariantModal.value = true
+}
+
+function closeEditVariantModal() {
+  showEditVariantModal.value = false
+  editingVariant.value = null
+  savingVariant.value = false
+  clearBienTheErrors()
+}
+
+function validateEditVariantForm() {
+  clearBienTheErrors()
+
+  const soLuong = parseStock(bienTheForm.soLuong)
+  const giaGoc = parsePositiveMoney(bienTheForm.giaGoc)
+  const giaBan = parsePositiveMoney(bienTheForm.giaBan)
+
+  if (soLuong == null) {
+    bienTheErrors.soLuong = 'Số lượng phải là số nguyên không âm'
+  }
+  if (giaGoc == null) {
+    bienTheErrors.giaGoc = 'Giá gốc phải lớn hơn 0'
+  }
+  if (giaBan == null) {
+    bienTheErrors.giaBan = 'Giá bán phải lớn hơn 0'
+  }
+  if (giaGoc != null && giaBan != null && giaGoc > giaBan) {
+    bienTheErrors.giaGoc = 'Giá gốc không được lớn hơn giá bán'
+  }
+  if (![1, 2].includes(Number(bienTheForm.kichHoat))) {
+    bienTheErrors.kichHoat = 'Trạng thái biến thể không hợp lệ'
+  }
+  if (soLuong === 0 && Number(bienTheForm.kichHoat) === 1) {
+    bienTheErrors.kichHoat = 'Không thể bật bán khi số lượng bằng 0'
+  }
+
+  return Object.keys(bienTheErrors).length === 0
+}
+
+async function saveEditingVariant() {
+  if (!editingVariant.value || savingVariant.value) return
+  if (!validateEditVariantForm()) return
+
+  savingVariant.value = true
+  try {
+    await api.capNhatBienThe(editingVariant.value.id, {
+      soLuong: Number(bienTheForm.soLuong),
+      giaGoc: Number(bienTheForm.giaGoc),
+      giaBan: Number(bienTheForm.giaBan),
+      kichHoat: Number(bienTheForm.kichHoat)
+    })
+    showToast('Cập nhật biến thể thành công')
+    const editedGiayId = editingVariant.value.giayId
+    closeEditVariantModal()
+    await Promise.all([
+      loadData(currentPage.value),
+      selectedGiayId.value === editedGiayId ? syncSelectedProduct() : Promise.resolve()
+    ])
+  } catch (error) {
+    Object.assign(bienTheErrors, getFieldErrors(error))
+    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật biến thể'), 'error')
+  } finally {
+    savingVariant.value = false
+  }
+}
+
+function closeImageModal() {
+  selectedVariant.value = null
+  showImageModal.value = false
+}
+
 function openVariantQr(item) {
   const qrValue = String(item?.sku || item?.maChiTietSanPham || '').trim()
   if (!qrValue) {
@@ -308,11 +431,6 @@ function openVariantQr(item) {
   showQrModal.value = true
 }
 
-function closeImageModal() {
-  selectedVariant.value = null
-  showImageModal.value = false
-}
-
 function closeQrModal() {
   showQrModal.value = false
   selectedQrItem.value = null
@@ -321,20 +439,44 @@ function closeQrModal() {
 function handleQrPrimaryAction() {
   const actionType = selectedQrItem.value?.actionType
   const targetItem = selectedQrItem.value?.item
-
-  closeQrModal()
-
   if (actionType === 'manage-images' && targetItem) {
-    openImageModal(targetItem)
+    closeQrModal()
+    selectedVariant.value = targetItem
+    showImageModal.value = true
+  }
+}
+
+function handleScannerResult(result) {
+  if (result) {
+    filters.keyword = result
+    showScannerModal.value = false
+    loadData(0)
+    showToast('Đã tìm thấy mã: ' + result, 'success')
+  }
+}
+
+async function toggleBienTheStatus(item) {
+  if (updatingStatusIds.has(item.id)) return
+  if (Number(item.soLuong || 0) <= 0 && Number(item.kichHoat) !== 1) {
+    showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
+    return
+  }
+
+  updatingStatusIds.add(item.id)
+  try {
+    const newTrangThai = Number(item.kichHoat) === 1 ? 2 : 1
+
+    await api.doiTrangThaiBienThe(item.id, newTrangThai)
+    item.kichHoat = newTrangThai
+    showToast('Cập nhật trạng thái thành công', 'success')
+  } catch (error) {
+    showToast(getDisplayErrorMessage(error, 'Cập nhật trạng thái thất bại'), 'error')
+  } finally {
+    updatingStatusIds.delete(item.id)
   }
 }
 
 async function xuatExcel() {
-  if (!totalItems.value) {
-    showToast('Không có dữ liệu để xuất Excel', 'error')
-    return
-  }
-
   try {
     const response = await api.layDanhSachChiTietSanPham({
       keyword: filters.keyword.trim() || undefined,
@@ -371,28 +513,6 @@ async function xuatExcel() {
     )
   } catch (error) {
     showToast(getDisplayErrorMessage(error, 'Không thể xuất Excel chi tiết sản phẩm'), 'error')
-  }
-}
-
-async function toggleBienTheStatus(item) {
-  if (isUpdatingStatus(item.id)) return
-  if (!canToggleStatus(item)) {
-    showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
-    return
-  }
-
-  updatingStatusIds.add(item.id)
-  try {
-    await api.doiTrangThaiBienThe(item.id, nextBienTheStatus(item))
-    showToast('Cập nhật trạng thái CTSP thành công')
-    await Promise.all([
-      loadData(currentPage.value),
-      selectedGiayId.value === item.giayId ? syncSelectedProduct() : Promise.resolve()
-    ])
-  } catch (error) {
-    showToast(getDisplayErrorMessage(error, 'Không thể cập nhật trạng thái chi tiết sản phẩm'), 'error')
-  } finally {
-    updatingStatusIds.delete(item.id)
   }
 }
 
@@ -457,6 +577,7 @@ onUnmounted(() => {
       :updating-status-ids="updatingStatusIds"
       :focused-chi-tiet-id="focusedChiTietId"
       @toggle-status="toggleBienTheStatus"
+      @edit-variant="openEditVariantModal"
       @open-qr="openVariantQr"
       @refresh="loadData"
       @update:current-page="loadData"
@@ -464,65 +585,34 @@ onUnmounted(() => {
       @open-discount-detail="openDiscountDetail"
     />
 
+    <QuanLySanPhamBienTheFormModal
+      :open="showEditVariantModal"
+      :editing-bien-the="editingVariant"
+      :selected-giay="editingSelectedGiay"
+      :danh-muc="danhMuc"
+      :bien-the-form="bienTheForm"
+      :bien-the-errors="bienTheErrors"
+      :bulk-bien-the-form="bulkBienTheForm"
+      :bulk-bien-the-errors="bulkBienTheErrors"
+      :generated-bulk-bien-thes="generatedBulkBienThes"
+      :saving-bien-the="savingVariant"
+      @close="closeEditVariantModal"
+      @save="saveEditingVariant"
+    />
+
     <AdminQrCodeModal
-      :open="showQrModal && !!selectedQrItem"
-      :badge="selectedQrItem?.badge"
-      :title="selectedQrItem?.title"
-      :subtitle="selectedQrItem?.subtitle"
-      :code-label="selectedQrItem?.codeLabel"
-      :value="selectedQrItem?.value"
-      :note="selectedQrItem?.note"
-      :image-url="selectedQrItem?.imageUrl"
-      :image-alt="selectedQrItem?.imageAlt"
-      :detail-items="selectedQrItem?.detailItems"
-      :primary-action-label="selectedQrItem?.primaryActionLabel"
+      :open="showQrModal"
+      v-bind="selectedQrItem"
       @close="closeQrModal"
       @primary-action="handleQrPrimaryAction"
     />
 
     <BanHangQrScannerModal
-      :open="showScannerModal"
+      :is-open="showScannerModal"
+      :is-admin="true"
       @close="showScannerModal = false"
-      @scan="handleQrScan"
+      @scan="handleScannerResult"
     />
-
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showImageModal && selectedVariant"
-          class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-4"
-          @click.self="closeImageModal"
-        >
-          <div class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-            <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-rose-500">Biến thể sản phẩm</p>
-                <h2 class="mt-2 text-2xl font-black text-slate-900">{{ selectedVariant.tenSanPham }}</h2>
-                <p class="mt-1 text-sm text-slate-500">
-                  {{ selectedVariant.maChiTietSanPham }} • {{ selectedVariant.mauSac }} / {{ selectedVariant.kichCo }}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                class="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                @click="closeImageModal"
-              >
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-
-            <div class="overflow-y-auto p-6">
-              <BienTheImageManager
-                :variant="selectedVariant"
-                @updated="loadData(currentPage)"
-                @error="showToast($event, 'error')"
-              />
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
 
     <Teleport to="body">
       <Transition name="fade">

@@ -11,7 +11,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
       v-if="loadingInit"
       class="rounded-[24px] border border-slate-200 bg-white p-10 text-center text-slate-400 shadow-sm"
     >
-      �ang t?i d? li?u...
+      Đang tải dữ liệu...
     </section>
 
     <template v-else>
