@@ -279,6 +279,12 @@ export interface ThemHinhAnhRequest {
   moTa?: string
 }
 
+export interface CapNhatHinhAnhRequest {
+  url: string
+  loaiHinh?: number
+  moTa?: string
+}
+
 // ─── API functions ────────────────────────────────────────────────────────────
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -384,6 +390,10 @@ export function layHinhAnh(chiTietId: number): Promise<HinhAnhGiay[]> {
 
 export function themHinhAnh(chiTietId: number, body: ThemHinhAnhRequest): Promise<HinhAnhGiay> {
   return request<HinhAnhGiay>(`/admin/san-pham/bien-the/${chiTietId}/hinh-anh`, { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function capNhatHinhAnh(id: number, body: CapNhatHinhAnhRequest): Promise<HinhAnhGiay> {
+  return request<HinhAnhGiay>(`/admin/san-pham/hinh-anh/${id}`, { method: 'PUT', body: JSON.stringify(body) })
 }
 
 export function xoaHinhAnh(id: number): Promise<void> {

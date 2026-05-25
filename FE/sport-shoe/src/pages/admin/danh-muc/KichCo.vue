@@ -102,7 +102,7 @@ function validate() {
   const ghiChu = normalizeOptionalText(form.ghiChu)
 
   if (!normalizedSize) {
-    errors.giaTri = 'Kích cỡ chưa đúng định dạng, vui lòng nhập lại'
+    errors.giaTri = 'Kích cỡ không hợp lệ, vui lòng nhập lại'
   }
 
   if (ghiChu && exceedsMaxLength(ghiChu, GHI_CHU_MAX_LENGTH)) {
@@ -119,6 +119,8 @@ function validate() {
 
 async function handleSave() {
   if (!validate()) return
+
+    if (!confirm(modalMode.value === 'add' ? 'Xác nhận thêm mới kích cỡ này?' : 'Xác nhận lưu thay đổi kích cỡ này?')) return
 
   saving.value = true
   try {
@@ -267,8 +269,9 @@ async function xuatExcel() {
 
     <template #modal>
       <Teleport to="body">
-        <div
-          v-if="showModal"
+        <Transition name="fade">
+          <div
+            v-if="showModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
           @click.self="showModal = false"
         >
@@ -325,7 +328,23 @@ async function xuatExcel() {
             </div>
           </div>
         </div>
+        </Transition>
       </Teleport>
     </template>
   </DanhMucPageShell>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>

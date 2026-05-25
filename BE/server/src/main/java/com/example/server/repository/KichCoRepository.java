@@ -14,5 +14,7 @@ public interface KichCoRepository extends JpaRepository<KichCo, Integer> {
 
     boolean existsByGiaTriIgnoreCase(String giaTri);
 
+    java.util.Optional<KichCo> findByGiaTriIgnoreCase(String giaTri);
+
     boolean existsByGiaTriIgnoreCaseAndIdNot(String giaTri, Integer id);
 }

@@ -1,5 +1,23 @@
 package com.example.server.core.admin.quanLySanPham;
 
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatGiayRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatHinhAnhRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.DoiTrangThaiBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.DoiTrangThaiRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamHangLoatRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoGiayRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.ThemHinhAnhRequest;
+import com.example.server.core.admin.quanLySanPham.dto.response.BienTheResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.ChiTietSanPhamListItemResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.DanhMucSanPhamResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.GiayDetailResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.GiayListItemResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.HinhAnhGiayResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.TaoChiTietSanPhamHangLoatResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.TaoChiTietSanPhamResponse;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.api.PageResponse;
 import jakarta.validation.Valid;
@@ -67,7 +85,7 @@ public class QuanLySanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "giaBan"));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lay danh sach chi tiet san pham thanh cong",
                 service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)
@@ -171,6 +189,14 @@ public class QuanLySanPhamController {
             @Valid @RequestBody ThemHinhAnhRequest req
     ) {
         return ResponseEntity.ok(ApiResponse.success("Them hinh anh thanh cong", service.themHinhAnh(id, req)));
+    }
+
+    @PutMapping("/hinh-anh/{id}")
+    public ResponseEntity<ApiResponse<HinhAnhGiayResponse>> capNhatHinhAnh(
+            @PathVariable Integer id,
+            @Valid @RequestBody CapNhatHinhAnhRequest req
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Cap nhat hinh anh thanh cong", service.capNhatHinhAnh(id, req)));
     }
 
     @DeleteMapping("/hinh-anh/{id}")

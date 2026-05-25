@@ -36,6 +36,23 @@ public class MauSacService {
 
     @Transactional
     public MauSacResponse taoMauSac(MauSacRequest req) {
+        String ten = req.ten().trim();
+        var existingOpt = mauSacRepository.findByTenIgnoreCase(ten);
+        
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Tên màu sắc '" + ten + "' đã tồn tại");
+            }
+            // Khôi phục nếu đang bị ngừng bán
+            existing.setTrangThai(1);
+            if (req.maMauHex() != null && !req.maMauHex().isBlank()) {
+                existing.setMaMauHex(req.maMauHex());
+            }
+            existing.setNgayCapNhat(Instant.now());
+            return toMauSac(mauSacRepository.save(existing));
+        }
+
         String ma = req.ma().trim().toUpperCase();
         if (mauSacRepository.existsByMaIgnoreCase(ma)) {
             throw new BusinessException("Mã màu sắc '" + ma + "' đã tồn tại");
@@ -43,7 +60,7 @@ public class MauSacService {
 
         var entity = new MauSac();
         entity.setMa(ma);
-        entity.setTen(req.ten().trim());
+        entity.setTen(ten);
         entity.setMaMauHex(req.maMauHex());
         entity.setTrangThai(1);
         entity.setNgayTao(Instant.now());
@@ -59,8 +76,13 @@ public class MauSacService {
             throw new BusinessException("Mã màu sắc '" + ma + "' đã tồn tại");
         }
 
+        String ten = req.ten().trim();
+        if (mauSacRepository.existsByTenIgnoreCaseAndIdNot(ten, id)) {
+            throw new BusinessException("Tên màu sắc '" + ten + "' đã tồn tại");
+        }
+
         entity.setMa(ma);
-        entity.setTen(req.ten().trim());
+        entity.setTen(ten);
         entity.setMaMauHex(req.maMauHex());
         entity.setNgayCapNhat(Instant.now());
         return toMauSac(entity);

@@ -151,6 +151,12 @@ function handleSearchKeydown(event) {
   if (event.key !== 'Enter') return
   event.preventDefault()
 
+  const keyword = normalizedQuery.value
+  if (!keyword) {
+    closeDropdown()
+    return
+  }
+
   if (filteredOptions.value.length > 0) {
     selectValue(filteredOptions.value[0].value)
     return

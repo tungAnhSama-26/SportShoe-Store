@@ -182,6 +182,8 @@ function validate() {
 async function handleSave() {
   if (!validate()) return
 
+    if (!confirm(modalMode.value === 'add' ? 'Xác nhận thêm mới thương hiệu này?' : 'Xác nhận lưu thay đổi thương hiệu này?')) return
+
   saving.value = true
   try {
     const body = {
@@ -349,8 +351,9 @@ async function xuatExcel() {
 
     <template #modal>
       <Teleport to="body">
-        <div
-          v-if="showModal"
+        <Transition name="fade">
+          <div
+            v-if="showModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
           @click.self="showModal = false"
         >
@@ -473,7 +476,23 @@ async function xuatExcel() {
             </div>
           </div>
         </div>
+        </Transition>
       </Teleport>
     </template>
   </DanhMucPageShell>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>

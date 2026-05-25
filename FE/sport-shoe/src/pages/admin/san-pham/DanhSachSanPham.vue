@@ -11,7 +11,6 @@ import {
   Search,
 } from "lucide-vue-next";
 import * as api from "../../../services/san-pham-api";
-import AdminQrCodeModal from "../../../components/common/AdminQrCodeModal.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import Card from "../../../components/ui/Card.vue";
@@ -27,12 +26,10 @@ const loading = ref(false);
 const items = ref([]);
 const danhMuc = ref(null);
 const currentPage = ref(0);
-const pageSize = ref(10);
+const pageSize = ref(5);
 const totalItems = ref(0);
 const totalPages = ref(0);
 const updatingStatusIds = reactive(new Set());
-const showQrModal = ref(false);
-const selectedQrItem = ref(null);
 
 const filters = reactive({
   keyword: "",
@@ -248,55 +245,6 @@ function goToChiTietList(item) {
   });
 }
 
-function openProductQr(item) {
-  const qrValue = String(item?.ma || "").trim();
-  if (!qrValue) {
-    showToast("Sản phẩm này chưa có mã để tạo QR", "error");
-    return;
-  }
-
-  selectedQrItem.value = {
-    badge: "QR sản phẩm",
-    title: item.ten || "Sản phẩm",
-    subtitle: `${item.ma}${item.thuongHieu ? ` • ${item.thuongHieu}` : ""}`,
-    codeLabel: "Mã sản phẩm",
-    value: qrValue,
-    note: "Quét mã này ở bán hàng tại quầy để tìm nhanh sản phẩm theo mã sản phẩm.",
-    imageUrl: item.hinhAnh || "",
-    imageAlt: item.ten || item.ma || "Ảnh sản phẩm",
-    detailItems: [
-      { label: "Thương hiệu", value: item.thuongHieu || "—" },
-      { label: "Loại giày", value: item.loaiGiay || "—" },
-      {
-        label: "Số lượng",
-        value: Number(item.tongSoLuong || 0).toLocaleString("vi-VN"),
-      },
-      { label: "Giá bán", value: giaHienThi(item) },
-      { label: "Trạng thái", value: trangThaiLabel(item.trangThai) },
-    ],
-    primaryActionLabel: "Xem danh sách biến thể",
-    actionType: "go-to-variants",
-    item,
-  };
-  showQrModal.value = true;
-}
-
-function closeQrModal() {
-  showQrModal.value = false;
-  selectedQrItem.value = null;
-}
-
-function handleQrPrimaryAction() {
-  const actionType = selectedQrItem.value?.actionType;
-  const targetItem = selectedQrItem.value?.item;
-
-  closeQrModal();
-
-  if (actionType === "go-to-variants" && targetItem) {
-    goToChiTietList(targetItem);
-  }
-}
-
 async function handleToggleStatus(item) {
   if (isUpdatingStatus(item.id)) return;
   if (!canQuickToggleProduct(item)) {
@@ -430,17 +378,17 @@ onUnmounted(() => {
           </label>
 
           <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-            <Button variant="soft" @click="resetFilters">
+            <Button class="bg-black text-white hover:bg-gray-800" @click="resetFilters">
               <template #prefix><RotateCcw class="h-4 w-4" /></template>
               Đặt lại
             </Button>
-            <Button variant="soft" @click="xuatExcel">
+            <Button class="bg-black text-white hover:bg-gray-800" @click="xuatExcel">
               <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
               Xuất Excel
             </Button>
-            <Button variant="primary" @click="goToForm">
+            <Button class="bg-black text-white hover:bg-gray-800" @click="goToForm">
               <template #prefix><Plus class="h-4 w-4" /></template>
-              Thêm sản phẩm chi tiết
+              Thêm sản phẩm
             </Button>
           </div>
         </div>
@@ -510,19 +458,19 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <div class="rounded-[24px] border border-slate-100">
+      <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
         <table
-          class="w-full table-fixed border-separate border-spacing-0 text-sm"
+          class="w-full min-w-[1050px] table-fixed border-separate border-spacing-0 text-sm"
         >
           <colgroup>
             <col class="w-[5%]" />
             <col class="w-[9%]" />
-            <col class="w-[24%]" />
-            <col class="w-[12%]" />
-            <col class="w-[8%]" />
-            <col class="w-[15%]" />
+            <col class="w-[23%]" />
             <col class="w-[11%]" />
             <col class="w-[8%]" />
+            <col class="w-[19%]" />
+            <col class="w-[13%]" />
+            <col class="w-[12%]" />
           </colgroup>
           <thead>
             <tr class="text-left text-[13px] font-bold text-slate-950 [&>th]:whitespace-nowrap">
@@ -578,7 +526,7 @@ onUnmounted(() => {
               <td class="px-4 py-4 text-center align-middle font-semibold text-slate-700 whitespace-nowrap">
                 {{ Number(item.tongSoLuong || 0).toLocaleString("vi-VN") }}
               </td>
-              <td class="pl-4 pr-0 py-4 font-semibold text-slate-800">
+              <td class="px-4 py-4 font-semibold text-slate-800">
                 <div
                   class="flex min-h-[56px] flex-col justify-center gap-1.5 leading-5"
                 >
@@ -586,23 +534,14 @@ onUnmounted(() => {
                     <div
                       class="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] font-semibold text-slate-800"
                     >
-                      <span class="whitespace-nowrap">{{
-                        giaTrongBang(item).start
-                      }}</span>
-                    </div>
-                  </div>
-                  <div v-if="hasOriginalPrice(item)">
-                    <div
-                      class="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs font-medium text-slate-400 line-through"
-                    >
-                      <span class="whitespace-nowrap">{{
-                        giaGocTrongBang(item).start
-                      }}</span>
+                      <span class="whitespace-nowrap">{{ giaTrongBang(item).start }}</span>
+                      <span v-if="giaTrongBang(item).isRange" class="text-slate-400 font-normal mx-0.5">-</span>
+                      <span v-if="giaTrongBang(item).isRange" class="whitespace-nowrap">{{ giaTrongBang(item).end }}</span>
                     </div>
                   </div>
                 </div>
               </td>
-              <td class="px-0 py-4 text-center whitespace-nowrap">
+              <td class="px-4 py-4 text-center whitespace-nowrap">
                 <Badge :variant="item.trangThai === 1 ? 'success' : item.trangThai === 2 ? 'warning' : 'danger'">
                   {{ trangThaiLabel(item.trangThai) }}
                 </Badge>
@@ -623,8 +562,8 @@ onUnmounted(() => {
                   <button
                     type="button"
                     class="admin-table-action text-slate-600 hover:text-rose-500"
-                    title="Xem QR và thông tin sản phẩm"
-                    @click="openProductQr(item)"
+                    title="Xem danh sách biến thể"
+                    @click="goToChiTietList(item)"
                   >
                     <Eye class="h-4 w-4" />
                   </button>
@@ -651,22 +590,6 @@ onUnmounted(() => {
         />
       </template>
     </Card>
-
-    <AdminQrCodeModal
-      :open="showQrModal && !!selectedQrItem"
-      :badge="selectedQrItem?.badge"
-      :title="selectedQrItem?.title"
-      :subtitle="selectedQrItem?.subtitle"
-      :code-label="selectedQrItem?.codeLabel"
-      :value="selectedQrItem?.value"
-      :note="selectedQrItem?.note"
-      :image-url="selectedQrItem?.imageUrl"
-      :image-alt="selectedQrItem?.imageAlt"
-      :detail-items="selectedQrItem?.detailItems"
-      :primary-action-label="selectedQrItem?.primaryActionLabel"
-      @close="closeQrModal"
-      @primary-action="handleQrPrimaryAction"
-    />
 
     <Teleport to="body">
       <Transition name="fade">

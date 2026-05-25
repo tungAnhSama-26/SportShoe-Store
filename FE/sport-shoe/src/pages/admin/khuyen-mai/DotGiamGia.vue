@@ -240,8 +240,8 @@ onMounted(taiDanhSach);
 
       <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
-      <div class="w-full">
-        <table class="w-full table-fixed border-separate border-spacing-y-2 text-xs">
+      <div class="overflow-x-auto admin-table-scroll w-full">
+        <table class="w-full min-w-[900px] table-fixed border-separate border-spacing-y-2 text-xs">
           <colgroup>
             <col class="w-[5%]" />
             <col class="w-[15%]" />
