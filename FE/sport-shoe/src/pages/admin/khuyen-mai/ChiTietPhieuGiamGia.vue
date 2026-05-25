@@ -555,7 +555,14 @@ onMounted(taiChiTiet);
 
         <div class="min-w-0 space-y-2">
           <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày bắt đầu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ngayBatDau" type="date" readonly class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm font-normal text-slate-500 outline-none cursor-not-allowed" />
+          <input
+            v-model="form.ngayBatDau"
+            type="date"
+            :min="laMoi ? getToday() : undefined"
+            :readonly="isReadOnly"
+            class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+            :class="isReadOnly ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-slate-50'"
+          />
           <p v-if="formErrors.ngayBatDau" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayBatDau }}</p>
         </div>
 
@@ -603,7 +610,10 @@ onMounted(taiChiTiet);
                   <CheckSquare v-if="dsEmailChon.includes(kh.email)" class="mx-auto h-5 w-5 text-rose-500" />
                   <div v-else class="mx-auto h-5 w-5 rounded border border-slate-300 bg-white"></div>
                 </td>
-                <td class="px-4 py-3 font-semibold text-slate-800">{{ kh.hoTen }}</td>
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-slate-800">{{ kh.hoTen }}</div>
+                  <div class="text-xs text-slate-400 font-medium">Tên đăng nhập: {{ kh.tenDangNhap }}</div>
+                </td>
                 <td class="px-4 py-3 text-slate-500">{{ kh.sdt }}<br>{{ kh.email }}</td>
               </tr>
             </tbody>
