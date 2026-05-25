@@ -181,7 +181,7 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
         {{ loiTrang }}
       </div>
 
-      <div class="w-full">
+      <div class="overflow-x-auto admin-table-scroll w-full">
         <table
           v-if="activeTab === 'phieu'"
           class="w-full border-separate border-spacing-y-2 text-sm"

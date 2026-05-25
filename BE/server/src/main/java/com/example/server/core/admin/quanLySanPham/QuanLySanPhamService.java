@@ -1,5 +1,34 @@
 package com.example.server.core.admin.quanLySanPham;
 
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatGiayRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatHinhAnhRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.DoiTrangThaiBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.DoiTrangThaiRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamHangLoatItemRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamHangLoatRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoGiayRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.ThemHinhAnhRequest;
+import com.example.server.core.admin.quanLySanPham.dto.response.BienTheResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.ChatLieuGiayOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.ChiTietSanPhamListItemResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.CoGiayOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.CongNgheDemOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.DanhMucSanPhamResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.DeGiayOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.GiayDetailResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.GiayListItemResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.HinhAnhGiayResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.KichCoOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.LoaiGiayOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.MauSacOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.TaoChiTietSanPhamHangLoatResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.TaoChiTietSanPhamResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.ThuocTinhResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.ThuongHieuOption;
+import com.example.server.core.admin.quanLySanPham.dto.response.TrongLuongOption;
 import com.example.server.entity.*;
 import com.example.server.infrastructure.api.PageResponse;
 import com.example.server.infrastructure.exception.BusinessException;
@@ -617,7 +646,7 @@ public class QuanLySanPhamService {
         try {
             var giay = giayRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
-            
+
             if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
                 giay.setTrangThai(TRANG_THAI_KINH_DOANH);
                 updateTrangThaiTuSoLuong(giay);
@@ -797,6 +826,22 @@ public class QuanLySanPhamService {
     }
 
     @Transactional
+    public HinhAnhGiayResponse capNhatHinhAnh(Integer id, CapNhatHinhAnhRequest req) {
+        var hinh = hinhAnhGiayRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hình ảnh #" + id + " không tồn tại"));
+
+        hinh.setUrl(req.url().trim());
+        if (req.loaiHinh() != null) {
+            hinh.setLoaiHinh(req.loaiHinh());
+        }
+        hinh.setMoTa(req.moTa());
+        hinh.setNgayCapNhat(Instant.now());
+
+        var saved = hinhAnhGiayRepository.save(hinh);
+        return toHinhAnh(saved);
+    }
+
+    @Transactional
     public void xoaHinhAnh(Integer id) {
         if (!hinhAnhGiayRepository.existsById(id)) {
             throw new ResourceNotFoundException("Hình ảnh #" + id + " không tồn tại");
@@ -823,9 +868,7 @@ public class QuanLySanPhamService {
                 h.getLaHinhChinh(), h.getTrangThai(), h.getNgayTao()
         );
     }
-
     // ─── Utils ───────────────────────────────────────────────────────────────
-
     private void validateProductPayload(
             Integer giayId,
             boolean requireProductFields,

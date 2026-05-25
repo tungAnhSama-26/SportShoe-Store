@@ -20,7 +20,7 @@ const loading = ref(false)
 const items = ref([])
 const danhMuc = ref(null)
 const currentPage = ref(0)
-const pageSize = ref(10)
+const pageSize = ref(5)
 const totalItems = ref(0)
 const totalPages = ref(0)
 const selectedProduct = ref(null)
@@ -257,8 +257,8 @@ async function loadData(page = 0) {
       mauSacId: filters.mauSacId,
       kichCoId: filters.kichCoId,
       trangThai: filters.trangThai,
-      page,
-      size: pageSize.value
+      page: selectedGiayId.value ? 0 : page,
+      size: selectedGiayId.value ? 1000 : pageSize.value
     })
     if (requestId !== latestLoadRequestId) return
     items.value = response.items || []
@@ -576,6 +576,7 @@ onUnmounted(() => {
       :page-size-options="pageSizeOptions"
       :updating-status-ids="updatingStatusIds"
       :focused-chi-tiet-id="focusedChiTietId"
+      :hide-pagination="!!selectedGiayId"
       @toggle-status="toggleBienTheStatus"
       @edit-variant="openEditVariantModal"
       @open-qr="openVariantQr"

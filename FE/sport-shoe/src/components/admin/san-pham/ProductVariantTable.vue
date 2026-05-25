@@ -39,6 +39,10 @@ const props = defineProps({
   focusedChiTietId: {
     type: Number,
     default: null
+  },
+  hidePagination: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -154,8 +158,8 @@ function openDiscountDetail(item) {
       </div>
     </div>
 
-    <div class="rounded-[24px] border border-slate-100">
-      <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
+    <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
+      <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
           <col class="w-[4%]" />
           <col class="w-[8%]" />
@@ -309,6 +313,7 @@ function openDiscountDetail(item) {
     </div>
 
     <AdminTableFooter
+      v-if="!hidePagination"
       :current-page="currentPage"
       :page-size="pageSize"
       :page-size-options="pageSizeOptions"

@@ -43,8 +43,19 @@ public class KichCoService {
     @Transactional
     public KichCoResponse taoKichCo(KichCoRequest req) {
         String giaTri = normalizeKichCoGiaTri(req.giaTri());
-        if (kichCoRepository.existsByGiaTriIgnoreCase(giaTri)) {
-            throw new BusinessException("Kích cỡ '" + giaTri + "' đã tồn tại");
+        var existingOpt = kichCoRepository.findByGiaTriIgnoreCase(giaTri);
+        
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Kích cỡ '" + giaTri + "' đã tồn tại");
+            }
+            existing.setTrangThai(1);
+            if (hasText(req.ghiChu())) {
+                existing.setGhiChu(req.ghiChu().trim());
+            }
+            existing.setNgayCapNhat(Instant.now());
+            return toKichCo(kichCoRepository.save(existing));
         }
 
         var entity = new KichCo();

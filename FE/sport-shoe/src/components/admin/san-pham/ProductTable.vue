@@ -221,11 +221,15 @@ function handlePageSizeChange(size) {
                     class="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] font-semibold text-slate-800"
                   >
                     <span class="whitespace-nowrap">{{ giaTrongBang(item).start }}</span>
+                    <span v-if="giaTrongBang(item).isRange" class="text-slate-400 font-normal mx-0.5">-</span>
+                    <span v-if="giaTrongBang(item).isRange" class="whitespace-nowrap">{{ giaTrongBang(item).end }}</span>
                   </div>
                 </div>
                 <div v-if="hasOriginalPrice(item)">
                   <div class="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs font-medium text-slate-400 line-through">
                     <span class="whitespace-nowrap">{{ giaGocTrongBang(item).start }}</span>
+                    <span v-if="giaGocTrongBang(item).isRange" class="mx-0.5">-</span>
+                    <span v-if="giaGocTrongBang(item).isRange" class="whitespace-nowrap">{{ giaGocTrongBang(item).end }}</span>
                   </div>
                 </div>
               </div>

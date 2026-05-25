@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { ImageOff, Plus, RefreshCw, Star, Trash2, Upload } from 'lucide-vue-next'
+import { ImageOff, Plus, RefreshCw, Star, Trash2, Upload, Pencil } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 
 const props = defineProps({
@@ -35,6 +35,7 @@ const emit = defineEmits(['updated', 'error', 'change-draft-images', 'saved'])
 const images = ref([])
 const loading = ref(false)
 const showAddForm = ref(false)
+const editingId = ref(null)
 const saving = ref(false)
 const deletingId = ref(null)
 const settingMainId = ref(null)
@@ -100,6 +101,7 @@ function clearForm() {
 
 function closeAddForm() {
   showAddForm.value = false
+  editingId.value = null
   clearForm()
 }
 
@@ -159,6 +161,16 @@ async function loadImages() {
 
 function openAddForm() {
   clearForm()
+  editingId.value = null
+  showAddForm.value = true
+}
+
+function openEditForm(item) {
+  clearForm()
+  editingId.value = item.id
+  form.url = item.url || ''
+  form.loaiHinh = item.loaiHinh || 2
+  form.moTa = item.moTa || ''
   showAddForm.value = true
 }
 
@@ -187,6 +199,38 @@ async function handleSave() {
   saving.value = true
   try {
     if (isDraftMode.value) {
+      if (editingId.value) {
+        let draftItemUpdated = false
+        const updatedDrafts = displayedImages.value.map(img => {
+          if (img.id === editingId.value) {
+            draftItemUpdated = true
+            return {
+              ...img,
+              url: form.url.trim(),
+              loaiHinh: Number(form.loaiHinh),
+              moTa: form.moTa.trim(),
+              laHinhChinh: Number(form.loaiHinh) === 1
+            }
+          }
+          return img
+        })
+        
+        if (draftItemUpdated && Number(form.loaiHinh) === 1) {
+            updatedDrafts.forEach(img => {
+                if (img.id !== editingId.value) {
+                    img.laHinhChinh = false
+                    img.loaiHinh = 2
+                }
+            })
+        }
+        
+        updateDraftImages(updatedDrafts)
+        closeAddForm()
+        emit('saved', buildSavedPayload())
+        emit('updated')
+        return true
+      }
+
       const shouldSetMain = Number(form.loaiHinh || 2) === 1 || !displayedImages.value.length
       const draftItem = {
         id: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -211,11 +255,18 @@ async function handleSave() {
       moTa: form.moTa.trim() || undefined
     }
 
-    for (const targetVariant of persistedTargetVariants.value) {
-      const created = await api.themHinhAnh(targetVariant.id, payload)
+    if (editingId.value) {
+      const updated = await api.capNhatHinhAnh(editingId.value, payload)
+      if (Number(payload.loaiHinh) === 1 && !updated.laHinhChinh) {
+        await api.datHinhChinh(updated.id)
+      }
+    } else {
+      for (const targetVariant of persistedTargetVariants.value) {
+        const created = await api.themHinhAnh(targetVariant.id, payload)
 
-      if (Number(payload.loaiHinh) === 1 && !created.laHinhChinh) {
-        await api.datHinhChinh(created.id)
+        if (Number(payload.loaiHinh) === 1 && !created.laHinhChinh) {
+          await api.datHinhChinh(created.id)
+        }
       }
     }
 
@@ -225,7 +276,7 @@ async function handleSave() {
     emit('updated')
     return true
   } catch (error) {
-    emit('error', error?.message || 'Thêm ảnh thất bại')
+    emit('error', error?.message || (editingId.value ? 'Cập nhật ảnh thất bại' : 'Thêm ảnh thất bại'))
     return false
   } finally {
     saving.value = false
@@ -343,6 +394,7 @@ watch(
   () => {
     images.value = []
     showAddForm.value = false
+    editingId.value = null
     clearForm()
     if (props.autoLoad && !isDraftMode.value) {
       loadImages()
@@ -424,6 +476,14 @@ defineExpose({
               {{ item.moTa || 'Không có mô tả' }}
             </p>
             <div class="flex items-center gap-1">
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition hover:bg-blue-200 disabled:opacity-60"
+                title="Sửa ảnh"
+                @click="openEditForm(item)"
+              >
+                <Pencil :size="14" />
+              </button>
               <button
                 v-if="!item.laHinhChinh"
                 type="button"
@@ -528,7 +588,7 @@ defineExpose({
               :disabled="saving"
               @click="handleSave"
             >
-              {{ saving ? 'Đang lưu...' : 'Lưu ảnh' }}
+              {{ saving ? 'Đang lưu...' : (editingId ? 'Cập nhật ảnh' : 'Lưu ảnh') }}
             </button>
           </div>
         </div>
