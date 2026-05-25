@@ -3,6 +3,8 @@ package com.example.server.core.admin.quanlyhoadon.controller;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.XacNhanHoanTienRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.XacNhanThanhToanCodRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonDetailResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonSummaryResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
@@ -85,6 +87,28 @@ public class QuanLyHoaDonController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Tinh phi van chuyen GHN thanh cong",
                 quanLyHoaDonService.tinhVaCapNhatPhiVanChuyenGhn(id, request)
+        ));
+    }
+
+    @PostMapping("/{id}/thanh-toan-cod")
+    public ResponseEntity<ApiResponse<HoaDonDetailResponse>> xacNhanThanhToanCod(
+            @PathVariable Integer id,
+            @Valid @RequestBody XacNhanThanhToanCodRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Xac nhan thanh toan COD thanh cong",
+                quanLyHoaDonService.xacNhanThanhToanCod(id, request)
+        ));
+    }
+
+    @PostMapping("/{id}/hoan-tien")
+    public ResponseEntity<ApiResponse<HoaDonDetailResponse>> xacNhanHoanTien(
+            @PathVariable Integer id,
+            @Valid @RequestBody XacNhanHoanTienRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Xac nhan hoan tien thanh cong",
+                quanLyHoaDonService.xacNhanHoanTien(id, request)
         ));
     }
 }
