@@ -43,3 +43,17 @@ export function tinhPhiVanChuyenGhn(id, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function xacNhanThanhToanCod(id, payload) {
+  return request(`/admin/hoa-don/${id}/thanh-toan-cod`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function xacNhanHoanTien(id, payload) {
+  return request(`/admin/hoa-don/${id}/hoan-tien`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

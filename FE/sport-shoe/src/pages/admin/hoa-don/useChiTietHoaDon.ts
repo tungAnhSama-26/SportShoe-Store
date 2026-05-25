@@ -24,7 +24,7 @@ import {
 } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
-import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn } from "../../../services/hoa-don";
+import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod } from "../../../services/hoa-don";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
@@ -49,6 +49,21 @@ export function useChiTietHoaDon() {
   const hienModalLichSu = ref(false);
   const hienModalSanPham = ref(false);
   const hienModalXacNhanHuy = ref(false);
+  const hienModalThanhToanCod = ref(false);
+  const dangXacNhanThanhToanCod = ref(false);
+  const formThanhToanCod = ref({
+    hinhThucThanhToan: 2,
+    tienKhachDua: "",
+    ghiChu: "",
+  });
+  const hienModalHoanTien = ref(false);
+  const dangXacNhanHoanTien = ref(false);
+  const formHoanTien = ref({
+    hinhThucHoanTien: 2,
+    soTienHoan: "",
+    maGiaoDichHoan: "",
+    ghiChu: "",
+  });
 
   const hienModalThongTin = ref(false);
   const tabHienTai = ref("donHang");
@@ -76,6 +91,10 @@ export function useChiTietHoaDon() {
   const tuKhoaSanPham = ref("");
   const ketQuaTimKiem = ref<SanPhamTaiQuay[]>([]);
   const dangTimKiem = ref(false);
+  const giaTuSanPham = ref("");
+  const giaDenSanPham = ref("");
+  const trangSanPhamHienTai = ref(1);
+  const soSanPhamMoiTrang = 5;
   const danhSachSanPhamUpdate = ref<
     Array<{ chiTietId: number; tenSanPham: string; soLuong: number; giaBan: number; maBienThe: string }>
   >([]);
@@ -89,6 +108,14 @@ export function useChiTietHoaDon() {
     { id: 6, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
   ];
 
+  const cacBuocGiaoThatBai = [
+    { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
+    { id: 2, key: "Đã xác nhận", ten: "Đã Xác Nhận", icon: markRaw(ClipboardCheck) },
+    { id: 3, key: "Chờ lấy hàng", ten: "Chờ Lấy Hàng", icon: markRaw(Package) },
+    { id: 4, key: "Chờ giao hàng", ten: "Chờ Giao Hàng", icon: markRaw(Truck) },
+    { id: 8, key: "Giao hàng thất bại", ten: "Giao Hàng Thất Bại", icon: markRaw(TriangleAlert) },
+  ];
+
   const cacBuocYeuCauHuy = [
     { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
     { id: 7, key: "Yêu cầu hủy", ten: "Yêu Cầu Hủy", icon: markRaw(TriangleAlert) },
@@ -99,11 +126,19 @@ export function useChiTietHoaDon() {
     { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
   ];
 
+  const donGiaoThatBai = computed(() => {
+    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+    return stt === "giao hàng thất bại" || stt === "giao_hang_that_bai";
+  });
+
   const laDonTaiQuay = computed(() => {
-    return hoaDon.value?.loaiDon === "Tại cửa hàng" || hoaDon.value?.kenhBan === 1;
+    return hoaDon.value?.loaiDon === "Cửa hàng" || hoaDon.value?.loaiDon === "Offline" || hoaDon.value?.loaiDon === "Tại cửa hàng" || hoaDon.value?.kenhBan === 1;
   });
 
   const cacBuoc = computed(() => {
+    if (donGiaoThatBai.value) {
+      return cacBuocGiaoThatBai;
+    }
     if (laDonTaiQuay.value) {
       return [
         { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
@@ -157,6 +192,7 @@ export function useChiTietHoaDon() {
     if (stt === "chờ lấy hàng" || stt === "cho_lay_hang" || stt === "cho_giao_hang") return 3;
     if (stt === "chờ giao hàng" || stt === "đang vận chuyển" || stt === "chờ vận chuyển" || stt === "dang_van_chuyen") return 4;
     if (stt === "đã giao hàng" || stt === "vận chuyển" || stt === "da_giao_hang") return 5;
+    if (stt === "giao hàng thất bại" || stt === "giao_hang_that_bai") return 8;
     if (stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh") return 6;
     return 0;
   });
@@ -235,6 +271,86 @@ export function useChiTietHoaDon() {
   );
   const thanhToanGanNhat = computed(() => hoaDon.value?.lichSuThanhToan?.[0] ?? null);
   const lichSuRutGon = computed(() => hoaDon.value?.lichSuHoaDon ?? []);
+  const thanhToanCodDangCho = computed(() =>
+    (hoaDon.value?.lichSuThanhToan ?? []).find(
+      (item: any) => item.phuongThucThanhToan === "COD" && item.trangThaiThanhToan === "Chờ thanh toán",
+    ) ?? null,
+  );
+  const coTheThanhToanCod = computed(() => {
+    const trangThai = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+    return trangThai === "đã giao hàng" && Boolean(thanhToanCodDangCho.value);
+  });
+  const thanhToanCanHoanTien = computed(() =>
+    (hoaDon.value?.lichSuThanhToan ?? []).find(
+      (item: any) => item.trangThaiThanhToan === "Cần hoàn tiền",
+    ) ?? null,
+  );
+  const coTheHoanTien = computed(() => Boolean(thanhToanCanHoanTien.value));
+  const tongTienHoan = computed(() => thanhToanCanHoanTien.value?.tongTien ?? 0);
+  const tongTienThanhToanCod = computed(() => thanhToanCodDangCho.value?.tongTien ?? hoaDon.value?.tongTien ?? tongKhachCanTra.value);
+  const noiDungChuyenKhoanCod = computed(() => `COD ${hoaDon.value?.maHoaDon || ""}`.trim());
+  const qrThanhToanCodUrl = computed(() => {
+    const amount = Math.max(Number(tongTienThanhToanCod.value) || 0, 0);
+    const description = encodeURIComponent(noiDungChuyenKhoanCod.value);
+    return `https://img.vietqr.io/image/MB-0876524519-compact2.png?amount=${amount}&addInfo=${description}&accountName=SPORTSHOE%20STORE`;
+  });
+  const tienThieuThanhToanCod = computed(() => {
+    if (formThanhToanCod.value.hinhThucThanhToan !== 1) {
+      return 0;
+    }
+    const tienKhachDua = Number(formThanhToanCod.value.tienKhachDua) || 0;
+    return Math.max(tongTienThanhToanCod.value - tienKhachDua, 0);
+  });
+  const danhSachSanPhamHoaDon = computed(() => hoaDon.value?.sanPham ?? []);
+  const giaLonNhatSanPham = computed(() =>
+    danhSachSanPhamHoaDon.value.reduce((max: number, item: any) => Math.max(max, Number(item.donGia) || 0), 0),
+  );
+  const giaTuSanPhamSo = computed({
+    get: () => Math.min(Number(giaTuSanPham.value) || 0, giaLonNhatSanPham.value),
+    set: (value: number) => {
+      const giaMax = giaLonNhatSanPham.value;
+      const giaDen = giaDenSanPham.value === "" ? giaMax : Number(giaDenSanPham.value) || 0;
+      giaTuSanPham.value = String(Math.max(0, Math.min(Number(value) || 0, giaDen || giaMax)));
+    },
+  });
+  const giaDenSanPhamSo = computed({
+    get: () => {
+      const giaMax = giaLonNhatSanPham.value;
+      if (giaDenSanPham.value === "") return giaMax;
+      return Math.max(giaTuSanPhamSo.value, Math.min(Number(giaDenSanPham.value) || 0, giaMax));
+    },
+    set: (value: number) => {
+      const giaMax = giaLonNhatSanPham.value;
+      giaDenSanPham.value = String(Math.max(giaTuSanPhamSo.value, Math.min(Number(value) || 0, giaMax)));
+    },
+  });
+  const dinhDangTienKhongDonVi = (value: number) => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value || 0);
+  const nhanKhoangGiaSanPham = computed(() =>
+    `${dinhDangTienKhongDonVi(giaTuSanPhamSo.value)} - ${dinhDangTienKhongDonVi(giaDenSanPhamSo.value)} (Max: ${dinhDangTienKhongDonVi(giaLonNhatSanPham.value)})`,
+  );
+  const styleKhoangGiaSanPham = computed(() => {
+    const giaMax = giaLonNhatSanPham.value || 1;
+    const tu = (giaTuSanPhamSo.value / giaMax) * 100;
+    const den = (giaDenSanPhamSo.value / giaMax) * 100;
+    return {
+      background: `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${tu}%, #B82220 ${tu}%, #B82220 ${den}%, #e5e7eb ${den}%, #e5e7eb 100%)`,
+    };
+  });
+  const danhSachSanPhamDaLoc = computed(() => {
+    const giaTu = Number(giaTuSanPham.value) || 0;
+    const giaDen = Number(giaDenSanPham.value) || 0;
+
+    return danhSachSanPhamHoaDon.value.filter((item: any) => {
+      const donGia = Number(item.donGia) || 0;
+      return (!giaTu || donGia >= giaTu) && (!giaDen || donGia <= giaDen);
+    });
+  });
+  const tongTrangSanPham = computed(() => Math.ceil(danhSachSanPhamDaLoc.value.length / soSanPhamMoiTrang) || 1);
+  const hienPhanTrangSanPham = computed(() => danhSachSanPhamDaLoc.value.length > soSanPhamMoiTrang);
+  const danhSachSanPhamPhanTrang = computed(() => {
+    const start = (trangSanPhamHienTai.value - 1) * soSanPhamMoiTrang;
+    return danhSachSanPhamDaLoc.value.slice(start, start + soSanPhamMoiTrang);
+  });
   const thongTinBuoc = computed(() => {
     const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
     const nguonBuoc = donDaHuy.value ? cacBuocDaHuy : donYeuCauHuy.value ? cacBuocYeuCauHuy : cacBuoc.value;
@@ -245,11 +361,11 @@ export function useChiTietHoaDon() {
       ) ?? null;
       
       let time = banGhi?.ngayTao;
-      let staff = banGhi?.tenNhanVien;
+      let staff = banGhi?.maNhanVien;
       
       if (!banGhi && buoc.id === 1) {
         time = hoaDon.value?.ngayTao;
-        staff = hoaDon.value?.tenNhanVien ?? "Admin";
+        staff = hoaDon.value?.maNhanVien ?? "Hệ thống";
       }
 
       return {
@@ -451,7 +567,9 @@ export function useChiTietHoaDon() {
     { key: "Chờ lấy hàng", label: "Chờ lấy hàng" },
     { key: "Chờ giao hàng", label: "Chờ giao hàng" },
     { key: "Đã giao hàng", label: "Đã giao hàng" },
+    { key: "Giao hàng thất bại", label: "Giao hàng thất bại" },
     { key: "Hoàn thành", label: "Hoàn thành" },
+    { key: "Hủy", label: "Hủy" },
     { key: "Yêu cầu hủy", label: "Yêu cầu hủy" },
     { key: "Cần hoàn tiền", label: "Cần hoàn tiền" }
   ];
@@ -466,6 +584,7 @@ export function useChiTietHoaDon() {
     else if (currentStt === 'chờ lấy hàng' || currentStt === 'cho_lay_hang' || currentStt === 'cho_giao_hang') normalizedStt = "Chờ lấy hàng";
     else if (currentStt === 'chờ giao hàng' || currentStt === 'đang vận chuyển' || currentStt === 'chờ vận chuyển' || currentStt === 'dang_van_chuyen') normalizedStt = "Chờ giao hàng";
     else if (currentStt === 'đã giao hàng' || currentStt === 'vận chuyển' || currentStt === 'da_giao_hang') normalizedStt = "Đã giao hàng";
+    else if (currentStt === 'giao hàng thất bại' || currentStt === 'giao_hang_that_bai') normalizedStt = "Giao hàng thất bại";
     else if (currentStt === 'hoàn thành' || currentStt === 'đã hoàn thành' || currentStt === 'hoan_thanh') normalizedStt = "Hoàn thành";
     else if (currentStt === 'yêu cầu hủy' || currentStt === 'yeu_cau_huy') normalizedStt = "Yêu cầu hủy";
     else if (currentStt === 'cần hoàn tiền' || currentStt === 'can_hoan_tien') normalizedStt = "Cần hoàn tiền";
@@ -489,9 +608,19 @@ export function useChiTietHoaDon() {
     if (donDaHoanThanh.value) {
       return key === "Hoàn thành";
     }
+    if (donGiaoThatBai.value) {
+      return key === "Giao hàng thất bại" || key === "Hủy" || key === "Cần hoàn tiền";
+    }
+    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+    if (stt === "chờ giao hàng" && key === "Giao hàng thất bại") {
+      return true;
+    }
+    if (stt === "đã giao hàng" && key === "Hoàn thành") {
+      return true;
+    }
     return laDonTaiQuay.value
       ? (index === 0 || key === "Hoàn thành")
-      : (index === indexTrangThaiHienTai.value || index === indexTrangThaiHienTai.value + 1);
+      : (key !== "Giao hàng thất bại" && (index === indexTrangThaiHienTai.value || index === indexTrangThaiHienTai.value + 1));
   }
 
   watch(hienModalThongTin, (val) => {
@@ -508,6 +637,7 @@ export function useChiTietHoaDon() {
     else if (stt === 'chờ lấy hàng' || stt === 'cho_lay_hang' || stt === 'cho_giao_hang') defaultStt = "Chờ lấy hàng";
     else if (stt === 'chờ giao hàng' || stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Chờ giao hàng";
     else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
+    else if (stt === 'giao hàng thất bại' || stt === 'giao_hang_that_bai') defaultStt = "Giao hàng thất bại";
     else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
     else if (stt === 'yêu cầu hủy' || stt === 'yeu_cau_huy') defaultStt = "Yêu cầu hủy";
     else if (stt === 'cần hoàn tiền' || stt === 'can_hoan_tien') defaultStt = "Cần hoàn tiền";
@@ -529,6 +659,16 @@ export function useChiTietHoaDon() {
     hienModalXacNhan.value = false;
     hienModalSanPham.value = false;
     hienModalThongTin.value = false;
+  });
+
+  watch([giaTuSanPham, giaDenSanPham, () => hoaDon.value?.sanPham?.length], () => {
+    trangSanPhamHienTai.value = 1;
+  });
+
+  watch(tongTrangSanPham, (total) => {
+    if (trangSanPhamHienTai.value > total) {
+      trangSanPhamHienTai.value = total;
+    }
   });
 
   async function handleLuuThongTin() {
@@ -598,7 +738,80 @@ export function useChiTietHoaDon() {
     });
   }
 
+  function moModalThanhToanCod() {
+    if (!coTheThanhToanCod.value) return;
+    formThanhToanCod.value = {
+      hinhThucThanhToan: 2,
+      tienKhachDua: String(tongTienThanhToanCod.value || ""),
+      ghiChu: "Xác nhận thanh toán COD khi giao hàng",
+    };
+    hienModalThanhToanCod.value = true;
+  }
+
+  async function handleXacNhanThanhToanCod() {
+    if (!hoaDon.value || dangXacNhanThanhToanCod.value) return;
+    if (formThanhToanCod.value.hinhThucThanhToan === 1 && tienThieuThanhToanCod.value > 0) {
+      hienThiThongBao("warning", "Thiếu tiền thanh toán", "Tiền khách đưa chưa đủ để xác nhận thanh toán COD.");
+      return;
+    }
+
+    dangXacNhanThanhToanCod.value = true;
+    try {
+      hoaDon.value = await xacNhanThanhToanCod(hoaDon.value.id, {
+        hinhThucThanhToan: formThanhToanCod.value.hinhThucThanhToan,
+        tienKhachDua: Number(formThanhToanCod.value.tienKhachDua) || tongTienThanhToanCod.value,
+        ghiChu: formThanhToanCod.value.ghiChu,
+      });
+      hienThiThongBao("success", "Đã xác nhận thanh toán", "Thanh toán COD đã được ghi nhận.");
+      hienModalThanhToanCod.value = false;
+    } catch (error) {
+      hienThiThongBao("error", "Lỗi xác nhận thanh toán", getDisplayErrorMessage(error, "Không thể xác nhận thanh toán COD."));
+    } finally {
+      dangXacNhanThanhToanCod.value = false;
+    }
+  }
+
+  function moModalHoanTien() {
+    if (!coTheHoanTien.value) return;
+    formHoanTien.value = {
+      hinhThucHoanTien: 2,
+      soTienHoan: String(tongTienHoan.value || ""),
+      maGiaoDichHoan: "",
+      ghiChu: "Đã hoàn tiền cho khách hàng",
+    };
+    hienModalHoanTien.value = true;
+  }
+
+  async function handleXacNhanHoanTien() {
+    if (!hoaDon.value || dangXacNhanHoanTien.value || !thanhToanCanHoanTien.value) return;
+    const soTienHoan = Number(formHoanTien.value.soTienHoan) || 0;
+    if (soTienHoan <= 0) {
+      hienThiThongBao("warning", "Số tiền không hợp lệ", "Số tiền hoàn phải lớn hơn 0.");
+      return;
+    }
+    if (soTienHoan !== Number(tongTienHoan.value || 0)) {
+      hienThiThongBao("warning", "Số tiền hoàn chưa đúng", "Hiện tại chỉ hỗ trợ hoàn toàn bộ số tiền cần hoàn.");
+      return;
+    }
+
+    dangXacNhanHoanTien.value = true;
+    try {
+      hoaDon.value = await xacNhanHoanTien(hoaDon.value.id, {
+        hinhThucHoanTien: formHoanTien.value.hinhThucHoanTien,
+        soTienHoan,
+        maGiaoDichHoan: formHoanTien.value.maGiaoDichHoan,
+        ghiChu: formHoanTien.value.ghiChu,
+      });
+      hienThiThongBao("success", "Đã xác nhận hoàn tiền", "Giao dịch hoàn tiền đã được ghi nhận.");
+      hienModalHoanTien.value = false;
+    } catch (error) {
+      hienThiThongBao("error", "Lỗi xác nhận hoàn tiền", getDisplayErrorMessage(error, "Không thể xác nhận hoàn tiền."));
+    } finally {
+      dangXacNhanHoanTien.value = false;
+    }
+  }
+
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint };
+  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien };
 }
