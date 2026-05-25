@@ -105,8 +105,8 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
       <div class="p-6">
         <Table red-header>
           <template #header>
-            <th class="w-[6%] px-4 py-3.5">Ảnh</th>
             <th class="w-[4%] px-4 py-3.5">STT</th>
+            <th class="w-[6%] px-4 py-3.5">Ảnh</th>
             <th class="w-[13%] px-4 py-3.5">Tên đăng nhập</th>
             <th class="w-[13%] px-4 py-3.5">Họ tên</th>
             <th class="w-[16%] px-4 py-3.5">Email</th>
@@ -129,6 +129,7 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
               :key="kh.id"
               class="hover:bg-slate-50/50 transition-colors duration-150"
             >
+              <td class="px-4 py-2.5 font-semibold text-slate-500">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
               <td class="px-4 py-2.5">
                 <img
                   :src="kh.hinhAnh || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(kh.hoTen || 'KH') + '&background=f1f5f9&color=475569&size=64')"
@@ -136,7 +137,6 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
                   class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
                 />
               </td>
-              <td class="px-4 py-2.5 font-semibold text-slate-500">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
               <td class="px-4 py-2.5 font-semibold text-slate-800">
                 <div class="truncate max-w-[120px]" :title="kh.tenDangNhap">{{ kh.tenDangNhap }}</div>
               </td>
@@ -146,8 +146,8 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
               <td class="px-4 py-2.5 text-[13px] text-slate-600">
                 <div class="truncate max-w-[160px]" :title="kh.email || '—'">{{ kh.email || '—' }}</div>
               </td>
-              <td class="px-4 py-2.5 text-[12px] text-slate-500">
-                <div class="truncate max-w-[180px]" :title="kh.diaChiMacDinh || '—'">{{ kh.diaChiMacDinh || '—' }}</div>
+              <td class="px-4 py-2.5 text-[12px] text-slate-500 leading-relaxed">
+                {{ kh.diaChiMacDinh || '—' }}
               </td>
               <td class="px-4 py-2.5 text-slate-600 text-[13px]">
                 <div class="truncate" :title="kh.sdtMacDinh || kh.sdt || '—'">{{ kh.sdtMacDinh || kh.sdt || '—' }}</div>
