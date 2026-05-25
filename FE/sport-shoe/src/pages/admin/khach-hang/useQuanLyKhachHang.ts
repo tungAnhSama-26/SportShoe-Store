@@ -400,31 +400,15 @@ export function useQuanLyKhachHang() {
       kh.diaChiMacDinh = macDinh
         ? `${macDinh.diaChiCuThe}, ${macDinh.phuongXa}, ${macDinh.quanHuyen}, ${macDinh.tinhThanh}`
         : null;
+      kh.sdtMacDinh = macDinh ? macDinh.sdt : null;
     }
   }
 
   // ========================
-  // MODAL ĐƠN HÀNG
+  // ĐƠN HÀNG — CHUYỂN TRANG
   // ========================
-  const khModalDonHang = ref<any>(null);
-  const dsHoaDonModal = ref<any[]>([]);
-  const dangTaiDonHang = ref(false);
-
-  async function moModalDonHang(kh: any) {
-    khModalDonHang.value = kh;
-    dangTaiDonHang.value = true;
-    try {
-      dsHoaDonModal.value = await layHoaDonTheoKhachHang(kh.id);
-    } catch { dsHoaDonModal.value = []; } finally { dangTaiDonHang.value = false; }
-  }
-
-  function dongModalDonHang() {
-    khModalDonHang.value = null;
-    dsHoaDonModal.value = [];
-  }
-
-  function xemChiTietDon(id: number) {
-    router.push({ name: "admin-hoa-don-chi-tiet", params: { id } });
+  function moModalDonHang(kh: any) {
+    router.push({ name: "admin-khach-hang-don-hang", params: { id: kh.id } });
   }
 
   onMounted(() => {
@@ -436,5 +420,5 @@ export function useQuanLyKhachHang() {
     taiThongBaoDieuHuong();
   });
 
-  return { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, toast, toastTimer, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, khModalDonHang, dsHoaDonModal, dangTaiDonHang, moModalDonHang, dongModalDonHang, xemChiTietDon };
+  return { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, toast, toastTimer, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, moModalDonHang };
 }

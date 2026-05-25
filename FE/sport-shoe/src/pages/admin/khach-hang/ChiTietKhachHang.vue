@@ -84,6 +84,7 @@ const form = ref({
   hoTen: "",
   email: "",
   sdt: "",
+  gioiTinh: "",
   ngaySinh: "",
   hinhAnh: "",
   matKhau: "",
@@ -174,6 +175,7 @@ async function taiChiTiet() {
       hoTen: data.hoTen,
       email: data.email ?? "",
       sdt: data.sdt ?? "",
+      gioiTinh: data.gioiTinh != null ? String(data.gioiTinh) : "",
       ngaySinh: data.ngaySinh ?? "",
       hinhAnh: data.hinhAnh ?? "",
       matKhau: "",
@@ -243,6 +245,7 @@ async function luu() {
         hoTen,
         email: email || undefined,
         sdt: sdt || undefined,
+        gioiTinh: form.value.gioiTinh !== "" ? Number(form.value.gioiTinh) : undefined,
         ngaySinh: ngaySinh || undefined,
         hinhAnh: hinhAnh || undefined,
         matKhau: normalizeText(form.value.matKhau),
@@ -280,6 +283,7 @@ async function luu() {
         hoTen,
         email: email || undefined,
         sdt: sdt || undefined,
+        gioiTinh: form.value.gioiTinh !== "" ? Number(form.value.gioiTinh) : undefined,
         ngaySinh: ngaySinh || undefined,
         hinhAnh: hinhAnh || undefined,
       });
@@ -450,8 +454,13 @@ onMounted(taiChiTiet);
               </label>
 
               <label class="space-y-2">
-                <span class="text-[13px] font-semibold text-slate-500">Số điện thoại</span>
-                <input v-model="form.sdt" type="tel" placeholder="Nhập SĐT" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition" />
+                <span class="text-[13px] font-semibold text-slate-500">Giới tính</span>
+                <select v-model="form.gioiTinh" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition">
+                  <option value="">-- Chọn giới tính --</option>
+                  <option value="1">Nam</option>
+                  <option value="0">Nữ</option>
+                  <option value="2">Khác</option>
+                </select>
               </label>
 
               <label class="space-y-2">
