@@ -35,11 +35,12 @@ function isHetHan(ngayKetThuc) {
 }
 
 function mauTrangThai(trangThai, ngayKetThuc) {
-  if (isHetHan(ngayKetThuc)) return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+  if (isHetHan(ngayKetThuc) || Number(trangThai) === 2) {
+    return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+  }
   if (Number(trangThai) === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
-  if (Number(trangThai) === 2) return "bg-slate-100 text-slate-500 ring-1 ring-slate-200";
   if (Number(trangThai) === 4) return "bg-sky-50 text-sky-600 ring-1 ring-sky-100";
-  return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+  return "bg-slate-100 text-slate-500 ring-1 ring-slate-200";
 }
 
 function statusText(value, ngayKetThuc) {
