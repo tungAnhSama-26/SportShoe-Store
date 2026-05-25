@@ -29,6 +29,7 @@ type TrangThaiLoc =
   | "Chờ lấy hàng"
   | "Chờ giao hàng"
   | "Đã giao hàng"
+  | "Giao hàng thất bại"
   | "Hoàn thành"
   | "Hủy"
   | "Yêu cầu hủy"
@@ -39,6 +40,7 @@ type HoaDonItem = {
   maHoaDon: string;
   maNhanVien: string;
   tenKhachHang: string;
+  soDienThoai?: string;
   tongTien: number;
   ngayTao: string;
   loaiDon: string;
@@ -58,6 +60,7 @@ const dsTrangThai: TrangThaiLoc[] = [
   "Chờ lấy hàng",
   "Chờ giao hàng",
   "Đã giao hàng",
+  "Giao hàng thất bại",
   "Hoàn thành",
   "Hủy",
   "Yêu cầu hủy",
@@ -73,6 +76,7 @@ const mauTrangThai: Record<string, string> = {
   "Chờ lấy hàng": "bg-blue-50 text-blue-600",
   "Chờ giao hàng": "bg-violet-50 text-violet-600",
   "Đã giao hàng": "bg-cyan-50 text-cyan-600",
+  "Giao hàng thất bại": "bg-rose-50 text-rose-600",
   "Hoàn thành": "bg-emerald-50 text-emerald-600",
   Hủy: "bg-stone-100 text-stone-600",
   "Yêu cầu hủy": "bg-primary/5 text-primary",
@@ -235,6 +239,7 @@ function xuatExcel() {
       { label: "Mã hóa đơn", key: "maHoaDon" },
       { label: "Mã nhân viên", value: (row) => row.maNhanVien || "—" },
       { label: "Khách hàng", value: (row) => row.tenKhachHang || "—" },
+      { label: "Số điện thoại", value: (row) => row.soDienThoai || "—" },
       { label: "Tổng tiền", value: (row) => dinhDangTien(row.tongTien) },
       { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
       { label: "Loại đơn", value: (row) => row.loaiDon || "—" },
@@ -312,7 +317,7 @@ onMounted(taiDanhSach);
             <input
               v-model="boLoc.keyword"
               type="text"
-              placeholder="Tìm theo mã hóa đơn, mã/tên nhân viên, khách hàng..."
+              placeholder="Mã hóa đơn / mã nhân viên..."
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
             />
           </div>
@@ -381,8 +386,8 @@ onMounted(taiDanhSach);
             class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
           >
             <option value="">Tất cả loại đơn</option>
-            <option value="Tại cửa hàng">Tại cửa hàng</option>
-            <option value="Online">Online</option>
+            <option value="Cửa hàng">Cửa hàng</option>
+            <option value="Trực tuyến">Trực tuyến</option>
           </select>
         </label>
 
@@ -437,6 +442,7 @@ onMounted(taiDanhSach);
               <th class="px-4 py-3">Mã hóa đơn</th>
               <th class="px-4 py-3">Mã nhân viên</th>
               <th class="px-4 py-3">Khách hàng</th>
+              <th class="px-4 py-3">SĐT khách hàng</th>
               <th class="px-4 py-3">Tổng tiền</th>
               <th class="px-4 py-3">Ngày tạo</th>
               <th class="px-4 py-3">Loại đơn</th>
@@ -445,10 +451,10 @@ onMounted(taiDanhSach);
           </template>
           <template #body>
             <tr v-if="dangTai">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu hóa đơn...</td>
+              <td colspan="10" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu hóa đơn...</td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có hóa đơn phù hợp.</td>
+              <td colspan="10" class="py-10 text-center text-sm text-slate-400">Không có hóa đơn phù hợp.</td>
             </tr>
             <tr
               v-for="(hoaDon, index) in danhSachPhanTrang"
@@ -461,6 +467,7 @@ onMounted(taiDanhSach);
               <td class="px-4 py-4 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
               <td class="px-4 py-4">{{ hoaDon.maNhanVien || "—" }}</td>
               <td class="px-4 py-4">{{ hoaDon.tenKhachHang || "—" }}</td>
+              <td class="px-4 py-4">{{ hoaDon.soDienThoai || "—" }}</td>
               <td class="px-4 py-4 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
               <td class="px-4 py-4">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
               <td class="px-4 py-4">{{ hoaDon.loaiDon }}</td>

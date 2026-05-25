@@ -407,7 +407,7 @@ CREATE TABLE hoa_don (
     ngay_cap_nhat         DATETIME2        NULL,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
-    CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (1, 2, 3, 4, 5, 6, 7, 8, 9)),
+    CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
     CONSTRAINT ck_hoa_don_tong_tien CHECK (
         tong_tien_hang >= 0 AND tien_giam >= 0 AND tong_tien_thanh_toan >= 0
     ),
@@ -483,8 +483,8 @@ CREATE TABLE thanh_toan (
     trang_thai        INT              NOT NULL,
     ghi_chu           NVARCHAR(500)    NULL,
     ngay_tao          DATETIME2        NOT NULL CONSTRAINT df_tt_ngay_tao DEFAULT SYSDATETIME(),
-    CONSTRAINT ck_tt_hinh_thuc CHECK (hinh_thuc IN (1, 2, 3)),
-    CONSTRAINT ck_tt_trang_thai CHECK (trang_thai IN (0, 1, 2)),
+    CONSTRAINT ck_tt_hinh_thuc CHECK (hinh_thuc IN (1, 2, 3, 4)),
+    CONSTRAINT ck_tt_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5)),
     CONSTRAINT ck_tt_so_tien CHECK (so_tien > 0),
     CONSTRAINT ck_tt_thoi_lai CHECK (tien_thoi_lai IS NULL OR tien_thoi_lai >= 0),
     CONSTRAINT fk_tt_hoa_don FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id) ON DELETE CASCADE,
