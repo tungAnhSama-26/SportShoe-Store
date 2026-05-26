@@ -313,7 +313,7 @@ onActivated(() => {
 
     <Card>
       <template #header>
-        <div class="mb-5 flex items-center gap-3">
+        <div class="flex items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
             <Filter class="h-5 w-5" />
           </div>
@@ -383,7 +383,7 @@ onActivated(() => {
     <!-- Danh sách -->
     <Card>
       <template #header>
-        <div class="mb-5 flex items-center gap-3">
+        <div class="flex items-center gap-3">
           <div
             class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary"
           >

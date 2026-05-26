@@ -293,13 +293,11 @@ onMounted(taiDanhSach);
 
 <template>
   <div class="space-y-5">
-    <section>
-      <h1 class="admin-page-title text-[30px]">Quản lý hóa đơn</h1>
-    </section>
+    <!-- Header removed -->
 
     <Card>
       <template #header>
-        <div class="mb-5 flex items-center gap-3">
+        <div class="flex items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
             <Filter class="h-5 w-5" />
           </div>
@@ -406,7 +404,7 @@ onMounted(taiDanhSach);
 
     <Card>
       <template #header>
-        <div class="mb-5 flex items-center gap-3">
+        <div class="flex items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary">
             <FileText class="h-5 w-5" />
           </div>
@@ -438,16 +436,16 @@ onMounted(taiDanhSach);
         <div :key="trangThaiDangChon" class="admin-table-scroll">
         <Table>
           <template #header>
-              <th class="px-4 py-3">STT</th>
-              <th class="px-4 py-3">Mã hóa đơn</th>
-              <th class="px-4 py-3">Mã nhân viên</th>
-              <th class="px-4 py-3">Khách hàng</th>
-              <th class="px-4 py-3">SĐT khách hàng</th>
-              <th class="px-4 py-3">Tổng tiền</th>
-              <th class="px-4 py-3">Ngày tạo</th>
-              <th class="px-4 py-3">Loại đơn</th>
-              <th class="px-4 py-3">Trạng thái</th>
-              <th class="px-2.5 py-3 text-center whitespace-nowrap">Hành động</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">STT</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Mã hóa đơn</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Mã nhân viên</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Khách hàng</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">SĐT khách hàng</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Tổng tiền</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Ngày tạo</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Loại đơn</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Trạng thái</th>
+              <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">Hành động</th>
           </template>
           <template #body>
             <tr v-if="dangTai">
@@ -459,27 +457,27 @@ onMounted(taiDanhSach);
             <tr
               v-for="(hoaDon, index) in danhSachPhanTrang"
               :key="hoaDon.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 [&>td]:whitespace-nowrap [&>td]:px-3 [&>td]:py-3.5"
+              class="bg-white text-[13px] text-slate-700 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50 transition-colors [&>td]:whitespace-nowrap"
             >
-              <td class="rounded-l-2xl px-4 py-4 font-semibold">
+              <td class="rounded-l-2xl px-3 py-3.5 font-semibold">
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
-              <td class="px-4 py-4">{{ hoaDon.maNhanVien || "—" }}</td>
-              <td class="px-4 py-4">{{ hoaDon.tenKhachHang || "—" }}</td>
-              <td class="px-4 py-4">{{ hoaDon.soDienThoai || "—" }}</td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
-              <td class="px-4 py-4">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
-              <td class="px-4 py-4">{{ hoaDon.loaiDon }}</td>
-              <td class="px-3 py-4 text-center">
+              <td class="px-3 py-3.5 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
+              <td class="px-3 py-3.5">{{ hoaDon.maNhanVien || "—" }}</td>
+              <td class="px-3 py-3.5">{{ hoaDon.tenKhachHang || "—" }}</td>
+              <td class="px-3 py-3.5">{{ hoaDon.soDienThoai || "—" }}</td>
+              <td class="px-3 py-3.5 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
+              <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
+              <td class="px-3 py-3.5">{{ hoaDon.loaiDon }}</td>
+              <td class="px-3 py-3.5 text-center">
                 <span
-                  class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-semibold"
+                  class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
                   :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
                 >
                   {{ hoaDon.trangThai }}
                 </span>
               </td>
-              <td class="rounded-r-2xl px-2.5 py-4 text-center">
+              <td class="rounded-r-2xl px-3 py-3.5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
                   <button
                     type="button"

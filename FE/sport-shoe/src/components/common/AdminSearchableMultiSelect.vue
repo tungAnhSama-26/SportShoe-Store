@@ -210,7 +210,7 @@ defineExpose({
             <div class="flex items-center gap-2">
               <span
                 v-if="option.color"
-                class="h-3 w-3 shrink-0 rounded-full border border-black/5"
+                class="h-3 w-3 shrink-0 rounded-full border border-slate-300"
                 :style="{ backgroundColor: option.color }"
               ></span>
               <span class="truncate">{{ option.label }}</span>

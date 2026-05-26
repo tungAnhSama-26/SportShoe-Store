@@ -46,9 +46,7 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
       </div>
     </Transition>
 
-    <section class="flex items-end justify-between">
-      <h1 class="admin-page-title text-[30px]">Quản lý phiếu giảm giá</h1>
-    </section>
+    <!-- Header removed -->
 
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center gap-3">

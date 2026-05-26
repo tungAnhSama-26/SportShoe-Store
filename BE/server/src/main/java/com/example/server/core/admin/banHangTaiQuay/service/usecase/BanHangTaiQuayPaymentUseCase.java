@@ -28,7 +28,7 @@ public class BanHangTaiQuayPaymentUseCase {
 
     public void validateTienKhachDua(BigDecimal tienKhachDua) {
         if (tienKhachDua != null && tienKhachDua.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("Tien khach dua khong duoc am");
+            throw new BusinessException("Tiền khách đưa không được âm");
         }
     }
 

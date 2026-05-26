@@ -63,7 +63,7 @@ public class DotGiamGiaSanPhamService {
     @Transactional
     public DotGiamGiaSanPham add(DotGiamGiaSanPhamRequest request) {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
         GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
 
@@ -87,10 +87,10 @@ public class DotGiamGiaSanPhamService {
     @Transactional
     public DotGiamGiaSanPham update(Integer id, DotGiamGiaSanPhamRequest request) {
         DotGiamGiaSanPham dotGiamGiaSanPham = dotGiamGiaSanPhamRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia san pham"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá san pham"));
 
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
         GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
 
@@ -117,7 +117,7 @@ public class DotGiamGiaSanPhamService {
     @Transactional
     public void saveAll(DotGiamGiaSanPhamBulkRequest request) {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
 
         // 1. Lấy danh sách ID đã có
         List<DotGiamGiaSanPham> currentLinks = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(request.getDotGiamGiaId());

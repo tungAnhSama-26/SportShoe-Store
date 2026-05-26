@@ -44,7 +44,7 @@ public class QuanLyHoaDonController {
             @RequestParam(name = "denNgay", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay danh sach hoa don thanh cong",
+                "Lấy danh sách hóa đơn thành công",
                 quanLyHoaDonService.layDanhSachHoaDon(keyword, loaiDon, trangThai, tuNgay, denNgay)
         ));
     }
@@ -52,7 +52,7 @@ public class QuanLyHoaDonController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HoaDonDetailResponse>> layChiTietHoaDon(@PathVariable Integer id) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay chi tiet hoa don thanh cong",
+                "Lấy chi tiết hóa đơn thành công",
                 quanLyHoaDonService.layChiTietHoaDon(id)
         ));
     }
@@ -63,7 +63,7 @@ public class QuanLyHoaDonController {
             @Valid @RequestBody CapNhatTrangThaiHoaDonRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Cap nhat trang thai hoa don thanh cong",
+                "Cập nhật trạng thái hóa đơn thành công",
                 quanLyHoaDonService.capNhatTrangThaiHoaDon(id, request)
         ));
     }
@@ -74,7 +74,7 @@ public class QuanLyHoaDonController {
             @Valid @RequestBody CapNhatSanPhamHoaDonRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Cap nhat san pham hoa don thanh cong",
+                "Cập nhật sản phẩm hóa đơn thành công",
                 quanLyHoaDonService.capNhatSanPhamHoaDon(id, request)
         ));
     }
@@ -85,7 +85,7 @@ public class QuanLyHoaDonController {
             @Valid @RequestBody TinhPhiVanChuyenGhnRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tinh phi van chuyen GHN thanh cong",
+                "Tính phí vận chuyển GHN thành công",
                 quanLyHoaDonService.tinhVaCapNhatPhiVanChuyenGhn(id, request)
         ));
     }
@@ -96,7 +96,7 @@ public class QuanLyHoaDonController {
             @Valid @RequestBody XacNhanThanhToanCodRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Xac nhan thanh toan COD thanh cong",
+                "Xác nhận thanh toán COD thành công",
                 quanLyHoaDonService.xacNhanThanhToanCod(id, request)
         ));
     }
@@ -107,7 +107,7 @@ public class QuanLyHoaDonController {
             @Valid @RequestBody XacNhanHoanTienRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Xac nhan hoan tien thanh cong",
+                "Xác nhận hoàn tiền thành công",
                 quanLyHoaDonService.xacNhanHoanTien(id, request)
         ));
     }

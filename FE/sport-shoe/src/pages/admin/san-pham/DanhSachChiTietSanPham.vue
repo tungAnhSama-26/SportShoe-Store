@@ -545,8 +545,7 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-5">
-    <section class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-      <h1 class="admin-page-title text-[30px]">Quản lý sản phẩm</h1>
+    <section class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-end">
 
       <button v-if="selectedProduct" type="button" class="admin-btn-soft" @click="clearProductFilter">
         <X class="h-4 w-4" />

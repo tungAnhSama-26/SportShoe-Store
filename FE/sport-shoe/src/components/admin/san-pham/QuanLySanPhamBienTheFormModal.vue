@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
                 <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
                   <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Màu sắc</p>
                   <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                    <span v-if="editingBienThe.maMauHex" class="h-3 w-3 shrink-0 rounded-full border border-black/5" :style="{ backgroundColor: editingBienThe.maMauHex }"></span>
+                    <span v-if="editingBienThe.maMauHex" class="h-3 w-3 shrink-0 rounded-full border border-slate-300" :style="{ backgroundColor: editingBienThe.maMauHex }"></span>
                     <span class="truncate">{{ editingBienThe.mauSac }}</span>
                   </div>
                 </div>
@@ -449,7 +449,7 @@ onBeforeUnmount(() => {
                         >
                           <div class="flex min-w-0 items-center gap-2">
                             <span
-                              class="h-3 w-3 shrink-0 rounded-full border border-black/5"
+                              class="h-3 w-3 shrink-0 rounded-full border border-slate-300"
                               :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                             ></span>
                             <span class="truncate">{{ item.ten }}</span>

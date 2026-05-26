@@ -1,6 +1,7 @@
 <script setup>
+import { Plus, Minus } from "lucide-vue-next";
 import { useChiTietDotGiamGia } from "./useChiTietDotGiamGia";
-const { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm } = useChiTietDotGiamGia();
+const { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm } = useChiTietDotGiamGia();
 </script>
 
 <template>
@@ -47,13 +48,12 @@ const { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLef
       </div>
     </Transition>
 
-    <!-- Header -->
     <section class="flex items-center gap-4">
       <button
         @click="router.push({ name: 'admin-dot-giam-gia' })"
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
-        <ArrowLeft class="h-5 w-5" />
+        <ArrowLeft class="h-4 w-4" />
       </button>
       <div class="flex-1 min-w-0">
         <div>
@@ -280,56 +280,99 @@ const { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLef
             <template v-else>
               <table class="w-full text-sm">
                 <thead>
-                  <tr class="text-[11px] font-semibold text-slate-400 border-b border-slate-100">
-                    <th class="px-3 py-2 text-left w-8">
+                  <tr class="text-[12px] font-semibold text-slate-500 border-b border-slate-100 bg-slate-50 whitespace-nowrap">
+                    <th class="px-4 py-3 text-center w-12 rounded-tl-xl">
                       <input
                         type="checkbox"
-                        class="h-3.5 w-3.5 accent-rose-500 cursor-pointer"
+                        class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer"
                         :checked="tatCaDaChon"
                         :indeterminate="motSoDaChon"
                         :disabled="isReadOnly || tatCaCoTheChon.length === 0"
                         @change="toggleChonTatCa"
                       />
                     </th>
-                    <th class="px-3 py-2 text-left w-8">STT</th>
-                    <th class="px-3 py-2 text-left w-12">Ảnh</th>
-                    <th class="px-3 py-2 text-left">Tên sản phẩm</th>
-                    <th class="px-3 py-2 text-left">Màu sắc</th>
-                    <th class="px-3 py-2 text-left">Kích cỡ</th>
-                    <th class="px-3 py-2 text-left">Trạng thái</th>
+                    <th class="px-4 py-3 text-center w-16">STT</th>
+                    <th class="px-4 py-3 text-left w-48">Mã SP</th>
+                    <th class="px-4 py-3 text-left">Tên sản phẩm</th>
+                    <th class="px-4 py-3 text-center w-12 rounded-tr-xl"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(bt, idx) in bienTheTrang" :key="bt.id"
-                    class="border-b border-slate-50 last:border-0 transition"
-                    :class="[
-                      isVariantBlocked(bt.id) ? 'opacity-40 pointer-events-none bg-slate-50' :
-                      isVariantSelected(bt.id) ? 'bg-rose-50/30' :
-                      'hover:bg-slate-50'
-                    ]"
-                  >
-                    <td class="px-3 py-2.5">
-                      <button :disabled="isReadOnly || isVariantBlocked(bt.id)" @click="toggleVariant(bt, bt._sp)" class="flex items-center justify-center disabled:cursor-not-allowed">
-                        <CheckSquare v-if="isVariantSelected(bt.id)" class="h-4 w-4 text-rose-500" />
-                        <Square v-else class="h-4 w-4 text-slate-300" />
-                      </button>
-                    </td>
-                    <td class="px-3 py-2.5 text-slate-400 text-xs">{{ (trangBienThe - 1) * soHangMoiTrang + idx + 1 }}</td>
-                    <td class="px-3 py-2.5">
-                      <div class="h-9 w-9 rounded-lg bg-slate-100 overflow-hidden border border-slate-100">
-                        <img v-if="bt.hinhAnh || bt._sp?.hinhAnh" :src="bt.hinhAnh || bt._sp?.hinhAnh" class="h-full w-full object-cover" />
-                      </div>
-                    </td>
-                    <td class="px-3 py-2.5 text-slate-600">{{ bt._sp?.ten || bt.tenSanPham }}</td>
-                    <td class="px-3 py-2.5 text-slate-600">{{ bt.mauSac }}</td>
-                    <td class="px-3 py-2.5 text-slate-600">{{ bt.kichCo }}</td>
-                    <td class="px-3 py-2.5">
-                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                        :class="bt.soLuong > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400'">
-                        {{ bt.soLuong > 0 ? 'Còn hàng' : 'Hết hàng' }}
-                      </span>
-                    </td>
-                  </tr>
+                  <template v-for="(sp, idx) in spTrang" :key="sp.id">
+                    <!-- Product Row -->
+                    <tr class="border-b border-slate-100 last:border-0 transition bg-white" :class="[ isProductBlocked(sp) ? 'opacity-40' : 'hover:bg-slate-50' ]">
+                      <td class="px-4 py-3 text-center align-middle">
+                        <button :disabled="isReadOnly || getProductSelectState(sp).disabled" @click="toggleProduct(sp)" class="flex items-center justify-center disabled:cursor-not-allowed mx-auto">
+                          <CheckSquare v-if="getProductSelectState(sp).checked" class="h-4 w-4 text-rose-500" />
+                          <div v-else-if="getProductSelectState(sp).indeterminate" class="h-4 w-4 rounded border border-rose-500 bg-rose-500 flex items-center justify-center">
+                            <div class="h-0.5 w-2 bg-white rounded-full"></div>
+                          </div>
+                          <Square v-else class="h-4 w-4 text-slate-300" />
+                        </button>
+                      </td>
+                      <td class="px-4 py-3 text-center text-slate-400 font-medium whitespace-nowrap">{{ (trangBienThe - 1) * soHangMoiTrang + idx + 1 }}</td>
+                      <td class="px-4 py-3 text-slate-500 font-medium whitespace-nowrap">{{ sp.ma }}</td>
+                      <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ sp.ten }}</td>
+                      <td class="px-4 py-3 text-center align-middle">
+                        <button type="button" @click="toggleProductExpansion(sp.id)" class="text-slate-500 hover:text-slate-800 focus:outline-none flex items-center justify-center w-full transition-colors">
+                          <Plus v-if="!expandedProducts.has(sp.id)" class="w-4 h-4 mx-auto" />
+                          <Minus v-else class="w-4 h-4 mx-auto" />
+                        </button>
+                      </td>
+                    </tr>
+                    
+                    <!-- Variants Rows -->
+                    <template v-if="expandedProducts.has(sp.id)">
+                      <tr class="bg-slate-50/50 border-b border-slate-200">
+                        <td colspan="5" class="p-0">
+                          <div class="pl-8 pr-4 py-3">
+                            <table class="w-full text-[13px]">
+                              <thead class="text-slate-800 text-[12px] font-semibold whitespace-nowrap">
+                                <tr>
+                                  <th class="px-3 py-2 text-left font-medium w-12">Chọn</th>
+                                  <th class="px-3 py-2 text-left font-medium w-16">Ảnh</th>
+                                  <th class="px-3 py-2 text-left font-medium">Mã biến thể</th>
+                                  <th class="px-3 py-2 text-left font-medium">Màu sắc</th>
+                                  <th class="px-3 py-2 text-left font-medium">Kích cỡ</th>
+                                  <th class="px-3 py-2 text-center font-medium">Số lượng</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="bt in sp.bienThes" :key="bt.id"
+                                  class="border-b border-slate-100 last:border-0 transition whitespace-nowrap"
+                                  :class="[
+                                    isVariantBlocked(bt.id || bt.giayChiTietId) ? 'opacity-40 pointer-events-none' :
+                                    isVariantSelected(bt.id || bt.giayChiTietId) ? 'bg-rose-50/30' :
+                                    'hover:bg-white'
+                                  ]"
+                                >
+                                  <td class="px-3 py-2">
+                                    <button :disabled="isReadOnly || isVariantBlocked(bt.id || bt.giayChiTietId)" @click="toggleVariant(bt, sp)" class="flex items-center justify-start disabled:cursor-not-allowed">
+                                      <CheckSquare v-if="isVariantSelected(bt.id || bt.giayChiTietId)" class="h-4 w-4 text-rose-500" />
+                                      <Square v-else class="h-4 w-4 text-slate-300" />
+                                    </button>
+                                  </td>
+                                  <td class="px-3 py-2">
+                                    <div class="h-8 w-8 rounded bg-white overflow-hidden border border-slate-200">
+                                      <img v-if="bt.hinhAnh || sp.hinhAnh" :src="bt.hinhAnh || sp.hinhAnh" class="h-full w-full object-cover" />
+                                    </div>
+                                  </td>
+                                  <td class="px-3 py-2 text-slate-500 font-medium">{{ bt.sku || bt.maBienThe || sp.ten }}</td>
+                                  <td class="px-3 py-2 text-slate-600">{{ bt.mauSac }}</td>
+                                  <td class="px-3 py-2 text-slate-600">{{ bt.kichCo }}</td>
+                                  <td class="px-3 py-2 text-center">
+                                    <span class="inline-flex items-center text-[13px] font-medium text-slate-700">
+                                      {{ bt.soLuong || 0 }}
+                                    </span>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+                  </template>
                 </tbody>
               </table>
 
@@ -338,7 +381,7 @@ const { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLef
                 :current-page="trangBienThe"
                 :page-size="soHangMoiTrang"
                 :page-size-options="pageSizeOptions"
-                :total-items="tatCaBienThe.length"
+                :total-items="danhSachSP.length"
                 :total-pages="tongSoTrang"
                 compact
                 @update:current-page="trangBienThe = $event"

@@ -36,7 +36,7 @@ public class NhanVienController {
             @RequestParam(required = false) Integer trangThai
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay danh sach nhan vien thanh cong",
+                "Lấy danh sách nhân viên thành công",
                 nhanVienService.layDanhSach(keyword, vaiTro, trangThai)
         ));
     }
@@ -45,7 +45,7 @@ public class NhanVienController {
     public ResponseEntity<ApiResponse<NhanVienResponse>> layChiTiet(@PathVariable UUID id) {
         assertCanAccessProfile(id);
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay chi tiet nhan vien thanh cong",
+                "Lấy chi tiết nhân viên thành công",
                 nhanVienService.layChiTiet(id)
         ));
     }
@@ -53,7 +53,7 @@ public class NhanVienController {
     @GetMapping("/cccd/{cccd}")
     public ResponseEntity<ApiResponse<NhanVienResponse>> layTheoCccd(@PathVariable String cccd) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay nhan vien theo CCCD thanh cong",
+                "Lấy nhân viên theo CCCD thành công",
                 nhanVienService.layTheoCccd(cccd)
         ));
     }
@@ -63,7 +63,7 @@ public class NhanVienController {
             @Valid @RequestBody TaoNhanVienRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
-                "Tao nhan vien thanh cong",
+                "Tạo nhân viên thành công",
                 nhanVienService.taoNhanVien(request)
         ));
     }
@@ -75,7 +75,7 @@ public class NhanVienController {
     ) {
         assertCanAccessProfile(id);
         return ResponseEntity.ok(ApiResponse.success(
-                "Cap nhat nhan vien thanh cong",
+                "Cập nhật nhân viên thành công",
                 nhanVienService.capNhatNhanVien(id, request)
         ));
     }
@@ -86,7 +86,7 @@ public class NhanVienController {
             @Valid @RequestBody DoiTrangThaiRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Doi trang thai thanh cong",
+                "Đổi trạng thái thành công",
                 nhanVienService.doiTrangThai(id, request)
         ));
     }
@@ -97,7 +97,7 @@ public class NhanVienController {
             @Valid @RequestBody DoiMatKhauRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Doi mat khau thanh cong",
+                "Đổi mật khẩu thành công",
                 nhanVienService.doiMatKhau(id, request)
         ));
     }
@@ -105,7 +105,7 @@ public class NhanVienController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> xoaNhanVien(@PathVariable UUID id) {
         nhanVienService.xoaNhanVien(id);
-        return ResponseEntity.ok(ApiResponse.success("Xoa nhan vien thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Xóa nhân viên thành công", null));
     }
 
     private void assertCanAccessProfile(UUID employeeId) {
