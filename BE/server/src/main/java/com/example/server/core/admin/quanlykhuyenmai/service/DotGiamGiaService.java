@@ -54,7 +54,7 @@ public class DotGiamGiaService {
 
     public DotGiamGia update(Integer id, DotGiamGiaRequest request) {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay dot giam gia"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
 
         if (dotGiamGia.getKichHoat() != null && (dotGiamGia.getKichHoat() == 0 || dotGiamGia.getKichHoat() == 2)) {
             throw new BusinessException("Không thể chỉnh sửa đợt giảm giá đã ngừng hoạt động hoặc hết hạn.");

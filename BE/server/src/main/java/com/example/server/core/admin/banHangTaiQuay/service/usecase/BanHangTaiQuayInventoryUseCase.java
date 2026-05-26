@@ -14,7 +14,7 @@ public class BanHangTaiQuayInventoryUseCase {
         }
 
         if (giayChiTiet.getSoLuong() == null || giayChiTiet.getSoLuong() < soLuong) {
-            throw new BusinessException("So luong ton khong du cho san pham " + giayChiTiet.getGiay().getTen());
+            throw new BusinessException("Số lượng tồn không đủ cho sản phẩm " + giayChiTiet.getGiay().getTen());
         }
     }
 

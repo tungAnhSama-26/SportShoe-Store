@@ -1,4 +1,4 @@
-package com.example.server.core.admin.quanLySanPham;
+package com.example.server.core.admin.quanLySanPham.service;
 
 import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatBienTheRequest;
 import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatGiayRequest;
@@ -655,7 +655,7 @@ public class QuanLySanPhamService {
             }
             giay.setNgayCapNhat(Instant.now());
         } catch (Exception e) {
-            System.err.println("!!! LOI XOA GIAY: " + e.getMessage());
+            System.err.println("!!! LỖI XÓA GIÀY: " + e.getMessage());
             e.printStackTrace();
             throw new BusinessException("Lỗi xử lý trạng thái: " + e.getMessage());
         }
@@ -741,14 +741,14 @@ public class QuanLySanPhamService {
     @Transactional
     public BienTheResponse doiTrangThaiBienThe(Integer id, DoiTrangThaiBienTheRequest req) {
         if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
-            throw new BusinessException("Trang thai CTSP khong hop le");
+            throw new BusinessException("Trạng thái CTSP không hợp lệ");
         }
 
         var gct = giayChiTietRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Bien the #" + id + " khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
 
         if (req.kichHoat() == 1 && (gct.getSoLuong() == null || gct.getSoLuong() <= 0)) {
-            throw new BusinessException("Khong the kich hoat CTSP khi so luong ton bang 0");
+            throw new BusinessException("Không thể kích hoạt CTSP khi số lượng tồn bằng 0");
         }
 
         gct.setKichHoat(req.kichHoat());

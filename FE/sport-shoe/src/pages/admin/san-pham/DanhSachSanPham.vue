@@ -346,7 +346,6 @@ onUnmounted(() => {
     </section>
 
     <Card>
-      <template #header>
         <div class="mb-5 flex items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
             <Filter class="h-5 w-5" />
@@ -355,7 +354,6 @@ onUnmounted(() => {
             <h2 class="admin-section-title">Bộ lọc</h2>
           </div>
         </div>
-      </template>
 
       <div class="flex flex-col gap-4">
         <div
@@ -447,7 +445,6 @@ onUnmounted(() => {
     </Card>
 
     <Card>
-      <template #header>
         <div class="mb-5 flex items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
             <Package class="h-5 w-5" />
@@ -456,7 +453,6 @@ onUnmounted(() => {
             <h2 class="admin-section-title">Danh sách sản phẩm</h2>
           </div>
         </div>
-      </template>
 
       <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
         <table

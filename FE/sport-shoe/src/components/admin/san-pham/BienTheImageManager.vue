@@ -43,7 +43,7 @@ const uploading = ref(false)
 
 const form = reactive({
   url: '',
-  loaiHinh: 2,
+  loaiHinh: 1,
   moTa: ''
 })
 
@@ -94,7 +94,7 @@ const colorScopeText = computed(() => {
 
 function clearForm() {
   form.url = ''
-  form.loaiHinh = 2
+  form.loaiHinh = 1
   form.moTa = ''
   Object.keys(errors).forEach((key) => delete errors[key])
 }
@@ -169,7 +169,7 @@ function openEditForm(item) {
   clearForm()
   editingId.value = item.id
   form.url = item.url || ''
-  form.loaiHinh = item.loaiHinh || 2
+  form.loaiHinh = item.loaiHinh || 1
   form.moTa = item.moTa || ''
   showAddForm.value = true
 }
@@ -551,28 +551,6 @@ defineExpose({
             <p v-if="errors.url" class="mt-1 text-xs text-rose-500">{{ errors.url }}</p>
           </div>
 
-          <div class="grid gap-3 md:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-xs font-medium text-slate-700">Loại ảnh</label>
-              <select
-                v-model.number="form.loaiHinh"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-              >
-                <option :value="1">Ảnh chính</option>
-                <option :value="2">Ảnh phụ</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="mb-1 block text-xs font-medium text-slate-700">Mô tả</label>
-              <input
-                v-model="form.moTa"
-                type="text"
-                placeholder="Ví dụ: góc nghiêng"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-          </div>
 
           <div class="flex justify-end gap-2">
             <button

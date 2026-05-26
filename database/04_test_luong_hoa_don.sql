@@ -56,7 +56,7 @@ ADD CONSTRAINT ck_tt_trang_thai
 CHECK (trang_thai IN (0, 1, 2, 3, 4, 5));
 GO
 
-DECLARE @Flow TABLE (
+DROP TABLE IF EXISTS #Flow; CREATE TABLE #Flow (
     ma NVARCHAR(150) NOT NULL,
     mo_ta NVARCHAR(300) NOT NULL,
     kenh_ban INT NOT NULL,
@@ -78,23 +78,23 @@ DECLARE @Flow TABLE (
     ngay_tao DATETIME2 NOT NULL
 );
 
-INSERT INTO @Flow
+INSERT INTO #Flow
 (ma, mo_ta, kenh_ban, khach_user, nv_ma, trang_thai, tong_hang, tien_giam, tong_thanh_toan, gct_ma, so_luong, gia_don_vi, vc_trang_thai, vc_phi, tt_hinh_thuc, tt_trang_thai, tt_ngay, tt_ghi_chu, ngay_tao)
 VALUES
-(N'FLOW_HD_01_ONLINE_CHO_XN', N'Online moi tao, cho xac nhan', 2, 'khach1', NULL, 1, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'COD cho thu tien khi nhan hang.', '2026-05-25T08:00:00'),
-(N'FLOW_HD_02_CUAHANG_HOANTHANH', N'Cua hang thanh toan tai quay hoan thanh', 1, 'khach2', 'NV002', 5, 1690000, 0, 1690000, N'GCT001', 1, 1690000, NULL, 0, 1, 1, '2026-05-25T08:35:00', N'Tien mat tai quay da thu.', '2026-05-25T08:30:00'),
-(N'FLOW_HD_03_ONLINE_PAID_CHO_GIAO', N'Online da thanh toan, dang giao hang', 2, 'khach3', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 2, 1, '2026-05-25T09:00:00', N'Chuyen khoan online thanh cong.', '2026-05-25T09:00:00'),
-(N'FLOW_HD_04_COD_DA_GIAO_CHO_THU', N'COD da giao hang, cho xac nhan thu tien', 2, 'khach4', 'NV002', 4, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 4, 0, NULL, N'COD da giao, cho admin xac nhan thanh toan.', '2026-05-25T09:30:00'),
-(N'FLOW_HD_05_COD_GIAO_THAT_BAI', N'COD giao hang that bai, huy giao dich cho thu tien', 2, 'khach5', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 4, 3, NULL, N'Khach khong nhan hang, huy giao dich COD.', '2026-05-25T10:00:00'),
-(N'FLOW_HD_06_ONLINE_PAID_GIAO_FAIL', N'Online da thanh toan nhung giao that bai, can hoan tien', 2, 'khach6', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 2, 4, '2026-05-25T10:30:00', N'Da thu tien truoc, giao that bai nen can hoan tien.', '2026-05-25T10:30:00'),
-(N'FLOW_HD_07_CAN_HOAN_TIEN', N'Don dang can hoan tien', 2, 'khach7', 'NV002', 8, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 2, 4, '2026-05-25T11:00:00', N'Cho admin xac nhan hoan tien.', '2026-05-25T11:00:00'),
-(N'FLOW_HD_08_DA_HOAN_TIEN', N'Don da huy sau khi hoan tien xong', 2, 'khach8', 'NV002', 6, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 5, 30000, 2, 5, '2026-05-25T11:35:00', N'Da hoan tien cho khach.', '2026-05-25T11:30:00'),
-(N'FLOW_HD_09_YEU_CAU_HUY', N'Khach gui yeu cau huy don', 2, 'khach9', NULL, 7, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'Cho nhan vien xu ly yeu cau huy.', '2026-05-25T12:00:00'),
-(N'FLOW_HD_10_CUAHANG_GIAO_HANG', N'Cua hang tao ho khach va co giao hang', 1, 'khach10', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 1, 1, '2026-05-25T12:35:00', N'Thu tien tai quay, tiep tuc giao hang.', '2026-05-25T12:30:00');
+(N'HD1779726539414', N'Online moi tao, cho xac nhan', 2, 'khach1', NULL, 1, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'COD cho thu tien khi nhan hang.', '2026-05-26T08:00:00'),
+(N'HD1779726539415', N'Cua hang thanh toan tai quay hoan thanh', 1, 'khach2', 'NV002', 5, 1690000, 0, 1690000, N'GCT001', 1, 1690000, NULL, 0, 1, 1, '2026-05-26T08:35:00', N'Tien mat tai quay da thu.', '2026-05-26T08:30:00'),
+(N'HD1779726539416', N'Online da thanh toan, dang giao hang', 2, 'khach3', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 2, 1, '2026-05-26T09:00:00', N'Chuyen khoan online thanh cong.', '2026-05-26T09:00:00'),
+(N'HD1779726539417', N'COD da giao hang, cho xac nhan thu tien', 2, 'khach4', 'NV002', 4, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 4, 0, NULL, N'COD da giao, cho admin xac nhan thanh toan.', '2026-05-26T09:30:00'),
+(N'HD1779726539418', N'COD giao hang that bai, huy giao dich cho thu tien', 2, 'khach5', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 4, 3, NULL, N'Khach khong nhan hang, huy giao dich COD.', '2026-05-26T10:00:00'),
+(N'HD1779726539419', N'Online da thanh toan nhung giao that bai, can hoan tien', 2, 'khach6', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 2, 4, '2026-05-26T10:30:00', N'Da thu tien truoc, giao that bai nen can hoan tien.', '2026-05-26T10:30:00'),
+(N'HD1779726539420', N'Don dang can hoan tien', 2, 'khach7', 'NV002', 8, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 2, 4, '2026-05-26T11:00:00', N'Cho admin xac nhan hoan tien.', '2026-05-26T11:00:00'),
+(N'HD1779726539421', N'Don da huy sau khi hoan tien xong', 2, 'khach8', 'NV002', 6, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 5, 30000, 2, 5, '2026-05-26T11:35:00', N'Da hoan tien cho khach.', '2026-05-26T11:30:00'),
+(N'HD1779726539422', N'Khach gui yeu cau huy don', 2, 'khach9', NULL, 7, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'Cho nhan vien xu ly yeu cau huy.', '2026-05-26T12:00:00'),
+(N'HD1779726539423', N'Cua hang tao ho khach va co giao hang', 1, 'khach10', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 1, 1, '2026-05-26T12:35:00', N'Thu tien tai quay, tiep tuc giao hang.', '2026-05-26T12:30:00');
 
 IF EXISTS (
     SELECT 1
-    FROM @Flow f
+    FROM #Flow f
     LEFT JOIN khach_hang kh ON kh.ten_dang_nhap = f.khach_user
     LEFT JOIN giay_chi_tiet gct ON gct.ma_bien_the = f.gct_ma
     WHERE kh.id IS NULL OR gct.id IS NULL
@@ -105,37 +105,37 @@ END;
 
 IF EXISTS (
     SELECT 1
-    FROM @Flow f
+    FROM #Flow f
     LEFT JOIN nhan_vien nv ON nv.ma = f.nv_ma
     WHERE f.nv_ma IS NOT NULL AND nv.id IS NULL
 )
 BEGIN
-    THROW 51001, 'Missing employee seed data. Check nhan_vien.ma in @Flow.', 1;
+    THROW 51001, 'Missing employee seed data. Check nhan_vien.ma in #Flow.', 1;
 END;
 
 DELETE tt
 FROM thanh_toan tt
 JOIN hoa_don hd ON hd.id = tt.hoa_don_id
-JOIN @Flow f ON f.ma = hd.ma;
+JOIN #Flow f ON f.ma = hd.ma;
 
 DELETE ls
 FROM lich_su_hoa_don ls
 JOIN hoa_don hd ON hd.id = ls.hoa_don_id
-JOIN @Flow f ON f.ma = hd.ma;
+JOIN #Flow f ON f.ma = hd.ma;
 
 DELETE vc
 FROM van_chuyen vc
 JOIN hoa_don hd ON hd.id = vc.hoa_don_id
-JOIN @Flow f ON f.ma = hd.ma;
+JOIN #Flow f ON f.ma = hd.ma;
 
 DELETE hdct
 FROM hoa_don_chi_tiet hdct
 JOIN hoa_don hd ON hd.id = hdct.hoa_don_id
-JOIN @Flow f ON f.ma = hd.ma;
+JOIN #Flow f ON f.ma = hd.ma;
 
 DELETE hd
 FROM hoa_don hd
-JOIN @Flow f ON f.ma = hd.ma;
+JOIN #Flow f ON f.ma = hd.ma;
 
 INSERT INTO hoa_don
 (ma, kenh_ban, khach_hang_id, nhan_vien_id, phieu_giam_gia_id, ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_hang, ngay_lap, ngay_thanh_toan, trang_thai, tong_tien_hang, tien_giam, tong_tien_thanh_toan, ghi_chu, ngay_tao, ngay_cap_nhat)
@@ -157,7 +157,7 @@ SELECT
     f.mo_ta,
     f.ngay_tao,
     DATEADD(MINUTE, 5, f.ngay_tao)
-FROM @Flow f
+FROM #Flow f
 JOIN khach_hang kh ON kh.ten_dang_nhap = f.khach_user
 LEFT JOIN nhan_vien nv ON nv.ma = f.nv_ma;
 
@@ -171,7 +171,7 @@ SELECT
     f.so_luong * f.gia_don_vi,
     CASE WHEN f.trang_thai = 6 THEN 0 ELSE 1 END,
     f.ngay_tao
-FROM @Flow f
+FROM #Flow f
 JOIN hoa_don hd ON hd.ma = f.ma
 JOIN giay_chi_tiet gct ON gct.ma_bien_the = f.gct_ma;
 
@@ -180,7 +180,7 @@ INSERT INTO van_chuyen
 SELECT
     hd.id,
     N'GHN',
-    CONCAT(N'FLOW_GHN_', RIGHT(f.ma, 2)),
+    CONCAT(N'GHN_', RIGHT(f.ma, 2)),
     f.vc_phi,
     CASE WHEN f.vc_trang_thai IN (2, 3, 4, 5) THEN DATEADD(MINUTE, 10, f.ngay_tao) ELSE NULL END,
     DATEADD(DAY, 3, f.ngay_tao),
@@ -189,7 +189,7 @@ SELECT
     f.mo_ta,
     f.ngay_tao,
     DATEADD(MINUTE, 5, f.ngay_tao)
-FROM @Flow f
+FROM #Flow f
 JOIN hoa_don hd ON hd.ma = f.ma
 WHERE f.vc_trang_thai IS NOT NULL;
 
@@ -198,7 +198,7 @@ INSERT INTO thanh_toan
 SELECT
     hd.id,
     nv.id,
-    CONCAT(N'FLOW_TT_', RIGHT(f.ma, 2)),
+    CONCAT(N'TT_', RIGHT(f.ma, 2)),
     f.tt_hinh_thuc,
     f.tong_thanh_toan,
     NULL,
@@ -214,7 +214,7 @@ SELECT
     f.tt_trang_thai,
     f.tt_ghi_chu,
     f.ngay_tao
-FROM @Flow f
+FROM #Flow f
 JOIN hoa_don hd ON hd.ma = f.ma
 LEFT JOIN nhan_vien nv ON nv.ma = COALESCE(f.nv_ma, 'NV002');
 
@@ -237,7 +237,7 @@ SELECT
     END,
     f.mo_ta,
     f.ngay_tao
-FROM @Flow f
+FROM #Flow f
 JOIN hoa_don hd ON hd.ma = f.ma
 LEFT JOIN nhan_vien nv ON nv.ma = f.nv_ma;
 
@@ -252,6 +252,6 @@ SELECT
 FROM hoa_don hd
 LEFT JOIN thanh_toan tt ON tt.hoa_don_id = hd.id
 LEFT JOIN van_chuyen vc ON vc.hoa_don_id = hd.id
-WHERE hd.ma LIKE N'FLOW_HD_%'
+WHERE hd.ma LIKE N'HD_TEST_%'
 ORDER BY hd.ma;
 GO
