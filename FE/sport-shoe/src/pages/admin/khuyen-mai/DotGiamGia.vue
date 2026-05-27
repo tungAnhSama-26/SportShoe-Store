@@ -174,10 +174,6 @@ onMounted(taiDanhSach);
 
 <template>
   <div class="space-y-5">
-    <section class="flex items-end justify-between">
-      <h1 class="admin-page-title text-[30px]">Quản lý đợt giảm giá</h1>
-    </section>
-
     <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
@@ -241,8 +237,8 @@ onMounted(taiDanhSach);
 
       <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
-      <div class="w-full">
-        <table class="w-full table-fixed border-separate border-spacing-y-2 text-xs">
+      <div class="overflow-x-auto admin-table-scroll w-full">
+        <table class="w-full min-w-[900px] table-fixed border-separate border-spacing-y-2 text-xs">
           <colgroup>
             <col class="w-[5%]" />
             <col class="w-[15%]" />

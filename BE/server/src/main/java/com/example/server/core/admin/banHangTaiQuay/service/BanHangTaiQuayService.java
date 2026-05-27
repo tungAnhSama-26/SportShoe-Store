@@ -99,11 +99,11 @@ public class BanHangTaiQuayService {
     private static final int TRANG_THAI_PHIEU_THEO_KH_DA_DUNG = 0;
     private static final int TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG = 1;
     private static final String DIA_CHI_TAI_QUAY = "Mua tại quầy";
-    private static final String DIA_CHI_TAI_QUAY_KHONG_DAU = "Mua tai quay";
+    private static final String DIA_CHI_TAI_QUAY_KHONG_DAU = "Mua tại quầy";
     private static final String GHI_CHU_TAO_HOA_DON_TAI_QUAY = "Hóa  ơn chờ tạo từ màn hình bán hàng tại quầy";
     private static final String KHACH_VANG_LAI = "Khách vãng lai";
     private static final String KHONG_CO = "Không có";
-    private static final String KHONG_CO_KHONG_DAU = "Khong co";
+    private static final String KHONG_CO_KHONG_DAU = "Không có";
     private static final String MA_HOA_DON_TAM_PREFIX = "HD";
 
     private final KhachHangRepository khachHangRepository;
@@ -340,7 +340,7 @@ public class BanHangTaiQuayService {
     @Transactional
     public void huyHoaDonCho(Integer hoaDonId) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
             throw new BusinessException("Chi ho tro huy hoa don tai quay");
@@ -473,7 +473,7 @@ public class BanHangTaiQuayService {
     @Transactional(readOnly = true)
     public HoaDonChoChiTietResponse layChiTietHoaDonCho(Integer hoaDonId) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
         return mapHoaDonChiTiet(hoaDon, items, vanChuyenRepository.findByHoaDonId(hoaDonId).orElse(null));
     }
@@ -559,7 +559,7 @@ public class BanHangTaiQuayService {
 
     private HoaDon thanhToanHoaDonCho(ThanhToanTaiQuayRequest request) {
         HoaDon hoaDon = hoaDonRepository.findById(request.hoaDonId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
             throw new BusinessException("Chi ho tro thanh toan hoa don tai quay");
@@ -658,7 +658,7 @@ public class BanHangTaiQuayService {
         }
 
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findByMaIgnoreCase(maPhieuGiamGia)
-                .orElseThrow(() -> new BusinessException("Phieu giam gia khong ton tai"));
+                .orElseThrow(() -> new BusinessException("Phieu giam gia không tồn tại"));
 
         validatePhieuGiamGia(phieuGiamGia, khachHang, tongTienHang, hoaDon);
 
@@ -730,7 +730,7 @@ public class BanHangTaiQuayService {
         }
 
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
             throw new BusinessException("Chi ho tro ap dung phieu giam gia cho hoa don tai quay");
@@ -757,7 +757,7 @@ public class BanHangTaiQuayService {
 
     private GiayChiTiet layGiayChiTietHopLe(Integer chiTietId, Integer soLuong) {
         GiayChiTiet giayChiTiet = giayChiTietRepository.findById(chiTietId)
-                .orElseThrow(() -> new ResourceNotFoundException("San pham chi tiet khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("San pham chi tiet không tồn tại"));
 
         inventoryUseCase.validateAvailable(giayChiTiet, soLuong);
         return giayChiTiet;
@@ -899,7 +899,7 @@ public class BanHangTaiQuayService {
             return null;
         }
         return khachHangRepository.findById(khachHangId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khach hang khong ton tai"));
+                .orElseThrow(() -> new ResourceNotFoundException("Khach hang không tồn tại"));
     }
 
     private String layTenKhachHang(KhachHang khachHang, String tenKhachHang) {
@@ -967,7 +967,7 @@ public class BanHangTaiQuayService {
 
         return switch (normalizeTextKey(value)) {
             case "mua tai quay" -> DIA_CHI_TAI_QUAY;
-            case "khong co" -> KHONG_CO;
+            case "không có" -> KHONG_CO;
             case "khach le", "khach vang lai" -> KHACH_VANG_LAI;
             case "hoa don cho tao tu man hinh ban hang tai quay" -> GHI_CHU_TAO_HOA_DON_TAI_QUAY;
             default -> value;

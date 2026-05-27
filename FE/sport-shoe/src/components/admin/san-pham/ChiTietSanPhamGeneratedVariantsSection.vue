@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Package2, Save, Trash2, X } from "lucide-vue-next";
 import BienTheImageManager from "./BienTheImageManager.vue";
 import AdminFormattedNumberInput from "../../common/AdminFormattedNumberInput.vue";
@@ -60,6 +60,18 @@ const saveButtonLabel = computed(() => {
 
 const draftImageManagerRefs = ref({});
 const showSaveConfirmModal = ref(false);
+const showErrors = ref(false);
+const showDefaultErrors = ref(false);
+
+watch(
+  () => props.generatedVariants.length,
+  (newVal) => {
+    if (newVal > 0) {
+      showErrors.value = false;
+      showDefaultErrors.value = false;
+    }
+  }
+);
 
 function parseNumericValue(value) {
   if (value === null || value === undefined || value === "") return 0;
@@ -74,37 +86,48 @@ function buildNumberFieldError(label, value, { allowZero = true } = {}) {
   return "";
 }
 
-const defaultFieldErrors = computed(() => ({
-  soLuong: buildNumberFieldError(
-    "Số lượng mặc định",
-    props.variantBuilder.soLuong,
-  ),
-  giaGoc: (() => {
-    const priceError = buildNumberFieldError(
-      "Giá gốc mặc định",
-      props.variantBuilder.giaGoc,
-      { allowZero: false },
-    );
-    if (priceError) return priceError;
-    const giaGoc = parseNumericValue(props.variantBuilder.giaGoc);
-    const giaBan = parseNumericValue(props.variantBuilder.giaBan);
-    return giaGoc > 0 && giaBan > 0 && giaGoc > giaBan
-      ? "Giá gốc mặc định không được lớn hơn giá bán mặc định"
-      : "";
-  })(),
-  giaBan: (() => {
-    const priceError = buildNumberFieldError(
-      "Giá bán mặc định",
-      props.variantBuilder.giaBan,
-      { allowZero: false },
-    );
-    return priceError;
-  })(),
-}));
+const defaultFieldErrors = computed(() => {
+  if (!showDefaultErrors.value) {
+    return { soLuong: "", giaGoc: "", giaBan: "" };
+  }
+  return {
+    soLuong: buildNumberFieldError(
+      "Số lượng mặc định",
+      props.variantBuilder.soLuong,
+    ),
+    giaGoc: (() => {
+      const priceError = buildNumberFieldError(
+        "Giá gốc mặc định",
+        props.variantBuilder.giaGoc,
+        { allowZero: false },
+      );
+      if (priceError) return priceError;
+      const giaGoc = parseNumericValue(props.variantBuilder.giaGoc);
+      const giaBan = parseNumericValue(props.variantBuilder.giaBan);
+      return giaGoc > 0 && giaBan > 0 && giaGoc > giaBan
+        ? "Giá gốc mặc định không được lớn hơn giá bán mặc định"
+        : "";
+    })(),
+    giaBan: (() => {
+      const priceError = buildNumberFieldError(
+        "Giá bán mặc định",
+        props.variantBuilder.giaBan,
+        { allowZero: false },
+      );
+      return priceError;
+    })(),
+  };
+});
 
 const generatedVariantFieldErrors = computed(() =>
   Object.fromEntries(
     props.generatedVariants.map((item) => {
+      if (!showErrors.value) {
+        return [
+          item.key,
+          { soLuong: "", giaGoc: "", giaBan: "" }
+        ];
+      }
       const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, {
         allowZero: false,
       });
@@ -177,7 +200,7 @@ const saveConfirmationDetails = computed(() => {
   ];
 
   if (imageColorCount > 0) {
-    lines.push(`${imageColorCount} biến thể có ảnh đính kèm.`);
+    lines.push(`${imageColorCount} màu sắc có ảnh đính kèm.`);
   }
 
   return {
@@ -199,24 +222,44 @@ function resolveFieldError(localError, parentError) {
   return localError || parentError || "";
 }
 
-function collectValidationMessages(errors, limit = 4) {
-  const messages = Object.values(errors || {})
-    .flatMap((value) => {
-      if (typeof value === "string") return [value];
-      if (value && typeof value === "object") return Object.values(value);
-      return [];
-    })
-    .filter((value) => typeof value === "string" && value.trim())
-    .map((value) => value.trim());
+function getDetailedValidationMessages() {
+  const messages = [];
 
-  const uniqueMessages = [...new Set(messages)];
-  if (!uniqueMessages.length) return "";
+  // Default fields (always evaluate using build function directly for raw checking)
+  const defaultErrorsRaw = {
+    soLuong: buildNumberFieldError("Số lượng mặc định", props.variantBuilder.soLuong),
+    giaGoc: (() => {
+      const priceError = buildNumberFieldError("Giá gốc mặc định", props.variantBuilder.giaGoc, { allowZero: false });
+      if (priceError) return priceError;
+      const giaGoc = parseNumericValue(props.variantBuilder.giaGoc);
+      const giaBan = parseNumericValue(props.variantBuilder.giaBan);
+      return giaGoc > 0 && giaBan > 0 && giaGoc > giaBan ? "Giá gốc mặc định không được lớn hơn giá bán mặc định" : "";
+    })(),
+    giaBan: buildNumberFieldError("Giá bán mặc định", props.variantBuilder.giaBan, { allowZero: false })
+  };
 
-  const visibleMessages = uniqueMessages.slice(0, limit).join("; ");
-  const hiddenCount = uniqueMessages.length - limit;
-  return hiddenCount > 0
-    ? `${visibleMessages}; và ${hiddenCount} lỗi khác`
-    : visibleMessages;
+  if (defaultErrorsRaw.soLuong) messages.push(defaultErrorsRaw.soLuong);
+  if (defaultErrorsRaw.giaGoc) messages.push(defaultErrorsRaw.giaGoc);
+  if (defaultErrorsRaw.giaBan) messages.push(defaultErrorsRaw.giaBan);
+
+  // Variant fields
+  props.generatedVariants.forEach((item) => {
+    const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, { allowZero: false });
+    const giaBanError = buildNumberFieldError("Giá bán", item.giaBan, { allowZero: false });
+    const soLuongError = buildNumberFieldError("Số lượng", item.soLuong);
+    const priceCompareError = parseNumericValue(item.giaGoc) > 0 && parseNumericValue(item.giaBan) > 0 && parseNumericValue(item.giaGoc) > parseNumericValue(item.giaBan)
+      ? "Giá gốc không được lớn hơn giá bán"
+      : "";
+
+    const variantName = `Biến thể Size ${item.kichCo} - ${formatColorName(item.mauSac)}`;
+
+    if (soLuongError) messages.push(`${variantName}: ${soLuongError}`);
+    if (giaGocError) messages.push(`${variantName}: ${giaGocError}`);
+    else if (priceCompareError) messages.push(`${variantName}: ${priceCompareError}`);
+    if (giaBanError) messages.push(`${variantName}: ${giaBanError}`);
+  });
+
+  return messages;
 }
 
 function relatedVariants(mauSacId) {
@@ -225,16 +268,16 @@ function relatedVariants(mauSacId) {
   );
 }
 
-function draftImagesForVariant(variantKey) {
-  return props.draftVariantImages[String(variantKey)] || [];
+function draftImagesForColor(mauSacId) {
+  return props.draftVariantImages[String(mauSacId)] || [];
 }
 
-function handleDraftImagesChange(variantKey, images) {
-  emit("change-draft-images", { variantKey, images });
+function handleDraftImagesChange(mauSacId, images) {
+  emit("change-draft-images", { variantKey: mauSacId, images });
 }
 
-function setDraftImageManagerRef(variantKey, instance) {
-  const draftKey = String(variantKey);
+function setDraftImageManagerRef(mauSacId, instance) {
+  const draftKey = String(mauSacId);
   if (instance) {
     draftImageManagerRefs.value[draftKey] = instance;
     return;
@@ -244,8 +287,8 @@ function setDraftImageManagerRef(variantKey, instance) {
 }
 
 async function commitPendingDraftImages() {
-  for (const item of props.generatedVariants) {
-    const manager = draftImageManagerRefs.value[String(item.key)];
+  for (const item of props.representativeGeneratedVariants) {
+    const manager = draftImageManagerRefs.value[String(item.mauSacId)];
     if (!manager?.commitPendingForm) continue;
 
     const committed = await manager.commitPendingForm();
@@ -258,8 +301,13 @@ async function commitPendingDraftImages() {
 }
 
 function handleApplyDefaults() {
+  showDefaultErrors.value = true;
   if (hasDefaultFieldErrors.value) {
-    const detailMessage = collectValidationMessages(defaultFieldErrors.value);
+    const messages = [];
+    if (defaultFieldErrors.value.soLuong) messages.push(defaultFieldErrors.value.soLuong);
+    if (defaultFieldErrors.value.giaGoc) messages.push(defaultFieldErrors.value.giaGoc);
+    if (defaultFieldErrors.value.giaBan) messages.push(defaultFieldErrors.value.giaBan);
+    const detailMessage = messages.join("; ");
     emit(
       "error",
       detailMessage
@@ -299,16 +347,19 @@ function confirmSave() {
 }
 
 async function handleSaveClick() {
-  if (hasDefaultFieldErrors.value || hasGeneratedVariantFieldErrors.value) {
-    const detailMessage = collectValidationMessages({
-      ...defaultFieldErrors.value,
-      ...generatedVariantFieldErrors.value,
-    });
+  showErrors.value = true;
+  showDefaultErrors.value = true;
+  const messages = getDetailedValidationMessages();
+  if (messages.length > 0) {
+    const limit = 3;
+    const visibleMessages = messages.slice(0, limit).join("; ");
+    const hiddenCount = messages.length - limit;
+    const detailMessage = hiddenCount > 0
+      ? `${visibleMessages}; và ${hiddenCount} lỗi khác`
+      : visibleMessages;
     emit(
       "error",
-      detailMessage
-        ? `Vui lòng sửa biến thể: ${detailMessage}`
-        : "Vui lòng sửa số lượng và giá của biến thể trước khi lưu.",
+      `Vui lòng sửa các lỗi sau: ${detailMessage}`,
     );
     return;
   }
@@ -534,21 +585,21 @@ async function handleSaveClick() {
             Ảnh sản phẩm chi tiết
           </h2>
           <p class="mt-1 text-sm text-slate-500">
-            Thêm ảnh cho từng kích cỡ của màu sắc (biến thể) nếu muốn.
+            Thêm ảnh cho từng màu sắc (biến thể đại diện) để tự động đồng bộ cho toàn bộ kích cỡ.
           </p>
         </div>
       </div>
 
       <div class="mt-5 grid gap-5">
         <BienTheImageManager
-          v-for="item in generatedVariants"
-          :key="`draft-variant-${item.key}`"
-          :ref="(instance) => setDraftImageManagerRef(item.key, instance)"
+          v-for="item in representativeGeneratedVariants"
+          :key="`draft-color-${item.mauSacId}`"
+          :ref="(instance) => setDraftImageManagerRef(item.mauSacId, instance)"
           :variant="item"
-          :draft-images="draftImagesForVariant(item.key)"
-          :related-variants="[]"
-          display-mode="variant"
-          @change-draft-images="handleDraftImagesChange(item.key, $event)"
+          :draft-images="draftImagesForColor(item.mauSacId)"
+          :related-variants="relatedVariants(item.mauSacId)"
+          display-mode="color"
+          @change-draft-images="handleDraftImagesChange(item.mauSacId, $event)"
           @error="emit('error', $event)"
         />
       </div>

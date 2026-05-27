@@ -257,7 +257,7 @@ function generateVariants() {
                 >
                   <div class="flex min-w-0 items-center gap-2">
                     <span
-                      class="h-3 w-3 shrink-0 rounded-full border border-black/5"
+                      class="h-3 w-3 shrink-0 rounded-full border border-slate-300"
                       :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                     ></span>
                     <span class="truncate">{{ item.ten }}</span>
@@ -282,7 +282,7 @@ function generateVariants() {
                 class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
               >
                 <span
-                  class="h-2.5 w-2.5 shrink-0 rounded-full border border-black/5"
+                  class="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-300"
                   :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                 ></span>
                 {{ item.ten }}

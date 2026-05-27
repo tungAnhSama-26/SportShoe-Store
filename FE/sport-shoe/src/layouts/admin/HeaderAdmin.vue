@@ -1,17 +1,58 @@
 <script setup>
 import { computed, ref } from "vue";
 import { ChevronDown, LogOut, Menu, Moon, Sun, UserCog, UserRound } from "lucide-vue-next";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
 import { useAdminSession } from "../../composable/useAdminSession";
 import { getCurrentAdminUser, logout } from "../../services/auth";
 
+const route = useRoute();
 const router = useRouter();
 const { isDark, toggleDark } = useDarkMode();
 const { adminSession, avatarUrl } = useAdminSession();
-const FALLBACK_ADMIN_NAME = "Tr\u1ea7n V\u0169 T\u00f9ng Anh";
+const FALLBACK_ADMIN_NAME = "Trần Vũ Tùng Anh";
 const hienMenuTaiKhoan = ref(false);
+
+const pageTitle = computed(() => {
+  const titles = {
+    'admin-thong-ke': 'Thống kê',
+    'admin-phieu-giam-gia': 'Quản lý phiếu giảm giá',
+    'admin-phieu-giam-gia-khach-hang': 'Phiếu giảm giá khách hàng',
+    'admin-phieu-giam-gia-them': 'Thêm phiếu giảm giá',
+    'admin-phieu-giam-gia-chi-tiet': 'Cập nhật phiếu giảm giá',
+    'admin-hoa-don': 'Quản lý hóa đơn',
+    'admin-hoa-don-chi-tiet': 'Chi tiết hóa đơn',
+    'admin-ban-hang': 'Bán hàng tại quầy',
+    'admin-san-pham': 'Quản lý sản phẩm',
+    'admin-san-pham-them': 'Thêm sản phẩm',
+    'admin-chi-tiet-san-pham': 'Cập nhật sản phẩm',
+    'admin-chi-tiet-san-pham-new': 'Chi tiết sản phẩm',
+    'admin-bien-the-san-pham': 'Quản lý biến thể sản phẩm',
+    'admin-bien-the-san-pham-them': 'Thêm biến thể sản phẩm',
+    'admin-loai-giay': 'Quản lý loại giày',
+    'admin-co-giay': 'Quản lý cổ giày',
+    'admin-de-giay': 'Quản lý đế giày',
+    'admin-chat-lieu-giay': 'Quản lý chất liệu giày',
+    'admin-thuong-hieu': 'Quản lý thương hiệu',
+    'admin-cong-nghe-dem': 'Quản lý công nghệ đệm',
+    'admin-mau-sac': 'Quản lý màu sắc',
+    'admin-kich-co': 'Quản lý kích cỡ',
+    'admin-trong-luong': 'Quản lý trọng lượng',
+    'admin-dot-giam-gia': 'Quản lý đợt giảm giá',
+    'admin-dot-giam-gia-them': 'Thêm đợt giảm giá',
+    'admin-dot-giam-gia-chi-tiet': 'Chi tiết đợt giảm giá',
+    'admin-nhan-vien': 'Quản lý nhân viên',
+    'admin-nhan-vien-them': 'Thêm nhân viên',
+    'admin-nhan-vien-lich-lam': 'Lịch làm việc',
+    'admin-nhan-vien-chi-tiet': 'Cập nhật nhân viên',
+    'admin-profile': 'Hồ sơ cá nhân',
+    'admin-khach-hang': 'Quản lý khách hàng',
+    'admin-khach-hang-them': 'Thêm khách hàng',
+    'admin-khach-hang-chi-tiet': 'Cập nhật khách hàng'
+  };
+  return titles[route.name] || 'Hệ thống Quản trị';
+});
 
 const profileName = computed(() => {
   const username = adminSession.value.tenTaiKhoan?.trim();
@@ -41,13 +82,18 @@ function dangXuat() {
 <template>
   <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
     <div class="flex h-[74px] items-center justify-between gap-3 px-4 lg:px-6">
-      <button
-        type="button"
-        @click="toggleSidebar"
-        class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
-      >
-        <Menu class="h-5 w-5" />
-      </button>
+      <div class="flex items-center gap-4">
+        <button
+          type="button"
+          @click="toggleSidebar"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+        >
+          <Menu class="h-5 w-5" />
+        </button>
+        <h1 class="hidden md:block text-base font-bold text-slate-800 dark:text-slate-100">
+          {{ pageTitle }}
+        </h1>
+      </div>
 
       <div class="flex items-center gap-3">
         <button

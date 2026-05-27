@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuanLyKhachHang } from "./useQuanLyKhachHang";
-const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, toast, toastTimer, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, khModalDonHang, dsHoaDonModal, dangTaiDonHang, moModalDonHang, dongModalDonHang, xemChiTietDon } = useQuanLyKhachHang();
+const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, toast, toastTimer, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, moModalDonHang } = useQuanLyKhachHang();
 </script>
 
 <template>
@@ -42,10 +42,7 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
       </div>
     </Transition>
 
-    <!-- Header -->
-    <section>
-      <h1 class="admin-page-title text-[30px]">Quản lý khách hàng</h1>
-    </section>
+    <!-- Header removed -->
 
     <!-- Bộ lọc -->
     <Card title="Bộ lọc">
@@ -103,23 +100,25 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
       <div v-if="loiTrang" class="mx-6 mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
       <div class="p-6">
-        <Table>
+        <Table red-header>
           <template #header>
-            <th class="w-[5%] px-4 py-3.5">STT</th>
-            <th class="w-[15%] px-4 py-3.5">Tên đăng nhập</th>
-            <th class="w-[18%] px-4 py-3.5">Họ tên</th>
-            <th class="w-[25%] px-4 py-3.5">Email</th>
-            <th class="w-[13%] px-4 py-3.5">Số điện thoại</th>
-            <th class="w-[12%] px-4 py-3.5">Trạng thái</th>
-            <th class="w-[12%] px-4 py-3.5 text-center">Hành động</th>
+            <th class="w-[4%] px-4 py-3.5">STT</th>
+            <th class="w-[6%] px-4 py-3.5">Ảnh</th>
+            <th class="w-[13%] px-4 py-3.5">Tên đăng nhập</th>
+            <th class="w-[13%] px-4 py-3.5">Họ tên</th>
+            <th class="w-[16%] px-4 py-3.5">Email</th>
+            <th class="w-[20%] px-4 py-3.5">Địa chỉ</th>
+            <th class="w-[11%] px-4 py-3.5">Số điện thoại</th>
+            <th class="w-[9%] px-4 py-3.5">Trạng thái</th>
+            <th class="w-[8%] px-4 py-3.5 text-center">Hành động</th>
           </template>
-          
+
           <template #body>
             <tr v-if="dangTai">
-              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="7" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
+              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
             </tr>
             <tr
               v-else
@@ -127,31 +126,35 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
               :key="kh.id"
               class="hover:bg-slate-50/50 transition-colors duration-150"
             >
-              <td class="px-4 py-3.5 font-semibold text-slate-500">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
-              <td class="px-4 py-3.5 font-semibold text-slate-800">
-                <div class="truncate max-w-[150px]" :title="kh.tenDangNhap">{{ kh.tenDangNhap }}</div>
+              <td class="px-4 py-2.5 font-semibold text-slate-500">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
+              <td class="px-4 py-2.5">
+                <img
+                  :src="kh.hinhAnh || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(kh.hoTen || 'KH') + '&background=f1f5f9&color=475569&size=64')"
+                  :alt="kh.hoTen"
+                  class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
+                />
               </td>
-              <td class="px-4 py-3.5 font-semibold text-slate-800">
-                <div class="truncate max-w-[150px]" :title="kh.hoTen">
-                  {{ kh.hoTen }}
-                </div>
+              <td class="px-4 py-2.5 font-semibold text-slate-800">
+                <div class="truncate max-w-[120px]" :title="kh.tenDangNhap">{{ kh.tenDangNhap }}</div>
               </td>
-              <td class="px-4 py-3.5 text-[13px] text-slate-600">
-                <div class="truncate max-w-[200px]" :title="kh.email || '—'">
-                  {{ kh.email || '—' }}
-                </div>
+              <td class="px-4 py-2.5 font-semibold text-slate-800">
+                <div class="truncate max-w-[120px]" :title="kh.hoTen">{{ kh.hoTen }}</div>
               </td>
-              <td class="px-4 py-3.5 text-slate-600">
-                <div class="truncate" :title="kh.sdt || '—'">
-                  {{ kh.sdt || '—' }}
-                </div>
+              <td class="px-4 py-2.5 text-[13px] text-slate-600">
+                <div class="truncate max-w-[160px]" :title="kh.email || '—'">{{ kh.email || '—' }}</div>
               </td>
-              <td class="px-4 py-3.5">
+              <td class="px-4 py-2.5 text-[12px] text-slate-500 leading-relaxed">
+                {{ kh.diaChiMacDinh || '—' }}
+              </td>
+              <td class="px-4 py-2.5 text-slate-600 text-[13px]">
+                <div class="truncate" :title="kh.sdtMacDinh || kh.sdt || '—'">{{ kh.sdtMacDinh || kh.sdt || '—' }}</div>
+              </td>
+              <td class="px-4 py-2.5">
                 <Badge :variant="kh.trangThai === 1 ? 'success' : 'danger'">
                   {{ kh.tenTrangThai }}
                 </Badge>
               </td>
-              <td class="px-4 py-3.5 text-center">
+              <td class="px-4 py-2.5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
                   <AdminQuickStatusAction
                     :loading="dangDoiTrangThai === kh.id"
@@ -349,90 +352,5 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
     </div>
   </Teleport>
 
-  <!-- ===== MODAL ĐƠN HÀNG ===== -->
-  <Teleport to="body">
-    <div v-if="khModalDonHang" class="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/40 p-4 overflow-y-auto">
-      <div class="w-full max-w-5xl rounded-[32px] bg-white shadow-2xl my-8">
-        <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-100 px-8 py-5">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-violet-500">
-              <ShoppingBag class="h-5 w-5" />
-            </div>
-            <div>
-              <h2 class="text-base font-bold text-slate-800">Đơn hàng</h2>
-              <p class="text-xs text-slate-400">Lịch sử mua hàng của khách</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" @click="dongModalDonHang" class="h-8 w-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
-            <X class="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div class="flex flex-col xl:flex-row gap-0">
-          <!-- Thông tin khách hàng -->
-          <div class="xl:w-56 shrink-0 border-b xl:border-b-0 xl:border-r border-slate-100 p-6 flex flex-col items-center text-center gap-3">
-            <img
-              :src="khModalDonHang.hinhAnh || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(khModalDonHang.hoTen) + '&background=f1f5f9&color=475569&size=128'"
-              :alt="khModalDonHang.hoTen"
-              class="h-20 w-20 rounded-full object-cover ring-4 ring-slate-100"
-            />
-            <div>
-              <p class="font-bold text-slate-800">{{ khModalDonHang.hoTen }}</p>
-              <p class="text-xs text-slate-500 mt-1">{{ khModalDonHang.email || '—' }}</p>
-              <p class="text-xs text-slate-500">{{ khModalDonHang.sdt || '—' }}</p>
-              <p class="text-xs text-slate-500">{{ khModalDonHang.ngaySinh || '—' }}</p>
-              <span class="mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold" :class="mauTrangThai(khModalDonHang.trangThai)">
-                {{ khModalDonHang.tenTrangThai }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Bảng đơn hàng -->
-          <div class="flex-1 p-6 overflow-x-auto">
-            <div v-if="dangTaiDonHang" class="py-10 text-center text-sm text-slate-400">Đang tải đơn hàng...</div>
-            <div v-else-if="!dsHoaDonModal.length" class="py-10 text-center text-sm text-slate-400">
-              <Package class="h-10 w-10 mx-auto mb-2 text-slate-200" />
-              Trống
-            </div>
-            <table v-else class="min-w-[560px] w-full border-separate border-spacing-y-2 text-sm">
-              <thead>
-                <tr class="text-left text-xs font-bold text-slate-950">
-                  <th class="rounded-l-2xl bg-slate-100 px-4 py-3">#</th>
-                  <th class="bg-slate-100 px-4 py-3">Mã đơn hàng</th>
-                  <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-                  <th class="bg-slate-100 px-4 py-3">Loại</th>
-                  <th class="bg-slate-100 px-4 py-3">Tổng cộng</th>
-                  <th class="bg-slate-100 px-4 py-3">Chi tiết</th>
-                  <th class="rounded-r-2xl bg-slate-100 px-4 py-3">Tạo lúc</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(hd, idx) in dsHoaDonModal"
-                  :key="hd.id"
-                  class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
-                >
-                  <td class="rounded-l-2xl px-4 py-3 font-semibold text-slate-500">{{ idx + 1 }}</td>
-                  <td class="px-4 py-3 font-mono font-semibold text-slate-800 text-xs">{{ hd.maHoaDon }}</td>
-                  <td class="px-4 py-3">
-                    <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="mauTrangThaiDon(hd.trangThai)">
-                      {{ hd.trangThai }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-600">{{ hd.loaiDon }}</td>
-                  <td class="px-4 py-3 font-semibold text-slate-800">{{ dinhDangTien(hd.tongTien) }}</td>
-                  <td class="px-4 py-3">
-                    <Button variant="ghost" @click="xemChiTietDon(hd.id)" class="text-primary hover:text-primary-hover text-xs font-semibold underline p-0 h-auto">Xem chi tiết</Button>
-                  </td>
-                  <td class="rounded-r-2xl px-4 py-3 text-slate-500 text-xs">{{ dinhDangNgay(hd.ngayTao) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </Teleport>
   </div>
 </template>

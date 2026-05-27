@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Check, ChevronDown, Search, Trash2, X } from 'lucide-vue-next'
+import { Check, ChevronDown, Search, Trash2, X, Images, Pencil, Save } from 'lucide-vue-next'
 import AdminFormattedNumberInput from '../../common/AdminFormattedNumberInput.vue'
 
 const props = defineProps({
@@ -208,15 +208,23 @@ function handleSaveClick() {
     if (hasEditingFieldErrors.value) {
       return
     }
+    if (!window.confirm('Bạn có chắc chắn muốn lưu thông tin biến thể này không?')) return
   } else {
     if (hasBulkDefaultErrors.value || hasGeneratedBulkFieldErrors.value) {
       props.bulkBienTheErrors.generated = 'Vui lòng sửa các giá trị âm trước khi lưu.'
       return
     }
     delete props.bulkBienTheErrors.generated
+    if (!window.confirm('Bạn có chắc chắn muốn lưu danh sách biến thể này không?')) return
   }
 
   emit('save')
+}
+
+function confirmRemoveGeneratedBulk(key) {
+  if (window.confirm('Bạn có chắc chắn muốn xóa biến thể này khỏi danh sách tạo?')) {
+    emit('remove-generated-bulk', key)
+  }
 }
 
 onMounted(() => {
@@ -230,94 +238,151 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4"
-      @click.self="emit('close')"
-    >
+    <Transition name="modal">
       <div
-        class="flex max-h-[90vh] w-full flex-col rounded-2xl bg-white shadow-2xl"
-        :class="editingBienThe ? 'max-w-xl' : 'max-w-6xl'"
+        v-if="open"
+        class="modal-wrapper fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4"
+        @click.self="emit('close')"
       >
-        <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div
+          class="modal-container flex max-h-[90vh] w-full flex-col shadow-2xl"
+          :class="editingBienThe ? 'max-w-4xl overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.24)]' : 'max-w-6xl rounded-2xl bg-white'"
+      >
+        <!-- Single Edit Header -->
+        <div v-if="editingBienThe" class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+          <div>
+            <div class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-600">
+              <Pencil :size="16" />
+              Cập nhật biến thể
+            </div>
+            <h2 class="mt-3 text-2xl font-black text-slate-900">
+              {{ selectedGiay?.ten || 'Cập nhật biến thể' }}
+            </h2>
+            <p class="mt-2 text-sm text-slate-500">
+              Mã SP: {{ selectedGiay?.ma || '—' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+            @click="emit('close')"
+          >
+            <X :size="18" />
+          </button>
+        </div>
+
+        <!-- Bulk Add Header -->
+        <div v-else class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <h2 class="text-lg font-semibold text-gray-800">
-            {{ editingBienThe ? 'Cập nhật biến thể' : 'Tạo danh sách biến thể' }}
+            Tạo danh sách biến thể
           </h2>
           <button type="button" class="rounded-lg p-1.5 hover:bg-gray-100" @click="emit('close')">
             <X :size="18" />
           </button>
         </div>
 
-        <div class="overflow-y-auto p-6">
-          <div class="mb-4 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-700">
+        <div class="overflow-y-auto" :class="editingBienThe ? 'p-0' : 'p-6'">
+          <!-- Optional Banner for Bulk Add -->
+          <div v-if="!editingBienThe" class="mb-4 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-700">
             {{ selectedGiay?.ten }} · {{ selectedGiay?.ma }}
           </div>
 
-          <div v-if="editingBienThe" class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div class="text-xs font-medium uppercase tracking-wide text-slate-400">Màu sắc</div>
-                <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <span
-                    v-if="editingBienThe.maMauHex"
-                    class="h-3 w-3 rounded-full border border-black/5"
-                    :style="{ backgroundColor: editingBienThe.maMauHex }"
-                  ></span>
-                  <span>{{ editingBienThe.mauSac }}</span>
+          <div v-if="editingBienThe" class="grid gap-4 p-5 lg:grid-cols-[0.95fr_1.05fr]">
+            <div class="space-y-4">
+              <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_52%,#eef2ff_100%)] p-4">
+                <div v-if="editingBienThe.hinhAnh" class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm">
+                  <img :src="editingBienThe.hinhAnh" :alt="selectedGiay?.ten" class="h-full w-full object-contain" />
+                </div>
+                <div v-else class="flex aspect-[4/3] items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-white text-slate-400">
+                  <div class="text-center">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                      <Images :size="20" />
+                    </div>
+                    <p class="mt-3 text-sm font-medium">Chưa có ảnh hiển thị</p>
+                  </div>
                 </div>
               </div>
 
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div class="text-xs font-medium uppercase tracking-wide text-slate-400">Kích cỡ</div>
-                <div class="mt-2 text-sm font-semibold text-slate-700">Size {{ editingBienThe.kichCo }}</div>
+              <div class="grid gap-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2">
+                <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Màu sắc</p>
+                  <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <span v-if="editingBienThe.maMauHex" class="h-3 w-3 shrink-0 rounded-full border border-slate-300" :style="{ backgroundColor: editingBienThe.maMauHex }"></span>
+                    <span class="truncate">{{ editingBienThe.mauSac }}</span>
+                  </div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Kích cỡ</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-800">Size {{ editingBienThe.kichCo }}</p>
+                </div>
               </div>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Số lượng</label>
-                <AdminFormattedNumberInput
-                  v-model="bienTheForm.soLuong"
-                  :min="0"
-                  class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="inputErrorClass(resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong))"
-                />
-                <p v-if="resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong) }}</p>
+            <div class="flex flex-col justify-between space-y-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+              <div class="space-y-4">
+                <div>
+                  <p class="text-sm font-bold uppercase tracking-[0.16em] text-slate-800">Cập nhật thông tin</p>
+                </div>
+
+                <div class="space-y-4">
+                  <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Số lượng</label>
+                    <AdminFormattedNumberInput
+                      v-model="bienTheForm.soLuong"
+                      :min="0"
+                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      :class="inputErrorClass(resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong))"
+                    />
+                    <p v-if="resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong) }}</p>
+                  </div>
+
+                  <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Giá gốc</label>
+                    <AdminFormattedNumberInput
+                      v-model="bienTheForm.giaGoc"
+                      :min="0"
+                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc))"
+                    />
+                    <p v-if="resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc) }}</p>
+                  </div>
+
+                  <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Giá bán *</label>
+                    <AdminFormattedNumberInput
+                      v-model="bienTheForm.giaBan"
+                      :min="0"
+                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan))"
+                    />
+                    <p v-if="resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan) }}</p>
+                  </div>
+
+                  <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Trạng thái</label>
+                    <select
+                      v-model.number="bienTheForm.kichHoat"
+                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      :class="inputErrorClass(bienTheErrors.kichHoat)"
+                    >
+                      <option :value="1">Kích hoạt</option>
+                      <option :value="2">Tạm dừng</option>
+                    </select>
+                    <p v-if="bienTheErrors.kichHoat" class="mt-1 text-xs text-red-500">{{ bienTheErrors.kichHoat }}</p>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Giá gốc</label>
-                <AdminFormattedNumberInput
-                  v-model="bienTheForm.giaGoc"
-                  :min="0"
-                  class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc))"
-                />
-                <p v-if="resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc) }}</p>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Giá bán *</label>
-                <AdminFormattedNumberInput
-                  v-model="bienTheForm.giaBan"
-                  :min="0"
-                  class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan))"
-                />
-                <p v-if="resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan) }}</p>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Trạng thái</label>
-                <select
-                  v-model.number="bienTheForm.kichHoat"
-                  class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="inputErrorClass(bienTheErrors.kichHoat)"
+              <div class="mt-4">
+                <button
+                  type="button"
+                  :disabled="savingBienThe"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  @click="handleSaveClick"
                 >
-                  <option :value="1">Kích hoạt</option>
-                  <option :value="2">Tạm dừng</option>
-                </select>
-                <p v-if="bienTheErrors.kichHoat" class="mt-1 text-xs text-red-500">{{ bienTheErrors.kichHoat }}</p>
+                  <Save :size="18" />
+                  {{ savingBienThe ? 'Đang lưu...' : 'Lưu biến thể' }}
+                </button>
               </div>
             </div>
           </div>
@@ -357,6 +422,7 @@ onBeforeUnmount(() => {
                             type="text"
                             placeholder="Tìm màu sắc..."
                             class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                            @keydown.enter.prevent='() => {}'
                             @keydown.stop
                           />
                         </div>
@@ -383,7 +449,7 @@ onBeforeUnmount(() => {
                         >
                           <div class="flex min-w-0 items-center gap-2">
                             <span
-                              class="h-3 w-3 shrink-0 rounded-full border border-black/5"
+                              class="h-3 w-3 shrink-0 rounded-full border border-slate-300"
                               :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                             ></span>
                             <span class="truncate">{{ item.ten }}</span>
@@ -430,6 +496,7 @@ onBeforeUnmount(() => {
                             type="text"
                             placeholder="Tìm kích cỡ..."
                             class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                            @keydown.enter.prevent='() => {}'
                             @keydown.stop
                           />
                         </div>
@@ -599,7 +666,7 @@ onBeforeUnmount(() => {
                           <button
                             type="button"
                             class="inline-flex rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
-                            @click="emit('remove-generated-bulk', item.key)"
+                            @click="confirmRemoveGeneratedBulk(item.key)"
                           >
                             <Trash2 :size="14" />
                           </button>
@@ -620,7 +687,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+        <div v-if="!editingBienThe" class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
           <button
             type="button"
             class="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
@@ -634,10 +701,34 @@ onBeforeUnmount(() => {
             class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:opacity-60"
             @click="handleSaveClick"
           >
-            {{ savingBienThe ? 'Đang lưu...' : (editingBienThe ? 'Lưu biến thể' : 'Lưu danh sách biến thể') }}
+            {{ savingBienThe ? 'Đang lưu...' : 'Lưu danh sách biến thể' }}
           </button>
         </div>
       </div>
     </div>
+    </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-active .modal-container,
+.modal-leave-active .modal-container {
+  transition: all 0.3s ease;
+}
+
+.modal-enter-from .modal-container,
+.modal-leave-to .modal-container {
+  opacity: 0;
+  transform: scale(0.95);
+}
+</style>

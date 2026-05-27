@@ -116,9 +116,7 @@ const {
       </div>
     </Transition>
 
-    <section class="flex items-end justify-between">
-      <h1 class="admin-page-title text-[30px]">Quản lý phiếu giảm giá</h1>
-    </section>
+    <!-- Header removed -->
 
     <section
       class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
@@ -258,7 +256,7 @@ const {
         {{ loiTrang }}
       </div>
 
-      <div class="w-full">
+      <div class="overflow-x-auto admin-table-scroll w-full">
         <table
           v-if="activeTab === 'phieu'"
           class="w-full border-separate border-spacing-y-2 text-sm"

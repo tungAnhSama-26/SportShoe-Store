@@ -1,7 +1,7 @@
 <template>
   <button
     :class="[
-      'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60',
+      'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60',
       variantClasses,
       sizeClasses,
       fullWidth ? 'w-full' : '',
@@ -52,13 +52,13 @@ const props = defineProps({
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return 'bg-gradient-to-br from-red-500 to-primary text-white shadow-primary/40 shadow-md hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-px border border-transparent';
+      return 'bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)] border border-transparent';
     case 'secondary':
       return 'bg-secondary text-white shadow-md shadow-secondary/20 hover:shadow-lg hover:shadow-secondary/30 hover:-translate-y-px border border-transparent';
     case 'outline':
       return 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-primary hover:border-primary/30 shadow-sm';
     case 'soft':
-      return 'bg-white border border-primary/15 text-primary shadow-sm hover:bg-primary/5 hover:border-primary/30 hover:-translate-y-px';
+      return 'border border-rose-200 bg-white text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600';
     case 'danger':
       return 'bg-rose-500 text-white shadow-md shadow-rose-500/20 hover:bg-rose-600 border border-transparent';
     case 'ghost':

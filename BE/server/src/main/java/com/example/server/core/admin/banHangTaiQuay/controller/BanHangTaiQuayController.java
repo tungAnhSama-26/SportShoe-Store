@@ -42,7 +42,7 @@ public class BanHangTaiQuayController {
             @RequestParam(name = "phone", required = false) String phone
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tim kiem khach hang thanh cong",
+                "Tìm kiếm khách hàng thành công",
                 banHangTaiQuayService.timKhachHangTheoTuKhoa(phone)
         ));
     }
@@ -52,7 +52,7 @@ public class BanHangTaiQuayController {
             @RequestParam(name = "keyword", required = false) String keyword
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tim kiem san pham thanh cong",
+                "Tìm kiếm sản phẩm thành công",
                 banHangTaiQuayService.timSanPham(keyword)
         ));
     }
@@ -65,7 +65,7 @@ public class BanHangTaiQuayController {
             @RequestParam(name = "tongTienHang", required = false) BigDecimal tongTienHang
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tim kiem phieu giam gia thanh cong",
+                "Tìm kiếm phiếu giảm giá thành công",
                 banHangTaiQuayService.timPhieuGiamGia(keyword, hoaDonId, khachHangId, tongTienHang)
         ));
     }
@@ -73,7 +73,7 @@ public class BanHangTaiQuayController {
     @GetMapping("/hoa-don-cho")
     public ResponseEntity<ApiResponse<List<HoaDonChoTomTatResponse>>> layDanhSachHoaDonCho() {
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay danh sach hoa don cho thanh cong",
+                "Lấy danh sách hóa đơn chờ thành công",
                 banHangTaiQuayService.layDanhSachHoaDonCho()
         ));
     }
@@ -83,7 +83,7 @@ public class BanHangTaiQuayController {
             @PathVariable Integer hoaDonId
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay chi tiet hoa don cho thanh cong",
+                "Lấy chi tiết hóa đơn chờ thành công",
                 banHangTaiQuayService.layChiTietHoaDonCho(hoaDonId)
         ));
     }
@@ -93,7 +93,7 @@ public class BanHangTaiQuayController {
             @Valid @RequestBody ApDungPhieuGiamGiaRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Ap dung phieu giam gia thanh cong",
+                "Áp dụng phiếu giảm giá thành công",
                 banHangTaiQuayService.apDungPhieuGiamGia(request)
         ));
     }
@@ -103,7 +103,7 @@ public class BanHangTaiQuayController {
             @Valid @RequestBody TinhPhiVanChuyenTaiQuayRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tinh phi van chuyen GHN thanh cong",
+                "Tính phí vận chuyển GHN thành công",
                 banHangTaiQuayService.tinhPhiVanChuyenGhn(request)
         ));
     }
@@ -113,7 +113,7 @@ public class BanHangTaiQuayController {
             @Valid @RequestBody TaoHoaDonChoRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tao hoa don cho thanh cong",
+                "Tạo hóa đơn chờ thành công",
                 banHangTaiQuayService.taoHoaDonCho(request)
         ));
     }
@@ -123,7 +123,7 @@ public class BanHangTaiQuayController {
             @Valid @RequestBody ThanhToanTaiQuayRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Thanh toan tai quay thanh cong",
+                "Thanh toán tại quầy thành công",
                 banHangTaiQuayService.thanhToanTaiQuay(request)
         ));
     }
@@ -131,6 +131,6 @@ public class BanHangTaiQuayController {
     @PatchMapping("/hoa-don-cho/{hoaDonId}/huy")
     public ResponseEntity<ApiResponse<Void>> huyHoaDonCho(@PathVariable Integer hoaDonId) {
         banHangTaiQuayService.huyHoaDonCho(hoaDonId);
-        return ResponseEntity.ok(ApiResponse.success("Huy hoa don cho thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Hủy hóa đơn chờ thành công", null));
     }
 }

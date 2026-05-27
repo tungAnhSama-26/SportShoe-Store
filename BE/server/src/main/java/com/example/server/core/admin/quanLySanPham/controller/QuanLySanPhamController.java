@@ -1,5 +1,24 @@
-package com.example.server.core.admin.quanLySanPham;
+package com.example.server.core.admin.quanLySanPham.controller;
 
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatGiayRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.CapNhatHinhAnhRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.DoiTrangThaiBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.DoiTrangThaiRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoBienTheRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamHangLoatRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoChiTietSanPhamRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.TaoGiayRequest;
+import com.example.server.core.admin.quanLySanPham.dto.request.ThemHinhAnhRequest;
+import com.example.server.core.admin.quanLySanPham.dto.response.BienTheResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.ChiTietSanPhamListItemResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.DanhMucSanPhamResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.GiayDetailResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.GiayListItemResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.HinhAnhGiayResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.TaoChiTietSanPhamHangLoatResponse;
+import com.example.server.core.admin.quanLySanPham.dto.response.TaoChiTietSanPhamResponse;
+import com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.api.PageResponse;
 import jakarta.validation.Valid;
@@ -31,7 +50,7 @@ public class QuanLySanPhamController {
 
     @GetMapping("/danh-muc")
     public ResponseEntity<ApiResponse<DanhMucSanPhamResponse>> layDanhMuc() {
-        return ResponseEntity.ok(ApiResponse.success("Lay danh muc thanh cong", service.layDanhMuc()));
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh mục thành công", service.layDanhMuc()));
     }
 
     @GetMapping
@@ -47,14 +66,14 @@ public class QuanLySanPhamController {
     ) {
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay danh sach giay thanh cong",
+                "Lấy danh sách giày thành công",
                 service.danhSachGiay(keyword, thuongHieuId, loaiGiayId, trangThai, minPrice, maxPrice, pageable)
         ));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<GiayDetailResponse>> chiTietGiay(@PathVariable Integer id) {
-        return ResponseEntity.ok(ApiResponse.success("Lay chi tiet giay thanh cong", service.chiTietGiay(id)));
+        return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết giày thành công", service.chiTietGiay(id)));
     }
 
     @GetMapping("/chi-tiet")
@@ -67,16 +86,16 @@ public class QuanLySanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "giaBan"));
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay danh sach chi tiet san pham thanh cong",
+                "Lấy danh sách chi tiết sản phẩm thành công",
                 service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)
         ));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<GiayDetailResponse>> taoGiay(@Valid @RequestBody TaoGiayRequest req) {
-        return ResponseEntity.ok(ApiResponse.success("Tao giay thanh cong", service.taoGiay(req)));
+        return ResponseEntity.ok(ApiResponse.success("Tạo giày thành công", service.taoGiay(req)));
     }
 
     @PostMapping("/chi-tiet")
@@ -84,7 +103,7 @@ public class QuanLySanPhamController {
             @Valid @RequestBody TaoChiTietSanPhamRequest req
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tao san pham va chi tiet san pham thanh cong",
+                "Tạo sản phẩm và chi tiết sản phẩm thành công",
                 service.taoChiTietSanPham(req)
         ));
     }
@@ -94,7 +113,7 @@ public class QuanLySanPhamController {
             @Valid @RequestBody TaoChiTietSanPhamHangLoatRequest req
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Tao san pham va danh sach chi tiet san pham thanh cong",
+                "Tạo sản phẩm và danh sách chi tiết sản phẩm thành công",
                 service.taoChiTietSanPhamHangLoat(req)
         ));
     }
@@ -104,7 +123,7 @@ public class QuanLySanPhamController {
             @PathVariable Integer id,
             @Valid @RequestBody CapNhatGiayRequest req
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Cap nhat giay thanh cong", service.capNhatGiay(id, req)));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật giày thành công", service.capNhatGiay(id, req)));
     }
 
     @PatchMapping("/{id}/trang-thai")
@@ -113,18 +132,18 @@ public class QuanLySanPhamController {
             @Valid @RequestBody DoiTrangThaiRequest req
     ) {
         service.doiTrangThai(id, req);
-        return ResponseEntity.ok(ApiResponse.success("Doi trang thai thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Đổi trạng thái thành công", null));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> xoaGiay(@PathVariable Integer id) {
         service.xoaGiay(id);
-        return ResponseEntity.ok(ApiResponse.success("Xoa giay thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Xóa giày thành công", null));
     }
 
     @GetMapping("/{giayId}/bien-the")
     public ResponseEntity<ApiResponse<List<BienTheResponse>>> danhSachBienThe(@PathVariable Integer giayId) {
-        return ResponseEntity.ok(ApiResponse.success("Lay bien the thanh cong", service.danhSachBienThe(giayId)));
+        return ResponseEntity.ok(ApiResponse.success("Lấy biến thể thành công", service.danhSachBienThe(giayId)));
     }
 
     @PostMapping("/{giayId}/bien-the")
@@ -132,7 +151,7 @@ public class QuanLySanPhamController {
             @PathVariable Integer giayId,
             @Valid @RequestBody TaoBienTheRequest req
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Tao bien the thanh cong", service.taoBienThe(giayId, req)));
+        return ResponseEntity.ok(ApiResponse.success("Tạo biến thể thành công", service.taoBienThe(giayId, req)));
     }
 
     @PutMapping("/bien-the/{id}")
@@ -140,7 +159,7 @@ public class QuanLySanPhamController {
             @PathVariable Integer id,
             @Valid @RequestBody CapNhatBienTheRequest req
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Cap nhat bien the thanh cong", service.capNhatBienThe(id, req)));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật biến thể thành công", service.capNhatBienThe(id, req)));
     }
 
     @PatchMapping("/bien-the/{id}/trang-thai")
@@ -149,7 +168,7 @@ public class QuanLySanPhamController {
             @Valid @RequestBody DoiTrangThaiBienTheRequest req
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                "Doi trang thai bien the thanh cong",
+                "Đổi trạng thái biến thể thành công",
                 service.doiTrangThaiBienThe(id, req)
         ));
     }
@@ -157,12 +176,12 @@ public class QuanLySanPhamController {
     @DeleteMapping("/bien-the/{id}")
     public ResponseEntity<ApiResponse<Void>> xoaBienThe(@PathVariable Integer id) {
         service.xoaBienThe(id);
-        return ResponseEntity.ok(ApiResponse.success("Xoa bien the thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Xóa biến thể thành công", null));
     }
 
     @GetMapping("/bien-the/{id}/hinh-anh")
     public ResponseEntity<ApiResponse<List<HinhAnhGiayResponse>>> danhSachHinhAnh(@PathVariable Integer id) {
-        return ResponseEntity.ok(ApiResponse.success("Lay hinh anh thanh cong", service.layHinhAnh(id)));
+        return ResponseEntity.ok(ApiResponse.success("Lấy hình ảnh thành công", service.layHinhAnh(id)));
     }
 
     @PostMapping("/bien-the/{id}/hinh-anh")
@@ -170,18 +189,26 @@ public class QuanLySanPhamController {
             @PathVariable Integer id,
             @Valid @RequestBody ThemHinhAnhRequest req
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Them hinh anh thanh cong", service.themHinhAnh(id, req)));
+        return ResponseEntity.ok(ApiResponse.success("Thêm hình ảnh thành công", service.themHinhAnh(id, req)));
+    }
+
+    @PutMapping("/hinh-anh/{id}")
+    public ResponseEntity<ApiResponse<HinhAnhGiayResponse>> capNhatHinhAnh(
+            @PathVariable Integer id,
+            @Valid @RequestBody CapNhatHinhAnhRequest req
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật hình ảnh thành công", service.capNhatHinhAnh(id, req)));
     }
 
     @DeleteMapping("/hinh-anh/{id}")
     public ResponseEntity<ApiResponse<Void>> xoaHinhAnh(@PathVariable Integer id) {
         service.xoaHinhAnh(id);
-        return ResponseEntity.ok(ApiResponse.success("Xoa hinh anh thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Xóa hình ảnh thành công", null));
     }
 
     @PatchMapping("/hinh-anh/{id}/chinh")
     public ResponseEntity<ApiResponse<Void>> datHinhChinh(@PathVariable Integer id) {
         service.datHinhChinh(id);
-        return ResponseEntity.ok(ApiResponse.success("Dat hinh chinh thanh cong", null));
+        return ResponseEntity.ok(ApiResponse.success("Đặt hình chính thành công", null));
     }
 }

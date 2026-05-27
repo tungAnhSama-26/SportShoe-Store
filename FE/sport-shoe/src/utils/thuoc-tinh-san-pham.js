@@ -4,7 +4,7 @@ const SIZE_VALUE_PATTERN = /^(?:(EU)\s*)?(\d{1,2})(?:([.]5))?$/i
 
 const COLOR_PRESETS = [
   { keywords: ['den', 'black'], hex: '#111827' },
-  { keywords: ['trang', 'white'], hex: '#F8FAFC' },
+  { keywords: ['trang', 'white'], hex: '#FFFFFF' },
   { keywords: ['xam', 'ghi', 'gray', 'grey'], hex: '#6B7280' },
   { keywords: ['do', 'red', 'burgundy', 'maroon'], hex: '#DC2626' },
   { keywords: ['hong', 'pink', 'rose'], hex: '#EC4899' },

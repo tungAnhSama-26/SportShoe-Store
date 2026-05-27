@@ -151,6 +151,12 @@ function handleSearchKeydown(event) {
   if (event.key !== 'Enter') return
   event.preventDefault()
 
+  const keyword = normalizedQuery.value
+  if (!keyword) {
+    closeDropdown()
+    return
+  }
+
   if (filteredOptions.value.length > 0) {
     selectValue(filteredOptions.value[0].value)
     return
@@ -259,7 +265,7 @@ onBeforeUnmount(() => {
             <div class="flex items-center gap-2">
               <span
                 v-if="option.color"
-                class="h-3 w-3 shrink-0 rounded-full border border-black/5"
+                class="h-3 w-3 shrink-0 rounded-full border border-slate-300"
                 :style="{ backgroundColor: option.color }"
               ></span>
               <span class="truncate">{{ option.label }}</span>

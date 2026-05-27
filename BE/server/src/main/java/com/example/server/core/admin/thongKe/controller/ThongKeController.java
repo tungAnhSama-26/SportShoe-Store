@@ -43,7 +43,7 @@ public class ThongKeController {
         );
 
         return ResponseEntity.ok(ApiResponse.success(
-                "Lay du lieu thong ke thanh cong",
+                "Lấy dữ liệu thống kê thành công",
                 thongKeService.layDuLieuThongKe(request)
         ));
     }

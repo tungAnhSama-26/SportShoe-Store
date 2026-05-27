@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useChiTietHoaDon } from "./useChiTietHoaDon";
-const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint } = useChiTietHoaDon();
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien } = useChiTietHoaDon();
 </script>
 
 <template>
@@ -45,13 +46,13 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
           </p>
           <p>
             Tạo Bởi:
-            <span class="font-medium text-slate-700">{{ hoaDon.tenNhanVien || "Hệ Thống" }}</span>
+            <span class="font-medium text-slate-700">{{ hoaDon.nguoiTao || "Hệ Thống" }}</span>
             <span class="mx-2 text-slate-300">|</span>
             Cập Nhật Gần Nhất:
             <span class="font-medium text-slate-700">
               {{
                 hoaDon.lichSuHoaDon?.[0]
-                  ? `${dinhDangGio(hoaDon.lichSuHoaDon[0].ngayTao)} ${dinhDangNgay(hoaDon.lichSuHoaDon[0].ngayTao)} - ${hoaDon.lichSuHoaDon[0].tenNhanVien}`
+                  ? `${dinhDangGio(hoaDon.lichSuHoaDon[0].ngayTao)} ${dinhDangNgay(hoaDon.lichSuHoaDon[0].ngayTao)} - ${hoaDon.lichSuHoaDon[0].maNhanVien}`
                   : "Chưa Có"
               }}
             </span>
@@ -227,21 +228,65 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
         <div class="space-y-3">
           <Card class="px-5 py-4">
             <template #header>
-              <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-                <History class="h-4.5 w-4.5 text-slate-500" />
-                Lịch Sử Thanh Toán
-              </h2>
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+                  <History class="h-4.5 w-4.5 text-slate-500" />
+                  Lịch Sử Thanh Toán
+                </h2>
+                <button
+                  v-if="coTheThanhToanCod"
+                  type="button"
+                  class="inline-flex h-9 items-center gap-2 rounded-full bg-[#B82220] px-3.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(184,34,32,0.22)] transition hover:bg-[#991b1b] active:scale-95"
+                  @click="moModalThanhToanCod"
+                >
+                  <Banknote class="h-4 w-4" />
+                  Thanh toán
+                </button>
+                <button
+                  v-if="coTheHoanTien"
+                  type="button"
+                  class="inline-flex h-9 items-center gap-2 rounded-full bg-amber-500 px-3.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(245,158,11,0.22)] transition hover:bg-amber-600 active:scale-95"
+                  @click="moModalHoanTien"
+                >
+                  <Banknote class="h-4 w-4" />
+                  Hoàn tiền
+                </button>
+              </div>
             </template>
 
-            <div v-if="thanhToanGanNhat" class="mt-4 space-y-3 text-sm">
-              <div class="flex items-center justify-between">
-                <span class="font-semibold text-slate-700">{{ thanhToanGanNhat.phuongThucThanhToan }}</span>
-                <span class="font-bold text-[#B82220]">{{ dinhDangTien(thanhToanGanNhat.tongTien) }}</span>
-              </div>
-              <div class="text-xs text-slate-400">
-                {{ dinhDangGio(thanhToanGanNhat.thoiGian) }} {{ dinhDangNgay(thanhToanGanNhat.thoiGian) }}
-                <span class="mx-1">-</span>
-                {{ hoaDon.tenNhanVien || "Admin" }}
+            <div v-if="hoaDon.lichSuThanhToan?.length" class="mt-4 space-y-3 text-sm">
+              <div
+                v-for="thanhToan in hoaDon.lichSuThanhToan"
+                :key="thanhToan.id"
+                class="rounded-2xl border border-slate-100 bg-slate-50/60 p-3"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-semibold text-slate-700">{{ thanhToan.phuongThucThanhToan }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ thanhToan.loaiGiaoDich }}</p>
+                  </div>
+                  <span
+                    class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    :class="thanhToan.trangThaiThanhToan === 'Đã thanh toán'
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : thanhToan.trangThaiThanhToan === 'Cần hoàn tiền'
+                        ? 'bg-amber-50 text-amber-600'
+                        : thanhToan.trangThaiThanhToan === 'Đã hoàn tiền'
+                          ? 'bg-sky-50 text-sky-600'
+                          : thanhToan.trangThaiThanhToan === 'Đã hủy' || thanhToan.trangThaiThanhToan === 'Thanh toán thất bại'
+                            ? 'bg-rose-50 text-rose-600'
+                            : 'bg-slate-100 text-slate-500'"
+                  >
+                    {{ thanhToan.trangThaiThanhToan }}
+                  </span>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-3">
+                  <span class="text-xs text-slate-400">
+                    {{ dinhDangGio(thanhToan.thoiGian) }} {{ dinhDangNgay(thanhToan.thoiGian) }}
+                  </span>
+                  <span class="font-bold text-[#B82220]">{{ dinhDangTien(thanhToan.tongTien) }}</span>
+                </div>
+                <p v-if="thanhToan.ghiChu" class="mt-2 text-xs text-slate-500">{{ thanhToan.ghiChu }}</p>
               </div>
             </div>
             <div v-else class="mt-4 text-sm text-slate-400">Chưa Có Lịch Sử Thanh Toán.</div>
@@ -300,13 +345,46 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
       <section class="grid gap-3">
         <Card class="px-6 py-5">
           <template #header>
-            <div class="mb-4 flex items-center justify-between gap-4">
-              <h2 class="flex items-center gap-2 text-base font-semibold text-slate-700">
-                <Package class="h-5 w-5 text-slate-500" />
-                Danh Sách Sản Phẩm ({{ hoaDon.sanPham?.length || 0 }})
+            <div>
+              <h2 class="flex shrink-0 items-center gap-2 whitespace-nowrap text-base font-semibold text-slate-700">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500">
+                  <Package class="h-5 w-5" />
+                </span>
+                <span>Danh Sách Sản Phẩm ({{ hoaDon.sanPham?.length || 0 }})</span>
               </h2>
             </div>
           </template>
+
+          <div class="mb-6 w-full">
+            <div class="mb-3 flex items-center justify-between gap-4 text-xs font-semibold text-slate-400">
+              <span>Khoảng giá</span>
+              <span class="text-right text-slate-500">{{ nhanKhoangGiaSanPham }}</span>
+            </div>
+            <div class="relative h-8 w-full">
+              <div
+                class="absolute left-[9px] right-[9px] top-1/2 h-1 -translate-y-1/2 rounded-full"
+                :style="styleKhoangGiaSanPham"
+              ></div>
+              <input
+                v-model.number="giaTuSanPhamSo"
+                type="range"
+                min="0"
+                :max="giaLonNhatSanPham || 0"
+                step="10000"
+                class="price-range-input"
+                aria-label="Giá từ"
+              />
+              <input
+                v-model.number="giaDenSanPhamSo"
+                type="range"
+                min="0"
+                :max="giaLonNhatSanPham || 0"
+                step="10000"
+                class="price-range-input"
+                aria-label="Giá đến"
+              />
+            </div>
+          </div>
 
           <div class="overflow-x-auto">
             <table class="w-full table-auto text-[15px]">
@@ -315,7 +393,6 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
                   <th class="rounded-l-2xl px-5 py-3.5">STT</th>
                   <th class="px-5 py-3.5">Ảnh</th>
                   <th class="px-5 py-3.5">Sản Phẩm</th>
-                  <th class="px-5 py-3.5">Màu Sắc</th>
                   <th class="px-5 py-3.5">Số Lượng</th>
                   <th class="px-5 py-3.5">Thời Gian</th>
                   <th class="px-5 py-3.5">Đơn Giá</th>
@@ -323,8 +400,11 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in hoaDon.sanPham" :key="item.id" class="border-b border-slate-100 last:border-b-0">
-                  <td class="px-5 py-6 font-semibold text-slate-600">{{ index + 1 }}</td>
+                <tr v-if="!danhSachSanPhamPhanTrang.length">
+                  <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400">Không có sản phẩm phù hợp với khoảng giá.</td>
+                </tr>
+                <tr v-for="(item, index) in danhSachSanPhamPhanTrang" :key="item.id" class="border-b border-slate-100 last:border-b-0">
+                  <td class="px-5 py-6 font-semibold text-slate-600">{{ (trangSanPhamHienTai - 1) * soSanPhamMoiTrang + index + 1 }}</td>
                   <td class="px-5 py-6">
                     <img :src="item.hinhAnh || 'https://via.placeholder.com/72x72?text=Shoe'" class="h-14 w-14 rounded-xl object-cover" />
                   </td>
@@ -332,7 +412,6 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
                     <p class="text-base font-semibold text-slate-800">{{ vietHoaChuCaiDau(item.tenSanPham) }}</p>
                     <p class="mt-1 text-sm text-slate-400">{{ item.phanLoai }}</p>
                   </td>
-                  <td class="px-5 py-6 text-slate-600">{{ item.mauSac }}</td>
                   <td class="px-5 py-6 font-semibold text-slate-700">{{ item.soLuong }}</td>
                   <td class="px-5 py-6">
                     <p class="text-sm font-semibold text-slate-700">{{ dinhDangGio(hoaDon.ngayTao) }}</p>
@@ -344,9 +423,251 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
               </tbody>
             </table>
           </div>
+
+          <AdminTableFooter
+            v-if="hienPhanTrangSanPham"
+            :current-page="trangSanPhamHienTai"
+            :page-size="soSanPhamMoiTrang"
+            :page-size-options="[5]"
+            :total-items="danhSachSanPhamDaLoc.length"
+            :total-pages="tongTrangSanPham"
+            compact
+            @update:current-page="trangSanPhamHienTai = $event"
+            @update:page-size="() => {}"
+          />
         </Card>
       </section>
     </template>
+
+    <div v-if="hienModalThanhToanCod" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm">
+      <div class="flex max-h-[calc(100vh-1.5rem)] w-full max-w-[780px] flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.28)]">
+        <div class="relative shrink-0 bg-gradient-to-br from-white via-rose-50/70 to-white px-5 pb-3 pt-4">
+          <button
+            type="button"
+            class="absolute right-5 top-5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-slate-400 shadow-sm transition hover:bg-white hover:text-slate-700"
+            @click="hienModalThanhToanCod = false"
+          >
+            <X class="h-5 w-5" />
+          </button>
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220] text-white shadow-[0_14px_30px_rgba(184,34,32,0.25)]">
+              <Banknote class="h-6 w-6" />
+            </div>
+            <div>
+              <h3 class="text-lg font-extrabold uppercase tracking-wide text-slate-900">Thanh toán COD</h3>
+              <p class="mt-1 text-sm text-slate-500">{{ hoaDon.maHoaDon }} - {{ hoaDon.tenKhachHang }}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 rounded-2xl border border-rose-100 bg-white/80 px-4 py-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-500">Tổng tiền hàng</span>
+              <span class="text-lg font-extrabold text-[#B82220]">{{ dinhDangTien(tongTienThanhToanCod) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="min-h-0 flex-1 space-y-3 overflow-hidden px-5 py-4">
+          <div class="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+            <button
+              type="button"
+              class="h-10 rounded-xl text-sm font-bold outline-none transition focus-visible:ring-4 focus-visible:ring-rose-100"
+              :class="formThanhToanCod.hinhThucThanhToan === 2 ? 'bg-[#B82220] text-white shadow-sm' : 'text-slate-500 hover:bg-white/70'"
+              @click="formThanhToanCod.hinhThucThanhToan = 2"
+            >
+              Chuyển khoản
+            </button>
+            <button
+              type="button"
+              class="h-10 rounded-xl text-sm font-bold outline-none transition focus-visible:ring-4 focus-visible:ring-rose-100"
+              :class="formThanhToanCod.hinhThucThanhToan === 1 ? 'bg-[#B82220] text-white shadow-sm' : 'text-slate-500 hover:bg-white/70'"
+              @click="formThanhToanCod.hinhThucThanhToan = 1"
+            >
+              Tiền mặt
+            </button>
+          </div>
+
+          <div
+            class="grid gap-4"
+            :class="formThanhToanCod.hinhThucThanhToan === 2 ? 'lg:grid-cols-[1.05fr_0.95fr]' : 'place-items-center'"
+          >
+            <div v-if="formThanhToanCod.hinhThucThanhToan === 2" class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+              <div class="space-y-1 text-sm">
+                <p><span class="font-bold text-slate-800">Ngân hàng:</span> <span class="text-slate-600">MB Bank</span></p>
+                <p><span class="font-bold text-slate-800">Số tài khoản:</span> <span class="text-slate-600">0876524519</span></p>
+                <p><span class="font-bold text-slate-800">Nội dung:</span> <span class="text-[#B82220]">{{ noiDungChuyenKhoanCod }}</span></p>
+              </div>
+              <div class="mx-auto mt-3 flex w-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-inner">
+                <img :src="qrThanhToanCodUrl" alt="QR thanh toán COD" class="h-52 w-52 object-contain" />
+              </div>
+              <p class="mt-2 text-xs text-slate-400">Quét mã để thanh toán đúng số tiền.</p>
+            </div>
+
+            <div class="w-full space-y-3" :class="formThanhToanCod.hinhThucThanhToan === 1 ? 'max-w-[420px]' : ''">
+              <label v-if="formThanhToanCod.hinhThucThanhToan === 1" class="block space-y-2">
+                <span class="text-sm font-bold text-slate-600">Tiền khách đưa</span>
+                <input
+                  v-model="formThanhToanCod.tienKhachDua"
+                  type="number"
+                  min="0"
+                  inputmode="numeric"
+                  placeholder="Nhập số tiền..."
+                  class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+                />
+              </label>
+
+              <div class="overflow-hidden rounded-2xl border border-slate-200">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50 text-xs font-bold text-slate-500">
+                    <tr>
+                      <th class="px-3 py-2.5 text-left">STT</th>
+                      <th class="px-3 py-2.5 text-left">Phương thức</th>
+                      <th class="px-3 py-2.5 text-right">Số tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-t border-slate-100">
+                      <td class="px-3 py-3 font-semibold text-slate-500">1</td>
+                      <td class="px-3 py-3 font-semibold text-slate-700">{{ formThanhToanCod.hinhThucThanhToan === 2 ? 'Chuyển khoản' : 'Tiền mặt' }}</td>
+                      <td class="px-3 py-3 text-right font-bold text-[#B82220]">{{ dinhDangTien(tongTienThanhToanCod) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <label class="block space-y-2">
+                <span class="text-sm font-bold text-slate-600">Ghi chú</span>
+                <textarea
+                  v-model="formThanhToanCod.ghiChu"
+                  rows="2"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+                ></textarea>
+              </label>
+
+              <div class="flex items-center justify-between rounded-2xl bg-rose-50 px-4 py-3">
+                <span class="text-sm font-bold text-slate-600">Tiền thiếu</span>
+                <span class="text-lg font-extrabold text-[#B82220]">{{ dinhDangTien(tienThieuThanhToanCod) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shrink-0 border-t border-slate-100 bg-slate-50/90 px-5 py-4 sm:px-6">
+          <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <button
+            type="button"
+            class="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 outline-none transition hover:bg-slate-100 focus-visible:ring-4 focus-visible:ring-slate-200"
+            @click="hienModalThanhToanCod = false"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#B82220] px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(184,34,32,0.24)] outline-none transition hover:bg-[#991b1b] focus-visible:ring-4 focus-visible:ring-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="dangXacNhanThanhToanCod"
+            @click="handleXacNhanThanhToanCod"
+          >
+            <CheckCircle2 class="h-4 w-4" />
+            {{ dangXacNhanThanhToanCod ? 'Đang xác nhận...' : 'Xác nhận thanh toán' }}
+          </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="hienModalHoanTien" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+      <div class="w-full max-w-[560px] overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div class="bg-amber-50 px-6 py-5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white">
+                <Banknote class="h-5 w-5" />
+              </div>
+              <div>
+                <h3 class="text-lg font-extrabold uppercase tracking-wide text-slate-800">Xác nhận hoàn tiền</h3>
+                <p class="mt-1 text-sm text-slate-500">{{ hoaDon.maHoaDon }} - {{ hoaDon.tenKhachHang }}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition hover:text-slate-700"
+              @click="hienModalHoanTien = false"
+            >
+              <X class="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-4 px-6 py-5">
+          <div class="flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50/60 px-4 py-3">
+            <span class="text-sm font-bold text-slate-600">Số tiền cần hoàn</span>
+            <span class="text-lg font-extrabold text-amber-600">{{ dinhDangTien(tongTienHoan) }}</span>
+          </div>
+
+          <label class="block space-y-2">
+            <span class="text-sm font-bold text-slate-600">Phương thức hoàn</span>
+            <select
+              v-model.number="formHoanTien.hinhThucHoanTien"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+            >
+              <option :value="2">Chuyển khoản</option>
+              <option :value="1">Tiền mặt</option>
+              <option :value="3">Hoàn qua cổng thanh toán</option>
+            </select>
+          </label>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="block space-y-2">
+              <span class="text-sm font-bold text-slate-600">Số tiền hoàn</span>
+              <input
+                v-model="formHoanTien.soTienHoan"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+              />
+            </label>
+            <label class="block space-y-2">
+              <span class="text-sm font-bold text-slate-600">Mã giao dịch hoàn</span>
+              <input
+                v-model="formHoanTien.maGiaoDichHoan"
+                type="text"
+                placeholder="VD: RF20260524..."
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+              />
+            </label>
+          </div>
+
+          <label class="block space-y-2">
+            <span class="text-sm font-bold text-slate-600">Ghi chú</span>
+            <textarea
+              v-model="formHoanTien.ghiChu"
+              rows="3"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            class="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+            @click="hienModalHoanTien = false"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)] transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="dangXacNhanHoanTien"
+            @click="handleXacNhanHoanTien"
+          >
+            <CheckCircle2 class="h-4 w-4" />
+            {{ dangXacNhanHoanTien ? 'Đang xác nhận...' : 'Xác nhận hoàn tiền' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div v-if="hienModalXacNhan" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
       <div class="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-2xl">
@@ -542,13 +863,6 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
           >
             Thông tin khách hàng
           </button>
-          <button
-            :class="tabHienTai === 'giaoHang' ? 'border-b-2 border-blue-500 font-semibold text-blue-500' : 'text-blue-500 hover:text-blue-600'"
-            class="pb-3 transition-colors"
-            @click="tabHienTai = 'giaoHang'"
-          >
-            Thông tin giao hàng
-          </button>
         </div>
 
         <div class="p-6">
@@ -594,65 +908,6 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
              </div>
           </div>
 
-          <div v-if="tabHienTai === 'giaoHang'" class="space-y-4">
-             <div>
-                <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Địa chỉ cụ thể</label>
-                <textarea v-model="formThongTin.diaChi" rows="2" class="w-full rounded-[8px] border border-slate-200 px-3 py-2 text-[14px] text-slate-800 outline-none transition focus:border-blue-400"></textarea>
-             </div>
-             <div>
-                <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Loại đơn</label>
-                <input type="text" readonly :value="formThongTin.loaiDon" class="w-full rounded-[8px] bg-slate-100 px-3 py-2.5 text-[14px] text-slate-600 outline-none" />
-             </div>
-             <div class="rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
-                <div class="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p class="flex items-center gap-2 text-[13px] font-semibold text-slate-700">
-                      Tự Tính Phí Vận Chuyển
-                      <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
-                    </p>
-                  </div>
-                  <Button
-                    @click="handleTinhPhiGhn"
-                    :disabled="dangTinhPhiGhn || laDonTaiQuay || donDaHoanThanh"
-                    class="bg-rose-500 hover:bg-rose-600 text-white border-transparent rounded-full px-4 py-2 text-xs"
-                  >
-                    {{ dangTinhPhiGhn ? "Đang Tính..." : "Tự Tính Phí GHN" }}
-                  </Button>
-                </div>
-                <div class="grid gap-3 md:grid-cols-2">
-                  <div v-if="diaChiGhnDaDo" class="md:col-span-2 rounded-xl bg-white px-3 py-2 text-sm text-slate-600">
-                    GHN Đã Dò: <span class="font-semibold text-slate-800">{{ diaChiGhnDaDo }}</span>
-                  </div>
-                  <label class="space-y-1.5">
-                    <span class="text-xs font-medium text-slate-500">Loại Dịch Vụ</span>
-                    <select v-model.number="formGhn.serviceTypeId" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300">
-                      <option :value="2">Hàng Nhẹ</option>
-                      <option :value="5">Hàng Nặng</option>
-                    </select>
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="text-xs font-medium text-slate-500">Cân Nặng (gram)</span>
-                    <input v-model.number="formGhn.weight" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="text-xs font-medium text-slate-500">Dài (cm)</span>
-                    <input v-model.number="formGhn.length" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="text-xs font-medium text-slate-500">Rộng (cm)</span>
-                    <input v-model.number="formGhn.width" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="text-xs font-medium text-slate-500">Cao (cm)</span>
-                    <input v-model.number="formGhn.height" type="number" class="w-full rounded-[8px] border border-slate-200 bg-white px-3 py-2 text-[14px] outline-none transition focus:border-rose-300" />
-                  </label>
-                  <div class="flex items-end justify-between rounded-xl bg-white px-3 py-2 text-sm">
-                    <span class="text-slate-500">Phí Hiện Tại</span>
-                    <span class="font-semibold text-rose-500">{{ dinhDangTien(hoaDon.phiVanChuyen) }}</span>
-                  </div>
-                </div>
-             </div>
-          </div>
         </div>
 
         <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
@@ -667,3 +922,53 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
     </div>
   </div>
 </template>
+
+<style scoped>
+.price-range-input {
+  display: block;
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 18px;
+  width: 100%;
+  margin: 0;
+  transform: translateY(-50%);
+  appearance: none;
+  background: transparent;
+}
+
+.price-range-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  height: 18px;
+  width: 18px;
+  margin-top: -7px;
+  appearance: none;
+  border: 3px solid #ffffff;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #d9dde6, 0 4px 12px rgba(184, 34, 32, 0.2);
+  cursor: pointer;
+}
+
+.price-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  height: 18px;
+  width: 18px;
+  border: 3px solid #ffffff;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #d9dde6, 0 4px 12px rgba(184, 34, 32, 0.2);
+  cursor: pointer;
+}
+
+.price-range-input::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+}
+
+.price-range-input::-moz-range-track {
+  height: 4px;
+  background: transparent;
+}
+</style>
