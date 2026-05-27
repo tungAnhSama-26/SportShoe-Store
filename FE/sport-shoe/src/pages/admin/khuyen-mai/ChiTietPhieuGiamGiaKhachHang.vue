@@ -156,6 +156,11 @@ async function submitForm() {
 
   if (!isValid) return;
 
+  const confirmMsg = laMoi 
+    ? "Bạn có chắc chắn muốn tặng phiếu giảm giá này cho khách hàng đã chọn không?" 
+    : "Bạn có chắc chắn muốn cập nhật thông tin phiếu tặng khách hàng này không?";
+  if (!window.confirm(confirmMsg)) return;
+
   saving.value = true;
   loiTrang.value = "";
 
