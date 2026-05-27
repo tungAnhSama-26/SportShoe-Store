@@ -1,6 +1,76 @@
 <script setup>
 import { usePhieuGiamGiaList } from "./usePhieuGiamGiaList";
-const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel } = usePhieuGiamGiaList();
+const {
+  computed,
+  onMounted,
+  ref,
+  watch,
+  useRoute,
+  useRouter,
+  CheckCircle2,
+  CircleX,
+  Eye,
+  FileSpreadsheet,
+  Filter,
+  Plus,
+  RotateCcw,
+  Search,
+  X,
+  getPhieuGiamGiaKhachHangList,
+  getPhieuGiamGiaList,
+  updatePhieuGiamGia,
+  updatePhieuGiamGiaKhachHang,
+  AdminTableFooter,
+  AdminQuickStatusAction,
+  exportRowsToExcel,
+  getDisplayErrorMessage,
+  router,
+  route,
+  dangTai,
+  loiTrang,
+  resolveActiveTab,
+  activeTab,
+  toast,
+  toastTimer,
+  toastClass,
+  toastIconClass,
+  toastAccentClass,
+  ToastIcon,
+  hienThiThongBao,
+  boLoc,
+  boLocKh,
+  danhSach,
+  tongSoTrang,
+  soPhanTuMotTrang,
+  trangHienTai,
+  totalItems,
+  danhSachKh,
+  tongSoTrangKh,
+  soPhanTuMotTrangKh,
+  trangHienTaiKh,
+  totalItemsKh,
+  dsTrangThai,
+  dsLoai,
+  isHetHan,
+  mauTrangThai,
+  statusText,
+  loaiGiamText,
+  loaiPhieuText,
+  formatGiaTri,
+  formatTien,
+  toDisplayDate,
+  soLuongDaDung,
+  soLuongConLai,
+  timer,
+  taiDanhSach,
+  taiDanhSachKh,
+  lamMoiBoLoc,
+  nhanhDoiTrangThai,
+  nhanhDoiTrangThaiKh,
+  openCreateModal,
+  openEditModal,
+  xuatExcel,
+} = usePhieuGiamGiaList();
 </script>
 
 <template>
@@ -48,7 +118,9 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
 
     <!-- Header removed -->
 
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+    <section
+      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+    >
       <div class="mb-5 flex items-center gap-3">
         <div
           class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
@@ -152,13 +224,17 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
             class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]"
           >
             <Plus class="h-4 w-4" />
-            {{ activeTab === "phieu" ? "Tạo phiếu mới" : "Tặng phiếu khách hàng" }}
+            {{
+              activeTab === "phieu" ? "Tạo phiếu mới" : "Tặng phiếu khách hàng"
+            }}
           </button>
         </div>
       </div>
     </section>
 
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+    <section
+      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+    >
       <div class="mb-5 flex items-center justify-between">
         <h2 class="admin-section-title text-lg">
           {{
@@ -168,7 +244,8 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
           }}
         </h2>
         <p class="text-sm font-medium text-slate-400">
-          {{ activeTab === "phieu" ? totalItems : totalItemsKh }} bản ghi hiển thị.
+          {{ activeTab === "phieu" ? totalItems : totalItemsKh }} bản ghi hiển
+          thị.
         </p>
       </div>
 
@@ -185,7 +262,9 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
           class="w-full border-separate border-spacing-y-2 text-sm"
         >
           <thead>
-            <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap">
+            <tr
+              class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
+            >
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
@@ -194,7 +273,11 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
               <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
               <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap">Hành động</th>
+              <th
+                class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap"
+              >
+                Hành động
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -220,10 +303,18 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
                 {{ item.ma }}
               </td>
               <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ loaiPhieuText(item.loaiPhieu) }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ formatGiaTri(item.giaTri, item.loai) }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ toDisplayDate(item.ngayBatDau) }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ toDisplayDate(item.ngayKetThuc) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{ loaiPhieuText(item.loaiPhieu) }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{ formatGiaTri(item.giaTri, item.loai) }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{ toDisplayDate(item.ngayBatDau) }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{ toDisplayDate(item.ngayKetThuc) }}
+              </td>
               <td class="px-4 py-3">
                 <span
                   class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
@@ -236,11 +327,27 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="isHetHan(item.ngayKetThuc)"
-                    :disabled-title="'Phiếu đã hết hạn, không thể thay đổi trạng thái'"
-                    :action-label="Number(item.trangThai) === 1 ? 'Ngừng hoạt động' : 'Kích hoạt'"
-                    :confirm-message="Number(item.trangThai) === 1 ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?' : 'Bạn có chắc chắn muốn kích hoạt phiếu này không?'"
-                    :intent="Number(item.trangThai) === 1 ? 'deactivate' : 'activate'"
+                    :disabled="
+                      isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 0
+                    "
+                    :disabled-title="
+                      isHetHan(item.ngayKetThuc)
+                        ? 'Phiếu đã hết hạn, không thể thay đổi trạng thái'
+                        : 'Phiếu đã ngừng hoạt động, không thể thay đổi trạng thái'
+                    "
+                    :action-label="
+                      Number(item.trangThai) === 1
+                        ? 'Ngừng hoạt động'
+                        : 'Kích hoạt'
+                    "
+                    :confirm-message="
+                      Number(item.trangThai) === 1
+                        ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?'
+                        : 'Bạn có chắc chắn muốn kích hoạt phiếu này không?'
+                    "
+                    :intent="
+                      Number(item.trangThai) === 1 ? 'deactivate' : 'activate'
+                    "
                     @toggle="nhanhDoiTrangThai(item)"
                   />
                   <button
@@ -305,7 +412,11 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
                 {{ toDisplayDate(item.ngayTao) }}
               </td>
               <td class="px-4 py-3">
-                {{ item.ngaySuDung ? toDisplayDate(item.ngaySuDung) : "Chưa sử dụng" }}
+                {{
+                  item.ngaySuDung
+                    ? toDisplayDate(item.ngaySuDung)
+                    : "Chưa sử dụng"
+                }}
               </td>
               <td class="px-4 py-3">
                 <span
@@ -319,8 +430,14 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="Number(item.trangThai) === 0"
-                    disabled-title="Không thể thao tác trên phiếu đã ngừng hoạt động"
+                    :disabled="
+                      Number(item.trangThai) === 0 || isHetHan(item.ngayKetThuc)
+                    "
+                    :disabled-title="
+                      Number(item.trangThai) === 0
+                        ? 'Không thể thao tác trên phiếu đã ngừng hoạt động'
+                        : 'Phiếu đã hết hạn, không thể thao tác trên phiếu này'
+                    "
                     action-label="Tắt liên kết"
                     confirm-message="Bạn có chắc chắn muốn tắt liên kết này không?"
                     intent="deactivate"
@@ -341,15 +458,25 @@ const { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, Circ
 
       <AdminTableFooter
         :current-page="activeTab === 'phieu' ? trangHienTai : trangHienTaiKh"
-        :page-size="activeTab === 'phieu' ? soPhanTuMotTrang : soPhanTuMotTrangKh"
+        :page-size="
+          activeTab === 'phieu' ? soPhanTuMotTrang : soPhanTuMotTrangKh
+        "
         :page-size-options="[5, 10, 20]"
         :total-items="activeTab === 'phieu' ? totalItems : totalItemsKh"
         :total-pages="activeTab === 'phieu' ? tongSoTrang : tongSoTrangKh"
         compact
         show-refresh
         @refresh="activeTab === 'phieu' ? taiDanhSach() : taiDanhSachKh()"
-        @update:current-page="activeTab === 'phieu' ? (trangHienTai = $event) : (trangHienTaiKh = $event)"
-        @update:page-size="activeTab === 'phieu' ? (soPhanTuMotTrang = $event) : (soPhanTuMotTrangKh = $event)"
+        @update:current-page="
+          activeTab === 'phieu'
+            ? (trangHienTai = $event)
+            : (trangHienTaiKh = $event)
+        "
+        @update:page-size="
+          activeTab === 'phieu'
+            ? (soPhanTuMotTrang = $event)
+            : (soPhanTuMotTrangKh = $event)
+        "
       />
     </section>
   </div>
