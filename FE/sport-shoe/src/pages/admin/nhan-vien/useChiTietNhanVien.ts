@@ -196,7 +196,6 @@ export function useChiTietNhanVien() {
   const dsVaiTro = [
     { value: 1, label: "Admin" },
     { value: 2, label: "Bán hàng" },
-    { value: 3, label: "Kho" },
   ];
 
 
@@ -516,7 +515,7 @@ export function useChiTietNhanVien() {
       vaiTro: form.value.vaiTro,
     };
     if (!laMoi) {
-      payload.tenDangNhap = form.value.tenDangNhap.trim();
+      payload.tenDangNhap = form.value.email.trim();
     }
 
     try {

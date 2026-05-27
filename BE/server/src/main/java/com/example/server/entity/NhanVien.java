@@ -30,9 +30,9 @@ public class NhanVien {
     @Column(name = "ma", nullable = false, length = 20)
     private String ma;
 
-    @Size(max = 50)
+    @Size(max = 100)
     @NotNull
-    @Column(name = "ten_dang_nhap", nullable = false, length = 50)
+    @Column(name = "ten_dang_nhap", nullable = false, length = 100)
     private String tenDangNhap;
 
     @Size(max = 100)

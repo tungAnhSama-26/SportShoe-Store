@@ -64,7 +64,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException("Email đã được sử dụng");
         }
-        String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail);
+        String generatedTenDangNhap = normalizedEmail;
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
