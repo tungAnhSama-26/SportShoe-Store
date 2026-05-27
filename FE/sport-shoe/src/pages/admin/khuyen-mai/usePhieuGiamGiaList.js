@@ -143,7 +143,7 @@ export function usePhieuGiamGiaList() {
   }
 
   function mauTrangThai(trangThai, ngayKetThuc) {
-    if (isHetHan(ngayKetThuc)) return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+    if (isHetHan(ngayKetThuc)) return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
     const status = Number(trangThai);
     if (status === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
     if (status === 2) return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
@@ -362,7 +362,13 @@ export function usePhieuGiamGiaList() {
   }
 
   async function nhanhDoiTrangThai(item) {
-    if (isHetHan(item.ngayKetThuc)) return;
+    if (isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 0) {
+      const msg = isHetHan(item.ngayKetThuc)
+        ? 'Phiếu đã hết hạn, không thể thay đổi trạng thái'
+        : 'Phiếu đã ngừng hoạt động, không thể thay đổi trạng thái';
+      hienThiThongBao('warning', 'Không thể thay đổi trạng thái', msg);
+      return;
+    }
     try {
       const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
       await updatePhieuGiamGia(item.id, {
@@ -391,7 +397,13 @@ export function usePhieuGiamGiaList() {
   }
 
   async function nhanhDoiTrangThaiKh(item) {
-    if (Number(item.trangThai) === 0) return;
+    if (Number(item.trangThai) === 0 || isHetHan(item.ngayKetThuc)) {
+      const msg = Number(item.trangThai) === 0
+        ? 'Không thể thao tác trên phiếu đã ngừng hoạt động'
+        : 'Phiếu đã hết hạn, không thể thay đổi trạng thái';
+      hienThiThongBao('warning', 'Không thể thay đổi trạng thái', msg);
+      return;
+    }
     try {
       const nextStatus = 0;
       await updatePhieuGiamGiaKhachHang(item.id, {
