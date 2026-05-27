@@ -10,7 +10,7 @@ import java.time.LocalDate;
 
 public record CapNhatNhanVienRequest(
         @NotBlank @Size(max = 100) String hoTen,
-        @NotBlank @Size(max = 50) String tenDangNhap,
+        @NotBlank @Size(max = 100) String tenDangNhap,
         @NotBlank @Email @Size(max = 100) String email,
         @Size(max = 20) String sdt,
         @Pattern(regexp = "^\\d{12}$", message = "CCCD phai gom dung 12 chu so") String cccd,

@@ -86,7 +86,8 @@ public class AuthController {
     @PostMapping("/admin/login")
     public ResponseEntity<ApiResponse<AdminLoginResponse>> adminLogin(@Valid @RequestBody LoginRequest request) {
         String username = request.username().trim();
-        Optional<NhanVien> nvOptional = nhanVienRepository.findByTenDangNhapIgnoreCase(username);
+        Optional<NhanVien> nvOptional = nhanVienRepository.findByTenDangNhapIgnoreCase(username)
+                .or(() -> nhanVienRepository.findByEmail(username.toLowerCase(java.util.Locale.ROOT)));
 
         if (nvOptional.isEmpty()) {
             throw new BusinessException("Tài khoản hoặc mật khẩu không chính xác");

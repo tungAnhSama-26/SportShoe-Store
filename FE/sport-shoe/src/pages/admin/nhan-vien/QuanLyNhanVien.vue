@@ -49,7 +49,7 @@ const dsVaiTro = [
   { label: "Tất cả vai trò", value: "" },
   { label: "Admin", value: "1" },
   { label: "Bán hàng", value: "2" },
-  { label: "Kho", value: "3" },
+
 ];
 
 const dsTrangThai = [
@@ -200,8 +200,11 @@ function xuatExcel() {
       { label: "STT", value: (_, index) => index + 1 },
       { label: "Mã NV", key: "ma" },
       { label: "Họ tên", key: "hoTen" },
+      { label: "Tài khoản", key: "tenDangNhap" },
       { label: "Email", key: "email" },
+      { label: "Giới tính", value: (row) => row.gioiTinh || "—" },
       { label: "Số điện thoại", value: (row) => row.sdt || "—" },
+      { label: "Địa chỉ", value: (row) => row.diaChi || "—" },
       { label: "Vai trò", value: (row) => hienThiVaiTro(row) },
       { label: "Trạng thái", value: (row) => hienThiTrangThai(row) },
     ],
@@ -331,7 +334,7 @@ onActivated(() => {
           <input
             v-model="boLoc.keyword"
             type="text"
-            placeholder="Tìm theo mã, họ tên, email, SĐT..."
+            placeholder="Tìm theo mã, họ tên, tài khoản, SĐT..."
             class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
           />
         </div>
@@ -411,20 +414,22 @@ onActivated(() => {
               <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
               <th class="px-3 py-3 whitespace-nowrap">Mã NV</th>
               <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
-              <th class="px-3 py-3 whitespace-nowrap">Email</th>
+              <th class="px-3 py-3 whitespace-nowrap">Tài khoản</th>
+              <th class="px-3 py-3 whitespace-nowrap">Giới tính</th>
               <th class="px-3 py-3 whitespace-nowrap">Số điện thoại</th>
+              <th class="px-3 py-3 whitespace-nowrap">Địa chỉ</th>
               <th class="px-3 py-3 whitespace-nowrap">Vai trò</th>
               <th class="px-3 py-3 whitespace-nowrap">Trạng thái</th>
               <th class="px-3 py-3 text-center whitespace-nowrap">Hành động</th>
           </template>
           <template #body>
             <tr v-if="dangTai">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
                 Đang tải dữ liệu nhân viên...
               </td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
                 Không có nhân viên phù hợp.
               </td>
             </tr>
@@ -459,13 +464,28 @@ onActivated(() => {
                 </div>
               </td>
               <td class="px-3 py-3 text-slate-600">
-                <div class="truncate" :title="nv.email">
-                  {{ nv.email }}
+                <div class="text-sm">
+                  
+                  <span class="font-semibold text-slate-800" :title="nv.tenDangNhap">{{ nv.tenDangNhap }}</span>
+                </div>
+                <div class="text-xs mt-0.5">
+                 
+                  <span class="text-slate-500 select-all" :title="nv.email">{{ nv.email }}</span>
+                </div>
+              </td>
+              <td class="px-3 py-3 text-slate-600">
+                <div class="truncate" :title="nv.gioiTinh">
+                  {{ nv.gioiTinh || "—" }}
                 </div>
               </td>
               <td class="px-3 py-3 text-slate-600">
                 <div class="truncate" :title="nv.sdt || '—'">
                   {{ nv.sdt || "—" }}
+                </div>
+              </td>
+              <td class="px-3 py-3 text-slate-600">
+                <div class="min-w-[180px] max-w-[320px] break-words whitespace-normal leading-normal text-sm" :title="nv.diaChi || '—'">
+                  {{ nv.diaChi || "—" }}
                 </div>
               </td>
               <td class="px-3 py-3 text-slate-600">
