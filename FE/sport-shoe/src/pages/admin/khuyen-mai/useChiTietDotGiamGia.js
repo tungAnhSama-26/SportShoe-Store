@@ -112,12 +112,24 @@ export function useChiTietDotGiamGia() {
         result.push({ ...bt, _sp: sp });
       }
     }
-    return result.sort((a, b) =>
-      (a._sp?.ten || a.tenSanPham || '').localeCompare(b._sp?.ten || b.tenSanPham || '', 'vi')
-    );
+    // Sắp xếp sản phẩm mới nhất lên trước (theo ID giảm dần)
+    // Các biến thể của cùng sản phẩm sẽ được nhóm lại với nhau
+    return result.sort((a, b) => {
+      const spIdA = a._sp?.id || 0;
+      const spIdB = b._sp?.id || 0;
+      if (spIdB !== spIdA) {
+        return spIdB - spIdA;
+      }
+      return (b.id || 0) - (a.id || 0);
+    });
   });
 
-  const tongSoTrang = computed(() => Math.max(1, Math.ceil(tatCaBienThe.value.length / soHangMoiTrang.value)));
+  const tongSoTrang = computed(() => Math.max(1, Math.ceil(danhSachSP.value.length / soHangMoiTrang.value)));
+
+  const spTrang = computed(() => {
+    const start = (trangBienThe.value - 1) * soHangMoiTrang.value;
+    return danhSachSP.value.slice(start, start + soHangMoiTrang.value);
+  });
 
   const bienTheTrang = computed(() => {
     const start = (trangBienThe.value - 1) * soHangMoiTrang.value;
@@ -419,6 +431,41 @@ export function useChiTietDotGiamGia() {
     tatCaCoTheChon.value.some(bt => isVariantSelected(bt.id))
   );
 
+  function isProductBlocked(sp) {
+    if (!sp.bienThes || !sp.bienThes.length) return true;
+    return sp.bienThes.every(bt => isVariantBlocked(bt.id || bt.giayChiTietId));
+  }
+
+  function getProductSelectState(sp) {
+    if (!sp.bienThes || !sp.bienThes.length) return { checked: false, indeterminate: false, disabled: true };
+    const unblocked = sp.bienThes.filter(bt => !isVariantBlocked(bt.id || bt.giayChiTietId));
+    if (unblocked.length === 0) return { checked: false, indeterminate: false, disabled: true };
+    
+    const selectedCount = unblocked.filter(bt => isVariantSelected(bt.id || bt.giayChiTietId)).length;
+    return {
+      checked: selectedCount > 0 && selectedCount === unblocked.length,
+      indeterminate: selectedCount > 0 && selectedCount < unblocked.length,
+      disabled: false
+    };
+  }
+
+  function toggleProduct(sp) {
+    if (!sp.bienThes) return;
+    const state = getProductSelectState(sp);
+    const unblocked = sp.bienThes.filter(bt => !isVariantBlocked(bt.id || bt.giayChiTietId));
+    if (state.checked) {
+      // Bỏ chọn tất cả
+      unblocked.forEach(bt => removeSelectedVariant(bt.id || bt.giayChiTietId));
+    } else {
+      // Chọn tất cả
+      unblocked.forEach(bt => {
+        if (!isVariantSelected(bt.id || bt.giayChiTietId)) {
+          toggleVariant(bt, sp);
+        }
+      });
+    }
+  }
+
   function toggleChonTatCa() {
     if (tatCaDaChon.value) {
       tatCaCoTheChon.value.forEach(bt => removeSelectedVariant(bt.id));
@@ -619,5 +666,5 @@ export function useChiTietDotGiamGia() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm };
+  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm };
 }

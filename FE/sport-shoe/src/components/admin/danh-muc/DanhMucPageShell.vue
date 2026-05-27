@@ -1,6 +1,7 @@
-﻿<script setup>
-import { FileSpreadsheet, Filter, Layers3, Plus, Search } from "lucide-vue-next";
+<script setup>
+import { FileSpreadsheet, Filter, Layers3, Plus, Search, RotateCcw } from "lucide-vue-next";
 import AdminTableFooter from "../../common/AdminTableFooter.vue";
+import Button from "../../ui/Button.vue";
 
 defineProps({
   addLabel: {
@@ -72,10 +73,6 @@ function onKeywordInput(event) {
       </div>
     </Transition>
 
-    <section>
-      <h1 class="admin-page-title text-[30px]">{{ title }}</h1>
-    </section>
-
     <section class="admin-section-card">
       <div class="admin-section-header">
         <div class="admin-section-icon admin-section-icon--slate">
@@ -102,31 +99,18 @@ function onKeywordInput(event) {
         </div>
 
         <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-          <button
-            type="button"
-            class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
-            @click="emit('search')"
-          >
-            <Search class="h-4 w-4" />
-            Tìm kiếm
-          </button>
-          <button
-            v-if="showExport"
-            type="button"
-            class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
-            @click="emit('export')"
-          >
-            <FileSpreadsheet class="h-4 w-4" />
+          <Button variant="soft" @click="emit('update:keyword', ''); emit('search')">
+            <template #prefix><RotateCcw class="h-4 w-4" /></template>
+            Đặt lại
+          </Button>
+          <Button v-if="showExport" variant="soft" @click="emit('export')">
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
             Xuất Excel
-          </button>
-          <button
-            type="button"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-semibold text-white transition hover:bg-rose-600"
-            @click="emit('add')"
-          >
-            <Plus class="h-4 w-4" />
+          </Button>
+          <Button variant="primary" @click="emit('add')">
+            <template #prefix><Plus class="h-4 w-4" /></template>
             {{ addLabel }}
-          </button>
+          </Button>
         </div>
       </div>
     </section>

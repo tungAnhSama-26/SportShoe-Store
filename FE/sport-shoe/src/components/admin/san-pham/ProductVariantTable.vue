@@ -39,6 +39,10 @@ const props = defineProps({
   focusedChiTietId: {
     type: Number,
     default: null
+  },
+  hidePagination: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -154,8 +158,8 @@ function openDiscountDetail(item) {
       </div>
     </div>
 
-    <div class="rounded-[24px] border border-slate-100">
-      <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
+    <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
+      <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
           <col class="w-[4%]" />
           <col class="w-[8%]" />
@@ -220,7 +224,7 @@ function openDiscountDetail(item) {
                 :title="item.mauSac"
               >
                 <span
-                  class="h-2.5 w-2.5 rounded-full border border-black/5"
+                  class="h-2.5 w-2.5 rounded-full border border-slate-300"
                   :style="{ backgroundColor: item.maMauHex || '#e2e8f0' }"
                 ></span>
                 <span class="truncate whitespace-nowrap">{{ item.mauSac }}</span>
@@ -274,8 +278,8 @@ function openDiscountDetail(item) {
                 {{ bienTheTrangThaiLabel(item) }}
               </span>
             </td>
-            <td class="rounded-r-2xl px-2.5 py-4 align-middle text-center">
-              <div class="flex items-center justify-center gap-1">
+            <td class="rounded-r-2xl px-4 py-4 align-middle text-center">
+              <div class="flex items-center justify-center gap-2">
                 <AdminQuickStatusAction
                   :loading="isUpdatingStatus(item.id)"
                   :disabled="isUpdatingStatus(item.id) || !canToggleStatus(item)"
@@ -309,6 +313,7 @@ function openDiscountDetail(item) {
     </div>
 
     <AdminTableFooter
+      v-if="!hidePagination"
       :current-page="currentPage"
       :page-size="pageSize"
       :page-size-options="pageSizeOptions"

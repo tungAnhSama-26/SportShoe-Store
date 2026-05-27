@@ -65,7 +65,7 @@ public class PhieuGiamGiaKhachHangService {
 
     public PhieuGiamGiaKhachHang update(Integer id, PhieuGiamGiaKhachHangRequest request) {
         PhieuGiamGiaKhachHang phieuGiamGiaKhachHang = phieuGiamGiaKhachHangRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia khach hang"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá khách hàng"));
 
         if (phieuGiamGiaKhachHang.getTrangThai() != null && (phieuGiamGiaKhachHang.getTrangThai() == 0 || phieuGiamGiaKhachHang.getTrangThai() == 2)) {
             throw new BusinessException("Không thể chỉnh sửa liên kết phiếu đã ngừng hoạt động hoặc hết hạn.");
@@ -98,13 +98,13 @@ public class PhieuGiamGiaKhachHangService {
 
     private PhieuGiamGia getPhieuGiamGia(Integer phieuGiamGiaId) {
         return phieuGiamGiaRepository.findById(phieuGiamGiaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá"));
     }
 
     private KhachHang getKhachHangByEmail(String email) {
         String normalizedEmail = email == null ? "" : email.trim();
         return khachHangRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay khach hang voi email nay"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng với email này"));
     }
 
     private void validateLienKet(

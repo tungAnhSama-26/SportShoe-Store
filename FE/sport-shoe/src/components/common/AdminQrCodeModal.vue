@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Check, Copy, Download, Images, QrCode, X } from "lucide-vue-next";
+import { Download, Images, QrCode, Save, X } from "lucide-vue-next";
 import { createQrCodeSvg } from "../../utils/qr-code";
 
 const props = defineProps({
@@ -57,9 +57,6 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "primary-action"]);
 
-const copying = ref(false);
-const copied = ref(false);
-
 const normalizedValue = computed(() => String(props.value ?? "").trim());
 const hasImage = computed(() => Boolean(String(props.imageUrl ?? "").trim()));
 
@@ -94,10 +91,6 @@ function closeModal() {
   emit("close");
 }
 
-function handlePrimaryAction() {
-  emit("primary-action");
-}
-
 function createSafeFilename(value) {
   return (
     String(value ?? "qr-code")
@@ -110,32 +103,7 @@ function createSafeFilename(value) {
   );
 }
 
-async function copyCode() {
-  if (!normalizedValue.value || copying.value) {
-    return;
-  }
 
-  copying.value = true;
-  try {
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(normalizedValue.value);
-    } else {
-      const textArea = document.createElement("textarea");
-      textArea.value = normalizedValue.value;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-    }
-
-    copied.value = true;
-    window.setTimeout(() => {
-      copied.value = false;
-    }, 1800);
-  } finally {
-    copying.value = false;
-  }
-}
 
 function downloadSvg() {
   if (!qrPreview.value.svg) {
@@ -274,37 +242,17 @@ function downloadSvg() {
                 </div>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="mt-2 pt-2">
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="!normalizedValue"
-                  @click="copyCode"
-                >
-                  <Check v-if="copied" :size="16" />
-                  <Copy v-else :size="16" />
-                  {{ copied ? "Đã sao chép" : "Sao chép mã" }}
-                </button>
-
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 shadow-sm shadow-rose-200"
                   :disabled="!qrPreview.svg"
                   @click="downloadSvg"
                 >
-                  <Download :size="16" />
-                  Tải QR SVG
+                  <Save :size="18" />
+                  Lưu QR sản phẩm về máy
                 </button>
               </div>
-
-              <button
-                v-if="primaryActionLabel"
-                type="button"
-                class="inline-flex w-full items-center justify-center rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-600"
-                @click="handlePrimaryAction"
-              >
-                {{ primaryActionLabel }}
-              </button>
             </div>
           </div>
         </div>

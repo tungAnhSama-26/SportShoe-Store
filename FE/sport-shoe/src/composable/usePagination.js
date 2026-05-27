@@ -1,5 +1,5 @@
 import { computed, ref, watch } from "vue";
-const usePagination = (items, initialPageSize = 10) => {
+const usePagination = (items, initialPageSize = 5) => {
   const currentPage = ref(1);
   const pageSize = ref(initialPageSize);
   const sourceItems = computed(() => Array.isArray(items) ? items : items.value);

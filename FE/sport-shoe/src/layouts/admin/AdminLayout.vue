@@ -46,7 +46,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="admin-shell min-h-screen flex font-sans text-gray-800 dark:text-slate-100 relative transition-colors duration-300">
+  <div class="admin-shell min-h-screen w-full flex font-sans text-gray-800 dark:text-slate-100 relative transition-colors duration-300">
     <!-- Mobile overlay -->
     <div 
       v-show="!isDesktopSidebar && isSidebarOpen" 

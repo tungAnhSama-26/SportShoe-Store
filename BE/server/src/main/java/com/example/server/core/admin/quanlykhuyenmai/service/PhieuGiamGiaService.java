@@ -50,7 +50,7 @@ public class PhieuGiamGiaService {
 
     public PhieuGiamGia update(Integer id, PhieuGiamGiaRequest request) {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phieu giam gia"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá"));
 
         if (phieuGiamGia.getTrangThai() != null && phieuGiamGia.getTrangThai() == 2) {
             throw new BusinessException("Không thể chỉnh sửa phiếu giảm giá đã hết hạn.");

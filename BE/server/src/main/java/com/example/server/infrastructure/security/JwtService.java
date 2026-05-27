@@ -56,7 +56,7 @@ public class JwtService {
             String signaturePart = sign(headerPart + "." + payloadPart);
             return headerPart + "." + payloadPart + "." + signaturePart;
         } catch (Exception exception) {
-            throw new IllegalStateException("Khong the tao JWT", exception);
+            throw new IllegalStateException("Không thể tạo JWT", exception);
         }
     }
 
@@ -64,12 +64,12 @@ public class JwtService {
         try {
             String[] parts = token.split("\\.");
             if (parts.length != 3) {
-                throw new IllegalArgumentException("JWT khong dung dinh dang");
+                throw new IllegalArgumentException("JWT không đúng định dạng");
             }
 
             String expectedSignature = sign(parts[0] + "." + parts[1]);
             if (!constantTimeEquals(expectedSignature, parts[2])) {
-                throw new IllegalArgumentException("JWT khong hop le");
+                throw new IllegalArgumentException("JWT không hợp lệ");
             }
 
             Map<String, Object> claims = objectMapper.readValue(
@@ -92,7 +92,7 @@ public class JwtService {
                     String.valueOf(claims.get("role"))
             );
         } catch (Exception exception) {
-            throw new IllegalArgumentException("JWT khong hop le", exception);
+            throw new IllegalArgumentException("JWT không hợp lệ", exception);
         }
     }
 

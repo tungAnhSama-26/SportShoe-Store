@@ -174,13 +174,14 @@ export function useChiTietSanPhamFormPage() {
       create: (body) => kichCoApi.create(body)
     }
   }
+  // Extend quickCreateDefinition to support edit mode
   const quickCreateDefinition = computed(() => {
     if (quickCreateType.value === 'mauSac') {
       return {
         title: 'Thêm nhanh màu sắc',
         description: '',
         fields: [
-          { key: 'ma', label: 'Mã màu *', placeholder: 'Tự sinh', uppercase: true, readonly: true },
+          { key: 'ma', label: 'Mã màu *', placeholder: 'Tự sinh', uppercase: true },
           { key: 'ten', label: 'Tên màu *', placeholder: 'Nhập tên màu' },
           { key: 'maMauHex', label: 'Chọn màu (RGB)', type: 'color' }
         ]
@@ -249,8 +250,16 @@ export function useChiTietSanPhamFormPage() {
       return
     }
     const message = getDisplayErrorMessage(error, '')
+    const normalizedMessage = normalizeErrorText(message)
+
+    if (normalizedMessage.includes('ma ') && normalizedMessage.includes('da ton tai')) {
+      quickCreateErrors.ma = message
+      return
+    }
+
     if (isDuplicateAttributeErrorMessage(message)) {
       setQuickCreateDuplicateError(type, getQuickCreateDuplicateValue(type))
+      quickCreateErrors.general = 'Vui lòng kiểm tra lại danh sách, có thể dữ liệu chưa được cập nhật.'
       return
     }
     quickCreateErrors.general = getDisplayErrorMessage(
@@ -469,7 +478,7 @@ export function useChiTietSanPhamFormPage() {
           return
         }
         if (!giaTri) {
-          quickCreateErrors.giaTri = 'Kích cỡ chưa đúng định dạng, vui lòng nhập lại'
+          quickCreateErrors.giaTri = 'Kích cỡ không hợp lệ, vui lòng nhập lại'
         }
         if (Object.keys(quickCreateErrors).length) {
           return
@@ -550,12 +559,11 @@ export function useChiTietSanPhamFormPage() {
     if (!draftEntries.length || !Array.isArray(variants) || !variants.length) {
       return false
     }
-    for (const [variantKey, draftImages] of draftEntries) {
-      const [mauSacIdStr, kichCoIdStr] = variantKey.split('-')
+    for (const [mauSacIdStr, draftImages] of draftEntries) {
       const mauSacId = Number(mauSacIdStr)
-      const kichCoId = Number(kichCoIdStr)
+      if (isNaN(mauSacId)) continue
       const relatedVariants = variants.filter(
-        (variant) => Number(variant?.id) > 0 && Number(variant?.mauSacId) === mauSacId && Number(variant?.kichCoId) === kichCoId
+        (variant) => Number(variant?.id) > 0 && Number(variant?.mauSacId) === mauSacId
       )
       if (!relatedVariants.length) {
         continue
@@ -573,14 +581,14 @@ export function useChiTietSanPhamFormPage() {
     return true
   }
   function clearSavedDraftImages(variants) {
-    const savedVariantKeys = new Set(
-      (variants || []).map((item) => `${item?.mauSacId}-${item?.kichCoId}`)
+    const savedColorIds = new Set(
+      (variants || []).map((item) => String(item?.mauSacId))
     )
-    if (!savedVariantKeys.size) {
+    if (!savedColorIds.size) {
       return
     }
     draftVariantImages.value = Object.fromEntries(
-      Object.entries(draftVariantImages.value || {}).filter(([variantKey]) => !savedVariantKeys.has(variantKey))
+      Object.entries(draftVariantImages.value || {}).filter(([colorId]) => !savedColorIds.has(colorId))
     )
   }
   function collectValidationMessages(errors, limit = 4) {
@@ -700,9 +708,12 @@ export function useChiTietSanPhamFormPage() {
         : ''
       if (syncedDraftImages) {
         showToast(`Lưu sản phẩm và đồng bộ ảnh thành công!${skippedMessage}`, 'success')
-        return
+      } else {
+        showToast(`Lưu sản phẩm thành công!${skippedMessage}`, 'success')
       }
-      showToast(`Lưu sản phẩm thành công!${skippedMessage}`, 'success')
+      setTimeout(() => {
+        goBack()
+      }, 1000)
     } catch (error) {
       console.error('Error saving product:', error)
       const fieldErrorSummary = collectValidationMessages(getFieldErrors(error))
