@@ -615,6 +615,11 @@ export function useChiTietDotGiamGia() {
 
     if (!isValid) return;
 
+    const confirmMsg = laMoi 
+      ? "Bạn có chắc chắn muốn thêm mới đợt giảm giá này không?" 
+      : "Bạn có chắc chắn muốn cập nhật thông tin đợt giảm giá này không?";
+    if (!window.confirm(confirmMsg)) return;
+
     saving.value = true;
     loiTrang.value = "";
     try {
@@ -652,12 +657,24 @@ export function useChiTietDotGiamGia() {
         ),
       });
 
-      alert(laMoi ? "Thêm đợt giảm giá thành công" : "Cập nhật thành công");
-      router.push({ name: "admin-dot-giam-gia" });
+      hienThiThongBao(
+        "success", 
+        "Thành công", 
+        laMoi ? "Đã tạo mới đợt giảm giá thành công." : "Đã cập nhật đợt giảm giá thành công."
+      );
+
+      setTimeout(() => {
+        router.push({ name: "admin-dot-giam-gia" });
+      }, 1000);
     } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(
-        error,
-        "Không thể lưu đợt giảm giá",
+      const msg = getDisplayErrorMessage(error, "Không thể lưu đợt giảm giá");
+      loiTrang.value = msg;
+      
+      // Thêm thông báo lỗi dạng Toast
+      hienThiThongBao(
+        "error",
+        laMoi ? "Lỗi tạo mới" : "Lỗi cập nhật",
+        msg
       );
     } finally {
       saving.value = false;
