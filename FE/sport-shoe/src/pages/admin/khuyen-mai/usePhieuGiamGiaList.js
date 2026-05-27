@@ -369,6 +369,12 @@ export function usePhieuGiamGiaList() {
       hienThiThongBao('warning', 'Không thể thay đổi trạng thái', msg);
       return;
     }
+
+    const confirmMsg = Number(item.trangThai) === 1 
+      ? "Bạn có chắc chắn muốn ngừng hoạt động phiếu giảm giá này?" 
+      : "Bạn có chắc chắn muốn kích hoạt lại phiếu giảm giá này?";
+    if (!window.confirm(confirmMsg)) return;
+
     try {
       const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
       await updatePhieuGiamGia(item.id, {
@@ -385,7 +391,11 @@ export function usePhieuGiamGiaList() {
         soLuongDaDung: item.soLuongDaDung || 0,
         trangThai: nextStatus,
       });
-      hienThiThongBao("success", "Cập nhật phiếu thành công");
+      hienThiThongBao(
+        "success", 
+        "Thành công", 
+        Number(item.trangThai) === 1 ? "Đã ngừng hoạt động phiếu." : "Đã kích hoạt lại phiếu thành công."
+      );
       await taiDanhSach();
     } catch (error) {
       hienThiThongBao(
@@ -404,13 +414,20 @@ export function usePhieuGiamGiaList() {
       hienThiThongBao('warning', 'Không thể thay đổi trạng thái', msg);
       return;
     }
+
+    if (!window.confirm("Bạn có chắc chắn muốn dừng áp dụng phiếu giảm giá này cho khách hàng?")) return;
+
     try {
       const nextStatus = 0;
       await updatePhieuGiamGiaKhachHang(item.id, {
         ...item,
         trangThai: nextStatus,
       });
-      hienThiThongBao("success", "Cập nhật liên kết thành công");
+      hienThiThongBao(
+        "success", 
+        "Thành công", 
+        "Đã dừng áp dụng phiếu giảm giá cho khách hàng này."
+      );
       taiDanhSachKh();
     } catch (error) {
       hienThiThongBao(
@@ -554,6 +571,14 @@ export function usePhieuGiamGiaList() {
   }
 
   onMounted(() => {
+    // Kiểm tra và hiển thị thông báo từ trang Chi tiết nếu có
+    const flash = window.sessionStorage.getItem("admin-phieu-giam-gia-toast");
+    if (flash) {
+      const { loai, tieuDe, noiDung } = JSON.parse(flash);
+      hienThiThongBao(loai, tieuDe, noiDung);
+      window.sessionStorage.removeItem("admin-phieu-giam-gia-toast");
+    }
+
     if (activeTab.value === "khach-hang") {
       taiDanhSachKh();
       return;

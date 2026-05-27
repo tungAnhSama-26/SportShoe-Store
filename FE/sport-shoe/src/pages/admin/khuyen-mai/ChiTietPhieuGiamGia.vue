@@ -360,6 +360,11 @@ async function submitForm() {
 
   if (!isValid) return;
 
+  const confirmMsg = laMoi 
+    ? "Bạn có chắc chắn muốn thêm mới phiếu giảm giá này không?" 
+    : "Bạn có chắc chắn muốn cập nhật thông tin phiếu giảm giá này không?";
+  if (!window.confirm(confirmMsg)) return;
+
   saving.value = true;
   loiTrang.value = "";
 
