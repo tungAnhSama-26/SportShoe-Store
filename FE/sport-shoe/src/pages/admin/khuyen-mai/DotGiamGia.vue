@@ -7,6 +7,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showError } from "../../../utils/alert";
 
 const router = useRouter();
 
@@ -110,7 +111,7 @@ async function nhanhDoiTrangThai(item) {
     await updateDotGiamGia(item.id, { ...item, kichHoat: nextStatus });
     await taiDanhSach();
   } catch (error) {
-    window.alert(getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đợt giảm giá"));
+    showError(getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đợt giảm giá"), "Lỗi");
   }
 }
 
@@ -127,7 +128,7 @@ async function xuatExcel() {
 
     const rows = data?.content || [];
     if (!rows.length) {
-      window.alert("Không có dữ liệu để xuất Excel.");
+      showError("Không có dữ liệu để xuất Excel.");
       return;
     }
 
@@ -146,7 +147,7 @@ async function xuatExcel() {
       rows,
     });
   } catch (error) {
-    window.alert(getDisplayErrorMessage(error, "Không thể xuất Excel đợt giảm giá"));
+    showError(getDisplayErrorMessage(error, "Không thể xuất Excel đợt giảm giá"), "Lỗi");
   }
 }
 

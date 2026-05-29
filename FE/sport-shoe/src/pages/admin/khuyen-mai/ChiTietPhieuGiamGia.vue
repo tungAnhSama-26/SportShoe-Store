@@ -8,11 +8,13 @@ import {
   deletePhieuGiamGiaKhachHang,
   getPhieuGiamGiaDetail,
   getPhieuGiamGiaKhachHangList,
-  updatePhieuGiamGia
+  updatePhieuGiamGia,
+  checkTenPhieuGiamGia
 } from "../../../services/khuyen-mai";
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
 const route = useRoute();
 const router = useRouter();
@@ -23,45 +25,6 @@ const laMoi = !id;
 const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
-const toast = ref({
-  hienThi: false,
-  loai: "success",
-  tieuDe: "",
-  noiDung: "",
-});
-let toastTimer = null;
-
-const toastClass = computed(() => {
-  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
-  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
-  return "border-rose-100 bg-rose-50 text-rose-700";
-});
-
-const toastIconClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
-  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
-  return "bg-rose-100 text-rose-600";
-});
-
-const toastAccentClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-500";
-  if (toast.value.loai === "warning") return "bg-amber-500";
-  return "bg-rose-500";
-});
-
-const ToastIcon = computed(() => {
-  if (toast.value.loai === "success") return CheckCircle2;
-  return CircleX;
-});
-
-function hienThiThongBao(loai, tieuDe, noiDung = "") {
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value = { hienThi: true, loai, tieuDe, noiDung };
-  toastTimer = setTimeout(() => {
-    toast.value.hienThi = false;
-  }, 3200);
-}
-
 const formErrors = reactive({});
 
 const form = reactive({
@@ -77,6 +40,27 @@ const form = reactive({
   ngayKetThuc: "",
   soLuong: "",
   trangThai: "1"
+});
+
+let tenCheckTimeout = null;
+watch(() => form.ten, (newVal) => {
+  if (tenCheckTimeout) clearTimeout(tenCheckTimeout);
+  if (!newVal || newVal.trim() === '') {
+    delete formErrors.ten;
+    return;
+  }
+  tenCheckTimeout = setTimeout(async () => {
+    try {
+      const res = await checkTenPhieuGiamGia(newVal.trim(), id || null);
+      if (res.exists) {
+        formErrors.ten = 'Tên phiếu giảm giá đã tồn tại';
+      } else if (formErrors.ten === 'Tên phiếu giảm giá đã tồn tại') {
+        delete formErrors.ten;
+      }
+    } catch (e) {
+      // Ignore error
+    }
+  }, 500);
 });
 
 const isReadOnly = computed(() => !laMoi && (Number(form.trangThai) === 0 || Number(form.trangThai) === 2));
@@ -356,7 +340,7 @@ async function submitForm() {
   }
   if (form.loaiPhieu === "2" && dsEmailChon.value.length === 0) {
     formErrors.email = "Phải chọn ít nhất 1 khách hàng cho phiếu cá nhân";
-    hienThiThongBao("warning", "Chưa chọn khách hàng", "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân");
+    showError("Chưa chọn khách hàng", "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân");
     isValid = false;
   }
 
@@ -365,7 +349,8 @@ async function submitForm() {
   const confirmMsg = laMoi 
     ? "Bạn có chắc chắn muốn thêm mới phiếu giảm giá này không?" 
     : "Bạn có chắc chắn muốn cập nhật thông tin phiếu giảm giá này không?";
-  if (!window.confirm(confirmMsg)) return;
+  const isConfirmed = await showConfirm(confirmMsg);
+  if (!isConfirmed) return;
 
   saving.value = true;
   loiTrang.value = "";
@@ -392,10 +377,10 @@ async function submitForm() {
     if (laMoi) {
       const res = await createPhieuGiamGia(payload);
       phieuId = res?.id;
-      hienThiThongBao("success", "Tạo phiếu giảm giá thành công");
+      showSuccess("Tạo phiếu giảm giá thành công");
     } else {
       await updatePhieuGiamGia(id, payload);
-      hienThiThongBao("success", "Cập nhật phiếu giảm giá thành công");
+      showSuccess("Cập nhật phiếu giảm giá thành công");
     }
 
     if (Number(form.loaiPhieu) === 2) {
@@ -522,35 +507,6 @@ onMounted(taiChiTiet);
 
 <template>
   <div class="space-y-5 pb-10">
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-y-3 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-3 opacity-0"
-    >
-      <div
-        v-if="toast.hienThi"
-        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
-        :class="toastClass"
-      >
-        <div class="flex gap-3 p-4">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
-            <component :is="ToastIcon" class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
-          </div>
-          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
-            <X class="h-4 w-4" />
-          </button>
-        </div>
-        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
-      </div>
-    </Transition>
-
     <section class="flex items-center gap-4">
       <button
         @click="router.push({ name: 'admin-phieu-giam-gia' })"

@@ -126,6 +126,17 @@ public class QuanLySanPhamService {
     // ─── Danh mục ────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
+    public Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+        boolean exists = false;
+        if (id != null && id > 0) {
+            exists = giayRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
+        } else {
+            exists = giayRepository.existsByTenIgnoreCase(ten);
+        }
+        return Map.of("exists", exists);
+    }
+
+    @Transactional(readOnly = true)
     public DanhMucSanPhamResponse layDanhMuc() {
         var loaiGiay = loaiGiayRepository.findAll().stream()
                 .filter(l -> l.getTrangThai() == 1)

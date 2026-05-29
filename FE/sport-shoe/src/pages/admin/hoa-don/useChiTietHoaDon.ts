@@ -28,6 +28,7 @@ import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhi
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showSuccess, showError } from "../../../utils/alert";
 import logoGhn from "../../../constants/logoGhn";
 
 export function useChiTietHoaDon() {
@@ -37,13 +38,7 @@ export function useChiTietHoaDon() {
   const dangTai = ref(false);
   const loiTrang = ref("");
   const dangCapNhat = ref(false);
-  const toast = ref({
-    hienThi: false,
-    loai: "success" as "success" | "warning" | "error",
-    tieuDe: "",
-    noiDung: "",
-  });
-  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
 
   const hienModalXacNhan = ref(false);
   const hienModalLichSu = ref(false);
@@ -214,43 +209,12 @@ export function useChiTietHoaDon() {
 
   const donDaKetThuc = computed(() => donDaHoanThanh.value || donDaHuy.value);
 
-  const toastClass = computed(() => {
-    if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
-    if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
-    return "border-rose-100 bg-rose-50 text-rose-700";
-  });
-
-  const toastIconClass = computed(() => {
-    if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
-    if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
-    return "bg-rose-100 text-rose-600";
-  });
-
-  const toastAccentClass = computed(() => {
-    if (toast.value.loai === "success") return "bg-emerald-500";
-    if (toast.value.loai === "warning") return "bg-amber-500";
-    return "bg-rose-500";
-  });
-
-  const ToastIcon = computed(() => {
-    if (toast.value.loai === "success") return CheckCircle2;
-    if (toast.value.loai === "warning") return CircleX;
-    return CircleX;
-  });
-
   function hienThiThongBao(loai: "success" | "warning" | "error", tieuDe: string, noiDung = "") {
-    if (toastTimer) {
-      clearTimeout(toastTimer);
+    if (loai === "success") {
+      showSuccess(noiDung || tieuDe, tieuDe);
+    } else {
+      showError(noiDung || tieuDe, tieuDe);
     }
-    toast.value = {
-      hienThi: true,
-      loai,
-      tieuDe,
-      noiDung,
-    };
-    toastTimer = setTimeout(() => {
-      toast.value.hienThi = false;
-    }, 3200);
   }
 
   function thongBaoDonDaHoanThanh() {
@@ -555,7 +519,7 @@ export function useChiTietHoaDon() {
       hienThiThongBao("success", "Cập Nhật Thành Công", "Sản phẩm hóa đơn đã được cập nhật.");
       hienModalSanPham.value = false;
     } catch (error) {
-      window.alert(getDisplayErrorMessage(error, "Không thể cập nhật sản phẩm trong hóa đơn"));
+      showError(getDisplayErrorMessage(error, "Không thể cập nhật sản phẩm trong hóa đơn"));
     } finally {
       dangCapNhat.value = false;
     }
@@ -701,7 +665,7 @@ export function useChiTietHoaDon() {
       return;
     }
     if (!formThongTin.value.diaChi.trim()) {
-      window.alert("Vui lòng nhập địa chỉ người nhận để tính phí GHN.");
+      showError("Vui lòng nhập địa chỉ người nhận để tính phí GHN.");
       return;
     }
 
@@ -722,7 +686,7 @@ export function useChiTietHoaDon() {
       hoaDon.value = await layChiTietHoaDon(hoaDon.value.id);
       hienThiThongBao("success", "Đã Tính Phí GHN", `Phí vận chuyển mới: ${dinhDangTien(ketQua.phiVanChuyen || ketQua.total || 0)}.`);
     } catch (error) {
-      window.alert(getDisplayErrorMessage(error, "Không thể tính phí vận chuyển GHN"));
+      showError(getDisplayErrorMessage(error, "Không thể tính phí vận chuyển GHN"));
     } finally {
       dangTinhPhiGhn.value = false;
     }
@@ -813,5 +777,5 @@ export function useChiTietHoaDon() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien };
+  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien };
 }
