@@ -559,6 +559,10 @@ export function usePhieuGiamGiaList() {
           { label: "Mã phiếu", key: "maPhieuGiamGia" },
           { label: "Tên phiếu", key: "tenPhieuGiamGia" },
           { label: "Khách hàng", key: "tenKhachHang" },
+          { 
+            label: "Giá trị giảm", 
+            value: (row) => formatGiaTri(row.giaTriPhieuGiamGia, row.loaiPhieuGiamGia) 
+          },
           { label: "Ngày tặng", value: (row) => toDisplayDate(row.ngayTao) },
           { label: "Ngày dùng", value: (row) => toDisplayDate(row.ngaySuDung) },
           { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
