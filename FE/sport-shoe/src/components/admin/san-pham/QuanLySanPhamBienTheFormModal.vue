@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Check, ChevronDown, Search, Trash2, X, Images, Pencil, Save } from 'lucide-vue-next'
 import AdminFormattedNumberInput from '../../common/AdminFormattedNumberInput.vue'
+import { showConfirm } from '../../../utils/alert'
 
 const props = defineProps({
   open: {
@@ -202,27 +203,30 @@ function applyGeneratedDefaults() {
   })
 }
 
-function handleSaveClick() {
+async function handleSaveClick() {
   if (props.editingBienThe) {
     Object.assign(props.bienTheErrors, editingFieldErrors.value)
     if (hasEditingFieldErrors.value) {
       return
     }
-    if (!window.confirm('Bạn có chắc chắn muốn lưu thông tin biến thể này không?')) return
+    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn lưu thông tin biến thể này không?')
+    if (!isConfirmed) return
   } else {
     if (hasBulkDefaultErrors.value || hasGeneratedBulkFieldErrors.value) {
       props.bulkBienTheErrors.generated = 'Vui lòng sửa các giá trị âm trước khi lưu.'
       return
     }
     delete props.bulkBienTheErrors.generated
-    if (!window.confirm('Bạn có chắc chắn muốn lưu danh sách biến thể này không?')) return
+    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn lưu danh sách biến thể này không?')
+    if (!isConfirmed) return
   }
 
   emit('save')
 }
 
-function confirmRemoveGeneratedBulk(key) {
-  if (window.confirm('Bạn có chắc chắn muốn xóa biến thể này khỏi danh sách tạo?')) {
+async function confirmRemoveGeneratedBulk(key) {
+  const isConfirmed = await showConfirm('Bạn có chắc chắn muốn xóa biến thể này khỏi danh sách tạo?')
+  if (isConfirmed) {
     emit('remove-generated-bulk', key)
   }
 }

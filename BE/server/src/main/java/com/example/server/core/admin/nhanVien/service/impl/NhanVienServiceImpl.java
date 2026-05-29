@@ -40,7 +40,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 .filter(nv -> matchKeyword(kw, nv))
                 .filter(nv -> vaiTro == null || vaiTro.equals(nv.getVaiTro()))
                 .filter(nv -> trangThai == null || trangThai.equals(nv.getTrangThai()))
-                .sorted(Comparator.comparing(NhanVien::getNgayTao, Comparator.nullsLast(Comparator.naturalOrder())))
+                .sorted(Comparator.comparing(NhanVien::getNgayTao, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toItem)
                 .toList();
     }

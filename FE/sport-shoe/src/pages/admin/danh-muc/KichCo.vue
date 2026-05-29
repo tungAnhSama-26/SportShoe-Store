@@ -8,6 +8,7 @@ import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusA
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import { exceedsMaxLength, normalizeOptionalText, normalizeSizeValue } from '../../../utils/thuoc-tinh-san-pham'
+import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -17,17 +18,7 @@ const pageSize = ref(5)
 const loading = ref(false)
 const keyword = ref('')
 
-const toast = reactive({ show: false, message: '', type: 'success' })
 const GHI_CHU_MAX_LENGTH = 200
-
-function showToast(msg, type = 'success') {
-  toast.message = msg
-  toast.type = type
-  toast.show = true
-  setTimeout(() => {
-    toast.show = false
-  }, 3000)
-}
 
 async function loadData(page = 0) {
   loading.value = true
@@ -38,7 +29,7 @@ async function loadData(page = 0) {
     totalPages.value = res.totalPages
     currentPage.value = res.page
   } catch (e) {
-    showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách kích cỡ'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể tải danh sách kích cỡ'))
   } finally {
     loading.value = false
   }
@@ -120,7 +111,13 @@ function validate() {
 async function handleSave() {
   if (!validate()) return
 
-    if (!confirm(modalMode.value === 'add' ? 'Xác nhận thêm mới kích cỡ này?' : 'Xác nhận lưu thay đổi kích cỡ này?')) return
+  if (modalMode.value === 'add') {
+    const isConfirmed = await showConfirm('Xác nhận thêm mới kích cỡ này?')
+    if (!isConfirmed) return
+  } else {
+    const isConfirmed = await showConfirm('Xác nhận lưu thay đổi kích cỡ này?')
+    if (!isConfirmed) return
+  }
 
   saving.value = true
   try {
@@ -132,12 +129,12 @@ async function handleSave() {
     if (modalMode.value === 'add') await kichCoApi.create(body)
     else await kichCoApi.update(selectedItem.value.id, body)
 
-    showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
+    showSuccess(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false
     loadData(currentPage.value)
   } catch (e) {
     Object.assign(errors, getFieldErrors(e))
-    showToast(getDisplayErrorMessage(e, 'Không thể lưu kích cỡ'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể lưu kích cỡ'))
   } finally {
     saving.value = false
   }
@@ -147,15 +144,16 @@ async function handleToggleStatus(item) {
   const nextTrangThai = item.trangThai === 1 ? 0 : 1
   const actionLabel = nextTrangThai === 1 ? 'bật' : 'dừng'
 
-  if (!confirm(`Xác nhận ${actionLabel} nhanh kích cỡ "${item.giaTri}"?`)) return
+  const isConfirmed = await showConfirm(`Xác nhận ${actionLabel} nhanh kích cỡ "${item.giaTri}"?`)
+  if (!isConfirmed) return
 
   updatingStatusId.value = item.id
   try {
     await kichCoApi.toggleStatus(item.id, nextTrangThai)
-    showToast('Cập nhật trạng thái thành công')
+    showSuccess('Cập nhật trạng thái thành công')
     loadData(currentPage.value)
   } catch (e) {
-    showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái kích cỡ'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái kích cỡ'))
   } finally {
     updatingStatusId.value = null
   }
@@ -163,7 +161,7 @@ async function handleToggleStatus(item) {
 
 async function xuatExcel() {
   if (!totalItems.value) {
-    showToast('Không có dữ liệu để xuất Excel', 'error')
+    showError('Không có dữ liệu để xuất Excel')
     return
   }
 
@@ -181,9 +179,13 @@ async function xuatExcel() {
       rows: res.items || []
     })
 
-    showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
+    if (exported) {
+      showSuccess('Xuất Excel thành công')
+    } else {
+      showError('Không có dữ liệu để xuất Excel')
+    }
   } catch (e) {
-    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel kích cỡ'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể xuất Excel kích cỡ'))
   }
 }
 </script>
@@ -194,7 +196,6 @@ async function xuatExcel() {
     add-label="Thêm kích cỡ"
     list-title="Danh sách kích cỡ"
     search-placeholder="Tìm theo kích cỡ..."
-    :toast="toast"
     :keyword="keyword"
     :page-size="pageSize"
     :page-size-options="pageSizeOptions"

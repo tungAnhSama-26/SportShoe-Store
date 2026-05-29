@@ -7,6 +7,7 @@ import {
   generateHexColorFromText,
   isValidHexColor,
 } from "../../../utils/thuoc-tinh-san-pham";
+import { showConfirm } from "../../../utils/alert";
 
 const props = defineProps({
   generatedVariants: {
@@ -59,7 +60,6 @@ const saveButtonLabel = computed(() => {
 });
 
 const draftImageManagerRefs = ref({});
-const showSaveConfirmModal = ref(false);
 const showErrors = ref(false);
 const showDefaultErrors = ref(false);
 
@@ -336,16 +336,6 @@ function formatColorName(value) {
   return normalized.charAt(0).toLocaleUpperCase("vi-VN") + normalized.slice(1);
 }
 
-function closeSaveConfirmModal() {
-  if (props.saving) return;
-  showSaveConfirmModal.value = false;
-}
-
-function confirmSave() {
-  showSaveConfirmModal.value = false;
-  emit("save");
-}
-
 async function handleSaveClick() {
   showErrors.value = true;
   showDefaultErrors.value = true;
@@ -369,7 +359,16 @@ async function handleSaveClick() {
     return;
   }
 
-  showSaveConfirmModal.value = true;
+  const { title } = saveConfirmationDetails.value;
+  const isConfirmed = await showConfirm(
+    "", 
+    title, 
+    "Xác nhận lưu", 
+    "Xem lại"
+  );
+  if (isConfirmed) {
+    emit("save");
+  }
 }
 </script>
 
@@ -632,64 +631,6 @@ async function handleSaveClick() {
       </button>
     </div>
 
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showSaveConfirmModal"
-          class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4"
-          @click.self="closeSaveConfirmModal"
-        >
-          <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-          >
-            <div v-if="showSaveConfirmModal" class="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl">
 
-              <!-- Header -->
-              <div class="px-6 pt-6 pb-5 flex items-center justify-between">
-                <h3 class="text-[17px] font-bold text-slate-900">{{ saveConfirmationDetails.title }}</h3>
-                <button
-                  type="button"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                  @click="closeSaveConfirmModal"
-                >
-                  <X :size="16" />
-                </button>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex items-center gap-2 border-t border-slate-100 px-6 py-4">
-                <button
-                  type="button"
-                  class="flex-1 h-10 rounded-2xl border border-slate-200 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                  :disabled="saving"
-                  @click="closeSaveConfirmModal"
-                >
-                  Xem lại
-                </button>
-                <button
-                  type="button"
-                  class="flex-1 h-10 flex items-center justify-center gap-2 rounded-2xl bg-rose-500 text-[13px] font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
-                  :disabled="saving"
-                  @click="confirmSave"
-                >
-                  <Save :size="14" />
-                  Xác nhận lưu
-                </button>
-              </div>
-
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
   </section>
 </template>

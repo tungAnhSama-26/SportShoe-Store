@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -23,6 +24,16 @@ public class PhieuGiamGiaService {
 
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
 
+    public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+        boolean exists = false;
+        if (id != null && id > 0) {
+            exists = phieuGiamGiaRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
+        } else {
+            exists = phieuGiamGiaRepository.existsByTenIgnoreCase(ten);
+        }
+        return java.util.Map.of("exists", exists);
+    }
+
     public List<QuanLyPhieuGiamGiaResponse> getAll() {
         return phieuGiamGiaRepository.hienThiPhieuGiamGia();
     }
@@ -32,7 +43,7 @@ public class PhieuGiamGiaService {
     }
 
     public Page<QuanLyPhieuGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loai, LocalDate tuNgay, LocalDate denNgay, Integer pageNo, Integer pageSize) {
-        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, "ngayTao", "id"));
         Instant start = tuNgay == null ? null : tuNgay.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant end = denNgay == null ? null : denNgay.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
         return phieuGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loai, start, end, pageable);

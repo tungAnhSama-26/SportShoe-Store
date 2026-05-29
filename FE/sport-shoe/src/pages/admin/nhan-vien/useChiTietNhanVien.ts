@@ -12,6 +12,7 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import { showSuccess, showConfirm } from "../../../utils/alert";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 
@@ -163,7 +164,6 @@ export function useChiTietNhanVien() {
   const dangLuu = ref(false);
   const dangUpload = ref(false);
   const loiTrang = ref("");
-  const thongBao = ref("");
   const nhanVien = ref<any>(null);
   const fileInputAvatar = ref<HTMLInputElement | null>(null);
   const matKhauMoi = ref("");
@@ -501,7 +501,6 @@ export function useChiTietNhanVien() {
 
     dangLuu.value = true;
     loiTrang.value = "";
-    thongBao.value = "";
 
     const payload = {
       hoTen: form.value.hoTen.trim(),
@@ -557,10 +556,7 @@ export function useChiTietNhanVien() {
         router.push(redirectPath.startsWith("/admin") ? redirectPath : "/admin");
         return;
       }
-      thongBao.value = "Đã lưu thay đổi thành công.";
-      setTimeout(() => {
-        thongBao.value = "";
-      }, 3000);
+      showSuccess("Đã lưu thay đổi thành công.", "Thành công");
     } catch (error) {
       Object.assign(loiForm.value, getFieldErrors(error));
       loiTrang.value = getDisplayErrorMessage(
@@ -582,12 +578,9 @@ export function useChiTietNhanVien() {
     loiTrang.value = "";
     try {
       await doiMatKhauNhanVien(id!, matKhauMoi.value.trim());
-      thongBao.value = "Đã đổi mật khẩu thành công.";
+      showSuccess("Đã đổi mật khẩu thành công.", "Thành công");
       matKhauMoi.value = "";
       showDoiMatKhau.value = false;
-      setTimeout(() => {
-        thongBao.value = "";
-      }, 3000);
     } catch (error) {
       loiTrang.value = getDisplayErrorMessage(error, "Không thể đổi mật khẩu nhân viên");
     } finally {
@@ -599,17 +592,20 @@ export function useChiTietNhanVien() {
     try {
       const updated = await doiTrangThaiNhanVien(id!, trangThai);
       nhanVien.value = updated;
-      thongBao.value = trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.";
-      setTimeout(() => {
-        thongBao.value = "";
-      }, 3000);
+      showSuccess(trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.", "Thành công");
     } catch (error) {
       loiTrang.value = getDisplayErrorMessage(error, "Không thể cập nhật trạng thái nhân viên");
     }
   }
 
   async function xoaNhanVienHienTai() {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa nhân viên này không?")) return;
+    const confirmed = await showConfirm(
+      "Bạn có chắc chắn muốn xóa nhân viên này không?",
+      "Xác nhận xóa",
+      "Xóa",
+      "Hủy"
+    );
+    if (!confirmed) return;
     try {
       await xoaNhanVien(id!);
       router.push({ name: "admin-nhan-vien" });
@@ -644,5 +640,5 @@ export function useChiTietNhanVien() {
     dungQuet();
   });
 
-  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, thongBao, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh };
+  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh };
 }

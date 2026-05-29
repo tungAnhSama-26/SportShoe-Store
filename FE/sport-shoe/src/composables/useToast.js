@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { showSuccess, showError } from '../utils/alert'
 
 export function useToast() {
   const toast = reactive({
@@ -7,28 +8,16 @@ export function useToast() {
     type: 'success',
   })
 
-  let toastTimer = null
-
   function showToast(message, type = 'success') {
-    toast.message = message
-    toast.type = type
-    toast.show = true
-
-    if (toastTimer) {
-      clearTimeout(toastTimer)
+    if (type === 'success') {
+      showSuccess(message)
+    } else {
+      showError(message)
     }
-
-    toastTimer = setTimeout(() => {
-      toast.show = false
-    }, 3000)
   }
 
   function hideToast() {
-    toast.show = false
-    if (toastTimer) {
-      clearTimeout(toastTimer)
-      toastTimer = null
-    }
+    // No longer needed with SweetAlert2
   }
 
   return {

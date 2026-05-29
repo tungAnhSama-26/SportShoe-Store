@@ -312,6 +312,13 @@ export function layDanhMuc(): Promise<DanhMucSanPhamResponse> {
   return request<DanhMucSanPhamResponse>('/admin/san-pham/danh-muc')
 }
 
+export function checkTenGiay(ten: string, id?: number | null): Promise<{ exists: boolean }> {
+  const params = new URLSearchParams()
+  params.set('ten', ten)
+  if (id != null) params.set('id', String(id))
+  return request<{ exists: boolean }>(`/admin/san-pham/check-ten?${params}`)
+}
+
 export function chiTietGiay(id: number): Promise<GiayDetail> {
   return request<GiayDetail>(`/admin/san-pham/${id}`)
 }
