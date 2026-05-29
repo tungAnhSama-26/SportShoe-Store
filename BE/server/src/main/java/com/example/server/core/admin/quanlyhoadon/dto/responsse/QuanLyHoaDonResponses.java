@@ -18,7 +18,9 @@ public final class QuanLyHoaDonResponses {
             BigDecimal tongTien,
             Instant ngayTao,
             String loaiDon,
-            String trangThai
+            String trangThai,
+            String maPhieuGiamGia,
+            String emailKhachHang
     ) {
     }
 
