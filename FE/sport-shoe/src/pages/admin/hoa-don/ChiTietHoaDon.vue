@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useChiTietHoaDon } from "./useChiTietHoaDon";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
-const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien } = useChiTietHoaDon();
+const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, toast, toastTimer, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien } = useChiTietHoaDon();
 </script>
 
 <template>
@@ -155,7 +155,15 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
               <span class="font-semibold text-slate-700">{{ dinhDangTien(tongTienHang) }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-slate-500">Giảm Giá</span>
+              <span class="text-slate-500">
+                Giảm Giá
+                <span
+                  v-if="hoaDon.voucher && hoaDon.voucher !== 'Không áp dụng'"
+                  class="ml-1 font-semibold text-slate-600"
+                >
+                  {{ hoaDon.voucher }}
+                </span>
+              </span>
               <span class="font-semibold text-emerald-500">- {{ dinhDangTien(hoaDon.giamGia) }}</span>
             </div>
             <div class="flex items-center justify-between">
@@ -355,34 +363,76 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
             </div>
           </template>
 
-          <div class="mb-6 w-full">
-            <div class="mb-3 flex items-center justify-between gap-4 text-xs font-semibold text-slate-400">
-              <span>Khoảng giá</span>
-              <span class="text-right text-slate-500">{{ nhanKhoangGiaSanPham }}</span>
+          <div class="mb-6 space-y-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+            <div class="grid gap-3 lg:grid-cols-[minmax(260px,1.35fr)_minmax(190px,0.85fr)_minmax(210px,0.9fr)]">
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-semibold text-slate-500">Tìm kiếm</span>
+                <div class="relative">
+                  <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    v-model.trim="tuKhoaLocSanPham"
+                    type="text"
+                    class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
+                    placeholder="Tên sản phẩm, màu, size..."
+                  />
+                </div>
+              </label>
+
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-semibold text-slate-500">Loại sản phẩm</span>
+                <select
+                  v-model="loaiSanPhamDangLoc"
+                  class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
+                >
+                  <option value="">Tất cả loại</option>
+                  <option v-for="loai in danhSachLoaiSanPham" :key="loai" :value="loai">{{ loai }}</option>
+                </select>
+              </label>
+
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-semibold text-slate-500">Sắp xếp</span>
+                <select
+                  v-model="sapXepSanPham"
+                  class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
+                >
+                  <option value="macDinh">Mặc định</option>
+                  <option value="giaTang">Giá thấp đến cao</option>
+                  <option value="giaGiam">Giá cao đến thấp</option>
+                  <option value="soLuongGiam">Số lượng nhiều nhất</option>
+                  <option value="tongTienGiam">Tổng tiền cao nhất</option>
+                </select>
+              </label>
             </div>
-            <div class="relative h-8 w-full">
-              <div
-                class="absolute left-[9px] right-[9px] top-1/2 h-1 -translate-y-1/2 rounded-full"
-                :style="styleKhoangGiaSanPham"
-              ></div>
-              <input
-                v-model.number="giaTuSanPhamSo"
-                type="range"
-                min="0"
-                :max="giaLonNhatSanPham || 0"
-                step="10000"
-                class="price-range-input"
-                aria-label="Giá từ"
-              />
-              <input
-                v-model.number="giaDenSanPhamSo"
-                type="range"
-                min="0"
-                :max="giaLonNhatSanPham || 0"
-                step="10000"
-                class="price-range-input"
-                aria-label="Giá đến"
-              />
+
+            <div class="w-full">
+              <div class="mb-3 flex items-center justify-between gap-4 text-xs font-semibold text-slate-400">
+                <span>Khoảng giá</span>
+                <span class="text-right text-slate-500">{{ nhanKhoangGiaSanPham }}</span>
+              </div>
+              <div class="relative h-8 w-full">
+                <div
+                  class="absolute left-[9px] right-[9px] top-1/2 h-1 -translate-y-1/2 rounded-full"
+                  :style="styleKhoangGiaSanPham"
+                ></div>
+                <input
+                  v-model.number="giaTuSanPhamSo"
+                  type="range"
+                  min="0"
+                  :max="giaLonNhatSanPham || 0"
+                  step="1"
+                  class="price-range-input"
+                  aria-label="Giá từ"
+                />
+                <input
+                  v-model.number="giaDenSanPhamSo"
+                  type="range"
+                  min="0"
+                  :max="giaLonNhatSanPham || 0"
+                  step="1"
+                  class="price-range-input"
+                  aria-label="Giá đến"
+                />
+              </div>
             </div>
           </div>
 
@@ -401,7 +451,7 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
               </thead>
               <tbody>
                 <tr v-if="!danhSachSanPhamPhanTrang.length">
-                  <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400">Không có sản phẩm phù hợp với khoảng giá.</td>
+                  <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400">Không có sản phẩm phù hợp với bộ lọc.</td>
                 </tr>
                 <tr v-for="(item, index) in danhSachSanPhamPhanTrang" :key="item.id" class="border-b border-slate-100 last:border-b-0">
                   <td class="px-5 py-6 font-semibold text-slate-600">{{ (trangSanPhamHienTai - 1) * soSanPhamMoiTrang + index + 1 }}</td>
