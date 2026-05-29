@@ -53,6 +53,14 @@ public class QuanLySanPhamController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh mục thành công", service.layDanhMuc()));
     }
 
+    @GetMapping("/check-ten")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Boolean>>> checkTenTrung(
+            @RequestParam String ten,
+            @RequestParam(required = false) Integer id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Kiểm tra thành công", service.checkTenTrung(ten, id)));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<GiayListItemResponse>>> danhSachGiay(
             @RequestParam(required = false) String keyword,

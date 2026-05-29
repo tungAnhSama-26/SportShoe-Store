@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { LoaderCircle, Power } from 'lucide-vue-next'
+import { showConfirm } from '../../utils/alert'
 
 const props = defineProps({
   loading: {
@@ -44,9 +45,9 @@ const intentClass = computed(() => {
   return 'admin-quick-status-action--neutral'
 })
 
-function handleClick() {
+async function handleClick() {
   if (props.loading || props.disabled) return
-  if (props.confirmMessage && !window.confirm(props.confirmMessage)) return
+  if (props.confirmMessage && !(await showConfirm(props.confirmMessage))) return
   emit('toggle')
 }
 </script>

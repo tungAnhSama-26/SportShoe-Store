@@ -38,13 +38,6 @@ const {
   dangTaiSP,
   saving,
   loiTrang,
-  toast,
-  toastTimer,
-  toastClass,
-  toastIconClass,
-  toastAccentClass,
-  ToastIcon,
-  hienThiThongBao,
   formErrors,
   form,
   isReadOnly,
@@ -112,46 +105,7 @@ const filteredSelectedVariants = computed(() => {
 <template>
   <div class="space-y-5 pb-10">
     <!-- Toast Notification -->
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-y-3 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-3 opacity-0"
-    >
-      <div
-        v-if="toast.hienThi"
-        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
-        :class="toastClass"
-      >
-        <div class="flex gap-3 p-4">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            :class="toastIconClass"
-          >
-            <component :is="ToastIcon" class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p
-              v-if="toast.noiDung"
-              class="mt-1 text-sm leading-5 text-slate-600"
-            >
-              {{ toast.noiDung }}
-            </p>
-          </div>
-          <button
-            type="button"
-            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
-            @click="toast.hienThi = false"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
-        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
-      </div>
-    </Transition>
+
 
     <section class="flex items-center gap-4">
       <button

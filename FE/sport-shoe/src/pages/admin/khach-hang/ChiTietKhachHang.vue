@@ -12,6 +12,7 @@ import {
   uploadFile
 } from "../../../services/khach-hang";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 
@@ -76,7 +77,6 @@ function buildDiaChiPayload() {
     laMacDinh: Boolean(f.laMacDinh),
   };
 }
-const thongBao = ref("");
 const khachHang = ref(null);
 
 const form = ref({
@@ -237,7 +237,7 @@ async function luu() {
 
   dangLuu.value = true;
   loiTrang.value = "";
-  thongBao.value = "";
+
   try {
     if (laMoi) {
       const result = await taoKhachHang({
@@ -288,8 +288,7 @@ async function luu() {
         hinhAnh: hinhAnh || undefined,
       });
       khachHang.value = updated;
-      thongBao.value = "Đã lưu thay đổi thành công!";
-      setTimeout(() => (thongBao.value = ""), 3000);
+      showSuccess("Đã lưu thay đổi thành công!", "Thành công");
     }
   } catch (e) {
     Object.assign(loiForm.value, getFieldErrors(e));
@@ -310,8 +309,7 @@ async function doiMatKhau() {
     await doiMatKhauKhachHang(id!, matKhauMoi.value);
     matKhauMoi.value = "";
     showDoiMatKhau.value = false;
-    thongBao.value = "Đã đổi mật khẩu thành công!";
-    setTimeout(() => (thongBao.value = ""), 3000);
+    showSuccess("Đã đổi mật khẩu thành công!", "Thành công");
   } catch (e) {
     loiTrang.value = getDisplayErrorMessage(e, "Không thể đổi mật khẩu khách hàng");
   } finally {
@@ -322,12 +320,12 @@ async function doiMatKhau() {
 async function doiTrangThai(trangThai: number) {
   const hanhDong = trangThai === 1 ? "kích hoạt" : "khóa";
   const tenKhachHang = form.value.hoTen || form.value.tenDangNhap || "khách hàng này";
-  if (!window.confirm(`Bạn có chắc muốn ${hanhDong} ${tenKhachHang} không?`)) return;
+  const isConfirmed = await showConfirm(`Bạn có chắc muốn ${hanhDong} ${tenKhachHang} không?`);
+  if (!isConfirmed) return;
   try {
     const updated = await doiTrangThaiKhachHang(id!, trangThai);
     khachHang.value = updated;
-    thongBao.value = trangThai === 1 ? "Đã kích hoạt khách hàng!" : "Đã khóa khách hàng!";
-    setTimeout(() => (thongBao.value = ""), 3000);
+    showSuccess(trangThai === 1 ? "Đã kích hoạt khách hàng!" : "Đã khóa khách hàng!", "Thành công");
   } catch (e) {
     loiTrang.value = getDisplayErrorMessage(e, "Không thể cập nhật trạng thái khách hàng");
   }
@@ -373,7 +371,7 @@ onMounted(taiChiTiet);
     <div v-if="dangTai" class="rounded-[24px] border bg-white p-10 text-center text-slate-400 text-sm">Đang tải...</div>
 
     <template v-else>
-      <div v-if="thongBao" class="rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-sm font-semibold text-emerald-700">✓ {{ thongBao }}</div>
+
       <div v-if="loiTrang" class="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
 
       <div class="flex flex-col-reverse xl:grid gap-5 xl:grid-cols-[320px_1fr]">

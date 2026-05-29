@@ -22,6 +22,14 @@ public class QuanLyPhieuGiamGiaController {
         return phieuGiamGiaService.getAll();
     }
 
+    @GetMapping("check-ten")
+    public java.util.Map<String, Boolean> checkTenTrung(
+            @RequestParam String ten,
+            @RequestParam(required = false) Integer id
+    ) {
+        return phieuGiamGiaService.checkTenTrung(ten, id);
+    }
+
     @GetMapping("detail/{id}")
     public QuanLyPhieuGiamGiaResponse detail(@PathVariable("id") Integer id) {
         return phieuGiamGiaService.getOne(id);

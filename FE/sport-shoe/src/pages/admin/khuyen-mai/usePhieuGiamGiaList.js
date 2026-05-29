@@ -21,6 +21,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
 export function usePhieuGiamGiaList() {
   const router = useRouter();
@@ -40,60 +41,12 @@ export function usePhieuGiamGiaList() {
   }
 
   const activeTab = ref(resolveActiveTab());
-  const toast = ref({
-    hienThi: false,
-    loai: "success",
-    tieuDe: "",
-    noiDung: "",
-  });
-  let toastTimer = null;
-
-  const toastClass = computed(() => {
-    if (toast.value.loai === "success") {
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
-    }
-    if (toast.value.loai === "warning") {
-      return "border-amber-100 bg-amber-50 text-amber-700";
-    }
-    return "border-rose-100 bg-rose-50 text-rose-700";
-  });
-
-  const toastIconClass = computed(() => {
-    if (toast.value.loai === "success") {
-      return "bg-emerald-100 text-emerald-600";
-    }
-    if (toast.value.loai === "warning") {
-      return "bg-amber-100 text-amber-600";
-    }
-    return "bg-rose-100 text-rose-600";
-  });
-
-  const toastAccentClass = computed(() => {
-    if (toast.value.loai === "success") {
-      return "bg-emerald-500";
-    }
-    if (toast.value.loai === "warning") {
-      return "bg-amber-500";
-    }
-    return "bg-rose-500";
-  });
-
-  const ToastIcon = computed(() => {
-    if (toast.value.loai === "success") {
-      return CheckCircle2;
-    }
-    return CircleX;
-  });
-
   function hienThiThongBao(loai, tieuDe, noiDung = "") {
-    if (toastTimer) {
-      clearTimeout(toastTimer);
+    if (loai === "success") {
+      showSuccess(noiDung || tieuDe, tieuDe);
+    } else if (loai === "error") {
+      showError(noiDung || tieuDe, tieuDe);
     }
-
-    toast.value = { hienThi: true, loai, tieuDe, noiDung };
-    toastTimer = setTimeout(() => {
-      toast.value.hienThi = false;
-    }, 3200);
   }
 
   const boLoc = ref({
@@ -373,7 +326,8 @@ export function usePhieuGiamGiaList() {
     const confirmMsg = Number(item.trangThai) === 1 
       ? "Bạn có chắc chắn muốn ngừng hoạt động phiếu giảm giá này?" 
       : "Bạn có chắc chắn muốn kích hoạt lại phiếu giảm giá này?";
-    if (!window.confirm(confirmMsg)) return;
+    const isConfirmed = await showConfirm(confirmMsg);
+    if (!isConfirmed) return;
 
     try {
       const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
@@ -415,7 +369,8 @@ export function usePhieuGiamGiaList() {
       return;
     }
 
-    if (!window.confirm("Bạn có chắc chắn muốn dừng áp dụng phiếu giảm giá này cho khách hàng?")) return;
+    const isConfirmed = await showConfirm("Bạn có chắc chắn muốn dừng áp dụng phiếu giảm giá này cho khách hàng?");
+    if (!isConfirmed) return;
 
     try {
       const nextStatus = 0;
@@ -483,7 +438,7 @@ export function usePhieuGiamGiaList() {
 
         const rows = data?.content || [];
         if (!rows.length) {
-          window.alert("Không có dữ liệu để xuất Excel.");
+          showError("Không có dữ liệu để xuất Excel.");
           return;
         }
 
@@ -547,7 +502,7 @@ export function usePhieuGiamGiaList() {
 
       const rows = data?.content || [];
       if (!rows.length) {
-        window.alert("Không có dữ liệu để xuất Excel.");
+        showError("Không có dữ liệu để xuất Excel.");
         return;
       }
 
@@ -570,7 +525,7 @@ export function usePhieuGiamGiaList() {
         rows,
       });
     } catch (error) {
-      window.alert(error?.message || "Xuất Excel thất bại.");
+      showError(error?.message || "Xuất Excel thất bại.");
     }
   }
 
@@ -591,5 +546,5 @@ export function usePhieuGiamGiaList() {
     taiDanhSach();
   });
 
-  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
+  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
 }

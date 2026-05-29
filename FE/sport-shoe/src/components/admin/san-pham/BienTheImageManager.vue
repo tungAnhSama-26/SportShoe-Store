@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ImageOff, Plus, RefreshCw, Star, Trash2, Upload, Pencil } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import { showConfirm } from '../../../utils/alert'
 
 const props = defineProps({
   variant: {
@@ -307,7 +308,8 @@ async function commitPendingForm() {
 }
 
 async function handleDelete(imageId) {
-  if (!confirm('Xóa hình ảnh này?')) return
+  const isConfirmed = await showConfirm('Xóa hình ảnh này?')
+  if (!isConfirmed) return
 
   if (isDraftMode.value) {
     updateDraftImages(displayedImages.value.filter((item) => item.id !== imageId))
