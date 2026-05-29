@@ -490,7 +490,7 @@ public class BanHangTaiQuayService {
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
         lichSu.setNhanVien(resolveNhanVienDangDangNhap());
-        lichSu.setTrangThai(String.valueOf(trangThai));
+        lichSu.setTrangThai(invoiceStateUseCase.labelTrangThaiHoaDon(trangThai));
         lichSu.setGhiChu(ghiChu);
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
