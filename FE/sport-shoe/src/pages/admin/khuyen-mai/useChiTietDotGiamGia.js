@@ -112,6 +112,7 @@ export function useChiTietDotGiamGia() {
         result.push({ ...bt, _sp: sp });
       }
     }
+
     // Sắp xếp sản phẩm mới nhất lên trước (theo ID giảm dần)
     // Các biến thể của cùng sản phẩm sẽ được nhóm lại với nhau
     return result.sort((a, b) => {
@@ -124,6 +125,17 @@ export function useChiTietDotGiamGia() {
     });
   });
 
+  // Tính toán giá sau giảm cho các biến thể hiển thị trong bảng
+  const bienTheHienThi = computed(() => {
+    const mucGiam = Number(form.giaTriGiam) || 0;
+    return tatCaBienThe.value.map(bt => ({
+      ...bt,
+      giaSauGiam: bt.giaGoc 
+        ? bt.giaGoc * (1 - mucGiam / 100) 
+        : bt.giaBan * (1 - mucGiam / 100)
+    }));
+  });
+
   const tongSoTrang = computed(() => Math.max(1, Math.ceil(danhSachSP.value.length / soHangMoiTrang.value)));
 
   const spTrang = computed(() => {
@@ -133,7 +145,7 @@ export function useChiTietDotGiamGia() {
 
   const bienTheTrang = computed(() => {
     const start = (trangBienThe.value - 1) * soHangMoiTrang.value;
-    return tatCaBienThe.value.slice(start, start + soHangMoiTrang.value);
+    return bienTheHienThi.value.slice(start, start + soHangMoiTrang.value);
   });
 
   function getToday() {
@@ -538,7 +550,7 @@ export function useChiTietDotGiamGia() {
         giaTriGiam: detail.giaTriGiam ?? "",
         ngayBatDau: detail.ngayBatDau ?? "",
         ngayKetThuc: detail.ngayKetThuc ?? "",
-        kichHoat: String(detail.kichHoat ?? 1),
+        kichHoat: String(detail.kichHoat ?? 1)
       });
 
       // Load selected variants for this campaign

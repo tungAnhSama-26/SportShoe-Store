@@ -172,7 +172,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
                     mapLoaiDon(hoaDon),
-                    resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
+                    resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
+                    hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
+                    resolveEmail(hoaDon.getKhachHang())
             ))
             .toList();
     }
@@ -196,7 +198,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
                         mapLoaiDon(hoaDon),
-                        resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()))
+                        resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
+                        hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
+                        resolveEmail(hoaDon.getKhachHang())
                 ))
                 .toList();
     }

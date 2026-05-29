@@ -120,12 +120,13 @@ public class DotGiamGiaSanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
 
         // 1. Lấy danh sách ID đã có
-        List<DotGiamGiaSanPham> currentLinks = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(request.getDotGiamGiaId());
+        List<DotGiamGiaSanPham> currentLinks = dotGiamGiaSanPhamRepository
+                .findByDotGiamGiaId(request.getDotGiamGiaId());
         Set<Integer> targetVariantIds = request.getGiayChiTietIds() == null
                 ? new HashSet<>()
                 : request.getGiayChiTietIds().stream()
-                .filter(variantId -> variantId != null && variantId > 0)
-                .collect(Collectors.toCollection(HashSet::new));
+                        .filter(variantId -> variantId != null && variantId > 0)
+                        .collect(Collectors.toCollection(HashSet::new));
 
         // 2. Xóa những cái không còn trong list mới
         Set<Integer> seenVariantIds = new HashSet<>();
@@ -138,7 +139,7 @@ public class DotGiamGiaSanPhamService {
                     return !seenVariantIds.add(currentVariantId);
                 })
                 .toList();
-        
+
         if (!toDelete.isEmpty()) {
             dotGiamGiaSanPhamRepository.deleteAll(toDelete);
             dotGiamGiaSanPhamRepository.flush();
@@ -181,7 +182,8 @@ public class DotGiamGiaSanPhamService {
         // 4. Flush tất cả thay đổi (delete + insert) trước khi tính lại giá
         dotGiamGiaSanPhamRepository.flush();
 
-        // 5. Cập nhật lại giá cho tất cả biến thể liên quan (cũ, mới và cả những biến thể bị tích bỏ)
+        // 5. Cập nhật lại giá cho tất cả biến thể liên quan (cũ, mới và cả những biến
+        // thể bị tích bỏ)
         Set<Integer> deletedVariantIds = toDelete.stream()
                 .map(l -> l.getGiayChiTiet().getId())
                 .collect(Collectors.toSet());
@@ -197,7 +199,8 @@ public class DotGiamGiaSanPhamService {
 
     public void updateGiaBanForGiayChiTiet(Integer giayChiTietId) {
         GiayChiTiet gct = giayChiTietRepository.findById(giayChiTietId).orElse(null);
-        if (gct == null) return;
+        if (gct == null)
+            return;
 
         gct.setNgayCapNhat(Instant.now());
         giayChiTietRepository.save(gct);

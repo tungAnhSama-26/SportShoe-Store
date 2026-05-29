@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Ticket, Users, X } from "lucide-vue-next";
+import { ArrowLeft, CheckCircle2, CheckSquare, CircleX, Eye, RefreshCcw, Save, Search, ShoppingBag, Ticket, Users, X } from "lucide-vue-next";
 import {
   createPhieuGiamGia,
   createPhieuGiamGiaKhachHang,
@@ -11,6 +11,7 @@ import {
   updatePhieuGiamGia
 } from "../../../services/khuyen-mai";
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
+import { layDanhSachHoaDon } from "../../../services/hoa-don";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 
 const route = useRoute();
@@ -269,6 +270,7 @@ async function taiChiTiet() {
       lienKetKhachHangHienTai.value = [];
       dsEmailChon.value = [];
     }
+    await taiHoaDonLienQuan();
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể tải chi tiết phiếu giảm giá");
   } finally {
@@ -412,6 +414,107 @@ async function submitForm() {
   } finally {
     saving.value = false;
   }
+}
+
+const danhSachTatCaHoaDon = ref([]);
+const listHoaDonApplied = ref([]);
+const dangTaiHoaDon = ref(false);
+const loiTaiHoaDon = ref("");
+
+const getHoaDonsCuaKhachHang = (email) => {
+  if (!email) return [];
+  return listHoaDonApplied.value.filter(
+    (hd) => hd.emailKhachHang && hd.emailKhachHang.toLowerCase() === email.toLowerCase()
+  );
+};
+
+const getTongDonHangCuaKhachHang = (email) => {
+  if (!email) return 0;
+  return danhSachTatCaHoaDon.value.filter(
+    (hd) => hd.emailKhachHang && hd.emailKhachHang.toLowerCase() === email.toLowerCase()
+  ).length;
+};
+
+const getDonHangGanNhat = (email) => {
+  if (!email) return null;
+  const khHoaDons = danhSachTatCaHoaDon.value.filter(
+    (hd) => hd.emailKhachHang && hd.emailKhachHang.toLowerCase() === email.toLowerCase()
+  );
+  if (khHoaDons.length === 0) return null;
+  return [...khHoaDons].sort((a, b) => new Date(b.ngayTao) - new Date(a.ngayTao))[0];
+};
+
+function dinhDangNgaySinh(ngay) {
+  if (!ngay) return "—";
+  try {
+    const parts = ngay.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    const d = new Date(ngay);
+    if (isNaN(d.getTime())) return ngay;
+    return new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(d);
+  } catch (e) {
+    return ngay;
+  }
+}
+
+function dinhDangTien(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
+function dinhDangNgay(ngay) {
+  if (!ngay) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(ngay));
+}
+
+const mauTrangThai = {
+  "Chờ xác nhận": "bg-amber-50 text-amber-600 border border-amber-100",
+  "Đã xác nhận": "bg-orange-50 text-orange-600 border border-orange-100",
+  "Chờ lấy hàng": "bg-blue-50 text-blue-600 border border-blue-100",
+  "Chờ giao hàng": "bg-violet-50 text-violet-600 border border-violet-100",
+  "Đã giao hàng": "bg-cyan-50 text-cyan-600 border border-cyan-100",
+  "Giao hàng thất bại": "bg-rose-50 text-rose-600 border border-rose-100",
+  "Hoàn thành": "bg-emerald-50 text-emerald-600 border border-emerald-100",
+  "Hủy": "bg-stone-100 text-stone-600 border border-stone-200",
+  "Yêu cầu hủy": "bg-slate-100 text-slate-600 border border-slate-200",
+  "Cần hoàn tiền": "bg-red-50 text-red-600 border border-red-100",
+};
+
+async function taiHoaDonLienQuan() {
+  if (laMoi || !form.ma) return;
+  dangTaiHoaDon.value = true;
+  loiTaiHoaDon.value = "";
+  try {
+    const allInvoices = await layDanhSachHoaDon();
+    danhSachTatCaHoaDon.value = allInvoices || [];
+    listHoaDonApplied.value = (allInvoices || []).filter(
+      (hd) => hd.maPhieuGiamGia && hd.maPhieuGiamGia.toLowerCase() === form.ma.toLowerCase()
+    );
+  } catch (err) {
+    console.error("Lỗi tải hóa đơn liên quan:", err);
+    loiTaiHoaDon.value = "Không thể tải danh sách hóa đơn liên quan";
+  } finally {
+    dangTaiHoaDon.value = false;
+  }
+}
+
+function xemChiTietHoaDon(id) {
+  router.push({ name: "admin-hoa-don-chi-tiet", params: { id } });
 }
 
 onMounted(taiChiTiet);
@@ -599,27 +702,57 @@ onMounted(taiChiTiet);
             <thead class="sticky top-0 z-10 bg-slate-50 text-[12px] font-semibold text-slate-500">
               <tr>
                 <th class="w-12 px-4 py-3 text-center">#</th>
-                <th class="px-4 py-3">Khách hàng</th>
-                <th class="px-4 py-3">SĐT / Email</th>
+                <th class="px-4 py-3">Họ và tên</th>
+                <th class="px-4 py-3">Tên đăng nhập</th>
+                <th class="px-4 py-3">Số điện thoại</th>
+                <th class="px-4 py-3">Email</th>
+                <th class="px-4 py-3">Ngày sinh</th>
+                <th class="px-4 py-3">Tổng đơn hàng</th>
+                <th class="px-4 py-3">Đơn hàng gần nhất</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-if="dangTaiKh">
-                <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-400">Đang tải danh sách khách hàng...</td>
+                <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">Đang tải danh sách khách hàng...</td>
               </tr>
               <tr v-else-if="!danhSachKh.length">
-                <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
+                <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
               </tr>
               <tr v-for="kh in danhSachKh" v-else :key="kh.id" @click="toggleEmail(kh.email)" class="cursor-pointer transition-colors hover:bg-rose-50/50" :class="dsEmailChon.includes(kh.email) ? 'bg-rose-50/30' : ''">
                 <td class="px-4 py-3 text-center">
                   <CheckSquare v-if="dsEmailChon.includes(kh.email)" class="mx-auto h-5 w-5 text-rose-500" />
                   <div v-else class="mx-auto h-5 w-5 rounded border border-slate-300 bg-white"></div>
                 </td>
-                <td class="px-4 py-3">
-                  <div class="font-semibold text-slate-800">{{ kh.hoTen }}</div>
-                  <div class="text-xs text-slate-400 font-medium">Tên đăng nhập: {{ kh.tenDangNhap }}</div>
+                <td class="px-4 py-3 font-semibold text-slate-800">{{ kh.hoTen }}</td>
+                <td class="px-4 py-3 text-slate-600 font-medium">{{ kh.tenDangNhap }}</td>
+                <td class="px-4 py-3 text-slate-500 font-medium">{{ kh.sdt || '—' }}</td>
+                <td class="px-4 py-3 text-slate-500 font-medium">{{ kh.email }}</td>
+                <td class="px-4 py-3 text-slate-500 font-medium">{{ dinhDangNgaySinh(kh.ngaySinh) }}</td>
+                <td class="px-4 py-3" @click.stop>
+                  <div v-if="getTongDonHangCuaKhachHang(kh.email) === 0" class="text-slate-400 text-xs font-medium">
+                    Chưa mua
+                  </div>
+                  <div v-else class="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5 inline-block">
+                    {{ getTongDonHangCuaKhachHang(kh.email) }} đơn
+                  </div>
                 </td>
-                <td class="px-4 py-3 text-slate-500">{{ kh.sdt }}<br>{{ kh.email }}</td>
+                <td class="px-4 py-3" @click.stop>
+                  <div v-if="!getDonHangGanNhat(kh.email)" class="text-slate-400 text-xs font-medium">
+                    —
+                  </div>
+                  <div v-else class="flex flex-col gap-0.5">
+                    <span
+                      @click="xemChiTietHoaDon(getDonHangGanNhat(kh.email).id)"
+                      class="inline-flex items-center gap-0.5 text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors rounded px-1.5 py-0.5 cursor-pointer w-max"
+                      title="Xem chi tiết đơn hàng gần nhất"
+                    >
+                      {{ getDonHangGanNhat(kh.email).maHoaDon }}
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium mt-0.5">
+                      {{ dinhDangNgay(getDonHangGanNhat(kh.email).ngayTao) }}
+                    </span>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -638,6 +771,90 @@ onMounted(taiChiTiet);
           {{ saving ? "Đang lưu..." : (laMoi ? "Tạo phiếu giảm giá" : "Lưu thay đổi") }}
         </button>
         <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="whitespace-nowrap rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">{{ isReadOnly ? "Quay lại" : "Hủy" }}</button>
+      </div>
+    </section>
+
+    <!-- Danh sách đơn hàng đã áp dụng phiếu giảm giá -->
+    <section v-if="!laMoi" class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500">
+            <ShoppingBag class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Đơn hàng đã áp dụng phiếu giảm giá</h2>
+            <p class="text-xs font-medium text-slate-400">Danh sách các hóa đơn sử dụng mã phiếu giảm giá này</p>
+          </div>
+        </div>
+        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-700">
+          Tổng đơn hàng: {{ listHoaDonApplied.length }}
+        </div>
+      </div>
+
+      <div v-if="dangTaiHoaDon" class="py-10 text-center text-sm text-slate-400">
+        Đang tải danh sách hóa đơn liên quan...
+      </div>
+      
+      <div v-else-if="loiTaiHoaDon" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-600">
+        {{ loiTaiHoaDon }}
+      </div>
+
+      <div v-else-if="!listHoaDonApplied.length" class="py-12 text-center text-sm text-slate-400">
+        <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+          <ShoppingBag class="h-6 w-6" />
+        </div>
+        Chưa có đơn hàng nào áp dụng phiếu giảm giá này.
+      </div>
+
+      <div v-else class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <table class="w-full border-collapse text-left text-sm">
+          <thead class="bg-slate-50 text-[12px] font-semibold text-slate-500">
+            <tr>
+              <th class="w-12 px-4 py-3.5 text-center">STT</th>
+              <th class="px-4 py-3.5">Mã hóa đơn</th>
+              <th class="px-4 py-3.5">Khách hàng</th>
+              <th class="px-4 py-3.5">Số điện thoại</th>
+              <th class="px-4 py-3.5">Tổng tiền</th>
+              <th class="px-4 py-3.5">Ngày tạo</th>
+              <th class="px-4 py-3.5">Loại đơn</th>
+              <th class="px-4 py-3.5 text-center">Trạng thái</th>
+              <th class="w-20 px-4 py-3.5 text-center">Hành động</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-[13px] text-slate-700">
+            <tr v-for="(hd, index) in listHoaDonApplied" :key="hd.id" class="transition-colors hover:bg-slate-50/50">
+              <td class="px-4 py-3.5 text-center font-medium text-slate-400">{{ index + 1 }}</td>
+              <td class="px-4 py-3.5 font-bold text-slate-800">{{ hd.maHoaDon }}</td>
+              <td class="px-4 py-3.5 font-semibold text-slate-800">{{ hd.tenKhachHang || '—' }}</td>
+              <td class="px-4 py-3.5 text-slate-500">{{ hd.soDienThoai || '—' }}</td>
+              <td class="px-4 py-3.5 font-bold text-slate-800">{{ dinhDangTien(hd.tongTien) }}</td>
+              <td class="px-4 py-3.5 text-slate-500">{{ dinhDangNgay(hd.ngayTao) }}</td>
+              <td class="px-4 py-3.5">
+                <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+                  {{ hd.loaiDon }}
+                </span>
+              </td>
+              <td class="px-4 py-3.5 text-center">
+                <span
+                  class="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                  :class="mauTrangThai[hd.trangThai] || 'bg-slate-100 text-slate-600 border border-slate-200'"
+                >
+                  {{ hd.trangThai }}
+                </span>
+              </td>
+              <td class="px-4 py-3.5 text-center">
+                <button
+                  type="button"
+                  @click="xemChiTietHoaDon(hd.id)"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-600"
+                  title="Xem chi tiết đơn hàng"
+                >
+                  <Eye class="h-4 w-4" />
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </div>
