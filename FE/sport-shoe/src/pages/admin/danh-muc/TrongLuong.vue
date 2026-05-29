@@ -13,6 +13,7 @@ import {
   generateWeightAttributeCode,
   normalizeOptionalText
 } from '../../../utils/thuoc-tinh-san-pham'
+import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
 const items = ref([])
 const totalItems = ref(0)
@@ -22,17 +23,7 @@ const pageSize = ref(5)
 const loading = ref(false)
 const keyword = ref('')
 
-const toast = reactive({ show: false, message: '', type: 'success' })
 const MO_TA_MAX_LENGTH = 300
-
-function showToast(msg, type = 'success') {
-  toast.message = msg
-  toast.type = type
-  toast.show = true
-  setTimeout(() => {
-    toast.show = false
-  }, 3000)
-}
 
 async function loadData(page = 0) {
   loading.value = true
@@ -43,7 +34,7 @@ async function loadData(page = 0) {
     totalPages.value = res.totalPages
     currentPage.value = res.page
   } catch (e) {
-    showToast(getDisplayErrorMessage(e, 'Không thể tải danh sách trọng lượng'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể tải danh sách trọng lượng'))
   } finally {
     loading.value = false
   }
@@ -146,7 +137,13 @@ function validate() {
 async function handleSave() {
   if (!validate()) return
 
-    if (!confirm(modalMode.value === 'add' ? 'Xác nhận thêm mới trọng lượng này?' : 'Xác nhận lưu thay đổi trọng lượng này?')) return
+  if (modalMode.value === 'add') {
+    const isConfirmed = await showConfirm('Xác nhận thêm mới trọng lượng này?')
+    if (!isConfirmed) return
+  } else {
+    const isConfirmed = await showConfirm('Xác nhận lưu thay đổi trọng lượng này?')
+    if (!isConfirmed) return
+  }
 
   saving.value = true
   try {
@@ -159,12 +156,12 @@ async function handleSave() {
     if (modalMode.value === 'add') await trongLuongApi.create(body)
     else await trongLuongApi.update(selectedItem.value.id, body)
 
-    showToast(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
+    showSuccess(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
     showModal.value = false
     loadData(currentPage.value)
   } catch (e) {
     Object.assign(errors, getFieldErrors(e))
-    showToast(getDisplayErrorMessage(e, 'Không thể lưu trọng lượng'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể lưu trọng lượng'))
   } finally {
     saving.value = false
   }
@@ -174,15 +171,16 @@ async function handleToggleStatus(item) {
   const nextTrangThai = item.trangThai === 1 ? 0 : 1
   const actionLabel = nextTrangThai === 1 ? 'bật' : 'dừng'
 
-  if (!confirm(`Xác nhận ${actionLabel} nhanh trọng lượng "${item.ma}"?`)) return
+  const isConfirmed = await showConfirm(`Xác nhận ${actionLabel} nhanh trọng lượng "${item.ma}"?`)
+  if (!isConfirmed) return
 
   updatingStatusId.value = item.id
   try {
     await trongLuongApi.toggleStatus(item.id, nextTrangThai)
-    showToast('Cập nhật trạng thái thành công')
+    showSuccess('Cập nhật trạng thái thành công')
     loadData(currentPage.value)
   } catch (e) {
-    showToast(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái trọng lượng'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể cập nhật trạng thái trọng lượng'))
   } finally {
     updatingStatusId.value = null
   }
@@ -190,7 +188,7 @@ async function handleToggleStatus(item) {
 
 async function xuatExcel() {
   if (!totalItems.value) {
-    showToast('Không có dữ liệu để xuất Excel', 'error')
+    showError('Không có dữ liệu để xuất Excel')
     return
   }
 
@@ -209,9 +207,13 @@ async function xuatExcel() {
       rows: res.items || []
     })
 
-    showToast(exported ? 'Xuất Excel thành công' : 'Không có dữ liệu để xuất Excel', exported ? 'success' : 'error')
+    if (exported) {
+      showSuccess('Xuất Excel thành công')
+    } else {
+      showError('Không có dữ liệu để xuất Excel')
+    }
   } catch (e) {
-    showToast(getDisplayErrorMessage(e, 'Không thể xuất Excel trọng lượng'), 'error')
+    showError(getDisplayErrorMessage(e, 'Không thể xuất Excel trọng lượng'))
   }
 }
 </script>
@@ -222,7 +224,6 @@ async function xuatExcel() {
     add-label="Thêm trọng lượng"
     list-title="Danh sách trọng lượng"
     search-placeholder="Tìm theo mã trọng lượng..."
-    :toast="toast"
     :keyword="keyword"
     :page-size="pageSize"
     :page-size-options="pageSizeOptions"

@@ -75,7 +75,6 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
     AND (:loaiGiam IS NULL OR dotGiamGia.loaiGiam = :loaiGiam)
     AND (CAST(:tuNgay AS date) IS NULL OR dotGiamGia.ngayBatDau >= CAST(:tuNgay AS date))
     AND (CAST(:denNgay AS date) IS NULL OR dotGiamGia.ngayKetThuc <= CAST(:denNgay AS date))
-    ORDER BY dotGiamGia.ngayTao DESC
 """)
     Page<QuanLyDotGiamGiaResponse> timKiemVaPhanTrang(
             @Param("keyword") String keyword, 
@@ -84,4 +83,7 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             @Param("tuNgay") java.time.LocalDate tuNgay, 
             @Param("denNgay") java.time.LocalDate denNgay, 
             Pageable pageable);
+
+    boolean existsByTenIgnoreCase(String ten);
+    boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
 }

@@ -21,6 +21,7 @@ import Badge from "../../../components/ui/Badge.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showError } from "../../../utils/alert";
 
 type TrangThaiLoc =
   | "Tất cả"
@@ -227,7 +228,7 @@ function xemChiTiet(id: number) {
 
 function xuatExcel() {
   if (!danhSachHienThi.value.length) {
-    window.alert("Không có dữ liệu để xuất Excel.");
+    showError("Không có dữ liệu để xuất Excel.");
     return;
   }
 
@@ -270,7 +271,7 @@ async function xuatHoaDonPdf(id: number) {
     });
     } catch (error) {
       if (popup) popup.close();
-      window.alert(getDisplayErrorMessage(error, "Không thể xuất PDF hóa đơn"));
+      showError(getDisplayErrorMessage(error, "Không thể xuất PDF hóa đơn"), "Lỗi");
     } finally {
     dangXuatPdfId.value = null;
   }
