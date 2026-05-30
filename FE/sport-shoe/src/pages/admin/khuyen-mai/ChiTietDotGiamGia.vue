@@ -376,7 +376,7 @@ const filteredSelectedVariants = computed(() => {
           <div class="flex gap-3">
             <div class="relative flex-1">
               <Search
-                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-500"
+                class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               />
               <input
                 v-model="searchSP"
@@ -384,7 +384,7 @@ const filteredSelectedVariants = computed(() => {
                 @keyup.enter="taiDanhSachSP"
                 type="text"
                 placeholder="Tìm theo tên hoặc mã sản phẩm..."
-                class="h-11 w-full rounded-2xl border border-rose-100 bg-rose-50/40 pl-11 pr-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 disabled:opacity-70 disabled:bg-slate-100"
               />
             </div>
             <button
@@ -622,157 +622,169 @@ const filteredSelectedVariants = computed(() => {
 
     <!-- Bảng sản phẩm & biến thể đã chọn ở dưới cùng -->
     <section
-  class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-5"
->
-  <div
-    class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-  >
-    <div class="flex items-center gap-3">
+      class="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm space-y-5"
+    >
       <div
-        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
-        <CheckSquare class="h-5 w-5" />
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
+          >
+            <CheckSquare class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">
+              Sản phẩm & biến thể đã chọn áp dụng
+            </h2>
+            <p class="text-[13px] text-slate-400">
+              Danh sách chi tiết gồm {{ selectedVariants.length }} biến thể đã
+              chọn
+            </p>
+          </div>
+        </div>
+
+        <div v-if="selectedVariants.length > 0" class="relative w-full sm:w-80">
+          <Search
+            class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            v-model="searchSelectedText"
+            type="text"
+            placeholder="Lọc nhanh trong danh sách đã chọn..."
+            class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-xs text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+          />
+        </div>
       </div>
+
       <div>
-        <h2 class="text-base font-bold text-slate-800">
-          Sản phẩm & biến thể đã chọn áp dụng
-        </h2>
-        <p class="text-[13px] text-slate-400">
-          Danh sách chi tiết gồm {{ selectedVariants.length }} biến thể đã chọn
-        </p>
-      </div>
-    </div>
+        <div
+          v-if="!selectedVariants.length"
+          class="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3"
+        >
+          <div class="rounded-full bg-slate-50 p-4">
+            <Tag class="h-8 w-8 text-slate-300" />
+          </div>
+          <p class="text-sm font-medium">
+            Chưa có sản phẩm hoặc biến thể nào được chọn.
+          </p>
+          <p class="text-xs text-slate-400">
+            Hãy chọn các biến thể ở bảng tìm kiếm phía trên.
+          </p>
+        </div>
 
-    <div v-if="selectedVariants.length > 0" class="relative w-full sm:w-80">
-      <Search
-        class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-      />
-      <input
-        v-model="searchSelectedText"
-        type="text"
-        placeholder="Lọc nhanh trong danh sách đã chọn..."
-        class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-xs text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-      />
-    </div>
-  </div>
+        <div
+          v-else-if="!filteredSelectedVariants.length"
+          class="text-center py-10 text-slate-400 text-sm"
+        >
+          Không tìm thấy sản phẩm đã chọn nào khớp với từ khóa tìm kiếm.
+        </div>
 
-  <div>
-    <div
-      v-if="!selectedVariants.length"
-      class="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3"
-    >
-      <div class="rounded-full bg-slate-50 p-4">
-        <Tag class="h-8 w-8 text-slate-300" />
-      </div>
-      <p class="text-sm font-medium">
-        Chưa có sản phẩm hoặc biến thể nào được chọn.
-      </p>
-      <p class="text-xs text-slate-400">
-        Hãy chọn các biến thể ở bảng tìm kiếm phía trên.
-      </p>
-    </div>
-
-    <div
-      v-else-if="!filteredSelectedVariants.length"
-      class="text-center py-10 text-slate-400 text-sm"
-    >
-      Không tìm thấy sản phẩm đã chọn nào khớp với từ khóa tìm kiếm.
-    </div>
-
-    <div
-      v-else
-      class="overflow-x-auto max-h-[450px] overflow-y-auto admin-table-scroll pr-1"
-    >
-      <table
-        class="w-full min-w-[1000px] table-fixed text-xs border-separate border-spacing-y-2"
-      >
-        <colgroup>
-          <col class="w-[4%]" />   <col class="w-[6%]" />   <col class="w-[10%]" />  <col class="w-[22%]" />  <col class="w-[12%]" />  <col class="w-[9%]" />   <col class="w-[6%]" />   <col class="w-[10%]" />  <col class="w-[11%]" />  <col class="w-[6%]" />   <col class="w-[4%]" />   </colgroup>
-        <thead>
-          <tr
-            class="text-[11px] font-semibold text-slate-500 border-b border-slate-100 bg-slate-50 sticky top-0 z-10 whitespace-nowrap"
+        <div
+          v-else
+          class="overflow-x-auto max-h-[450px] overflow-y-auto admin-table-scroll pr-1"
+        >
+          <table
+            class="w-full min-w-[1000px] table-fixed text-xs border-separate border-spacing-y-2"
           >
-            <th class="px-4 py-3 text-center rounded-l-xl">STT</th>
-            <th class="px-4 py-3 text-center">Ảnh</th>
-            <th class="px-4 py-3 text-center">Mã SP</th>
-            <th class="px-4 py-3 text-center">Tên sản phẩm</th>
-            <th class="px-4 py-3 text-center">Mã biến thể</th>
-            <th class="px-4 py-3 text-center">Màu sắc</th>
-            <th class="px-4 py-3 text-center">Kích cỡ</th>
-            <th class="px-4 py-3 text-center">Giá gốc</th>
-            <th class="px-4 py-3 text-center">Giá sau giảm</th>
-            <th class="px-4 py-3 text-center">Số lượng</th>
-            <th class="px-4 py-3 text-center rounded-r-xl">
-              <span v-if="!isReadOnly">Xóa</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(bt, index) in filteredSelectedVariants"
-            :key="bt.id"
-            class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200 [&>td]:align-middle"
-          >
-            <td
-              class="rounded-l-xl px-4 py-3 text-center font-semibold text-slate-400"
-            >
-              {{ index + 1 }}
-            </td>
-            <td class="px-4 py-3">
-              <div
-                class="h-10 w-10 shrink-0 rounded bg-slate-50 overflow-hidden border border-slate-200 flex items-center justify-center mx-auto"
+            <colgroup>
+              <col class="w-[4%]" />
+              <col class="w-[6%]" />
+              <col class="w-[10%]" />
+              <col class="w-[22%]" />
+              <col class="w-[12%]" />
+              <col class="w-[9%]" />
+              <col class="w-[6%]" />
+              <col class="w-[10%]" />
+              <col class="w-[11%]" />
+              <col class="w-[6%]" />
+              <col class="w-[4%]" />
+            </colgroup>
+            <thead>
+              <tr
+                class="text-[11px] font-semibold text-slate-500 border-b border-slate-100 bg-slate-50 sticky top-0 z-10 whitespace-nowrap"
               >
-                <img
-                  v-if="bt.hinhAnh"
-                  :src="bt.hinhAnh"
-                  class="h-full w-full object-cover"
-                />
-                <Tag v-else class="h-4 w-4 text-slate-300" />
-              </div>
-            </td>
-            <td class="px-4 py-3 font-semibold text-slate-500 text-center">
-              {{ bt.maSanPham || "—" }}
-            </td>
-            <td
-              class="px-4 py-3 font-bold text-slate-900 whitespace-normal break-words text-center"
-            >
-              {{ bt.tenSanPham }}
-            </td>
-            <td class="px-4 py-3 font-medium text-slate-600 text-center">
-              {{ bt.maBienThe || bt.sku || "—" }}
-            </td>
-            <td class="px-4 py-3 font-semibold text-slate-600 text-center">
-              {{ bt.mauSac || "—" }}
-            </td>
-            <td class="px-4 py-3 font-semibold text-slate-600 text-center">
-              {{ bt.kichCo || "—" }}
-            </td>
-            <td class="px-4 py-3 text-center font-semibold text-slate-500">
-              {{ formatCurrency(bt.giaBan) }}
-            </td>
-            <td class="px-4 py-3 text-center font-bold text-rose-600">
-              {{ formatCurrency(tinhGiaGiam(bt.giaBan)) }}
-            </td>
-            <td class="px-4 py-3 text-center font-medium text-slate-600">
-              {{ bt.soLuong || 0 }}
-            </td>
-            <td class="rounded-r-xl px-4 py-3 text-center">
-              <button
-                v-if="!isReadOnly"
-                type="button"
-                @click="removeSelectedVariant(bt.id)"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                title="Xóa biến thể khỏi danh sách áp dụng"
+                <th class="px-4 py-3 text-center rounded-l-xl">STT</th>
+                <th class="px-4 py-3 text-center">Ảnh</th>
+                <th class="px-4 py-3 text-center">Mã SP</th>
+                <th class="px-4 py-3 text-center">Tên sản phẩm</th>
+                <th class="px-4 py-3 text-center">Mã biến thể</th>
+                <th class="px-4 py-3 text-center">Màu sắc</th>
+                <th class="px-4 py-3 text-center">Kích cỡ</th>
+                <th class="px-4 py-3 text-center">Giá gốc</th>
+                <th class="px-4 py-3 text-center">Giá sau giảm</th>
+                <th class="px-4 py-3 text-center">Số lượng</th>
+                <th class="px-4 py-3 text-center rounded-r-xl">
+                  <span v-if="!isReadOnly">Xóa</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(bt, index) in filteredSelectedVariants"
+                :key="bt.id"
+                class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200 [&>td]:align-middle"
               >
-                <X class="h-4 w-4" />
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+                <td
+                  class="rounded-l-xl px-4 py-3 text-center font-semibold text-slate-400"
+                >
+                  {{ index + 1 }}
+                </td>
+                <td class="px-4 py-3">
+                  <div
+                    class="h-10 w-10 shrink-0 rounded bg-slate-50 overflow-hidden border border-slate-200 flex items-center justify-center mx-auto"
+                  >
+                    <img
+                      v-if="bt.hinhAnh"
+                      :src="bt.hinhAnh"
+                      class="h-full w-full object-cover"
+                    />
+                    <Tag v-else class="h-4 w-4 text-slate-300" />
+                  </div>
+                </td>
+                <td class="px-4 py-3 font-semibold text-slate-500 text-center">
+                  {{ bt.maSanPham || "—" }}
+                </td>
+                <td
+                  class="px-4 py-3 font-bold text-slate-900 whitespace-normal break-words text-center"
+                >
+                  {{ bt.tenSanPham }}
+                </td>
+                <td class="px-4 py-3 font-medium text-slate-600 text-center">
+                  {{ bt.maBienThe || bt.sku || "—" }}
+                </td>
+                <td class="px-4 py-3 font-semibold text-slate-600 text-center">
+                  {{ bt.mauSac || "—" }}
+                </td>
+                <td class="px-4 py-3 font-semibold text-slate-600 text-center">
+                  {{ bt.kichCo || "—" }}
+                </td>
+                <td class="px-4 py-3 text-center font-semibold text-slate-500">
+                  {{ formatCurrency(bt.giaBan) }}
+                </td>
+                <td class="px-4 py-3 text-center font-bold text-rose-600">
+                  {{ formatCurrency(tinhGiaGiam(bt.giaBan)) }}
+                </td>
+                <td class="px-4 py-3 text-center font-medium text-slate-600">
+                  {{ bt.soLuong || 0 }}
+                </td>
+                <td class="rounded-r-xl px-4 py-3 text-center">
+                  <button
+                    v-if="!isReadOnly"
+                    type="button"
+                    @click="removeSelectedVariant(bt.id)"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                    title="Xóa biến thể khỏi danh sách áp dụng"
+                  >
+                    <X class="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 

@@ -1,14 +1,27 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, CheckCircle2, CheckSquare, CircleX, Eye, RefreshCcw, Save, Search, ShoppingBag, Ticket, Users, X } from "lucide-vue-next";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  CheckSquare,
+  CircleX,
+  Eye,
+  RefreshCcw,
+  Save,
+  Search,
+  ShoppingBag,
+  Ticket,
+  Users,
+  X,
+} from "lucide-vue-next";
 import {
   createPhieuGiamGia,
   createPhieuGiamGiaKhachHang,
   deletePhieuGiamGiaKhachHang,
   getPhieuGiamGiaDetail,
   getPhieuGiamGiaKhachHangList,
-  updatePhieuGiamGia
+  updatePhieuGiamGia,
 } from "../../../services/khuyen-mai";
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
@@ -32,8 +45,10 @@ const toast = ref({
 let toastTimer = null;
 
 const toastClass = computed(() => {
-  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
-  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
+  if (toast.value.loai === "success")
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning")
+    return "border-amber-100 bg-amber-50 text-amber-700";
   return "border-rose-100 bg-rose-50 text-rose-700";
 });
 
@@ -76,10 +91,12 @@ const form = reactive({
   ngayBatDau: "",
   ngayKetThuc: "",
   soLuong: "",
-  trangThai: "1"
+  trangThai: "1",
 });
 
-const isReadOnly = computed(() => !laMoi && (Number(form.trangThai) === 0 || Number(form.trangThai) === 2));
+const isReadOnly = computed(() => {
+  return false;
+});
 
 const searchKh = ref("");
 const danhSachKh = ref([]);
@@ -116,15 +133,19 @@ function taoMaNgauNhien() {
 
 function dongBoSoLuongPhieuCaNhan() {
   if (form.loaiPhieu === "2") {
-    form.soLuong = String(Math.max(1, dsEmailChon.value.length));
+    form.soLuong = String(dsEmailChon.value.length);
   }
 }
 
 async function taiDanhSachKh() {
   dangTaiKh.value = true;
   try {
-    const res = await layDanhSachKhachHang({ keyword: searchKh.value, page: 0, size: 50 });
-    danhSachKh.value = Array.isArray(res) ? res : (res?.content || []);
+    const res = await layDanhSachKhachHang({
+      keyword: searchKh.value,
+      page: 0,
+      size: 50,
+    });
+    danhSachKh.value = Array.isArray(res) ? res : res?.content || [];
   } catch (error) {
     console.error("Lỗi tải khách hàng:", error);
   } finally {
@@ -142,11 +163,11 @@ async function taiLienKetKhachHangTheoPhieu(maPhieu) {
   const data = await getPhieuGiamGiaKhachHangList({
     keyword: maPhieu,
     pageNo: 0,
-    pageSize: 1000
+    pageSize: 1000,
   });
 
   lienKetKhachHangHienTai.value = (data?.content || []).filter(
-    (item) => item?.maPhieuGiamGia === maPhieu && item?.email
+    (item) => item?.maPhieuGiamGia === maPhieu && item?.email,
   );
   dsEmailChon.value = lienKetKhachHangHienTai.value.map((item) => item.email);
   dongBoSoLuongPhieuCaNhan();
@@ -166,14 +187,20 @@ function toggleEmail(email) {
 
 function chonTatCa() {
   const emailsTrang = danhSachKh.value.map((kh) => kh.email).filter(Boolean);
-  const daChonHet = emailsTrang.length > 0 && emailsTrang.every((email) => dsEmailChon.value.includes(email));
+  const daChonHet =
+    emailsTrang.length > 0 &&
+    emailsTrang.every((email) => dsEmailChon.value.includes(email));
 
   if (daChonHet) {
-    dsEmailChon.value = dsEmailChon.value.filter((email) => !emailsTrang.includes(email));
+    dsEmailChon.value = dsEmailChon.value.filter(
+      (email) => !emailsTrang.includes(email),
+    );
     return;
   }
 
-  dsEmailChon.value = Array.from(new Set([...dsEmailChon.value, ...emailsTrang]));
+  dsEmailChon.value = Array.from(
+    new Set([...dsEmailChon.value, ...emailsTrang]),
+  );
 }
 
 let searchTimer;
@@ -182,53 +209,66 @@ function handleSearch() {
   searchTimer = setTimeout(taiDanhSachKh, 400);
 }
 
-watch(() => form.loaiPhieu, (loaiPhieuMoi, loaiPhieuCu) => {
-  if (loaiPhieuMoi === "2") {
-    soLuongPhieuCongKhai.value = form.soLuong;
-    dongBoSoLuongPhieuCaNhan();
-    return;
-  }
+watch(
+  () => form.loaiPhieu,
+  (loaiPhieuMoi, loaiPhieuCu) => {
+    if (loaiPhieuMoi === "2") {
+      soLuongPhieuCongKhai.value = form.soLuong;
+      dongBoSoLuongPhieuCaNhan();
+      return;
+    }
 
-  delete formErrors.email;
-  if (loaiPhieuCu === "2") {
-    form.soLuong = soLuongPhieuCongKhai.value;
-  }
-});
+    delete formErrors.email;
+    if (loaiPhieuCu === "2") {
+      form.soLuong = soLuongPhieuCongKhai.value;
+    }
+  },
+);
 
-watch(dsEmailChon, () => {
-  if (form.loaiPhieu === "2") {
-    dongBoSoLuongPhieuCaNhan();
-  }
-}, { deep: true });
+watch(
+  dsEmailChon,
+  () => {
+    if (form.loaiPhieu === "2") {
+      dongBoSoLuongPhieuCaNhan();
+    }
+  },
+  { deep: true },
+);
 
-watch(() => form.giaTri, (newVal) => {
-  if (newVal === "" || newVal === null || newVal === undefined) {
+watch(
+  () => form.giaTri,
+  (newVal) => {
+    if (newVal === "" || newVal === null || newVal === undefined) {
+      delete formErrors.giaTri;
+      return;
+    }
+    if (Number(form.loai) === 1) {
+      const val = Number(newVal);
+      if (val <= 0) {
+        formErrors.giaTri = "Giá trị giảm phải lớn hơn 0%";
+      } else if (val > 100) {
+        formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
+      } else {
+        delete formErrors.giaTri;
+      }
+    } else {
+      const val = parseVndNumber(newVal);
+      if (val <= 0) {
+        formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
+      } else {
+        delete formErrors.giaTri;
+      }
+    }
+  },
+);
+
+watch(
+  () => form.loai,
+  () => {
     delete formErrors.giaTri;
-    return;
-  }
-  if (Number(form.loai) === 1) {
-    const val = Number(newVal);
-    if (val <= 0) {
-      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0%";
-    } else if (val > 100) {
-      formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
-    } else {
-      delete formErrors.giaTri;
-    }
-  } else {
-    const val = parseVndNumber(newVal);
-    if (val <= 0) {
-      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
-    } else {
-      delete formErrors.giaTri;
-    }
-  }
-});
-
-watch(() => form.loai, () => {
-  delete formErrors.giaTri;
-  form.giaTri = "";
-});
+    form.giaTri = "";
+  },
+);
 
 async function taiChiTiet() {
   await taiDanhSachKh();
@@ -238,6 +278,8 @@ async function taiChiTiet() {
       taoMaNgauNhien();
     }
     form.ngayBatDau = getToday();
+    // Tải danh sách hóa đơn để lấy lịch sử mua hàng của khách hàng (Tổng đơn, đơn gần nhất)
+    await taiHoaDonLienQuan();
     return;
   }
 
@@ -254,13 +296,16 @@ async function taiChiTiet() {
       ten: detail.ten ?? "",
       loai,
       loaiPhieu,
-      giaTri: loai === "2" ? formatVndNumber(detail.giaTri ?? 0) : String(detail.giaTri ?? ""),
+      giaTri:
+        loai === "2"
+          ? formatVndNumber(detail.giaTri ?? 0)
+          : String(detail.giaTri ?? ""),
       giaTriToiThieu: formatVndNumber(detail.giaTriToiThieu ?? 0),
       giamToiDa: formatVndNumber(detail.giamToiDa ?? 0),
       ngayBatDau: detail.ngayBatDau ?? "",
       ngayKetThuc: detail.ngayKetThuc ?? "",
       soLuong,
-      trangThai: String(detail.trangThai ?? 1)
+      trangThai: String(detail.trangThai ?? 1),
     });
 
     if (loaiPhieu === "2") {
@@ -272,7 +317,10 @@ async function taiChiTiet() {
     }
     await taiHoaDonLienQuan();
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải chi tiết phiếu giảm giá");
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải chi tiết phiếu giảm giá",
+    );
   } finally {
     dangTai.value = false;
   }
@@ -280,21 +328,31 @@ async function taiChiTiet() {
 
 async function dongBoKhachHangPhieuCaNhan(phieuId, maPhieu) {
   const emailsDaChon = new Set(dsEmailChon.value.filter(Boolean));
-  const lienKetHienTai = lienKetKhachHangHienTai.value.filter((item) => item?.id && item?.email);
+  const lienKetHienTai = lienKetKhachHangHienTai.value.filter(
+    (item) => item?.id && item?.email,
+  );
   const emailHienTai = new Set(lienKetHienTai.map((item) => item.email));
 
-  const emailsCanThem = [...emailsDaChon].filter((email) => !emailHienTai.has(email));
-  const lienKetCanXoa = lienKetHienTai.filter((item) => !emailsDaChon.has(item.email));
-
-  await Promise.all(
-    emailsCanThem.map((email) => createPhieuGiamGiaKhachHang({
-      phieuGiamGiaId: phieuId,
-      email,
-      trangThai: 1
-    }))
+  const emailsCanThem = [...emailsDaChon].filter(
+    (email) => !emailHienTai.has(email),
+  );
+  const lienKetCanXoa = lienKetHienTai.filter(
+    (item) => !emailsDaChon.has(item.email),
   );
 
-  await Promise.all(lienKetCanXoa.map((item) => deletePhieuGiamGiaKhachHang(item.id)));
+  await Promise.all(
+    emailsCanThem.map((email) =>
+      createPhieuGiamGiaKhachHang({
+        phieuGiamGiaId: phieuId,
+        email,
+        trangThai: 1,
+      }),
+    ),
+  );
+
+  await Promise.all(
+    lienKetCanXoa.map((item) => deletePhieuGiamGiaKhachHang(item.id)),
+  );
 
   await taiLienKetKhachHangTheoPhieu(maPhieu);
 }
@@ -346,24 +404,32 @@ async function submitForm() {
   if (!form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
     isValid = false;
-  } else if (form.ngayKetThuc < getToday()) {
+  } else if (laMoi && form.ngayKetThuc < getToday()) {
     formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
     isValid = false;
   }
-  if (form.ngayBatDau && form.ngayKetThuc && form.ngayBatDau > form.ngayKetThuc) {
+  if (
+    form.ngayBatDau &&
+    form.ngayKetThuc &&
+    form.ngayBatDau > form.ngayKetThuc
+  ) {
     formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
     isValid = false;
   }
   if (form.loaiPhieu === "2" && dsEmailChon.value.length === 0) {
     formErrors.email = "Phải chọn ít nhất 1 khách hàng cho phiếu cá nhân";
-    hienThiThongBao("warning", "Chưa chọn khách hàng", "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân");
+    hienThiThongBao(
+      "warning",
+      "Chưa chọn khách hàng",
+      "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân",
+    );
     isValid = false;
   }
 
   if (!isValid) return;
 
-  const confirmMsg = laMoi 
-    ? "Bạn có chắc chắn muốn thêm mới phiếu giảm giá này không?" 
+  const confirmMsg = laMoi
+    ? "Bạn có chắc chắn muốn thêm mới phiếu giảm giá này không?"
     : "Bạn có chắc chắn muốn cập nhật thông tin phiếu giảm giá này không?";
   if (!window.confirm(confirmMsg)) return;
 
@@ -384,7 +450,7 @@ async function submitForm() {
       soLuong: Number(form.soLuong),
       trangThai: laMoi ? undefined : form.trangThai,
       ngayTao: laMoi ? getToday() : undefined,
-      ngayCapNhat: !laMoi ? getToday() : undefined
+      ngayCapNhat: !laMoi ? getToday() : undefined,
     };
 
     let phieuId = id;
@@ -401,7 +467,11 @@ async function submitForm() {
     if (Number(form.loaiPhieu) === 2) {
       await dongBoKhachHangPhieuCaNhan(phieuId, payload.ma);
     } else if (lienKetKhachHangHienTai.value.length) {
-      await Promise.all(lienKetKhachHangHienTai.value.map((item) => deletePhieuGiamGiaKhachHang(item.id)));
+      await Promise.all(
+        lienKetKhachHangHienTai.value.map((item) =>
+          deletePhieuGiamGiaKhachHang(item.id),
+        ),
+      );
       lienKetKhachHangHienTai.value = [];
       dsEmailChon.value = [];
     }
@@ -410,7 +480,10 @@ async function submitForm() {
       router.push({ name: "admin-phieu-giam-gia" });
     }, 900);
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể lưu phiếu giảm giá");
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể lưu phiếu giảm giá",
+    );
   } finally {
     saving.value = false;
   }
@@ -424,24 +497,32 @@ const loiTaiHoaDon = ref("");
 const getHoaDonsCuaKhachHang = (email) => {
   if (!email) return [];
   return listHoaDonApplied.value.filter(
-    (hd) => hd.emailKhachHang && hd.emailKhachHang.toLowerCase() === email.toLowerCase()
+    (hd) =>
+      hd.emailKhachHang &&
+      hd.emailKhachHang.toLowerCase() === email.toLowerCase(),
   );
 };
 
 const getTongDonHangCuaKhachHang = (email) => {
   if (!email) return 0;
   return danhSachTatCaHoaDon.value.filter(
-    (hd) => hd.emailKhachHang && hd.emailKhachHang.toLowerCase() === email.toLowerCase()
+    (hd) =>
+      hd.emailKhachHang &&
+      hd.emailKhachHang.toLowerCase() === email.toLowerCase(),
   ).length;
 };
 
 const getDonHangGanNhat = (email) => {
   if (!email) return null;
   const khHoaDons = danhSachTatCaHoaDon.value.filter(
-    (hd) => hd.emailKhachHang && hd.emailKhachHang.toLowerCase() === email.toLowerCase()
+    (hd) =>
+      hd.emailKhachHang &&
+      hd.emailKhachHang.toLowerCase() === email.toLowerCase(),
   );
   if (khHoaDons.length === 0) return null;
-  return [...khHoaDons].sort((a, b) => new Date(b.ngayTao) - new Date(a.ngayTao))[0];
+  return [...khHoaDons].sort(
+    (a, b) => new Date(b.ngayTao) - new Date(a.ngayTao),
+  )[0];
 };
 
 function dinhDangNgaySinh(ngay) {
@@ -490,21 +571,28 @@ const mauTrangThai = {
   "Đã giao hàng": "bg-cyan-50 text-cyan-600 border border-cyan-100",
   "Giao hàng thất bại": "bg-rose-50 text-rose-600 border border-rose-100",
   "Hoàn thành": "bg-emerald-50 text-emerald-600 border border-emerald-100",
-  "Hủy": "bg-stone-100 text-stone-600 border border-stone-200",
+  Hủy: "bg-stone-100 text-stone-600 border border-stone-200",
   "Yêu cầu hủy": "bg-slate-100 text-slate-600 border border-slate-200",
   "Cần hoàn tiền": "bg-red-50 text-red-600 border border-red-100",
 };
 
 async function taiHoaDonLienQuan() {
-  if (laMoi || !form.ma) return;
+  // Cho phép chạy khi thêm mới để lấy dữ liệu danhSachTatCaHoaDon dùng cho thống kê khách hàng
   dangTaiHoaDon.value = true;
   loiTaiHoaDon.value = "";
   try {
     const allInvoices = await layDanhSachHoaDon();
     danhSachTatCaHoaDon.value = allInvoices || [];
-    listHoaDonApplied.value = (allInvoices || []).filter(
-      (hd) => hd.maPhieuGiamGia && hd.maPhieuGiamGia.toLowerCase() === form.ma.toLowerCase()
-    );
+
+    if (form.ma && !laMoi) {
+      listHoaDonApplied.value = (allInvoices || []).filter(
+        (hd) =>
+          hd.maPhieuGiamGia &&
+          hd.maPhieuGiamGia.toLowerCase() === form.ma.toLowerCase(),
+      );
+    } else {
+      listHoaDonApplied.value = [];
+    }
   } catch (err) {
     console.error("Lỗi tải hóa đơn liên quan:", err);
     loiTaiHoaDon.value = "Không thể tải danh sách hóa đơn liên quan";
@@ -536,14 +624,26 @@ onMounted(taiChiTiet);
         :class="toastClass"
       >
         <div class="flex gap-3 p-4">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            :class="toastIconClass"
+          >
             <component :is="ToastIcon" class="h-5 w-5" />
           </div>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
+            <p
+              v-if="toast.noiDung"
+              class="mt-1 text-sm leading-5 text-slate-600"
+            >
+              {{ toast.noiDung }}
+            </p>
           </div>
-          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
+          <button
+            type="button"
+            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
+            @click="toast.hienThi = false"
+          >
             <X class="h-4 w-4" />
           </button>
         </div>
@@ -565,248 +665,504 @@ onMounted(taiChiTiet);
       </div>
     </section>
 
-    <div v-if="loiTrang" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
-    
-    <div v-if="isReadOnly" class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700">
-      Phiếu giảm giá này đã hết hạn hoặc ngừng hoạt động nên chỉ có thể xem chi tiết.
+    <div
+      v-if="loiTrang"
+      class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-600"
+    >
+      {{ loiTrang }}
     </div>
 
-    <section class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+    <div
+      v-if="isReadOnly"
+      class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700"
+    >
+      Phiếu giảm giá này đã hết hạn hoặc ngừng hoạt động nên chỉ có thể xem chi
+      tiết.
+    </div>
+
+    <section
+      class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"
+    >
       <fieldset :disabled="isReadOnly" class="space-y-6">
         <div class="flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
-          <Ticket class="h-5 w-5" />
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
+          >
+            <Ticket class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Thông tin phiếu</h2>
+          </div>
         </div>
-        <div>
-          <h2 class="text-base font-bold text-slate-800">Thông tin phiếu</h2>
-        </div>
-      </div>
 
-      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Mã phiếu <span class="text-rose-500">*</span></label>
-          <div class="relative">
-            <input v-model="form.ma" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100" placeholder="Ví dụ: VOUCHER2024" />
-            <button v-if="!isReadOnly" @click="taoMaNgauNhien" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-rose-500">
-              <RefreshCcw class="h-4 w-4" />
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Mã phiếu <span class="text-rose-500">*</span></label
+            >
+            <div class="relative">
+              <input
+                v-model="form.ma"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100"
+                placeholder="Ví dụ: VOUCHER2024"
+              />
+              <button
+                v-if="!isReadOnly"
+                @click="taoMaNgauNhien"
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-rose-500"
+              >
+                <RefreshCcw class="h-4 w-4" />
+              </button>
+            </div>
+            <p v-if="formErrors.ma" class="mt-1 text-xs text-rose-500">
+              {{ formErrors.ma }}
+            </p>
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Tên phiếu <span class="text-rose-500">*</span></label
+            >
+            <input
+              v-model="form.ten"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+              placeholder="Ví dụ: Giảm giá hè 2024"
+            />
+            <p v-if="formErrors.ten" class="mt-1 text-xs text-rose-500">
+              {{ formErrors.ten }}
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-[13px] font-semibold text-slate-500"
+              >Hình thức phiếu <span class="text-rose-500">*</span></label
+            >
+            <div class="flex gap-6 pt-2">
+              <label class="group flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  v-model="form.loaiPhieu"
+                  value="1"
+                  class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500"
+                />
+                <span class="text-sm font-normal text-slate-600"
+                  >Công khai</span
+                >
+              </label>
+              <label class="group flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  v-model="form.loaiPhieu"
+                  value="2"
+                  class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500"
+                />
+                <span class="text-sm font-normal text-slate-600">Cá nhân</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-[13px] font-semibold text-slate-500"
+              >Loại giảm <span class="text-rose-500">*</span></label
+            >
+            <div class="flex gap-6 pt-2">
+              <label class="group flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  v-model="form.loai"
+                  value="1"
+                  class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500"
+                />
+                <span class="text-sm font-normal text-slate-600"
+                  >Phần trăm (%)</span
+                >
+              </label>
+              <label class="group flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  v-model="form.loai"
+                  value="2"
+                  class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500"
+                />
+                <span class="text-sm font-normal text-slate-600"
+                  >Tiền mặt (VNĐ)</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Giá trị giảm ({{ form.loai === "1" ? "%" : "VNĐ" }})
+              <span class="text-rose-500">*</span></label
+            >
+            <div class="relative">
+              <input
+                :value="form.giaTri"
+                :type="form.loai === '1' ? 'number' : 'text'"
+                :min="form.loai === '1' ? '1' : undefined"
+                :max="form.loai === '1' ? '100' : undefined"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+                :placeholder="form.loai === '1' ? '0' : '0'"
+                @input="
+                  form.loai === '2'
+                    ? handleVndInput('giaTri', $event)
+                    : (form.giaTri = $event.target.value)
+                "
+              />
+              <span
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400"
+                >{{ form.loai === "1" ? "%" : "VNĐ" }}</span
+              >
+            </div>
+            <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">
+              {{ formErrors.giaTri }}
+            </p>
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Giá trị đơn tối thiểu (VNĐ)</label
+            >
+            <input
+              :value="form.giaTriToiThieu"
+              type="text"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+              @input="handleVndInput('giaTriToiThieu', $event)"
+            />
+            <p
+              v-if="formErrors.giaTriToiThieu"
+              class="mt-1 text-xs text-rose-500"
+            >
+              {{ formErrors.giaTriToiThieu }}
+            </p>
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Giảm tối đa (VNĐ)</label
+            >
+            <input
+              :value="form.giamToiDa"
+              type="text"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+              @input="handleVndInput('giamToiDa', $event)"
+            />
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Số lượng <span class="text-rose-500">*</span></label
+            >
+            <input
+              v-model="form.soLuong"
+              type="number"
+              min="1"
+              :readonly="form.loaiPhieu === '2'"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+              :class="
+                form.loaiPhieu === '2'
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100'
+                  : ''
+              "
+            />
+            <p v-if="formErrors.soLuong" class="mt-1 text-xs text-rose-500">
+              {{ formErrors.soLuong }}
+            </p>
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Ngày bắt đầu <span class="text-rose-500">*</span></label
+            >
+            <input
+              v-model="form.ngayBatDau"
+              type="date"
+              :min="laMoi ? getToday() : undefined"
+              :readonly="isReadOnly"
+              class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+              :class="
+                isReadOnly
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-500'
+                  : 'bg-slate-50'
+              "
+            />
+            <p v-if="formErrors.ngayBatDau" class="mt-1 text-xs text-rose-500">
+              {{ formErrors.ngayBatDau }}
+            </p>
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <label
+              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              >Ngày kết thúc <span class="text-rose-500">*</span></label
+            >
+            <input
+              v-model="form.ngayKetThuc"
+              type="date"
+              :min="form.ngayBatDau || getToday()"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+            <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">
+              {{ formErrors.ngayKetThuc }}
+            </p>
+          </div>
+        </div>
+
+        <div
+          v-if="form.loaiPhieu === '2'"
+          class="mt-6 space-y-4 rounded-3xl border border-slate-100 bg-slate-50/30 p-5"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-slate-800">
+              <Users class="h-5 w-5 text-rose-500" />
+              <span class="text-sm font-bold">Chọn khách hàng mục tiêu</span>
+            </div>
+            <button
+              v-if="!isReadOnly"
+              type="button"
+              @click="chonTatCa"
+              class="text-xs font-semibold text-rose-500 transition-colors hover:text-rose-600"
+            >
+              {{
+                danhSachKh.length > 0 &&
+                danhSachKh.every((kh) => dsEmailChon.includes(kh.email))
+                  ? "Bỏ chọn tất cả"
+                  : "Chọn tất cả trang này"
+              }}
             </button>
           </div>
-          <p v-if="formErrors.ma" class="mt-1 text-xs text-rose-500">{{ formErrors.ma }}</p>
-        </div>
 
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Tên phiếu <span class="text-rose-500">*</span></label>
-          <input v-model="form.ten" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" placeholder="Ví dụ: Giảm giá hè 2024" />
-          <p v-if="formErrors.ten" class="mt-1 text-xs text-rose-500">{{ formErrors.ten }}</p>
-        </div>
-
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Hình thức phiếu <span class="text-rose-500">*</span></label>
-          <div class="flex gap-6 pt-2">
-            <label class="group flex cursor-pointer items-center gap-2">
-              <input type="radio" v-model="form.loaiPhieu" value="1" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-normal text-slate-600">Công khai</span>
-            </label>
-            <label class="group flex cursor-pointer items-center gap-2">
-              <input type="radio" v-model="form.loaiPhieu" value="2" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-normal text-slate-600">Cá nhân</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="space-y-2">
-          <label class="text-[13px] font-semibold text-slate-500">Loại giảm <span class="text-rose-500">*</span></label>
-          <div class="flex gap-6 pt-2">
-            <label class="group flex cursor-pointer items-center gap-2">
-              <input type="radio" v-model="form.loai" value="1" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-normal text-slate-600">Phần trăm (%)</span>
-            </label>
-            <label class="group flex cursor-pointer items-center gap-2">
-              <input type="radio" v-model="form.loai" value="2" class="h-5 w-5 border-slate-300 text-rose-500 focus:ring-rose-500" />
-              <span class="text-sm font-normal text-slate-600">Tiền mặt (VNĐ)</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giá trị giảm ({{ form.loai === '1' ? '%' : 'VNĐ' }}) <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <input :value="form.giaTri" :type="form.loai === '1' ? 'number' : 'text'" :min="form.loai === '1' ? '1' : undefined" :max="form.loai === '1' ? '100' : undefined" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" :placeholder="form.loai === '1' ? '0' : '0'" @input="form.loai === '2' ? handleVndInput('giaTri', $event) : form.giaTri = $event.target.value" />
-            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">{{ form.loai === '1' ? '%' : 'VNĐ' }}</span>
+            <Search
+              class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              v-model="searchKh"
+              type="text"
+              placeholder="Tìm theo tên hoặc số điện thoại..."
+              @input="handleSearch"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300"
+            />
           </div>
-          <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTri }}</p>
-        </div>
 
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giá trị đơn tối thiểu (VNĐ)</label>
-          <input :value="form.giaTriToiThieu" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giaTriToiThieu', $event)" />
-          <p v-if="formErrors.giaTriToiThieu" class="mt-1 text-xs text-rose-500">{{ formErrors.giaTriToiThieu }}</p>
-        </div>
-
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Giảm tối đa (VNĐ)</label>
-          <input :value="form.giamToiDa" type="text" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white" @input="handleVndInput('giamToiDa', $event)" />
-        </div>
-
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Số lượng <span class="text-rose-500">*</span></label>
-          <input
-            v-model="form.soLuong"
-            type="number"
-            min="1"
-            :readonly="form.loaiPhieu === '2'"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-            :class="form.loaiPhieu === '2' ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100' : ''"
-          />
-          <p v-if="formErrors.soLuong" class="mt-1 text-xs text-rose-500">{{ formErrors.soLuong }}</p>
-        </div>
-
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày bắt đầu <span class="text-rose-500">*</span></label>
-          <input
-            v-model="form.ngayBatDau"
-            type="date"
-            :min="laMoi ? getToday() : undefined"
-            :readonly="isReadOnly"
-            class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
-            :class="isReadOnly ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-slate-50'"
-          />
-          <p v-if="formErrors.ngayBatDau" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayBatDau }}</p>
-        </div>
-
-        <div class="min-w-0 space-y-2">
-          <label class="block whitespace-nowrap text-[13px] font-semibold text-slate-500">Ngày kết thúc <span class="text-rose-500">*</span></label>
-          <input v-model="form.ngayKetThuc" type="date" :min="form.ngayBatDau || getToday()" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white" />
-          <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">{{ formErrors.ngayKetThuc }}</p>
-        </div>
-      </div>
-
-      <div v-if="form.loaiPhieu === '2'" class="mt-6 space-y-4 rounded-3xl border border-slate-100 bg-slate-50/30 p-5">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3 text-slate-800">
-            <Users class="h-5 w-5 text-rose-500" />
-            <span class="text-sm font-bold">Chọn khách hàng mục tiêu</span>
-          </div>
-          <button v-if="!isReadOnly" type="button" @click="chonTatCa" class="text-xs font-semibold text-rose-500 transition-colors hover:text-rose-600">
-            {{ danhSachKh.length > 0 && danhSachKh.every((kh) => dsEmailChon.includes(kh.email)) ? "Bỏ chọn tất cả" : "Chọn tất cả trang này" }}
-          </button>
-        </div>
-
-        <div class="relative">
-          <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input v-model="searchKh" type="text" placeholder="Tìm theo tên hoặc số điện thoại..." @input="handleSearch" class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300" />
-        </div>
-
-        <div class="custom-scrollbar max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
-          <table class="w-full border-collapse text-left text-sm">
-            <thead class="sticky top-0 z-10 bg-slate-50 text-[12px] font-semibold text-slate-500">
-              <tr>
-                <th class="w-12 px-4 py-3 text-center">#</th>
-                <th class="px-4 py-3">Họ và tên</th>
-                <th class="px-4 py-3">Tên đăng nhập</th>
-                <th class="px-4 py-3">Số điện thoại</th>
-                <th class="px-4 py-3">Email</th>
-                <th class="px-4 py-3">Ngày sinh</th>
-                <th class="px-4 py-3">Tổng đơn hàng</th>
-                <th class="px-4 py-3">Đơn hàng gần nhất</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-if="dangTaiKh">
-                <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">Đang tải danh sách khách hàng...</td>
-              </tr>
-              <tr v-else-if="!danhSachKh.length">
-                <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
-              </tr>
-              <tr v-for="kh in danhSachKh" v-else :key="kh.id" @click="toggleEmail(kh.email)" class="cursor-pointer transition-colors hover:bg-rose-50/50" :class="dsEmailChon.includes(kh.email) ? 'bg-rose-50/30' : ''">
-                <td class="px-4 py-3 text-center">
-                  <CheckSquare v-if="dsEmailChon.includes(kh.email)" class="mx-auto h-5 w-5 text-rose-500" />
-                  <div v-else class="mx-auto h-5 w-5 rounded border border-slate-300 bg-white"></div>
-                </td>
-                <td class="px-4 py-3 font-semibold text-slate-800">{{ kh.hoTen }}</td>
-                <td class="px-4 py-3 text-slate-600 font-medium">{{ kh.tenDangNhap }}</td>
-                <td class="px-4 py-3 text-slate-500 font-medium">{{ kh.sdt || '—' }}</td>
-                <td class="px-4 py-3 text-slate-500 font-medium">{{ kh.email }}</td>
-                <td class="px-4 py-3 text-slate-500 font-medium">{{ dinhDangNgaySinh(kh.ngaySinh) }}</td>
-                <td class="px-4 py-3" @click.stop>
-                  <div v-if="getTongDonHangCuaKhachHang(kh.email) === 0" class="text-slate-400 text-xs font-medium">
-                    Chưa mua
-                  </div>
-                  <div v-else class="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5 inline-block">
-                    {{ getTongDonHangCuaKhachHang(kh.email) }} đơn
-                  </div>
-                </td>
-                <td class="px-4 py-3" @click.stop>
-                  <div v-if="!getDonHangGanNhat(kh.email)" class="text-slate-400 text-xs font-medium">
-                    —
-                  </div>
-                  <div v-else class="flex flex-col gap-0.5">
-                    <span
-                      @click="xemChiTietHoaDon(getDonHangGanNhat(kh.email).id)"
-                      class="inline-flex items-center gap-0.5 text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors rounded px-1.5 py-0.5 cursor-pointer w-max"
-                      title="Xem chi tiết đơn hàng gần nhất"
+          <div
+            class="custom-scrollbar max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm"
+          >
+            <table class="w-full border-collapse text-left text-sm">
+              <thead
+                class="sticky top-0 z-10 bg-slate-50 text-[12px] font-semibold text-slate-500"
+              >
+                <tr>
+                  <th class="w-12 px-4 py-3 text-center">#</th>
+                  <th class="px-4 py-3">Họ và tên</th>
+                  <th class="px-4 py-3">Tên đăng nhập</th>
+                  <th class="px-4 py-3">Số điện thoại</th>
+                  <th class="px-4 py-3">Email</th>
+                  <th class="px-4 py-3">Ngày sinh</th>
+                  <th class="px-4 py-3">Tổng đơn hàng</th>
+                  <th class="px-4 py-3">Đơn hàng gần nhất</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr v-if="dangTaiKh">
+                  <td
+                    colspan="8"
+                    class="px-4 py-6 text-center text-sm text-slate-400"
+                  >
+                    Đang tải danh sách khách hàng...
+                  </td>
+                </tr>
+                <tr v-else-if="!danhSachKh.length">
+                  <td
+                    colspan="8"
+                    class="px-4 py-6 text-center text-sm text-slate-400"
+                  >
+                    Không có khách hàng phù hợp.
+                  </td>
+                </tr>
+                <tr
+                  v-for="kh in danhSachKh"
+                  v-else
+                  :key="kh.id"
+                  @click="toggleEmail(kh.email)"
+                  class="cursor-pointer transition-colors hover:bg-rose-50/50"
+                  :class="dsEmailChon.includes(kh.email) ? 'bg-rose-50/30' : ''"
+                >
+                  <td class="px-4 py-3 text-center">
+                    <CheckSquare
+                      v-if="dsEmailChon.includes(kh.email)"
+                      class="mx-auto h-5 w-5 text-rose-500"
+                    />
+                    <div
+                      v-else
+                      class="mx-auto h-5 w-5 rounded border border-slate-300 bg-white"
+                    ></div>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-slate-800">
+                    {{ kh.hoTen }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-600 font-medium">
+                    {{ kh.tenDangNhap }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-500 font-medium">
+                    {{ kh.sdt || "—" }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-500 font-medium">
+                    {{ kh.email }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-500 font-medium">
+                    {{ dinhDangNgaySinh(kh.ngaySinh) }}
+                  </td>
+                  <td class="px-4 py-3" @click.stop>
+                    <div
+                      v-if="getTongDonHangCuaKhachHang(kh.email) === 0"
+                      class="text-slate-400 text-xs font-medium"
                     >
-                      {{ getDonHangGanNhat(kh.email).maHoaDon }}
-                    </span>
-                    <span class="text-[10px] text-slate-400 font-medium mt-0.5">
-                      {{ dinhDangNgay(getDonHangGanNhat(kh.email).ngayTao) }}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                      Chưa mua
+                    </div>
+                    <div
+                      v-else
+                      class="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5 inline-block"
+                    >
+                      {{ getTongDonHangCuaKhachHang(kh.email) }} đơn
+                    </div>
+                  </td>
+                  <td class="px-4 py-3" @click.stop>
+                    <div
+                      v-if="!getDonHangGanNhat(kh.email)"
+                      class="text-slate-400 text-xs font-medium"
+                    >
+                      —
+                    </div>
+                    <div v-else class="flex flex-col gap-0.5">
+                      <span
+                        @click="
+                          xemChiTietHoaDon(getDonHangGanNhat(kh.email).id)
+                        "
+                        class="inline-flex items-center gap-0.5 text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors rounded px-1.5 py-0.5 cursor-pointer w-max"
+                        title="Xem chi tiết đơn hàng gần nhất"
+                      >
+                        {{ getDonHangGanNhat(kh.email).maHoaDon }}
+                      </span>
+                      <span
+                        class="text-[10px] text-slate-400 font-medium mt-0.5"
+                      >
+                        {{ dinhDangNgay(getDonHangGanNhat(kh.email).ngayTao) }}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        <div class="text-xs font-medium text-slate-400">
-          Đã chọn: <span class="font-bold text-slate-700">{{ dsEmailChon.length }}</span> khách hàng
+          <div class="text-xs font-medium text-slate-400">
+            Đã chọn:
+            <span class="font-bold text-slate-700">{{
+              dsEmailChon.length
+            }}</span>
+            khách hàng
+          </div>
+          <p v-if="formErrors.email" class="text-xs text-rose-500">
+            {{ formErrors.email }}
+          </p>
         </div>
-        <p v-if="formErrors.email" class="text-xs text-rose-500">{{ formErrors.email }}</p>
-      </div>
       </fieldset>
 
       <div class="flex items-center gap-3 border-t border-slate-100 pt-6">
-        <button v-if="!isReadOnly" @click="submitForm" :disabled="saving" class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60">
+        <button
+          v-if="!isReadOnly"
+          @click="submitForm"
+          :disabled="saving"
+          class="inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60"
+        >
           <Save class="h-4 w-4" />
-          {{ saving ? "Đang lưu..." : (laMoi ? "Tạo phiếu giảm giá" : "Lưu thay đổi") }}
+          {{
+            saving
+              ? "Đang lưu..."
+              : laMoi
+                ? "Tạo phiếu giảm giá"
+                : "Lưu thay đổi"
+          }}
         </button>
-        <button @click="router.push({ name: 'admin-phieu-giam-gia' })" class="whitespace-nowrap rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">{{ isReadOnly ? "Quay lại" : "Hủy" }}</button>
+        <button
+          @click="router.push({ name: 'admin-phieu-giam-gia' })"
+          class="whitespace-nowrap rounded-2xl border border-slate-200 bg-slate-50 px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+        >
+          {{ isReadOnly ? "Quay lại" : "Hủy" }}
+        </button>
       </div>
     </section>
 
     <!-- Danh sách đơn hàng đã áp dụng phiếu giảm giá -->
-    <section v-if="!laMoi" class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+    <section
+      v-if="!laMoi"
+      class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"
+    >
+      <div
+        class="flex items-center justify-between border-b border-slate-100 pb-4"
+      >
         <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500"
+          >
             <ShoppingBag class="h-5 w-5" />
           </div>
           <div>
-            <h2 class="text-base font-bold text-slate-800">Đơn hàng đã áp dụng phiếu giảm giá</h2>
-            <p class="text-xs font-medium text-slate-400">Danh sách các hóa đơn sử dụng mã phiếu giảm giá này</p>
+            <h2 class="text-base font-bold text-slate-800">
+              Đơn hàng đã áp dụng phiếu giảm giá
+            </h2>
+            <p class="text-xs font-medium text-slate-400">
+              Danh sách các hóa đơn sử dụng mã phiếu giảm giá này
+            </p>
           </div>
         </div>
-        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-700">
+        <div
+          class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-700"
+        >
           Tổng đơn hàng: {{ listHoaDonApplied.length }}
         </div>
       </div>
 
-      <div v-if="dangTaiHoaDon" class="py-10 text-center text-sm text-slate-400">
+      <div
+        v-if="dangTaiHoaDon"
+        class="py-10 text-center text-sm text-slate-400"
+      >
         Đang tải danh sách hóa đơn liên quan...
       </div>
-      
-      <div v-else-if="loiTaiHoaDon" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-600">
+
+      <div
+        v-else-if="loiTaiHoaDon"
+        class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-600"
+      >
         {{ loiTaiHoaDon }}
       </div>
 
-      <div v-else-if="!listHoaDonApplied.length" class="py-12 text-center text-sm text-slate-400">
-        <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+      <div
+        v-else-if="!listHoaDonApplied.length"
+        class="py-12 text-center text-sm text-slate-400"
+      >
+        <div
+          class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-400"
+        >
           <ShoppingBag class="h-6 w-6" />
         </div>
         Chưa có đơn hàng nào áp dụng phiếu giảm giá này.
       </div>
 
-      <div v-else class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div
+        v-else
+        class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+      >
         <table class="w-full border-collapse text-left text-sm">
           <thead class="bg-slate-50 text-[12px] font-semibold text-slate-500">
             <tr>
@@ -822,22 +1178,43 @@ onMounted(taiChiTiet);
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-[13px] text-slate-700">
-            <tr v-for="(hd, index) in listHoaDonApplied" :key="hd.id" class="transition-colors hover:bg-slate-50/50">
-              <td class="px-4 py-3.5 text-center font-medium text-slate-400">{{ index + 1 }}</td>
-              <td class="px-4 py-3.5 font-bold text-slate-800">{{ hd.maHoaDon }}</td>
-              <td class="px-4 py-3.5 font-semibold text-slate-800">{{ hd.tenKhachHang || '—' }}</td>
-              <td class="px-4 py-3.5 text-slate-500">{{ hd.soDienThoai || '—' }}</td>
-              <td class="px-4 py-3.5 font-bold text-slate-800">{{ dinhDangTien(hd.tongTien) }}</td>
-              <td class="px-4 py-3.5 text-slate-500">{{ dinhDangNgay(hd.ngayTao) }}</td>
+            <tr
+              v-for="(hd, index) in listHoaDonApplied"
+              :key="hd.id"
+              class="transition-colors hover:bg-slate-50/50"
+            >
+              <td class="px-4 py-3.5 text-center font-medium text-slate-400">
+                {{ index + 1 }}
+              </td>
+              <td class="px-4 py-3.5 font-bold text-slate-800">
+                {{ hd.maHoaDon }}
+              </td>
+              <td class="px-4 py-3.5 font-semibold text-slate-800">
+                {{ hd.tenKhachHang || "—" }}
+              </td>
+              <td class="px-4 py-3.5 text-slate-500">
+                {{ hd.soDienThoai || "—" }}
+              </td>
+              <td class="px-4 py-3.5 font-bold text-slate-800">
+                {{ dinhDangTien(hd.tongTien) }}
+              </td>
+              <td class="px-4 py-3.5 text-slate-500">
+                {{ dinhDangNgay(hd.ngayTao) }}
+              </td>
               <td class="px-4 py-3.5">
-                <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+                <span
+                  class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
+                >
                   {{ hd.loaiDon }}
                 </span>
               </td>
               <td class="px-4 py-3.5 text-center">
                 <span
                   class="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                  :class="mauTrangThai[hd.trangThai] || 'bg-slate-100 text-slate-600 border border-slate-200'"
+                  :class="
+                    mauTrangThai[hd.trangThai] ||
+                    'bg-slate-100 text-slate-600 border border-slate-200'
+                  "
                 >
                   {{ hd.trangThai }}
                 </span>

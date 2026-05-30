@@ -1,8 +1,21 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search } from "lucide-vue-next";
-import { getDotGiamGiaList, updateDotGiamGia } from "../../../services/khuyen-mai";
+import {
+  CheckCircle2,
+  CircleX,
+  Eye,
+  FileSpreadsheet,
+  Filter,
+  Plus,
+  RotateCcw,
+  Search,
+  X,
+} from "lucide-vue-next";
+import {
+  getDotGiamGiaList,
+  updateDotGiamGia,
+} from "../../../services/khuyen-mai";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
@@ -21,11 +34,55 @@ const totalItems = ref(0);
 
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
-  { label: "Kích hoạt", value: "1" },
+  { label: "Đang hoạt động", value: "1" },
   { label: "Ngừng hoạt động", value: "0" },
   { label: "Hết hạn", value: "het_han" },
   { label: "Sắp diễn ra", value: "4" },
 ];
+
+const toast = ref({
+  hienThi: false,
+  loai: "success",
+  tieuDe: "",
+  noiDung: "",
+});
+let toastTimer = null;
+
+const toastClass = computed(() => {
+  if (toast.value.loai === "success")
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  if (toast.value.loai === "warning")
+    return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-rose-100 bg-rose-50 text-rose-700";
+});
+
+const toastIconClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
+  return "bg-rose-100 text-rose-600";
+});
+
+const toastAccentClass = computed(() => {
+  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "warning") return "bg-amber-500";
+  return "bg-rose-500";
+});
+
+const ToastIcon = computed(() => {
+  if (toast.value.loai === "success") return CheckCircle2;
+  return CircleX;
+});
+
+function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+
+  toast.value = { hienThi: true, loai, tieuDe, noiDung };
+  toastTimer = setTimeout(() => {
+    toast.value.hienThi = false;
+  }, 3200);
+}
 
 function isHetHan(ngayKetThuc) {
   if (!ngayKetThuc) return false;
@@ -36,16 +93,18 @@ function isHetHan(ngayKetThuc) {
 
 function mauTrangThai(trangThai, ngayKetThuc) {
   if (isHetHan(ngayKetThuc) || Number(trangThai) === 2) {
-    return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
+    return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
   }
-  if (Number(trangThai) === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
-  if (Number(trangThai) === 4) return "bg-sky-50 text-sky-600 ring-1 ring-sky-100";
-  return "bg-slate-100 text-slate-500 ring-1 ring-slate-200";
+  const status = Number(trangThai);
+  if (status === 1)
+    return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
+  if (status === 4) return "bg-blue-50 text-blue-600 ring-1 ring-blue-200";
+  return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
 function statusText(value, ngayKetThuc) {
   if (isHetHan(ngayKetThuc)) return "Hết hạn";
-  if (Number(value) === 1) return "Kích hoạt";
+  if (Number(value) === 1) return "Đang hoạt động";
   if (Number(value) === 2) return "Hết hạn";
   if (Number(value) === 4) return "Sắp diễn ra";
   return "Ngừng hoạt động";
@@ -65,25 +124,30 @@ async function taiDanhSach() {
 
     const data = await getDotGiamGiaList({
       keyword: boLoc.value.keyword || undefined,
-      trangThai: (!isFilterHetHan && boLoc.value.trangThai !== "")
-        ? Number(boLoc.value.trangThai)
-        : undefined,
+      trangThai:
+        !isFilterHetHan && boLoc.value.trangThai !== ""
+          ? Number(boLoc.value.trangThai)
+          : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
       pageNo: trangHienTai.value - 1,
-      pageSize: (isFilterHetHan || isFilterKichHoat) ? 1000 : soPhanTuMotTrang.value
+      pageSize:
+        isFilterHetHan || isFilterKichHoat ? 1000 : soPhanTuMotTrang.value,
     });
 
     let items = data?.content || [];
 
     if (isFilterHetHan) {
-      items = items.filter(item => isHetHan(item.ngayKetThuc));
+      items = items.filter((item) => isHetHan(item.ngayKetThuc));
     } else if (isFilterKichHoat) {
-      items = items.filter(item => !isHetHan(item.ngayKetThuc));
+      items = items.filter((item) => !isHetHan(item.ngayKetThuc));
     }
 
     if (isFilterHetHan || isFilterKichHoat) {
-      tongSoTrang.value = Math.max(1, Math.ceil(items.length / soPhanTuMotTrang.value));
+      tongSoTrang.value = Math.max(
+        1,
+        Math.ceil(items.length / soPhanTuMotTrang.value),
+      );
       totalItems.value = items.length;
       const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
       danhSach.value = items.slice(start, start + soPhanTuMotTrang.value);
@@ -93,7 +157,10 @@ async function taiDanhSach() {
       totalItems.value = data?.totalElements || 0;
     }
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải danh sách đợt giảm giá");
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải danh sách đợt giảm giá",
+    );
   } finally {
     dangTai.value = false;
   }
@@ -104,13 +171,39 @@ function lamMoiBoLoc() {
 }
 
 async function nhanhDoiTrangThai(item) {
-  if (isHetHan(item.ngayKetThuc)) return;
+  if (isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2) {
+    hienThiThongBao(
+      "warning",
+      "Thao tác bị chặn",
+      "Đợt giảm giá đã hết hạn, vui lòng vào chi tiết để gia hạn.",
+    );
+    return;
+  }
+
   try {
-    const nextStatus = Number(item.kichHoat) === 1 ? 0 : 1;
+    const isCurrentlyActive =
+      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4;
+    const nextStatus = isCurrentlyActive ? 0 : 1;
+
     await updateDotGiamGia(item.id, { ...item, kichHoat: nextStatus });
+
+    hienThiThongBao(
+      "success",
+      "Thành công",
+      isCurrentlyActive
+        ? "Đã ngừng hoạt động đợt giảm giá."
+        : "Đã chuyển đợt giảm giá sang đang hoạt động thành công.",
+    );
     await taiDanhSach();
   } catch (error) {
-    window.alert(getDisplayErrorMessage(error, "Không thể cập nhật trạng thái đợt giảm giá"));
+    hienThiThongBao(
+      "error",
+      "Cập nhật thất bại",
+      getDisplayErrorMessage(
+        error,
+        "Không thể cập nhật trạng thái đợt giảm giá",
+      ),
+    );
   }
 }
 
@@ -118,7 +211,10 @@ async function xuatExcel() {
   try {
     const data = await getDotGiamGiaList({
       keyword: boLoc.value.keyword || undefined,
-      trangThai: boLoc.value.trangThai !== "" ? Number(boLoc.value.trangThai) : undefined,
+      trangThai:
+        boLoc.value.trangThai !== ""
+          ? Number(boLoc.value.trangThai)
+          : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
       pageNo: 0,
@@ -139,14 +235,22 @@ async function xuatExcel() {
         { label: "Mã", key: "ma" },
         { label: "Tên", key: "ten" },
         { label: "Giá trị giảm", value: (row) => row.giaTriGiam + "%" },
-        { label: "Ngày bắt đầu", value: (row) => toDisplayDate(row.ngayBatDau) },
-        { label: "Ngày kết thúc", value: (row) => toDisplayDate(row.ngayKetThuc) },
+        {
+          label: "Ngày bắt đầu",
+          value: (row) => toDisplayDate(row.ngayBatDau),
+        },
+        {
+          label: "Ngày kết thúc",
+          value: (row) => toDisplayDate(row.ngayKetThuc),
+        },
         { label: "Trạng thái", value: (row) => statusText(row.kichHoat) },
       ],
       rows,
     });
   } catch (error) {
-    window.alert(getDisplayErrorMessage(error, "Không thể xuất Excel đợt giảm giá"));
+    window.alert(
+      getDisplayErrorMessage(error, "Không thể xuất Excel đợt giảm giá"),
+    );
   }
 }
 
@@ -161,22 +265,71 @@ watch(soPhanTuMotTrang, () => {
 watch(trangHienTai, taiDanhSach);
 
 let timer;
-watch(boLoc, () => {
-  clearTimeout(timer);
-  timer = setTimeout(() => {
-    trangHienTai.value = 1;
-    taiDanhSach();
-  }, 300);
-}, { deep: true });
+watch(
+  boLoc,
+  () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      trangHienTai.value = 1;
+      taiDanhSach();
+    }, 300);
+  },
+  { deep: true },
+);
 
 onMounted(taiDanhSach);
 </script>
 
 <template>
   <div class="space-y-5">
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-3 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-3 opacity-0"
+    >
+      <div
+        v-if="toast.hienThi"
+        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
+        :class="toastClass"
+      >
+        <div class="flex gap-3 p-4">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            :class="toastIconClass"
+          >
+            <component :is="ToastIcon" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
+            <p
+              v-if="toast.noiDung"
+              class="mt-1 text-sm leading-5 text-slate-600"
+            >
+              {{ toast.noiDung }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
+            @click="toast.hienThi = false"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        </div>
+        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
+      </div>
+    </Transition>
+
+    <section
+      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+    >
       <div class="mb-5 flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
+        >
           <Filter class="h-5 w-5" />
         </div>
         <div>
@@ -190,55 +343,99 @@ onMounted(taiDanhSach);
           <div class="space-y-2">
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
-              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input v-model="boLoc.keyword" type="text" placeholder="Mã, tên..." class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+              <Search
+                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                v-model="boLoc.keyword"
+                type="text"
+                placeholder="Mã, tên..."
+                class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              />
             </div>
           </div>
 
           <div class="space-y-2">
             <label class="admin-filter-label">Ngày bắt đầu</label>
-            <input v-model="boLoc.tuNgay" type="date" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+            <input
+              v-model="boLoc.tuNgay"
+              type="date"
+              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
           </div>
 
           <div class="space-y-2">
             <label class="admin-filter-label">Ngày kết thúc</label>
-            <input v-model="boLoc.denNgay" type="date" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white" />
+            <input
+              v-model="boLoc.denNgay"
+              type="date"
+              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
           </div>
 
           <div class="space-y-2">
             <label class="admin-filter-label">Trạng thái</label>
-            <select v-model="boLoc.trangThai" class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white">
-              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
+            <select
+              v-model="boLoc.trangThai"
+              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+              <option
+                v-for="tt in dsTrangThai"
+                :key="tt.value"
+                :value="tt.value"
+              >
+                {{ tt.label }}
+              </option>
             </select>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-3">
-          <button @click="lamMoiBoLoc" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
+          <button
+            @click="lamMoiBoLoc"
+            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
+          >
             <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
           </button>
-          <button @click="xuatExcel" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600">
+          <button
+            @click="xuatExcel"
+            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
+          >
             <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
           </button>
-          <button @click="router.push({ name: 'admin-dot-giam-gia-them' })" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]">
+          <button
+            @click="router.push({ name: 'admin-dot-giam-gia-them' })"
+            class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]"
+          >
             <Plus class="h-4 w-4" /> Tạo đợt giảm giá
           </button>
         </div>
       </div>
     </section>
 
-    <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+    <section
+      class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+    >
       <div class="mb-5 flex items-center justify-between">
         <h2 class="admin-section-title text-lg">Danh sách các đợt giảm giá</h2>
         <div>
-          <p class="text-sm font-medium text-slate-400">{{ totalItems }} bản ghi hiển thị.</p>
+          <p class="text-sm font-medium text-slate-400">
+            {{ totalItems }} bản ghi hiển thị.
+          </p>
         </div>
       </div>
 
-      <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
+      <div
+        v-if="loiTrang"
+        class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600"
+      >
+        {{ loiTrang }}
+      </div>
 
       <div class="overflow-x-auto admin-table-scroll w-full">
-        <table class="w-full min-w-[900px] table-fixed border-separate border-spacing-y-2 text-xs">
+        <table
+          class="w-full min-w-[900px] table-fixed border-separate border-spacing-y-2 text-sm"
+        >
           <colgroup>
             <col class="w-[5%]" />
             <col class="w-[15%]" />
@@ -250,7 +447,9 @@ onMounted(taiDanhSach);
             <col class="w-[14%]" />
           </colgroup>
           <thead>
-            <tr class="text-left text-xs font-bold text-slate-950 [&>th]:whitespace-nowrap">
+            <tr
+              class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
+            >
               <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
               <th class="bg-slate-100 px-4 py-3">Mã</th>
               <th class="bg-slate-100 px-4 py-3">Tên</th>
@@ -258,29 +457,54 @@ onMounted(taiDanhSach);
               <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
               <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
               <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
+              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">
+                Hành động
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
+                Đang tải dữ liệu...
+              </td>
             </tr>
             <tr v-else-if="!danhSach.length">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có dữ liệu.</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
+                Không có dữ liệu.
+              </td>
             </tr>
-            <tr v-for="(item, index) in danhSach" :key="item.id" class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200">
-              <td class="rounded-l-2xl px-4 py-3 font-semibold">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
-              <td class="px-4 py-3 font-bold tracking-tight text-slate-900">{{ item.ma }}</td>
+            <tr
+              v-for="(item, index) in danhSach"
+              :key="item.id"
+              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200"
+            >
+              <td class="rounded-l-2xl px-4 py-3 font-semibold">
+                {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
+              </td>
+              <td class="px-4 py-3 font-bold tracking-tight text-slate-900">
+                {{ item.ma }}
+              </td>
               <td class="px-4 py-3 align-top">
-                <div class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900">{{ item.ten }}</div>
+                <div
+                  class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900"
+                >
+                  {{ item.ten }}
+                </div>
               </td>
               <td class="px-4 py-3 font-bold text-slate-800">
                 {{ item.giaTriGiam }}%
               </td>
-              <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayBatDau) }}</td>
-              <td class="px-4 py-3 font-medium text-slate-600">{{ toDisplayDate(item.ngayKetThuc) }}</td>
+              <td class="px-4 py-3 font-medium text-slate-600">
+                {{ toDisplayDate(item.ngayBatDau) }}
+              </td>
+              <td class="px-4 py-3 font-medium text-slate-600">
+                {{ toDisplayDate(item.ngayKetThuc) }}
+              </td>
               <td class="px-4 py-3">
-                <span class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold" :class="mauTrangThai(item.kichHoat, item.ngayKetThuc)">
+                <span
+                  class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="mauTrangThai(item.kichHoat, item.ngayKetThuc)"
+                >
                   {{ statusText(item.kichHoat, item.ngayKetThuc) }}
                 </span>
               </td>
@@ -288,14 +512,36 @@ onMounted(taiDanhSach);
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="isHetHan(item.ngayKetThuc)"
-                    :disabled-title="'Đợt giảm giá đã hết hạn, không thể thay đổi trạng thái'"
-                    :action-label="Number(item.kichHoat) === 1 ? 'Ngừng hoạt động' : 'Kích hoạt'"
-                    :confirm-message="Number(item.kichHoat) === 1 ? 'Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?' : 'Bạn có chắc chắn muốn kích hoạt đợt giảm giá này không?'"
-                    :intent="Number(item.kichHoat) === 1 ? 'deactivate' : 'activate'"
+                    :disabled="
+                      isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2
+                    "
+                    :disabled-title="
+                      isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2
+                        ? 'Đợt giảm giá đã hết hạn, vui lòng vào chi tiết để gia hạn'
+                        : undefined
+                    "
+                    :action-label="
+                      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
+                        ? 'Ngừng hoạt động'
+                        : 'Đang hoạt động'
+                    "
+                    :confirm-message="
+                      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
+                        ? 'Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?'
+                        : 'Bạn có chắc chắn muốn chuyển đợt giảm giá này sang trạng thái đang hoạt động không?'
+                    "
+                    :intent="
+                      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
+                        ? 'deactivate'
+                        : 'activate'
+                    "
                     @toggle="nhanhDoiTrangThai(item)"
                   />
-                  <button @click="openEditModal(item)" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Xem chi tiết">
+                  <button
+                    @click="openEditModal(item)"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    title="Xem chi tiết"
+                  >
                     <Eye class="h-5 w-5" />
                   </button>
                 </div>
@@ -320,4 +566,3 @@ onMounted(taiDanhSach);
     </section>
   </div>
 </template>
-
