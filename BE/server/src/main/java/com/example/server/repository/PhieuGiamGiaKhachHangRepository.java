@@ -81,9 +81,14 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
         SET pgk.trangThai = (
             SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id
         )
-        WHERE pgk.trangThai != 0 
-          AND pgk.trangThai != (
-            SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id
+        WHERE (
+            (SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id) = 2
+            AND pgk.trangThai != 2
+        ) OR (
+            pgk.trangThai != 0 
+            AND pgk.trangThai != (
+                SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id
+            )
         )
     """)
     void dongBoTrangThaiTuPhieuGiamGia();

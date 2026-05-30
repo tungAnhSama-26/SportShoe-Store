@@ -281,23 +281,21 @@ const {
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="
-                      isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 0
-                    "
+                    :disabled="isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2"
                     :disabled-title="
-                      isHetHan(item.ngayKetThuc)
-                        ? 'Phiếu đã hết hạn, không thể thay đổi trạng thái'
-                        : 'Phiếu đã ngừng hoạt động, không thể thay đổi trạng thái'
+                      isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
+                        ? 'Phiếu đã hết hạn, vui lòng vào chi tiết để gia hạn'
+                        : undefined
                     "
                     :action-label="
                       Number(item.trangThai) === 1
                         ? 'Ngừng hoạt động'
-                        : 'Kích hoạt'
+                        : 'Đang hoạt động'
                     "
                     :confirm-message="
                       Number(item.trangThai) === 1
                         ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?'
-                        : 'Bạn có chắc chắn muốn kích hoạt phiếu này không?'
+                        : 'Bạn có chắc chắn muốn chuyển phiếu này sang trạng thái đang hoạt động không?'
                     "
                     :intent="
                       Number(item.trangThai) === 1 ? 'deactivate' : 'activate'
@@ -384,13 +382,11 @@ const {
                 <div class="flex items-center justify-center gap-3">
                   <AdminQuickStatusAction
                     :loading="false"
-                    :disabled="
-                      Number(item.trangThai) === 0 || isHetHan(item.ngayKetThuc)
-                    "
+                    :disabled="isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2"
                     :disabled-title="
-                      Number(item.trangThai) === 0
-                        ? 'Không thể thao tác trên phiếu đã ngừng hoạt động'
-                        : 'Phiếu đã hết hạn, không thể thao tác trên phiếu này'
+                      isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
+                        ? 'Phiếu đã hết hạn, không thể thao tác'
+                        : undefined
                     "
                     action-label="Tắt liên kết"
                     confirm-message="Bạn có chắc chắn muốn tắt liên kết này không?"
