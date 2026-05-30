@@ -67,10 +67,10 @@ public class DotGiamGiaSanPhamService {
         GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
 
-        List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
-        if (!actives.isEmpty() && request.getTrangThai() == 1) {
-            throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
-        }
+        // List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
+        // if (!actives.isEmpty() && request.getTrangThai() == 1) {
+        //     throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
+        // }
 
         DotGiamGiaSanPham dotGiamGiaSanPham = new DotGiamGiaSanPham();
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
@@ -94,14 +94,14 @@ public class DotGiamGiaSanPhamService {
         GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
 
-        if (request.getTrangThai() == 1) {
-            List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
-            for (DotGiamGiaSanPham active : actives) {
-                if (!active.getId().equals(id)) {
-                    throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
-                }
-            }
-        }
+        // if (request.getTrangThai() == 1) {
+        //     List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
+        //     for (DotGiamGiaSanPham active : actives) {
+        //         if (!active.getId().equals(id)) {
+        //             throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
+        //         }
+        //     }
+        // }
 
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
         dotGiamGiaSanPham.setGiayChiTiet(gct);
@@ -162,10 +162,10 @@ public class DotGiamGiaSanPhamService {
                         .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the #" + vId));
 
                 // Kiểm tra xem biến thể này có đang trong đợt khác không
-                List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(vId);
-                if (!actives.isEmpty()) {
-                    throw new BusinessException("Biến thể " + gct.getMaBienThe() + " đang tham gia đợt giảm giá khác.");
-                }
+                // List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(vId);
+                // if (!actives.isEmpty()) {
+                //     throw new BusinessException("Biến thể " + gct.getMaBienThe() + " đang tham gia đợt giảm giá khác.");
+                // }
 
                 DotGiamGiaSanPham dgs = new DotGiamGiaSanPham();
                 dgs.setDotGiamGia(dotGiamGia);
