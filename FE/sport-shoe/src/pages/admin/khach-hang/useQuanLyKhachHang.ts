@@ -14,6 +14,7 @@ import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusA
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
+import { isValidVnPhone } from "../../../utils/validation";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 import Input from "../../../components/ui/Input.vue";
@@ -187,7 +188,9 @@ export function useQuanLyKhachHang() {
         { label: "Tên đăng nhập", key: "tenDangNhap" },
         { label: "Họ tên", key: "hoTen" },
         { label: "Email", value: (row) => row.email || "—" },
-        { label: "Số điện thoại", value: (row) => row.sdt || "—" },
+        { label: "Số điện thoại", value: (row) => row.sdtMacDinh || row.sdt || "—" },
+        { label: "Giới tính", value: (row) => row.tenGioiTinh || "—" },
+        { label: "Địa chỉ mặc định", value: (row) => row.diaChiMacDinh || "—" },
         { label: "Trạng thái", value: (row) => row.tenTrangThai || "—" },
       ],
       rows: danhSach.value || [],
@@ -344,6 +347,10 @@ export function useQuanLyKhachHang() {
     const dangSua = Boolean(diaChiDangSua.value);
     if (!f.hoTen || !f.sdt || !f.tinhThanh || !f.quanHuyen || !f.phuongXa || !f.diaChiCuThe) {
       loiDiaChi.value = "Vui lòng điền đầy đủ thông tin địa chỉ.";
+      return;
+    }
+    if (!isValidVnPhone(f.sdt)) {
+      loiDiaChi.value = "Số điện thoại không đúng định dạng (VD: 0901234567).";
       return;
     }
     loiDiaChi.value = "";

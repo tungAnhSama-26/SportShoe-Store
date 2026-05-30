@@ -10,7 +10,7 @@ import {
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
-import Badge from "../../../components/ui/Badge.vue";
+import Table from "../../../components/ui/Table.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -149,6 +149,10 @@ onMounted(taiDuLieu);
                 <span class="w-16 shrink-0 text-[12px] font-semibold text-slate-400">Ngày sinh</span>
                 <span class="text-slate-700 text-[12px]">{{ dinhDangNgay(khachHang.ngaySinh) }}</span>
               </div>
+              <div v-if="khachHang.tenGioiTinh" class="flex gap-2">
+                <span class="w-16 shrink-0 text-[12px] font-semibold text-slate-400">Giới tính</span>
+                <span class="text-slate-700 text-[12px]">{{ khachHang.tenGioiTinh }}</span>
+              </div>
               <div v-if="diaChiMacDinh" class="flex gap-2">
                 <span class="w-16 shrink-0 text-[12px] font-semibold text-slate-400">Địa chỉ</span>
                 <span class="text-slate-600 text-[12px] leading-relaxed">
@@ -194,36 +198,34 @@ onMounted(taiDuLieu);
                 <p class="text-sm text-slate-400">Khách hàng chưa có đơn hàng nào.</p>
               </div>
 
-              <div v-else class="overflow-x-auto">
-                <table class="w-full min-w-[640px] border-separate border-spacing-y-2 text-sm">
-                  <thead>
-                    <tr class="text-left text-xs font-bold text-white">
-                      <th class="rounded-l-2xl bg-primary px-4 py-3">#</th>
-                      <th class="bg-primary px-4 py-3">Mã đơn hàng</th>
-                      <th class="bg-primary px-4 py-3">Trạng thái</th>
-                      <th class="bg-primary px-4 py-3">Loại</th>
-                      <th class="bg-primary px-4 py-3">Tổng cộng</th>
-                      <th class="bg-primary px-4 py-3">Ngày tạo</th>
-                      <th class="rounded-r-2xl bg-primary px-4 py-3 text-center">Chi tiết</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div v-else class="admin-table-scroll">
+                <Table>
+                  <template #header>
+                    <th class="px-3 py-3 whitespace-nowrap">#</th>
+                    <th class="px-3 py-3 whitespace-nowrap">Mã đơn hàng</th>
+                    <th class="px-3 py-3 whitespace-nowrap">Trạng thái</th>
+                    <th class="px-3 py-3 whitespace-nowrap">Loại</th>
+                    <th class="px-3 py-3 whitespace-nowrap">Tổng cộng</th>
+                    <th class="px-3 py-3 whitespace-nowrap">Ngày tạo</th>
+                    <th class="px-3 py-3 text-center whitespace-nowrap">Chi tiết</th>
+                  </template>
+                  <template #body>
                     <tr
                       v-for="(hd, idx) in dsHoaDon"
                       :key="hd.id"
-                      class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 hover:ring-violet-200 transition"
+                      class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
                     >
-                      <td class="rounded-l-2xl px-4 py-3 font-semibold text-slate-400 text-xs">{{ idx + 1 }}</td>
-                      <td class="px-4 py-3 font-mono font-semibold text-slate-800 text-xs">{{ hd.maHoaDon }}</td>
-                      <td class="px-4 py-3">
+                      <td class="rounded-l-2xl px-3 py-3 font-semibold text-slate-400">{{ idx + 1 }}</td>
+                      <td class="px-3 py-3 font-mono font-semibold text-slate-800 text-xs">{{ hd.maHoaDon }}</td>
+                      <td class="px-3 py-3">
                         <span class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold" :class="mauTrangThaiDon(hd.trangThai)">
                           {{ hd.trangThai }}
                         </span>
                       </td>
-                      <td class="px-4 py-3 text-slate-600 text-xs">{{ hd.loaiDon }}</td>
-                      <td class="px-4 py-3 font-semibold text-slate-800">{{ dinhDangTien(hd.tongTien) }}</td>
-                      <td class="px-4 py-3 text-slate-500 text-xs">{{ dinhDangNgay(hd.ngayTao) }}</td>
-                      <td class="rounded-r-2xl px-4 py-3 text-center">
+                      <td class="px-3 py-3 text-slate-600 text-xs">{{ hd.loaiDon }}</td>
+                      <td class="px-3 py-3 font-semibold text-slate-800">{{ dinhDangTien(hd.tongTien) }}</td>
+                      <td class="px-3 py-3 text-slate-500 text-xs">{{ dinhDangNgay(hd.ngayTao) }}</td>
+                      <td class="rounded-r-2xl px-3 py-3 text-center">
                         <button
                           @click="xemChiTietDon(hd.id)"
                           class="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-3 py-1 text-[11px] font-semibold text-violet-600 hover:bg-violet-100 transition"
@@ -232,8 +234,8 @@ onMounted(taiDuLieu);
                         </button>
                       </td>
                     </tr>
-                  </tbody>
-                </table>
+                  </template>
+                </Table>
               </div>
             </div>
           </Card>

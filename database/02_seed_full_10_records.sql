@@ -87,18 +87,18 @@ VALUES
 GO
 
 INSERT INTO khach_hang
-(ten_dang_nhap, ho_ten, email, sdt, ngay_sinh, hinh_anh, mat_khau, trang_thai)
+(ten_dang_nhap, ho_ten, email, sdt, ngay_sinh, gioi_tinh, hinh_anh, mat_khau, trang_thai)
 VALUES
-('khach1', N'Nguyễn Thị Lan', 'lan.nguyen@gmail.com', '0911111111', '1995-03-15', N'/assets/avatar/kh001.png', '123456', 1),
-('khach2', N'Trần Văn Hải', 'hai.tran@yahoo.com', '0988888888', '1998-07-20', N'/assets/avatar/kh002.png', '123456', 1),
-('khach3', N'Lê Thị Mai', 'mai.le@hotmail.com', '0977777777', '2000-11-05', N'/assets/avatar/kh003.png', '123456', 1),
-('khach4', N'Phạm Minh Quân', 'quan.pham@gmail.com', '0909999999', '1997-01-30', N'/assets/avatar/kh004.png', '123456', 1),
-('khach5', N'Hoàng Thị Ngọc', 'ngoc.hoang@gmail.com', '0933333333', '1996-09-12', N'/assets/avatar/kh005.png', '123456', 1),
-('khach6', N'Vũ Văn Long', 'long.vu@yahoo.com', '0912222222', '1999-04-18', N'/assets/avatar/kh006.png', '123456', 1),
-('khach7', N'Đặng Thị Hạnh', 'hanh.dang@gmail.com', '0944444444', '2001-12-25', N'/assets/avatar/kh007.png', '123456', 1),
-('khach8', N'Bùi Anh Tuấn', 'tuan.bui@gmail.com', '0966666666', '1994-06-03', N'/assets/avatar/kh008.png', '123456', 1),
-('khach9', N'Đỗ Khánh Vy', 'vy.do@gmail.com', '0922223333', '2002-02-14', N'/assets/avatar/kh009.png', '123456', 1),
-('khach10', N'Ngô Gia Bảo', 'bao.ngo@gmail.com', '0955555555', '1993-10-10', N'/assets/avatar/kh010.png', '123456', 1);
+('khach1', N'Nguyễn Thị Lan', 'lan.nguyen@gmail.com', '0911111111', '1995-03-15', 0, N'/assets/avatar/kh001.png', '123456', 1),
+('khach2', N'Trần Văn Hải', 'hai.tran@yahoo.com', '0988888888', '1998-07-20', 1, N'/assets/avatar/kh002.png', '123456', 1),
+('khach3', N'Lê Thị Mai', 'mai.le@hotmail.com', '0977777777', '2000-11-05', 0, N'/assets/avatar/kh003.png', '123456', 1),
+('khach4', N'Phạm Minh Quân', 'quan.pham@gmail.com', '0909999999', '1997-01-30', 1, N'/assets/avatar/kh004.png', '123456', 1),
+('khach5', N'Hoàng Thị Ngọc', 'ngoc.hoang@gmail.com', '0933333333', '1996-09-12', 0, N'/assets/avatar/kh005.png', '123456', 1),
+('khach6', N'Vũ Văn Long', 'long.vu@yahoo.com', '0912222222', '1999-04-18', 1, N'/assets/avatar/kh006.png', '123456', 1),
+('khach7', N'Đặng Thị Hạnh', 'hanh.dang@gmail.com', '0944444444', '2001-12-25', 0, N'/assets/avatar/kh007.png', '123456', 1),
+('khach8', N'Bùi Anh Tuấn', 'tuan.bui@gmail.com', '0966666666', '1994-06-03', 1, N'/assets/avatar/kh008.png', '123456', 1),
+('khach9', N'Đỗ Khánh Vy', 'vy.do@gmail.com', '0922223333', '2002-02-14', 0, N'/assets/avatar/kh009.png', '123456', 1),
+('khach10', N'Ngô Gia Bảo', 'bao.ngo@gmail.com', '0955555555', '1993-10-10', 1, N'/assets/avatar/kh010.png', '123456', 1);
 GO
 
 INSERT INTO dia_chi_khach_hang

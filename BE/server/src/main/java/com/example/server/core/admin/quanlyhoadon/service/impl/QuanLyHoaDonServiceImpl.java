@@ -910,10 +910,10 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
         }
         if (thanhToan.getHoaDon() != null && !isTaiQuay(thanhToan.getHoaDon())
                 && thanhToan.getCongThanhToan() != null && !thanhToan.getCongThanhToan().isBlank()) {
-            return "Thanh toán online";
+            return "Thanh toán đơn trực tuyến";
         }
         if (thanhToan.getHoaDon() != null && isTaiQuay(thanhToan.getHoaDon())) {
-            return "Thanh toán tại quầy";
+            return "Thanh toán đơn cửa hàng";
         }
         return thanhToan.getTienThoiLai() != null && thanhToan.getTienThoiLai().compareTo(BigDecimal.ZERO) > 0
                 ? "Thanh toán toàn phần"
@@ -982,6 +982,16 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
         }
 
         return switch (normalizeTextKey(value)) {
+            case "1" -> "Chờ xác nhận";
+            case "2" -> "Chờ lấy hàng";
+            case "3" -> "Chờ giao hàng";
+            case "4" -> "Đã giao hàng";
+            case "5" -> "Hoàn thành";
+            case "6" -> "Hủy";
+            case "7" -> "Yêu cầu hủy";
+            case "8" -> "Cần hoàn tiền";
+            case "9" -> "Đã xác nhận";
+            case "10" -> "Giao hàng thất bại";
             case "mua tai quay" -> DIA_CHI_TAI_QUAY;
             case "không có" -> KHONG_CO;
             case "khach le", "khach vang lai" -> KHACH_VANG_LAI;
