@@ -86,7 +86,6 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
           <template #header>
             <th class="px-3 py-3 whitespace-nowrap">STT</th>
             <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
-            <th class="px-3 py-3 whitespace-nowrap">Tên đăng nhập</th>
             <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
             <th class="px-3 py-3 whitespace-nowrap">Email</th>
             <th class="px-3 py-3 whitespace-nowrap">Địa chỉ</th>
@@ -97,10 +96,10 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
 
           <template #body>
             <tr v-if="dangTai">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu khách hàng...</td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
+              <td colspan="8" class="py-10 text-center text-sm text-slate-400">Không có khách hàng phù hợp.</td>
             </tr>
             <tr
               v-else
@@ -117,9 +116,6 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
                   :alt="kh.hoTen"
                   class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
                 />
-              </td>
-              <td class="px-3 py-3 font-semibold text-slate-800">
-                <div class="truncate max-w-[120px]" :title="kh.tenDangNhap">{{ kh.tenDangNhap }}</div>
               </td>
               <td class="px-3 py-3 font-semibold text-slate-800">
                 <div class="truncate max-w-[120px]" :title="kh.hoTen">{{ kh.hoTen }}</div>

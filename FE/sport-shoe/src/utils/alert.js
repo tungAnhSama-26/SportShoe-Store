@@ -17,11 +17,12 @@ const customSwal = Swal.mixin({
 /**
  * Hiển thị thông báo thành công
  */
-export function showSuccess(text, title = 'Thành công!') {
+export function showSuccess(text, title = 'Thành công!', iconColor = undefined) {
   return customSwal.fire({
     title,
     text,
     icon: 'success',
+    ...(iconColor ? { iconColor } : {}),
     showConfirmButton: false,
     timer: 2000,
     timerProgressBar: false
