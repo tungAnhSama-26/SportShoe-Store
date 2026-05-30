@@ -69,6 +69,7 @@ const pageSizeOptions = [5, 10, 20, 50]
 let toastTimer = null
 let latestLoadRequestId = 0
 let keywordSearchTimer = null
+let suppressGiayIdWatch = false
 
 const selectedGiayId = computed(() => {
   const raw = Array.isArray(route.query.giayId) ? route.query.giayId[0] : route.query.giayId
@@ -189,17 +190,16 @@ function openDiscountDetail(item) {
 }
 
 function bienTheTrangThaiLabel(item) {
-  if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
-  return Number(item.kichHoat) === 1 ? 'Đang bán' : 'Ngừng bán'
+  return Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0 ? 'Đang bán' : 'Ngừng bán'
 }
 
 function bienTheTrangThaiClass(item) {
-  if (Number(item.soLuong || 0) <= 0) return 'bg-amber-50 text-amber-600'
-  return Number(item.kichHoat) === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'
+  if (Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0) return 'bg-emerald-50 text-emerald-600'
+  return 'bg-slate-100 text-slate-600'
 }
 
 function nextBienTheStatus(item) {
-  return Number(item.kichHoat) === 1 ? 2 : 1
+  return Number(item.kichHoat) === 1 ? 0 : 1
 }
 
 function quickToggleLabel(item) {
@@ -208,7 +208,7 @@ function quickToggleLabel(item) {
 }
 
 function canToggleStatus(item) {
-  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
+  return true
 }
 
 function quickToggleIntent(item) {
@@ -216,7 +216,7 @@ function quickToggleIntent(item) {
 }
 
 function quickToggleDisabledTitle(item) {
-  return canToggleStatus(item) ? quickToggleLabel(item) : 'Hết hàng chưa thể chuyển sang đang bán'
+  return quickToggleLabel(item)
 }
 
 function quickToggleConfirmMessage(item) {
@@ -249,17 +249,37 @@ async function syncSelectedProduct() {
 
 async function loadData(page = 0) {
   const requestId = ++latestLoadRequestId
+
+  // Khi có bộ lọc/tìm kiếm đang kích hoạt → bỏ giayId để tìm trên tất cả sản phẩm
+  const hasActiveFilter =
+    filters.keyword.trim() ||
+    filters.mauSacId ||
+    filters.kichCoId ||
+    filters.trangThai != null
+
+  // Xác định giayId hiệu lực trước khi đổi route
+  const effectiveGiayId = hasActiveFilter ? null : selectedGiayId.value
+
+  if (selectedGiayId.value && hasActiveFilter) {
+    if (requestId !== latestLoadRequestId) return
+    // Dùng flag để watcher không gọi lại loadData khi ta chủ động replace route
+    suppressGiayIdWatch = true
+    await router.replace({ name: 'admin-bien-the-san-pham' })
+    suppressGiayIdWatch = false
+  }
+
   loading.value = true
   try {
     const response = await api.layDanhSachChiTietSanPham({
       keyword: filters.keyword.trim() || undefined,
-      giayId: selectedGiayId.value,
+      giayId: effectiveGiayId,
       mauSacId: filters.mauSacId,
       kichCoId: filters.kichCoId,
       trangThai: filters.trangThai,
-      page: selectedGiayId.value ? 0 : page,
-      size: selectedGiayId.value ? 1000 : pageSize.value
+      page: effectiveGiayId ? 0 : page,
+      size: effectiveGiayId ? 1000 : pageSize.value
     })
+
     if (requestId !== latestLoadRequestId) return
     items.value = response.items || []
     currentPage.value = response.page
@@ -279,6 +299,7 @@ function resetFilters() {
   filters.mauSacId = null
   filters.kichCoId = null
   filters.trangThai = null
+  // Không cần xóa giayId vì khi không có filter, sản phẩm đang chọn vẫn giữ nguyên
   loadData(0)
 }
 
@@ -296,9 +317,7 @@ function handleQrScan(code) {
   loadData(0)
 }
 
-function clearProductFilter() {
-  router.replace({ name: 'admin-bien-the-san-pham' })
-}
+
 
 function goToForm() {
   if (selectedGiayId.value) {
@@ -327,7 +346,7 @@ function openEditVariantModal(item) {
   bienTheForm.soLuong = Number(item.soLuong || 0)
   bienTheForm.giaGoc = Number(item.giaGoc || 0)
   bienTheForm.giaBan = Number(item.giaBan || 0)
-  bienTheForm.kichHoat = Number(item.kichHoat) === 2 ? 2 : 1
+  bienTheForm.kichHoat = Number(item.kichHoat) === 0 ? 0 : 1
   clearBienTheErrors()
   showEditVariantModal.value = true
 }
@@ -358,11 +377,8 @@ function validateEditVariantForm() {
   if (giaGoc != null && giaBan != null && giaGoc > giaBan) {
     bienTheErrors.giaGoc = 'Giá gốc không được lớn hơn giá bán'
   }
-  if (![1, 2].includes(Number(bienTheForm.kichHoat))) {
+  if (![1, 0].includes(Number(bienTheForm.kichHoat))) {
     bienTheErrors.kichHoat = 'Trạng thái biến thể không hợp lệ'
-  }
-  if (soLuong === 0 && Number(bienTheForm.kichHoat) === 1) {
-    bienTheErrors.kichHoat = 'Không thể bật bán khi số lượng bằng 0'
   }
 
   return Object.keys(bienTheErrors).length === 0
@@ -457,14 +473,10 @@ function handleScannerResult(result) {
 
 async function toggleBienTheStatus(item) {
   if (updatingStatusIds.has(item.id)) return
-  if (Number(item.soLuong || 0) <= 0 && Number(item.kichHoat) !== 1) {
-    showToast('Không thể chuyển CTSP sang đang bán khi số lượng tồn bằng 0', 'error')
-    return
-  }
 
   updatingStatusIds.add(item.id)
   try {
-    const newTrangThai = Number(item.kichHoat) === 1 ? 2 : 1
+    const newTrangThai = Number(item.kichHoat) === 1 ? 0 : 1
 
     await api.doiTrangThaiBienThe(item.id, newTrangThai)
     item.kichHoat = newTrangThai
@@ -519,6 +531,8 @@ async function xuatExcel() {
 watch(
   () => route.query.giayId,
   async () => {
+    // Bỏ qua nếu route thay đổi do chính ta xóa giayId để mở rộng bộ lọc
+    if (suppressGiayIdWatch) return
     await syncSelectedProduct()
     await loadData(0)
   }
@@ -545,13 +559,6 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-5">
-    <section class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-end">
-
-      <button v-if="selectedProduct" type="button" class="admin-btn-soft" @click="clearProductFilter">
-        <X class="h-4 w-4" />
-        Bỏ lọc sản phẩm
-      </button>
-    </section>
 
     <ProductVariantFilters
       :filters="filters"
@@ -561,7 +568,6 @@ onUnmounted(() => {
       @export-excel="xuatExcel"
       @go-to-form="goToForm"
       @load-data="loadData"
-      @clear-product-filter="clearProductFilter"
       @open-scanner="showScannerModal = true"
     />
 

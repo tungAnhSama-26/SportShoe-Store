@@ -90,7 +90,7 @@ function dangXuat() {
         >
           <Menu class="h-5 w-5" />
         </button>
-        <h1 class="hidden md:block text-base font-bold text-slate-800 dark:text-slate-100">
+        <h1 class="hidden md:block text-[28px] whitespace-nowrap font-bold text-slate-800 dark:text-slate-100">
           {{ pageTitle }}
         </h1>
       </div>
