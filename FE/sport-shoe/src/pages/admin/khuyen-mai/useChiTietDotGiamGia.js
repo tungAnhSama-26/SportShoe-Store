@@ -493,15 +493,8 @@ export function useChiTietDotGiamGia() {
         taoMaNgauNhien();
       }
       form.ngayBatDau = getToday();
-      // Load blocked variants (đã thuộc đợt khác) ngay cả khi tạo mới
-      try {
-        const spList = await getDotGiamGiaSanPhamList();
-        blockedVariantIds.value = new Set(
-          spList
-            .map(item => Number(item.giayChiTietId ?? item.id))
-            .filter(v => Number.isInteger(v) && v > 0)
-        );
-      } catch { /* bỏ qua nếu lỗi */ }
+      // Keep blocked variants empty to allow assigning products to multiple promotions
+      blockedVariantIds.value = new Set();
       await taiDanhSachSP();
       return;
     }
@@ -528,13 +521,8 @@ export function useChiTietDotGiamGia() {
           .map((item) => normalizeVariantForSelection(item)),
       );
 
-      // Chặn các biến thể đã thuộc đợt giảm giá khác
-      blockedVariantIds.value = new Set(
-        spList
-          .filter(item => String(item.dotGiamGiaId) !== String(id))
-          .map(item => Number(item.giayChiTietId ?? item.id))
-          .filter(v => Number.isInteger(v) && v > 0)
-      );
+      // Keep blocked variants empty to allow assigning products to multiple promotions
+      blockedVariantIds.value = new Set();
 
       await taiDanhSachSP();
     } catch (e) {
