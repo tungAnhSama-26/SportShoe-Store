@@ -10,6 +10,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -69,6 +70,15 @@ public class EmailService {
         if (!dispatchResult.sent()) {
             throw new BusinessException(dispatchResult.warningMessage());
         }
+    }
+
+    /**
+     * Gửi email chào mừng khách hàng ở luồng nền (không chặn request tạo khách hàng).
+     * Lỗi gửi email chỉ được ghi log, không làm hỏng thao tác tạo khách hàng.
+     */
+    @Async
+    public void sendCustomerRegistrationEmailAsync(String to, String fullName, String username, String password) {
+        trySendCustomerRegistrationEmail(to, fullName, username, password);
     }
 
     public EmailDispatchResult trySendCustomerRegistrationEmail(String to, String fullName, String username, String password) {
