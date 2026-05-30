@@ -263,9 +263,6 @@ onActivated(() => {
 
     <!-- Header -->
     <section>
-      <h1 class="admin-page-title text-[30px]">
-        Quản lý nhân viên
-      </h1>
     </section>
 
     <Card>
