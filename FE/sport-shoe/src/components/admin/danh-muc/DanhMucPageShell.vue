@@ -67,7 +67,7 @@ function onKeywordInput(event) {
       <div
         v-if="toast?.show"
         class="fixed right-4 top-[88px] z-50 rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
-        :class="toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"
+        :class="toast.type === 'success' ? 'bg-[#ff6a00]' : 'bg-[#cf1018]'"
       >
         {{ toast.message }}
       </div>

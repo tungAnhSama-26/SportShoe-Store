@@ -181,7 +181,7 @@ const trongLuongOptions = computed(() =>
                 </div>
 
                 <div :class="mode === 'add' ? '' : 'md:col-span-2'">
-                  <label class="mb-1 block text-xs font-medium text-gray-700">Tên sản phẩm *</label>
+                  <label class="mb-1 block text-xs font-medium text-gray-700">Tên sản phẩm <span class="text-rose-500">*</span></label>
                   <input
                     v-model="productForm.ten"
                     type="text"
@@ -193,7 +193,7 @@ const trongLuongOptions = computed(() =>
                 </div>
 
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-700">Thương hiệu *</label>
+                  <label class="mb-1 block text-xs font-medium text-gray-700">Thương hiệu <span class="text-rose-500">*</span></label>
                   <AdminSearchableSelect
                     :model-value="productForm.thuongHieuId"
                     :options="thuongHieuOptions"
@@ -206,7 +206,7 @@ const trongLuongOptions = computed(() =>
                 </div>
 
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-700">Loại giày *</label>
+                  <label class="mb-1 block text-xs font-medium text-gray-700">Loại giày <span class="text-rose-500">*</span></label>
                   <AdminSearchableSelect
                     :model-value="productForm.loaiGiayId"
                     :options="loaiGiayOptions"
