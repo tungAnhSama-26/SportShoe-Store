@@ -85,7 +85,7 @@ interface NhanVien {
   ten: string;
   vieTat: string;
   chucVu: string;       // tenVaiTro từ BE
-  vaiTro: number;       // 1=Admin, 2=Bán hàng, 3=Kho
+  vaiTro: number;       // 1=Admin, 2=Nhân viên, 3=Kho
   hinhAnh: string;
   mauNen: string;
   lich: CaLam[];        // index 0=T2 ... 6=CN
@@ -154,7 +154,7 @@ const boLocVaiTro = ref(0); // 0 = tất cả
 const dsVaiTro = [
   { value: 0, label: "Tất cả" },
   { value: 1, label: "Admin" },
-  { value: 2, label: "Bán hàng" },
+  { value: 2, label: "Nhân viên" },
   { value: 3, label: "Kho" },
 ];
 
