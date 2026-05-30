@@ -133,7 +133,7 @@ function updateProductField(field, value, numeric = false) {
           </label>
 
           <label class="block">
-            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Sản phẩm *</span>
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Sản phẩm <span class="text-rose-500">*</span></span>
             <input
               :value="productForm.ten"
               type="text"
@@ -167,7 +167,7 @@ function updateProductField(field, value, numeric = false) {
     <div class="mt-5 border-t border-slate-100 pt-5">
       <div class="grid gap-4 md:grid-cols-2">
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Thương hiệu *</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Thương hiệu <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.thuongHieuId"
             :options="thuongHieuOptions"
@@ -185,7 +185,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Loại giày *</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Loại giày <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.loaiGiayId"
             :options="loaiGiayOptions"
@@ -203,7 +203,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giới tính</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Giới tính <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.gioiTinh"
             :options="genderSearchOptions"
@@ -218,7 +218,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Chất liệu</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Chất liệu <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.chatLieuGiayId"
             :options="chatLieuOptions"
@@ -236,7 +236,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Đế giày</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Đế giày <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.deGiayId"
             :options="deGiayOptions"
@@ -254,7 +254,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Cổ giày</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Cổ giày <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.coGiayId"
             :options="coGiayOptions"
@@ -272,7 +272,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Công nghệ đệm</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Công nghệ đệm <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.congNgheDemId"
             :options="congNgheDemOptions"
@@ -290,7 +290,7 @@ function updateProductField(field, value, numeric = false) {
         </div>
 
         <div class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Trọng lượng</span>
+          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Trọng lượng <span class="text-rose-500">*</span></span>
           <AdminSearchableSelect
             :model-value="productForm.trongLuongId"
             :options="trongLuongOptions"

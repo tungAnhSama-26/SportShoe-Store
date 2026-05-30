@@ -105,13 +105,12 @@ function discountTitle(item) {
 }
 
 function bienTheTrangThaiLabel(item) {
-  if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
-  return Number(item.kichHoat) === 1 ? 'Đang bán' : 'Ngừng bán'
+  return Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0 ? 'Đang bán' : 'Ngừng bán'
 }
 
 function bienTheTrangThaiClass(item) {
-  if (Number(item.soLuong || 0) <= 0) return 'bg-amber-50 text-amber-600'
-  return Number(item.kichHoat) === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'
+  if (Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0) return 'bg-emerald-50 text-emerald-600'
+  return 'bg-slate-100 text-slate-600'
 }
 
 function quickToggleLabel(item) {
@@ -120,7 +119,7 @@ function quickToggleLabel(item) {
 }
 
 function canToggleStatus(item) {
-  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
+  return true
 }
 
 function quickToggleIntent(item) {
@@ -128,7 +127,7 @@ function quickToggleIntent(item) {
 }
 
 function quickToggleDisabledTitle(item) {
-  return canToggleStatus(item) ? quickToggleLabel(item) : 'Hết hàng chưa thể chuyển sang đang bán'
+  return quickToggleLabel(item)
 }
 
 function quickToggleConfirmMessage(item) {
@@ -149,14 +148,6 @@ function openDiscountDetail(item) {
 
 <template>
   <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="mb-5 flex items-center gap-3">
-      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
-        <Layers3 class="h-5 w-5" />
-      </div>
-      <div>
-        <h2 class="admin-section-title">Danh sách chi tiết sản phẩm</h2>
-      </div>
-    </div>
 
     <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
       <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-sm">

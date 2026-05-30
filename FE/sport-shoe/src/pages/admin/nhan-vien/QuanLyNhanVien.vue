@@ -37,13 +37,8 @@ const danhSach = ref([]);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const boLoc = ref({ keyword: "", vaiTro: "", trangThai: "" });
-const toast = ref({
-  hienThi: false,
-  loai: "success",
-  tieuDe: "",
-  noiDung: "",
-});
-let toastTimer: ReturnType<typeof setTimeout> | null = null;
+const toastTimer = null;
+
 
 const dsVaiTro = [
   { label: "Tất cả vai trò", value: "" },
@@ -72,14 +67,9 @@ function dinhDangNgay(ngay: string) {
   }).format(new Date(ngay));
 }
 
-function hienThiThongBao(loai: "success" | "error", tieuDe: string, noiDung = "") {
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value = { hienThi: true, loai, tieuDe, noiDung };
-  toastTimer = setTimeout(() => {
-    toast.value.hienThi = false;
-    toastTimer = null;
-  }, 4200);
-}
+import { showSuccess, showError, showConfirm } from "../../../utils/alert";
+
+
 
 function taiThongBaoDieuHuong() {
   if (typeof window === "undefined") return;
@@ -89,13 +79,13 @@ function taiThongBaoDieuHuong() {
 
   try {
     const payload = JSON.parse(raw);
-    hienThiThongBao(
-      payload?.loai === "error" ? "error" : "success",
-      payload?.tieuDe || "Thao tác thành công",
-      typeof payload?.noiDung === "string" ? payload.noiDung : "",
-    );
+    if (payload?.loai === "error") {
+      showError(typeof payload?.noiDung === "string" ? payload.noiDung : "", payload?.tieuDe || "Lỗi");
+    } else {
+      showSuccess(typeof payload?.noiDung === "string" ? payload.noiDung : "", payload?.tieuDe || "Thao tác thành công");
+    }
   } catch {
-    hienThiThongBao("success", "Đã tạo nhân viên mới");
+    showSuccess("Đã tạo nhân viên mới");
   }
 }
 
@@ -189,7 +179,7 @@ function quanLyLichLam(id: string) {
 
 function xuatExcel() {
   if (!danhSach.value.length) {
-    window.alert("Không có dữ liệu để xuất Excel.");
+    showError("Không có dữ liệu để xuất Excel.");
     return;
   }
 
@@ -228,13 +218,13 @@ const dangDoiTrangThai = ref<string | null>(null);
 async function capNhatTrangThai(nv: any) {
   // Kiểm tra quyền: Chỉ Admin mới được đổi trạng thái
   if (adminSession.value.vaiTro !== "Quản trị viên") {
-    window.alert("Chỉ có Quản trị viên mới có quyền thực hiện hành động này.");
+    showError("Chỉ có Quản trị viên mới có quyền thực hiện hành động này.");
     return;
   }
 
   // Không cho phép khóa tài khoản Admin khác
   if (nv.tenVaiTro === "Admin") {
-    window.alert("Không thể thay đổi trạng thái của tài khoản Quản trị viên.");
+    showError("Không thể thay đổi trạng thái của tài khoản Quản trị viên.");
     return;
   }
 
@@ -243,20 +233,19 @@ async function capNhatTrangThai(nv: any) {
       ? `Bạn có chắc muốn cho nhân viên "${nv.hoTen}" nghỉ làm?`
       : `Bạn có chắc muốn kích hoạt lại nhân viên "${nv.hoTen}"?`;
 
-  if (!window.confirm(message)) return;
+  if (!(await showConfirm(message))) return;
 
   dangDoiTrangThai.value = nv.id;
   try {
     await doiTrangThaiNhanVien(nv.id, nv.trangThai === 1 ? 0 : 1);
     await taiDanhSach();
   } catch (e) {
-    window.alert(
-      getDisplayErrorMessage(e, "Không thể cập nhật trạng thái nhân viên"),
-    );
+    showError(getDisplayErrorMessage(e, "Không thể cập nhật trạng thái nhân viên"));
   } finally {
     dangDoiTrangThai.value = null;
   }
 }
+
 
 onMounted(() => {
   taiThongBaoDieuHuong();
@@ -270,48 +259,10 @@ onActivated(() => {
 
 <template>
   <div class="space-y-5">
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-y-3 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-3 opacity-0"
-    >
-      <div
-        v-if="toast.hienThi"
-        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
-        :class="toast.loai === 'success' ? 'border-emerald-100' : 'border-amber-100'"
-      >
-        <div class="flex gap-3 p-4">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            :class="toast.loai === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'"
-          >
-            <CheckCircle2 v-if="toast.loai === 'success'" class="h-5 w-5" />
-            <TriangleAlert v-else class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
-          </div>
-          <button
-            type="button"
-            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
-            @click="toast.hienThi = false"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
-        <div class="h-1.5 w-full" :class="toast.loai === 'success' ? 'bg-emerald-500' : 'bg-amber-500'"></div>
-      </div>
-    </Transition>
+
 
     <!-- Header -->
     <section>
-      <h1 class="admin-page-title text-[30px]">
-        Quản lý nhân viên
-      </h1>
     </section>
 
     <Card>

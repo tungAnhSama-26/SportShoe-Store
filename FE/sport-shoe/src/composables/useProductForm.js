@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as api from '../services/san-pham-api.ts'
 
@@ -41,8 +41,33 @@ export function useProductForm() {
 
   const productErrors = reactive({})
 
+  let tenCheckTimeout = null
+  function validateTenGiayRealtime(newTen) {
+    if (tenCheckTimeout) clearTimeout(tenCheckTimeout)
+    if (!newTen || newTen.trim() === '') {
+      delete productErrors.ten
+      return
+    }
+    tenCheckTimeout = setTimeout(async () => {
+      try {
+        const res = await api.checkTenGiay(newTen.trim(), currentProductId.value)
+        if (res.exists) {
+          productErrors.ten = 'Tên sản phẩm đã tồn tại'
+        } else if (productErrors.ten === 'Tên sản phẩm đã tồn tại') {
+          delete productErrors.ten
+        }
+      } catch (e) {
+        // Ignore error
+      }
+    }, 500)
+  }
+
+  watch(() => productForm.ten, (newVal) => {
+    validateTenGiayRealtime(newVal)
+  })
+
   const pageTitle = computed(() =>
-    currentProductId.value ? 'CHỈNH SỬA CHI TIẾT SẢN PHẨM' : 'THÊM CHI TIẾT SẢN PHẨM'
+    currentProductId.value ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM SẢN PHẨM'
   )
 
   const productCode = computed(() => currentProduct.value?.ma || draftProductCode.value)

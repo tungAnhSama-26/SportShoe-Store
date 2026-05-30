@@ -17,6 +17,10 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     Optional<PhieuGiamGia> findByMaIgnoreCase(String ma);
 
+    boolean existsByTenIgnoreCase(String ten);
+
+    boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
+
     @Query("""
             select p
             from PhieuGiamGia p
@@ -26,7 +30,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
                 or lower(p.ma) like lower(concat('%', :keyword, '%'))
                 or lower(p.ten) like lower(concat('%', :keyword, '%'))
               )
-            order by p.ngayTao desc
+            order by p.ngayTao desc, p.id desc
             """)
     List<PhieuGiamGia> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
@@ -77,7 +81,6 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     AND (:loai IS NULL OR phieuGG.loai = :loai)
     AND (CAST(:tuNgay AS timestamp) IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
     AND (CAST(:denNgay AS timestamp) IS NULL OR phieuGG.ngayKetThuc <= :denNgay)
-    ORDER BY phieuGG.ngayTao DESC
 """)
     Page<QuanLyPhieuGiamGiaResponse> timKiemVaPhanTrang(
             @Param("keyword") String keyword, 

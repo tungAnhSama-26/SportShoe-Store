@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ImageOff, Plus, RefreshCw, Star, Trash2, Upload, Pencil } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
+import { showConfirm } from '../../../utils/alert'
 
 const props = defineProps({
   variant: {
@@ -189,6 +190,61 @@ async function handleUploadFile(event) {
   }
 }
 
+async function handleDirectUpload(event) {
+  const target = event.target
+  if (!target.files?.length) return
+
+  uploading.value = true
+  try {
+    const file = target.files[0]
+    const url = await api.uploadFile(file)
+    await directSaveImage(url)
+  } catch (error) {
+    emit('error', error?.message || 'Tải ảnh lên thất bại')
+  } finally {
+    uploading.value = false
+    target.value = ''
+  }
+}
+
+async function directSaveImage(url) {
+  const shouldSetMain = !displayedImages.value.length
+
+  if (isDraftMode.value) {
+    const draftItem = {
+      id: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      url: url,
+      loaiHinh: shouldSetMain ? 1 : 2,
+      moTa: '',
+      laHinhChinh: shouldSetMain,
+      trangThai: 1,
+      ngayTao: new Date().toISOString()
+    }
+    updateDraftImages([...displayedImages.value, draftItem])
+    emit('saved', buildSavedPayload())
+    emit('updated')
+    return true
+  }
+
+  const payload = {
+    url: url,
+    loaiHinh: shouldSetMain ? 1 : 2,
+    moTa: ''
+  }
+
+  for (const targetVariant of persistedTargetVariants.value) {
+    const created = await api.themHinhAnh(targetVariant.id, payload)
+    if (Number(payload.loaiHinh) === 1 && !created.laHinhChinh) {
+      await api.datHinhChinh(created.id)
+    }
+  }
+
+  await loadImages()
+  emit('saved', buildSavedPayload())
+  emit('updated')
+  return true
+}
+
 async function handleSave() {
   Object.keys(errors).forEach((key) => delete errors[key])
   if (!form.url.trim()) {
@@ -307,7 +363,8 @@ async function commitPendingForm() {
 }
 
 async function handleDelete(imageId) {
-  if (!confirm('Xóa hình ảnh này?')) return
+  const isConfirmed = await showConfirm('Xóa hình ảnh này?')
+  if (!isConfirmed) return
 
   if (isDraftMode.value) {
     updateDraftImages(displayedImages.value.filter((item) => item.id !== imageId))
@@ -438,14 +495,16 @@ defineExpose({
         >
           <RefreshCw :size="14" />
         </button>
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-xl bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
-          @click="openAddForm"
+        <label
+          v-if="displayedImages.length === 0"
+          class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+          :class="{ 'opacity-60 pointer-events-none': uploading }"
         >
-          <Plus :size="14" />
-          Thêm ảnh
-        </button>
+          <Plus :size="14" v-if="!uploading" />
+          <RefreshCw :size="14" class="animate-spin" v-else />
+          {{ uploading ? 'Đang thêm...' : 'Thêm ảnh' }}
+          <input type="file" accept="image/*" class="hidden" @change="handleDirectUpload" :disabled="uploading" />
+        </label>
       </div>
     </div>
 
@@ -454,7 +513,7 @@ defineExpose({
         Đang tải ảnh...
       </div>
 
-      <div v-else-if="displayedImages.length" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-else-if="displayedImages.length" class="grid gap-3 grid-cols-2 sm:grid-cols-3">
         <div
           v-for="item in displayedImages"
           :key="item.id"
@@ -522,51 +581,47 @@ defineExpose({
       </div>
     </div>
 
-    <div v-if="showAddForm" class="mt-4 rounded-2xl border border-rose-100 bg-rose-50 p-4">
-      <div class="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <div class="space-y-3">
-          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-rose-200 bg-white px-4 py-3 text-sm font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-100/50">
-            <Upload :size="14" />
-            {{ uploading ? 'Đang tải ảnh...' : 'Chọn ảnh để upload' }}
+    <div v-if="showAddForm" class="mt-3 rounded-xl border border-rose-100 bg-rose-50 p-3">
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <div class="flex-shrink-0 w-32 space-y-2">
+          <div v-if="form.url" class="overflow-hidden rounded-xl border border-slate-200 bg-white aspect-square">
+            <img :src="form.url" alt="" class="h-full w-full object-cover" />
+          </div>
+          <label class="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-dashed border-rose-200 bg-white px-2 py-2 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-100/50 text-center">
+            <Upload :size="12" />
+            {{ uploading ? 'Đang tải...' : 'Chọn ảnh' }}
             <input type="file" accept="image/*" class="hidden" @change="handleUploadFile" />
           </label>
-
-          <div v-if="form.url" class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div class="aspect-square">
-              <img :src="form.url" alt="" class="h-full w-full object-cover" />
-            </div>
-          </div>
         </div>
 
-        <div class="space-y-3">
+        <div class="flex-1 space-y-2 flex flex-col justify-between">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-700">URL ảnh *</label>
+            <label class="mb-1 block text-[11px] font-medium text-slate-700">URL ảnh <span class="text-rose-500">*</span></label>
             <input
               v-model="form.url"
               type="url"
               placeholder="https://..."
-              class="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+              class="w-full rounded-lg border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-rose-400"
               :class="errors.url ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'"
             />
-            <p v-if="errors.url" class="mt-1 text-xs text-rose-500">{{ errors.url }}</p>
+            <p v-if="errors.url" class="mt-1 text-[10px] text-rose-500">{{ errors.url }}</p>
           </div>
 
-
-          <div class="flex justify-end gap-2">
+          <div class="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-100"
+              class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100"
               @click="closeAddForm"
             >
               Hủy
             </button>
             <button
               type="button"
-              class="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-60"
+              class="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:opacity-60"
               :disabled="saving"
               @click="handleSave"
             >
-              {{ saving ? 'Đang lưu...' : (editingId ? 'Cập nhật ảnh' : 'Lưu ảnh') }}
+              {{ saving ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Lưu') }}
             </button>
           </div>
         </div>

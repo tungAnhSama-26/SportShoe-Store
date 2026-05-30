@@ -53,6 +53,14 @@ public class QuanLySanPhamController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh mục thành công", service.layDanhMuc()));
     }
 
+    @GetMapping("/check-ten")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Boolean>>> checkTenTrung(
+            @RequestParam String ten,
+            @RequestParam(required = false) Integer id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Kiểm tra thành công", service.checkTenTrung(ten, id)));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<GiayListItemResponse>>> danhSachGiay(
             @RequestParam(required = false) String keyword,
@@ -86,7 +94,7 @@ public class QuanLySanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "giaBan"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách chi tiết sản phẩm thành công",
                 service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ImageOff, Images, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../common/AdminQuickStatusAction.vue'
 
@@ -72,7 +72,7 @@ const emit = defineEmits([
 ])
 
 function canToggleStatus(item) {
-  return Number(item.kichHoat) === 1 || Number(item.soLuong || 0) > 0
+  return true
 }
 
 function quickToggleLabel(item) {
@@ -84,7 +84,7 @@ function quickToggleIntent(item) {
 }
 
 function quickToggleDisabledTitle(item) {
-  return canToggleStatus(item) ? quickToggleLabel(item) : 'Hết hàng chưa thể chuyển sang đang bán'
+  return quickToggleLabel(item)
 }
 
 function quickToggleConfirmMessage(item) {

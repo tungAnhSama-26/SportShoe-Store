@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'clear-product-filter', 'open-scanner'])
+const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'open-scanner'])
 
 function handleKeywordEnter() {
   emit('load-data', 0)
@@ -29,14 +29,6 @@ function handleFilterChange() {
 
 <template>
   <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="mb-5 flex items-center gap-3">
-      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
-        <Filter class="h-5 w-5" />
-      </div>
-      <div>
-        <h2 class="admin-section-title">Bộ lọc</h2>
-      </div>
-    </div>
 
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -70,10 +62,6 @@ function handleFilterChange() {
           <button type="button" class="admin-btn-soft" @click="$emit('export-excel')">
             <FileSpreadsheet class="h-4 w-4" />
             Xuất Excel
-          </button>
-          <button type="button" class="admin-btn-primary" @click="$emit('go-to-form')">
-            <Plus class="h-4 w-4" />
-            Thêm sản phẩm chi tiết
           </button>
         </div>
       </div>
@@ -115,7 +103,7 @@ function handleFilterChange() {
           >
             <option :value="null">Tất cả trạng thái</option>
             <option :value="1">Đang bán</option>
-            <option :value="2">Ngừng bán / Hết hàng</option>
+            <option :value="2">Ngừng bán</option>
           </select>
         </label>
       </div>

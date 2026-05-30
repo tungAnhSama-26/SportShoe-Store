@@ -1,116 +1,95 @@
 <script setup lang="ts">
 import { useQuanLyKhachHang } from "./useQuanLyKhachHang";
-const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, toast, toastTimer, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, moModalDonHang } = useQuanLyKhachHang();
+const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, moModalDonHang } = useQuanLyKhachHang();
 </script>
 
 <template>
   <div>
     <div class="space-y-5">
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-y-3 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-3 opacity-0"
-    >
-      <div
-        v-if="toast.hienThi"
-        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
-        :class="toast.loai === 'success' ? 'border-emerald-100' : 'border-rose-100'"
-      >
-        <div class="flex gap-3 p-4">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            :class="toast.loai === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'"
-          >
-            <CheckCircle2 class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
-          </div>
-          <button
-            type="button"
-            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
-            @click="toast.hienThi = false"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
-        <div class="h-1.5 w-full" :class="toast.loai === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></div>
-      </div>
-    </Transition>
 
-    <!-- Header removed -->
+
+    <!-- Header -->
+    <section>
+    </section>
 
     <!-- Bộ lọc -->
-    <Card title="Bộ lọc">
-      <template #icon>
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-          <Filter class="h-4 w-4" />
+    <Card>
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+            <Filter class="h-5 w-5" />
+          </div>
+          <h2 class="admin-section-title">Bộ lọc</h2>
         </div>
       </template>
 
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="min-w-0 flex-1">
-          <Input
+      <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+        <div class="relative flex-1 lg:min-w-[260px]">
+          <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
             v-model="boLoc.keyword"
+            type="text"
             placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
-          >
-            <template #prefix>
-              <Search class="h-4 w-4 text-slate-400" />
-            </template>
-          </Input>
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+          />
         </div>
-        <select v-model="boLoc.trangThai" class="h-11 w-40 shrink-0 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10">
-          <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">{{ tt.label }}</option>
+        <select
+          v-model="boLoc.trangThai"
+          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 lg:w-44"
+        >
+          <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">
+            {{ tt.label }}
+          </option>
         </select>
-        <div class="flex items-center gap-3">
-          <Button variant="soft" @click="lamMoiBoLoc">
-            <template #prefix>
-              <RotateCcw class="h-4 w-4" />
-            </template>
-            Đặt lại
-          </Button>
-          <Button variant="soft" @click="xuatExcel">
-            <template #prefix>
-              <FileSpreadsheet class="h-4 w-4" />
-            </template>
-            Xuất Excel
-          </Button>
-          <Button variant="primary" @click="themMoi">
-            <template #prefix>
-              <Plus class="h-4 w-4" />
-            </template>
-            Thêm khách hàng
-          </Button>
-        </div>
+        <Button variant="soft" @click="lamMoiBoLoc">
+          <template #prefix><RotateCcw class="h-4 w-4" /></template>
+          Đặt lại bộ lọc
+        </Button>
+        <Button variant="soft" @click="xuatExcel">
+          <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+          Xuất Excel
+        </Button>
+        <Button variant="primary" @click="themMoi">
+          <template #prefix><Plus class="h-4 w-4" /></template>
+          Thêm khách hàng
+        </Button>
       </div>
     </Card>
 
     <!-- Danh sách -->
-    <Card title="Danh sách khách hàng" no-padding>
-      <template #icon>
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-500">
-          <Users class="h-4 w-4" />
+    <Card>
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary">
+            <Users class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="admin-section-title">
+              Danh sách khách hàng
+            </h2>
+          </div>
         </div>
       </template>
 
-      <div v-if="loiTrang" class="mx-6 mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>
+      <div
+        v-if="loiTrang"
+        class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600"
+      >
+        {{ loiTrang }}
+      </div>
 
-      <div class="p-6">
-        <Table red-header>
+      <div class="admin-table-scroll">
+        <Table>
           <template #header>
-            <th class="w-[4%] px-4 py-3.5">STT</th>
-            <th class="w-[6%] px-4 py-3.5">Ảnh</th>
-            <th class="w-[13%] px-4 py-3.5">Tên đăng nhập</th>
-            <th class="w-[13%] px-4 py-3.5">Họ tên</th>
-            <th class="w-[16%] px-4 py-3.5">Email</th>
-            <th class="w-[20%] px-4 py-3.5">Địa chỉ</th>
-            <th class="w-[11%] px-4 py-3.5">Số điện thoại</th>
-            <th class="w-[9%] px-4 py-3.5">Trạng thái</th>
-            <th class="w-[8%] px-4 py-3.5 text-center">Hành động</th>
+            <th class="px-3 py-3 whitespace-nowrap">STT</th>
+            <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
+            <th class="px-3 py-3 whitespace-nowrap">Tên đăng nhập</th>
+            <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
+            <th class="px-3 py-3 whitespace-nowrap">Email</th>
+            <th class="px-3 py-3 whitespace-nowrap">Địa chỉ</th>
+            <th class="px-3 py-3 whitespace-nowrap">Số điện thoại</th>
+            <th class="px-3 py-3 whitespace-nowrap">Trạng thái</th>
+            <th class="px-3 py-3 text-center whitespace-nowrap">Hành động</th>
           </template>
 
           <template #body>
@@ -124,38 +103,42 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
               v-else
               v-for="(kh, index) in danhSachPhanTrang"
               :key="kh.id"
-              class="hover:bg-slate-50/50 transition-colors duration-150"
+              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="px-4 py-2.5 font-semibold text-slate-500">{{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}</td>
-              <td class="px-4 py-2.5">
+              <td class="rounded-l-2xl px-3 py-3 font-semibold">
+                {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
+              </td>
+              <td class="px-3 py-3">
                 <img
                   :src="kh.hinhAnh || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(kh.hoTen || 'KH') + '&background=f1f5f9&color=475569&size=64')"
                   :alt="kh.hoTen"
                   class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
                 />
               </td>
-              <td class="px-4 py-2.5 font-semibold text-slate-800">
+              <td class="px-3 py-3 font-semibold text-slate-800">
                 <div class="truncate max-w-[120px]" :title="kh.tenDangNhap">{{ kh.tenDangNhap }}</div>
               </td>
-              <td class="px-4 py-2.5 font-semibold text-slate-800">
+              <td class="px-3 py-3 font-semibold text-slate-800">
                 <div class="truncate max-w-[120px]" :title="kh.hoTen">{{ kh.hoTen }}</div>
               </td>
-              <td class="px-4 py-2.5 text-[13px] text-slate-600">
-                <div class="truncate max-w-[160px]" :title="kh.email || '—'">{{ kh.email || '—' }}</div>
+              <td class="px-3 py-3 text-slate-600">
+                <div class="text-xs truncate max-w-[160px]" :title="kh.email || '—'">{{ kh.email || '—' }}</div>
               </td>
-              <td class="px-4 py-2.5 text-[12px] text-slate-500 leading-relaxed">
-                {{ kh.diaChiMacDinh || '—' }}
+              <td class="px-3 py-3 text-slate-600">
+                <div class="min-w-[180px] max-w-[320px] break-words whitespace-normal leading-normal text-sm" :title="kh.diaChiMacDinh || '—'">
+                  {{ kh.diaChiMacDinh || '—' }}
+                </div>
               </td>
-              <td class="px-4 py-2.5 text-slate-600 text-[13px]">
+              <td class="px-3 py-3 text-slate-600">
                 <div class="truncate" :title="kh.sdtMacDinh || kh.sdt || '—'">{{ kh.sdtMacDinh || kh.sdt || '—' }}</div>
               </td>
-              <td class="px-4 py-2.5">
+              <td class="px-3 py-3">
                 <Badge :variant="kh.trangThai === 1 ? 'success' : 'danger'">
                   {{ kh.tenTrangThai }}
                 </Badge>
               </td>
-              <td class="px-4 py-2.5 text-center">
-                <div class="flex items-center justify-center gap-1.5">
+              <td class="rounded-r-2xl px-3 py-3 align-top text-center">
+                <div class="flex items-center justify-center gap-0.5">
                   <AdminQuickStatusAction
                     :loading="dangDoiTrangThai === kh.id"
                     :action-label="kh.trangThai === 1 ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'"
@@ -164,22 +147,22 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
                   />
                   <button
                     @click="moModalDiaChi(kh)"
-                    class="p-1.5 rounded-lg text-sky-500 hover:text-sky-700 hover:bg-sky-50 transition-colors duration-150"
+                    class="admin-table-action text-sky-500 hover:text-sky-700"
                     title="Quản lý địa chỉ"
                   >
                     <MapPin :size="14" />
                   </button>
                   <button
                     @click="moModalDonHang(kh)"
-                    class="p-1.5 rounded-lg text-violet-500 hover:text-violet-700 hover:bg-violet-50 transition-colors duration-150"
+                    class="admin-table-action text-violet-500 hover:text-violet-700"
                     title="Xem đơn hàng"
                   >
                     <ShoppingBag :size="14" />
                   </button>
                   <button
                     @click="xemChiTiet(kh.id)"
-                    class="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors duration-150"
-                    title="Xem / Chỉnh sửa"
+                    class="admin-table-action text-slate-600 hover:text-slate-900"
+                    title="Xem chi tiết"
                   >
                     <Eye :size="14" />
                   </button>

@@ -20,6 +20,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showError } from "../../../utils/alert";
 
 const router = useRouter();
 
@@ -223,7 +224,7 @@ async function xuatExcel() {
 
     const rows = data?.content || [];
     if (!rows.length) {
-      window.alert("Không có dữ liệu để xuất Excel.");
+      showError("Không có dữ liệu để xuất Excel.");
       return;
     }
 

@@ -26,6 +26,7 @@ import {
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
 const route = useRoute();
 const router = useRouter();
@@ -431,7 +432,8 @@ async function submitForm() {
   const confirmMsg = laMoi
     ? "Bạn có chắc chắn muốn thêm mới phiếu giảm giá này không?"
     : "Bạn có chắc chắn muốn cập nhật thông tin phiếu giảm giá này không?";
-  if (!window.confirm(confirmMsg)) return;
+  const isConfirmed = await showConfirm(confirmMsg);
+  if (!isConfirmed) return;
 
   saving.value = true;
   loiTrang.value = "";
@@ -458,10 +460,10 @@ async function submitForm() {
     if (laMoi) {
       const res = await createPhieuGiamGia(payload);
       phieuId = res?.id;
-      hienThiThongBao("success", "Tạo phiếu giảm giá thành công");
+      showSuccess("Tạo phiếu giảm giá thành công");
     } else {
       await updatePhieuGiamGia(id, payload);
-      hienThiThongBao("success", "Cập nhật phiếu giảm giá thành công");
+      showSuccess("Cập nhật phiếu giảm giá thành công");
     }
 
     if (Number(form.loaiPhieu) === 2) {

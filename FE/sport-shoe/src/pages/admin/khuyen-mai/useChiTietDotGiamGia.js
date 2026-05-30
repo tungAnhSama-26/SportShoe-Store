@@ -20,6 +20,7 @@ import {
   updateDotGiamGia,
   getDotGiamGiaSanPhamList,
   syncDotGiamGiaSanPham,
+  checkTenDotGiamGia,
 } from "../../../services/khuyen-mai";
 import {
   chiTietGiay,
@@ -27,6 +28,7 @@ import {
   layBienThe,
 } from "../../../services/san-pham-api";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
 export function useChiTietDotGiamGia() {
   const route = useRoute();
@@ -39,45 +41,12 @@ export function useChiTietDotGiamGia() {
   const dangTaiSP = ref(false);
   const saving = ref(false);
   const loiTrang = ref("");
-  const toast = ref({
-    hienThi: false,
-    loai: "success",
-    tieuDe: "",
-    noiDung: "",
-  });
-  let toastTimer = null;
-
-  const toastClass = computed(() => {
-    if (toast.value.loai === "success")
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
-    if (toast.value.loai === "warning")
-      return "border-amber-100 bg-amber-50 text-amber-700";
-    return "border-rose-100 bg-rose-50 text-rose-700";
-  });
-
-  const toastIconClass = computed(() => {
-    if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
-    if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
-    return "bg-rose-100 text-rose-600";
-  });
-
-  const toastAccentClass = computed(() => {
-    if (toast.value.loai === "success") return "bg-emerald-500";
-    if (toast.value.loai === "warning") return "bg-amber-500";
-    return "bg-rose-500";
-  });
-
-  const ToastIcon = computed(() => {
-    if (toast.value.loai === "success") return CheckCircle2;
-    return CircleX;
-  });
-
   function hienThiThongBao(loai, tieuDe, noiDung = "") {
-    if (toastTimer) clearTimeout(toastTimer);
-    toast.value = { hienThi: true, loai, tieuDe, noiDung };
-    toastTimer = setTimeout(() => {
-      toast.value.hienThi = false;
-    }, 3200);
+    if (loai === "success") {
+      showSuccess(noiDung || tieuDe, tieuDe);
+    } else if (loai === "error") {
+      showError(noiDung || tieuDe, tieuDe);
+    }
   }
   const formErrors = reactive({});
 
@@ -628,7 +597,8 @@ export function useChiTietDotGiamGia() {
     const confirmMsg = laMoi 
       ? "Bạn có chắc chắn muốn thêm mới đợt giảm giá này không?" 
       : "Bạn có chắc chắn muốn cập nhật thông tin đợt giảm giá này không?";
-    if (!window.confirm(confirmMsg)) return;
+    const isConfirmed = await showConfirm(confirmMsg);
+    if (!isConfirmed) return;
 
     saving.value = true;
     loiTrang.value = "";
@@ -693,5 +663,5 @@ export function useChiTietDotGiamGia() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, toast, toastTimer, toastClass, toastIconClass, toastAccentClass, ToastIcon, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm };
+  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm };
 }

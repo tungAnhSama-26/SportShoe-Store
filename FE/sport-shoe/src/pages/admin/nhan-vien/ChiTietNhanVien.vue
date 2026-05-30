@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useChiTietNhanVien } from "./useChiTietNhanVien";
-const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, thongBao, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh } = useChiTietNhanVien();
+const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh } = useChiTietNhanVien();
 </script>
 
 <template>
@@ -34,12 +34,6 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
           </div>
         </Transition>
       </Teleport>
-      <div
-        v-if="thongBao"
-        class="rounded-[20px] border border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-700"
-      >
-        {{ thongBao }}
-      </div>
       <div
         v-if="loiTrang"
         class="rounded-[20px] border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700"

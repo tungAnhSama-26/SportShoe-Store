@@ -47,6 +47,10 @@ public class KhachHang {
     @Column(name = "ngay_sinh")
     private LocalDate ngaySinh;
 
+    // 0 = Nữ, 1 = Nam, 2 = Khác
+    @Column(name = "gioi_tinh")
+    private Integer gioiTinh;
+
     @Size(max = 255)
     @NotNull
     @Column(name = "mat_khau", nullable = false)

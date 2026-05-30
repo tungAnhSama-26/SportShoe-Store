@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -24,6 +25,16 @@ public class DotGiamGiaService {
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final DotGiamGiaSanPhamService dotGiamGiaSanPhamService;
+
+    public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+        boolean exists = false;
+        if (id != null && id > 0) {
+            exists = dotGiamGiaRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
+        } else {
+            exists = dotGiamGiaRepository.existsByTenIgnoreCase(ten);
+        }
+        return java.util.Map.of("exists", exists);
+    }
 
     public List<QuanLyDotGiamGiaResponse> getAll() {
         return dotGiamGiaRepository.hienThiDotGiamGia();

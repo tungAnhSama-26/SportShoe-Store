@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -22,6 +23,16 @@ import java.util.List;
 public class PhieuGiamGiaService {
 
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
+
+    public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+        boolean exists = false;
+        if (id != null && id > 0) {
+            exists = phieuGiamGiaRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
+        } else {
+            exists = phieuGiamGiaRepository.existsByTenIgnoreCase(ten);
+        }
+        return java.util.Map.of("exists", exists);
+    }
 
     public List<QuanLyPhieuGiamGiaResponse> getAll() {
         return phieuGiamGiaRepository.hienThiPhieuGiamGia();

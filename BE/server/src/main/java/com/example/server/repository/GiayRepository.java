@@ -9,4 +9,8 @@ public interface GiayRepository extends JpaRepository<Giay, Integer>, JpaSpecifi
     boolean existsByMaIgnoreCase(String ma);
 
     boolean existsByMaIgnoreCaseAndIdNot(String ma, Integer id);
+
+    boolean existsByTenIgnoreCase(String ten);
+
+    boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
 }

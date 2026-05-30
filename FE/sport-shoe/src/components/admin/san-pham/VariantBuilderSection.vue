@@ -181,7 +181,7 @@ function generateVariants() {
       <div ref="mauSacDropdownRef" class="dropdown-container relative rounded-[20px] border border-slate-200 bg-slate-50 p-4" @click.stop>
         <div class="grid gap-3 lg:grid-cols-[120px_minmax(0,1fr)_auto] lg:items-start">
           <div>
-            <label class="block text-[13px] font-semibold text-slate-700">Màu sắc</label>
+            <label class="block text-[13px] font-semibold text-slate-700">Màu sắc <span class="text-rose-500">*</span></label>
           </div>
 
           <div>
@@ -307,7 +307,7 @@ function generateVariants() {
       <div ref="kichCoDropdownRef" class="dropdown-container relative rounded-[20px] border border-slate-200 bg-white p-4" @click.stop>
         <div class="grid gap-3 lg:grid-cols-[120px_minmax(0,1fr)_auto] lg:items-start">
           <div>
-            <label class="block text-[13px] font-semibold text-slate-700">Kích cỡ</label>
+            <label class="block text-[13px] font-semibold text-slate-700">Kích cỡ <span class="text-rose-500">*</span></label>
           </div>
 
           <div>

@@ -11,6 +11,7 @@ import {
 } from "../../../services/nhan-vien";
 import { getCurrentAdminUser } from "../../../services/auth";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import { showSuccess } from "../../../utils/alert";
 import { useAdminSession } from "../../../composable/useAdminSession";
 
 const router = useRouter();
@@ -23,7 +24,7 @@ const dangTai = ref(false);
 const dangLuu = ref(false);
 const dangUpload = ref(false);
 const loiTrang = ref("");
-const thongBao = ref("");
+
 const fileInputAvatar = ref<HTMLInputElement | null>(null);
 
 const showDoiMatKhau = ref(false);
@@ -306,8 +307,7 @@ async function luu() {
       }
     });
     refreshAdminSession();
-    thongBao.value = "Cập nhật thông tin thành công.";
-    setTimeout(() => { thongBao.value = ""; }, 3000);
+    showSuccess("Cập nhật thông tin thành công.", "Thành công");
   } catch (error) {
     Object.assign(loiForm.value, getFieldErrors(error));
     loiTrang.value = getDisplayErrorMessage(error, "Không thể cập nhật thông tin");
@@ -325,10 +325,9 @@ async function doiMatKhau() {
   dangLuu.value = true;
   try {
     await doiMatKhauNhanVien(id, matKhauMoi.value.trim());
-    thongBao.value = "Đổi mật khẩu thành công.";
+    showSuccess("Đổi mật khẩu thành công.", "Thành công");
     matKhauMoi.value = "";
     showDoiMatKhau.value = false;
-    setTimeout(() => { thongBao.value = ""; }, 3000);
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể đổi mật khẩu");
   } finally {
@@ -380,10 +379,7 @@ onUnmounted(dungQuet);
       </button>
     </section>
 
-    <!-- Alerts -->
-    <div v-if="thongBao" class="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-medium text-emerald-700">
-      {{ thongBao }}
-    </div>
+
     <div v-if="loiTrang" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700">
       {{ loiTrang }}
     </div>
