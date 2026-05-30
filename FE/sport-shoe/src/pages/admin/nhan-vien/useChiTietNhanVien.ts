@@ -12,7 +12,7 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
-import { showSuccess, showConfirm } from "../../../utils/alert";
+import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 
@@ -195,7 +195,7 @@ export function useChiTietNhanVien() {
 
   const dsVaiTro = [
     { value: 1, label: "Admin" },
-    { value: 2, label: "Bán hàng" },
+    { value: 2, label: "Nhân viên" },
   ];
 
 
@@ -537,10 +537,9 @@ export function useChiTietNhanVien() {
             EMPLOYEE_CREATE_TOAST_KEY,
             JSON.stringify({
               loai: emailGuiThanhCong ? "success" : "error",
-              tieuDe: emailGuiThanhCong
-                ? "Đã tạo nhân viên mới"
-                : "Đã tạo nhân viên nhưng chưa gửi được email",
-              noiDung: chiTietDangNhap,
+              noiDung: emailGuiThanhCong
+                ? "Thêm nhân viên thành công"
+                : `Thêm nhân viên thành công, nhưng chưa gửi được email đăng nhập.${chiTietDangNhap ? ` ${chiTietDangNhap}` : ""}`,
             }),
           );
         }
@@ -556,13 +555,16 @@ export function useChiTietNhanVien() {
         router.push(redirectPath.startsWith("/admin") ? redirectPath : "/admin");
         return;
       }
-      showSuccess("Đã lưu thay đổi thành công.", "Thành công");
+      await showSuccess("Đã lưu thay đổi thành công.", "Thành công");
+      router.push({ name: "admin-nhan-vien" });
     } catch (error) {
       Object.assign(loiForm.value, getFieldErrors(error));
-      loiTrang.value = getDisplayErrorMessage(
+      const errorMessage = getDisplayErrorMessage(
         error,
         laMoi ? "Không thể tạo nhân viên" : "Không thể cập nhật nhân viên",
       );
+      loiTrang.value = errorMessage;
+      showError(errorMessage);
     } finally {
       dangLuu.value = false;
     }

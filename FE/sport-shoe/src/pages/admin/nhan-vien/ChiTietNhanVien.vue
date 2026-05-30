@@ -1,24 +1,38 @@
 <script setup lang="ts">
 import { useChiTietNhanVien } from "./useChiTietNhanVien";
+import { Lock, MapPin, User } from "lucide-vue-next";
+import Card from "../../../components/ui/Card.vue";
+import Button from "../../../components/ui/Button.vue";
 const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh } = useChiTietNhanVien();
+
+function taoChuCaiDaiDien(value?: string) {
+  return String(value || "NV")
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("") || "NV";
+}
 </script>
 
 <template>
   <div class="space-y-6">
-    <section class="flex items-center gap-4">
-      <div class="flex items-center gap-4">
-        <button
-          type="button"
-          @click="router.push({ name: 'admin-nhan-vien' })"
-          class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
-        >
-          <ArrowLeft class="h-5 w-5" />
-        </button>
+    <section class="flex items-start gap-4">
+      <button
+        type="button"
+        @click="router.push({ name: 'admin-nhan-vien' })"
+        class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+      >
+        <ArrowLeft class="h-5 w-5" />
+      </button>
+      <div>
         <h1 class="text-[28px] font-bold tracking-tight text-slate-900">
           {{ laMoi ? "Thêm nhân viên mới" : "Chi tiết nhân viên" }}
         </h1>
+        <p v-if="!laMoi" class="mt-1 text-sm text-slate-400">
+          Mã nhân viên: {{ nhanVien?.ma || "Chưa cập nhật" }}
+        </p>
       </div>
-
     </section>
 
     <Card v-if="dangTai" class="py-16 text-center text-sm text-slate-400">
@@ -41,19 +55,14 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
         {{ loiTrang }}
       </div>
 
-      <div class="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <Card>
-          <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-slate-800">Thông tin nhân viên</h2>
-          </div>
-          <div class="mt-7 h-px bg-slate-200"></div>
-
-          <div class="pt-10">
-            <div class="flex justify-center">
+      <div class="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+        <div class="space-y-5">
+          <Card class="text-center !bg-white shadow-sm">
+            <div class="flex justify-center pt-2">
               <button
                 type="button"
                 @click="fileInputAvatar?.click()"
-                class="relative flex h-[194px] w-[194px] items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-200 bg-slate-50 text-center transition hover:border-slate-300 hover:bg-slate-100"
+                class="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-center text-[42px] font-light text-slate-500 transition hover:bg-slate-200"
               >
                 <img
                   v-if="form.hinhAnh"
@@ -61,7 +70,7 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
                   alt="Ảnh nhân viên"
                   class="h-full w-full object-cover"
                 />
-                <span v-else class="text-[18px] font-medium text-slate-400">Chọn ảnh</span>
+                <span v-else>{{ taoChuCaiDaiDien(form.hoTen) }}</span>
                 <span
                   v-if="dangUpload"
                   class="absolute inset-0 flex items-center justify-center bg-white/80 text-sm font-semibold text-slate-600"
@@ -78,25 +87,73 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
               />
             </div>
 
-            <label class="mt-8 block space-y-1.5">
-              <span class="text-[13px] font-semibold text-slate-500">Họ và tên <span class="text-rose-500">*</span></span>
-              <input
-                v-model="form.hoTen"
-                type="text"
-                placeholder="Nhập họ và tên"
-                :class="[
-                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
-                  loiForm.hoTen ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
-                ]"
-              />
-              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
-            </label>
-          </div>
-        </Card>
+            <h2 class="mt-5 text-base font-bold text-slate-900">{{ form.hoTen || "Nhân viên mới" }}</h2>
+            <p class="mt-1 text-sm text-slate-400">{{ form.email || "Chưa cập nhật email" }}</p>
+            <div v-if="!laMoi" class="mt-3">
+              <span
+                class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                :class="nhanVien?.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+              >
+                {{ nhanVien?.trangThai === 1 ? "Hoạt động" : "Khóa" }}
+              </span>
+            </div>
+            <p v-else class="mt-3 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
+          </Card>
 
-        <Card>
-          <h2 class="text-base font-bold text-slate-800">Thông tin chi tiết</h2>
-          <div class="mt-7 h-px bg-slate-200"></div>
+          <template v-if="!laMoi">
+            <Card class="!bg-white shadow-sm">
+              <h3 class="mb-3 text-sm font-bold text-slate-800">Đổi mật khẩu</h3>
+              <div v-if="!showDoiMatKhau">
+                <Button variant="outline" class="w-full justify-center" @click="showDoiMatKhau = true">Đổi mật khẩu</Button>
+              </div>
+              <div v-else class="space-y-3">
+                <input
+                  v-model="matKhauMoi"
+                  type="password"
+                  placeholder="Mật khẩu mới tối thiểu 6 ký tự"
+                  class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-primary/50 focus:bg-white focus:ring-2 focus:ring-primary/10"
+                />
+                <div class="flex gap-2">
+                  <Button variant="primary" class="flex-1 justify-center" @click="doiMatKhau" :disabled="dangLuu">Xác nhận</Button>
+                  <Button variant="soft" class="flex-1 justify-center" @click="showDoiMatKhau = false; matKhauMoi = ''">Hủy</Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card class="space-y-2 !bg-white shadow-sm">
+              <h3 class="mb-3 text-sm font-bold text-slate-800">Trạng thái tài khoản</h3>
+              <Button
+                v-if="nhanVien?.trangThai === 1"
+                variant="soft"
+                class="w-full justify-center bg-rose-50 text-rose-600 hover:bg-rose-100"
+                @click="doiTrangThai(0)"
+              >
+                <Lock class="h-4 w-4" />
+                Khóa tài khoản
+              </Button>
+              <Button
+                v-else
+                variant="soft"
+                class="w-full justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                @click="doiTrangThai(1)"
+              >
+                Kích hoạt tài khoản
+              </Button>
+            </Card>
+          </template>
+        </div>
+
+        <div class="space-y-5">
+        <Card class="space-y-5 !bg-white shadow-sm">
+          <div class="mb-2 flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-500">
+              <User class="h-5 w-5" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-slate-800">Thông tin cơ bản</h2>
+              <p class="text-sm text-slate-400">Họ tên, email, liên hệ và tài khoản.</p>
+            </div>
+          </div>
 
           <!-- QR Scanner Modal -->
           <Teleport to="body">
@@ -140,51 +197,49 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
             </div>
           </Teleport>
 
-          <!-- CCCD Field -->
-          <div class="mt-6 space-y-1.5">
-            <span class="text-[13px] font-semibold text-slate-500">Số CCCD</span>
-            <div class="flex items-center gap-3 flex-wrap">
+          <div class="mb-5 rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
+            <div class="mb-3 flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                <ScanLine class="h-5 w-5" />
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-800">Quét CCCD</h3>
+                <p class="text-xs text-slate-400">Dùng để điền nhanh thông tin nhân viên.</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 @click="batDauQuet"
                 :class="[
-                  'flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition whitespace-nowrap',
-                  loiForm.cccd ? 'border-rose-400 bg-rose-50 text-rose-600 hover:bg-rose-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  'inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition whitespace-nowrap shadow-sm',
+                  loiForm.cccd ? 'border-rose-400 bg-white text-rose-600 hover:bg-rose-50' : 'border-rose-200 bg-white text-primary hover:bg-rose-50'
                 ]"
               >
                 <ScanLine class="h-4 w-4" />
                 {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
               </button>
-              <span v-if="form.cccd" class="text-sm font-semibold text-slate-800">{{ form.cccd }}</span>
+              <span v-if="form.cccd" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">Đã có CCCD</span>
             </div>
-            <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
+            <p v-if="loiForm.cccd" class="mt-2 text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>
 
-          <div class="mt-5 grid gap-x-5 gap-y-4 xl:grid-cols-12">
-            <div class="space-y-1.5 xl:col-span-4">
-              <span class="text-[13px] font-semibold text-slate-500">Giới tính <span class="text-rose-500">*</span></span>
-              <div class="flex h-11 items-center gap-6 px-1 text-sm text-slate-700">
-                <label class="inline-flex items-center gap-2">
-                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-primary" />
-                  <span>Nam</span>
-                </label>
-                <label class="inline-flex items-center gap-2">
-                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-primary" />
-                  <span>Nữ</span>
-                </label>
-              </div>
-            </div>
-
-            <label class="space-y-1.5 xl:col-span-4">
-              <span class="text-[13px] font-semibold text-slate-500">Ngày sinh <span class="text-rose-500">*</span></span>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="text-[13px] font-semibold text-slate-500">Họ và tên <span class="text-rose-500">*</span></span>
               <input
-                v-model="form.ngaySinh"
-                type="date"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+                v-model="form.hoTen"
+                type="text"
+                placeholder="Nhập họ và tên"
+                :class="[
+                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
+                  loiForm.hoTen ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
+                ]"
               />
+              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
             </label>
 
-            <label class="space-y-1.5 xl:col-span-4">
+            <label class="space-y-2">
               <span class="text-[13px] font-semibold text-slate-500">Email <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.email"
@@ -198,40 +253,7 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
               <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
             </label>
 
-            <label class="space-y-1.5 xl:col-span-4">
-              <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
-              <select
-                v-model="form.tinhThanh"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
-              >
-                <option value="">Chọn tỉnh thành</option>
-                <option v-for="item in dsTinhThanh" :key="item.value" :value="item.value">{{ item.label }}</option>
-              </select>
-            </label>
-
-            <label class="space-y-1.5 xl:col-span-4">
-              <span class="text-[13px] font-semibold text-slate-500">Quận/Huyện <span class="text-rose-500">*</span></span>
-              <select
-                v-model="form.quanHuyen"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
-              >
-                <option value="">Chọn quận huyện</option>
-                <option v-for="item in dsQuanHuyen" :key="item.value" :value="item.value">{{ item.label }}</option>
-              </select>
-            </label>
-
-            <label class="space-y-1.5 xl:col-span-4">
-              <span class="text-[13px] font-semibold text-slate-500">Xã/Phường/Thị trấn <span class="text-rose-500">*</span></span>
-              <select
-                v-model="form.xaPhuong"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
-              >
-                <option value="">Chọn xã phường</option>
-                <option v-for="item in dsXaPhuong" :key="item.value" :value="item.value">{{ item.label }}</option>
-              </select>
-            </label>
-
-            <label class="space-y-1.5 xl:col-span-6">
+            <label class="space-y-2">
               <span class="text-[13px] font-semibold text-slate-500">Số điện thoại <span class="text-rose-500">*</span></span>
               <input
                 v-model="form.sdt"
@@ -245,7 +267,7 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
               <p v-if="loiForm.sdt" class="text-xs text-rose-500">{{ loiForm.sdt }}</p>
             </label>
 
-            <label class="space-y-1.5 xl:col-span-6">
+            <label class="space-y-2">
               <span class="text-[13px] font-semibold text-slate-500">Vai trò <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.vaiTro"
@@ -255,103 +277,110 @@ const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, Arrow
               </select>
             </label>
 
-            <label class="space-y-1.5 xl:col-span-12">
-              <span class="text-[13px] font-semibold text-slate-500">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
+            <label class="space-y-2">
+              <span class="text-[13px] font-semibold text-slate-500">Giới tính <span class="text-rose-500">*</span></span>
+              <select
+                v-model="form.gioiTinh"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="">-- Chọn giới tính --</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </label>
+
+            <label class="space-y-2">
+              <span class="text-[13px] font-semibold text-slate-500">Ngày sinh <span class="text-rose-500">*</span></span>
+              <input
+                v-model="form.ngaySinh"
+                type="date"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              />
+            </label>
+
+          </div>
+        </Card>
+
+        <Card class="space-y-5 !bg-white shadow-sm">
+          <div class="mb-2 flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-500">
+              <MapPin class="h-5 w-5" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-slate-800">Địa chỉ</h2>
+              <p class="text-sm text-slate-400">Khu vực làm việc hoặc địa chỉ liên hệ của nhân viên.</p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
+              <select
+                v-model="form.tinhThanh"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="">Chọn tỉnh thành</option>
+                <option v-for="item in dsTinhThanh" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+
+            <label class="space-y-2">
+              <span class="text-[13px] font-semibold text-slate-500">Quận/Huyện <span class="text-rose-500">*</span></span>
+              <select
+                v-model="form.quanHuyen"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="">Chọn quận huyện</option>
+                <option v-for="item in dsQuanHuyen" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+
+            <label class="space-y-2">
+              <span class="text-[13px] font-semibold text-slate-500">Xã/Phường/Thị trấn <span class="text-rose-500">*</span></span>
+              <select
+                v-model="form.xaPhuong"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="">Chọn xã phường</option>
+                <option v-for="item in dsXaPhuong" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </label>
+
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-[13px] font-semibold text-slate-500">Địa chỉ cụ thể</span>
               <input
                 v-model="form.diaChiCuThe"
                 type="text"
                 placeholder="Nhập địa chỉ cụ thể"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 placeholder:text-slate-400 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+                :class="[
+                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
+                  'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
+                ]"
               />
             </label>
           </div>
+          <div class="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              @click="luu"
+              :disabled="dangLuu"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 text-sm font-bold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save class="h-4 w-4" />
+              {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
+            </button>
+            <button
+              type="button"
+              @click="router.push({ name: 'admin-nhan-vien' })"
+              class="inline-flex h-11 items-center justify-center rounded-2xl border border-rose-200 bg-white px-6 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
+            >
+              Hủy
+            </button>
+          </div>
         </Card>
+        </div>
       </div>
-
-      <!-- Buttons cuối trang -->
-      <Card class="flex flex-wrap items-center justify-end gap-3">
-        <Button
-          variant="outline"
-          @click="router.push({ name: 'admin-nhan-vien' })"
-          class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-slate-100 px-8 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
-        >
-          Hủy
-        </Button>
-        <Button
-          variant="primary"
-          @click="luu"
-          :disabled="dangLuu"
-          class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-500 px-8 text-[15px] font-semibold text-white shadow-md shadow-red-500/25 transition hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Save class="h-4 w-4" />
-          {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
-        </Button>
-      </Card>
-
-      <section v-if="!laMoi" class="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <h3 class="text-[18px] font-bold text-slate-900">Đổi mật khẩu</h3>
-          <div class="mt-6 space-y-4">
-            <template v-if="showDoiMatKhau">
-              <input
-                v-model="matKhauMoi"
-                type="password"
-                placeholder="Mật khẩu mới tối thiểu 6 ký tự"
-                class="h-12 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[16px] text-slate-700 outline-none focus:border-slate-300"
-              />
-              <div class="flex gap-3">
-                <Button variant="primary" @click="doiMatKhau" :disabled="dangLuu" class="h-11 px-5">
-                  Xác nhận
-                </Button>
-                <Button
-                  variant="soft"
-                  @click="showDoiMatKhau = false; matKhauMoi = ''"
-                  class="h-11 px-5"
-                >
-                  Hủy
-                </Button>
-              </div>
-            </template>
-            <Button
-              v-else
-              variant="soft"
-              @click="showDoiMatKhau = true"
-              class="h-11 px-5"
-            >
-              Đổi mật khẩu
-            </Button>
-          </div>
-        </Card>
-
-        <Card>
-          <h3 class="text-[18px] font-bold text-slate-900">Trạng thái tài khoản</h3>
-          <div class="mt-6 flex flex-wrap gap-3">
-            <Button
-              v-if="nhanVien?.trangThai === 1"
-              variant="danger"
-              @click="doiTrangThai(0)"
-              class="h-11 px-5"
-            >
-              Khóa tài khoản
-            </Button>
-            <Button
-              v-else
-              variant="success"
-              @click="doiTrangThai(1)"
-              class="h-11 px-5"
-            >
-              Kích hoạt tài khoản
-            </Button>
-            <Button
-              variant="outline"
-              @click="xoaNhanVienHienTai"
-              class="h-11 px-5 text-rose-600 border-rose-200 hover:bg-rose-50"
-            >
-              Xóa nhân viên
-            </Button>
-          </div>
-        </Card>
-      </section>
     </template>
   </div>
 </template>

@@ -1,7 +1,28 @@
 <script setup lang="ts">
 import { useChiTietHoaDon } from "./useChiTietHoaDon";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import { API_BASE_URL } from "../../../services/api-client";
 const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien } = useChiTietHoaDon();
+
+const productImageFallback =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' rx='14' fill='%23f8fafc'/%3E%3Cpath d='M18 44h35c3 0 5-2 5-5 0-2-1-4-3-5l-10-5-7 8H25l-5-5-6 5v3c0 2 2 4 4 4z' fill='%23e2e8f0'/%3E%3Cpath d='M24 48h30' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
+const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+
+function resolveProductImageUrl(url?: string) {
+  const value = String(url || "").trim();
+  if (!value) return productImageFallback;
+  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+  if (value.startsWith("/uploads/")) return `${apiOrigin}${value}`;
+  if (value.startsWith("uploads/")) return `${apiOrigin}/${value}`;
+  return value.startsWith("/") ? value : `/${value}`;
+}
+
+function handleProductImageError(event: Event) {
+  const target = event.currentTarget as HTMLImageElement | null;
+  if (target && target.src !== productImageFallback) {
+    target.src = productImageFallback;
+  }
+}
 
 </script>
 
@@ -377,7 +398,7 @@ const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft
                     index
                     + 1 }}</td>
                   <td class="px-5 py-6">
-                    <img :src="item.hinhAnh || 'https://via.placeholder.com/72x72?text=Shoe'"
+                    <img :src="resolveProductImageUrl(item.hinhAnh)" @error="handleProductImageError"
                       class="h-14 w-14 rounded-xl object-cover" />
                   </td>
                   <td class="px-5 py-6">

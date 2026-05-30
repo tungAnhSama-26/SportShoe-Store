@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onActivated, onMounted } from "vue";
+import { ref, computed, watch, onActivated, onMounted, onUnmounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
   doiTrangThaiNhanVien,
@@ -37,13 +37,18 @@ const danhSach = ref([]);
 const dangTai = ref(false);
 const loiTrang = ref("");
 const boLoc = ref({ keyword: "", vaiTro: "", trangThai: "" });
-const toastTimer = null;
+const toast = reactive({
+  show: false,
+  message: "",
+  type: "success",
+});
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 
 const dsVaiTro = [
   { label: "Tất cả vai trò", value: "" },
   { label: "Admin", value: "1" },
-  { label: "Bán hàng", value: "2" },
+  { label: "Nhân viên", value: "2" },
 
 ];
 
@@ -69,6 +74,16 @@ function dinhDangNgay(ngay: string) {
 
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 
+function showToast(message: string, type = "success") {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.message = message;
+  toast.type = type;
+  toast.show = true;
+  toastTimer = setTimeout(() => {
+    toast.show = false;
+    toastTimer = null;
+  }, 3000);
+}
 
 
 function taiThongBaoDieuHuong() {
@@ -80,12 +95,18 @@ function taiThongBaoDieuHuong() {
   try {
     const payload = JSON.parse(raw);
     if (payload?.loai === "error") {
-      showError(typeof payload?.noiDung === "string" ? payload.noiDung : "", payload?.tieuDe || "Lỗi");
+      showError(
+        typeof payload?.noiDung === "string" 
+          ? payload.noiDung 
+          : "Thêm nhân viên thành công, nhưng chưa gửi được email đăng nhập."
+      );
     } else {
-      showSuccess(typeof payload?.noiDung === "string" ? payload.noiDung : "", payload?.tieuDe || "Thao tác thành công");
+      showSuccess(
+        typeof payload?.noiDung === "string" ? payload.noiDung : "Thêm nhân viên thành công"
+      );
     }
   } catch {
-    showSuccess("Đã tạo nhân viên mới");
+    showSuccess("Thêm nhân viên thành công");
   }
 }
 
@@ -103,8 +124,8 @@ function hienThiVaiTro(nv: any) {
   if (normalizedRole.includes("admin") || normalizedRole.includes("quan tri")) {
     return "Admin";
   }
-  if (normalizedRole.includes("ban hang") || Number(nv?.vaiTro) === 2) {
-    return "Bán hàng";
+  if (normalizedRole.includes("ban hang") || normalizedRole.includes("nhan vien") || Number(nv?.vaiTro) === 2) {
+    return "Nhân viên";
   }
   if (normalizedRole.includes("kho") || Number(nv?.vaiTro) === 3) {
     return "Kho";
@@ -255,10 +276,25 @@ onMounted(() => {
 onActivated(() => {
   taiThongBaoDieuHuong();
 });
+
+onUnmounted(() => {
+  if (toastTimer) clearTimeout(toastTimer);
+});
 </script>
 
 <template>
   <div class="space-y-5">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="toast.show"
+          class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
+          :class="toast.type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'"
+        >
+          {{ toast.message }}
+        </div>
+      </Transition>
+    </Teleport>
 
 
     <!-- Header -->
@@ -365,7 +401,7 @@ onActivated(() => {
               <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
               <th class="px-3 py-3 whitespace-nowrap">Mã NV</th>
               <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
-              <th class="px-3 py-3 whitespace-nowrap">Tài khoản</th>
+              <th class="px-3 py-3 whitespace-nowrap">Email</th>
               <th class="px-3 py-3 whitespace-nowrap">Giới tính</th>
               <th class="px-3 py-3 whitespace-nowrap">Số điện thoại</th>
               <th class="px-3 py-3 whitespace-nowrap">Địa chỉ</th>
@@ -415,13 +451,8 @@ onActivated(() => {
                 </div>
               </td>
               <td class="px-3 py-3 text-slate-600">
-                <div class="text-sm">
-                  
-                  <span class="font-semibold text-slate-800" :title="nv.tenDangNhap">{{ nv.tenDangNhap }}</span>
-                </div>
-                <div class="text-xs mt-0.5">
-                 
-                  <span class="text-slate-500 select-all" :title="nv.email">{{ nv.email }}</span>
+                <div class="text-sm font-semibold text-slate-800 select-all" :title="nv.email">
+                  {{ nv.email }}
                 </div>
               </td>
               <td class="px-3 py-3 text-slate-600">
@@ -500,3 +531,18 @@ onActivated(() => {
     </Card>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>
