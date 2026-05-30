@@ -7,6 +7,7 @@ import com.example.server.entity.PhieuGiamGia;
 import com.example.server.entity.PhieuGiamGiaKhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
 import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaRepository;
@@ -30,6 +31,7 @@ public class PhieuGiamGiaKhachHangService {
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final KhachHangRepository khachHangRepository;
+    private final EmailService emailService;
 
     public List<QuanLyPhieuGiamGiaKhachHangResponse> getAll() {
         return phieuGiamGiaKhachHangRepository.hienThiPhieuGiamGiaKhachHang();
@@ -60,7 +62,24 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai() == null ? 1 : request.getTrangThai());
         phieuGiamGiaKhachHang.setNgayTao(resolveNgayTao(request.getNgayTao()));
 
-        return phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+        PhieuGiamGiaKhachHang saved = phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+
+        // Gửi email tặng phiếu giảm giá cho khách hàng ở luồng nền.
+        if (khachHang.getEmail() != null && !khachHang.getEmail().isBlank()) {
+            emailService.sendVoucherGiftEmailAsync(
+                    khachHang.getEmail(),
+                    khachHang.getHoTen(),
+                    phieuGiamGia.getMa(),
+                    phieuGiamGia.getTen(),
+                    phieuGiamGia.getLoai(),
+                    phieuGiamGia.getGiaTri(),
+                    phieuGiamGia.getGiamToiDa(),
+                    phieuGiamGia.getGiaTriToiThieu(),
+                    phieuGiamGia.getNgayKetThuc()
+            );
+        }
+
+        return saved;
     }
 
     public PhieuGiamGiaKhachHang update(Integer id, PhieuGiamGiaKhachHangRequest request) {
