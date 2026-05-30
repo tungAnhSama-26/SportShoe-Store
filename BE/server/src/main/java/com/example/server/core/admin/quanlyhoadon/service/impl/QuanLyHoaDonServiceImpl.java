@@ -36,7 +36,7 @@ import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -52,6 +52,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
+
+    private static final ZoneId MUI_GIO_HOA_DON = ZoneId.of("Asia/Bangkok");
 
     private static final int KENH_BAN_TAI_QUAY = 1;
     private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
@@ -129,8 +131,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     ) {
         Integer kenhBan = mapLoaiDonToKenhBan(loaiDon);
         Integer trangThaiDb = mapTrangThaiFilterToDb(trangThai);
-        Instant tuNgayValue = tuNgay != null ? tuNgay.atStartOfDay().toInstant(ZoneOffset.UTC) : null;
-        Instant denNgayValue = denNgay != null ? denNgay.plusDays(1).atStartOfDay().minusNanos(1).toInstant(ZoneOffset.UTC) : null;
+        Instant tuNgayValue = tuNgay != null ? tuNgay.atStartOfDay(MUI_GIO_HOA_DON).toInstant() : null;
+        Instant denNgayValue = denNgay != null ? denNgay.plusDays(1).atStartOfDay(MUI_GIO_HOA_DON).minusNanos(1).toInstant() : null;
 
         List<HoaDon> hoaDons = hoaDonRepository.searchInvoices(
                 null, // Bỏ tìm kiếm trực tiếp trên SQL vì thiếu bảng phụ (thanhToan)
