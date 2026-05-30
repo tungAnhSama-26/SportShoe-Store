@@ -66,31 +66,7 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception) {
-        Map<String, String> errors = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .collect(Collectors.toMap(
-                        error -> error.getField(),
-                        error -> error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage(),
-                        (left, right) -> left,
-                        LinkedHashMap::new
-                ));
 
-        return ResponseEntity.badRequest()
-                .body(ErrorResponse.of(
-                        ErrorCode.VALIDATION_ERROR,
-                        ErrorCode.VALIDATION_ERROR.messageTemplate(),
-                        errors
-                ));
-    }
-
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException exception) {
-        return ResponseEntity.badRequest()
-                .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, exception.getMessage()));
-    }
 
     @ExceptionHandler(RestClientException.class)
     public ResponseEntity<ErrorResponse> handleRestClient(RestClientException exception) {
