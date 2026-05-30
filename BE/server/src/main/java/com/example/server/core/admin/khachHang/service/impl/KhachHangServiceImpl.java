@@ -84,9 +84,9 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgayTao(Instant.now());
 
         KhachHang saved = khachHangRepository.save(kh);
-        EmailDispatchResult emailDispatchResult = null;
+        // Gửi email chào mừng ở luồng nền để không làm chậm thao tác tạo khách hàng.
         if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
-            emailDispatchResult = emailService.trySendCustomerRegistrationEmail(
+            emailService.sendCustomerRegistrationEmailAsync(
                     saved.getEmail(),
                     saved.getHoTen(),
                     saved.getTenDangNhap(),
@@ -94,7 +94,7 @@ public class KhachHangServiceImpl implements KhachHangService {
             );
         }
 
-        return toKhachHangResponse(saved, emailDispatchResult);
+        return toKhachHangResponse(saved);
     }
 
     @Override

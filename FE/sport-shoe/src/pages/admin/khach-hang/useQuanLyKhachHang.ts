@@ -37,11 +37,11 @@ export function useQuanLyKhachHang() {
     { label: "Khóa", value: "0" },
   ];
 
-  function hienThiThongBao(loai: "success" | "error", tieuDe: string, noiDung = "") {
+  function hienThiThongBao(loai: "success" | "error", tieuDe: string, noiDung = "", iconColor?: string) {
     if (loai === "success") {
-      showSuccess(noiDung || tieuDe, tieuDe);
+      showSuccess(noiDung || tieuDe, noiDung ? tieuDe : "Thành công", iconColor);
     } else {
-      showError(noiDung || tieuDe, tieuDe);
+      showError(noiDung || tieuDe, noiDung ? tieuDe : "Thất bại");
     }
   }
 
@@ -54,10 +54,12 @@ export function useQuanLyKhachHang() {
     try {
       const payload = JSON.parse(raw);
       const noiDung = typeof payload?.noiDung === "string" ? payload.noiDung : "";
+      const iconColor = typeof payload?.iconColor === "string" ? payload.iconColor : undefined;
       hienThiThongBao(
         payload?.loai === "error" ? "error" : "success",
         payload?.tieuDe || "Thao tác thành công",
         noiDung,
+        iconColor,
       );
     } catch {
       hienThiThongBao("success", "Đã tạo khách hàng mới");
