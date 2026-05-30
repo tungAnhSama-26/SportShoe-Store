@@ -211,10 +211,12 @@ public class AuthController {
     }
 
     private KhachHangResponse toKhachHangResponse(KhachHang kh) {
-        String diaChiMacDinh = diaChiKhachHangRepository
-                .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId())
+        var diaChiMacDinhOpt = diaChiKhachHangRepository
+                .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId());
+        String diaChiMacDinh = diaChiMacDinhOpt
                 .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
                 .orElse(null);
+        String sdtMacDinh = diaChiMacDinhOpt.map(dc -> dc.getSdt()).orElse(null);
 
         return new KhachHangResponse(
                 kh.getId(),
@@ -223,14 +225,27 @@ public class AuthController {
                 kh.getEmail(),
                 kh.getSdt(),
                 kh.getNgaySinh(),
+                kh.getGioiTinh(),
+                tenGioiTinh(kh.getGioiTinh()),
                 kh.getHinhAnh(),
                 kh.getTrangThai(),
                 kh.getTrangThai() == 1 ? "Đang hoạt động" : "Ngừng hoạt động",
                 kh.getNgayTao(),
                 diaChiMacDinh,
+                sdtMacDinh,
                 null,
                 null
         );
+    }
+
+    private String tenGioiTinh(Integer gioiTinh) {
+        if (gioiTinh == null) return null;
+        return switch (gioiTinh) {
+            case 0 -> "Nữ";
+            case 1 -> "Nam";
+            case 2 -> "Khác";
+            default -> null;
+        };
     }
 
     private boolean isAdmin(NhanVien nhanVien) {
