@@ -371,7 +371,7 @@ const filteredSelectedVariants = computed(() => {
                     <th class="px-4 py-3 text-center w-12 rounded-tl-xl">
                       <input
                         type="checkbox"
-                        class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer"
+                        class="h-4 w-4 rounded border-slate-400 text-rose-500 focus:ring-rose-500 cursor-pointer"
                         :checked="tatCaDaChon"
                         :indeterminate="motSoDaChon"
                         :disabled="isReadOnly || tatCaCoTheChon.length === 0"
@@ -413,7 +413,7 @@ const filteredSelectedVariants = computed(() => {
                           >
                             <div class="h-0.5 w-2 bg-white rounded-full"></div>
                           </div>
-                          <Square v-else class="h-4 w-4 text-slate-300" />
+                          <Square v-else class="h-4 w-4 text-slate-500 hover:text-slate-600 transition-colors" />
                         </button>
                       </td>
                       <td
@@ -510,7 +510,7 @@ const filteredSelectedVariants = computed(() => {
                                       />
                                       <Square
                                         v-else
-                                        class="h-4 w-4 text-slate-300"
+                                        class="h-4 w-4 text-slate-500 hover:text-slate-600 transition-colors"
                                       />
                                     </button>
                                   </td>

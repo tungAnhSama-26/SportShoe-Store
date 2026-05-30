@@ -78,6 +78,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.entity.DotGiamGia;
+import com.example.server.entity.DotGiamGiaSanPham;
+import com.example.server.repository.DotGiamGiaSanPhamRepository;
+import java.time.LocalDate;
 
 @Service
 public class BanHangTaiQuayService {
@@ -124,6 +128,7 @@ public class BanHangTaiQuayService {
     private final BanHangTaiQuayPaymentUseCase paymentUseCase;
     private final BanHangTaiQuayShippingUseCase shippingUseCase;
     private final BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase;
+    private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
 
     public BanHangTaiQuayService(
             KhachHangRepository khachHangRepository,
@@ -143,7 +148,8 @@ public class BanHangTaiQuayService {
             BanHangTaiQuayInventoryUseCase inventoryUseCase,
             BanHangTaiQuayPaymentUseCase paymentUseCase,
             BanHangTaiQuayShippingUseCase shippingUseCase,
-            BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase
+            BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase,
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository
     ) {
         this.khachHangRepository = khachHangRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -163,6 +169,7 @@ public class BanHangTaiQuayService {
         this.paymentUseCase = paymentUseCase;
         this.shippingUseCase = shippingUseCase;
         this.invoiceStateUseCase = invoiceStateUseCase;
+        this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
     }
 
     @Transactional(readOnly = true)
@@ -196,7 +203,7 @@ public class BanHangTaiQuayService {
                         chiTiet.getMaBienThe(),
                         chiTiet.getSoLuong(),
                         chiTiet.getGiaGoc(),
-                        chiTiet.getGiaBan(),
+                        layGiaBanThucTe(chiTiet),
                         hinhAnhMap.get(chiTiet.getId()),
                         chiTiet.getGiay().getLoaiGiay() != null ? chiTiet.getGiay().getLoaiGiay().getTen() : null,
                         chiTiet.getGiay().getThuongHieu() != null ? chiTiet.getGiay().getThuongHieu().getTen() : null,
@@ -745,11 +752,12 @@ public class BanHangTaiQuayService {
         inventoryUseCase.deductStock(giayChiTiet, soLuong);
         giayChiTietRepository.save(giayChiTiet);
 
+        BigDecimal giaThucTe = layGiaBanThucTe(giayChiTiet);
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
         hoaDonChiTiet.setSoLuong(soLuong);
-        hoaDonChiTiet.setGiaDonVi(giayChiTiet.getGiaBan());
-        hoaDonChiTiet.setThanhTien(giayChiTiet.getGiaBan().multiply(BigDecimal.valueOf(soLuong.longValue())));
+        hoaDonChiTiet.setGiaDonVi(giaThucTe);
+        hoaDonChiTiet.setThanhTien(giaThucTe.multiply(BigDecimal.valueOf(soLuong.longValue())));
         hoaDonChiTiet.setTrangThai(1);
         hoaDonChiTiet.setNgayTao(Instant.now());
         return hoaDonChiTiet;
@@ -802,11 +810,12 @@ public class BanHangTaiQuayService {
 
     private HoaDonChiTiet taoDongHoaDonTam(TaoHoaDonChoItemRequest item) {
         GiayChiTiet giayChiTiet = layGiayChiTietHopLe(item.chiTietId(), item.soLuong());
+        BigDecimal giaThucTe = layGiaBanThucTe(giayChiTiet);
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
         hoaDonChiTiet.setSoLuong(item.soLuong());
-        hoaDonChiTiet.setGiaDonVi(giayChiTiet.getGiaBan());
-        hoaDonChiTiet.setThanhTien(giayChiTiet.getGiaBan().multiply(BigDecimal.valueOf(item.soLuong().longValue())));
+        hoaDonChiTiet.setGiaDonVi(giaThucTe);
+        hoaDonChiTiet.setThanhTien(giaThucTe.multiply(BigDecimal.valueOf(item.soLuong().longValue())));
         hoaDonChiTiet.setTrangThai(1);
         hoaDonChiTiet.setNgayTao(Instant.now());
         return hoaDonChiTiet;
@@ -995,6 +1004,52 @@ public class BanHangTaiQuayService {
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT);
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private BigDecimal layGiaBanThucTe(GiayChiTiet gct) {
+        if (gct == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
+        if (activeDiscounts == null || activeDiscounts.isEmpty()) {
+            return gct.getGiaBan();
+        }
+        
+        LocalDate now = LocalDate.now();
+        BigDecimal giaThapNhat = gct.getGiaBan();
+        
+        for (DotGiamGiaSanPham link : activeDiscounts) {
+            DotGiamGia dgg = link.getDotGiamGia();
+            if (dgg == null || dgg.getKichHoat() == null || dgg.getKichHoat() == 0) {
+                continue;
+            }
+            if (dgg.getNgayBatDau() != null && now.isBefore(dgg.getNgayBatDau())) {
+                continue;
+            }
+            if (dgg.getNgayKetThuc() != null && now.isAfter(dgg.getNgayKetThuc())) {
+                continue;
+            }
+            
+            BigDecimal giaSauGiam = gct.getGiaBan();
+            if (dgg.getLoaiGiam() != null && dgg.getLoaiGiam() == 1) { // %
+                BigDecimal discountAmount = gct.getGiaBan().multiply(dgg.getGiaTriGiam())
+                        .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                giaSauGiam = gct.getGiaBan().subtract(discountAmount);
+            } else if (dgg.getLoaiGiam() != null && dgg.getLoaiGiam() == 2) { // fixed
+                giaSauGiam = gct.getGiaBan().subtract(dgg.getGiaTriGiam());
+            }
+            
+            if (giaSauGiam.compareTo(BigDecimal.ZERO) < 0) {
+                giaSauGiam = BigDecimal.ZERO;
+            }
+            
+            if (giaSauGiam.compareTo(giaThapNhat) < 0) {
+                giaThapNhat = giaSauGiam;
+            }
+        }
+        
+        return giaThapNhat;
     }
 
     private record PhieuGiamGiaDuocApDung(
