@@ -1206,7 +1206,7 @@ public class QuanLySanPhamService {
             }
 
             DotGiamGia dotGiamGia = link.getDotGiamGia();
-            if (!isDiscountDisplayable(dotGiamGia, now)) {
+            if (!isDiscountEffective(dotGiamGia, now)) {
                 continue;
             }
 
