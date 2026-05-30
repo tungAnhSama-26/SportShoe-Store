@@ -13,6 +13,13 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
 @Service
 public class EmailService {
 
@@ -30,6 +37,9 @@ public class EmailService {
 
     private static final String SYSTEM_LOGIN_URL = "http://localhost:5173/login";
     private static final String CUSTOMER_LOGIN_URL = "http://localhost:3000/login";
+    private static final String CUSTOMER_STORE_URL = "http://localhost:3000";
+    private static final DateTimeFormatter VOUCHER_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
@@ -79,6 +89,40 @@ public class EmailService {
     @Async
     public void sendCustomerRegistrationEmailAsync(String to, String fullName, String username, String password) {
         trySendCustomerRegistrationEmail(to, fullName, username, password);
+    }
+
+    /**
+     * Gửi email tặng phiếu giảm giá cá nhân cho khách hàng ở luồng nền.
+     * Lỗi gửi email chỉ được ghi log, không làm hỏng thao tác tặng phiếu.
+     *
+     * @param loai 1 = giảm theo phần trăm, 2 = giảm theo số tiền
+     */
+    @Async
+    public void sendVoucherGiftEmailAsync(
+            String to,
+            String fullName,
+            String maPhieu,
+            String tenPhieu,
+            Integer loai,
+            BigDecimal giaTri,
+            BigDecimal giamToiDa,
+            BigDecimal giaTriToiThieu,
+            Instant ngayKetThuc
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            applyFrom(helper);
+            helper.setTo(to);
+            helper.setSubject("🎁 Quà tặng từ SportShoe - Phiếu giảm giá dành riêng cho bạn");
+            helper.setText(
+                    buildVoucherGiftEmailHtml(fullName, maPhieu, tenPhieu, loai, giaTri, giamToiDa, giaTriToiThieu, ngayKetThuc),
+                    true
+            );
+            mailSender.send(message);
+        } catch (MessagingException | MailException exception) {
+            log.error("Không thể gửi email tặng phiếu giảm giá tới {}", to, exception);
+        }
     }
 
     public EmailDispatchResult trySendCustomerRegistrationEmail(String to, String fullName, String username, String password) {
@@ -454,6 +498,123 @@ public class EmailService {
                 .replace("__COLOR__", color)
                 .replace("__FONT__", Integer.toString(fontSize))
                 .replace("__SYMBOL__", symbol);
+    }
+
+    private String buildVoucherGiftEmailHtml(
+            String fullName,
+            String maPhieu,
+            String tenPhieu,
+            Integer loai,
+            BigDecimal giaTri,
+            BigDecimal giamToiDa,
+            BigDecimal giaTriToiThieu,
+            Instant ngayKetThuc
+    ) {
+        boolean phanTram = loai != null && loai == 1;
+        String giaTriText = phanTram
+                ? ("Giảm ngay " + formatPercent(giaTri) + "%")
+                : ("Giảm ngay " + formatCurrency(giaTri));
+        String toiDaText = (phanTram && giamToiDa != null && giamToiDa.signum() > 0)
+                ? (" (tối đa " + formatCurrency(giamToiDa) + ")")
+                : "";
+        String donToiThieuText = (giaTriToiThieu != null && giaTriToiThieu.signum() > 0)
+                ? ("cho đơn hàng từ " + formatCurrency(giaTriToiThieu))
+                : "áp dụng cho mọi đơn hàng";
+        String hanText = ngayKetThuc != null
+                ? ("đến hết ngày " + VOUCHER_DATE_FORMAT.format(ngayKetThuc))
+                : "Không giới hạn thời gian";
+
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Quà tặng từ SportShoe</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f4f7;padding:32px 12px;">
+                    <tr>
+                      <td align="center">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.08);">
+                          <tr>
+                            <td style="padding:32px 32px 4px 32px;text-align:center;">
+                              <div style="font-size:25px;font-weight:800;color:#cf1018;">&#127873; Quà tặng từ SportShoe</div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:18px 36px 0 36px;font-size:15px;line-height:1.6;color:#374151;">
+                              Chào bạn <b>__FULL_NAME__</b>,
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:10px 36px 0 36px;font-size:15px;line-height:1.6;color:#6b7280;">
+                              Chúng tôi xin gửi tặng bạn một phiếu giảm giá đặc biệt để tri ân sự ủng hộ của bạn dành cho SportShoe.
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:24px 36px 8px 36px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:18px;background:linear-gradient(135deg,#870e14 0%,#cf1018 45%,#ef1e24 100%);">
+                                <tr>
+                                  <td style="padding:26px 22px;text-align:center;">
+                                    <div style="font-size:13px;font-weight:700;letter-spacing:0.12em;color:#ffd9d9;text-transform:uppercase;">Mã ưu đãi của bạn</div>
+                                    <div style="margin:16px auto;padding:14px 10px;border:2px dashed rgba(255,255,255,0.65);border-radius:12px;max-width:300px;font-size:30px;font-weight:800;letter-spacing:0.08em;color:#ffffff;font-family:'Courier New',Courier,monospace;">__MA__</div>
+                                    <div style="font-size:15px;font-weight:600;color:#ffeaea;">__TEN__</div>
+                                    <div style="margin-top:14px;font-size:18px;font-weight:800;color:#ffffff;">__GIA_TRI____TOI_DA__</div>
+                                    <div style="margin-top:6px;font-size:13px;color:#ffdede;">__DON_TOI_THIEU__</div>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:6px 36px 0 36px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:10px;background:#fff8ec;border:1px solid #fde2b8;">
+                                <tr>
+                                  <td style="padding:12px 16px;font-size:13px;color:#92600a;line-height:1.5;">
+                                    <b>&#9200; Hạn sử dụng:</b> __HAN__
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:26px 36px 6px 36px;text-align:center;">
+                              <a href="__URL__" style="display:inline-block;padding:14px 42px;border-radius:999px;background:#cf1018;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;box-shadow:0 8px 16px rgba(207,16,24,0.28);">Sử dụng ngay</a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:18px 36px 30px 36px;text-align:center;font-size:12px;color:#9ca3af;line-height:1.6;">
+                              Email này được gửi tự động từ hệ thống SportShoe.<br>Vui lòng không trả lời trực tiếp email này.
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+                </html>
+                """;
+
+        return html
+                .replace("__FULL_NAME__", escapeHtml(fullName))
+                .replace("__MA__", escapeHtml(maPhieu))
+                .replace("__TEN__", escapeHtml(tenPhieu))
+                .replace("__GIA_TRI__", escapeHtml(giaTriText))
+                .replace("__TOI_DA__", escapeHtml(toiDaText))
+                .replace("__DON_TOI_THIEU__", escapeHtml(donToiThieuText))
+                .replace("__HAN__", escapeHtml(hanText))
+                .replace("__URL__", escapeHtml(CUSTOMER_STORE_URL));
+    }
+
+    private String formatCurrency(BigDecimal value) {
+        BigDecimal amount = value == null ? BigDecimal.ZERO : value;
+        return NumberFormat.getInstance(new Locale("vi", "VN")).format(amount) + " VNĐ";
+    }
+
+    private String formatPercent(BigDecimal value) {
+        BigDecimal amount = value == null ? BigDecimal.ZERO : value.stripTrailingZeros();
+        return amount.toPlainString();
     }
 
     private EmailDispatchResult emailFailure(String userMessage, String recipient, Exception exception) {
