@@ -28,7 +28,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
               and (:trangThai is null or hd.trangThai = :trangThai)
               and (:tuNgay is null or hd.ngayTao >= :tuNgay)
               and (:denNgay is null or hd.ngayTao <= :denNgay)
-            order by hd.ngayTao desc
+            order by hd.ngayTao asc, hd.id asc
             """)
     List<HoaDon> searchInvoices(
             @Param("keyword") String keyword,
