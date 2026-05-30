@@ -26,45 +26,36 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
         </div>
       </template>
 
-      <div class="flex flex-col gap-5">
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 items-end">
-          <div class="lg:col-span-8">
-            <div class="relative">
-              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                v-model="boLoc.keyword"
-                type="text"
-                placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
-              />
-            </div>
-          </div>
-          <div class="lg:col-span-4">
-            <select
-              v-model="boLoc.trangThai"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
-            >
-              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">
-                {{ tt.label }}
-              </option>
-            </select>
-          </div>
+      <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+        <div class="relative flex-1 lg:min-w-[260px]">
+          <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            v-model="boLoc.keyword"
+            type="text"
+            placeholder="Tìm theo tên đăng nhập, họ tên, email, SĐT..."
+            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+          />
         </div>
-
-        <div class="flex flex-wrap items-center justify-end gap-3">
-          <Button variant="soft" @click="lamMoiBoLoc">
-            <template #prefix><RotateCcw class="h-4 w-4" /></template>
-            Đặt lại bộ lọc
-          </Button>
-          <Button variant="soft" @click="xuatExcel">
-            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
-            Xuất Excel
-          </Button>
-          <Button variant="primary" @click="themMoi">
-            <template #prefix><Plus class="h-4 w-4" /></template>
-            Thêm khách hàng
-          </Button>
-        </div>
+        <select
+          v-model="boLoc.trangThai"
+          class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 lg:w-44"
+        >
+          <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">
+            {{ tt.label }}
+          </option>
+        </select>
+        <Button variant="soft" @click="lamMoiBoLoc">
+          <template #prefix><RotateCcw class="h-4 w-4" /></template>
+          Đặt lại bộ lọc
+        </Button>
+        <Button variant="soft" @click="xuatExcel">
+          <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+          Xuất Excel
+        </Button>
+        <Button variant="primary" @click="themMoi">
+          <template #prefix><Plus class="h-4 w-4" /></template>
+          Thêm khách hàng
+        </Button>
       </div>
     </Card>
 
