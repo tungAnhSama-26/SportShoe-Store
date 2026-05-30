@@ -64,7 +64,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                    sum(case when gct.giaBan < gct.giaGoc then 1 else 0 end),
                    min(gct.giaGoc), max(gct.giaGoc)
             from GiayChiTiet gct
-            where gct.giay.id in :ids and (gct.kichHoat = 1 or gct.kichHoat = 2)
+            where gct.giay.id in :ids and (gct.kichHoat = 1 or gct.kichHoat = 0)
             group by gct.giay.id
             """)
     List<Object[]> aggregateByGiayIds(@Param("ids") Collection<Integer> ids);
@@ -89,7 +89,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                       and (
                         :trangThai is null
                         or (:trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0)
-                        or (:trangThai = 2 and (gct.kichHoat <> 1 or gct.soLuong <= 0))
+                        or (:trangThai = 0 and (gct.kichHoat <> 1 or gct.soLuong <= 0))
                       )
                     """,
             countQuery = """
@@ -109,7 +109,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                       and (
                         :trangThai is null
                         or (:trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0)
-                        or (:trangThai = 2 and (gct.kichHoat <> 1 or gct.soLuong <= 0))
+                        or (:trangThai = 0 and (gct.kichHoat <> 1 or gct.soLuong <= 0))
                       )
                     """
     )
@@ -122,6 +122,6 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             Pageable pageable
     );
 
-    @Query("select sum(gct.soLuong) from GiayChiTiet gct where gct.giay.id = :giayId and (gct.kichHoat = 1 or gct.kichHoat = 2)")
+    @Query("select sum(gct.soLuong) from GiayChiTiet gct where gct.giay.id = :giayId and (gct.kichHoat = 1 or gct.kichHoat = 0)")
     Long sumSoLuongByGiayId(@Param("giayId") Integer giayId);
 }

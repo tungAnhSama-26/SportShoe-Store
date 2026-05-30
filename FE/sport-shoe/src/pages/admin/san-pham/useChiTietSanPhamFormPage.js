@@ -647,11 +647,11 @@ export function useChiTietSanPhamFormPage() {
       )
       return
     }
-    if (!generatedVariants.value.length) {
-      showToast('Vui lòng tạo ít nhất một biến thể sản phẩm', 'error')
+    if (!generatedVariants.value.filter(v => v.selected !== false).length) {
+      showToast('Vui lòng chọn ít nhất một biến thể sản phẩm', 'error')
       return
     }
-    const { newVariants, skippedVariants } = splitNewAndExistingVariants(generatedVariants.value)
+    const { newVariants, skippedVariants } = splitNewAndExistingVariants(generatedVariants.value.filter(v => v.selected !== false))
     if (!newVariants.length) {
       const skippedNames = skippedVariants.slice(0, 4).map(getVariantDisplayName).join('; ')
       showToast(

@@ -12,6 +12,20 @@ function toQuery(params) {
   return buildQuery(params);
 }
 
+function checkTenDotGiamGia(ten, id = null) {
+  const params = new URLSearchParams();
+  params.set("ten", ten);
+  if (id != null) params.set("id", String(id));
+  return request(`/admin/dot-giam-gia/check-ten?${params}`);
+}
+
+function checkTenPhieuGiamGia(ten, id = null) {
+  const params = new URLSearchParams();
+  params.set("ten", ten);
+  if (id != null) params.set("id", String(id));
+  return request(`/admin/phieu-giam-gia/check-ten?${params}`);
+}
+
 function getDotGiamGiaList(filters) {
   const params = new URLSearchParams();
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
@@ -165,6 +179,8 @@ function getEmailSuggestions() {
 }
 
 export {
+  checkTenDotGiamGia,
+  checkTenPhieuGiamGia,
   createDotGiamGia,
   createDotGiamGiaSanPham,
   createPhieuGiamGia,

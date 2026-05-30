@@ -189,7 +189,7 @@ function subItemClass(active) {
           </router-link>
           <router-link to="/admin/bien-the-san-pham" :title="compactMode ? 'Bi\u1ebfn th\u1ec3 s\u1ea3n ph\u1ea9m' : undefined" :class="subItemClass(isActive('/admin/bien-the-san-pham'))">
             <Layers class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/bien-the-san-pham') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
-            <span v-if="!compactMode" class="min-w-0 truncate leading-tight">Bi&#7871;n th&#7875; s&#7843;n ph&#7849;m</span>
+            <span v-if="!compactMode" class="min-w-0 whitespace-nowrap leading-tight">Bi&#7871;n th&#7875; s&#7843;n ph&#7849;m</span>
           </router-link>
         </div>
       </div>

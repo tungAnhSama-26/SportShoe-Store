@@ -11,6 +11,7 @@ import {
 } from "../../../services/khuyen-mai";
 import { layChiTietKhachHang, layDanhSachKhachHang } from "../../../services/khach-hang";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,45 +23,6 @@ const dangTai = ref(false);
 const saving = ref(false);
 const loiTrang = ref("");
 const formErrors = reactive({});
-
-const toast = ref({
-  hienThi: false,
-  loai: "success",
-  tieuDe: "",
-  noiDung: "",
-});
-let toastTimer = null;
-
-const toastClass = computed(() => {
-  if (toast.value.loai === "success") return "border-emerald-100 bg-emerald-50 text-emerald-700";
-  if (toast.value.loai === "warning") return "border-amber-100 bg-amber-50 text-amber-700";
-  return "border-rose-100 bg-rose-50 text-rose-700";
-});
-
-const toastIconClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
-  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
-  return "bg-rose-100 text-rose-600";
-});
-
-const toastAccentClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-500";
-  if (toast.value.loai === "warning") return "bg-amber-500";
-  return "bg-rose-500";
-});
-
-const ToastIcon = computed(() => {
-  if (toast.value.loai === "success") return CheckCircle2;
-  return CircleX;
-});
-
-function hienThiThongBao(loai, tieuDe, noiDung = "") {
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value = { hienThi: true, loai, tieuDe, noiDung };
-  toastTimer = setTimeout(() => {
-    toast.value.hienThi = false;
-  }, 3200);
-}
 
 const phieuOptions = ref([]);
 const emailOptions = ref([]);
@@ -159,7 +121,8 @@ async function submitForm() {
   const confirmMsg = laMoi 
     ? "Bạn có chắc chắn muốn tặng phiếu giảm giá này cho khách hàng đã chọn không?" 
     : "Bạn có chắc chắn muốn cập nhật thông tin phiếu tặng khách hàng này không?";
-  if (!window.confirm(confirmMsg)) return;
+  const isConfirmed = await showConfirm(confirmMsg);
+  if (!isConfirmed) return;
 
   saving.value = true;
   loiTrang.value = "";
@@ -189,7 +152,7 @@ async function submitForm() {
       }
 
       if (successCount > 0 && failCount === 0) {
-        hienThiThongBao("success", "Tặng phiếu thành công", `Đã tặng cho ${successCount} khách hàng`);
+        showSuccess(`Đã tặng cho ${successCount} khách hàng`, "Tặng phiếu thành công");
         setTimeout(() => {
           router.push({ name: "admin-phieu-giam-gia-khach-hang" });
         }, 1500);
@@ -197,14 +160,14 @@ async function submitForm() {
       }
 
       if (successCount > 0) {
-        hienThiThongBao("warning", "Tặng phiếu hoàn tất một phần", `Thành công: ${successCount}, Thất bại: ${failCount}`);
+        showSuccess(`Thành công: ${successCount}, Thất bại: ${failCount}`, "Tặng phiếu hoàn tất một phần");
         setTimeout(() => {
           router.push({ name: "admin-phieu-giam-gia-khach-hang" });
         }, 1500);
         return;
       }
 
-      hienThiThongBao("error", "Tặng phiếu thất bại", firstErrorMessage || `Thất bại: ${failCount}`);
+      showError(firstErrorMessage || `Thất bại: ${failCount}`, "Tặng phiếu thất bại");
       return;
     }
 
@@ -215,7 +178,7 @@ async function submitForm() {
       trangThai: Number(form.trangThai)
     };
     await updatePhieuGiamGiaKhachHang(id, payload);
-    hienThiThongBao("success", "Cập nhật thành công");
+    showSuccess("Cập nhật thành công");
     setTimeout(() => {
       router.push({ name: "admin-phieu-giam-gia-khach-hang" });
     }, 1500);
@@ -223,7 +186,7 @@ async function submitForm() {
     const fieldErrors = getFieldErrors(error);
     Object.assign(formErrors, fieldErrors);
     if (!Object.keys(fieldErrors).length) {
-      hienThiThongBao("error", "Lỗi dữ liệu", getDisplayErrorMessage(error, "Không thể lưu phiếu giảm giá khách hàng"));
+      showError(getDisplayErrorMessage(error, "Không thể lưu phiếu giảm giá khách hàng"), "Lỗi dữ liệu");
     }
   } finally {
     saving.value = false;
@@ -271,35 +234,6 @@ onMounted(taiDuLieu);
 
 <template>
   <div class="space-y-5 pb-10">
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-y-3 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-3 opacity-0"
-    >
-      <div
-        v-if="toast.hienThi"
-        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
-        :class="toastClass"
-      >
-        <div class="flex gap-3 p-4">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" :class="toastIconClass">
-            <component :is="ToastIcon" class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p v-if="toast.noiDung" class="mt-1 text-sm leading-5 text-slate-600">{{ toast.noiDung }}</p>
-          </div>
-          <button type="button" class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600" @click="toast.hienThi = false">
-            <X class="h-4 w-4" />
-          </button>
-        </div>
-        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
-      </div>
-    </Transition>
-
     <section class="flex items-center gap-4">
       <button
         @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang' })"

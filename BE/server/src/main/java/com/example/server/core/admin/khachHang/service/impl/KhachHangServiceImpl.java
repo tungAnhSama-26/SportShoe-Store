@@ -75,8 +75,9 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setTenDangNhap(request.tenDangNhap().trim());
         kh.setHoTen(request.hoTen().trim());
         kh.setEmail(request.email() != null ? request.email().trim().toLowerCase(Locale.ROOT) : null);
-        kh.setSdt(request.sdt() != null ? request.sdt().trim() : null);
+        kh.setSdt(request.sdt() != null && !request.sdt().isBlank() ? request.sdt().trim() : null);
         kh.setNgaySinh(request.ngaySinh());
+        kh.setGioiTinh(request.gioiTinh());
         kh.setHinhAnh(request.hinhAnh());
         kh.setMatKhau(request.matKhau());
         kh.setTrangThai(1);
@@ -109,8 +110,9 @@ public class KhachHangServiceImpl implements KhachHangService {
 
         kh.setHoTen(request.hoTen().trim());
         kh.setEmail(request.email() != null ? request.email().trim().toLowerCase(Locale.ROOT) : null);
-        kh.setSdt(request.sdt() != null ? request.sdt().trim() : null);
+        kh.setSdt(request.sdt() != null && !request.sdt().isBlank() ? request.sdt().trim() : null);
         kh.setNgaySinh(request.ngaySinh());
+        kh.setGioiTinh(request.gioiTinh());
         kh.setHinhAnh(request.hinhAnh());
         kh.setNgayCapNhat(Instant.now());
 
@@ -284,10 +286,14 @@ public class KhachHangServiceImpl implements KhachHangService {
     }
 
     private KhachHangResponse toKhachHangResponse(KhachHang kh, EmailDispatchResult emailDispatchResult) {
-        String diaChiMacDinh = diaChiKhachHangRepository
+        DiaChiKhachHang diaChiMacDinh = diaChiKhachHangRepository
                 .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId())
-                .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
                 .orElse(null);
+        String diaChiMacDinhText = diaChiMacDinh != null
+                ? diaChiMacDinh.getDiaChiCuThe() + ", " + diaChiMacDinh.getPhuongXa() + ", "
+                        + diaChiMacDinh.getQuanHuyen() + ", " + diaChiMacDinh.getTinhThanh()
+                : null;
+        String sdtMacDinh = diaChiMacDinh != null ? diaChiMacDinh.getSdt() : null;
         return new KhachHangResponse(
                 kh.getId(),
                 kh.getTenDangNhap(),
@@ -295,14 +301,27 @@ public class KhachHangServiceImpl implements KhachHangService {
                 kh.getEmail(),
                 kh.getSdt(),
                 kh.getNgaySinh(),
+                kh.getGioiTinh(),
+                tenGioiTinh(kh.getGioiTinh()),
                 kh.getHinhAnh(),
                 kh.getTrangThai(),
                 kh.getTrangThai() == 1 ? "Hoạt động" : "Khóa",
                 kh.getNgayTao(),
-                diaChiMacDinh,
+                diaChiMacDinhText,
+                sdtMacDinh,
                 emailDispatchResult != null ? emailDispatchResult.sent() : null,
                 emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null
         );
+    }
+
+    private String tenGioiTinh(Integer gioiTinh) {
+        if (gioiTinh == null) return null;
+        return switch (gioiTinh) {
+            case 0 -> "Nữ";
+            case 1 -> "Nam";
+            case 2 -> "Khác";
+            default -> null;
+        };
     }
 
     private DiaChiResponse toDiaChiResponse(DiaChiKhachHang dc) {

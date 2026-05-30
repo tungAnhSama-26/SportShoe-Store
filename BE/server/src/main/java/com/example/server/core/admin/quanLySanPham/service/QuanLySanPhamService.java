@@ -126,6 +126,17 @@ public class QuanLySanPhamService {
     // ─── Danh mục ────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
+    public Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+        boolean exists = false;
+        if (id != null && id > 0) {
+            exists = giayRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
+        } else {
+            exists = giayRepository.existsByTenIgnoreCase(ten);
+        }
+        return Map.of("exists", exists);
+    }
+
+    @Transactional(readOnly = true)
     public DanhMucSanPhamResponse layDanhMuc() {
         var loaiGiay = loaiGiayRepository.findAll().stream()
                 .filter(l -> l.getTrangThai() == 1)
@@ -709,7 +720,7 @@ public class QuanLySanPhamService {
         String maBienThe = giay.getMa() + "-" + mauSac.getMa() + "-" + kichCo.getGiaTri();
         gct.setMaBienThe(maBienThe);
         gct.setSku(maBienThe + "-" + System.currentTimeMillis() % 10000);
-        gct.setKichHoat(req.soLuong() > 0 ? 1 : 2);
+        gct.setKichHoat(req.soLuong() > 0 ? 1 : 0);
         gct.setNgayTao(Instant.now());
 
         var saved = giayChiTietRepository.save(gct);
@@ -727,11 +738,6 @@ public class QuanLySanPhamService {
         gct.setGiaGoc(req.giaGoc());
         gct.setGiaBan(req.giaBan());
         gct.setKichHoat(req.kichHoat());
-        if (req.kichHoat() == 1 && req.soLuong() <= 0) {
-            gct.setKichHoat(2);
-        } else if (req.kichHoat() == 2 && req.soLuong() > 0) {
-            gct.setKichHoat(1);
-        }
         gct.setNgayCapNhat(Instant.now());
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
@@ -740,16 +746,12 @@ public class QuanLySanPhamService {
 
     @Transactional
     public BienTheResponse doiTrangThaiBienThe(Integer id, DoiTrangThaiBienTheRequest req) {
-        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
+        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 0)) {
             throw new BusinessException("Trạng thái CTSP không hợp lệ");
         }
 
         var gct = giayChiTietRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
-
-        if (req.kichHoat() == 1 && (gct.getSoLuong() == null || gct.getSoLuong() <= 0)) {
-            throw new BusinessException("Không thể kích hoạt CTSP khi số lượng tồn bằng 0");
-        }
 
         gct.setKichHoat(req.kichHoat());
         gct.setNgayCapNhat(Instant.now());
@@ -1097,7 +1099,7 @@ public class QuanLySanPhamService {
             putError(errors, "giaGoc", "Giá gốc không được lớn hơn giá bán");
         }
 
-        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 2)) {
+        if (req.kichHoat() == null || (req.kichHoat() != 1 && req.kichHoat() != 0)) {
             putError(errors, "kichHoat", "Trạng thái chi tiết sản phẩm không hợp lệ");
         }
 

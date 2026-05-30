@@ -62,6 +62,7 @@ CREATE TABLE khach_hang (
     email          VARCHAR(100)     NULL,
     sdt            VARCHAR(20)      NULL,
     ngay_sinh      DATE             NULL,
+    gioi_tinh      INT              NULL,
     hinh_anh       NVARCHAR(500)    NULL,
     mat_khau       VARCHAR(255)     NOT NULL,
     trang_thai     INT              NOT NULL CONSTRAINT df_khach_hang_trang_thai DEFAULT 1,
@@ -69,7 +70,8 @@ CREATE TABLE khach_hang (
     ngay_cap_nhat  DATETIME2        NULL,
     CONSTRAINT uq_khach_hang_ten_dang_nhap UNIQUE (ten_dang_nhap),
     CONSTRAINT uq_khach_hang_email UNIQUE (email),
-    CONSTRAINT ck_khach_hang_trang_thai CHECK (trang_thai IN (0, 1))
+    CONSTRAINT ck_khach_hang_trang_thai CHECK (trang_thai IN (0, 1)),
+    CONSTRAINT ck_khach_hang_gioi_tinh CHECK (gioi_tinh IS NULL OR gioi_tinh IN (0, 1, 2))
 );
 GO
 

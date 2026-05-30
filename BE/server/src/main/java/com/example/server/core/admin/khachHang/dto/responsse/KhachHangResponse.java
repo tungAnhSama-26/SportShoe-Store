@@ -11,11 +11,14 @@ public record KhachHangResponse(
         String email,
         String sdt,
         LocalDate ngaySinh,
+        Integer gioiTinh,
+        String tenGioiTinh,
         String hinhAnh,
         Integer trangThai,
         String tenTrangThai,
         Instant ngayTao,
         String diaChiMacDinh,
+        String sdtMacDinh,
         Boolean emailDaGuiThanhCong,
         String canhBaoEmail
 ) {}
