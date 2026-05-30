@@ -62,30 +62,7 @@ export function useChiTietDotGiamGia() {
     kichHoat: "1",
   });
 
-  let tenCheckTimeout = null;
-  watch(() => form.ten, (newVal) => {
-    if (tenCheckTimeout) clearTimeout(tenCheckTimeout);
-    if (!newVal || newVal.trim() === '') {
-      delete formErrors.ten;
-      return;
-    }
-    tenCheckTimeout = setTimeout(async () => {
-      try {
-        const res = await checkTenDotGiamGia(newVal.trim(), id || null);
-        if (res.exists) {
-          formErrors.ten = 'Tên đợt giảm giá đã tồn tại';
-        } else if (formErrors.ten === 'Tên đợt giảm giá đã tồn tại') {
-          delete formErrors.ten;
-        }
-      } catch (e) {
-        // Ignore error
-      }
-    }, 500);
-  });
-
-  const isReadOnly = computed(
-    () => !laMoi && (Number(form.kichHoat) === 0 || Number(form.kichHoat) === 2),
-  );
+  const isReadOnly = computed(() => false);
 
   const searchSP = ref("");
   const danhSachSP = ref([]);
@@ -601,7 +578,7 @@ export function useChiTietDotGiamGia() {
     if (!form.ngayKetThuc) {
       formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
       isValid = false;
-    } else if (form.ngayKetThuc < getToday()) {
+    } else if (laMoi && form.ngayKetThuc < getToday()) {
       formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
       isValid = false;
     }

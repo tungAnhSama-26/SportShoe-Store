@@ -315,19 +315,10 @@ export function usePhieuGiamGiaList() {
   }
 
   async function nhanhDoiTrangThai(item) {
-    if (isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 0) {
-      const msg = isHetHan(item.ngayKetThuc)
-        ? 'Phiếu đã hết hạn, không thể thay đổi trạng thái'
-        : 'Phiếu đã ngừng hoạt động, không thể thay đổi trạng thái';
-      hienThiThongBao('warning', 'Không thể thay đổi trạng thái', msg);
+    if (isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2) {
+      hienThiThongBao("warning", "Thao tác bị chặn", "Phiếu đã hết hạn, vui lòng vào chi tiết để gia hạn ngày kết thúc.");
       return;
     }
-
-    const confirmMsg = Number(item.trangThai) === 1 
-      ? "Bạn có chắc chắn muốn ngừng hoạt động phiếu giảm giá này?" 
-      : "Bạn có chắc chắn muốn kích hoạt lại phiếu giảm giá này?";
-    const isConfirmed = await showConfirm(confirmMsg);
-    if (!isConfirmed) return;
 
     try {
       const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
@@ -348,7 +339,7 @@ export function usePhieuGiamGiaList() {
       hienThiThongBao(
         "success", 
         "Thành công", 
-        Number(item.trangThai) === 1 ? "Đã ngừng hoạt động phiếu." : "Đã kích hoạt lại phiếu thành công."
+        Number(item.trangThai) === 1 ? "Đã ngừng hoạt động phiếu." : "Đã chuyển phiếu sang đang hoạt động thành công."
       );
       await taiDanhSach();
     } catch (error) {
@@ -361,16 +352,10 @@ export function usePhieuGiamGiaList() {
   }
 
   async function nhanhDoiTrangThaiKh(item) {
-    if (Number(item.trangThai) === 0 || isHetHan(item.ngayKetThuc)) {
-      const msg = Number(item.trangThai) === 0
-        ? 'Không thể thao tác trên phiếu đã ngừng hoạt động'
-        : 'Phiếu đã hết hạn, không thể thay đổi trạng thái';
-      hienThiThongBao('warning', 'Không thể thay đổi trạng thái', msg);
+    if (isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2) {
+      hienThiThongBao("warning", "Thao tác bị chặn", "Phiếu đã hết hạn, không thể thay đổi trạng thái liên kết.");
       return;
     }
-
-    const isConfirmed = await showConfirm("Bạn có chắc chắn muốn dừng áp dụng phiếu giảm giá này cho khách hàng?");
-    if (!isConfirmed) return;
 
     try {
       const nextStatus = 0;
