@@ -93,9 +93,7 @@ export function useChiTietDotGiamGia() {
     kichHoat: "1",
   });
 
-  const isReadOnly = computed(
-    () => !laMoi && (Number(form.kichHoat) === 0 || Number(form.kichHoat) === 2),
-  );
+  const isReadOnly = computed(() => false);
 
   const searchSP = ref("");
   const danhSachSP = ref([]);
@@ -611,7 +609,7 @@ export function useChiTietDotGiamGia() {
     if (!form.ngayKetThuc) {
       formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
       isValid = false;
-    } else if (form.ngayKetThuc < getToday()) {
+    } else if (laMoi && form.ngayKetThuc < getToday()) {
       formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
       isValid = false;
     }

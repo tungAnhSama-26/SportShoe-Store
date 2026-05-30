@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanlykhuyenmai.service;
 import com.example.server.core.admin.quanlykhuyenmai.dto.request.DotGiamGiaRequest;
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaResponse;
 import com.example.server.entity.DotGiamGia;
+import com.example.server.entity.DotGiamGiaSanPham;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DotGiamGiaRepository;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -31,17 +33,18 @@ public class DotGiamGiaService {
         return dotGiamGiaRepository.detailDotGiamGia(id);
     }
 
-    public Page<QuanLyDotGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loaiGiam, java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer pageNo, Integer pageSize) {
+    public Page<QuanLyDotGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loaiGiam,
+            LocalDate tuNgay, LocalDate denNgay, Integer pageNo, Integer pageSize) {
         Pageable pageable = PageRequest.of(pageNo, pageSize);
         return dotGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loaiGiam, tuNgay, denNgay, pageable);
     }
 
     public void remove(Integer id) {
         // Trước khi xóa, lấy các giayId liên quan để cập nhật lại giá sau này
-        List<com.example.server.entity.DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
+        List<DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
         dotGiamGiaRepository.deleteById(id);
         // Cập nhật lại giá cho các biến thể sản phẩm từng thuộc đợt này
-        for (com.example.server.entity.DotGiamGiaSanPham link : links) {
+        for (DotGiamGiaSanPham link : links) {
             dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
         }
     }
@@ -56,16 +59,15 @@ public class DotGiamGiaService {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
 
-        if (dotGiamGia.getKichHoat() != null && (dotGiamGia.getKichHoat() == 0 || dotGiamGia.getKichHoat() == 2)) {
-            throw new BusinessException("Không thể chỉnh sửa đợt giảm giá đã ngừng hoạt động hoặc hết hạn.");
-        }
+        // Cho phép toggle kichHoat 0 <-> 1 (ngừng/đang hoạt động)
 
         mapRequestToEntity(request, dotGiamGia);
         DotGiamGia saved = dotGiamGiaRepository.save(dotGiamGia);
 
-        // Sau khi update thông tin (% giảm, ngày...), cần cập nhật lại gia_ban cho các biến thể liên kết
-        List<com.example.server.entity.DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
-        for (com.example.server.entity.DotGiamGiaSanPham link : links) {
+        // Sau khi update thông tin (% giảm, ngày...), cần cập nhật lại gia_ban cho các
+        // biến thể liên kết
+        List<DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
+        for (DotGiamGiaSanPham link : links) {
             dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
         }
 
@@ -80,29 +82,31 @@ public class DotGiamGiaService {
         dotGiamGia.setGiaTriGiam(request.getGiaTriGiam());
         dotGiamGia.setNgayBatDau(request.getNgayBatDau());
         dotGiamGia.setNgayKetThuc(request.getNgayKetThuc());
-        
+
         // Tự động tính toán trạng thái
-        Integer currentStatus = dotGiamGia.getKichHoat();
-        if (currentStatus != null && currentStatus == 0) {
-            dotGiamGia.setKichHoat(0);
+        LocalDate now = LocalDate.now();
+        LocalDate start = dotGiamGia.getNgayBatDau();
+        LocalDate end = dotGiamGia.getNgayKetThuc();
+
+        if (end != null && end.isBefore(now)) {
+            dotGiamGia.setKichHoat(2); // Hết hạn
         } else {
-            java.time.LocalDate now = java.time.LocalDate.now();
-            java.time.LocalDate start = dotGiamGia.getNgayBatDau();
-            java.time.LocalDate end = dotGiamGia.getNgayKetThuc();
-            
-            if (end != null && end.isBefore(now)) {
-                dotGiamGia.setKichHoat(2); // Hết hạn
+            Integer requestedStatus = request.getKichHoat();
+            if (requestedStatus != null && requestedStatus == 0) {
+                dotGiamGia.setKichHoat(0); // Ngừng hoạt động thủ công
             } else if (start != null && start.isAfter(now)) {
                 dotGiamGia.setKichHoat(4); // Sắp diễn ra
             } else {
                 dotGiamGia.setKichHoat(1); // Hoạt động
             }
         }
-        
+
         if (dotGiamGia.getNgayTao() == null) {
-            dotGiamGia.setNgayTao(request.getNgayTao() == null ? java.time.LocalDate.now() : request.getNgayTao());
+            dotGiamGia.setNgayTao(request.getNgayTao() == null ? LocalDate.now() : request.getNgayTao());
         }
-        
-        dotGiamGia.setNgayCapNhat(request.getNgayCapNhat());
+
+        if (dotGiamGia.getId() != null) {
+            dotGiamGia.setNgayCapNhat(LocalDate.now());
+        }
     }
 }
