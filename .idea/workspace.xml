@@ -5,9 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/BE/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/BE/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/.idea/dataSources/d7b0a813-1a85-49ea-bef6-ab9cc0fa2830.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/BE/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/CapNhatKhachHangRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/CapNhatKhachHangRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DiaChiRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DiaChiRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DoiMatKhauRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DoiMatKhauRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/TaoKhachHangRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/TaoKhachHangRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/responsse/KhachHangResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/responsse/KhachHangResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/service/impl/KhachHangServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/service/impl/KhachHangServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/client/auth/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/client/auth/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/entity/KhachHang.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/entity/KhachHang.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/ChiTietKhachHang.vue" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/ChiTietKhachHang.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/DonHangKhachHang.vue" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/DonHangKhachHang.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/useQuanLyKhachHang.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/useQuanLyKhachHang.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database/01_schema_tables_rules.sql" beforeDir="false" afterPath="$PROJECT_DIR$/database/01_schema_tables_rules.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database/02_seed_full_10_records.sql" beforeDir="false" afterPath="$PROJECT_DIR$/database/02_seed_full_10_records.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,9 +38,11 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "Nghiem-huy",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "bui-hiep",
+    "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/SportShoe-Store/BE/server",
+    "last_opened_file_path": "E:/DuAnTN/SportShoe-Store",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -42,8 +54,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-84258761d1cc-intellij.indexing.shared.core-IU-243.28141.18" />
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-IU-243.28141.18" />
+        <option value="bundled-jdk-30f59d01ecdd-26cb7f24e5b0-intellij.indexing.shared.core-IU-253.29346.138" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.29346.138" />
       </set>
     </attachedChunks>
   </component>
@@ -57,6 +69,7 @@
       <updated>1776785102416</updated>
       <workItem from="1776785103553" duration="539000" />
       <workItem from="1778032390230" duration="16000" />
+      <workItem from="1780140731809" duration="34000" />
     </task>
     <servers />
   </component>
