@@ -341,9 +341,6 @@ onUnmounted(() => {
 <template>
   <div>
     <div class="space-y-5">
-    <section>
-      <h1 class="admin-page-title text-[30px]">Quản lý sản phẩm</h1>
-    </section>
 
     <Card>
         <div class="mb-5 flex items-center gap-3">
@@ -592,7 +589,7 @@ onUnmounted(() => {
         <div
           v-if="toast.show"
           class="fixed right-5 top-5 z-[90] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
-          :class="toast.type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'"
+          :class="toast.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
         >
           {{ toast.message }}
         </div>

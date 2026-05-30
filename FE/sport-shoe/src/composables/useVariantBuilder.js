@@ -135,6 +135,7 @@ export function useVariantBuilder() {
             soLuong: Number(variantBuilder.soLuong),
             giaGoc: Number(variantBuilder.giaGoc),
             giaBan: Number(variantBuilder.giaBan),
+            selected: true,
           }
         )
       })
@@ -195,8 +196,14 @@ export function useVariantBuilder() {
       return
     }
 
+    const selectedVariants = generatedVariants.value.filter(v => v.selected !== false)
+    if (selectedVariants.length === 0) {
+      variantErrors.generated = 'Vui lòng chọn ít nhất một biến thể để áp dụng'
+      return
+    }
+
     delete variantErrors.generated
-    generatedVariants.value.forEach((item) => {
+    selectedVariants.forEach((item) => {
       item.soLuong = Number(variantBuilder.soLuong || 0)
       item.giaGoc = Number(variantBuilder.giaGoc || 0)
       item.giaBan = Number(variantBuilder.giaBan || 0)

@@ -10,9 +10,6 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
 
     <!-- Header -->
     <section>
-      <h1 class="admin-page-title text-[30px]">
-        Quản lý khách hàng
-      </h1>
     </section>
 
     <!-- Bộ lọc -->

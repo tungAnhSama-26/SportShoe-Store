@@ -42,8 +42,9 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.DetailPhieuGiamGia(id);
     }
 
-    public Page<QuanLyPhieuGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loai, LocalDate tuNgay, LocalDate denNgay, Integer pageNo, Integer pageSize) {
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, "ngayTao", "id"));
+    public Page<QuanLyPhieuGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loai, LocalDate tuNgay,
+            LocalDate denNgay, Integer pageNo, Integer pageSize) {
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
         Instant start = tuNgay == null ? null : tuNgay.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant end = denNgay == null ? null : denNgay.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
         return phieuGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loai, start, end, pageable);
@@ -63,9 +64,6 @@ public class PhieuGiamGiaService {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá"));
 
-        if (phieuGiamGia.getTrangThai() != null && phieuGiamGia.getTrangThai() == 2) {
-            throw new BusinessException("Không thể chỉnh sửa phiếu giảm giá đã hết hạn.");
-        }
         // Cho phép toggle trangThai 0 <-> 1 (ngừng/kích hoạt)
 
         mapRequestToEntity(request, phieuGiamGia);
@@ -84,37 +82,40 @@ public class PhieuGiamGiaService {
         phieuGiamGia.setNgayBatDau(toInstant(request.getNgayBatDau()));
         phieuGiamGia.setNgayKetThuc(toInstant(request.getNgayKetThuc()));
         phieuGiamGia.setSoLuong(request.getSoLuong());
-        
+
         // Handle defaults for NotNull fields to prevent validation errors
         phieuGiamGia.setSoLuongDaDung(request.getSoLuongDaDung() == null ? 0 : request.getSoLuongDaDung());
-        
+
         // Tự động tính toán trạng thái
-        Integer requestedStatus = request.getTrangThai();
-        if (requestedStatus != null && requestedStatus == 0) {
-            // FE yêu cầu ngừng hoạt động
-            phieuGiamGia.setTrangThai(0);
+        Instant now = Instant.now();
+        Instant end = phieuGiamGia.getNgayKetThuc();
+
+        if (end != null && end.isBefore(now)) {
+            phieuGiamGia.setTrangThai(2); // Hết hạn dưới mọi điều kiện nếu hết date
         } else {
-            Instant now = Instant.now();
-            Instant start = phieuGiamGia.getNgayBatDau();
-            Instant end = phieuGiamGia.getNgayKetThuc();
-            int soLuongDaDung = phieuGiamGia.getSoLuongDaDung();
-            int soLuong = phieuGiamGia.getSoLuong();
-            
-            if (end != null && end.isBefore(now)) {
-                phieuGiamGia.setTrangThai(2); // Hết hạn
-            } else if (soLuongDaDung >= soLuong) {
-                phieuGiamGia.setTrangThai(3); // Hết số lượng
-            } else if (start != null && start.isAfter(now)) {
-                phieuGiamGia.setTrangThai(4); // Sắp diễn ra
+            Integer requestedStatus = request.getTrangThai();
+            if (requestedStatus != null && requestedStatus == 0) {
+                // FE yêu cầu ngừng hoạt động và chưa hết date
+                phieuGiamGia.setTrangThai(0);
             } else {
-                phieuGiamGia.setTrangThai(1); // Hoạt động
+                Instant start = phieuGiamGia.getNgayBatDau();
+                int soLuongDaDung = phieuGiamGia.getSoLuongDaDung();
+                int soLuong = phieuGiamGia.getSoLuong();
+
+                if (soLuongDaDung >= soLuong) {
+                    phieuGiamGia.setTrangThai(3); // Hết số lượng
+                } else if (start != null && start.isAfter(now)) {
+                    phieuGiamGia.setTrangThai(4); // Sắp diễn ra
+                } else {
+                    phieuGiamGia.setTrangThai(1); // Hoạt động
+                }
             }
         }
-        
+
         if (phieuGiamGia.getNgayTao() == null) {
             phieuGiamGia.setNgayTao(request.getNgayTao() == null ? Instant.now() : toInstant(request.getNgayTao()));
         }
-        
+
         phieuGiamGia.setNgayCapNhat(toInstant(request.getNgayCapNhat()));
     }
 

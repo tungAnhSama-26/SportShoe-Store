@@ -6,11 +6,12 @@ const customSwal = Swal.mixin({
     popup: 'rounded-[32px] p-4 shadow-xl border-0',
     title: 'text-xl font-bold text-slate-800',
     htmlContainer: 'text-sm text-slate-500 font-medium',
-    confirmButton: 'bg-[#009262] text-white px-8 py-2.5 rounded-full font-semibold hover:bg-emerald-700 transition focus:ring-4 focus:ring-emerald-100',
+    confirmButton: 'bg-[#cf1018] text-white px-8 py-2.5 rounded-full font-semibold hover:bg-rose-700 transition focus:ring-4 focus:ring-rose-100',
     cancelButton: 'bg-slate-100 text-slate-700 px-8 py-2.5 rounded-full font-semibold hover:bg-slate-200 transition focus:ring-4 focus:ring-slate-200',
     actions: 'gap-4 mt-6',
     icon: 'border-0'
   },
+  iconColor: '#cf1018',
   buttonsStyling: false,
 });
 

@@ -67,7 +67,7 @@ export function useProductForm() {
   })
 
   const pageTitle = computed(() =>
-    currentProductId.value ? 'CHỈNH SỬA CHI TIẾT SẢN PHẨM' : 'THÊM CHI TIẾT SẢN PHẨM'
+    currentProductId.value ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM SẢN PHẨM'
   )
 
   const productCode = computed(() => currentProduct.value?.ma || draftProductCode.value)

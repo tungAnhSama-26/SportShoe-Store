@@ -352,7 +352,7 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div>
-                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Giá bán *</label>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Giá bán <span class="text-rose-500">*</span></label>
                     <AdminFormattedNumberInput
                       v-model="bienTheForm.giaBan"
                       :min="0"
@@ -369,8 +369,8 @@ onBeforeUnmount(() => {
                       class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
                       :class="inputErrorClass(bienTheErrors.kichHoat)"
                     >
-                      <option :value="1">Kích hoạt</option>
-                      <option :value="2">Tạm dừng</option>
+                      <option :value="1">Đang bán</option>
+                      <option :value="0">Ngừng bán</option>
                     </select>
                     <p v-if="bienTheErrors.kichHoat" class="mt-1 text-xs text-red-500">{{ bienTheErrors.kichHoat }}</p>
                   </div>

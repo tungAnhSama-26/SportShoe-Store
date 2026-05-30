@@ -122,7 +122,7 @@ const defaultFieldErrors = computed(() => {
 const generatedVariantFieldErrors = computed(() =>
   Object.fromEntries(
     props.generatedVariants.map((item) => {
-      if (!showErrors.value) {
+      if (!showErrors.value || item.selected === false) {
         return [
           item.key,
           { soLuong: "", giaGoc: "", giaBan: "" }
@@ -177,6 +177,27 @@ const generatedVariantGroups = computed(() => {
   });
 
   return Array.from(groupedVariants.values());
+});
+
+function isGroupAllSelected(group) {
+  return group.variants.length > 0 && group.variants.every((v) => v.selected !== false);
+}
+
+function toggleGroupAll(group, selected) {
+  group.variants.forEach((v) => {
+    v.selected = selected;
+  });
+}
+
+const isAllSelected = computed({
+  get() {
+    return props.generatedVariants.length > 0 && props.generatedVariants.every(v => v.selected !== false);
+  },
+  set(value) {
+    props.generatedVariants.forEach(v => {
+      v.selected = value;
+    });
+  }
 });
 
 const hasDefaultFieldErrors = computed(() =>
@@ -243,7 +264,7 @@ function getDetailedValidationMessages() {
   if (defaultErrorsRaw.giaBan) messages.push(defaultErrorsRaw.giaBan);
 
   // Variant fields
-  props.generatedVariants.forEach((item) => {
+  props.generatedVariants.filter(item => item.selected !== false).forEach((item) => {
     const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, { allowZero: false });
     const giaBanError = buildNumberFieldError("Giá bán", item.giaBan, { allowZero: false });
     const soLuongError = buildNumberFieldError("Số lượng", item.soLuong);
@@ -359,6 +380,12 @@ async function handleSaveClick() {
     return;
   }
 
+  const selectedCount = props.generatedVariants.filter(v => v.selected !== false).length;
+  if (selectedCount === 0) {
+    emit("error", "Vui lòng chọn ít nhất một biến thể để lưu");
+    return;
+  }
+
   const { title } = saveConfirmationDetails.value;
   const isConfirmed = await showConfirm(
     "", 
@@ -377,6 +404,13 @@ async function handleSaveClick() {
     <p v-if="variantErrors.generated" class="text-sm text-rose-500">
       {{ variantErrors.generated }}
     </p>
+
+    <div v-if="generatedVariants.length" class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
+      <input type="checkbox" id="selectAll" v-model="isAllSelected" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
+      <label for="selectAll" class="text-[13px] font-semibold text-slate-600 cursor-pointer select-none">
+        Chọn tất cả biến thể
+      </label>
+    </div>
 
     <div
       v-if="generatedVariants.length"
@@ -428,7 +462,7 @@ async function handleSaveClick() {
 
       <label class="block">
         <span class="mb-1 block text-[13px] font-semibold text-slate-500">
-          Giá bán mặc định *
+          Giá bán mặc định <span class="text-rose-500">*</span>
         </span>
         <AdminFormattedNumberInput
           v-model="variantBuilder.giaBan"
@@ -489,7 +523,10 @@ async function handleSaveClick() {
           <table class="min-w-full border-separate border-spacing-y-2 text-sm">
             <thead>
               <tr class="text-left text-sm font-bold text-slate-500">
-                <th class="rounded-l-2xl bg-slate-100 px-4 py-3">Kích cỡ</th>
+                <th class="rounded-l-2xl bg-slate-100 px-4 py-3 w-[50px]">
+                  <input type="checkbox" :checked="isGroupAllSelected(group)" @change="toggleGroupAll(group, $event.target.checked)" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
+                </th>
+                <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
                 <th class="bg-slate-100 px-4 py-3">Số lượng</th>
                 <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
                 <th class="bg-slate-100 px-4 py-3">Giá bán</th>
@@ -505,7 +542,10 @@ async function handleSaveClick() {
                 :key="item.key"
                 class="bg-white shadow-sm"
               >
-                <td class="rounded-l-2xl px-4 py-4 font-semibold text-slate-700">
+                <td class="rounded-l-2xl px-4 py-4">
+                  <input type="checkbox" v-model="item.selected" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
+                </td>
+                <td class="px-4 py-4 font-semibold text-slate-700">
                   Size {{ item.kichCo }}
                 </td>
                 <td class="px-4 py-4">
@@ -589,7 +629,10 @@ async function handleSaveClick() {
         </div>
       </div>
 
-      <div class="mt-5 grid gap-5">
+      <div 
+        class="mt-5 grid gap-4 sm:grid-cols-2"
+        :class="representativeGeneratedVariants.length >= 3 ? 'lg:grid-cols-3' : ''"
+      >
         <BienTheImageManager
           v-for="item in representativeGeneratedVariants"
           :key="`draft-color-${item.mauSacId}`"
@@ -598,6 +641,7 @@ async function handleSaveClick() {
           :draft-images="draftImagesForColor(item.mauSacId)"
           :related-variants="relatedVariants(item.mauSacId)"
           display-mode="color"
+          compact
           @change-draft-images="handleDraftImagesChange(item.mauSacId, $event)"
           @error="emit('error', $event)"
         />
