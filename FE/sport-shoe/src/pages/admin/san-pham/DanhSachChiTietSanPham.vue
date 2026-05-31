@@ -294,12 +294,21 @@ async function loadData(page = 0) {
   }
 }
 
-function resetFilters() {
+async function resetFilters() {
   filters.keyword = ''
   filters.mauSacId = null
   filters.kichCoId = null
   filters.trangThai = null
-  // Không cần xóa giayId vì khi không có filter, sản phẩm đang chọn vẫn giữ nguyên
+
+  // Reset hoàn toàn: xóa sản phẩm đang chọn và giayId khỏi route
+  // để hiển thị toàn bộ biến thể của tất cả sản phẩm
+  if (selectedGiayId.value || selectedProduct.value) {
+    selectedProduct.value = null
+    suppressGiayIdWatch = true
+    await router.replace({ name: 'admin-bien-the-san-pham' })
+    suppressGiayIdWatch = false
+  }
+
   loadData(0)
 }
 
