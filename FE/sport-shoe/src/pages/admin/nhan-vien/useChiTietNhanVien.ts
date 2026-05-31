@@ -1,4 +1,4 @@
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Camera, Save, ScanLine, X } from "lucide-vue-next";
 import { BrowserMultiFormatReader } from "@zxing/browser";
@@ -11,6 +11,7 @@ import {
   uploadFile,
   xoaNhanVien,
 } from "../../../services/nhan-vien";
+import { getCurrentAdminUser } from "../../../services/auth";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import Card from "../../../components/ui/Card.vue";
@@ -165,6 +166,17 @@ export function useChiTietNhanVien() {
   const dangUpload = ref(false);
   const loiTrang = ref("");
   const nhanVien = ref<any>(null);
+  const adminHienTai = getCurrentAdminUser();
+  const laChinhMinh = computed(() => {
+    return nhanVien.value && adminHienTai && String(nhanVien.value.id) === String(adminHienTai.id);
+  });
+  const homNay = computed(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
   const fileInputAvatar = ref<HTMLInputElement | null>(null);
   const matKhauMoi = ref("");
   const showDoiMatKhau = ref(false);
@@ -174,6 +186,7 @@ export function useChiTietNhanVien() {
     email: "",
     sdt: "",
     cccd: "",
+    ngaySinh: "",
   });
 
   const form = ref({
@@ -476,7 +489,7 @@ export function useChiTietNhanVien() {
   }
 
   async function luu() {
-    loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "" };
+    loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "", ngaySinh: "" };
     let hasError = false;
 
     if (!form.value.hoTen.trim()) {
@@ -495,6 +508,16 @@ export function useChiTietNhanVien() {
     if (!/^\d{10}$/.test(form.value.sdt.trim())) {
       loiForm.value.sdt = "Số điện thoại phải gồm đúng 10 chữ số.";
       hasError = true;
+    }
+
+    if (form.value.ngaySinh) {
+      const selectedDate = new Date(form.value.ngaySinh);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate > today) {
+        loiForm.value.ngaySinh = "Ngày sinh không được là ngày trong tương lai.";
+        hasError = true;
+      }
     }
 
     if (hasError) return;
@@ -591,6 +614,10 @@ export function useChiTietNhanVien() {
   }
 
   async function doiTrangThai(trangThai: number) {
+    if (trangThai === 0 && laChinhMinh.value) {
+      showError("Bạn không thể tự khóa tài khoản của chính mình.");
+      return;
+    }
     try {
       const updated = await doiTrangThaiNhanVien(id!, trangThai);
       nhanVien.value = updated;
@@ -601,6 +628,10 @@ export function useChiTietNhanVien() {
   }
 
   async function xoaNhanVienHienTai() {
+    if (laChinhMinh.value) {
+      showError("Bạn không thể tự xóa tài khoản của chính mình.");
+      return;
+    }
     const confirmed = await showConfirm(
       "Bạn có chắc chắn muốn xóa nhân viên này không?",
       "Xác nhận xóa",
@@ -642,5 +673,5 @@ export function useChiTietNhanVien() {
     dungQuet();
   });
 
-  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh };
+  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, homNay };
 }

@@ -7,6 +7,7 @@ import com.example.server.core.admin.nhanVien.dto.request.TaoNhanVienRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.NhanVienResponses.NhanVienResponse;
 import com.example.server.core.admin.nhanVien.service.NhanVienService;
 import com.example.server.infrastructure.api.ApiResponse;
+import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.security.AdminPrincipal;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -85,6 +86,12 @@ public class NhanVienController {
             @PathVariable UUID id,
             @Valid @RequestBody DoiTrangThaiRequest request
     ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AdminPrincipal adminPrincipal) {
+            if (adminPrincipal.id().equals(id) && request.trangThai() == 0) {
+                throw new BusinessException("Bạn không thể tự khóa tài khoản của chính mình");
+            }
+        }
         return ResponseEntity.ok(ApiResponse.success(
                 "Đổi trạng thái thành công",
                 nhanVienService.doiTrangThai(id, request)
@@ -104,6 +111,12 @@ public class NhanVienController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> xoaNhanVien(@PathVariable UUID id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AdminPrincipal adminPrincipal) {
+            if (adminPrincipal.id().equals(id)) {
+                throw new BusinessException("Bạn không thể tự xóa tài khoản của chính mình");
+            }
+        }
         nhanVienService.xoaNhanVien(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa nhân viên thành công", null));
     }

@@ -3,7 +3,7 @@ import { useChiTietNhanVien } from "./useChiTietNhanVien";
 import { Lock, MapPin, User } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
-const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh } = useChiTietNhanVien();
+const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, homNay } = useChiTietNhanVien();
 
 function taoChuCaiDaiDien(value?: string) {
   return String(value || "NV")
@@ -125,7 +125,9 @@ function taoChuCaiDaiDien(value?: string) {
               <Button
                 v-if="nhanVien?.trangThai === 1"
                 variant="soft"
-                class="w-full justify-center bg-rose-50 text-rose-600 hover:bg-rose-100"
+                class="w-full justify-center bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="laChinhMinh"
+                :title="laChinhMinh ? 'Bạn không thể tự khóa tài khoản của chính mình' : ''"
                 @click="doiTrangThai(0)"
               >
                 <Lock class="h-4 w-4" />
@@ -197,23 +199,18 @@ function taoChuCaiDaiDien(value?: string) {
             </div>
           </Teleport>
 
-          <div class="mb-5 rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
-            <div class="mb-3 flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
-                <ScanLine class="h-5 w-5" />
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-slate-800">Quét CCCD</h3>
-                <p class="text-xs text-slate-400">Dùng để điền nhanh thông tin nhân viên.</p>
-              </div>
-            </div>
+          <div class="mb-5 rounded-2xl  border-rose-100 bg-white p-4">
+            <!-- <div class="mb-3 flex items-center gap-3">
+              
+              
+            </div> -->
             <div class="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 @click="batDauQuet"
                 :class="[
                   'inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition whitespace-nowrap shadow-sm',
-                  loiForm.cccd ? 'border-rose-400 bg-white text-rose-600 hover:bg-rose-50' : 'border-rose-200 bg-white text-primary hover:bg-rose-50'
+                  loiForm.cccd ? 'border-rose-400 bg-white text-black hover:bg-rose-50' : 'border-rose-200 bg-white text-black hover:bg-rose-50'
                 ]"
               >
                 <ScanLine class="h-4 w-4" />
@@ -295,8 +292,13 @@ function taoChuCaiDaiDien(value?: string) {
               <input
                 v-model="form.ngaySinh"
                 type="date"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+                :max="homNay"
+                :class="[
+                  'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:bg-white',
+                  loiForm.ngaySinh ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
+                ]"
               />
+              <p v-if="loiForm.ngaySinh" class="text-xs text-rose-500">{{ loiForm.ngaySinh }}</p>
             </label>
 
           </div>

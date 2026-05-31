@@ -13,6 +13,7 @@ const STORAGE_KEYS = [
 ];
 
 const DEFAULT_SESSION = Object.freeze({
+  id: "",
   hoTen: "Quản trị hệ thống",
   tenTaiKhoan: "admin",
   vaiTro: "Quản trị viên",
@@ -78,6 +79,7 @@ function normalizeSession(candidate) {
   }
 
   return {
+    id: candidate.id ?? "",
     hoTen: firstNonEmpty(candidate.hoTen, candidate.fullName, candidate.name, DEFAULT_SESSION.hoTen),
     tenTaiKhoan: firstNonEmpty(
       candidate.tenTaiKhoan,
