@@ -73,6 +73,16 @@ export async function apiRequest(path, options = {}) {
   const payload = await parsePayload(response);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUser");
+      localStorage.removeItem("sport-shoe-admin-session");
+      if (typeof window !== "undefined") {
+        const isApiPath = window.location.pathname.startsWith("/admin");
+        window.location.href = isApiPath ? "/admin/login" : "/login";
+      }
+    }
     const requestError = createRequestError(
       getFirstFieldError(payload?.errors) || payload?.message || `HTTP ${response.status}`,
       fallbackMessage,

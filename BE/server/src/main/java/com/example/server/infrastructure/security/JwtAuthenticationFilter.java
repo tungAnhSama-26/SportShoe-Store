@@ -1,5 +1,7 @@
 package com.example.server.infrastructure.security;
 
+import com.example.server.entity.NhanVien;
+import com.example.server.repository.NhanVienRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,14 +14,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final NhanVienRepository nhanVienRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, NhanVienRepository nhanVienRepository) {
         this.jwtService = jwtService;
+        this.nhanVienRepository = nhanVienRepository;
     }
 
     @Override
@@ -37,12 +42,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             AdminPrincipal principal = jwtService.parseToken(authorization.substring(7).trim());
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    principal,
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + principal.role()))
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            Optional<NhanVien> nhanVienOpt = nhanVienRepository.findById(principal.id());
+            if (nhanVienOpt.isEmpty() || nhanVienOpt.get().getTrangThai() != 1) {
+                SecurityContextHolder.clearContext();
+            } else {
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + principal.role()))
+                );
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         } catch (IllegalArgumentException ignored) {
             SecurityContextHolder.clearContext();
         }

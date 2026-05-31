@@ -243,6 +243,12 @@ async function capNhatTrangThai(nv: any) {
     return;
   }
 
+  // Không cho phép tự khóa tài khoản của chính mình
+  if (nv.id === adminSession.value.id) {
+    showError("Bạn không thể tự khóa tài khoản của chính mình.");
+    return;
+  }
+
   // Không cho phép khóa tài khoản Admin khác
   if (nv.tenVaiTro === "Admin") {
     showError("Không thể thay đổi trạng thái của tài khoản Quản trị viên.");
@@ -485,8 +491,8 @@ onUnmounted(() => {
                   <AdminQuickStatusAction
                     v-if="adminSession.vaiTro === 'Quản trị viên'"
                     :loading="dangDoiTrangThai === nv.id"
-                    :disabled="nv.tenVaiTro === 'Admin'"
-                    :disabled-title="'Không thể đổi trạng thái Admin'"
+                    :disabled="nv.tenVaiTro === 'Admin' || nv.id === adminSession.id"
+                    :disabled-title="nv.id === adminSession.id ? 'Bạn không thể tự khóa tài khoản của chính mình' : 'Không thể đổi trạng thái Admin'"
                     :action-label="nv.trangThai === 1 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
                     :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
