@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -60,6 +61,9 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienResponse taoNhanVien(TaoNhanVienRequest request) {
+        if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
+            throw new BusinessException("Ngày sinh không được quá 100 tuổi");
+        }
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException("Email đã được sử dụng");
@@ -111,6 +115,9 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request) {
+        if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
+            throw new BusinessException("Ngày sinh không được quá 100 tuổi");
+        }
         NhanVien nv = findNhanVien(id);
 
         String normalizedTenDangNhap = normalizeRequired(request.tenDangNhap(), "Ten dang nhap khong duoc de trong");

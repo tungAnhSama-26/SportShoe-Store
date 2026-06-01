@@ -13,7 +13,7 @@ public record CapNhatNhanVienRequest(
         @NotBlank @Size(max = 100) String hoTen,
         @NotBlank @Size(max = 100) String tenDangNhap,
         @NotBlank @Email @Size(max = 100) String email,
-        @Size(max = 20) String sdt,
+        @NotBlank @Pattern(regexp = "^\\d{10}$", message = "Số điện thoại phải gồm đúng 10 chữ số") String sdt,
         @Pattern(regexp = "^\\d{12}$", message = "CCCD phai gom dung 12 chu so") String cccd,
         @Size(max = 10) String gioiTinh,
         @Past(message = "Ngày sinh không được là ngày trong tương lai") LocalDate ngaySinh,
