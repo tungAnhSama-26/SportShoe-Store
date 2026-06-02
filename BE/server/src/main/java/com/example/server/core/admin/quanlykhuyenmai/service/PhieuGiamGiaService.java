@@ -90,8 +90,8 @@ public class PhieuGiamGiaService {
         Instant now = Instant.now();
         Instant end = phieuGiamGia.getNgayKetThuc();
 
-        if (end != null && end.isBefore(now)) {
-            phieuGiamGia.setTrangThai(2); // Hết hạn dưới mọi điều kiện nếu hết date
+        if (end != null && !end.isAfter(now)) {
+            phieuGiamGia.setTrangThai(2); // Hết hạn (bao gồm cả thời điểm hiện tại)
         } else {
             Integer requestedStatus = request.getTrangThai();
             if (requestedStatus != null && requestedStatus == 0) {

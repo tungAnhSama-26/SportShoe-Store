@@ -97,8 +97,8 @@ export function useChiTietDotGiamGia() {
     const mucGiam = Number(form.giaTriGiam) || 0;
     return tatCaBienThe.value.map(bt => ({
       ...bt,
-      giaSauGiam: bt.giaGoc 
-        ? bt.giaGoc * (1 - mucGiam / 100) 
+      giaSauGiam: bt.giaGoc
+        ? bt.giaGoc * (1 - mucGiam / 100)
         : bt.giaBan * (1 - mucGiam / 100)
     }));
   });
@@ -205,10 +205,10 @@ export function useChiTietDotGiamGia() {
       giaBan: Number(incoming?.giaBan ?? existing?.giaBan ?? 0),
       giaGoc: Number(
         incoming?.giaGoc ??
-          existing?.giaGoc ??
-          incoming?.giaBan ??
-          existing?.giaBan ??
-          0,
+        existing?.giaGoc ??
+        incoming?.giaBan ??
+        existing?.giaBan ??
+        0,
       ),
       mauSac: incoming?.mauSac || existing?.mauSac || "",
       kichCo: incoming?.kichCo || existing?.kichCo || "",
@@ -419,7 +419,7 @@ export function useChiTietDotGiamGia() {
     if (!sp.bienThes || !sp.bienThes.length) return { checked: false, indeterminate: false, disabled: true };
     const unblocked = sp.bienThes.filter(bt => !isVariantBlocked(bt.id || bt.giayChiTietId));
     if (unblocked.length === 0) return { checked: false, indeterminate: false, disabled: true };
-    
+
     const selectedCount = unblocked.filter(bt => isVariantSelected(bt.id || bt.giayChiTietId)).length;
     return {
       checked: selectedCount > 0 && selectedCount === unblocked.length,
@@ -461,10 +461,11 @@ export function useChiTietDotGiamGia() {
       (v) => Number(v.id) === Number(normalized.id),
     );
     if (index === -1) {
-      selectedVariants.value = dedupeSelectedVariants([
-        ...selectedVariants.value,
+      // Thêm sản phẩm mới vào đầu danh sách
+      selectedVariants.value = [
         normalized,
-      ]);
+        ...dedupeSelectedVariants(selectedVariants.value),
+      ];
     } else {
       selectedVariants.value.splice(index, 1);
       selectedVariants.value = dedupeSelectedVariants(selectedVariants.value);
@@ -558,16 +559,10 @@ export function useChiTietDotGiamGia() {
     if (!form.ngayBatDau) {
       formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
       isValid = false;
-    } else if (laMoi && form.ngayBatDau < getToday()) {
-      formErrors.ngayBatDau = "Ngày bắt đầu không được chọn trong quá khứ";
-      isValid = false;
     }
 
     if (!form.ngayKetThuc) {
       formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
-      isValid = false;
-    } else if (laMoi && form.ngayKetThuc < getToday()) {
-      formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
       isValid = false;
     }
 
@@ -582,8 +577,8 @@ export function useChiTietDotGiamGia() {
 
     if (!isValid) return;
 
-    const confirmMsg = laMoi 
-      ? "Bạn có chắc chắn muốn thêm mới đợt giảm giá này không?" 
+    const confirmMsg = laMoi
+      ? "Bạn có chắc chắn muốn thêm mới đợt giảm giá này không?"
       : "Bạn có chắc chắn muốn cập nhật thông tin đợt giảm giá này không?";
     const isConfirmed = await showConfirm(confirmMsg);
     if (!isConfirmed) return;
@@ -626,18 +621,30 @@ export function useChiTietDotGiamGia() {
       });
 
       hienThiThongBao(
-        "success", 
-        "Thành công", 
+        "success",
+        "Thành công",
         laMoi ? "Đã tạo mới đợt giảm giá thành công." : "Đã cập nhật đợt giảm giá thành công."
       );
 
+      // Lưu thông báo vào sessionStorage để hiển thị ở trang danh sách
+      if (laMoi) {
+        window.sessionStorage.setItem(
+          "admin-dot-giam-gia-toast",
+          JSON.stringify({
+            loai: "success",
+            tieuDe: "Thành công",
+            noiDung: "Đã tạo mới đợt giảm giá thành công."
+          })
+        );
+      }
+
       setTimeout(() => {
         router.push({ name: "admin-dot-giam-gia" });
-      }, 1000);
+      }, 500);
     } catch (error) {
       const msg = getDisplayErrorMessage(error, "Không thể lưu đợt giảm giá");
       loiTrang.value = msg;
-      
+
       // Thêm thông báo lỗi dạng Toast
       hienThiThongBao(
         "error",

@@ -31,6 +31,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
     )
     FROM PhieuGiamGiaKhachHang phieuGGKH JOIN KhachHang khachHang
     ON phieuGGKH.khachHang.id = khachHang.id
+    ORDER BY phieuGGKH.ngayTao DESC, phieuGGKH.id DESC
 """)
     List<QuanLyPhieuGiamGiaKhachHangResponse> hienThiPhieuGiamGiaKhachHang();
 
@@ -54,6 +55,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
     )
     FROM PhieuGiamGiaKhachHang phieuGGKH JOIN KhachHang khachHang
     ON phieuGGKH.khachHang.id = khachHang.id
+    ORDER BY phieuGGKH.ngayTao DESC, phieuGGKH.id DESC
 """)
     Page<QuanLyPhieuGiamGiaKhachHangResponse> phantrangPhieuGiamGiaKhachHang(Pageable pageable);
 
@@ -67,7 +69,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
     ON phieuGGKH.khachHang.id = khachHang.id
     WHERE (:keyword IS NULL OR LOWER(phieuGGKH.phieuGiamGia.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(phieuGGKH.phieuGiamGia.ten) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(khachHang.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')))
     AND (:trangThai IS NULL OR phieuGGKH.trangThai = :trangThai)
-    ORDER BY phieuGGKH.ngayTao DESC
+    ORDER BY phieuGGKH.ngayTao DESC, phieuGGKH.id DESC
 """)
     Page<QuanLyPhieuGiamGiaKhachHangResponse> timKiemVaPhanTrang(
             @Param("keyword") String keyword, 
