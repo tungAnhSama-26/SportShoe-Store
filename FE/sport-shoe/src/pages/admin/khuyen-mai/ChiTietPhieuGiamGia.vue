@@ -179,7 +179,7 @@ function toggleEmail(email) {
 
   const index = dsEmailChon.value.indexOf(email);
   if (index === -1) {
-    dsEmailChon.value.push(email);
+    dsEmailChon.value.unshift(email);
     return;
   }
 
@@ -251,6 +251,11 @@ watch(
         formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
       } else {
         delete formErrors.giaTri;
+      }
+      // Khi chọn 100%, tự động reset giảm tối đa về 0 và xóa error
+      if (val === 100) {
+        form.giamToiDa = "0";
+        delete formErrors.giamToiDa;
       }
     } else {
       const val = parseVndNumber(newVal);
@@ -397,16 +402,10 @@ async function submitForm() {
   if (!form.ngayBatDau) {
     formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
     isValid = false;
-  } else if (laMoi && form.ngayBatDau < getToday()) {
-    formErrors.ngayBatDau = "Ngày bắt đầu không được chọn trong quá khứ";
-    isValid = false;
   }
 
   if (!form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
-    isValid = false;
-  } else if (laMoi && form.ngayKetThuc < getToday()) {
-    formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
     isValid = false;
   }
   if (
@@ -824,6 +823,9 @@ onMounted(taiChiTiet);
             <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">
               {{ formErrors.giaTri }}
             </p>
+            <p v-else-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-emerald-600 font-medium">
+              ✓ Sản phẩm sẽ miễn phí hoàn toàn (giảm 100%)
+            </p>
           </div>
 
           <div class="min-w-0 space-y-2">
@@ -853,9 +855,14 @@ onMounted(taiChiTiet);
             <input
               :value="form.giamToiDa"
               type="text"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+              :disabled="Number(form.loai) === 1 && Number(form.giaTri) === 100"
+              class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              :class="Number(form.loai) === 1 && Number(form.giaTri) === 100 ? '' : 'bg-slate-50'"
               @input="handleVndInput('giamToiDa', $event)"
             />
+            <p v-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-slate-400">
+              Không cần giảm tối đa khi giảm 100%
+            </p>
           </div>
 
           <div class="min-w-0 space-y-2">
@@ -888,7 +895,6 @@ onMounted(taiChiTiet);
             <input
               v-model="form.ngayBatDau"
               type="date"
-              :min="laMoi ? getToday() : undefined"
               :readonly="isReadOnly"
               class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               :class="
@@ -910,7 +916,6 @@ onMounted(taiChiTiet);
             <input
               v-model="form.ngayKetThuc"
               type="date"
-              :min="form.ngayBatDau || getToday()"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">
