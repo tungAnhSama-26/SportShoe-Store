@@ -223,6 +223,9 @@ const filteredSelectedVariants = computed(() => {
                   >
                     {{ formErrors.giaTriGiam }}
                   </p>
+                  <p v-else-if="Number(form.giaTriGiam) === 100" class="text-xs text-emerald-600 font-medium">
+                    ✓ Sản phẩm sẽ miễn phí hoàn toàn (giảm 100%)
+                  </p>
                 </div>
               </div>
 
@@ -249,7 +252,6 @@ const filteredSelectedVariants = computed(() => {
                   >
                   <input
                     v-model="form.ngayKetThuc"
-                    :min="form.ngayBatDau || getToday()"
                     type="date"
                     class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
                   />

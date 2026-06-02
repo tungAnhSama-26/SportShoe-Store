@@ -19,13 +19,13 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
     @Query("""
         UPDATE DotGiamGia d 
         SET d.kichHoat = CASE 
-            WHEN d.ngayKetThuc < CURRENT_DATE THEN 2 
+            WHEN d.ngayKetThuc <= CURRENT_DATE THEN 2 
             WHEN d.ngayBatDau > CURRENT_DATE THEN 4 
             ELSE 1 
         END 
         WHERE d.kichHoat != 0 
         AND d.kichHoat != CASE 
-            WHEN d.ngayKetThuc < CURRENT_DATE THEN 2 
+            WHEN d.ngayKetThuc <= CURRENT_DATE THEN 2 
             WHEN d.ngayBatDau > CURRENT_DATE THEN 4 
             ELSE 1 
         END
