@@ -53,12 +53,12 @@ public class AuthService {
 
     @Transactional
     public KhachHangResponse login(LoginRequest request) {
-        String attemptKey = loginAttemptKey("customer", request.username());
+        String username = request.username().trim();
+        String attemptKey = loginAttemptKey("customer", username);
         assertLoginAllowed(attemptKey);
 
         Optional<KhachHang> khOptional = khachHangRepository.findAll().stream()
-                .filter(kh -> kh.getTenDangNhap().equals(request.username())
-                        || (kh.getEmail() != null && kh.getEmail().equals(request.username())))
+                .filter(kh -> kh.getTenDangNhap().equals(username))
                 .findFirst();
 
         if (khOptional.isEmpty()) {
@@ -88,8 +88,7 @@ public class AuthService {
         String attemptKey = loginAttemptKey("admin", username);
         assertLoginAllowed(attemptKey);
 
-        Optional<NhanVien> nvOptional = nhanVienRepository.findByTenDangNhapIgnoreCase(username)
-                .or(() -> nhanVienRepository.findByEmail(username.toLowerCase(Locale.ROOT)));
+        Optional<NhanVien> nvOptional = nhanVienRepository.findByTenDangNhapIgnoreCase(username);
 
         if (nvOptional.isEmpty()) {
             recordFailedLogin(attemptKey);

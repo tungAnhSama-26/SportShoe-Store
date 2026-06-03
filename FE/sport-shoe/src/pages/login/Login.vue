@@ -145,6 +145,10 @@ const handleLogin = async () => {
     showToast("Vui lòng nhập tên đăng nhập");
     return;
   }
+  if (loginForm.username.includes("@")) {
+    showToast("Vui lòng đăng nhập bằng tên đăng nhập, không sử dụng email");
+    return;
+  }
   if (!loginForm.password.trim()) {
     showToast("Vui lòng nhập mật khẩu");
     return;
