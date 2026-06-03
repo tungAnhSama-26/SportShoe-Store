@@ -95,6 +95,16 @@ import "./Login.css";
 const router = useRouter();
 const route = useRoute();
 
+const STAFF_ALLOWED_REDIRECTS = [
+  "/admin/ban-hang",
+  "/admin/hoa-don",
+  "/admin/khach-hang",
+  "/admin/lich-lam-viec",
+  "/admin/chat",
+  "/admin/profile",
+  "/nhanvien/profile",
+];
+
 const loginForm = reactive({
   username: "",
   password: "",
@@ -122,9 +132,37 @@ const showToast = (message, type = "error") => {
   }, 3000);
 };
 
+function laQuyenAdmin(user) {
+  const rawRole = user?.vaiTro ?? user?.role ?? user?.tenVaiTro ?? user?.roleName ?? user?.maVaiTro;
+  const normalized = String(rawRole ?? "").trim().toUpperCase();
+  return Number(rawRole) === 1 || normalized === "ADMIN" || normalized === "ROLE_ADMIN" || normalized === "QUẢN TRỊ VIÊN";
+}
+
+function laRedirectNhanVienHopLe(path) {
+  return STAFF_ALLOWED_REDIRECTS.some((allowedPath) => path === allowedPath || path.startsWith(`${allowedPath}/`));
+}
+
+function layDuongDanSauDangNhap(user) {
+  const redirectPath = typeof route.query.redirect === "string" ? route.query.redirect : "";
+
+  if (laQuyenAdmin(user)) {
+    return redirectPath.startsWith("/admin") ? redirectPath : "/admin";
+  }
+
+  if (redirectPath.startsWith("/nhanvien") || laRedirectNhanVienHopLe(redirectPath)) {
+    return redirectPath;
+  }
+
+  return "/admin/ban-hang";
+}
+
 const handleLogin = async () => {
   if (!loginForm.username.trim()) {
     showToast("Vui lòng nhập tên đăng nhập");
+    return;
+  }
+  if (loginForm.username.includes("@")) {
+    showToast("Vui lòng đăng nhập bằng tên đăng nhập, không sử dụng email");
     return;
   }
   if (!loginForm.password.trim()) {
@@ -134,11 +172,10 @@ const handleLogin = async () => {
 
   loading.value = true;
   try {
-    await adminLogin(loginForm.username, loginForm.password);
+    const user = await adminLogin(loginForm.username, loginForm.password);
     showToast("Đăng nhập hệ thống thành công!", "success");
     setTimeout(() => {
-      const redirectPath = typeof route.query.redirect === "string" ? route.query.redirect : "/admin";
-      router.push(redirectPath.startsWith("/admin") ? redirectPath : "/admin");
+      router.push(layDuongDanSauDangNhap(user));
     }, 800);
   } catch (error) {
     showToast(error.message || "Đăng nhập hệ thống thất bại");
