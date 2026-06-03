@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/uploads/**").permitAll()
+                        .requestMatchers("/api/v1/nhanvien/profile", "/api/v1/nhanvien/profile/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/upload", "/api/v1/upload/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/ban-hang-tai-quay/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/hoa-don/**").hasAnyRole("ADMIN", "STAFF")

@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,7 +48,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.clearContext();
             } else {
                 NhanVien nhanVien = nhanVienOpt.get();
-                if (parsedToken.authVersion() != resolveAuthVersion(nhanVien)) {
+                Integer currentVaiTro = normalizeVaiTro(nhanVien.getVaiTro());
+                if (!currentVaiTro.equals(normalizeVaiTro(principal.vaiTro()))) {
                     SecurityContextHolder.clearContext();
                     filterChain.doFilter(request, response);
                     return;
@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         nhanVien.getMa(),
                         nhanVien.getTenDangNhap(),
                         nhanVien.getHoTen(),
-                        normalizeVaiTro(nhanVien.getVaiTro()),
+                        currentVaiTro,
                         currentRole
                 );
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -83,10 +83,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private Integer normalizeVaiTro(Integer vaiTro) {
         return Integer.valueOf(1).equals(vaiTro) ? 1 : 2;
-    }
-
-    private long resolveAuthVersion(NhanVien nhanVien) {
-        Instant ngayCapNhat = nhanVien.getNgayCapNhat();
-        return ngayCapNhat != null ? ngayCapNhat.toEpochMilli() : 0L;
     }
 }

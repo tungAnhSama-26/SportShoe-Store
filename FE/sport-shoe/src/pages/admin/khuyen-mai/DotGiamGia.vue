@@ -20,7 +20,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
-import { showError } from "../../../utils/alert";
+import { showSuccess, showError } from "../../../utils/alert";
 
 const router = useRouter();
 
@@ -51,20 +51,20 @@ let toastTimer = null;
 
 const toastClass = computed(() => {
   if (toast.value.loai === "success")
-    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    return "border-rose-100 bg-white text-rose-700";
   if (toast.value.loai === "warning")
     return "border-amber-100 bg-amber-50 text-amber-700";
   return "border-rose-100 bg-rose-50 text-rose-700";
 });
 
 const toastIconClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "success") return "bg-rose-50 text-rose-600";
   if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
   return "bg-rose-100 text-rose-600";
 });
 
 const toastAccentClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "success") return "bg-[#cf1018]";
   if (toast.value.loai === "warning") return "bg-amber-500";
   return "bg-rose-500";
 });
@@ -75,6 +75,11 @@ const ToastIcon = computed(() => {
 });
 
 function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (loai === "success") {
+    showSuccess(noiDung || tieuDe, tieuDe);
+    return;
+  }
+
   if (toastTimer) {
     clearTimeout(toastTimer);
   }
@@ -318,7 +323,7 @@ onMounted(() => {
       leave-to-class="translate-y-3 opacity-0"
     >
       <div
-        v-if="toast.hienThi"
+        v-if="toast.hienThi && toast.loai !== 'success'"
         class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
         :class="toastClass"
       >

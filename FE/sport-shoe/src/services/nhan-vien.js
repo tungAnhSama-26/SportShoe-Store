@@ -53,6 +53,24 @@ export function doiMatKhauNhanVien(id, matKhauMoi) {
   });
 }
 
+export function layHoSoNhanVien() {
+  return request("/nhanvien/profile");
+}
+
+export function capNhatHoSoNhanVien(payload) {
+  return request("/nhanvien/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function doiMatKhauHoSoNhanVien(matKhauMoi) {
+  return request("/nhanvien/profile/mat-khau", {
+    method: "PATCH",
+    body: JSON.stringify({ matKhauMoi }),
+  });
+}
+
 export function xoaNhanVien(id) {
   return request(`/admin/nhan-vien/${id}`, { method: "DELETE" });
 }

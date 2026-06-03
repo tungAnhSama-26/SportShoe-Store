@@ -19,6 +19,7 @@ import Button from "../../../components/ui/Button.vue";
 import Badge from "../../../components/ui/Badge.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { showSuccess, showError } from "../../../utils/alert";
 
 const router = useRouter();
 
@@ -50,6 +51,16 @@ let latestLoadRequestId = 0;
 let keywordSearchTimer = null;
 
 function showToast(message, type = "success") {
+  if (type === "success") {
+    showSuccess(message);
+    return;
+  }
+
+  if (type === "error") {
+    showError(message);
+    return;
+  }
+
   if (toastTimer) clearTimeout(toastTimer);
   toast.message = message;
   toast.type = type;
@@ -587,7 +598,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="toast.show"
+          v-if="toast.show && toast.type !== 'success'"
           class="fixed right-5 top-5 z-[90] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
           :class="toast.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
         >

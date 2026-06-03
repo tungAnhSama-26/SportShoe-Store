@@ -14,10 +14,15 @@ import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.NhanVienRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
@@ -27,6 +32,10 @@ public class AuthService {
     private final NhanVienRepository nhanVienRepository;
     private final JwtService jwtService;
     private final PasswordService passwordService;
+
+    private static final int MAX_LOGIN_FAILED_ATTEMPTS = 5;
+    private static final Duration LOGIN_ATTEMPT_TTL = Duration.ofMinutes(15);
+    private static final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
 
     public AuthService(
             KhachHangRepository khachHangRepository,
@@ -44,24 +53,31 @@ public class AuthService {
 
     @Transactional
     public KhachHangResponse login(LoginRequest request) {
+        String attemptKey = loginAttemptKey("customer", request.username());
+        assertLoginAllowed(attemptKey);
+
         Optional<KhachHang> khOptional = khachHangRepository.findAll().stream()
                 .filter(kh -> kh.getTenDangNhap().equals(request.username())
                         || (kh.getEmail() != null && kh.getEmail().equals(request.username())))
                 .findFirst();
 
         if (khOptional.isEmpty()) {
+            recordFailedLogin(attemptKey);
             throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
         }
 
         KhachHang kh = khOptional.get();
         if (!passwordService.matches(request.password(), kh.getMatKhau())) {
+            recordFailedLogin(attemptKey);
             throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
         }
 
         if (kh.getTrangThai() != 1) {
+            recordFailedLogin(attemptKey);
             throw new BusinessException("Tài khoản đã bị khóa");
         }
 
+        clearFailedLogin(attemptKey);
         migratePasswordIfNeeded(kh, request.password());
         return toKhachHangResponse(kh);
     }
@@ -69,22 +85,29 @@ public class AuthService {
     @Transactional
     public AdminLoginResponse adminLogin(LoginRequest request) {
         String username = request.username().trim();
+        String attemptKey = loginAttemptKey("admin", username);
+        assertLoginAllowed(attemptKey);
+
         Optional<NhanVien> nvOptional = nhanVienRepository.findByTenDangNhapIgnoreCase(username)
                 .or(() -> nhanVienRepository.findByEmail(username.toLowerCase(Locale.ROOT)));
 
         if (nvOptional.isEmpty()) {
+            recordFailedLogin(attemptKey);
             throw new BusinessException("Tài khoản hoặc mật khẩu không chính xác");
         }
 
         NhanVien nhanVien = nvOptional.get();
         if (!passwordService.matches(request.password(), nhanVien.getMatKhau())) {
+            recordFailedLogin(attemptKey);
             throw new BusinessException("Tài khoản hoặc mật khẩu không chính xác");
         }
 
         if (nhanVien.getTrangThai() == null || nhanVien.getTrangThai() != 1) {
+            recordFailedLogin(attemptKey);
             throw new BusinessException("Tài khoản nhân viên đã bị khóa");
         }
 
+        clearFailedLogin(attemptKey);
         migratePasswordIfNeeded(nhanVien, request.password());
 
         Integer vaiTro = normalizeVaiTro(nhanVien.getVaiTro());
@@ -181,6 +204,57 @@ public class AuthService {
         if (passwordService.needsRehash(nhanVien.getMatKhau())) {
             nhanVien.setMatKhau(passwordService.hash(rawPassword));
             nhanVienRepository.save(nhanVien);
+        }
+    }
+
+    private String loginAttemptKey(String scope, String username) {
+        return scope + ":" + String.valueOf(username).trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void assertLoginAllowed(String key) {
+        LoginAttempt attempt = loginAttempts.get(key);
+        if (attempt == null) {
+            return;
+        }
+        if (attempt.isExpired()) {
+            loginAttempts.remove(key);
+            return;
+        }
+        if (attempt.failedAttempts() >= MAX_LOGIN_FAILED_ATTEMPTS) {
+            throw tooManyLoginAttempts();
+        }
+    }
+
+    private void recordFailedLogin(String key) {
+        LoginAttempt attempt = loginAttempts.compute(key, (ignored, current) -> {
+            if (current == null || current.isExpired()) {
+                return new LoginAttempt(1, Instant.now().plus(LOGIN_ATTEMPT_TTL));
+            }
+            return current.withFailedAttempts(current.failedAttempts() + 1);
+        });
+        if (attempt != null && attempt.failedAttempts() >= MAX_LOGIN_FAILED_ATTEMPTS) {
+            throw tooManyLoginAttempts();
+        }
+    }
+
+    private void clearFailedLogin(String key) {
+        loginAttempts.remove(key);
+    }
+
+    private ResponseStatusException tooManyLoginAttempts() {
+        return new ResponseStatusException(
+                HttpStatus.TOO_MANY_REQUESTS,
+                "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng chờ 15 phút rồi thử lại."
+        );
+    }
+
+    private record LoginAttempt(int failedAttempts, Instant expiredAt) {
+        private boolean isExpired() {
+            return Instant.now().isAfter(expiredAt);
+        }
+
+        private LoginAttempt withFailedAttempts(int failedAttempts) {
+            return new LoginAttempt(failedAttempts, expiredAt);
         }
     }
 }

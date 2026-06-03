@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -51,7 +52,7 @@ public class GlobalExceptionHandler {
                         LinkedHashMap::new
                 ));
 
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ErrorResponse.of(
                         ErrorCode.VALIDATION_ERROR,
                         ErrorCode.VALIDATION_ERROR.messageTemplate(),
@@ -61,8 +62,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException exception) {
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, exception.getMessage()));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException exception) {
+        String message = exception.getReason() != null ? exception.getReason() : exception.getStatusCode().toString();
+        return ResponseEntity.status(exception.getStatusCode())
+                .body(ErrorResponse.of(ErrorCode.BUSINESS_ERROR, message));
     }
 
 
