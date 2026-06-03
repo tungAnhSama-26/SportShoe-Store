@@ -11,7 +11,7 @@ const props = defineProps({
   <Teleport to="body">
     <Transition name="fade">
       <div
-        v-if="toast.show"
+        v-if="toast.show && toast.type !== 'success'"
         class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
         :class="toast.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
       >
