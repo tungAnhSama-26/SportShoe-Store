@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,15 +42,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            AdminPrincipal principal = jwtService.parseToken(authorization.substring(7).trim());
+            ParsedAdminToken parsedToken = jwtService.parseAdminToken(authorization.substring(7).trim());
+            AdminPrincipal principal = parsedToken.principal();
             Optional<NhanVien> nhanVienOpt = nhanVienRepository.findById(principal.id());
             if (nhanVienOpt.isEmpty() || nhanVienOpt.get().getTrangThai() != 1) {
                 SecurityContextHolder.clearContext();
             } else {
+                NhanVien nhanVien = nhanVienOpt.get();
+                if (parsedToken.authVersion() != resolveAuthVersion(nhanVien)) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+                String currentRole = resolveRole(nhanVien.getVaiTro());
+                AdminPrincipal currentPrincipal = new AdminPrincipal(
+                        nhanVien.getId(),
+                        nhanVien.getMa(),
+                        nhanVien.getTenDangNhap(),
+                        nhanVien.getHoTen(),
+                        normalizeVaiTro(nhanVien.getVaiTro()),
+                        currentRole
+                );
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        principal,
+                        currentPrincipal,
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + principal.role()))
+                        List.of(new SimpleGrantedAuthority("ROLE_" + currentRole))
                 );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
@@ -58,5 +75,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String resolveRole(Integer vaiTro) {
+        return Integer.valueOf(1).equals(vaiTro) ? "ADMIN" : "STAFF";
+    }
+
+    private Integer normalizeVaiTro(Integer vaiTro) {
+        return Integer.valueOf(1).equals(vaiTro) ? 1 : 2;
+    }
+
+    private long resolveAuthVersion(NhanVien nhanVien) {
+        Instant ngayCapNhat = nhanVien.getNgayCapNhat();
+        return ngayCapNhat != null ? ngayCapNhat.toEpochMilli() : 0L;
     }
 }

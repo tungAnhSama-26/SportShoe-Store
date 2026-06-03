@@ -45,7 +45,8 @@ const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/hoa-don",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
-  "/admin/chat"
+  "/admin/chat",
+  "/admin/profile"
 ];
 
 function isStaffAllowedPath(path) {
