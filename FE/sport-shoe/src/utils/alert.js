@@ -137,6 +137,31 @@ export function showError(text = '', title = 'Thất bại!') {
   });
 }
 
+export function showWarning(text = '', title = 'Cần xác minh CCCD') {
+  ensureAlertStyles();
+
+  return Swal.fire({
+    icon: 'warning',
+    title,
+    text: text || undefined,
+    toast: false,
+    position: 'center',
+    showConfirmButton: true,
+    confirmButtonText: 'Đã hiểu',
+    background: '#ffffff',
+    color: '#334155',
+    iconColor: BRAND_RED,
+    buttonsStyling: false,
+    customClass: {
+      popup: 'sportshoe-success-popup',
+      title: 'sportshoe-success-title',
+      htmlContainer: 'sportshoe-success-text',
+      confirmButton:
+        'bg-[#cf1018] text-white px-8 py-2.5 rounded-full font-semibold hover:bg-rose-700 transition focus:ring-4 focus:ring-rose-100 mt-4',
+    },
+  });
+}
+
 export async function showConfirm(
   text,
   title = 'Xác nhận',
