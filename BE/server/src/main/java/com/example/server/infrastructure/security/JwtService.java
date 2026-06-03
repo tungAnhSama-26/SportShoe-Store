@@ -36,7 +36,12 @@ public class JwtService {
     }
 
     public String generateToken(AdminPrincipal principal) {
+        return generateToken(principal, 0L);
+    }
+
+    public String generateToken(AdminPrincipal principal, long authVersion) {
         try {
+            Instant now = Instant.now();
             Map<String, Object> header = Map.of(
                     "alg", "HS256",
                     "typ", "JWT"
@@ -48,8 +53,9 @@ public class JwtService {
             claims.put("hoTen", principal.hoTen());
             claims.put("vaiTro", principal.vaiTro());
             claims.put("role", principal.role());
-            claims.put("iat", Instant.now().getEpochSecond());
-            claims.put("exp", Instant.now().plusSeconds(expirationSeconds).getEpochSecond());
+            claims.put("authVersion", authVersion);
+            claims.put("iat", now.getEpochSecond());
+            claims.put("exp", now.plusSeconds(expirationSeconds).getEpochSecond());
 
             String headerPart = encodeJson(header);
             String payloadPart = encodeJson(claims);
@@ -61,29 +67,13 @@ public class JwtService {
     }
 
     public AdminPrincipal parseToken(String token) {
+        return parseAdminToken(token).principal();
+    }
+
+    public ParsedAdminToken parseAdminToken(String token) {
         try {
-            String[] parts = token.split("\\.");
-            if (parts.length != 3) {
-                throw new IllegalArgumentException("JWT không đúng định dạng");
-            }
-
-            String expectedSignature = sign(parts[0] + "." + parts[1]);
-            if (!constantTimeEquals(expectedSignature, parts[2])) {
-                throw new IllegalArgumentException("JWT không hợp lệ");
-            }
-
-            Map<String, Object> claims = objectMapper.readValue(
-                    URL_DECODER.decode(parts[1]),
-                    new TypeReference<>() {
-                    }
-            );
-
-            long exp = ((Number) claims.get("exp")).longValue();
-            if (Instant.now().getEpochSecond() >= exp) {
-                throw new IllegalArgumentException("JWT da het han");
-            }
-
-            return new AdminPrincipal(
+            Map<String, Object> claims = readVerifiedClaims(token);
+            AdminPrincipal principal = new AdminPrincipal(
                     UUID.fromString(String.valueOf(claims.get("sub"))),
                     String.valueOf(claims.get("ma")),
                     String.valueOf(claims.get("tenDangNhap")),
@@ -91,9 +81,43 @@ public class JwtService {
                     ((Number) claims.get("vaiTro")).intValue(),
                     String.valueOf(claims.get("role"))
             );
+            return new ParsedAdminToken(principal, readAuthVersion(claims));
         } catch (Exception exception) {
             throw new IllegalArgumentException("JWT không hợp lệ", exception);
         }
+    }
+
+    private Map<String, Object> readVerifiedClaims(String token) throws Exception {
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("JWT không đúng định dạng");
+        }
+
+        String expectedSignature = sign(parts[0] + "." + parts[1]);
+        if (!constantTimeEquals(expectedSignature, parts[2])) {
+            throw new IllegalArgumentException("JWT không hợp lệ");
+        }
+
+        Map<String, Object> claims = objectMapper.readValue(
+                URL_DECODER.decode(parts[1]),
+                new TypeReference<>() {
+                }
+        );
+
+        long exp = ((Number) claims.get("exp")).longValue();
+        if (Instant.now().getEpochSecond() >= exp) {
+            throw new IllegalArgumentException("JWT đã hết hạn");
+        }
+
+        return claims;
+    }
+
+    private long readAuthVersion(Map<String, Object> claims) {
+        Object authVersion = claims.get("authVersion");
+        if (authVersion instanceof Number number) {
+            return number.longValue();
+        }
+        return 0L;
     }
 
     private String encodeJson(Object value) throws Exception {
