@@ -124,11 +124,14 @@ function hienThiVaiTro(nv: any) {
   if (normalizedRole.includes("admin") || normalizedRole.includes("quan tri")) {
     return "Admin";
   }
-  if (normalizedRole.includes("ban hang") || normalizedRole.includes("nhan vien") || Number(nv?.vaiTro) === 2) {
+  if (
+    normalizedRole.includes("ban hang") ||
+    normalizedRole.includes("nhan vien") ||
+    normalizedRole.includes("kho") ||
+    Number(nv?.vaiTro) === 2 ||
+    Number(nv?.vaiTro) === 3
+  ) {
     return "Nhân viên";
-  }
-  if (normalizedRole.includes("kho") || Number(nv?.vaiTro) === 3) {
-    return "Kho";
   }
   return nv?.tenVaiTro || "—";
 }

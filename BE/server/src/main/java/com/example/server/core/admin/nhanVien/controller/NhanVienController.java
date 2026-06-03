@@ -74,7 +74,7 @@ public class NhanVienController {
             @PathVariable UUID id,
             @Valid @RequestBody CapNhatNhanVienRequest request
     ) {
-        assertCanAccessProfile(id);
+        assertCanUpdateProfile(id, request);
         return ResponseEntity.ok(ApiResponse.success(
                 "Cập nhật nhân viên thành công",
                 nhanVienService.capNhatNhanVien(id, request)
@@ -128,6 +128,20 @@ public class NhanVienController {
                 && !"ADMIN".equals(adminPrincipal.role())
                 && !adminPrincipal.id().equals(employeeId)) {
             throw new AccessDeniedException("Nhan vien chi duoc cap nhat thong tin cua chinh minh");
+        }
+    }
+
+    private void assertCanUpdateProfile(UUID employeeId, CapNhatNhanVienRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = authentication != null ? authentication.getPrincipal() : null;
+        if (!(principal instanceof AdminPrincipal adminPrincipal) || "ADMIN".equals(adminPrincipal.role())) {
+            return;
+        }
+        if (!adminPrincipal.id().equals(employeeId)) {
+            throw new AccessDeniedException("Nhan vien chi duoc cap nhat thong tin cua chinh minh");
+        }
+        if (request.vaiTro() != null && !request.vaiTro().equals(adminPrincipal.vaiTro())) {
+            throw new AccessDeniedException("Nhan vien khong duoc tu thay doi vai tro");
         }
     }
 }
