@@ -13,10 +13,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,26 +32,10 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void usesCurrentStaffRoleFromDatabaseInsteadOfTokenRole() throws Exception {
-        UUID employeeId = UUID.randomUUID();
-        when(jwtService.parseAdminToken("token")).thenReturn(
-                new ParsedAdminToken(new AdminPrincipal(employeeId, "NV00002", "staff", "Staff", 1, "ADMIN"), 0L)
-        );
-        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee(employeeId, 2)));
-
-        Authentication authentication = runFilterAndCaptureAuthentication("Bearer token");
-
-        assertNotNull(authentication);
-        assertEquals("ROLE_STAFF", authentication.getAuthorities().iterator().next().getAuthority());
-        assertEquals(2, ((AdminPrincipal) authentication.getPrincipal()).vaiTro());
-        assertEquals("STAFF", ((AdminPrincipal) authentication.getPrincipal()).role());
-    }
-
-    @Test
     void keepsAdminRoleWhenDatabaseRoleIsAdmin() throws Exception {
         UUID employeeId = UUID.randomUUID();
         when(jwtService.parseAdminToken("token")).thenReturn(
-                new ParsedAdminToken(new AdminPrincipal(employeeId, "NV00001", "admin", "Admin", 2, "STAFF"), 0L)
+                new ParsedAdminToken(new AdminPrincipal(employeeId, "NV00001", "admin", "Admin", 1, "ADMIN"), 0L)
         );
         when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee(employeeId, 1)));
 
@@ -64,18 +48,32 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void rejectsTokenWhenAuthVersionIsStale() throws Exception {
+    void keepsStaffRoleWhenDatabaseRoleIsStaff() throws Exception {
         UUID employeeId = UUID.randomUUID();
-        NhanVien employee = employee(employeeId, 1);
-        employee.setNgayCapNhat(Instant.ofEpochMilli(12345));
         when(jwtService.parseAdminToken("token")).thenReturn(
-                new ParsedAdminToken(new AdminPrincipal(employeeId, "NV00001", "admin", "Admin", 1, "ADMIN"), 0L)
+                new ParsedAdminToken(new AdminPrincipal(employeeId, "NV00002", "staff", "Staff", 2, "STAFF"), 0L)
         );
-        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee));
+        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee(employeeId, 2)));
 
         Authentication authentication = runFilterAndCaptureAuthentication("Bearer token");
 
-        assertEquals(null, authentication);
+        assertNotNull(authentication);
+        assertEquals("ROLE_STAFF", authentication.getAuthorities().iterator().next().getAuthority());
+        assertEquals(2, ((AdminPrincipal) authentication.getPrincipal()).vaiTro());
+        assertEquals("STAFF", ((AdminPrincipal) authentication.getPrincipal()).role());
+    }
+
+    @Test
+    void rejectsTokenWhenRoleChangedInDatabase() throws Exception {
+        UUID employeeId = UUID.randomUUID();
+        when(jwtService.parseAdminToken("token")).thenReturn(
+                new ParsedAdminToken(new AdminPrincipal(employeeId, "NV00001", "admin", "Admin", 1, "ADMIN"), 0L)
+        );
+        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee(employeeId, 2)));
+
+        Authentication authentication = runFilterAndCaptureAuthentication("Bearer token");
+
+        assertNull(authentication);
     }
 
     private Authentication runFilterAndCaptureAuthentication(String authorizationHeader) throws Exception {

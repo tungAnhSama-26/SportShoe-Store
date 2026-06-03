@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
 import { useAdminSession } from "../../composable/useAdminSession";
-import { getCurrentAdminUser, logout } from "../../services/auth";
+import { isAdminRole, logout } from "../../services/auth";
 
 const route = useRoute();
 const router = useRouter();
@@ -47,6 +47,7 @@ const pageTitle = computed(() => {
     'admin-nhan-vien-lich-lam': 'Lịch làm việc',
     'admin-nhan-vien-chi-tiet': 'Cập nhật nhân viên',
     'admin-profile': 'Hồ sơ cá nhân',
+    'nhanvien-profile': 'Hồ sơ cá nhân',
     'admin-khach-hang': 'Quản lý khách hàng',
     'admin-khach-hang-them': 'Thêm khách hàng',
     'admin-khach-hang-chi-tiet': 'Cập nhật khách hàng'
@@ -69,7 +70,7 @@ const hasAvatar = computed(() => Boolean(adminSession.value.hinhAnh?.trim()));
 
 function chuyenDenCapNhatThongTin() {
   hienMenuTaiKhoan.value = false;
-  router.push("/admin/profile");
+  router.push(isAdminRole() ? "/admin/profile" : "/nhanvien/profile");
 }
 
 function dangXuat() {

@@ -4,9 +4,9 @@ import { useRouter } from "vue-router";
 import { Camera, Save, ScanLine, X, User, Mail, Phone, Calendar, MapPin, Lock, ArrowLeft } from "lucide-vue-next";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import {
-  capNhatNhanVien,
-  doiMatKhauNhanVien,
-  layChiTietNhanVien,
+  capNhatHoSoNhanVien,
+  doiMatKhauHoSoNhanVien,
+  layHoSoNhanVien,
   uploadFile,
 } from "../../../services/nhan-vien";
 import { getCurrentAdminUser } from "../../../services/auth";
@@ -243,7 +243,7 @@ async function taiChiTiet() {
   if (!id) return;
   dangTai.value = true;
   try {
-    const data = await layChiTietNhanVien(id);
+    const data = await layHoSoNhanVien();
     form.value = {
       hoTen: data.hoTen ?? "",
       tenDangNhap: data.tenDangNhap ?? "",
@@ -296,7 +296,7 @@ async function luu() {
   };
 
   try {
-    const updated = await capNhatNhanVien(id, payload);
+    const updated = await capNhatHoSoNhanVien(payload);
     // Cập nhật lại session storage
     const storageKeys = ["adminUser", "sport-shoe-admin-session"];
     storageKeys.forEach(key => {
@@ -326,7 +326,7 @@ async function doiMatKhau() {
   }
   dangLuu.value = true;
   try {
-    await doiMatKhauNhanVien(id, matKhauMoi.value.trim());
+    await doiMatKhauHoSoNhanVien(matKhauMoi.value.trim());
     showSuccess("Đổi mật khẩu thành công.", "Thành công");
     matKhauMoi.value = "";
     showDoiMatKhau.value = false;
