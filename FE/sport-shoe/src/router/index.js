@@ -40,6 +40,7 @@ import Register from "../pages/register/Register.vue";
 import ForgotPassword from "../pages/login/ForgotPassword.vue";
 import ErrorPage from "../pages/error/ErrorPage.vue";
 import { getCurrentAdminUser, hasRequiredAdminCccd, isAdminAuthenticated, isAdminRole } from "../services/auth";
+import { showWarning } from "../utils/alert";
 
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
@@ -360,6 +361,9 @@ router.beforeEach((to) => {
   }
 
   if (!hasRequiredAdminCccd() && !isOwnEmployeeProfile(to.path)) {
+    showWarning(
+      "Tài khoản của bạn chưa xác minh CCCD. Vui lòng vào hồ sơ cá nhân và quét CCCD trước khi sử dụng các chức năng khác."
+    );
     return {
       path: ownEmployeeProfilePath(),
       query: { requireCccd: "1", redirect: to.fullPath }
