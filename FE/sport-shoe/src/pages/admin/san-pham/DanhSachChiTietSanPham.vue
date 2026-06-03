@@ -12,6 +12,7 @@ import ProductVariantTable from '../../../components/admin/san-pham/ProductVaria
 import QuanLySanPhamBienTheFormModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheFormModal.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
+import { showSuccess, showError } from '../../../utils/alert'
 
 const route = useRoute()
 const router = useRouter()
@@ -101,6 +102,16 @@ const editingSelectedGiay = computed(() => {
 })
 
 function showToast(message, type = 'success') {
+  if (type === 'success') {
+    showSuccess(message)
+    return
+  }
+
+  if (type === 'error') {
+    showError(message)
+    return
+  }
+
   if (toastTimer) clearTimeout(toastTimer)
   toast.message = message
   toast.type = type
@@ -632,14 +643,14 @@ onUnmounted(() => {
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="toast.show"
+          v-if="toast.show && toast.type !== 'success'"
           class="fixed right-4 top-[88px] z-[100] w-[min(92vw,380px)] rounded-3xl border bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)]"
-          :class="toast.type === 'error' ? 'border-rose-100' : 'border-emerald-100'"
+          :class="toast.type === 'error' ? 'border-rose-100' : 'border-slate-100'"
         >
           <div class="flex items-start gap-3">
             <div
               class="mt-0.5 rounded-2xl p-2"
-              :class="toast.type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'"
+              :class="toast.type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'"
             >
               <TriangleAlert v-if="toast.type === 'error'" class="h-5 w-5" />
               <CircleCheckBig v-else class="h-5 w-5" />

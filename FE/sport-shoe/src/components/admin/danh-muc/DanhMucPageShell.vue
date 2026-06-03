@@ -65,7 +65,7 @@ function onKeywordInput(event) {
   <div class="space-y-5">
     <Transition name="fade">
       <div
-        v-if="toast?.show"
+        v-if="toast?.show && toast.type !== 'success'"
         class="fixed right-4 top-[88px] z-50 rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
         :class="toast.type === 'success' ? 'bg-[#ff6a00]' : 'bg-[#cf1018]'"
       >

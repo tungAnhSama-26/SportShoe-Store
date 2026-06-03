@@ -38,6 +38,7 @@ import Login from "../pages/login/Login.vue";
 import AdminLogin from "../pages/login/AdminLogin.vue";
 import Register from "../pages/register/Register.vue";
 import ForgotPassword from "../pages/login/ForgotPassword.vue";
+import ErrorPage from "../pages/error/ErrorPage.vue";
 import { getCurrentAdminUser, hasRequiredAdminCccd, isAdminAuthenticated, isAdminRole } from "../services/auth";
 
 const STAFF_ALLOWED_ADMIN_PATHS = [
@@ -54,11 +55,18 @@ function isStaffAllowedPath(path) {
 }
 
 function ownEmployeeProfilePath() {
-  return "/admin/profile";
+  return isAdminRole() ? "/admin/profile" : "/nhanvien/profile";
 }
 
 function isOwnEmployeeProfile(path) {
-  return path === "/admin/profile" || path.startsWith("/admin/profile");
+  return path === "/admin/profile"
+    || path.startsWith("/admin/profile")
+    || path === "/nhanvien/profile"
+    || path.startsWith("/nhanvien/profile");
+}
+
+function isProtectedAdminArea(path) {
+  return path.startsWith("/admin") || path.startsWith("/nhanvien");
 }
 
 const router = createRouter({
@@ -94,6 +102,11 @@ const router = createRouter({
       component: ForgotPassword
     },
     {
+      path: "/error/:status(\\d+)",
+      name: "error-page",
+      component: ErrorPage
+    },
+    {
       path: "/",
       component: TrangMacDinh,
       children: [
@@ -116,6 +129,21 @@ const router = createRouter({
           path: "gioi-thieu",
           name: "gioi-thieu",
           component: GioiThieu
+        }
+      ]
+    },
+    {
+      path: "/nhanvien",
+      component: AdminLayout,
+      children: [
+        {
+          path: "",
+          redirect: "/nhanvien/profile"
+        },
+        {
+          path: "profile",
+          name: "nhanvien-profile",
+          component: Profile
         }
       ]
     },
@@ -297,6 +325,17 @@ const router = createRouter({
           component: ChiTietKhachHang
         }
       ]
+    },
+    {
+      path: "/:pathMatch(.*)*",
+      name: "not-found",
+      redirect: (to) => ({
+        path: "/error/404",
+        query: {
+          message: "Đường dẫn không tồn tại.",
+          redirect: to.fullPath
+        }
+      })
     }
   ]
 });
@@ -306,12 +345,18 @@ router.beforeEach((to) => {
     return true;
   }
 
-  if (!to.path.startsWith("/admin")) {
+  if (!isProtectedAdminArea(to.path)) {
     return true;
   }
 
   if (!isAdminAuthenticated()) {
-    return { path: "/admin/login", query: { redirect: to.fullPath } };
+    return {
+      path: "/error/401",
+      query: {
+        redirect: to.fullPath,
+        message: "Không tìm thấy token đăng nhập. Vui lòng đăng nhập lại."
+      }
+    };
   }
 
   if (!hasRequiredAdminCccd() && !isOwnEmployeeProfile(to.path)) {
@@ -325,6 +370,10 @@ router.beforeEach((to) => {
     return true;
   }
 
+  if (to.path.startsWith("/nhanvien")) {
+    return isOwnEmployeeProfile(to.path) ? true : ownEmployeeProfilePath();
+  }
+
   if (isAdminRole()) {
     return true;
   }
@@ -334,7 +383,13 @@ router.beforeEach((to) => {
   }
 
   if (!isStaffAllowedPath(to.path)) {
-    return "/admin/ban-hang";
+    return {
+      path: "/error/403",
+      query: {
+        redirect: to.fullPath,
+        message: "Tài khoản nhân viên không có quyền truy cập chức năng dành cho admin."
+      }
+    };
   }
 
   return true;

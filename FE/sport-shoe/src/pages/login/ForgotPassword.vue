@@ -2,7 +2,7 @@
   <main class="login-page forgot-password-page">
     <!-- Toast Notification -->
     <Transition name="toast">
-      <div v-if="toast.show" :class="['toast-notification', toast.type]">
+      <div v-if="toast.show && toast.type !== 'success'" :class="['toast-notification', toast.type]">
         <div class="toast-content">
           <i v-if="toast.type === 'error'" class="fas fa-exclamation-circle"></i>
           <i v-if="toast.type === 'success'" class="fas fa-check-circle"></i>
@@ -109,6 +109,7 @@ import { reactive, ref } from "vue";
 import { Eye, EyeOff } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { request } from "../../services/auth";
+import { showSuccess } from "../../utils/alert";
 import "../login/Login.css";
 
 const router = useRouter();
@@ -133,6 +134,11 @@ const toast = reactive({
 });
 
 const showToast = (message, type = "error") => {
+  if (type === "success") {
+    showSuccess(message);
+    return;
+  }
+
   toast.message = message;
   toast.type = type;
   toast.show = true;

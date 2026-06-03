@@ -68,15 +68,15 @@ onBeforeUnmount(() => {
 
     <div
       v-if="hienThongBaoDangNhap"
-      class="fixed right-4 top-[88px] z-[70] w-[min(92vw,360px)] rounded-3xl border border-emerald-100 bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)] dark:border-emerald-900/50 dark:bg-slate-800"
+      class="fixed right-4 top-[88px] z-[70] w-[min(92vw,360px)] rounded-3xl border border-rose-100 bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)] dark:border-rose-900/50 dark:bg-slate-800"
     >
       <div class="flex items-start gap-3">
-        <div class="mt-0.5 rounded-2xl bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+        <div class="mt-0.5 rounded-2xl bg-rose-50 p-2 text-[#cf1018] dark:bg-rose-500/10 dark:text-rose-300">
           <CircleCheckBig class="h-5 w-5" />
         </div>
 
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium text-slate-800 dark:text-slate-100">Đăng nhập thành công</p>
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Đăng nhập thành công</p>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-300">
             Bạn đang sử dụng quyền {{ adminSession.vaiTro }}.
           </p>
