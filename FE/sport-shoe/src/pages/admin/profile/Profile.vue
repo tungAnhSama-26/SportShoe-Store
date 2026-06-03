@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Camera, Save, ScanLine, X, User, Mail, Phone, Calendar, MapPin, Lock, ArrowLeft } from "lucide-vue-next";
 import { BrowserMultiFormatReader } from "@zxing/browser";
@@ -52,6 +52,8 @@ const form = ref({
   quanHuyen: "",
   xaPhuong: "",
 });
+
+const cccdDaXacMinh = computed(() => /^\d{12}$/.test(String(form.value.cccd ?? "").trim()));
 
 const dsTinhThanh = [
   { value: "01", label: "Thành phố Hà Nội" },
@@ -532,16 +534,14 @@ onUnmounted(dungQuet);
 
             <!-- CCCD -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Số CCCD</label>
+              <label class="text-[13px] font-bold text-slate-600">Xác minh CCCD</label>
               <div class="flex gap-2">
-                <div class="relative flex-1">
-                  <ScanLine class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    v-model="form.cccd"
-                    type="text"
-                    placeholder="12 số CCCD"
-                    class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
-                  />
+                <div
+                  class="flex h-11 flex-1 items-center gap-3 rounded-2xl border px-4 text-sm font-semibold"
+                  :class="cccdDaXacMinh ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'"
+                >
+                  <ScanLine class="h-4 w-4 shrink-0" />
+                  <span>{{ cccdDaXacMinh ? "Đã xác minh CCCD" : "Chưa xác minh CCCD" }}</span>
                 </div>
                 <button
                   type="button"
@@ -552,6 +552,7 @@ onUnmounted(dungQuet);
                   <ScanLine class="h-5 w-5" />
                 </button>
               </div>
+              <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
             </div>
           </div>
 

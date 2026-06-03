@@ -10,7 +10,10 @@ GO
 --   01_schema_tables_rules.sql
 --   02_seed_full_10_records.sql
 --
--- This script is idempotent for FLOW_HD_* records.
+-- This script is idempotent for the HD17797265394xx records below.
+-- Constraint recreation uses WITH NOCHECK so old dirty data in an existing DB
+-- does not block this test dataset; the recreated constraints still protect
+-- new inserts/updates after this script runs.
 -- ============================================================
 
 IF EXISTS (
@@ -23,7 +26,7 @@ BEGIN
     ALTER TABLE dbo.hoa_don DROP CONSTRAINT ck_hoa_don_trang_thai;
 END;
 
-ALTER TABLE dbo.hoa_don WITH CHECK
+ALTER TABLE dbo.hoa_don WITH NOCHECK
 ADD CONSTRAINT ck_hoa_don_trang_thai
 CHECK (trang_thai IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
@@ -37,7 +40,7 @@ BEGIN
     ALTER TABLE dbo.thanh_toan DROP CONSTRAINT ck_tt_hinh_thuc;
 END;
 
-ALTER TABLE dbo.thanh_toan WITH CHECK
+ALTER TABLE dbo.thanh_toan WITH NOCHECK
 ADD CONSTRAINT ck_tt_hinh_thuc
 CHECK (hinh_thuc IN (1, 2, 3, 4));
 
@@ -51,10 +54,12 @@ BEGIN
     ALTER TABLE dbo.thanh_toan DROP CONSTRAINT ck_tt_trang_thai;
 END;
 
-ALTER TABLE dbo.thanh_toan WITH CHECK
+ALTER TABLE dbo.thanh_toan WITH NOCHECK
 ADD CONSTRAINT ck_tt_trang_thai
 CHECK (trang_thai IN (0, 1, 2, 3, 4, 5));
 GO
+
+DECLARE @baseTime DATETIME2 = DATEADD(HOUR, 8, CONVERT(DATETIME2, CONVERT(date, SYSDATETIME())));
 
 DROP TABLE IF EXISTS #Flow; CREATE TABLE #Flow (
     ma NVARCHAR(150) NOT NULL,
@@ -81,16 +86,16 @@ DROP TABLE IF EXISTS #Flow; CREATE TABLE #Flow (
 INSERT INTO #Flow
 (ma, mo_ta, kenh_ban, khach_user, nv_ma, trang_thai, tong_hang, tien_giam, tong_thanh_toan, gct_ma, so_luong, gia_don_vi, vc_trang_thai, vc_phi, tt_hinh_thuc, tt_trang_thai, tt_ngay, tt_ghi_chu, ngay_tao)
 VALUES
-(N'HD1779726539414', N'Online moi tao, cho xac nhan', 2, 'khach1', NULL, 1, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'COD cho thu tien khi nhan hang.', '2026-05-26T08:00:00'),
-(N'HD1779726539415', N'Cua hang thanh toan tai quay hoan thanh', 1, 'khach2', 'NV002', 5, 1690000, 0, 1690000, N'GCT001', 1, 1690000, NULL, 0, 1, 1, '2026-05-26T08:35:00', N'Tien mat tai quay da thu.', '2026-05-26T08:30:00'),
-(N'HD1779726539416', N'Online da thanh toan, dang giao hang', 2, 'khach3', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 2, 1, '2026-05-26T09:00:00', N'Chuyen khoan online thanh cong.', '2026-05-26T09:00:00'),
-(N'HD1779726539417', N'COD da giao hang, cho xac nhan thu tien', 2, 'khach4', 'NV002', 4, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 4, 0, NULL, N'COD da giao, cho admin xac nhan thanh toan.', '2026-05-26T09:30:00'),
-(N'HD1779726539418', N'COD giao hang that bai, huy giao dich cho thu tien', 2, 'khach5', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 4, 3, NULL, N'Khach khong nhan hang, huy giao dich COD.', '2026-05-26T10:00:00'),
-(N'HD1779726539419', N'Online da thanh toan nhung giao that bai, can hoan tien', 2, 'khach6', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 2, 4, '2026-05-26T10:30:00', N'Da thu tien truoc, giao that bai nen can hoan tien.', '2026-05-26T10:30:00'),
-(N'HD1779726539420', N'Don dang can hoan tien', 2, 'khach7', 'NV002', 8, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 2, 4, '2026-05-26T11:00:00', N'Cho admin xac nhan hoan tien.', '2026-05-26T11:00:00'),
-(N'HD1779726539421', N'Don da huy sau khi hoan tien xong', 2, 'khach8', 'NV002', 6, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 5, 30000, 2, 5, '2026-05-26T11:35:00', N'Da hoan tien cho khach.', '2026-05-26T11:30:00'),
-(N'HD1779726539422', N'Khach gui yeu cau huy don', 2, 'khach9', NULL, 7, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'Cho nhan vien xu ly yeu cau huy.', '2026-05-26T12:00:00'),
-(N'HD1779726539423', N'Cua hang tao ho khach va co giao hang', 1, 'khach10', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 1, 1, '2026-05-26T12:35:00', N'Thu tien tai quay, tiep tuc giao hang.', '2026-05-26T12:30:00');
+(N'HD1779726539414', N'Online moi tao, cho xac nhan', 2, 'khach1', NULL, 1, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'COD cho thu tien khi nhan hang.', @baseTime),
+(N'HD1779726539415', N'Cua hang thanh toan tai quay hoan thanh', 1, 'khach2', 'NV002', 5, 1690000, 0, 1690000, N'GCT001', 1, 1690000, NULL, 0, 1, 1, DATEADD(MINUTE, 35, @baseTime), N'Tien mat tai quay da thu.', DATEADD(MINUTE, 30, @baseTime)),
+(N'HD1779726539416', N'Online da thanh toan, dang giao hang', 2, 'khach3', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 2, 1, DATEADD(MINUTE, 60, @baseTime), N'Chuyen khoan online thanh cong.', DATEADD(MINUTE, 60, @baseTime)),
+(N'HD1779726539417', N'COD da giao hang, cho xac nhan thu tien', 2, 'khach4', 'NV002', 4, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 4, 0, NULL, N'COD da giao, cho admin xac nhan thanh toan.', DATEADD(MINUTE, 90, @baseTime)),
+(N'HD1779726539418', N'COD giao hang that bai, huy giao dich cho thu tien', 2, 'khach5', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 4, 3, NULL, N'Khach khong nhan hang, huy giao dich COD.', DATEADD(MINUTE, 120, @baseTime)),
+(N'HD1779726539419', N'Online da thanh toan nhung giao that bai, can hoan tien', 2, 'khach6', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 2, 4, DATEADD(MINUTE, 150, @baseTime), N'Da thu tien truoc, giao that bai nen can hoan tien.', DATEADD(MINUTE, 150, @baseTime)),
+(N'HD1779726539420', N'Don dang can hoan tien', 2, 'khach7', 'NV002', 8, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 2, 4, DATEADD(MINUTE, 180, @baseTime), N'Cho admin xac nhan hoan tien.', DATEADD(MINUTE, 180, @baseTime)),
+(N'HD1779726539421', N'Don da huy sau khi hoan tien xong', 2, 'khach8', 'NV002', 6, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 5, 30000, 2, 5, DATEADD(MINUTE, 215, @baseTime), N'Da hoan tien cho khach.', DATEADD(MINUTE, 210, @baseTime)),
+(N'HD1779726539422', N'Khach gui yeu cau huy don', 2, 'khach9', NULL, 7, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'Cho nhan vien xu ly yeu cau huy.', DATEADD(MINUTE, 240, @baseTime)),
+(N'HD1779726539423', N'Cua hang tao ho khach va co giao hang', 1, 'khach10', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 1, 1, DATEADD(MINUTE, 275, @baseTime), N'Thu tien tai quay, tiep tuc giao hang.', DATEADD(MINUTE, 270, @baseTime));
 
 IF EXISTS (
     SELECT 1
@@ -126,6 +131,17 @@ JOIN #Flow f ON f.ma = hd.ma;
 DELETE vc
 FROM van_chuyen vc
 JOIN hoa_don hd ON hd.id = vc.hoa_don_id
+JOIN #Flow f ON f.ma = hd.ma;
+
+DELETE pthct
+FROM phieu_tra_hang_chi_tiet pthct
+JOIN phieu_tra_hang pth ON pth.id = pthct.phieu_tra_hang_id
+JOIN hoa_don hd ON hd.id = pth.hoa_don_id
+JOIN #Flow f ON f.ma = hd.ma;
+
+DELETE pth
+FROM phieu_tra_hang pth
+JOIN hoa_don hd ON hd.id = pth.hoa_don_id
 JOIN #Flow f ON f.ma = hd.ma;
 
 DELETE hdct
@@ -249,9 +265,9 @@ SELECT
     tt.hinh_thuc AS thanh_toan_hinh_thuc,
     tt.trang_thai AS thanh_toan_trang_thai,
     vc.trang_thai AS van_chuyen_trang_thai
-FROM hoa_don hd
+FROM #Flow f
+JOIN hoa_don hd ON hd.ma = f.ma
 LEFT JOIN thanh_toan tt ON tt.hoa_don_id = hd.id
 LEFT JOIN van_chuyen vc ON vc.hoa_don_id = hd.id
-WHERE hd.ma LIKE N'HD_TEST_%'
 ORDER BY hd.ma;
 GO
