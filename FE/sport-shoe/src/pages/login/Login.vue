@@ -2,7 +2,7 @@
   <main class="login-page">
     <!-- Toast Notification -->
     <Transition name="toast">
-      <div v-if="toast.show" :class="['toast-notification', toast.type]">
+      <div v-if="toast.show && toast.type !== 'success'" :class="['toast-notification', toast.type]">
         <div class="toast-content">
           <i v-if="toast.type === 'error'" class="fas fa-exclamation-circle"></i>
           <i v-if="toast.type === 'success'" class="fas fa-check-circle"></i>
@@ -107,6 +107,7 @@ import { reactive, ref } from "vue";
 import { Eye, EyeOff } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { login } from "../../services/auth";
+import { showSuccess } from "../../utils/alert";
 import "./Login.css";
 
 const router = useRouter();
@@ -125,6 +126,11 @@ const toast = reactive({
 });
 
 const showToast = (message, type = "error") => {
+  if (type === "success") {
+    showSuccess(message);
+    return;
+  }
+
   toast.message = message;
   toast.type = type;
   toast.show = true;
@@ -137,6 +143,10 @@ const handleLogin = async () => {
   // Validation
   if (!loginForm.username.trim()) {
     showToast("Vui lòng nhập tên đăng nhập");
+    return;
+  }
+  if (loginForm.username.includes("@")) {
+    showToast("Vui lòng đăng nhập bằng tên đăng nhập, không sử dụng email");
     return;
   }
   if (!loginForm.password.trim()) {

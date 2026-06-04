@@ -121,7 +121,7 @@ public class PhieuGiamGiaKhachHangService {
     }
 
     private KhachHang getKhachHangByEmail(String email) {
-        String normalizedEmail = email == null ? "" : email.trim();
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
         return khachHangRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng với email này"));
     }

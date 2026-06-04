@@ -41,6 +41,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )
     FROM PhieuGiamGia phieuGG 
+    ORDER BY phieuGG.ngayTao DESC, phieuGG.id DESC
 """)
     List<QuanLyPhieuGiamGiaResponse> hienThiPhieuGiamGia();
 
@@ -62,6 +63,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     phieuGG.soLuongDaDung,phieuGG.trangThai,phieuGG.ngayTao
     )
     FROM PhieuGiamGia phieuGG 
+    ORDER BY phieuGG.ngayTao DESC, phieuGG.id DESC
 """)
     Page<QuanLyPhieuGiamGiaResponse> phantrangThaiPhieuGiamGia(Pageable pageable);
 
@@ -81,6 +83,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     AND (:loai IS NULL OR phieuGG.loai = :loai)
     AND (CAST(:tuNgay AS timestamp) IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
     AND (CAST(:denNgay AS timestamp) IS NULL OR phieuGG.ngayKetThuc <= :denNgay)
+    ORDER BY phieuGG.ngayTao DESC, phieuGG.id DESC
 """)
     Page<QuanLyPhieuGiamGiaResponse> timKiemVaPhanTrang(
             @Param("keyword") String keyword, 
@@ -96,17 +99,17 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
         UPDATE PhieuGiamGia p
         SET p.trangThai = 
             CASE 
-                WHEN p.ngayKetThuc < CURRENT_TIMESTAMP THEN 2
+                WHEN p.ngayKetThuc <= CURRENT_TIMESTAMP THEN 2
                 WHEN p.soLuongDaDung >= p.soLuong THEN 3
                 WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
                 ELSE 1
             END
-        WHERE (p.ngayKetThuc < CURRENT_TIMESTAMP AND p.trangThai != 2)
+        WHERE (p.ngayKetThuc <= CURRENT_TIMESTAMP AND p.trangThai != 2)
            OR (
                p.trangThai != 0 
                AND p.trangThai != (
                    CASE 
-                       WHEN p.ngayKetThuc < CURRENT_TIMESTAMP THEN 2
+                       WHEN p.ngayKetThuc <= CURRENT_TIMESTAMP THEN 2
                        WHEN p.soLuongDaDung >= p.soLuong THEN 3
                        WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
                        ELSE 1

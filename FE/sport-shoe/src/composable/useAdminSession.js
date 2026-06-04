@@ -1,6 +1,7 @@
 import { computed, readonly, ref } from "vue";
 
 const SESSION_STORAGE_NOTICE_KEY = "sport-shoe-admin-role-notice";
+const SESSION_STORAGE_PENDING_NOTICE_KEY = "sport-shoe-admin-role-notice-pending";
 const STORAGE_KEYS = [
   "sport-shoe-admin-session",
   "adminUser",
@@ -130,6 +131,13 @@ function shouldShowRoleNotice() {
 
   const token = `${currentSession.tenTaiKhoan}:${currentSession.vaiTro}`;
   const currentNotice = window.sessionStorage.getItem(SESSION_STORAGE_NOTICE_KEY);
+  const pendingNotice = window.sessionStorage.getItem(SESSION_STORAGE_PENDING_NOTICE_KEY) === "1";
+
+  if (pendingNotice) {
+    window.sessionStorage.removeItem(SESSION_STORAGE_PENDING_NOTICE_KEY);
+    window.sessionStorage.setItem(SESSION_STORAGE_NOTICE_KEY, token);
+    return true;
+  }
 
   if (currentNotice === token) {
     return false;

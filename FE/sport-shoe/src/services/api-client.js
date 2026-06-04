@@ -7,6 +7,8 @@ export const API_BASE_URL =
 const DEFAULT_FALLBACK =
   "Không thể hoàn tất thao tác này lúc này. Vui lòng thử lại.";
 
+const ERROR_PAGE_STATUSES = new Set([401, 403, 404, 422, 429, 500]);
+
 function getStoredAdminToken() {
   return localStorage.getItem("adminToken") ?? "";
 }
@@ -76,18 +78,14 @@ export async function apiRequest(path, options = {}) {
   const payload = await parsePayload(response);
 
   if (!response.ok) {
+    const message = getFirstFieldError(payload?.errors) || payload?.message || `HTTP ${response.status}`;
     if (response.status === 401) {
-      localStorage.removeItem("user");
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      localStorage.removeItem("sport-shoe-admin-session");
-      if (typeof window !== "undefined") {
-        const isApiPath = window.location.pathname.startsWith("/admin");
-        window.location.href = isApiPath ? "/admin/login" : "/login";
-      }
+      clearStoredSession();
     }
+    redirectToErrorPage(response.status, message);
+
     const requestError = createRequestError(
-      getFirstFieldError(payload?.errors) || payload?.message || `HTTP ${response.status}`,
+      message,
       fallbackMessage,
       payload?.errors,
     );
@@ -97,6 +95,30 @@ export async function apiRequest(path, options = {}) {
   }
 
   return unwrapData ? payload?.data ?? payload : payload;
+}
+
+function clearStoredSession() {
+  localStorage.removeItem("user");
+  localStorage.removeItem("adminToken");
+  localStorage.removeItem("adminUser");
+  localStorage.removeItem("sport-shoe-admin-session");
+}
+
+function redirectToErrorPage(status, message) {
+  if (!ERROR_PAGE_STATUSES.has(status) || typeof window === "undefined") {
+    return;
+  }
+  if (window.location.pathname.startsWith("/error/")) {
+    return;
+  }
+
+  const query = new URLSearchParams();
+  if (message) {
+    query.set("message", sanitizeErrorMessage(message, String(message)));
+  }
+  query.set("redirect", window.location.pathname + window.location.search + window.location.hash);
+
+  window.location.assign(`/error/${status}?${query.toString()}`);
 }
 
 export function buildQuery(params = {}) {

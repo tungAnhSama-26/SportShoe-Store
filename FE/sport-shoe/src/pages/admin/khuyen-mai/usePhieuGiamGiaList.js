@@ -92,7 +92,10 @@ export function usePhieuGiamGiaList() {
     if (!ngayKetThuc) return false;
     const homNay = new Date();
     homNay.setHours(0, 0, 0, 0);
-    return new Date(ngayKetThuc) < homNay;
+    const ngayKT = new Date(ngayKetThuc);
+    ngayKT.setHours(0, 0, 0, 0);
+    // Hết hạn nếu ngayKetThuc <= homNay (bao gồm cả hôm nay)
+    return ngayKT <= homNay;
   }
 
   function mauTrangThai(trangThai, ngayKetThuc) {
@@ -224,37 +227,53 @@ export function usePhieuGiamGiaList() {
     try {
       // "het_han" là filter FE tự xử lý, không gửi lên backend
       const isFilterHetHan = boLoc.value.trangThai === "het_han";
+      const isFilterDangHoatDong = boLoc.value.trangThai === "1";
+
+      // Cần lấy tất cả dữ liệu khi filter FE
+      const needFetchAll = isFilterHetHan || isFilterDangHoatDong;
 
       const data = await getPhieuGiamGiaList({
         keyword: boLoc.value.keyword || undefined,
-        trangThai: (!isFilterHetHan && boLoc.value.trangThai !== "")
+        trangThai: (!needFetchAll && boLoc.value.trangThai !== "")
           ? Number(boLoc.value.trangThai)
           : undefined,
         loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
         tuNgay: boLoc.value.tuNgay || undefined,
         denNgay: boLoc.value.denNgay || undefined,
-        pageNo: trangHienTai.value - 1,
-        pageSize: isFilterHetHan ? 1000 : soPhanTuMotTrang.value,
+        pageNo: needFetchAll ? 0 : (trangHienTai.value - 1),
+        pageSize: needFetchAll ? 9999 : soPhanTuMotTrang.value,
       });
 
       let items = data?.content || [];
 
+      // Áp dụng filter FE
       if (isFilterHetHan) {
-        // Lọc FE: chỉ lấy phiếu quá ngày kết thúc
-        items = items.filter(item => isHetHan(item.ngayKetThuc));
-      } else if (boLoc.value.trangThai === "1") {
-        // Đang hoạt động: loại bỏ phiếu đã hết hạn theo ngày
-        items = items.filter(item => !isHetHan(item.ngayKetThuc));
+        // Lọc FE: Phiếu hết hạn khi ngày kết thúc <= hôm nay HOẶC trangThai = 2
+        items = items.filter(item =>
+          isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
+        );
+      } else if (isFilterDangHoatDong) {
+        // Đang hoạt động: Chỉ lấy phiếu chưa hết hạn VÀ có trangThai = 1
+        items = items.filter(item =>
+          Number(item.trangThai) === 1 && !isHetHan(item.ngayKetThuc)
+        );
       }
 
-      tongSoTrang.value = Math.max(1, Math.ceil(items.length / soPhanTuMotTrang.value));
-      totalItems.value = items.length;
-      const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
-      danhSach.value = isFilterHetHan || boLoc.value.trangThai === "1"
-        ? items.slice(start, start + soPhanTuMotTrang.value)
-        : items;
+      // Tính toán phân trang
+      if (needFetchAll) {
+        // Phân trang FE
+        totalItems.value = items.length;
+        tongSoTrang.value = Math.max(1, Math.ceil(items.length / soPhanTuMotTrang.value));
 
-      if (!isFilterHetHan && boLoc.value.trangThai !== "1") {
+        // Đảm bảo trang hiện tại không vượt quá tổng số trang
+        if (trangHienTai.value > tongSoTrang.value) {
+          trangHienTai.value = tongSoTrang.value;
+        }
+
+        const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
+        danhSach.value = items.slice(start, start + soPhanTuMotTrang.value);
+      } else {
+        // Phân trang BE
         danhSach.value = items;
         tongSoTrang.value = data?.totalPages || 1;
         totalItems.value = data?.totalElements || 0;
@@ -337,8 +356,8 @@ export function usePhieuGiamGiaList() {
         trangThai: nextStatus,
       });
       hienThiThongBao(
-        "success", 
-        "Thành công", 
+        "success",
+        "Thành công",
         Number(item.trangThai) === 1 ? "Đã ngừng hoạt động phiếu." : "Đã chuyển phiếu sang đang hoạt động thành công."
       );
       await taiDanhSach();
@@ -364,8 +383,8 @@ export function usePhieuGiamGiaList() {
         trangThai: nextStatus,
       });
       hienThiThongBao(
-        "success", 
-        "Thành công", 
+        "success",
+        "Thành công",
         "Đã dừng áp dụng phiếu giảm giá cho khách hàng này."
       );
       taiDanhSachKh();
@@ -499,9 +518,9 @@ export function usePhieuGiamGiaList() {
           { label: "Mã phiếu", key: "maPhieuGiamGia" },
           { label: "Tên phiếu", key: "tenPhieuGiamGia" },
           { label: "Khách hàng", key: "tenKhachHang" },
-          { 
-            label: "Giá trị giảm", 
-            value: (row) => formatGiaTri(row.giaTriPhieuGiamGia, row.loaiPhieuGiamGia) 
+          {
+            label: "Giá trị giảm",
+            value: (row) => formatGiaTri(row.giaTriPhieuGiamGia, row.loaiPhieuGiamGia)
           },
           { label: "Ngày tặng", value: (row) => toDisplayDate(row.ngayTao) },
           { label: "Ngày dùng", value: (row) => toDisplayDate(row.ngaySuDung) },

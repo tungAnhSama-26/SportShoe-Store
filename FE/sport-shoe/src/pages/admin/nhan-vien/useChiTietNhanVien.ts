@@ -105,8 +105,7 @@ export function useChiTietNhanVien() {
         loiForm.value.cccd = "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
         return;
       }
-      thongBaoQrOk.value = 'Đã điền thông tin từ CCCD';
-      setTimeout(() => { thongBaoQrOk.value = ''; }, 4000);
+      showSuccess("Đã điền thông tin từ CCCD", "Thành công");
     } catch {
       loiForm.value.cccd = "Không thể đọc dữ liệu CCCD từ mã QR này.";
     }

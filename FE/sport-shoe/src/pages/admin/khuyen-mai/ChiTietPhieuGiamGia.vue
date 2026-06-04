@@ -27,6 +27,7 @@ import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -47,20 +48,20 @@ let toastTimer = null;
 
 const toastClass = computed(() => {
   if (toast.value.loai === "success")
-    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    return "border-rose-100 bg-white text-rose-700";
   if (toast.value.loai === "warning")
     return "border-amber-100 bg-amber-50 text-amber-700";
   return "border-rose-100 bg-rose-50 text-rose-700";
 });
 
 const toastIconClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "success") return "bg-rose-50 text-rose-600";
   if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
   return "bg-rose-100 text-rose-600";
 });
 
 const toastAccentClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "success") return "bg-[#cf1018]";
   if (toast.value.loai === "warning") return "bg-amber-500";
   return "bg-rose-500";
 });
@@ -71,6 +72,11 @@ const ToastIcon = computed(() => {
 });
 
 function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (loai === "success") {
+    showSuccess(noiDung || tieuDe, tieuDe);
+    return;
+  }
+
   if (toastTimer) clearTimeout(toastTimer);
   toast.value = { hienThi: true, loai, tieuDe, noiDung };
   toastTimer = setTimeout(() => {
@@ -99,12 +105,78 @@ const isReadOnly = computed(() => {
   return false;
 });
 
+// Computed cho giá trị giảm (% hoặc VNĐ)
+const giaTriDisplay = computed({
+  get() {
+    if (form.loai === "1") {
+      // Phần trăm - trả về giá trị số
+      return form.giaTri;
+    } else {
+      // Tiền mặt - trả về giá trị đã format
+      return form.giaTri;
+    }
+  },
+  set(value) {
+    if (form.loai === "1") {
+      // Phần trăm - lưu trực tiếp
+      form.giaTri = value;
+    } else {
+      // Tiền mặt - format trước khi lưu
+      form.giaTri = formatVndNumber(value);
+    }
+  }
+});
+
+// Computed cho giá trị đơn tối thiểu
+const giaTriToiThieuVnd = computed({
+  get() {
+    return form.giaTriToiThieu;
+  },
+  set(value) {
+    form.giaTriToiThieu = formatVndNumber(value);
+  }
+});
+
+// Computed cho giảm tối đa
+const giamToiDaVnd = computed({
+  get() {
+    return form.giamToiDa;
+  },
+  set(value) {
+    form.giamToiDa = formatVndNumber(value);
+  }
+});
+
 const searchKh = ref("");
 const danhSachKh = ref([]);
 const dsEmailChon = ref([]);
 const dangTaiKh = ref(false);
 const lienKetKhachHangHienTai = ref([]);
 const soLuongPhieuCongKhai = ref("");
+
+// Phân trang khách hàng
+const trangKh = ref(1);
+const soPhanTuMotTrangKh = ref(10);
+const boLocKh = ref("tat-ca"); // "tat-ca" | "da-chon"
+
+// Computed: Danh sách khách hàng sau khi lọc
+const danhSachKhFiltered = computed(() => {
+  if (boLocKh.value === "da-chon") {
+    return danhSachKh.value.filter((kh) => dsEmailChon.value.includes(kh.email));
+  }
+  return danhSachKh.value;
+});
+
+// Computed: Tổng số trang
+const tongSoTrangKh = computed(() => {
+  return Math.max(1, Math.ceil(danhSachKhFiltered.value.length / soPhanTuMotTrangKh.value));
+});
+
+// Computed: Khách hàng hiển thị trong trang hiện tại
+const danhSachKhTrang = computed(() => {
+  const start = (trangKh.value - 1) * soPhanTuMotTrangKh.value;
+  return danhSachKhFiltered.value.slice(start, start + soPhanTuMotTrangKh.value);
+});
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
@@ -179,11 +251,18 @@ function toggleEmail(email) {
 
   const index = dsEmailChon.value.indexOf(email);
   if (index === -1) {
-    dsEmailChon.value.push(email);
+    dsEmailChon.value.unshift(email);
     return;
   }
 
   dsEmailChon.value.splice(index, 1);
+}
+
+function xoaKhachHang(email) {
+  const index = dsEmailChon.value.indexOf(email);
+  if (index !== -1) {
+    dsEmailChon.value.splice(index, 1);
+  }
 }
 
 function chonTatCa() {
@@ -252,6 +331,11 @@ watch(
       } else {
         delete formErrors.giaTri;
       }
+      // Khi chọn 100%, tự động reset giảm tối đa về 0 và xóa error
+      if (val === 100) {
+        form.giamToiDa = "0";
+        delete formErrors.giamToiDa;
+      }
     } else {
       const val = parseVndNumber(newVal);
       if (val <= 0) {
@@ -263,11 +347,20 @@ watch(
   },
 );
 
+const isLoadingData = ref(false);
+
 watch(
   () => form.loai,
-  () => {
+  (newLoai, oldLoai) => {
+    // Không xóa giá trị khi đang load dữ liệu
+    if (isLoadingData.value) return;
+    
     delete formErrors.giaTri;
-    form.giaTri = "";
+    
+    // Chỉ xóa giá trị khi user chủ động đổi loại
+    if (oldLoai && oldLoai !== newLoai) {
+      form.giaTri = "";
+    }
   },
 );
 
@@ -285,6 +378,7 @@ async function taiChiTiet() {
   }
 
   dangTai.value = true;
+  isLoadingData.value = true;
   try {
     const detail = await getPhieuGiamGiaDetail(id);
     const loai = String(detail.loai ?? 1);
@@ -324,6 +418,10 @@ async function taiChiTiet() {
     );
   } finally {
     dangTai.value = false;
+    // Đợi một tick để các computed update xong
+    setTimeout(() => {
+      isLoadingData.value = false;
+    }, 100);
   }
 }
 
@@ -397,16 +495,10 @@ async function submitForm() {
   if (!form.ngayBatDau) {
     formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
     isValid = false;
-  } else if (laMoi && form.ngayBatDau < getToday()) {
-    formErrors.ngayBatDau = "Ngày bắt đầu không được chọn trong quá khứ";
-    isValid = false;
   }
 
   if (!form.ngayKetThuc) {
     formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
-    isValid = false;
-  } else if (laMoi && form.ngayKetThuc < getToday()) {
-    formErrors.ngayKetThuc = "Ngày kết thúc không được chọn trong quá khứ";
     isValid = false;
   }
   if (
@@ -621,7 +713,7 @@ onMounted(taiChiTiet);
       leave-to-class="translate-y-3 opacity-0"
     >
       <div
-        v-if="toast.hienThi"
+        v-if="toast.hienThi && toast.loai !== 'success'"
         class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
         :class="toastClass"
       >
@@ -804,17 +896,12 @@ onMounted(taiChiTiet);
             >
             <div class="relative">
               <input
-                :value="form.giaTri"
+                v-model="giaTriDisplay"
                 :type="form.loai === '1' ? 'number' : 'text'"
                 :min="form.loai === '1' ? '1' : undefined"
                 :max="form.loai === '1' ? '100' : undefined"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-                :placeholder="form.loai === '1' ? '0' : '0'"
-                @input="
-                  form.loai === '2'
-                    ? handleVndInput('giaTri', $event)
-                    : (form.giaTri = $event.target.value)
-                "
+                placeholder="0"
               />
               <span
                 class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400"
@@ -824,6 +911,9 @@ onMounted(taiChiTiet);
             <p v-if="formErrors.giaTri" class="mt-1 text-xs text-rose-500">
               {{ formErrors.giaTri }}
             </p>
+            <p v-else-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-emerald-600 font-medium">
+              ✓ Sản phẩm sẽ miễn phí hoàn toàn (giảm 100%)
+            </p>
           </div>
 
           <div class="min-w-0 space-y-2">
@@ -832,10 +922,9 @@ onMounted(taiChiTiet);
               >Giá trị đơn tối thiểu (VNĐ)</label
             >
             <input
-              :value="form.giaTriToiThieu"
+              v-model="giaTriToiThieuVnd"
               type="text"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-              @input="handleVndInput('giaTriToiThieu', $event)"
             />
             <p
               v-if="formErrors.giaTriToiThieu"
@@ -851,11 +940,15 @@ onMounted(taiChiTiet);
               >Giảm tối đa (VNĐ)</label
             >
             <input
-              :value="form.giamToiDa"
+              v-model="giamToiDaVnd"
               type="text"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-              @input="handleVndInput('giamToiDa', $event)"
+              :disabled="Number(form.loai) === 1 && Number(form.giaTri) === 100"
+              class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              :class="Number(form.loai) === 1 && Number(form.giaTri) === 100 ? '' : 'bg-slate-50'"
             />
+            <p v-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-slate-400">
+              Không cần giảm tối đa khi giảm 100%
+            </p>
           </div>
 
           <div class="min-w-0 space-y-2">
@@ -888,7 +981,6 @@ onMounted(taiChiTiet);
             <input
               v-model="form.ngayBatDau"
               type="date"
-              :min="laMoi ? getToday() : undefined"
               :readonly="isReadOnly"
               class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               :class="
@@ -910,7 +1002,6 @@ onMounted(taiChiTiet);
             <input
               v-model="form.ngayKetThuc"
               type="date"
-              :min="form.ngayBatDau || getToday()"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">
@@ -927,6 +1018,7 @@ onMounted(taiChiTiet);
             <div class="flex items-center gap-3 text-slate-800">
               <Users class="h-5 w-5 text-rose-500" />
               <span class="text-sm font-bold">Chọn khách hàng mục tiêu</span>
+              <span class="text-xs text-slate-500">({{ dsEmailChon.length }} đã chọn)</span>
             </div>
             <button
               v-if="!isReadOnly"
@@ -935,29 +1027,40 @@ onMounted(taiChiTiet);
               class="text-xs font-semibold text-rose-500 transition-colors hover:text-rose-600"
             >
               {{
-                danhSachKh.length > 0 &&
-                danhSachKh.every((kh) => dsEmailChon.includes(kh.email))
+                danhSachKhTrang.length > 0 &&
+                danhSachKhTrang.every((kh) => dsEmailChon.includes(kh.email))
                   ? "Bỏ chọn tất cả"
                   : "Chọn tất cả trang này"
               }}
             </button>
           </div>
 
-          <div class="relative">
-            <Search
-              class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              v-model="searchKh"
-              type="text"
-              placeholder="Tìm theo tên hoặc số điện thoại..."
-              @input="handleSearch"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300"
-            />
+          <div class="flex gap-3">
+            <div class="relative flex-1">
+              <Search
+                class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                v-model="searchKh"
+                type="text"
+                placeholder="Tìm theo tên hoặc số điện thoại..."
+                @input="handleSearch"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300"
+              />
+            </div>
+            
+            <select
+              v-model="boLocKh"
+              @change="trangKh = 1"
+              class="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-rose-300"
+            >
+              <option value="tat-ca">Tất cả khách hàng</option>
+              <option value="da-chon">Đã chọn ({{ dsEmailChon.length }})</option>
+            </select>
           </div>
 
           <div
-            class="custom-scrollbar max-h-[300px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm"
+            class="custom-scrollbar max-h-[400px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm"
           >
             <table class="w-full border-collapse text-left text-sm">
               <thead
@@ -972,27 +1075,28 @@ onMounted(taiChiTiet);
                   <th class="px-4 py-3">Ngày sinh</th>
                   <th class="px-4 py-3">Tổng đơn hàng</th>
                   <th class="px-4 py-3">Đơn hàng gần nhất</th>
+                  <th v-if="!isReadOnly" class="w-16 px-4 py-3 text-center">Xóa</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 <tr v-if="dangTaiKh">
                   <td
-                    colspan="8"
+                    :colspan="isReadOnly ? 8 : 9"
                     class="px-4 py-6 text-center text-sm text-slate-400"
                   >
                     Đang tải danh sách khách hàng...
                   </td>
                 </tr>
-                <tr v-else-if="!danhSachKh.length">
+                <tr v-else-if="!danhSachKhTrang.length">
                   <td
-                    colspan="8"
+                    :colspan="isReadOnly ? 8 : 9"
                     class="px-4 py-6 text-center text-sm text-slate-400"
                   >
-                    Không có khách hàng phù hợp.
+                    {{ boLocKh === 'da-chon' ? 'Chưa chọn khách hàng nào.' : 'Không có khách hàng phù hợp.' }}
                   </td>
                 </tr>
                 <tr
-                  v-for="kh in danhSachKh"
+                  v-for="(kh, index) in danhSachKhTrang"
                   v-else
                   :key="kh.id"
                   @click="toggleEmail(kh.email)"
@@ -1062,10 +1166,31 @@ onMounted(taiChiTiet);
                       </span>
                     </div>
                   </td>
+                  <td v-if="!isReadOnly" class="px-4 py-3 text-center" @click.stop>
+                    <button
+                      v-if="dsEmailChon.includes(kh.email)"
+                      @click="xoaKhachHang(kh.email)"
+                      class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50"
+                      title="Xóa khách hàng khỏi phiếu"
+                    >
+                      <X class="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+          <AdminTableFooter
+            :current-page="trangKh"
+            :page-size="soPhanTuMotTrangKh"
+            :page-size-options="[10, 20, 50]"
+            :total-items="danhSachKhFiltered.length"
+            :total-pages="tongSoTrangKh"
+            compact
+            @update:current-page="trangKh = $event"
+            @update:page-size="soPhanTuMotTrangKh = $event; trangKh = 1"
+          />
 
           <div class="text-xs font-medium text-slate-400">
             Đã chọn:
