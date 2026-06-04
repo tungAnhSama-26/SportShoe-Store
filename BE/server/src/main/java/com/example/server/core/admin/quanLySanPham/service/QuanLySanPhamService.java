@@ -139,31 +139,31 @@ public class QuanLySanPhamService {
     @Transactional(readOnly = true)
     public DanhMucSanPhamResponse layDanhMuc() {
         var loaiGiay = loaiGiayRepository.findAll().stream()
-                .filter(l -> l.getTrangThai() == 1)
+                .filter(l -> l.getTrangThai() != null && l.getTrangThai() == 1)
                 .map(l -> new LoaiGiayOption(l.getId(), l.getTen())).toList();
         var thuongHieu = thuongHieuRepository.findAll().stream()
-                .filter(t -> t.getTrangThai() == 1)
+                .filter(t -> t.getTrangThai() != null && t.getTrangThai() == 1)
                 .map(t -> new ThuongHieuOption(t.getId(), t.getTen(), t.getLogoUrl())).toList();
         var mauSac = mauSacRepository.findAll().stream()
-                .filter(m -> m.getTrangThai() == 1)
+                .filter(m -> m.getTrangThai() != null && m.getTrangThai() == 1)
                 .map(m -> new MauSacOption(m.getId(), m.getTen(), m.getMaMauHex())).toList();
         var kichCo = kichCoRepository.findAll().stream()
-                .filter(k -> k.getTrangThai() == 1)
+                .filter(k -> k.getTrangThai() != null && k.getTrangThai() == 1)
                 .map(k -> new KichCoOption(k.getId(), k.getGiaTri())).toList();
         var deGiay = deGiayRepository.findAll().stream()
-                .filter(d -> d.getTrangThai() == 1)
+                .filter(d -> d.getTrangThai() != null && d.getTrangThai() == 1)
                 .map(d -> new DeGiayOption(d.getId(), d.getTen())).toList();
         var coGiay = coGiayRepository.findAll().stream()
-                .filter(c -> c.getTrangThai() == 1)
+                .filter(c -> c.getTrangThai() != null && c.getTrangThai() == 1)
                 .map(c -> new CoGiayOption(c.getId(), c.getTen())).toList();
         var chatLieuGiay = chatLieuGiayRepository.findAll().stream()
-                .filter(c -> c.getTrangThai() == 1)
+                .filter(c -> c.getTrangThai() != null && c.getTrangThai() == 1)
                 .map(c -> new ChatLieuGiayOption(c.getId(), c.getTen())).toList();
         var trongLuong = trongLuongRepository.findAll().stream()
-                .filter(t -> t.getTrangThai() == 1)
+                .filter(t -> t.getTrangThai() != null && t.getTrangThai() == 1)
                 .map(t -> new TrongLuongOption(t.getId(), t.getMa(), t.getGiaTri())).toList();
         var congNgheDem = congNgheDemRepository.findAll().stream()
-                .filter(c -> c.getTrangThai() == 1)
+                .filter(c -> c.getTrangThai() != null && c.getTrangThai() == 1)
                 .map(c -> new CongNgheDemOption(c.getId(), c.getTen())).toList();
         return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, chatLieuGiay, trongLuong, congNgheDem);
     }
