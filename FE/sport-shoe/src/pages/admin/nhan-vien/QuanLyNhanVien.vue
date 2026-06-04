@@ -75,6 +75,16 @@ function dinhDangNgay(ngay: string) {
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 
 function showToast(message: string, type = "success") {
+  if (type === "success") {
+    showSuccess(message);
+    return;
+  }
+
+  if (type === "error") {
+    showError(message);
+    return;
+  }
+
   if (toastTimer) clearTimeout(toastTimer);
   toast.message = message;
   toast.type = type;
@@ -124,11 +134,14 @@ function hienThiVaiTro(nv: any) {
   if (normalizedRole.includes("admin") || normalizedRole.includes("quan tri")) {
     return "Admin";
   }
-  if (normalizedRole.includes("ban hang") || normalizedRole.includes("nhan vien") || Number(nv?.vaiTro) === 2) {
+  if (
+    normalizedRole.includes("ban hang") ||
+    normalizedRole.includes("nhan vien") ||
+    normalizedRole.includes("kho") ||
+    Number(nv?.vaiTro) === 2 ||
+    Number(nv?.vaiTro) === 3
+  ) {
     return "Nhân viên";
-  }
-  if (normalizedRole.includes("kho") || Number(nv?.vaiTro) === 3) {
-    return "Kho";
   }
   return nv?.tenVaiTro || "—";
 }
@@ -293,9 +306,9 @@ onUnmounted(() => {
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="toast.show"
+          v-if="toast.show && toast.type !== 'success'"
           class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
-          :class="toast.type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'"
+          :class="toast.type === 'error' ? 'bg-rose-500' : 'bg-[#cf1018]'"
         >
           {{ toast.message }}
         </div>

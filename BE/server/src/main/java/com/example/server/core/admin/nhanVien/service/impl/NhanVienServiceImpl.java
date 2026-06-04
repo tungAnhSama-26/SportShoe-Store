@@ -9,6 +9,7 @@ import com.example.server.core.admin.nhanVien.service.NhanVienService;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.security.PasswordService;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.infrastructure.service.EmailService.EmailDispatchResult;
 import com.example.server.repository.NhanVienRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -27,10 +29,19 @@ public class NhanVienServiceImpl implements NhanVienService {
 
     private final NhanVienRepository nhanVienRepository;
     private final EmailService emailService;
+    private final PasswordService passwordService;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final char[] TEMP_PASSWORD_CHARS =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789".toCharArray();
 
-    public NhanVienServiceImpl(NhanVienRepository nhanVienRepository, EmailService emailService) {
+    public NhanVienServiceImpl(
+            NhanVienRepository nhanVienRepository,
+            EmailService emailService,
+            PasswordService passwordService
+    ) {
         this.nhanVienRepository = nhanVienRepository;
         this.emailService = emailService;
+        this.passwordService = passwordService;
     }
 
     @Override
@@ -39,7 +50,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         String kw = normalize(keyword);
         return nhanVienRepository.findAll().stream()
                 .filter(nv -> matchKeyword(kw, nv))
-                .filter(nv -> vaiTro == null || vaiTro.equals(nv.getVaiTro()))
+                .filter(nv -> vaiTro == null || vaiTro.equals(normalizeVaiTro(nv.getVaiTro())))
                 .filter(nv -> trangThai == null || trangThai.equals(nv.getTrangThai()))
                 .sorted(Comparator.comparing(NhanVien::getNgayTao, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toItem)
@@ -64,6 +75,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
             throw new BusinessException("Ngày sinh không được quá 100 tuổi");
         }
+        Integer vaiTro = validateVaiTro(request.vaiTro());
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException("Email đã được sử dụng");
@@ -82,22 +94,22 @@ public class NhanVienServiceImpl implements NhanVienService {
 
         String generatedMa;
         do {
-            generatedMa = "NV" + String.format("%05d", new java.util.Random().nextInt(99999));
+            generatedMa = "NV" + String.format("%05d", SECURE_RANDOM.nextInt(100_000));
         } while (nhanVienRepository.existsByMa(generatedMa));
 
         nv.setMa(generatedMa);
         nv.setTenDangNhap(generatedTenDangNhap);
         nv.setHoTen(request.hoTen().trim());
         nv.setEmail(normalizedEmail);
-        String randomMatKhau = UUID.randomUUID().toString().substring(0, 8);
-        nv.setMatKhau(randomMatKhau);
+        String randomMatKhau = generateTemporaryPassword();
+        nv.setMatKhau(passwordService.hash(randomMatKhau));
         nv.setSdt(normalizeOptional(request.sdt()));
         nv.setCccd(normalizedCccd);
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
         nv.setDiaChi(normalizeOptional(request.diaChi()));
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
-        nv.setVaiTro(request.vaiTro());
+        nv.setVaiTro(vaiTro);
         nv.setTrangThai(1);
         nv.setNgayTao(Instant.now());
 
@@ -118,6 +130,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
             throw new BusinessException("Ngày sinh không được quá 100 tuổi");
         }
+        Integer vaiTro = validateVaiTro(request.vaiTro());
         NhanVien nv = findNhanVien(id);
 
         String normalizedTenDangNhap = normalizeRequired(request.tenDangNhap(), "Ten dang nhap khong duoc de trong");
@@ -154,7 +167,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setNgaySinh(request.ngaySinh());
         nv.setDiaChi(normalizeOptional(request.diaChi()));
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
-        nv.setVaiTro(request.vaiTro());
+        nv.setVaiTro(vaiTro);
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
     }
@@ -175,7 +188,7 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Transactional
     public NhanVienResponse doiMatKhau(UUID id, DoiMatKhauRequest request) {
         NhanVien nv = findNhanVien(id);
-        nv.setMatKhau(request.matKhauMoi());
+        nv.setMatKhau(passwordService.hash(request.matKhauMoi()));
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
     }
@@ -277,7 +290,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getNgaySinh(),
                 nv.getDiaChi(),
                 nv.getHinhAnh(),
-                nv.getVaiTro(),
+                normalizeVaiTro(nv.getVaiTro()),
                 mapVaiTro(nv.getVaiTro()),
                 nv.getTrangThai(),
                 nv.getTrangThai() == 1 ? "Đang làm" : "Nghỉ làm",
@@ -292,11 +305,32 @@ public class NhanVienServiceImpl implements NhanVienService {
         if (vaiTro == null) {
             return "Không xác định";
         }
+        if (!Integer.valueOf(1).equals(vaiTro)) {
+            return "Nhân viên";
+        }
         return switch (vaiTro) {
             case 1 -> "Admin";
             case 2 -> "Nhân viên";
-            case 3 -> "Kho";
             default -> "Không xác định";
         };
+    }
+
+    private Integer validateVaiTro(Integer vaiTro) {
+        if (Integer.valueOf(1).equals(vaiTro) || Integer.valueOf(2).equals(vaiTro)) {
+            return vaiTro;
+        }
+        throw new BusinessException("Vai tro khong hop le");
+    }
+
+    private Integer normalizeVaiTro(Integer vaiTro) {
+        return Integer.valueOf(1).equals(vaiTro) ? 1 : 2;
+    }
+
+    private String generateTemporaryPassword() {
+        StringBuilder password = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+            password.append(TEMP_PASSWORD_CHARS[SECURE_RANDOM.nextInt(TEMP_PASSWORD_CHARS.length)]);
+        }
+        return password.toString();
     }
 }

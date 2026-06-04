@@ -12,6 +12,7 @@ import com.example.server.entity.DiaChiKhachHang;
 import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.security.PasswordService;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.infrastructure.service.EmailService.EmailDispatchResult;
 import com.example.server.repository.DiaChiKhachHangRepository;
@@ -30,16 +31,19 @@ public class KhachHangServiceImpl implements KhachHangService {
     private final KhachHangRepository khachHangRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
     private final EmailService emailService;
+    private final PasswordService passwordService;
 
     public KhachHangServiceImpl(
             KhachHangRepository khachHangRepository,
             DiaChiKhachHangRepository diaChiKhachHangRepository,
-            EmailService emailService
+            EmailService emailService,
+            PasswordService passwordService
     ) {
 
         this.khachHangRepository = khachHangRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
         this.emailService = emailService;
+        this.passwordService = passwordService;
     }
 
     @Override
@@ -79,7 +83,7 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgaySinh(request.ngaySinh());
         kh.setGioiTinh(request.gioiTinh());
         kh.setHinhAnh(request.hinhAnh());
-        kh.setMatKhau(request.matKhau());
+        kh.setMatKhau(passwordService.hash(request.matKhau()));
         kh.setTrangThai(1);
         kh.setNgayTao(Instant.now());
 
@@ -131,7 +135,7 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Transactional
     public KhachHangResponse doiMatKhau(UUID id, DoiMatKhauRequest request) {
         KhachHang kh = findKhachHang(id);
-        kh.setMatKhau(request.matKhauMoi());
+        kh.setMatKhau(passwordService.hash(request.matKhauMoi()));
         kh.setNgayCapNhat(Instant.now());
         return toKhachHangResponse(khachHangRepository.save(kh));
     }

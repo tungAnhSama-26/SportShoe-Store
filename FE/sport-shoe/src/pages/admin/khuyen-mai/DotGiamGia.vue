@@ -20,7 +20,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
-import { showError } from "../../../utils/alert";
+import { showSuccess, showError } from "../../../utils/alert";
 
 const router = useRouter();
 
@@ -51,20 +51,20 @@ let toastTimer = null;
 
 const toastClass = computed(() => {
   if (toast.value.loai === "success")
-    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    return "border-rose-100 bg-white text-rose-700";
   if (toast.value.loai === "warning")
     return "border-amber-100 bg-amber-50 text-amber-700";
   return "border-rose-100 bg-rose-50 text-rose-700";
 });
 
 const toastIconClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-100 text-emerald-600";
+  if (toast.value.loai === "success") return "bg-rose-50 text-rose-600";
   if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
   return "bg-rose-100 text-rose-600";
 });
 
 const toastAccentClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-emerald-500";
+  if (toast.value.loai === "success") return "bg-[#cf1018]";
   if (toast.value.loai === "warning") return "bg-amber-500";
   return "bg-rose-500";
 });
@@ -75,6 +75,11 @@ const ToastIcon = computed(() => {
 });
 
 function hienThiThongBao(loai, tieuDe, noiDung = "") {
+  if (loai === "success") {
+    showSuccess(noiDung || tieuDe, tieuDe);
+    return;
+  }
+
   if (toastTimer) {
     clearTimeout(toastTimer);
   }
@@ -89,25 +94,31 @@ function isHetHan(ngayKetThuc) {
   if (!ngayKetThuc) return false;
   const homNay = new Date();
   homNay.setHours(0, 0, 0, 0);
-  return new Date(ngayKetThuc) < homNay;
+  const ngayKT = new Date(ngayKetThuc);
+  ngayKT.setHours(0, 0, 0, 0);
+  return ngayKT < homNay;
 }
 
 function mauTrangThai(trangThai, ngayKetThuc) {
-  if (isHetHan(ngayKetThuc) || Number(trangThai) === 2) {
+  if (isHetHan(ngayKetThuc)) {
     return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
   }
   const status = Number(trangThai);
   if (status === 1)
     return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
-  if (status === 4) return "bg-blue-50 text-blue-600 ring-1 ring-blue-200";
+  if (status === 2)
+    return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
+  if (status === 4) 
+    return "bg-blue-50 text-blue-600 ring-1 ring-blue-200";
   return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
 }
 
 function statusText(value, ngayKetThuc) {
   if (isHetHan(ngayKetThuc)) return "Hết hạn";
-  if (Number(value) === 1) return "Đang hoạt động";
-  if (Number(value) === 2) return "Hết hạn";
-  if (Number(value) === 4) return "Sắp diễn ra";
+  const status = Number(value);
+  if (status === 1) return "Đang hoạt động";
+  if (status === 2) return "Hết hạn";
+  if (status === 4) return "Sắp diễn ra";
   return "Ngừng hoạt động";
 }
 
@@ -123,6 +134,7 @@ async function taiDanhSach() {
     const isFilterHetHan = boLoc.value.trangThai === "het_han";
     const isFilterKichHoat = boLoc.value.trangThai === "1";
 
+    // Luôn lấy tất cả để có thể sắp xếp đúng ở FE
     const data = await getDotGiamGiaList({
       keyword: boLoc.value.keyword || undefined,
       trangThai:
@@ -131,32 +143,32 @@ async function taiDanhSach() {
           : undefined,
       tuNgay: boLoc.value.tuNgay || undefined,
       denNgay: boLoc.value.denNgay || undefined,
-      pageNo: trangHienTai.value - 1,
-      pageSize:
-        isFilterHetHan || isFilterKichHoat ? 1000 : soPhanTuMotTrang.value,
+      pageNo: 0,
+      pageSize: 1000, // Lấy nhiều để sắp xếp ở FE
     });
 
     let items = data?.content || [];
 
+    // Lọc theo trạng thái đặc biệt
     if (isFilterHetHan) {
+      // Lọc FE: chỉ lấy đợt quá ngày kết thúc
       items = items.filter((item) => isHetHan(item.ngayKetThuc));
     } else if (isFilterKichHoat) {
+      // Đang hoạt động: loại bỏ đợt đã hết hạn theo ngày
       items = items.filter((item) => !isHetHan(item.ngayKetThuc));
     }
 
-    if (isFilterHetHan || isFilterKichHoat) {
-      tongSoTrang.value = Math.max(
-        1,
-        Math.ceil(items.length / soPhanTuMotTrang.value),
-      );
-      totalItems.value = items.length;
-      const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
-      danhSach.value = items.slice(start, start + soPhanTuMotTrang.value);
-    } else {
-      danhSach.value = items;
-      tongSoTrang.value = data?.totalPages || 1;
-      totalItems.value = data?.totalElements || 0;
-    }
+    // Sắp xếp theo ID giảm dần để đợt mới nhất lên đầu
+    items.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+    // Tính toán phân trang ở FE
+    tongSoTrang.value = Math.max(
+      1,
+      Math.ceil(items.length / soPhanTuMotTrang.value),
+    );
+    totalItems.value = items.length;
+    const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
+    danhSach.value = items.slice(start, start + soPhanTuMotTrang.value);
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(
       error,
@@ -176,22 +188,29 @@ async function nhanhDoiTrangThai(item) {
     hienThiThongBao(
       "warning",
       "Thao tác bị chặn",
-      "Đợt giảm giá đã hết hạn, vui lòng vào chi tiết để gia hạn.",
+      "Đợt giảm giá đã hết hạn, vui lòng vào chi tiết để gia hạn ngày kết thúc.",
     );
     return;
   }
 
   try {
-    const isCurrentlyActive =
-      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4;
-    const nextStatus = isCurrentlyActive ? 0 : 1;
+    const nextStatus = Number(item.kichHoat) === 1 ? 0 : 1;
 
-    await updateDotGiamGia(item.id, { ...item, kichHoat: nextStatus });
+    await updateDotGiamGia(item.id, {
+      ma: item.ma,
+      ten: item.ten,
+      moTa: item.moTa,
+      loaiGiam: item.loaiGiam,
+      giaTriGiam: item.giaTriGiam,
+      ngayBatDau: item.ngayBatDau,
+      ngayKetThuc: item.ngayKetThuc,
+      kichHoat: nextStatus,
+    });
 
     hienThiThongBao(
       "success",
       "Thành công",
-      isCurrentlyActive
+      Number(item.kichHoat) === 1
         ? "Đã ngừng hoạt động đợt giảm giá."
         : "Đã chuyển đợt giảm giá sang đang hoạt động thành công.",
     );
@@ -278,7 +297,19 @@ watch(
   { deep: true },
 );
 
-onMounted(taiDanhSach);
+onMounted(() => {
+  // Kiểm tra và hiển thị thông báo từ trang Chi tiết nếu có
+  const flash = window.sessionStorage.getItem("admin-dot-giam-gia-toast");
+  if (flash) {
+    const { loai, tieuDe, noiDung } = JSON.parse(flash);
+    hienThiThongBao(loai, tieuDe, noiDung);
+    window.sessionStorage.removeItem("admin-dot-giam-gia-toast");
+    // Reset về trang 1 khi có thông báo từ tạo mới
+    trangHienTai.value = 1;
+    boLoc.value = { keyword: "", trangThai: "", tuNgay: "", denNgay: "" };
+  }
+  taiDanhSach();
+});
 </script>
 
 <template>
@@ -292,7 +323,7 @@ onMounted(taiDanhSach);
       leave-to-class="translate-y-3 opacity-0"
     >
       <div
-        v-if="toast.hienThi"
+        v-if="toast.hienThi && toast.loai !== 'success'"
         class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
         :class="toastClass"
       >

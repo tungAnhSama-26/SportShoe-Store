@@ -1,5 +1,8 @@
 import { apiRequest, getAuthHeaders as getApiAuthHeaders } from "./api-client";
 
+const ADMIN_ROLE_NOTICE_KEY = "sport-shoe-admin-role-notice";
+const ADMIN_ROLE_NOTICE_PENDING_KEY = "sport-shoe-admin-role-notice-pending";
+
 export async function request(path, init) {
   return apiRequest(path, {
     authenticated: false,
@@ -38,6 +41,8 @@ export async function adminLogin(username, password) {
     localStorage.setItem("adminToken", token);
     localStorage.setItem("adminUser", JSON.stringify(adminUser));
     localStorage.setItem("sport-shoe-admin-session", JSON.stringify(adminUser));
+    sessionStorage.removeItem(ADMIN_ROLE_NOTICE_KEY);
+    sessionStorage.setItem(ADMIN_ROLE_NOTICE_PENDING_KEY, "1");
   }
 
   return result.data;

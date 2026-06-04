@@ -41,15 +41,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            AdminPrincipal principal = jwtService.parseToken(authorization.substring(7).trim());
+            ParsedAdminToken parsedToken = jwtService.parseAdminToken(authorization.substring(7).trim());
+            AdminPrincipal principal = parsedToken.principal();
             Optional<NhanVien> nhanVienOpt = nhanVienRepository.findById(principal.id());
             if (nhanVienOpt.isEmpty() || nhanVienOpt.get().getTrangThai() != 1) {
                 SecurityContextHolder.clearContext();
             } else {
+                NhanVien nhanVien = nhanVienOpt.get();
+                Integer currentVaiTro = normalizeVaiTro(nhanVien.getVaiTro());
+                if (!currentVaiTro.equals(normalizeVaiTro(principal.vaiTro()))) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+                String currentRole = resolveRole(nhanVien.getVaiTro());
+                AdminPrincipal currentPrincipal = new AdminPrincipal(
+                        nhanVien.getId(),
+                        nhanVien.getMa(),
+                        nhanVien.getTenDangNhap(),
+                        nhanVien.getHoTen(),
+                        currentVaiTro,
+                        currentRole
+                );
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        principal,
+                        currentPrincipal,
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + principal.role()))
+                        List.of(new SimpleGrantedAuthority("ROLE_" + currentRole))
                 );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
@@ -58,5 +75,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String resolveRole(Integer vaiTro) {
+        return Integer.valueOf(1).equals(vaiTro) ? "ADMIN" : "STAFF";
+    }
+
+    private Integer normalizeVaiTro(Integer vaiTro) {
+        return Integer.valueOf(1).equals(vaiTro) ? 1 : 2;
     }
 }

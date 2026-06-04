@@ -99,8 +99,8 @@ public class DotGiamGiaService {
         LocalDate start = dotGiamGia.getNgayBatDau();
         LocalDate end = dotGiamGia.getNgayKetThuc();
 
-        if (end != null && end.isBefore(now)) {
-            dotGiamGia.setKichHoat(2); // Hết hạn
+        if (end != null && (end.isBefore(now) || end.isEqual(now))) {
+            dotGiamGia.setKichHoat(2); // Hết hạn (bao gồm cả ngày hôm nay)
         } else {
             Integer requestedStatus = request.getKichHoat();
             if (requestedStatus != null && requestedStatus == 0) {

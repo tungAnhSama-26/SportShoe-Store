@@ -85,7 +85,7 @@ interface NhanVien {
   ten: string;
   vieTat: string;
   chucVu: string;       // tenVaiTro từ BE
-  vaiTro: number;       // 1=Admin, 2=Nhân viên, 3=Kho
+  vaiTro: number;       // 1=Admin, 2=Nhân viên
   hinhAnh: string;
   mauNen: string;
   lich: CaLam[];        // index 0=T2 ... 6=CN
@@ -98,7 +98,6 @@ interface NhanVien {
 const MAU_VAI_TRO: Record<number, string> = {
   1: "bg-primary",
   2: "bg-emerald-500",
-  3: "bg-sky-500",
 };
 function mauNenNV(vaiTro: number) {
   return MAU_VAI_TRO[vaiTro] ?? "bg-slate-400";
@@ -132,10 +131,10 @@ async function taiNhanVien() {
       ten: nv.hoTen ?? "",
       vieTat: taoVietTat(nv.hoTen ?? ""),
       chucVu: nv.tenVaiTro ?? "—",
-      vaiTro: Number(nv.vaiTro ?? 0),
+      vaiTro: Number(nv.vaiTro) === 1 ? 1 : 2,
       hinhAnh: nv.hinhAnh ?? "",
-      mauNen: mauNenNV(Number(nv.vaiTro ?? 0)),
-      lich: taoLichMock(Number(nv.vaiTro ?? 0)),
+      mauNen: mauNenNV(Number(nv.vaiTro) === 1 ? 1 : 2),
+      lich: taoLichMock(Number(nv.vaiTro) === 1 ? 1 : 2),
       tongGio: 32,
       overtime: +(Math.random() * 5).toFixed(1),
       gioiHanOT: 5,
@@ -155,7 +154,6 @@ const dsVaiTro = [
   { value: 0, label: "Tất cả" },
   { value: 1, label: "Admin" },
   { value: 2, label: "Nhân viên" },
-  { value: 3, label: "Kho" },
 ];
 
 const danhSachLocVaiTro = computed(() =>
