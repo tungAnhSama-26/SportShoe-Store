@@ -37,7 +37,7 @@ public class CongNgheDemController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách công nghệ đệm thành công",
                 congNgheDemService.danhSachCongNgheDem(keyword, pageable)

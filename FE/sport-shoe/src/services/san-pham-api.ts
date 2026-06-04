@@ -309,7 +309,13 @@ export function layDanhSachGiay(filters: GiayListFilters = {}): Promise<PageResp
 }
 
 export function layDanhMuc(): Promise<DanhMucSanPhamResponse> {
-  return request<DanhMucSanPhamResponse>('/admin/san-pham/danh-muc')
+  return request<DanhMucSanPhamResponse>('/admin/san-pham/danh-muc', {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  })
 }
 
 export function checkTenGiay(ten: string, id?: number | null): Promise<{ exists: boolean }> {

@@ -18,4 +18,8 @@ public interface ThuongHieuRepository extends JpaRepository<ThuongHieu, Integer>
     boolean existsByMaIgnoreCase(String ma);
 
     boolean existsByMaIgnoreCaseAndIdNot(String ma, Integer id);
+
+    boolean existsByTenIgnoreCase(String ten);
+
+    boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
 }

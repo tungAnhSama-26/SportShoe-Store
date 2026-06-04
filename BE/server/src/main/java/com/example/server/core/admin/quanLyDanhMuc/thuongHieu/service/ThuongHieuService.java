@@ -41,6 +41,11 @@ public class ThuongHieuService {
             throw new BusinessException("Mã thương hiệu '" + ma + "' đã tồn tại");
         }
 
+        String ten = req.ten().trim();
+        if (thuongHieuRepository.existsByTenIgnoreCase(ten)) {
+            throw new BusinessException("Thương hiệu '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        }
+
         var entity = new ThuongHieu();
         entity.setMa(ma);
         entity.setTen(req.ten().trim());
@@ -60,6 +65,11 @@ public class ThuongHieuService {
         String ma = req.ma().trim().toUpperCase();
         if (thuongHieuRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
             throw new BusinessException("Mã thương hiệu '" + ma + "' đã tồn tại");
+        }
+        
+        String ten = req.ten().trim();
+        if (thuongHieuRepository.existsByTenIgnoreCaseAndIdNot(ten, id)) {
+            throw new BusinessException("Thương hiệu '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
         }
 
         entity.setMa(ma);
