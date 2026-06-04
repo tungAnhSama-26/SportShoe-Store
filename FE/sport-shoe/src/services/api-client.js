@@ -34,6 +34,9 @@ function buildHeaders(init, authenticated) {
   return {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(authenticated ? getAuthHeaders() : {}),
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
     ...initHeaders,
   };
 }

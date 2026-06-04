@@ -41,6 +41,11 @@ public class LoaiGiayService {
             throw new BusinessException("Mã loại giày '" + ma + "' đã tồn tại");
         }
 
+        String ten = req.ten().trim();
+        if (loaiGiayRepository.existsByTenIgnoreCase(ten)) {
+            throw new BusinessException("Loại giày '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        }
+
         var entity = new LoaiGiay();
         entity.setMa(ma);
         entity.setTen(req.ten().trim());
@@ -57,6 +62,11 @@ public class LoaiGiayService {
         String ma = req.ma().trim().toUpperCase();
         if (loaiGiayRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
             throw new BusinessException("Mã loại giày '" + ma + "' đã tồn tại");
+        }
+        
+        String ten = req.ten().trim();
+        if (loaiGiayRepository.existsByTenIgnoreCaseAndIdNot(ten, id)) {
+            throw new BusinessException("Loại giày '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
         }
 
         entity.setMa(ma);

@@ -37,7 +37,7 @@ public class ThuongHieuController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách thương hiệu thành công",
                 thuongHieuService.danhSachThuongHieu(keyword, pageable)

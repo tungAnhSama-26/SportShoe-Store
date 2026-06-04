@@ -72,7 +72,7 @@ public class QuanLySanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách giày thành công",
                 service.danhSachGiay(keyword, thuongHieuId, loaiGiayId, trangThai, minPrice, maxPrice, pageable)
@@ -94,7 +94,7 @@ public class QuanLySanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách chi tiết sản phẩm thành công",
                 service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)
