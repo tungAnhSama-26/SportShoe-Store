@@ -254,7 +254,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             }
             case "Hoàn thành" -> {
                 if (coThanhToanCodDangCho(hoaDon)) {
-                    throw new BusinessException("Vui long xac nhan thanh toan COD truoc khi hoan thanh hoa don");
+                    throw new BusinessException("Vui lòng xác nhận thanh toán COD trước khi hoàn thành hóa đơn");
                 }
                 hoaDon.setTrangThai(TRANG_THAI_HOAN_THANH);
                 hoaDon.setNgayThanhToan(hoaDon.getNgayThanhToan() == null ? Instant.now() : hoaDon.getNgayThanhToan());
@@ -301,7 +301,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         ensureHoaDonEditable(hoaDon);
         ganNhanVienXuLyNeuChuaCo(hoaDon);
         if (hoaDon.getTrangThai() != TRANG_THAI_CHO_XAC_NHAN) {
-            throw new BusinessException("Chi co the cap nhat san pham khi hoa don dang o trang thai cho xac nhan");
+            throw new BusinessException("Chỉ có thể cập nhật sản phẩm khi hóa đơn đang ở trạng thái chờ xác nhận");
         }
 
         List<HoaDonChiTiet> existingItems = hoaDonChiTietRepository.findByHoaDonId(id);
@@ -312,7 +312,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         for (CapNhatSanPhamHoaDonRequest.SanPhamItemRequest itemRequest : request.items()) {
             GiayChiTiet giayChiTiet = giayChiTietRepository.findById(itemRequest.chiTietId())
-                    .orElseThrow(() -> new ResourceNotFoundException("San pham chi tiet không tồn tại: " + itemRequest.chiTietId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm chi tiết không tồn tại: " + itemRequest.chiTietId()));
 
             HoaDonChiTiet chiTiet = existingMap.get(itemRequest.chiTietId());
             int diff = itemRequest.soLuong() - (chiTiet != null ? chiTiet.getSoLuong() : 0);
@@ -371,13 +371,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         Integer hinhThuc = request.hinhThucThanhToan();
         if (!Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_TIEN_MAT)
                 && !Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_CHUYEN_KHOAN)) {
-            throw new BusinessException("COD chi ho tro xac nhan bang tien mat hoac chuyen khoan");
+            throw new BusinessException("COD chỉ hỗ trợ xác nhận bằng tiền mặt hoặc chuyển khoản");
         }
 
         BigDecimal tongTien = defaultMoney(thanhToan.getSoTien());
         BigDecimal tienKhachDua = request.tienKhachDua() != null ? request.tienKhachDua() : tongTien;
         if (Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_TIEN_MAT) && tienKhachDua.compareTo(tongTien) < 0) {
-            throw new BusinessException("Tien khach dua phai lon hon hoac bang so tien can thanh toan");
+            throw new BusinessException("Tiền khách đưa phải lớn hơn hoặc bằng số tiền cần thanh toán");
         }
         if (tienKhachDua.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessException("Tiền khách đưa không được âm");
@@ -388,7 +388,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         thanhToan.setTienThoiLai(Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_TIEN_MAT)
                 ? tienKhachDua.subtract(tongTien)
                 : BigDecimal.ZERO);
-        thanhToan.setCongThanhToan(Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_CHUYEN_KHOAN) ? "COD - Chuyen khoan" : "COD - Tien mat");
+        thanhToan.setCongThanhToan(Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_CHUYEN_KHOAN) ? "COD - Chuyển khoản" : "COD - Tiền mặt");
         thanhToan.setNgayThanhToan(now);
         if (nhanVienXuLy != null) {
             thanhToan.setNhanVien(nhanVienXuLy);
@@ -396,7 +396,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_THANH_CONG);
         thanhToan.setGhiChu(request.ghiChu() != null && !request.ghiChu().isBlank()
                 ? request.ghiChu().trim()
-                : "COD - Da thu tien khi giao hang");
+                : "COD - Đã thu tiền khi giao hàng");
         thanhToanRepository.save(thanhToan);
 
         hoaDon.setNgayThanhToan(hoaDon.getNgayThanhToan() == null ? now : hoaDon.getNgayThanhToan());
@@ -425,16 +425,16 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         BigDecimal soTienCanHoan = defaultMoney(thanhToan.getSoTien());
         BigDecimal soTienHoan = request.soTienHoan() != null ? request.soTienHoan() : soTienCanHoan;
         if (soTienHoan.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("So tien hoan phai lon hon 0");
+            throw new BusinessException("Số tiền hoàn phải lớn hơn 0");
         }
         if (soTienHoan.compareTo(soTienCanHoan) != 0) {
-            throw new BusinessException("So tien hoan phai bang so tien can hoan");
+            throw new BusinessException("Số tiền hoàn phải bằng số tiền cần hoàn");
         }
 
         Instant now = Instant.now();
         thanhToan.setHinhThuc(hinhThuc);
         thanhToan.setSoTien(soTienHoan);
-        thanhToan.setCongThanhToan("Hoan tien - " + mapPhuongThucThanhToan(hinhThuc));
+        thanhToan.setCongThanhToan("Hoàn tiền - " + mapPhuongThucThanhToan(hinhThuc));
         if (request.maGiaoDichHoan() != null && !request.maGiaoDichHoan().isBlank()) {
             thanhToan.setMaGiaoDich(request.maGiaoDichHoan().trim());
         }
@@ -445,13 +445,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_DA_HOAN_TIEN);
         String ghiChu = request.ghiChu() != null && !request.ghiChu().isBlank()
                 ? request.ghiChu().trim()
-                : "Da hoan tien cho khach hang";
+                : "Đã hoàn tiền cho khách hàng";
         thanhToan.setGhiChu(taoGhiChuThanhToan(thanhToan, ghiChu));
         thanhToanRepository.save(thanhToan);
 
-        if (Objects.equals(hoaDon.getTrangThai(), TRANG_THAI_CAN_HOAN_TIEN)) {
-            hoaDon.setTrangThai(TRANG_THAI_HUY);
-        }
+        hoaDon.setTrangThai(TRANG_THAI_HUY);
         hoaDon.setNgayCapNhat(now);
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Xác nhận hoàn tiền", ghiChu);
@@ -471,7 +469,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
         if (items.isEmpty()) {
-            throw new BusinessException("Hoa don chua co san pham de tinh phi van chuyen");
+            throw new BusinessException("Hóa đơn chưa có sản phẩm để tính phí vận chuyển");
         }
 
         TinhPhiVanChuyenGhnResponse phiGhn = ghnShippingService.tinhPhi(hoaDon, items, request);
@@ -721,7 +719,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
     private HoaDon findHoaDon(Integer id) {
         return hoaDonRepository.findDetailById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
     }
 
     private void ensureHoaDonEditable(HoaDon hoaDon) {
