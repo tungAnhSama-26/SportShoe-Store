@@ -75,6 +75,7 @@ public class PhieuGiamGiaKhachHangService {
                     phieuGiamGia.getGiaTri(),
                     phieuGiamGia.getGiamToiDa(),
                     phieuGiamGia.getGiaTriToiThieu(),
+                    phieuGiamGia.getNgayBatDau(),
                     phieuGiamGia.getNgayKetThuc()
             );
         }

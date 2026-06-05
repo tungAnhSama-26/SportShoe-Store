@@ -94,4 +94,28 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
         )
     """)
     void dongBoTrangThaiTuPhieuGiamGia();
+
+    /**
+     * Lấy tất cả liên kết khách hàng của một phiếu giảm giá (dùng để gửi email khi phiếu được cập nhật).
+     */
+    @Query("""
+        SELECT pgk FROM PhieuGiamGiaKhachHang pgk
+        JOIN FETCH pgk.khachHang
+        JOIN FETCH pgk.phieuGiamGia
+        WHERE pgk.phieuGiamGia.id = :phieuGiamGiaId
+    """)
+    List<PhieuGiamGiaKhachHang> findAllByPhieuGiamGiaId(@Param("phieuGiamGiaId") Integer phieuGiamGiaId);
+
+    /**
+     * Lấy các liên kết đã hết hạn (trangThai = 2) mà khách hàng chưa sử dụng (ngaySuDung IS NULL).
+     * Dùng cho scheduler để gửi email thông báo hết hạn.
+     */
+    @Query("""
+        SELECT pgk FROM PhieuGiamGiaKhachHang pgk
+        JOIN FETCH pgk.khachHang
+        JOIN FETCH pgk.phieuGiamGia
+        WHERE pgk.trangThai = 2
+          AND pgk.ngaySuDung IS NULL
+    """)
+    List<PhieuGiamGiaKhachHang> findExpiredUnused();
 }
