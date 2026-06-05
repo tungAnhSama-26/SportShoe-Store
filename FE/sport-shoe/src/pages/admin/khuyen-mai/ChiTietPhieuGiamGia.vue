@@ -1070,13 +1070,12 @@ onMounted(taiChiTiet);
                   <th class="px-4 py-3">Ngày sinh</th>
                   <th class="px-4 py-3">Tổng đơn hàng</th>
                   <th class="px-4 py-3">Đơn hàng gần nhất</th>
-                  <th v-if="!isReadOnly" class="w-16 px-4 py-3 text-center">Xóa</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 <tr v-if="dangTaiKh">
                   <td
-                    :colspan="isReadOnly ? 8 : 9"
+                    colspan="8"
                     class="px-4 py-6 text-center text-sm text-slate-400"
                   >
                     Đang tải danh sách khách hàng...
@@ -1084,7 +1083,7 @@ onMounted(taiChiTiet);
                 </tr>
                 <tr v-else-if="!danhSachKhTrang.length">
                   <td
-                    :colspan="isReadOnly ? 8 : 9"
+                    colspan="8"
                     class="px-4 py-6 text-center text-sm text-slate-400"
                   >
                     {{ boLocKh === 'da-chon' ? 'Chưa chọn khách hàng nào.' : 'Không có khách hàng phù hợp.' }}
@@ -1160,16 +1159,6 @@ onMounted(taiChiTiet);
                         {{ dinhDangNgay(getDonHangGanNhat(kh.email).ngayTao) }}
                       </span>
                     </div>
-                  </td>
-                  <td v-if="!isReadOnly" class="px-4 py-3 text-center" @click.stop>
-                    <button
-                      v-if="dsEmailChon.includes(kh.email)"
-                      @click="xoaKhachHang(kh.email)"
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50"
-                      title="Xóa khách hàng khỏi phiếu"
-                    >
-                      <X class="h-4 w-4" />
-                    </button>
                   </td>
                 </tr>
               </tbody>

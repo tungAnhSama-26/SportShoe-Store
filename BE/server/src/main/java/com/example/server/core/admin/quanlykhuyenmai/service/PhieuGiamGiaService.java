@@ -3,8 +3,11 @@ package com.example.server.core.admin.quanlykhuyenmai.service;
 import com.example.server.core.admin.quanlykhuyenmai.dto.request.PhieuGiamGiaRequest;
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaResponse;
 import com.example.server.entity.PhieuGiamGia;
+import com.example.server.entity.PhieuGiamGiaKhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
+import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +26,8 @@ import java.util.List;
 public class PhieuGiamGiaService {
 
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
+    private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
+    private final EmailService emailService;
 
     public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
@@ -68,7 +73,44 @@ public class PhieuGiamGiaService {
 
         mapRequestToEntity(request, phieuGiamGia);
 
-        return phieuGiamGiaRepository.save(phieuGiamGia);
+        PhieuGiamGia saved = phieuGiamGiaRepository.save(phieuGiamGia);
+
+        // Gửi email thông báo cập nhật tới khách hàng được gán phiếu (chạy bất đồng bộ)
+        sendUpdateEmailsToCustomers(saved);
+
+        return saved;
+    }
+
+    /**
+     * Gửi email thông báo cập nhật phiếu tới tất cả khách hàng được gán phiếu đó.
+     * Bỏ qua khách hàng không có email.
+     */
+    private void sendUpdateEmailsToCustomers(PhieuGiamGia phieuGiamGia) {
+        try {
+            java.util.List<PhieuGiamGiaKhachHang> lienKetList =
+                    phieuGiamGiaKhachHangRepository.findAllByPhieuGiamGiaId(phieuGiamGia.getId());
+            for (PhieuGiamGiaKhachHang lienKet : lienKetList) {
+                String email = lienKet.getKhachHang().getEmail();
+                if (email != null && !email.isBlank()) {
+                    emailService.sendVoucherUpdatedEmailAsync(
+                            email,
+                            lienKet.getKhachHang().getHoTen(),
+                            phieuGiamGia.getMa(),
+                            phieuGiamGia.getTen(),
+                            phieuGiamGia.getLoai(),
+                            phieuGiamGia.getGiaTri(),
+                            phieuGiamGia.getGiamToiDa(),
+                            phieuGiamGia.getGiaTriToiThieu(),
+                            phieuGiamGia.getNgayBatDau(),
+                            phieuGiamGia.getNgayKetThuc()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            // Không để lỗi email làm hỏng luồng update chính
+            org.slf4j.LoggerFactory.getLogger(PhieuGiamGiaService.class)
+                    .error("Lỗi khi gửi email cập nhật phiếu {}: {}", phieuGiamGia.getMa(), e.getMessage());
+        }
     }
 
     private void mapRequestToEntity(PhieuGiamGiaRequest request, PhieuGiamGia phieuGiamGia) {
