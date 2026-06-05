@@ -613,7 +613,7 @@ public class BanHangTaiQuayService {
         );
 
         PhieuGiamGia pgg = phieuApDung.phieuGiamGia();
-        if (pgg.getSoLuong() != null && pgg.getSoLuong() < 999999) {
+        if (pgg.getSoLuong() != null && pgg.getSoLuong() != 999999) {
             pgg.setSoLuong(pgg.getSoLuong() - 1);
         }
         pgg.setSoLuongDaDung(pgg.getSoLuongDaDung() + 1);
@@ -639,7 +639,7 @@ public class BanHangTaiQuayService {
         if (phieuGiamGia == null) {
             return;
         }
-        if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() < 999999) {
+        if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() != 999999) {
             phieuGiamGia.setSoLuong(phieuGiamGia.getSoLuong() + 1);
         }
         phieuGiamGia.setSoLuongDaDung(phieuGiamGia.getSoLuongDaDung() - 1);
