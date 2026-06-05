@@ -157,6 +157,7 @@ export function usePhieuGiamGiaList() {
   }
 
   function soLuongConLai(item) {
+    if (Number(item?.soLuong || 0) >= 999999) return "Vô hạn";
     return Math.max(Number(item?.soLuong || 0) - soLuongDaDung(item), 0);
   }
 
@@ -476,7 +477,13 @@ export function usePhieuGiamGiaList() {
                   ? formatTien(row.giamToiDa)
                   : "Không giới hạn",
             },
-            { label: "Phát hành", value: (row) => Number(row.soLuong || 0) },
+            {
+              label: "Phát hành",
+              value: (row) =>
+                Number(row.soLuong || 0) >= 999999
+                  ? "Vô hạn"
+                  : Number(row.soLuong || 0),
+            },
             { label: "Đã dùng", value: (row) => soLuongDaDung(row) },
             { label: "Còn lại", value: (row) => soLuongConLai(row) },
             {

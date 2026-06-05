@@ -185,6 +185,32 @@ public class EmailService {
         }
     }
 
+    /**
+     * Gửi email thông báo phiếu giảm giá ngừng hoạt động.
+     */
+    @Async
+    public void sendVoucherDeactivatedEmailAsync(
+            String to,
+            String fullName,
+            String maPhieu,
+            String tenPhieu
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            applyFrom(helper);
+            helper.setTo(to);
+            helper.setSubject("⚠️ SportShoe - Phiếu giảm giá của bạn đã ngừng hoạt động");
+            helper.setText(
+                    buildVoucherDeactivatedEmailHtml(fullName, maPhieu, tenPhieu),
+                    true
+            );
+            mailSender.send(message);
+        } catch (MessagingException | MailException exception) {
+            log.error("Không thể gửi email ngừng hoạt động phiếu giảm giá tới {}", to, exception);
+        }
+    }
+
     public EmailDispatchResult trySendCustomerRegistrationEmail(String to, String fullName, String username, String password) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -888,6 +914,88 @@ public class EmailService {
     private EmailDispatchResult emailFailure(String userMessage, String recipient, Exception exception) {
         log.error("Không thể gửi email tới {}", recipient, exception);
         return EmailDispatchResult.failure(userMessage);
+    }
+
+    private String buildVoucherDeactivatedEmailHtml(
+            String fullName,
+            String maPhieu,
+            String tenPhieu
+    ) {
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Phiếu giảm giá đã ngừng hoạt động</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f4f7;padding:32px 12px;">
+                    <tr>
+                      <td align="center">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.08);">
+                          <tr>
+                            <td style="padding:32px 32px 4px 32px;text-align:center;">
+                              <div style="font-size:25px;font-weight:800;color:#ef4444;">⚠️ Phiếu giảm giá đã ngừng hoạt động</div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:18px 36px 0 36px;font-size:15px;line-height:1.6;color:#374151;">
+                              Chào bạn <b>__FULL_NAME__</b>,
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:10px 36px 0 36px;font-size:15px;line-height:1.6;color:#6b7280;">
+                              Chúng tôi xin thông báo phiếu giảm giá dưới đây của bạn đã được ngưng hoạt động bởi ban quản trị SportShoe.
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:24px 36px 8px 36px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:18px;background:linear-gradient(135deg,#f87171 0%,#ef4444 45%,#dc2626 100%);">
+                                <tr>
+                                  <td style="padding:26px 22px;text-align:center;">
+                                    <div style="font-size:13px;font-weight:700;letter-spacing:0.12em;color:#fee2e2;text-transform:uppercase;">Mã phiếu</div>
+                                    <div style="margin:12px auto;padding:14px 10px;border:2px dashed rgba(255,255,255,0.4);border-radius:12px;max-width:300px;font-size:28px;font-weight:800;letter-spacing:0.08em;color:#ffffff;font-family:'Courier New',Courier,monospace;">__MA__</div>
+                                    <div style="font-size:15px;font-weight:600;color:#fee2e2;">__TEN__</div>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:6px 36px 0 36px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:10px;background:#fef2f2;border:1px solid #fee2e2;">
+                                <tr>
+                                  <td style="padding:12px 16px;font-size:13px;color:#991b1b;line-height:1.8;">
+                                    Phiếu giảm giá này hiện không còn áp dụng được nữa. Vui lòng sử dụng các mã ưu đãi khác hoặc liên hệ bộ phận hỗ trợ nếu cần thiết.
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:26px 36px 6px 36px;text-align:center;">
+                              <a href="__URL__" style="display:inline-block;padding:14px 42px;border-radius:999px;background:#cf1018;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;box-shadow:0 8px 16px rgba(207,16,24,0.28);">Khám phá ưu đãi khác</a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:18px 36px 30px 36px;text-align:center;font-size:12px;color:#9ca3af;line-height:1.6;">
+                              Email này được gửi tự động từ hệ thống SportShoe.<br>Vui lòng không trả lời trực tiếp email này.
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+                </html>
+                """;
+
+        return html
+                .replace("__FULL_NAME__", escapeHtml(fullName))
+                .replace("__MA__", escapeHtml(maPhieu))
+                .replace("__TEN__", escapeHtml(tenPhieu))
+                .replace("__URL__", escapeHtml(CUSTOMER_STORE_URL));
     }
 
     private String escapeHtml(String value) {

@@ -613,7 +613,9 @@ public class BanHangTaiQuayService {
         );
 
         PhieuGiamGia pgg = phieuApDung.phieuGiamGia();
-        pgg.setSoLuong(pgg.getSoLuong() - 1);
+        if (pgg.getSoLuong() != null && pgg.getSoLuong() < 999999) {
+            pgg.setSoLuong(pgg.getSoLuong() - 1);
+        }
         pgg.setSoLuongDaDung(pgg.getSoLuongDaDung() + 1);
         phieuGiamGiaRepository.save(pgg);
 
@@ -637,7 +639,9 @@ public class BanHangTaiQuayService {
         if (phieuGiamGia == null) {
             return;
         }
-        phieuGiamGia.setSoLuong(phieuGiamGia.getSoLuong() + 1);
+        if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() < 999999) {
+            phieuGiamGia.setSoLuong(phieuGiamGia.getSoLuong() + 1);
+        }
         phieuGiamGia.setSoLuongDaDung(phieuGiamGia.getSoLuongDaDung() - 1);
         phieuGiamGiaRepository.save(phieuGiamGia);
 

@@ -96,6 +96,8 @@ const form = reactive({
   trangThai: "1",
 });
 
+const soLuongVoHan = ref(false);
+
 const isReadOnly = computed(() => {
   return false;
 });
@@ -290,6 +292,7 @@ watch(
     if (loaiPhieuMoi === "2") {
       soLuongPhieuCongKhai.value = form.soLuong;
       dongBoSoLuongPhieuCaNhan();
+      soLuongVoHan.value = false; // Reset vô hạn khi chuyển sang cá nhân
       return;
     }
 
@@ -298,6 +301,27 @@ watch(
       form.soLuong = soLuongPhieuCongKhai.value;
     }
   },
+);
+
+watch(soLuongVoHan, (isVoHan) => {
+  if (isVoHan) {
+    form.soLuong = "999999";
+    delete formErrors.soLuong;
+  } else if (form.soLuong === "999999") {
+    form.soLuong = "";
+  }
+});
+
+watch(
+  () => form.soLuong,
+  (newVal) => {
+    if (newVal === "" || newVal === null || newVal === undefined) {
+      return;
+    }
+    if (Number(newVal) > 999999) {
+      soLuongVoHan.value = true;
+    }
+  }
 );
 
 watch(
@@ -379,6 +403,11 @@ async function taiChiTiet() {
     const loai = String(detail.loai ?? 1);
     const loaiPhieu = String(detail.loaiPhieu ?? 1);
     const soLuong = String(detail.soLuong ?? "");
+
+    // Kiểm tra số lượng vô hạn
+    if (Number(soLuong) >= 999999) {
+      soLuongVoHan.value = true;
+    }
 
     Object.assign(form, {
       id: detail.id,
@@ -483,9 +512,15 @@ async function submitForm() {
     formErrors.giaTriToiThieu = "Giá trị đơn tối thiểu phải lớn hơn 0";
     isValid = false;
   }
-  if (!form.soLuong || Number(form.soLuong) <= 0) {
-    formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0";
-    isValid = false;
+  if (!soLuongVoHan.value) {
+    if (!form.soLuong || Number(form.soLuong) <= 0) {
+      formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0";
+      isValid = false;
+    }
+  } else {
+    // Vô hạn: gán giá trị lớn
+    form.soLuong = "999999";
+    delete formErrors.soLuong;
   }
   if (!form.ngayBatDau) {
     formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
@@ -951,20 +986,40 @@ onMounted(taiChiTiet);
               class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
               >Số lượng <span class="text-rose-500">*</span></label
             >
-            <input
-              v-model="form.soLuong"
-              type="number"
-              min="1"
-              :readonly="form.loaiPhieu === '2'"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-              :class="
-                form.loaiPhieu === '2'
-                  ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100'
-                  : ''
-              "
-            />
+            <div class="space-y-3">
+              <input
+                v-model="form.soLuong"
+                type="number"
+                min="1"
+                :readonly="form.loaiPhieu === '2' || soLuongVoHan"
+                :disabled="soLuongVoHan"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+                :class="
+                  form.loaiPhieu === '2' || soLuongVoHan
+                    ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100'
+                    : ''
+                "
+                placeholder="Nhập số lượng"
+              />
+              <label
+                v-if="form.loaiPhieu === '1'"
+                class="flex items-center gap-2 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  v-model="soLuongVoHan"
+                  class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                />
+                <span class="text-sm text-slate-600">
+                  Vô hạn số lượng
+                </span>
+              </label>
+            </div>
             <p v-if="formErrors.soLuong" class="mt-1 text-xs text-rose-500">
               {{ formErrors.soLuong }}
+            </p>
+            <p v-else-if="soLuongVoHan" class="text-xs text-emerald-600 font-medium">
+              ✓ Phiếu giảm giá có số lượng không giới hạn
             </p>
           </div>
 
