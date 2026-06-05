@@ -151,7 +151,7 @@ public class PhieuGiamGiaKhachHangService {
                 && phieuGiamGia.getId().equals(lienKetHienTai.getPhieuGiamGia().getId());
         long tongLienKetSauCapNhat = giuNguyenSlotPhieu ? soLienKetHienTai : soLienKetHienTai + 1;
 
-        if (phieuGiamGia.getSoLuong() != null && tongLienKetSauCapNhat > phieuGiamGia.getSoLuong()) {
+        if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() < 999999 && tongLienKetSauCapNhat > phieuGiamGia.getSoLuong()) {
             throw new BusinessException("Phieu nay da duoc tang het so luong.");
         }
     }

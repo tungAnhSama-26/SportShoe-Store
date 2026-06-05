@@ -42,7 +42,7 @@ public class PhieuGiamGiaRequest {
     private LocalDate ngayKetThuc;
 
     @NotNull(message = "Số lượng không được để trống")
-    @Min(value = 1, message = "Số lượng phải lớn hơn 0")
+    @Min(value = -1, message = "Số lượng phải lớn hơn hoặc bằng -1")
     private Integer soLuong;
 
     private Integer soLuongDaDung;
