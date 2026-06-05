@@ -100,7 +100,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
         SET p.trangThai = 
             CASE 
                 WHEN p.ngayKetThuc <= CURRENT_TIMESTAMP THEN 2
-                WHEN p.soLuongDaDung >= p.soLuong THEN 3
+                WHEN p.soLuong > 0 AND p.soLuong < 999999 AND p.soLuongDaDung >= p.soLuong THEN 3
                 WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
                 ELSE 1
             END
@@ -110,7 +110,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
                AND p.trangThai != (
                    CASE 
                        WHEN p.ngayKetThuc <= CURRENT_TIMESTAMP THEN 2
-                       WHEN p.soLuongDaDung >= p.soLuong THEN 3
+                       WHEN p.soLuong > 0 AND p.soLuong < 999999 AND p.soLuongDaDung >= p.soLuong THEN 3
                        WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
                        ELSE 1
                    END
