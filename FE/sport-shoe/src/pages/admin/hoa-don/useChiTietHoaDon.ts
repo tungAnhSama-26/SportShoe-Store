@@ -210,7 +210,15 @@ export function useChiTietHoaDon() {
     return stt === "hủy" || stt === "huy" || stt === "đã hủy" || stt === "da_huy";
   });
 
-  const donDaKetThuc = computed(() => donDaHoanThanh.value || donDaHuy.value);
+  const donDangChoHoanTien = computed(() => {
+    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+    const coThanhToanCanHoan = (hoaDon.value?.lichSuThanhToan ?? []).some(
+      (item: any) => item.trangThaiThanhToan === "Cần hoàn tiền",
+    );
+    return stt === "cần hoàn tiền" || stt === "can_hoan_tien" || coThanhToanCanHoan;
+  });
+
+  const donDaKetThuc = computed(() => donDaHoanThanh.value || donDaHuy.value || donDangChoHoanTien.value);
 
   function hienThiThongBao(loai: "success" | "warning" | "error", tieuDe: string, noiDung = "") {
     if (loai === "success") {
