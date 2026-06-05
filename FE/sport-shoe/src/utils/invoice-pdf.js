@@ -46,6 +46,15 @@ function buildMoneyRow(label, value, formatCurrency, options = {}) {
   `;
 }
 
+function buildSummaryTextRow(label, value) {
+  return `
+    <div class="money-row">
+      <span>${escapeHtml(label)}</span>
+      <span class="money-value">${escapeHtml(value)}</span>
+    </div>
+  `;
+}
+
 export function printInvoiceToPdf({
   invoice,
   formatCurrency,
@@ -129,11 +138,19 @@ export function printInvoiceToPdf({
             padding: 18mm;
           }
 
-          .hero {
-            border: 1px solid #fecaca;
-            border-radius: 18px;
+          .invoice-card {
             overflow: hidden;
-            margin-bottom: 16px;
+            border: 1px solid #fecaca;
+            border-radius: 20px;
+            background: #ffffff;
+            box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+          }
+
+          .hero {
+            border: 0;
+            border-radius: 0;
+            overflow: hidden;
+            margin-bottom: 0;
           }
 
           .hero-top {
@@ -228,10 +245,11 @@ export function printInvoiceToPdf({
           }
 
           .section {
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 14px;
+            border: 0;
+            border-top: 1px solid var(--line);
+            border-radius: 0;
+            padding: 18px;
+            margin-bottom: 0;
             break-inside: avoid;
           }
 
@@ -363,14 +381,18 @@ export function printInvoiceToPdf({
 
           .summary-layout {
             display: block;
+            border-top: 1px solid var(--line);
+            padding: 18px;
+            break-inside: avoid;
           }
 
           .thanks {
-            margin-top: 14px;
-            border-radius: 16px;
-            background: var(--soft);
-            border: 1px solid var(--line);
-            padding: 16px;
+            margin-top: 16px;
+            border-radius: 0;
+            background: transparent;
+            border: 0;
+            border-top: 1px solid var(--line);
+            padding: 14px 0 0;
             color: var(--muted);
           }
 
@@ -384,10 +406,10 @@ export function printInvoiceToPdf({
           .summary-card {
             width: 100%;
             margin-left: 0;
-            border-radius: 16px;
-            border: 1px solid #fecaca;
-            background: #fffafa;
-            padding: 16px;
+            border-radius: 0;
+            border: 0;
+            background: transparent;
+            padding: 0;
           }
 
           .money-row {
@@ -434,6 +456,10 @@ export function printInvoiceToPdf({
               margin: 0;
               padding: 0;
             }
+
+            .invoice-card {
+              box-shadow: none;
+            }
           }
 
           @page {
@@ -444,6 +470,7 @@ export function printInvoiceToPdf({
       </head>
       <body>
         <main class="invoice-page">
+          <article class="invoice-card">
           <section class="hero">
             <div class="hero-top">
               <div class="brand">
@@ -519,7 +546,7 @@ export function printInvoiceToPdf({
               </div>
               ${buildMoneyRow("Tổng tiền hàng", tongTienHang, formatCurrency)}
               ${phiVanChuyen > 0 ? buildMoneyRow("Phí vận chuyển", phiVanChuyen, formatCurrency, { plus: true }) : ""}
-              ${hasVoucher ? buildInfoItem("Mã giảm giá", invoice.voucher, { wide: true }) : ""}
+              ${hasVoucher ? buildSummaryTextRow("Mã giảm giá", invoice.voucher) : ""}
               ${giamGia > 0 ? buildMoneyRow("Số tiền được giảm", giamGia, formatCurrency, { discount: true }) : ""}
               ${buildMoneyRow("Tổng thanh toán", tongCanTra, formatCurrency, { total: true })}
             </aside>
@@ -529,6 +556,7 @@ export function printInvoiceToPdf({
               Hóa đơn được phát hành bởi SportShoe. Vui lòng kiểm tra thông tin sản phẩm và tổng thanh toán trước khi rời quầy.
             </div>
           </section>
+          </article>
         </main>
 
         <script>
