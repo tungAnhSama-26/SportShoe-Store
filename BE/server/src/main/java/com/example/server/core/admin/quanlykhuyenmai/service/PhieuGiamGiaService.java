@@ -198,7 +198,7 @@ public class PhieuGiamGiaService {
                 int soLuongDaDung = phieuGiamGia.getSoLuongDaDung();
                 int soLuong = phieuGiamGia.getSoLuong();
 
-                if (soLuong > 0 && soLuong < 999999 && soLuongDaDung >= soLuong) {
+                if (soLuong > 0 && soLuong != 999999 && soLuongDaDung >= soLuong) {
                     phieuGiamGia.setTrangThai(3); // Hết số lượng
                 } else if (start != null && start.isAfter(now)) {
                     phieuGiamGia.setTrangThai(4); // Sắp diễn ra
