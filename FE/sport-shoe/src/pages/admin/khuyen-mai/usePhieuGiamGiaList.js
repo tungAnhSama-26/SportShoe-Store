@@ -157,7 +157,7 @@ export function usePhieuGiamGiaList() {
   }
 
   function soLuongConLai(item) {
-    if (Number(item?.soLuong || 0) >= 999999) return "Vô hạn";
+    if (Number(item?.soLuong || 0) === 999999) return "Vô hạn";
     return Math.max(Number(item?.soLuong || 0) - soLuongDaDung(item), 0);
   }
 
@@ -480,7 +480,7 @@ export function usePhieuGiamGiaList() {
             {
               label: "Phát hành",
               value: (row) =>
-                Number(row.soLuong || 0) >= 999999
+                Number(row.soLuong || 0) === 999999
                   ? "Vô hạn"
                   : Number(row.soLuong || 0),
             },

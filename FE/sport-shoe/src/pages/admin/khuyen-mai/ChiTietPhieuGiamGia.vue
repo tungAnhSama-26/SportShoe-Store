@@ -326,17 +326,6 @@ watch(soLuongVoHan, (isVoHan) => {
   }
 });
 
-watch(
-  () => form.soLuong,
-  (newVal) => {
-    if (newVal === "" || newVal === null || newVal === undefined) {
-      return;
-    }
-    if (Number(newVal) > 999999) {
-      soLuongVoHan.value = true;
-    }
-  }
-);
 
 watch(
   dsEmailChon,
@@ -419,7 +408,7 @@ async function taiChiTiet() {
     const soLuong = String(detail.soLuong ?? "");
 
     // Kiểm tra số lượng vô hạn
-    if (Number(soLuong) >= 999999) {
+    if (Number(soLuong) === 999999) {
       soLuongVoHan.value = true;
     }
 
