@@ -98,6 +98,20 @@ const form = reactive({
 
 const soLuongVoHan = ref(false);
 
+const soLuongDisplay = computed({
+  get() {
+    if (soLuongVoHan.value) {
+      return "Vô hạn";
+    }
+    return form.soLuong;
+  },
+  set(val) {
+    if (!soLuongVoHan.value) {
+      form.soLuong = val;
+    }
+  }
+});
+
 const isReadOnly = computed(() => {
   return false;
 });
@@ -988,8 +1002,8 @@ onMounted(taiChiTiet);
             >
             <div class="space-y-3">
               <input
-                v-model="form.soLuong"
-                type="number"
+                v-model="soLuongDisplay"
+                :type="soLuongVoHan ? 'text' : 'number'"
                 min="1"
                 :readonly="form.loaiPhieu === '2' || soLuongVoHan"
                 :disabled="soLuongVoHan"
