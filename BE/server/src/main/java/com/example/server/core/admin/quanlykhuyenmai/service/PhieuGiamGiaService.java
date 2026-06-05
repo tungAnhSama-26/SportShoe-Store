@@ -69,14 +69,43 @@ public class PhieuGiamGiaService {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá"));
 
-        // Cho phép toggle trangThai 0 <-> 1 (ngừng/kích hoạt)
+        // Lưu giữ trạng thái cũ của dữ liệu trước khi mapRequest
+        String oldMa = phieuGiamGia.getMa();
+        String oldTen = phieuGiamGia.getTen();
+        Integer oldLoai = phieuGiamGia.getLoai();
+        java.math.BigDecimal oldGiaTri = phieuGiamGia.getGiaTri();
+        java.math.BigDecimal oldGiaTriToiThieu = phieuGiamGia.getGiaTriToiThieu();
+        java.math.BigDecimal oldGiamToiDa = phieuGiamGia.getGiamToiDa();
+        Instant oldNgayBatDau = phieuGiamGia.getNgayBatDau();
+        Instant oldNgayKetThuc = phieuGiamGia.getNgayKetThuc();
+        Integer oldSoLuong = phieuGiamGia.getSoLuong();
+        Integer oldTrangThai = phieuGiamGia.getTrangThai();
 
         mapRequestToEntity(request, phieuGiamGia);
 
         PhieuGiamGia saved = phieuGiamGiaRepository.save(phieuGiamGia);
 
-        // Gửi email thông báo cập nhật tới khách hàng được gán phiếu (chạy bất đồng bộ)
-        sendUpdateEmailsToCustomers(saved);
+        // Kiểm tra xem trạng thái thay đổi sang Ngừng hoạt động (0)
+        boolean statusChangedToDeactivated = (oldTrangThai == null || oldTrangThai != 0) && (saved.getTrangThai() != null && saved.getTrangThai() == 0);
+
+        // Kiểm tra xem các dữ liệu cốt lõi khác của phiếu có thay đổi không
+        boolean dataChanged = false;
+        if (!safeEquals(oldMa, saved.getMa())) dataChanged = true;
+        else if (!safeEquals(oldTen, saved.getTen())) dataChanged = true;
+        else if (!safeEquals(oldLoai, saved.getLoai())) dataChanged = true;
+        else if (!safeCompare(oldGiaTri, saved.getGiaTri())) dataChanged = true;
+        else if (!safeCompare(oldGiaTriToiThieu, saved.getGiaTriToiThieu())) dataChanged = true;
+        else if (!safeCompare(oldGiamToiDa, saved.getGiamToiDa())) dataChanged = true;
+        else if (!safeEquals(oldNgayBatDau, saved.getNgayBatDau())) dataChanged = true;
+        else if (!safeEquals(oldNgayKetThuc, saved.getNgayKetThuc())) dataChanged = true;
+        else if (!safeEquals(oldSoLuong, saved.getSoLuong())) dataChanged = true;
+
+        if (statusChangedToDeactivated) {
+            sendDeactivatedEmailsToCustomers(saved);
+        } else if (dataChanged) {
+            // Chỉ gửi email cập nhật khi thực sự có thay đổi dữ liệu của phiếu
+            sendUpdateEmailsToCustomers(saved);
+        }
 
         return saved;
     }
@@ -113,6 +142,31 @@ public class PhieuGiamGiaService {
         }
     }
 
+    /**
+     * Gửi email thông báo ngừng hoạt động phiếu tới tất cả khách hàng được gán phiếu đó.
+     * Bỏ qua khách hàng không có email.
+     */
+    private void sendDeactivatedEmailsToCustomers(PhieuGiamGia phieuGiamGia) {
+        try {
+            java.util.List<PhieuGiamGiaKhachHang> lienKetList =
+                    phieuGiamGiaKhachHangRepository.findAllByPhieuGiamGiaId(phieuGiamGia.getId());
+            for (PhieuGiamGiaKhachHang lienKet : lienKetList) {
+                String email = lienKet.getKhachHang().getEmail();
+                if (email != null && !email.isBlank()) {
+                    emailService.sendVoucherDeactivatedEmailAsync(
+                            email,
+                            lienKet.getKhachHang().getHoTen(),
+                            phieuGiamGia.getMa(),
+                            phieuGiamGia.getTen()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(PhieuGiamGiaService.class)
+                    .error("Lỗi khi gửi email ngừng hoạt động phiếu {}: {}", phieuGiamGia.getMa(), e.getMessage());
+        }
+    }
+
     private void mapRequestToEntity(PhieuGiamGiaRequest request, PhieuGiamGia phieuGiamGia) {
         phieuGiamGia.setMa(request.getMa());
         phieuGiamGia.setTen(request.getTen());
@@ -144,7 +198,7 @@ public class PhieuGiamGiaService {
                 int soLuongDaDung = phieuGiamGia.getSoLuongDaDung();
                 int soLuong = phieuGiamGia.getSoLuong();
 
-                if (soLuongDaDung >= soLuong) {
+                if (soLuong > 0 && soLuong < 999999 && soLuongDaDung >= soLuong) {
                     phieuGiamGia.setTrangThai(3); // Hết số lượng
                 } else if (start != null && start.isAfter(now)) {
                     phieuGiamGia.setTrangThai(4); // Sắp diễn ra
@@ -163,5 +217,17 @@ public class PhieuGiamGiaService {
 
     private Instant toInstant(LocalDate value) {
         return value == null ? null : value.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    }
+
+    private boolean safeEquals(Object o1, Object o2) {
+        if (o1 == null && o2 == null) return true;
+        if (o1 == null || o2 == null) return false;
+        return o1.equals(o2);
+    }
+
+    private boolean safeCompare(java.math.BigDecimal d1, java.math.BigDecimal d2) {
+        if (d1 == null && d2 == null) return true;
+        if (d1 == null || d2 == null) return false;
+        return d1.compareTo(d2) == 0;
     }
 }
