@@ -297,6 +297,11 @@ function validateDiaChi(): boolean {
 async function luu() {
   if (!validateThongTin()) return;
 
+  if (laMoi) {
+    const isConfirmed = await showConfirm("Xác nhận thêm mới khách hàng này?");
+    if (!isConfirmed) return;
+  }
+
   const hoTen = normalizeText(form.value.hoTen);
   const email = normalizeText(form.value.email);
   const sdt = normalizeText(form.value.sdt);
