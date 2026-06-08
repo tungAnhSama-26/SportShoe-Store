@@ -1,5 +1,6 @@
 <script setup>
-import { Eye, Images, Layers3, Pencil, Tag } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { Eye, Images, Layers3, Pencil, Tag, RefreshCw } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 
@@ -53,7 +54,8 @@ const emit = defineEmits([
   'open-qr',
   'refresh',
   'update:current-page',
-  'update:page-size'
+  'update:page-size',
+  'open-images'
 ])
 
 function isUpdatingStatus(id) {
@@ -204,16 +206,16 @@ function openDiscountDetail(item) {
               {{ item.maChiTietSanPham }}
             </td>
             <td class="px-2.5 py-4 align-middle">
-              <div class="relative mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+              <div class="relative mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-md bg-slate-100">
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <Images class="h-4 w-4 text-slate-300" v-else />
+                <!-- Badge giảm giá khi có đợt giảm giá đang áp dụng -->
                 <div
-                  v-if="formatDiscountPercent(item) !== '—'"
-                  class="absolute right-1 top-1 z-10 inline-flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm"
-                  :title="item.dotGiamGiaId ? discountTitle(item) : 'Giảm giá'"
+                  v-if="item.dotGiamGiaId && formatDiscountPercent(item) !== '—'"
+                  class="absolute left-0 top-0 origin-top-left scale-[0.65] rounded-br-lg rounded-tl-lg bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                  :title="item.tenDotGiamGia || item.maDotGiamGia || 'Đang giảm giá'"
                 >
-                  <Tag class="h-3 w-3" />
-                  {{ formatDiscountPercent(item) }}
+                  -{{ formatDiscountPercent(item) }}
                 </div>
               </div>
             </td>
@@ -288,6 +290,14 @@ function openDiscountDetail(item) {
                   :intent="quickToggleIntent(item)"
                   @toggle="$emit('toggle-status', item)"
                 />
+                <button
+                  type="button"
+                  class="admin-table-action text-slate-600 hover:text-sky-500"
+                  title="Quản lý ảnh"
+                  @click="$emit('open-images', item)"
+                >
+                  <Images class="h-4 w-4" />
+                </button>
                 <button
                   type="button"
                   class="admin-table-action text-slate-600 hover:text-rose-500"

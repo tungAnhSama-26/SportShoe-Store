@@ -10,6 +10,7 @@ import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import ProductVariantFilters from '../../../components/admin/san-pham/ProductVariantFilters.vue'
 import ProductVariantTable from '../../../components/admin/san-pham/ProductVariantTable.vue'
 import QuanLySanPhamBienTheFormModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheFormModal.vue'
+import QuanLySanPhamHinhAnhModal from '../../../components/admin/san-pham/QuanLySanPhamHinhAnhModal.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import { showSuccess, showError } from '../../../utils/alert'
@@ -436,6 +437,13 @@ function closeImageModal() {
   showImageModal.value = false
 }
 
+function openImageModalFromEdit(variant) {
+  // Đóng modal form sửa rồi mở modal quản lý ảnh cho biến thể đó
+  closeEditVariantModal()
+  selectedVariant.value = variant
+  showImageModal.value = true
+}
+
 function openVariantQr(item) {
   const qrValue = String(item?.sku || item?.maChiTietSanPham || '').trim()
   if (!qrValue) {
@@ -624,6 +632,7 @@ onUnmounted(() => {
       :saving-bien-the="savingVariant"
       @close="closeEditVariantModal"
       @save="saveEditingVariant"
+      @open-images="openImageModalFromEdit"
     />
 
     <AdminQrCodeModal
@@ -631,6 +640,14 @@ onUnmounted(() => {
       v-bind="selectedQrItem"
       @close="closeQrModal"
       @primary-action="handleQrPrimaryAction"
+    />
+
+    <QuanLySanPhamHinhAnhModal
+      :open="showImageModal"
+      :variant="selectedVariant"
+      @close="closeImageModal"
+      @updated="loadData(currentPage)"
+      @error="showToast($event, 'error')"
     />
 
     <BanHangQrScannerModal
