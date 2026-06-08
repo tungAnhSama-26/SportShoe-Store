@@ -26,6 +26,7 @@ import {
   chiTietGiay,
   layDanhSachGiay,
   layBienThe,
+  layDanhMuc,
 } from "../../../services/san-pham-api";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
@@ -72,9 +73,42 @@ export function useChiTietDotGiamGia() {
   const soHangMoiTrang = ref(5);
   const pageSizeOptions = [5, 10, 20, 50, 100];
 
+  const filterMauSac = ref("");
+  const filterKichCo = ref("");
+
+  const danhMuc = reactive({
+    mauSac: [],
+    kichCo: [],
+  });
+
+  const danhSachSPSauKhiLoc = computed(() => {
+    if (!filterMauSac.value && !filterKichCo.value) {
+      return danhSachSP.value;
+    }
+
+    return danhSachSP.value
+      .map((sp) => {
+        if (!sp.bienThes) return sp;
+        const filteredBienThes = sp.bienThes.filter((bt) => {
+          let matchMau = true;
+          let matchSize = true;
+          if (filterMauSac.value) {
+            matchMau = String(bt.mauSacId) === String(filterMauSac.value);
+          }
+          if (filterKichCo.value) {
+            matchSize = String(bt.kichCoId) === String(filterKichCo.value);
+          }
+          return matchMau && matchSize;
+        });
+
+        return { ...sp, bienThes: filteredBienThes };
+      })
+      .filter((sp) => sp.bienThes && sp.bienThes.length > 0);
+  });
+
   const tatCaBienThe = computed(() => {
     const result = [];
-    for (const sp of danhSachSP.value) {
+    for (const sp of danhSachSPSauKhiLoc.value) {
       for (const bt of sp.bienThes || []) {
         result.push({ ...bt, _sp: sp });
       }
@@ -103,11 +137,11 @@ export function useChiTietDotGiamGia() {
     }));
   });
 
-  const tongSoTrang = computed(() => Math.max(1, Math.ceil(danhSachSP.value.length / soHangMoiTrang.value)));
+  const tongSoTrang = computed(() => Math.max(1, Math.ceil(danhSachSPSauKhiLoc.value.length / soHangMoiTrang.value)));
 
   const spTrang = computed(() => {
     const start = (trangBienThe.value - 1) * soHangMoiTrang.value;
-    return danhSachSP.value.slice(start, start + soHangMoiTrang.value);
+    return danhSachSPSauKhiLoc.value.slice(start, start + soHangMoiTrang.value);
   });
 
   const bienTheTrang = computed(() => {
@@ -364,10 +398,22 @@ export function useChiTietDotGiamGia() {
   }
 
   let searchTimer;
+  watch([searchSP, filterMauSac, filterKichCo], () => {
+    clearTimeout(searchTimer);
+    trangBienThe.value = 1;
+    // We only need to fetch again if searchSP changes, but since searchSP is in the watch array,
+    // we just call taiDanhSachSP. However, color/size are filtered locally, so we only need to reset page.
+    // Let's refactor this:
+  });
+
   watch(searchSP, () => {
     clearTimeout(searchTimer);
     trangBienThe.value = 1;
     searchTimer = setTimeout(taiDanhSachSP, 400);
+  });
+
+  watch([filterMauSac, filterKichCo], () => {
+    trangBienThe.value = 1;
   });
 
   watch(
@@ -488,6 +534,16 @@ export function useChiTietDotGiamGia() {
     }
   }
 
+  async function taiDanhMuc() {
+    try {
+      const res = await layDanhMuc();
+      danhMuc.mauSac = res.mauSac || [];
+      danhMuc.kichCo = res.kichCo || [];
+    } catch (error) {
+      console.error("Lỗi tải danh mục:", error);
+    }
+  }
+
   async function taiChiTiet() {
     if (laMoi) {
       if (!form.ma) {
@@ -496,6 +552,7 @@ export function useChiTietDotGiamGia() {
       form.ngayBatDau = getToday();
       // Keep blocked variants empty to allow assigning products to multiple promotions
       blockedVariantIds.value = new Set();
+      await taiDanhMuc();
       await taiDanhSachSP();
       return;
     }
@@ -525,6 +582,7 @@ export function useChiTietDotGiamGia() {
       // Keep blocked variants empty to allow assigning products to multiple promotions
       blockedVariantIds.value = new Set();
 
+      await taiDanhMuc();
       await taiDanhSachSP();
     } catch (e) {
       loiTrang.value = getDisplayErrorMessage(
@@ -658,5 +716,5 @@ export function useChiTietDotGiamGia() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm };
+  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc };
 }

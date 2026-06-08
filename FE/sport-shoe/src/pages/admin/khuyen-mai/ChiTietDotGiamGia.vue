@@ -80,25 +80,42 @@ const {
   toggleProductExpansion,
   taiChiTiet,
   submitForm,
+  filterMauSac,
+  filterKichCo,
+  danhMuc,
+  danhSachSPSauKhiLoc,
 } = useChiTietDotGiamGia();
 
 const searchSelectedText = ref("");
+const filterSelectedMauSac = ref("");
+const filterSelectedKichCo = ref("");
 
 const filteredSelectedVariants = computed(() => {
-  if (!searchSelectedText.value.trim()) {
-    return selectedVariants.value;
+  let result = selectedVariants.value;
+
+  if (filterSelectedMauSac.value) {
+    result = result.filter(bt => String(bt.mauSacId) === String(filterSelectedMauSac.value));
   }
-  const keyword = searchSelectedText.value.trim().toLowerCase();
-  return selectedVariants.value.filter((bt) => {
-    const productName = (bt.tenSanPham || "").toLowerCase();
-    const productCode = (bt.maSanPham || "").toLowerCase();
-    const variantCode = (bt.maBienThe || bt.sku || "").toLowerCase();
-    return (
-      productName.includes(keyword) ||
-      productCode.includes(keyword) ||
-      variantCode.includes(keyword)
-    );
-  });
+
+  if (filterSelectedKichCo.value) {
+    result = result.filter(bt => String(bt.kichCoId) === String(filterSelectedKichCo.value));
+  }
+
+  if (searchSelectedText.value.trim()) {
+    const keyword = searchSelectedText.value.trim().toLowerCase();
+    result = result.filter((bt) => {
+      const productName = (bt.tenSanPham || "").toLowerCase();
+      const productCode = (bt.maSanPham || "").toLowerCase();
+      const variantCode = (bt.maBienThe || bt.sku || "").toLowerCase();
+      return (
+        productName.includes(keyword) ||
+        productCode.includes(keyword) ||
+        variantCode.includes(keyword)
+      );
+    });
+  }
+
+  return result;
 });
 </script>
 
@@ -328,9 +345,9 @@ const filteredSelectedVariants = computed(() => {
             </div>
           </div>
 
-          <!-- Tìm kiếm -->
-          <div class="flex gap-3">
-            <div class="relative flex-1">
+          <!-- Tìm kiếm và Lọc -->
+          <div class="flex flex-col sm:flex-row items-end gap-3">
+            <div class="relative flex-1 w-full">
               <Search
                 class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               />
@@ -343,14 +360,45 @@ const filteredSelectedVariants = computed(() => {
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 disabled:opacity-70 disabled:bg-slate-100"
               />
             </div>
-            <button
-              v-if="!isReadOnly"
-              @click="taiDanhSachSP"
-              class="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white transition hover:bg-rose-600"
-            >
-              <Search class="h-4 w-4" />
-              Tìm kiếm
-            </button>
+            
+            <div class="flex gap-3 w-full sm:w-auto">
+              <div class="space-y-1.5 flex-1 sm:flex-none">
+                <label class="text-[13px] font-semibold text-slate-500">Màu sắc</label>
+                <select
+                  v-model="filterMauSac"
+                  :disabled="isReadOnly"
+                  class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-normal text-slate-700 outline-none transition focus:border-rose-300 disabled:opacity-70 disabled:bg-slate-100 min-w-[140px]"
+                >
+                  <option value="">Tất cả màu sắc</option>
+                  <option v-for="mau in danhMuc.mauSac" :key="mau.id" :value="mau.id">
+                    {{ mau.ten }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-1.5 flex-1 sm:flex-none">
+                <label class="text-[13px] font-semibold text-slate-500">Kích cỡ</label>
+                <select
+                  v-model="filterKichCo"
+                  :disabled="isReadOnly"
+                  class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-normal text-slate-700 outline-none transition focus:border-rose-300 disabled:opacity-70 disabled:bg-slate-100 min-w-[140px]"
+                >
+                  <option value="">Tất cả kích cỡ</option>
+                  <option v-for="size in danhMuc.kichCo" :key="size.id" :value="size.id">
+                    {{ size.giaTri }}
+                  </option>
+                </select>
+              </div>
+
+              <button
+                v-if="!isReadOnly"
+                @click="taiDanhSachSP"
+                class="mb-0 h-11 inline-flex items-center gap-2 rounded-2xl bg-rose-500 px-5 text-sm font-medium text-white transition hover:bg-rose-600 shrink-0"
+              >
+                <Search class="h-4 w-4" />
+                Tìm kiếm
+              </button>
+            </div>
           </div>
 
           <!-- Danh sách biến thể - 1 bảng duy nhất -->
@@ -561,7 +609,7 @@ const filteredSelectedVariants = computed(() => {
                 :current-page="trangBienThe"
                 :page-size="soHangMoiTrang"
                 :page-size-options="pageSizeOptions"
-                :total-items="danhSachSP.length"
+                :total-items="danhSachSPSauKhiLoc.length"
                 :total-pages="tongSoTrang"
                 compact
                 @update:current-page="trangBienThe = $event"
@@ -600,16 +648,46 @@ const filteredSelectedVariants = computed(() => {
           </div>
         </div>
 
-        <div v-if="selectedVariants.length > 0" class="relative w-full sm:w-80">
-          <Search
-            class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            v-model="searchSelectedText"
-            type="text"
-            placeholder="Lọc nhanh trong danh sách đã chọn..."
-            class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-xs text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
-          />
+        <div v-if="selectedVariants.length > 0" class="flex flex-col sm:flex-row items-end gap-3 w-full sm:w-auto">
+          <div class="space-y-1.5 flex-1 sm:flex-none">
+            <label class="text-[13px] font-semibold text-slate-500">Màu sắc</label>
+            <select
+              v-model="filterSelectedMauSac"
+              :disabled="isReadOnly"
+              class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-normal text-slate-700 outline-none transition focus:border-rose-300 disabled:opacity-70 min-w-[130px]"
+            >
+              <option value="">Tất cả màu sắc</option>
+              <option v-for="mau in danhMuc.mauSac" :key="mau.id" :value="mau.id">
+                {{ mau.ten }}
+              </option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5 flex-1 sm:flex-none">
+            <label class="text-[13px] font-semibold text-slate-500">Kích cỡ</label>
+            <select
+              v-model="filterSelectedKichCo"
+              :disabled="isReadOnly"
+              class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-normal text-slate-700 outline-none transition focus:border-rose-300 disabled:opacity-70 min-w-[130px]"
+            >
+              <option value="">Tất cả kích cỡ</option>
+              <option v-for="size in danhMuc.kichCo" :key="size.id" :value="size.id">
+                {{ size.giaTri }}
+              </option>
+            </select>
+          </div>
+
+          <div class="relative w-full sm:w-64">
+            <Search
+              class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              v-model="searchSelectedText"
+              type="text"
+              placeholder="Tìm trong danh sách..."
+              class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+            />
+          </div>
         </div>
       </div>
 
