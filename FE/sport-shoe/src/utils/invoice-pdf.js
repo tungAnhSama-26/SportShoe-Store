@@ -1,3 +1,5 @@
+import logoGhn from "../constants/logoGhn";
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -37,22 +39,44 @@ function buildMoneyRow(label, value, formatCurrency, options = {}) {
   const className = options.total ? "money-row money-row-total" : "money-row";
   const valueClass = options.discount ? "money-value money-value-discount" : "money-value";
   const prefix = options.discount ? "- " : options.plus ? "+ " : "";
+  const labelContent = options.logoSrc
+    ? `<span class="money-label-with-logo"><span>${escapeHtml(label)}</span><img src="${escapeHtml(options.logoSrc)}" alt="${escapeHtml(options.logoAlt || "")}" class="money-label-logo" /></span>`
+    : escapeHtml(label);
 
   return `
     <div class="${className}">
-      <span>${escapeHtml(label)}</span>
+      <span>${labelContent}</span>
       <span class="${valueClass}">${escapeHtml(prefix + formatCurrency(value || 0))}</span>
     </div>
   `;
 }
 
-function buildSummaryTextRow(label, value) {
+function buildSummaryTextRow(label, value, options = {}) {
+  const valueClass = options.discount ? "money-value money-value-discount" : "money-value";
+
   return `
     <div class="money-row">
       <span>${escapeHtml(label)}</span>
-      <span class="money-value">${escapeHtml(value)}</span>
+      <span class="${valueClass}">${escapeHtml(value)}</span>
     </div>
   `;
+}
+
+function formatPercent(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
+}
+
+function getVoucherDiscountText(invoice, actualDiscount, formatCurrency) {
+  const type = Number(invoice?.loaiGiamGia);
+  const configuredValue = Number(invoice?.giaTriGiamGia || 0);
+
+  if (type === 1 && configuredValue > 0) {
+    return `${formatPercent(configuredValue)}% (- ${formatCurrency(actualDiscount || 0)})`;
+  }
+
+  return `- ${formatCurrency(actualDiscount || configuredValue || 0)}`;
 }
 
 export function printInvoiceToPdf({
@@ -74,7 +98,8 @@ export function printInvoiceToPdf({
   const phiVanChuyen = Number(invoice.phiVanChuyen || 0);
   const giamGia = Number(invoice.giamGia || 0);
   const tongCanTra = tongTienHang + phiVanChuyen - giamGia;
-  const hasVoucher = isMeaningfulText(invoice.voucher);
+  const hasVoucher = isMeaningfulText(invoice.voucher) && giamGia > 0;
+  const voucherDiscountText = hasVoucher ? getVoucherDiscountText(invoice, giamGia, formatCurrency) : "";
   const createdAt = invoice.ngayTao ? formatDate(invoice.ngayTao) : "Không có";
   const printedAt = formatDate(new Date().toISOString());
   const invoiceCode = invoice.maHoaDon || filename || "SPORTSHOE";
@@ -420,6 +445,18 @@ export function printInvoiceToPdf({
             color: var(--muted);
           }
 
+          .money-label-with-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+          }
+
+          .money-label-logo {
+            height: 15px;
+            width: auto;
+            object-fit: contain;
+          }
+
           .money-value {
             color: var(--ink);
             font-weight: 500;
@@ -545,9 +582,9 @@ export function printInvoiceToPdf({
                 <h2 class="section-title">Tổng kết thanh toán</h2>
               </div>
               ${buildMoneyRow("Tổng tiền hàng", tongTienHang, formatCurrency)}
-              ${phiVanChuyen > 0 ? buildMoneyRow("Phí vận chuyển", phiVanChuyen, formatCurrency, { plus: true }) : ""}
+              ${phiVanChuyen > 0 ? buildMoneyRow("Phí vận chuyển", phiVanChuyen, formatCurrency, { plus: true, logoSrc: logoGhn, logoAlt: "GHN" }) : ""}
               ${hasVoucher ? buildSummaryTextRow("Mã giảm giá", invoice.voucher) : ""}
-              ${giamGia > 0 ? buildMoneyRow("Số tiền được giảm", giamGia, formatCurrency, { discount: true }) : ""}
+              ${hasVoucher ? buildSummaryTextRow("Giá trị giảm", voucherDiscountText, { discount: true }) : ""}
               ${buildMoneyRow("Tổng thanh toán", tongCanTra, formatCurrency, { total: true })}
             </aside>
 
