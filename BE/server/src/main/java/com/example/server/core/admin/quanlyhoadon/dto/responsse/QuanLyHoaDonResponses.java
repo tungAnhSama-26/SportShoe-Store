@@ -77,6 +77,8 @@ public final class QuanLyHoaDonResponses {
             BigDecimal phiVanChuyen,
             String voucher,
             BigDecimal giamGia,
+            Integer loaiGiamGia,
+            BigDecimal giaTriGiamGia,
             String donViVanChuyen,
             String maVanDon,
             List<HoaDonPaymentHistoryResponse> lichSuThanhToan,

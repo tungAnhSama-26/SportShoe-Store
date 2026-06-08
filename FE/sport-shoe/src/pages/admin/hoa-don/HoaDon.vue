@@ -445,7 +445,7 @@ onMounted(taiDanhSach);
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">Tổng tiền</th>
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">Ngày tạo</th>
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">Loại đơn</th>
-              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Trạng thái</th>
+              <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">Trạng thái</th>
               <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">Hành động</th>
           </template>
           <template #body>
