@@ -92,6 +92,25 @@ public class EmailService {
     }
 
     /**
+     * Gửi email thông báo mật khẩu mới cho khách hàng ở luồng nền (không chặn request đổi mật khẩu).
+     * Lỗi gửi email chỉ được ghi log, không làm hỏng thao tác đổi mật khẩu.
+     */
+    @Async
+    public void sendCustomerPasswordChangedEmailAsync(String to, String fullName, String username, String newPassword) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            applyFrom(helper);
+            helper.setTo(to);
+            helper.setSubject("SportShoe - Mật khẩu tài khoản của bạn đã được thay đổi");
+            helper.setText(buildCustomerPasswordChangedEmailHtml(fullName, username, newPassword), true);
+            mailSender.send(message);
+        } catch (MessagingException | MailException exception) {
+            log.error("Không thể gửi email đổi mật khẩu khách hàng tới {}", to, exception);
+        }
+    }
+
+    /**
      * Gửi email tặng phiếu giảm giá cá nhân cho khách hàng ở luồng nền.
      * Lỗi gửi email chỉ được ghi log, không làm hỏng thao tác tặng phiếu.
      *
@@ -313,6 +332,30 @@ public class EmailService {
                 fullName,
                 username,
                 password
+        );
+    }
+
+    private String buildCustomerPasswordChangedEmailHtml(String fullName, String username, String newPassword) {
+        return buildAccountEmailHtml(
+                "SportShoe Store",
+                "Store",
+                "Trải nghiệm mua sắm<br>giày thể thao đỉnh cao",
+                buildFeatureRow(
+                        buildFeatureCell("&#128274;", "Bảo mật", "Tài khoản an toàn", true),
+                        buildFeatureCell("&#128666;", "Giao hàng", "Nhanh chóng tiện lợi", true),
+                        buildFeatureCell("&#127873;", "Ưu đãi", "Nhiều khuyến mãi hấp dẫn", false)
+                ),
+                "Mật khẩu tài khoản của bạn vừa được thay đổi.<br>Vui lòng sử dụng mật khẩu mới dưới đây để đăng nhập.",
+                "Tên đăng nhập",
+                "Mật khẩu mới",
+                "Đăng nhập ngay",
+                CUSTOMER_LOGIN_URL,
+                "Vì lý do bảo mật, bạn nên đổi lại mật khẩu sau khi đăng nhập. Nếu bạn không yêu cầu thay đổi này, vui lòng liên hệ với chúng tôi ngay.",
+                "Đội ngũ SportShoe",
+                "support@sportshoe.vn",
+                fullName,
+                username,
+                newPassword
         );
     }
 

@@ -67,16 +67,13 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Override
     @Transactional
     public KhachHangResponse taoKhachHang(TaoKhachHangRequest request) {
-        if (khachHangRepository.existsByTenDangNhap(request.tenDangNhap())) {
-            throw new BusinessException("Tên đăng nhập đã tồn tại");
-        }
         if (request.email() != null && !request.email().isBlank() && khachHangRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email đã được sử dụng");
         }
 
         KhachHang kh = new KhachHang();
         kh.setId(UUID.randomUUID());
-        kh.setTenDangNhap(request.tenDangNhap().trim());
+        kh.setTenDangNhap(taoTenDangNhapDuyNhat(request.tenDangNhap()));
         kh.setHoTen(request.hoTen().trim());
         kh.setEmail(request.email() != null ? request.email().trim().toLowerCase(Locale.ROOT) : null);
         kh.setSdt(request.sdt() != null && !request.sdt().isBlank() ? request.sdt().trim() : null);
@@ -137,7 +134,17 @@ public class KhachHangServiceImpl implements KhachHangService {
         KhachHang kh = findKhachHang(id);
         kh.setMatKhau(passwordService.hash(request.matKhauMoi()));
         kh.setNgayCapNhat(Instant.now());
-        return toKhachHangResponse(khachHangRepository.save(kh));
+        KhachHang saved = khachHangRepository.save(kh);
+        // Gửi email thông báo mật khẩu mới ở luồng nền để không làm chậm thao tác đổi mật khẩu.
+        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            emailService.sendCustomerPasswordChangedEmailAsync(
+                    saved.getEmail(),
+                    saved.getHoTen(),
+                    saved.getTenDangNhap(),
+                    request.matKhauMoi()
+            );
+        }
+        return toKhachHangResponse(saved);
     }
     @Override
     @Transactional
@@ -226,6 +233,24 @@ public class KhachHangServiceImpl implements KhachHangService {
     private KhachHang findKhachHang(UUID id) {
         return khachHangRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
+    }
+
+    /**
+     * Sinh tên đăng nhập duy nhất từ tên gợi ý của client. Nếu trùng thì tự thêm
+     * hậu tố số tăng dần (vd: an, an1, an2...) để admin không bị kẹt khi 2 email
+     * khác nhau nhưng phần trước @ giống nhau.
+     */
+    private String taoTenDangNhapDuyNhat(String goiY) {
+        String base = goiY == null ? "" : goiY.trim();
+        if (base.isEmpty()) {
+            throw new BusinessException("Không thể tạo tên đăng nhập cho khách hàng");
+        }
+        String tenDangNhap = base;
+        int counter = 1;
+        while (khachHangRepository.existsByTenDangNhap(tenDangNhap)) {
+            tenDangNhap = base + counter++;
+        }
+        return tenDangNhap;
     }
 
     private DiaChiKhachHang findDiaChi(Integer id) {
