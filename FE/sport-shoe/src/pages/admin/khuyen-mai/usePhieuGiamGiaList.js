@@ -341,7 +341,7 @@ export function usePhieuGiamGiaList() {
     }
 
     try {
-      const nextStatus = Number(item.trangThai) === 1 ? 0 : 1;
+      const nextStatus = (Number(item.trangThai) === 1 || Number(item.trangThai) === 4) ? 0 : 1;
       await updatePhieuGiamGia(item.id, {
         ma: item.ma,
         ten: item.ten,
@@ -359,7 +359,7 @@ export function usePhieuGiamGiaList() {
       hienThiThongBao(
         "success",
         "Thành công",
-        Number(item.trangThai) === 1 ? "Đã ngừng hoạt động phiếu." : "Đã chuyển phiếu sang đang hoạt động thành công."
+        (Number(item.trangThai) === 1 || Number(item.trangThai) === 4) ? "Đã ngừng hoạt động phiếu." : "Đã chuyển phiếu sang đang hoạt động thành công."
       );
       await taiDanhSach();
     } catch (error) {
