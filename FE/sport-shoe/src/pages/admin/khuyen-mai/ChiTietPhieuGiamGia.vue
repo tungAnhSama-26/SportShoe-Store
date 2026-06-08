@@ -172,7 +172,7 @@ const soLuongPhieuCongKhai = ref("");
 
 // Phân trang khách hàng
 const trangKh = ref(1);
-const soPhanTuMotTrangKh = ref(10);
+const soPhanTuMotTrangKh = ref(5);
 const boLocKh = ref("tat-ca"); // "tat-ca" | "da-chon"
 
 // Computed: Danh sách khách hàng sau khi lọc
@@ -1231,7 +1231,7 @@ onMounted(taiChiTiet);
           <AdminTableFooter
             :current-page="trangKh"
             :page-size="soPhanTuMotTrangKh"
-            :page-size-options="[10, 20, 50]"
+            :page-size-options="[5, 10, 20]"
             :total-items="danhSachKhFiltered.length"
             :total-pages="tongSoTrangKh"
             compact
