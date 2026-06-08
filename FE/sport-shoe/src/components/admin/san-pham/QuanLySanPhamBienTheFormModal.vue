@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Check, ChevronDown, Search, Trash2, X, Images, Pencil, Save } from 'lucide-vue-next'
+import { Check, ChevronDown, Search, Trash2, X, Images, Pencil, Save, RefreshCw } from 'lucide-vue-next'
 import AdminFormattedNumberInput from '../../common/AdminFormattedNumberInput.vue'
 import { showConfirm } from '../../../utils/alert'
+import * as api from '../../../services/san-pham-api'
 
 const props = defineProps({
   open: {
@@ -47,13 +48,38 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'save', 'generate-bulk', 'remove-generated-bulk'])
+const emit = defineEmits(['close', 'save', 'generate-bulk', 'remove-generated-bulk', 'image-updated'])
 
 const openSelectionDropdown = ref(null)
 const mauSacSearch = ref('')
 const kichCoSearch = ref('')
 const mauSacDropdownRef = ref(null)
 const kichCoDropdownRef = ref(null)
+const uploadingImage = ref(false)
+const imageFileInputRef = ref(null)
+
+function handleImageClick() {
+  imageFileInputRef.value?.click()
+}
+
+async function handleImageUpload(event) {
+  const file = event.target.files?.[0]
+  if (!file || !props.editingBienThe) return
+
+  uploadingImage.value = true
+  try {
+    const url = await api.uploadFile(file)
+    // Cập nhật ảnh chính cho biến thể ngay lập tức
+    await api.themHinhAnh(props.editingBienThe.id, { url, loaiHinh: 1, moTa: '' })
+    props.editingBienThe.hinhAnh = url
+    emit('image-updated')
+  } catch (e) {
+    // silent - lỗi upload không chặn flow chính
+  } finally {
+    uploadingImage.value = false
+    event.target.value = ''
+  }
+}
 
 const selectedMauSacItems = computed(() =>
   (props.danhMuc?.mauSac || []).filter((item) => props.bulkBienTheForm.mauSacIds.includes(item.id))
@@ -293,18 +319,49 @@ onBeforeUnmount(() => {
 
           <div v-if="editingBienThe" class="grid gap-4 p-5 lg:grid-cols-[0.95fr_1.05fr]">
             <div class="space-y-4">
-              <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_52%,#eef2ff_100%)] p-4">
+              <div
+                class="group cursor-pointer overflow-hidden rounded-[24px] border border-slate-200 bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_52%,#eef2ff_100%)] p-4 transition hover:border-rose-300"
+                title="Nhấn để đổi ảnh"
+                @click="handleImageClick"
+              >
                 <div v-if="editingBienThe.hinhAnh" class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm">
-                  <img :src="editingBienThe.hinhAnh" :alt="selectedGiay?.ten" class="h-full w-full object-contain" />
-                </div>
-                <div v-else class="flex aspect-[4/3] items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-white text-slate-400">
-                  <div class="text-center">
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                      <Images :size="20" />
+                  <img :src="editingBienThe.hinhAnh" :alt="selectedGiay?.ten" class="h-full w-full object-contain transition group-hover:opacity-60" />
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+                    <div class="flex items-center gap-2 rounded-2xl bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg backdrop-blur-sm">
+                      <span v-if="uploadingImage" class="flex items-center gap-2">
+                        <RefreshCw :size="14" class="animate-spin text-rose-500" />
+                        Đang tải lên...
+                      </span>
+                      <span v-else class="flex items-center gap-2">
+                        <Images :size="14" class="text-rose-500" />
+                        Đổi ảnh
+                      </span>
                     </div>
-                    <p class="mt-3 text-sm font-medium">Chưa có ảnh hiển thị</p>
+                  </div>
+                  <!-- Spinner toàn màn khi đang upload -->
+                  <div v-if="uploadingImage" class="absolute inset-0 flex items-center justify-center bg-white/70">
+                    <RefreshCw :size="22" class="animate-spin text-rose-500" />
                   </div>
                 </div>
+                <div v-else class="flex aspect-[4/3] items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-white text-slate-400 transition group-hover:border-rose-300 group-hover:bg-rose-50">
+                  <div class="text-center">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 transition group-hover:bg-rose-100 group-hover:text-rose-500">
+                      <span v-if="uploadingImage"><RefreshCw :size="20" class="animate-spin" /></span>
+                      <Images v-else :size="20" />
+                    </div>
+                    <p class="mt-3 text-sm font-medium transition group-hover:text-rose-500">
+                      {{ uploadingImage ? 'Đang tải...' : 'Nhấn để thêm ảnh' }}
+                    </p>
+                  </div>
+                </div>
+                <!-- Hidden file input -->
+                <input
+                  ref="imageFileInputRef"
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="handleImageUpload"
+                />
               </div>
 
               <div class="grid gap-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2">
