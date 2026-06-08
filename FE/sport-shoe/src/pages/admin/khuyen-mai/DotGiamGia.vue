@@ -194,7 +194,7 @@ async function nhanhDoiTrangThai(item) {
   }
 
   try {
-    const nextStatus = Number(item.kichHoat) === 1 ? 0 : 1;
+    const nextStatus = (Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4) ? 0 : 1;
 
     await updateDotGiamGia(item.id, {
       ma: item.ma,
@@ -210,7 +210,7 @@ async function nhanhDoiTrangThai(item) {
     hienThiThongBao(
       "success",
       "Thành công",
-      Number(item.kichHoat) === 1
+      (Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4)
         ? "Đã ngừng hoạt động đợt giảm giá."
         : "Đã chuyển đợt giảm giá sang đang hoạt động thành công.",
     );

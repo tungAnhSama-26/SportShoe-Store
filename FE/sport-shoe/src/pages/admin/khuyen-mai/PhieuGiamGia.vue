@@ -288,17 +288,17 @@ const {
                         : undefined
                     "
                     :action-label="
-                      Number(item.trangThai) === 1
+                      Number(item.trangThai) === 1 || Number(item.trangThai) === 4
                         ? 'Ngừng hoạt động'
                         : 'Đang hoạt động'
                     "
                     :confirm-message="
-                      Number(item.trangThai) === 1
+                      Number(item.trangThai) === 1 || Number(item.trangThai) === 4
                         ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?'
                         : 'Bạn có chắc chắn muốn chuyển phiếu này sang trạng thái đang hoạt động không?'
                     "
                     :intent="
-                      Number(item.trangThai) === 1 ? 'deactivate' : 'activate'
+                      Number(item.trangThai) === 1 || Number(item.trangThai) === 4 ? 'deactivate' : 'activate'
                     "
                     @toggle="nhanhDoiTrangThai(item)"
                   />
