@@ -207,6 +207,14 @@ function openDiscountDetail(item) {
               <div class="relative mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <Images class="h-4 w-4 text-slate-300" v-else />
+                <div
+                  v-if="formatDiscountPercent(item) !== '—'"
+                  class="absolute right-1 top-1 z-10 inline-flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm"
+                  :title="item.dotGiamGiaId ? discountTitle(item) : 'Giảm giá'"
+                >
+                  <Tag class="h-3 w-3" />
+                  {{ formatDiscountPercent(item) }}
+                </div>
               </div>
             </td>
             <td class="px-2.5 py-4 align-middle whitespace-nowrap">
