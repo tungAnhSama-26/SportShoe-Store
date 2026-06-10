@@ -1230,6 +1230,16 @@ public class QuanLySanPhamService {
         return result;
     }
 
+    /**
+     * Giá sau giảm (theo đợt giảm giá đang áp dụng) cho từng biến thể.
+     * Map chỉ chứa biến thể ĐANG có đợt giảm; biến thể không có thì không xuất hiện.
+     */
+    public Map<Integer, BigDecimal> layGiaSauGiam(Collection<GiayChiTiet> chiTiets) {
+        Map<Integer, BigDecimal> result = new HashMap<>();
+        buildActiveDiscountInfoMap(chiTiets).forEach((id, info) -> result.put(id, info.giaSauGiam()));
+        return result;
+    }
+
     private boolean isDiscountEffective(DotGiamGia dotGiamGia, LocalDate now) {
         if (dotGiamGia == null || dotGiamGia.getKichHoat() == null || dotGiamGia.getKichHoat() == 0) {
             return false;

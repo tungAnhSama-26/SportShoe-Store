@@ -44,12 +44,47 @@ public class PhieuTraHangChiTiet {
     private Integer soLuongTra;
 
     @NotNull
+    @ColumnDefault("0")
+    @Column(name = "so_luong_nhan", nullable = false)
+    private Integer soLuongNhan;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "so_luong_chap_nhan", nullable = false)
+    private Integer soLuongChapNhan;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "so_luong_tu_choi", nullable = false)
+    private Integer soLuongTuChoi;
+
+    @NotNull
     @Column(name = "gia_ban", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaBan;
 
     @NotNull
     @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "so_tien_hoan", nullable = false, precision = 18, scale = 2)
+    private BigDecimal soTienHoan;
+
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "tinh_trang_san_pham", length = 500)
+    private String tinhTrangSanPham;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "nhap_lai_ton_kho", nullable = false)
+    private Boolean nhapLaiTonKho;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "da_cap_nhat_ton", nullable = false)
+    private Boolean daCapNhatTon;
 
     @NotNull
     @ColumnDefault("1")

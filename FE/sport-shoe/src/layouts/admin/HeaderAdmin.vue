@@ -16,6 +16,8 @@ const hienMenuTaiKhoan = ref(false);
 
 const pageTitle = computed(() => {
   const titles = {
+    'admin-tra-hang': 'Quản lý trả hàng',
+    'admin-tra-hang-chi-tiet': 'Chi tiết trả hàng',
     'admin-thong-ke': 'Thống kê',
     'admin-phieu-giam-gia': 'Quản lý phiếu giảm giá',
     'admin-phieu-giam-gia-khach-hang': 'Phiếu giảm giá khách hàng',

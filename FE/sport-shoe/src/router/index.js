@@ -2,6 +2,12 @@ import { createRouter, createWebHistory } from "vue-router";
 import TrangMacDinh from "../layouts/TrangMacDinh.vue";
 import TrangChu from "../pages/TrangChu.vue";
 import SanPham from "../pages/SanPham.vue";
+import ChiTietSanPham from "../pages/ChiTietSanPham.vue";
+import GioHang from "../pages/GioHang.vue";
+import ThanhToan from "../pages/ThanhToan.vue";
+import DonHangCuaToi from "../pages/DonHangCuaToi.vue";
+import ChiTietDonHang from "../pages/ChiTietDonHang.vue";
+import DanhGiaDonHang from "../pages/DanhGiaDonHang.vue";
 import SanPhamNoiBat from "../pages/SanPhamNoiBat.vue";
 import GioiThieu from "../pages/GioiThieu.vue";
 import AdminLayout from "../layouts/admin/AdminLayout.vue";
@@ -9,6 +15,8 @@ import ThongKe from "../pages/admin/thong-ke/ThongKe.vue";
 import PhieuGiamGia from "../pages/admin/khuyen-mai/PhieuGiamGia.vue";
 import HoaDon from "../pages/admin/hoa-don/HoaDon.vue";
 import ChiTietHoaDon from "../pages/admin/hoa-don/ChiTietHoaDon.vue";
+import TraHang from "../pages/admin/tra-hang/TraHang.vue";
+import ChiTietTraHang from "../pages/admin/tra-hang/ChiTietTraHang.vue";
 import BanHangTaiQuay from "../pages/admin/ban-hang/BanHangTaiQuay.vue";
 import DanhSachSanPham from "../pages/admin/san-pham/DanhSachSanPham.vue";
 import DanhSachChiTietSanPham from "../pages/admin/san-pham/DanhSachChiTietSanPham.vue";
@@ -45,6 +53,7 @@ import { showWarning } from "../utils/alert";
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
   "/admin/hoa-don",
+  "/admin/tra-hang",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
   "/admin/chat",
@@ -120,6 +129,41 @@ const router = createRouter({
           path: "danh-muc",
           name: "danh-muc",
           component: SanPham
+        },
+        {
+          path: "san-pham",
+          name: "san-pham",
+          component: SanPham
+        },
+        {
+          path: "san-pham/:id(\\d+)",
+          name: "san-pham-chi-tiet",
+          component: ChiTietSanPham
+        },
+        {
+          path: "gio-hang",
+          name: "gio-hang",
+          component: GioHang
+        },
+        {
+          path: "thanh-toan",
+          name: "thanh-toan",
+          component: ThanhToan
+        },
+        {
+          path: "don-hang",
+          name: "don-hang",
+          component: DonHangCuaToi
+        },
+        {
+          path: "don-hang/:id(\\d+)",
+          name: "don-hang-chi-tiet",
+          component: ChiTietDonHang
+        },
+        {
+          path: "don-hang/:id(\\d+)/danh-gia",
+          name: "don-hang-danh-gia",
+          component: DanhGiaDonHang
         },
         {
           path: "noi-bat",
@@ -200,6 +244,16 @@ const router = createRouter({
           path: "hoa-don/:id",
           name: "admin-hoa-don-chi-tiet",
           component: ChiTietHoaDon
+        },
+        {
+          path: "tra-hang",
+          name: "admin-tra-hang",
+          component: TraHang
+        },
+        {
+          path: "tra-hang/:id",
+          name: "admin-tra-hang-chi-tiet",
+          component: ChiTietTraHang
         },
         {
           path: "ban-hang",
