@@ -55,6 +55,11 @@ public class Giay {
     @Column(name = "mo_ta")
     private String moTa;
 
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "hinh_anh", length = 500)
+    private String hinhAnh;
+
     @NotNull
     @ColumnDefault("1")
     @Column(name = "trang_thai", nullable = false)

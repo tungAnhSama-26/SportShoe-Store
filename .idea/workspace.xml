@@ -4,21 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/CapNhatKhachHangRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/CapNhatKhachHangRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DiaChiRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DiaChiRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DoiMatKhauRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/DoiMatKhauRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/TaoKhachHangRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/request/TaoKhachHangRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/responsse/KhachHangResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/dto/responsse/KhachHangResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/service/impl/KhachHangServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/admin/khachHang/service/impl/KhachHangServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/client/auth/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/core/client/auth/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/entity/KhachHang.java" beforeDir="false" afterPath="$PROJECT_DIR$/BE/server/src/main/java/com/example/server/entity/KhachHang.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/ChiTietKhachHang.vue" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/ChiTietKhachHang.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/DonHangKhachHang.vue" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/DonHangKhachHang.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/useQuanLyKhachHang.ts" beforeDir="false" afterPath="$PROJECT_DIR$/FE/sport-shoe/src/pages/admin/khach-hang/useQuanLyKhachHang.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database/01_schema_tables_rules.sql" beforeDir="false" afterPath="$PROJECT_DIR$/database/01_schema_tables_rules.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database/02_seed_full_10_records.sql" beforeDir="false" afterPath="$PROJECT_DIR$/database/02_seed_full_10_records.sql" afterDir="false" />
-    </list>
+    <list default="true" id="9265e799-fd59-4812-a95d-56f35817d171" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -27,19 +13,33 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
   <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 2
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 5
 }</component>
-  <component name="ProjectId" id="3Cfmfa7JILsgmcMHr13soFcKn4x" />
+  <component name="ProjectId" id="3CBPwIqY9gSrvEk38JcUMK5ASiP" />
   <component name="ProjectViewState">
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "bui-hiep",
+    "Spring Boot.ServerApplication.executor": "Run",
+    "git-widget-placeholder": "buihiep",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "E:/DuAnTN/SportShoe-Store",
@@ -51,6 +51,27 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="SportShoe-Store" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="SportShoe-Store" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.server.ServerApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -59,17 +80,18 @@
       </set>
     </attachedChunks>
   </component>
-  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="09b5e4d3-3821-4221-aef2-697e10dda2fc" name="Changes" comment="" />
-      <created>1776785102416</created>
+      <changelist id="9265e799-fd59-4812-a95d-56f35817d171" name="Changes" comment="" />
+      <created>1775856228776</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1776785102416</updated>
-      <workItem from="1776785103553" duration="539000" />
-      <workItem from="1778032390230" duration="16000" />
-      <workItem from="1780140731809" duration="34000" />
+      <updated>1775856228776</updated>
+      <workItem from="1775856231108" duration="606000" />
+      <workItem from="1775907126232" duration="44000" />
+      <workItem from="1775918529580" duration="28000" />
+      <workItem from="1775918812499" duration="7934000" />
+      <workItem from="1775965557347" duration="5529000" />
     </task>
     <servers />
   </component>

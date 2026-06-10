@@ -22,6 +22,20 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
 
     List<HoaDonChiTiet> findByHoaDonId(Integer hoaDonId);
 
+    /** Các dòng trong giỏ (hóa đơn), kèm sản phẩm/màu/size để hiển thị. */
+    @Query("""
+            select ct from HoaDonChiTiet ct
+            join fetch ct.giayChiTiet gct
+            join fetch gct.giay g
+            join fetch gct.mauSac ms
+            join fetch gct.kichCo kc
+            where ct.hoaDon.id = :hoaDonId
+            order by ct.id asc
+            """)
+    List<HoaDonChiTiet> findGioItems(@Param("hoaDonId") Integer hoaDonId);
+
+    java.util.Optional<HoaDonChiTiet> findByHoaDonIdAndGiayChiTietId(Integer hoaDonId, Integer giayChiTietId);
+
     @Query("""
             from HoaDonChiTiet hdct
             join fetch hdct.hoaDon hd
