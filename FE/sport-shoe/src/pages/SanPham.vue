@@ -1,21 +1,103 @@
 <script setup>
-import { ref } from 'vue';
-import Button from '../components/ui/Button.vue';
+import { computed, onMounted, ref } from 'vue';
 import Card from '../components/ui/Card.vue';
-import Badge from '../components/ui/Badge.vue';
-import { danhMucGiay } from '../constants/trangChu';
+import { layTatCaSanPham } from '../services/san-pham';
+import { dinhDangTienViet } from '../utils/dinhDangTien';
+import anhMacDinh from '../assets/login-shoe.png';
 
-// Dummy products for the static UI layout as requested (keep logic unchanged)
-const sanPhamDanhSach = ref([
-  { id: 1, name: "Stride Elite Runner", price: "2,500,000đ", category: "Chạy bộ", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600", isNew: true },
-  { id: 2, name: "Stride Urban Velocity", price: "1,850,000đ", category: "Thời trang", image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=600", isNew: false },
-  { id: 3, name: "Stride Pro Basketball", price: "3,200,000đ", category: "Bóng rổ", image: "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?auto=format&fit=crop&q=80&w=600", isNew: true },
-  { id: 4, name: "Stride Classic Leather", price: "1,950,000đ", category: "Cổ điển", image: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&q=80&w=600", isNew: false },
-  { id: 5, name: "Stride Trail Blazer", price: "2,800,000đ", category: "Leo núi", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=600", isNew: false },
-  { id: 6, name: "Stride Flex Trainer", price: "1,500,000đ", category: "Gym", image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&q=80&w=600", isNew: false },
-]);
+const tatCaSanPham = ref([]);
+const dangTai = ref(true);
+const sapXep = ref('moi');
 
-const boLocChon = ref('Tất cả');
+// Khoảng giá nhập tay.
+const giaMin = ref('');
+const giaMax = ref('');
+
+// Các nhóm thuộc tính lọc dạng checkbox. khoa = tên trường trong dữ liệu sản phẩm.
+// nhieu = true: trường là mảng (1 sản phẩm có nhiều giá trị, vd màu sắc, kích cỡ).
+const NHOM_LOC = [
+  { khoa: 'thuongHieu', nhan: 'Hãng' },
+  { khoa: 'mauSac', nhan: 'Màu sắc', nhieu: true },
+  { khoa: 'kichCo', nhan: 'Kích cỡ', nhieu: true },
+  { khoa: 'loaiGiay', nhan: 'Loại giày' },
+  { khoa: 'gioiTinhNhan', nhan: 'Giới tính' },
+  { khoa: 'chatLieu', nhan: 'Chất liệu' },
+  { khoa: 'deGiay', nhan: 'Đế giày' },
+  { khoa: 'coGiay', nhan: 'Cổ giày' },
+  { khoa: 'congNgheDem', nhan: 'Công nghệ đệm' },
+  { khoa: 'trongLuong', nhan: 'Trọng lượng' },
+];
+
+// Giá trị đã chọn cho mỗi nhóm (mảng).
+const boLoc = ref(Object.fromEntries(NHOM_LOC.map((n) => [n.khoa, []])));
+
+onMounted(async () => {
+  try {
+    tatCaSanPham.value = await layTatCaSanPham();
+  } catch {
+    tatCaSanPham.value = [];
+  } finally {
+    dangTai.value = false;
+  }
+});
+
+// Các giá trị duy nhất cho một nhóm, lấy từ chính dữ liệu sản phẩm.
+// Nhóm đa trị (màu/size): gom từ mảng; nhóm đơn trị: lấy trực tiếp.
+function giaTriDuyNhat(nhom) {
+  const tap = new Set();
+  tatCaSanPham.value.forEach((p) => {
+    if (nhom.nhieu) (p[nhom.khoa] || []).forEach((v) => v && tap.add(v));
+    else if (p[nhom.khoa]) tap.add(p[nhom.khoa]);
+  });
+  return Array.from(tap).sort((a, b) => String(a).localeCompare(String(b), 'vi', { numeric: true }));
+}
+
+// Chỉ hiển thị nhóm có ít nhất 1 giá trị.
+const cacNhomCoGiaTri = computed(() =>
+  NHOM_LOC.map((n) => ({ ...n, giaTri: giaTriDuyNhat(n) })).filter((n) => n.giaTri.length)
+);
+
+const dangLoc = computed(
+  () =>
+    giaMin.value !== '' ||
+    giaMax.value !== '' ||
+    NHOM_LOC.some((n) => boLoc.value[n.khoa].length)
+);
+
+const danhSachLoc = computed(() => {
+  let ds = tatCaSanPham.value;
+
+  for (const n of NHOM_LOC) {
+    const chon = boLoc.value[n.khoa];
+    if (chon.length) {
+      ds = n.nhieu
+        ? ds.filter((p) => chon.some((c) => (p[n.khoa] || []).includes(c)))
+        : ds.filter((p) => chon.includes(p[n.khoa]));
+    }
+  }
+
+  const min = giaMin.value === '' ? null : Number(giaMin.value);
+  const max = giaMax.value === '' ? null : Number(giaMax.value);
+  if (Number.isFinite(min)) ds = ds.filter((p) => p.gia >= min);
+  if (Number.isFinite(max)) ds = ds.filter((p) => p.gia <= max);
+
+  ds = [...ds];
+  if (sapXep.value === 'gia-tang') ds.sort((a, b) => a.gia - b.gia);
+  else if (sapXep.value === 'gia-giam') ds.sort((a, b) => b.gia - a.gia);
+  return ds;
+});
+
+function xoaLoc() {
+  for (const n of NHOM_LOC) boLoc.value[n.khoa] = [];
+  giaMin.value = '';
+  giaMax.value = '';
+}
+
+function xuLyAnhLoi(event) {
+  if (event.target.src !== anhMacDinh) {
+    event.target.src = anhMacDinh;
+  }
+}
 </script>
 
 <template>
@@ -23,52 +105,57 @@ const boLocChon = ref('Tất cả');
     <!-- Hero Section -->
     <section class="bg-black text-white py-16 px-6 lg:px-10">
       <div class="mx-auto max-w-7xl">
-        <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">Bộ Sưu Tập Giày</h1>
-        <p class="text-slate-400 max-w-xl text-sm md:text-base">Khám phá các dòng sản phẩm chất lượng cao của Stride, được thiết kế để mang lại hiệu suất và phong cách vượt trội cho mọi hoạt động của bạn.</p>
+        <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">Tất cả sản phẩm</h1>
+        <p class="text-slate-400 max-w-xl text-sm md:text-base">Khám phá toàn bộ các mẫu giày đang được bán tại cửa hàng, được thiết kế cho mọi nhu cầu và phong cách.</p>
       </div>
     </section>
 
     <div class="mx-auto max-w-7xl px-6 lg:px-10 mt-10 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
       <!-- Sidebar Filters -->
-      <aside class="space-y-8">
-        <div>
-          <h3 class="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-200">Danh Mục</h3>
-          <ul class="space-y-3">
-            <li>
-              <button 
-                @click="boLocChon = 'Tất cả'" 
-                class="text-sm font-medium transition-colors hover:text-primary"
-                :class="boLocChon === 'Tất cả' ? 'text-primary' : 'text-slate-600'"
-              >
-                Tất cả sản phẩm
-              </button>
-            </li>
-            <li v-for="dm in danhMucGiay" :key="dm.id">
-              <button 
-                @click="boLocChon = dm.ten" 
-                class="text-sm font-medium transition-colors hover:text-primary"
-                :class="boLocChon === dm.ten ? 'text-primary' : 'text-slate-600'"
-              >
-                {{ dm.ten }}
-              </button>
-            </li>
-          </ul>
+      <aside class="space-y-7">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-900">Bộ lọc</h2>
+          <button v-if="dangLoc" @click="xoaLoc" class="text-xs font-semibold text-primary hover:underline">Xóa lọc</button>
         </div>
-        
+
+        <!-- Khoảng giá: 2 ô input -->
         <div>
-          <h3 class="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-200">Lọc theo giá</h3>
-          <div class="space-y-3 text-sm text-slate-600 font-medium">
-            <label class="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors">
-              <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary/30" />
-              Dưới 1,000,000đ
-            </label>
-            <label class="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors">
-              <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary/30" />
-              1,000,000đ - 2,000,000đ
-            </label>
-            <label class="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors">
-              <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary/30" />
-              Trên 2,000,000đ
+          <h3 class="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">Khoảng giá (đ)</h3>
+          <div class="flex items-center gap-2">
+            <input
+              v-model="giaMin"
+              type="number"
+              min="0"
+              placeholder="Giá từ"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+            <span class="text-slate-400">—</span>
+            <input
+              v-model="giaMax"
+              type="number"
+              min="0"
+              placeholder="Giá đến"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+        <!-- Các nhóm thuộc tính: checkbox -->
+        <div v-for="nhom in cacNhomCoGiaTri" :key="nhom.khoa">
+          <h3 class="text-sm font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">{{ nhom.nhan }}</h3>
+          <div class="space-y-2.5 text-sm text-slate-600 font-medium max-h-56 overflow-y-auto pr-1">
+            <label
+              v-for="gt in nhom.giaTri"
+              :key="gt"
+              class="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors"
+            >
+              <input
+                type="checkbox"
+                :value="gt"
+                v-model="boLoc[nhom.khoa]"
+                class="rounded border-slate-300 text-primary focus:ring-primary/30"
+              />
+              {{ gt }}
             </label>
           </div>
         </div>
@@ -77,39 +164,44 @@ const boLocChon = ref('Tất cả');
       <!-- Product Grid -->
       <section>
         <div class="flex items-center justify-between mb-6">
-          <p class="text-sm text-slate-500">Hiển thị <span class="font-bold text-slate-900">{{ sanPhamDanhSach.length }}</span> kết quả</p>
-          <select class="text-sm border-slate-200 rounded-lg focus:border-primary focus:ring-primary/30 bg-white">
-            <option>Mới nhất</option>
-            <option>Giá tăng dần</option>
-            <option>Giá giảm dần</option>
+          <p class="text-sm text-slate-500">Hiển thị <span class="font-bold text-slate-900">{{ danhSachLoc.length }}</span> sản phẩm</p>
+          <select v-model="sapXep" class="text-sm border-slate-200 rounded-lg focus:border-primary focus:ring-primary/30 bg-white">
+            <option value="moi">Mới nhất</option>
+            <option value="gia-tang">Giá tăng dần</option>
+            <option value="gia-giam">Giá giảm dần</option>
           </select>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <Card 
-            v-for="sp in sanPhamDanhSach" 
-            :key="sp.id"
-            class="group overflow-hidden cursor-pointer flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-none bg-white"
-          >
-            <div class="relative aspect-square overflow-hidden bg-slate-100">
-              <img :src="sp.image" :alt="sp.name" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <Badge v-if="sp.isNew" variant="primary" class="absolute top-3 left-3 bg-primary text-white border-none shadow-md">Mới</Badge>
-              <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                <Button variant="primary" size="sm" class="w-full shadow-lg translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  Thêm vào giỏ
-                </Button>
-              </div>
-            </div>
-            <div class="p-4 flex flex-col flex-1">
-              <p class="text-xs text-slate-400 mb-1 font-medium">{{ sp.category }}</p>
-              <h3 class="font-bold text-slate-900 text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">{{ sp.name }}</h3>
-              <p class="font-bold text-lg mt-auto">{{ sp.price }}</p>
-            </div>
-          </Card>
+        <div v-if="dangTai" class="py-20 text-center text-sm text-slate-400">Đang tải sản phẩm...</div>
+
+        <div v-else-if="!danhSachLoc.length" class="py-20 text-center text-sm text-slate-400">
+          Không có sản phẩm phù hợp với bộ lọc.
         </div>
 
-        <div class="mt-12 flex justify-center">
-          <Button variant="outline" class="min-w-[200px]">Tải thêm sản phẩm</Button>
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <router-link
+            v-for="sp in danhSachLoc"
+            :key="sp.id"
+            :to="`/san-pham/${sp.id}`"
+            class="block"
+          >
+            <Card
+              class="group overflow-hidden cursor-pointer flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-none bg-white h-full"
+            >
+              <div class="relative aspect-square overflow-hidden bg-slate-100">
+                <img :src="sp.hinhAnh" :alt="sp.ten" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
+                <span v-if="sp.nhan" class="absolute left-3 top-3 rounded-md bg-red-600 px-2.5 py-1 text-xs font-extrabold text-white shadow-md">{{ sp.nhan }}</span>
+              </div>
+              <div class="p-4 flex flex-col flex-1">
+                <p class="text-xs text-slate-400 mb-1 font-medium">{{ sp.thuongHieu }}</p>
+                <h3 class="font-bold text-slate-900 text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">{{ sp.ten }}</h3>
+                <div class="mt-auto flex items-end gap-2">
+                  <p class="font-bold text-lg text-primary">{{ dinhDangTienViet(sp.gia) }}</p>
+                  <p v-if="sp.giaCu" class="text-xs text-slate-400 line-through pb-1">{{ dinhDangTienViet(sp.giaCu) }}</p>
+                </div>
+              </div>
+            </Card>
+          </router-link>
         </div>
       </section>
     </div>
