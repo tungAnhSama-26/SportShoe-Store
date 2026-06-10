@@ -226,18 +226,26 @@ function handleProductImageError(event: Event) {
                   <History class="h-4.5 w-4.5 text-slate-500" />
                   Lịch Sử Thanh Toán
                 </h2>
-                <button v-if="coTheThanhToanCod" type="button"
-                  class="inline-flex h-9 items-center gap-2 rounded-full bg-[#B82220] px-3.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(184,34,32,0.22)] transition hover:bg-[#991b1b] active:scale-95"
-                  @click="moModalThanhToanCod">
-                  <Banknote class="h-4 w-4" />
-                  Thanh toán
-                </button>
-                <button v-if="coTheHoanTien" type="button"
-                  class="inline-flex h-9 items-center gap-2 rounded-full bg-amber-500 px-3.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(245,158,11,0.22)] transition hover:bg-amber-600 active:scale-95"
-                  @click="moModalHoanTien">
-                  <Banknote class="h-4 w-4" />
-                  Hoàn tiền
-                </button>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <button v-if="hoaDon.phieuTraHangId" type="button"
+                    class="inline-flex h-9 items-center gap-2 rounded-full border border-[#B82220]/20 bg-[#B82220]/5 px-3.5 text-xs font-bold text-[#B82220] transition hover:bg-[#B82220]/10 active:scale-95"
+                    @click="router.push({ name: 'admin-tra-hang-chi-tiet', params: { id: hoaDon.phieuTraHangId } })">
+                    <Package class="h-4 w-4" />
+                    {{ hoaDon.trangThaiPhieuTraHang === 6 ? 'Xử lý trả hàng' : 'Xem phiếu trả hàng' }}
+                  </button>
+                  <button v-if="coTheThanhToanCod" type="button"
+                    class="inline-flex h-9 items-center gap-2 rounded-full bg-[#B82220] px-3.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(184,34,32,0.22)] transition hover:bg-[#991b1b] active:scale-95"
+                    @click="moModalThanhToanCod">
+                    <Banknote class="h-4 w-4" />
+                    Thanh toán
+                  </button>
+                  <button v-if="coTheHoanTien" type="button"
+                    class="inline-flex h-9 items-center gap-2 rounded-full bg-amber-500 px-3.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(245,158,11,0.22)] transition hover:bg-amber-600 active:scale-95"
+                    @click="moModalHoanTien">
+                    <Banknote class="h-4 w-4" />
+                    Hoàn tiền
+                  </button>
+                </div>
               </div>
             </template>
 

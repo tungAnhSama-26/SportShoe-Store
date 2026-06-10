@@ -8,27 +8,34 @@ import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
+import com.example.server.entity.ThanhToan;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
+import com.example.server.repository.ThanhToanRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Đặt hàng từ giỏ (hóa đơn đang mở). Đây là lúc TỒN KHO BỊ TRỪ.
- * - COD: tạo đơn ở trạng thái "Chờ xác nhận" và trừ kho ngay.
- * - VNPay: xử lý sau (trừ kho sau khi thanh toán thành công).
+ * Đặt hàng từ giỏ (hóa đơn đang mở). Đây là lúc tồn kho bị trừ.
+ * COD tạo giao dịch chờ thanh toán; VNPay chỉ chốt đơn sau khi phiên QR
+ * đã được xác nhận nên giao dịch được ghi nhận thành công ngay.
  */
 @Service
 public class ClientDatHangService {
 
-    /** Hóa đơn chuyển sang "Chờ xác nhận" sau khi đặt. */
     private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
+    private static final int HINH_THUC_VNPAY = 3;
+    private static final int HINH_THUC_COD = 4;
+    private static final int TRANG_THAI_CHO_THANH_TOAN = 0;
+    private static final int TRANG_THAI_DA_THANH_TOAN = 1;
+    private static final int LOAI_GIAO_DICH_THANH_TOAN = 1;
 
     private final ClientGioHangService gioHangService;
     private final ClientVoucherService voucherService;
@@ -36,6 +43,7 @@ public class ClientDatHangService {
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final BanHangTaiQuayInventoryUseCase inventoryUseCase;
+    private final ThanhToanRepository thanhToanRepository;
 
     public ClientDatHangService(
             ClientGioHangService gioHangService,
@@ -43,7 +51,8 @@ public class ClientDatHangService {
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             GiayChiTietRepository giayChiTietRepository,
-            BanHangTaiQuayInventoryUseCase inventoryUseCase
+            BanHangTaiQuayInventoryUseCase inventoryUseCase,
+            ThanhToanRepository thanhToanRepository
     ) {
         this.gioHangService = gioHangService;
         this.voucherService = voucherService;
@@ -51,10 +60,16 @@ public class ClientDatHangService {
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.giayChiTietRepository = giayChiTietRepository;
         this.inventoryUseCase = inventoryUseCase;
+        this.thanhToanRepository = thanhToanRepository;
     }
 
     @Transactional
     public DatHangResponse datHang(DatHangRequest request) {
+        return datHang(request, null);
+    }
+
+    @Transactional
+    public DatHangResponse datHang(DatHangRequest request, String maGiaoDich) {
         HoaDon hoaDon = gioHangService.timGioHang(request.khachHangId())
                 .orElseThrow(() -> new BusinessException("Giỏ hàng đang trống"));
 
@@ -64,10 +79,10 @@ public class ClientDatHangService {
         }
 
         if (hoaDon.getHanGiuHang() != null) {
-            // Đang giữ hàng -> tồn kho đã được trừ khi vào thanh toán, chỉ cần chốt đơn.
+            // Tồn kho đã được trừ khi vào thanh toán, chỉ cần chốt đơn.
             hoaDon.setHanGiuHang(null);
         } else {
-            // Chưa giữ (hoặc hết hạn đã hoàn): kiểm tra tồn tất cả trước rồi mới trừ.
+            // Chưa giữ hoặc phiên giữ đã hết: kiểm tra toàn bộ trước khi trừ.
             for (HoaDonChiTiet ct : dong) {
                 inventoryUseCase.validateAvailable(ct.getGiayChiTiet(), ct.getSoLuong());
             }
@@ -78,8 +93,12 @@ public class ClientDatHangService {
             }
         }
 
-        // 3. Điền thông tin giao hàng + chuyển trạng thái -> hóa đơn không còn là "giỏ".
-        String diaChi = Stream.of(request.diaChiCuThe(), request.phuongXa(), request.quanHuyen(), request.tinhThanh())
+        String diaChi = Stream.of(
+                        request.diaChiCuThe(),
+                        request.phuongXa(),
+                        request.quanHuyen(),
+                        request.tinhThanh()
+                )
                 .filter(s -> s != null && !s.isBlank())
                 .map(String::trim)
                 .reduce((a, b) -> a + ", " + b)
@@ -90,21 +109,31 @@ public class ClientDatHangService {
         hoaDon.setDiaChiGiaoHang(diaChi);
         hoaDon.setGhiChu(request.ghiChu());
 
-        // Áp mã giảm giá (nếu có): gán phiếu + trừ lượt + tính lại tổng thanh toán.
         if (request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
-            BigDecimal tongTienHang = hoaDon.getTongTienHang() == null ? BigDecimal.ZERO : hoaDon.getTongTienHang();
+            BigDecimal tongTienHang = hoaDon.getTongTienHang() == null
+                    ? BigDecimal.ZERO
+                    : hoaDon.getTongTienHang();
             BigDecimal tienGiam = voucherService.apDungVaoHoaDon(
-                    hoaDon, request.maPhieuGiamGia(), hoaDon.getKhachHang(), tongTienHang);
+                    hoaDon,
+                    request.maPhieuGiamGia(),
+                    hoaDon.getKhachHang(),
+                    tongTienHang
+            );
             hoaDon.setTienGiam(tienGiam);
             hoaDon.setTongTienThanhToan(tongTienHang.subtract(tienGiam).max(BigDecimal.ZERO));
         }
 
+        String hinhThuc = chuanHoaHinhThucThanhToan(request.hinhThucThanhToan());
+        Instant now = Instant.now();
         hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
-        hoaDon.setNgayLap(Instant.now());
-        hoaDon.setNgayCapNhat(Instant.now());
+        hoaDon.setNgayLap(now);
+        hoaDon.setNgayCapNhat(now);
+        if ("VNPAY".equals(hinhThuc)) {
+            hoaDon.setNgayThanhToan(now);
+        }
         hoaDonRepository.save(hoaDon);
+        taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
 
-        String hinhThuc = request.hinhThucThanhToan() == null ? "COD" : request.hinhThucThanhToan();
         return new DatHangResponse(
                 hoaDon.getId(),
                 hoaDon.getMa(),
@@ -112,5 +141,48 @@ public class ClientDatHangService {
                 hoaDon.getTrangThai(),
                 hinhThuc
         );
+    }
+
+    private String chuanHoaHinhThucThanhToan(String hinhThuc) {
+        String normalized = hinhThuc == null || hinhThuc.isBlank()
+                ? "COD"
+                : hinhThuc.trim().toUpperCase(Locale.ROOT);
+        if (!"COD".equals(normalized) && !"VNPAY".equals(normalized)) {
+            throw new BusinessException("Hình thức thanh toán không hợp lệ");
+        }
+        return normalized;
+    }
+
+    private void taoGiaoDichThanhToan(
+            HoaDon hoaDon,
+            String hinhThuc,
+            String maGiaoDich,
+            Instant now
+    ) {
+        BigDecimal soTien = hoaDon.getTongTienThanhToan() == null
+                ? BigDecimal.ZERO
+                : hoaDon.getTongTienThanhToan();
+        if (soTien.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        boolean laVnPay = "VNPAY".equals(hinhThuc);
+        ThanhToan thanhToan = new ThanhToan();
+        thanhToan.setHoaDon(hoaDon);
+        thanhToan.setMaGiaoDich(maGiaoDich != null && !maGiaoDich.isBlank()
+                ? maGiaoDich.trim()
+                : (laVnPay ? "VNPAY-" : "COD-") + hoaDon.getMa());
+        thanhToan.setHinhThuc(laVnPay ? HINH_THUC_VNPAY : HINH_THUC_COD);
+        thanhToan.setSoTien(soTien);
+        thanhToan.setCongThanhToan(laVnPay ? "VNPay" : "COD");
+        thanhToan.setNoiDungCk((laVnPay ? "Thanh toán VNPay " : "Thanh toán COD ") + hoaDon.getMa());
+        thanhToan.setTrangThai(laVnPay ? TRANG_THAI_DA_THANH_TOAN : TRANG_THAI_CHO_THANH_TOAN);
+        thanhToan.setLoaiGiaoDich(LOAI_GIAO_DICH_THANH_TOAN);
+        thanhToan.setNgayThanhToan(laVnPay ? now : null);
+        thanhToan.setNgayTao(now);
+        thanhToan.setGhiChu(laVnPay
+                ? "Khách hàng đã thanh toán trực tuyến qua VNPay"
+                : "Chờ thanh toán khi nhận hàng");
+        thanhToanRepository.save(thanhToan);
     }
 }

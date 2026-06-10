@@ -2,16 +2,20 @@ package com.example.server.core.client.donhang.service;
 
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.DongSanPham;
+import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
 import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
+import com.example.server.entity.PhieuTraHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
+import com.example.server.repository.LichSuHoaDonRepository;
+import com.example.server.repository.PhieuTraHangRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,15 +38,21 @@ public class ClientXemDonHangService {
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final DanhGiaRepository danhGiaRepository;
+    private final PhieuTraHangRepository phieuTraHangRepository;
+    private final LichSuHoaDonRepository lichSuHoaDonRepository;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
-            DanhGiaRepository danhGiaRepository
+            DanhGiaRepository danhGiaRepository,
+            PhieuTraHangRepository phieuTraHangRepository,
+            LichSuHoaDonRepository lichSuHoaDonRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.danhGiaRepository = danhGiaRepository;
+        this.phieuTraHangRepository = phieuTraHangRepository;
+        this.lichSuHoaDonRepository = lichSuHoaDonRepository;
     }
 
     @Transactional(readOnly = true)
@@ -52,13 +62,46 @@ public class ClientXemDonHangService {
             if (hd.getTrangThai() != null && hd.getTrangThai() == TRANG_THAI_GIO) {
                 continue; // bỏ qua giỏ hàng
             }
-            int soLuong = hoaDonChiTietRepository.findByHoaDonId(hd.getId()).stream()
+            List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findGioItems(hd.getId());
+            int soLuong = dong.stream()
                     .mapToInt(ct -> ct.getSoLuong() == null ? 0 : ct.getSoLuong())
                     .sum();
+            
+            List<DonHangTomTatResponse.DongSanPhamTomTat> sanPhams = new ArrayList<>();
+            for (HoaDonChiTiet ct : dong) {
+                GiayChiTiet gct = ct.getGiayChiTiet();
+                sanPhams.add(new DonHangTomTatResponse.DongSanPhamTomTat(
+                        ct.getId(),
+                        gct.getId(),
+                        gct.getGiay().getTen(),
+                        gct.getMauSac().getTen(),
+                        gct.getKichCo().getGiaTri(),
+                        gct.getGiay().getHinhAnh(),
+                        gct.getGiaBan(),
+                        ct.getGiaDonVi(),
+                        ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
+                        ct.getThanhTien()
+                ));
+            }
+            
+            // Check return slip for this invoice
+            Integer phieuTraHangId = null;
+            Integer trangThaiTraHang = null;
+            String trangThaiTraHangText = null;
+            var phieuOpt = phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hd.getId());
+            if (phieuOpt.isPresent()) {
+                PhieuTraHang phieu = phieuOpt.get();
+                phieuTraHangId = phieu.getId();
+                trangThaiTraHang = phieu.getTrangThai();
+                trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
+            }
+            
             result.add(new DonHangTomTatResponse(
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
                     hd.getTrangThai(), nhanTrangThai(hd.getTrangThai()),
-                    soLuong, hd.getTongTienThanhToan()));
+                    soLuong, hd.getTongTienThanhToan(), sanPhams,
+                    phieuTraHangId, trangThaiTraHang, trangThaiTraHangText,
+                    hd.getNgayCapNhat()));
         }
         return result;
     }
@@ -111,13 +154,36 @@ public class ClientXemDonHangService {
         BigDecimal giamVoucher = hd.getTienGiam() == null ? BigDecimal.ZERO : hd.getTienGiam();
         String maPhieu = hd.getPhieuGiamGia() != null ? hd.getPhieuGiamGia().getMa() : null;
 
+        // Check return slip for this invoice
+        Integer phieuTraHangId = null;
+        Integer trangThaiTraHang = null;
+        String trangThaiTraHangText = null;
+        var phieuOpt = phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hd.getId());
+        if (phieuOpt.isPresent()) {
+            PhieuTraHang phieu = phieuOpt.get();
+            phieuTraHangId = phieu.getId();
+            trangThaiTraHang = phieu.getTrangThai();
+            trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
+        }
+
+        List<LichSuTrangThai> lichSuTrangThai = lichSuHoaDonRepository
+                .findByHoaDonIdOrderByNgayTaoDesc(hd.getId())
+                .stream()
+                .map(lichSu -> new LichSuTrangThai(
+                        lichSu.getTrangThai(),
+                        lichSu.getNgayTao(),
+                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : "Hệ thống"))
+                .toList();
+
         return new DonHangChiTietResponse(
                 hd.getId(), hd.getMa(), hd.getNgayLap(),
                 hd.getTrangThai(), nhanTrangThai(hd.getTrangThai()),
                 Boolean.TRUE.equals(hd.getDaNhanHang()),
                 hd.getTenNguoiNhan(), hd.getSdtNguoiNhan(), hd.getDiaChiGiaoHang(),
                 maPhieu, sanPhams,
-                tamTinh, giamDot, giamVoucher, hd.getTongTienThanhToan());
+                tamTinh, giamDot, giamVoucher, hd.getTongTienThanhToan(),
+                hd.getNgayCapNhat(), lichSuTrangThai,
+                phieuTraHangId, trangThaiTraHang, trangThaiTraHangText);
     }
 
     /** Khách xác nhận đã nhận hàng (đơn phải đã hoàn thành). */
@@ -142,11 +208,33 @@ public class ClientXemDonHangService {
         }
         return switch (trangThai) {
             case 1 -> "Chờ xác nhận";
-            case 2 -> "Đã xác nhận";
-            case 3, 4 -> "Đang giao";
+            case 9 -> "Đã xác nhận";
+            case 2 -> "Chờ lấy hàng";
+            case 3 -> "Chờ giao hàng";
+            case 4 -> "Đã giao hàng";
             case 5 -> "Hoàn thành";
             case 6 -> "Đã hủy";
-            default -> "Đang xử lý";
+            case 7 -> "Yêu cầu hủy";
+            case 8 -> "Cần hoàn tiền";
+            case 10 -> "Giao hàng thất bại";
+            default -> "Không xác định";
+        };
+    }
+
+    private String nhanTrangThaiTraHang(Integer trangThai) {
+        if (trangThai == null) return null;
+        return switch (trangThai) {
+            case 1 -> "Chờ duyệt";
+            case 2 -> "Chờ khách gửi hàng";
+            case 3 -> "Đang hoàn hàng";
+            case 4 -> "Đã nhận hàng";
+            case 5 -> "Đang kiểm tra";
+            case 6 -> "Chờ hoàn tiền";
+            case 7 -> "Hoàn tất";
+            case 8 -> "Từ chối";
+            case 9 -> "Đã hủy";
+            case 10 -> "Hoàn hàng thất bại";
+            default -> "Không xác định";
         };
     }
 }

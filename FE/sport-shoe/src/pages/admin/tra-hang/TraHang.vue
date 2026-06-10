@@ -2,9 +2,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
+  CalendarDays,
   ClipboardCheck,
   Eye,
   Filter,
+  FileSpreadsheet,
   PackageCheck,
   RotateCcw,
   Search,
@@ -16,6 +18,8 @@ import Card from "../../../components/ui/Card.vue";
 import Table from "../../../components/ui/Table.vue";
 import { layDanhSachTraHang } from "../../../services/tra-hang";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { exportRowsToExcel } from "../../../utils/export-excel";
+import { showError } from "../../../utils/alert";
 
 const router = useRouter();
 const danhSach = ref([]);
@@ -23,13 +27,72 @@ const dangTai = ref(false);
 const loiTrang = ref("");
 const trangHienTai = ref(1);
 const soPhanTuMotTrang = ref(5);
-const boLoc = ref({
-  keyword: "",
-  trangThai: "",
+
+const tuNgayPicker = ref(null);
+const denNgayPicker = ref(null);
+
+function layNgayHienTaiInput() {
+  const homNay = new Date();
+  const year = homNay.getFullYear();
+  const month = String(homNay.getMonth() + 1).padStart(2, "0");
+  const day = String(homNay.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dinhDangNgayLoc(value) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
+function chuyenNgayLocSangInput(value) {
+  const normalized = value.trim();
+  if (!normalized) return "";
+  const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!match) return normalized;
+  const [, day, month, year] = match;
+  const fullYear = year.length === 2 ? `20${year}` : year;
+  return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function moLich(input) {
+  if (!input) return;
+  if (input.showPicker) {
+    input.showPicker();
+    return;
+  }
+  input.click();
+  input.focus();
+}
+
+function taoBoLocMacDinh() {
+  const homNay = layNgayHienTaiInput();
+  return {
+    keyword: "",
+    tuNgay: homNay,
+    denNgay: homNay,
+  };
+}
+
+const boLoc = ref(taoBoLocMacDinh());
+
+const tuNgayHienThi = computed({
+  get: () => dinhDangNgayLoc(boLoc.value.tuNgay),
+  set: (value) => {
+    boLoc.value.tuNgay = chuyenNgayLocSangInput(value);
+  },
 });
 
-const trangThaiOptions = [
-  { value: "", label: "Tất cả trạng thái" },
+const denNgayHienThi = computed({
+  get: () => dinhDangNgayLoc(boLoc.value.denNgay),
+  set: (value) => {
+    boLoc.value.denNgay = chuyenNgayLocSangInput(value);
+  },
+});
+
+const dsTrangThai = [
+  { value: "", label: "Tất cả" },
   { value: 1, label: "Chờ duyệt" },
   { value: 2, label: "Chờ khách gửi hàng" },
   { value: 3, label: "Đang hoàn hàng" },
@@ -42,39 +105,65 @@ const trangThaiOptions = [
   { value: 10, label: "Hoàn hàng thất bại" },
 ];
 
-const thongKe = computed(() => [
-  {
-    label: "Tổng phiếu",
-    value: danhSach.value.length,
-    className: "bg-slate-50 text-slate-700",
-  },
-  {
-    label: "Cần xử lý",
-    value: danhSach.value.filter((item) => [1, 4, 5].includes(item.trangThai)).length,
-    className: "bg-amber-50 text-amber-700",
-  },
-  {
-    label: "Chờ hoàn tiền",
-    value: danhSach.value.filter((item) => item.trangThai === 6).length,
-    className: "bg-rose-50 text-rose-700",
-  },
-  {
-    label: "Hoàn tất",
-    value: danhSach.value.filter((item) => item.trangThai === 7).length,
-    className: "bg-emerald-50 text-emerald-700",
-  },
-]);
+const trangThaiDangChon = ref("");
 
-const danhSachHienThi = computed(() => {
+const danhSachLocBoLoc = computed(() => {
   const keyword = boLoc.value.keyword.trim().toLowerCase();
-  const trangThai = Number(boLoc.value.trangThai || 0);
+  const tuNgay = boLoc.value.tuNgay ? new Date(boLoc.value.tuNgay + "T00:00:00") : null;
+  const denNgay = boLoc.value.denNgay ? new Date(boLoc.value.denNgay + "T23:59:59") : null;
+
   return danhSach.value.filter((item) => {
     const dungTuKhoa =
       !keyword
       || [item.ma, item.maHoaDon, item.tenKhachHang, item.soDienThoaiKhachHang]
         .some((value) => String(value || "").toLowerCase().includes(keyword));
-    const dungTrangThai = !trangThai || item.trangThai === trangThai;
-    return dungTuKhoa && dungTrangThai;
+    
+    const itemDate = new Date(item.ngayTao);
+    const dungNgayBatDau = !tuNgay || itemDate >= tuNgay;
+    const dungNgayKetThuc = !denNgay || itemDate <= denNgay;
+
+    return dungTuKhoa && dungNgayBatDau && dungNgayKetThuc;
+  });
+});
+
+const tongTheoTrangThai = computed(() =>
+  dsTrangThai.map((item) => ({
+    label: item.label,
+    value: item.value,
+    tong:
+      item.value === ""
+        ? danhSachLocBoLoc.value.length
+        : danhSachLocBoLoc.value.filter((tr) => tr.trangThai === item.value).length,
+  })),
+);
+
+const thongKe = computed(() => [
+  {
+    label: "Tổng phiếu",
+    value: danhSachLocBoLoc.value.length,
+    className: "bg-slate-50 text-slate-700",
+  },
+  {
+    label: "Cần xử lý",
+    value: danhSachLocBoLoc.value.filter((item) => [1, 4, 5].includes(item.trangThai)).length,
+    className: "bg-amber-50 text-amber-700",
+  },
+  {
+    label: "Chờ hoàn tiền",
+    value: danhSachLocBoLoc.value.filter((item) => item.trangThai === 6).length,
+    className: "bg-rose-50 text-rose-700",
+  },
+  {
+    label: "Hoàn tất",
+    value: danhSachLocBoLoc.value.filter((item) => item.trangThai === 7).length,
+    className: "bg-emerald-50 text-emerald-700",
+  },
+]);
+
+const danhSachHienThi = computed(() => {
+  const trangThai = trangThaiDangChon.value !== "" ? Number(trangThaiDangChon.value) : 0;
+  return danhSachLocBoLoc.value.filter((item) => {
+    return !trangThai || item.trangThai === trangThai;
   });
 });
 
@@ -107,11 +196,36 @@ async function taiDanhSach() {
 }
 
 function datLaiBoLoc() {
-  boLoc.value = { keyword: "", trangThai: "" };
+  boLoc.value = taoBoLocMacDinh();
+  trangThaiDangChon.value = "";
 }
 
 function xemChiTiet(id) {
   router.push({ name: "admin-tra-hang-chi-tiet", params: { id } });
+}
+
+function xuatExcel() {
+  if (!danhSachHienThi.value.length) {
+    showError("Không có dữ liệu để xuất Excel.");
+    return;
+  }
+
+  exportRowsToExcel({
+    filename: "danh-sach-phieu-tra-hang",
+    sheetName: "PhieuTraHang",
+    columns: [
+      { label: "STT", value: (_, index) => index + 1 },
+      { label: "Mã phiếu", key: "ma" },
+      { label: "Mã hóa đơn", key: "maHoaDon" },
+      { label: "Khách hàng", value: (row) => row.tenKhachHang || "Khách vãng lai" },
+      { label: "Số điện thoại", value: (row) => row.soDienThoaiKhachHang || "—" },
+      { label: "Tiền dự kiến", value: (row) => dinhDangTien(row.tongTienDuKien) },
+      { label: "Tiền thực tế", value: (row) => dinhDangTien(row.tongTienThucTe) },
+      { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
+      { label: "Trạng thái", value: (row) => row.tenTrangThai || "—" },
+    ],
+    rows: danhSachHienThi.value,
+  });
 }
 
 function dinhDangTien(value) {
@@ -174,8 +288,8 @@ onMounted(taiDanhSach);
         </div>
       </template>
 
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
-        <label class="flex-1 space-y-2">
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="min-w-[200px] flex-1 space-y-2">
           <span class="text-xs font-semibold text-slate-500">Tìm kiếm</span>
           <div class="relative">
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -187,26 +301,72 @@ onMounted(taiDanhSach);
           </div>
         </label>
 
-        <label class="w-full space-y-2 lg:w-72">
-          <span class="text-xs font-semibold text-slate-500">Trạng thái</span>
-          <select
-            v-model="boLoc.trangThai"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-          >
-            <option
-              v-for="option in trangThaiOptions"
-              :key="option.value"
-              :value="option.value"
+        <label class="min-w-[160px] flex-1 space-y-2">
+          <span class="text-xs font-semibold text-slate-500">Ngày bắt đầu</span>
+          <div class="relative">
+            <input
+              v-model="tuNgayHienThi"
+              type="text"
+              inputmode="numeric"
+              placeholder="dd/mm/yyyy"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              @click="moLich(tuNgayPicker)"
             >
-              {{ option.label }}
-            </option>
-          </select>
+              <CalendarDays class="h-4 w-4" />
+            </button>
+            <input
+              ref="tuNgayPicker"
+              v-model="boLoc.tuNgay"
+              type="date"
+              aria-label="Chọn ngày bắt đầu"
+              class="pointer-events-none absolute right-3 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0"
+              tabindex="-1"
+            />
+          </div>
         </label>
 
-        <Button variant="soft" @click="datLaiBoLoc">
-          <template #prefix><RotateCcw class="h-4 w-4" /></template>
-          Đặt lại
-        </Button>
+        <label class="min-w-[160px] flex-1 space-y-2">
+          <span class="text-xs font-semibold text-slate-500">Ngày kết thúc</span>
+          <div class="relative">
+            <input
+              v-model="denNgayHienThi"
+              type="text"
+              inputmode="numeric"
+              placeholder="dd/mm/yyyy"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              @click="moLich(denNgayPicker)"
+            >
+              <CalendarDays class="h-4 w-4" />
+            </button>
+            <input
+              ref="denNgayPicker"
+              v-model="boLoc.denNgay"
+              type="date"
+              aria-label="Chọn ngày kết thúc"
+              class="pointer-events-none absolute right-3 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0"
+              tabindex="-1"
+            />
+          </div>
+        </label>
+
+        <div class="flex shrink-0 items-center gap-3">
+          <Button variant="soft" @click="datLaiBoLoc">
+            <template #prefix><RotateCcw class="h-4 w-4" /></template>
+            Đặt lại
+          </Button>
+          <Button variant="soft" @click="xuatExcel">
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+            Xuất Excel
+          </Button>
+        </div>
       </div>
     </Card>
 
@@ -225,75 +385,86 @@ onMounted(taiDanhSach);
         </div>
       </template>
 
-      <div
-        v-if="dangTai"
-        class="flex min-h-56 items-center justify-center text-sm text-slate-400"
-      >
-        Đang tải danh sách trả hàng...
+      <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
+        {{ loiTrang }}
       </div>
 
-      <div
-        v-else-if="loiTrang"
-        class="flex min-h-56 flex-col items-center justify-center gap-4 text-center"
-      >
-        <p class="text-sm font-medium text-rose-600">{{ loiTrang }}</p>
-        <Button variant="soft" @click="taiDanhSach">Thử lại</Button>
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button
+          v-for="item in tongTheoTrangThai"
+          :key="item.value"
+          type="button"
+          @click="trangThaiDangChon = item.value"
+          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
+          :class="trangThaiDangChon === item.value ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:scale-[1.02]'"
+        >
+          {{ item.label }}
+          <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500 transition-all duration-200">{{ item.tong }}</span>
+        </button>
       </div>
 
-      <template v-else>
-        <Table>
-          <template #header>
-            <th class="px-4 py-3 text-center">STT</th>
-            <th class="px-4 py-3">Mã phiếu</th>
-            <th class="px-4 py-3">Mã hóa đơn</th>
-            <th class="px-4 py-3">Khách hàng</th>
-            <th class="px-4 py-3 text-right">Tiền dự kiến</th>
-            <th class="px-4 py-3">Ngày tạo</th>
-            <th class="px-4 py-3 text-center">Trạng thái</th>
-            <th class="px-4 py-3 text-center">Hành động</th>
-          </template>
+      <Transition name="tab-fade" mode="out-in">
+        <div :key="trangThaiDangChon" class="admin-table-scroll">
+          <Table>
+            <template #header>
+              <th class="px-4 py-3 text-center w-[6%]">STT</th>
+              <th class="px-4 py-3 w-[12%]">Mã phiếu</th>
+              <th class="px-4 py-3 w-[12%]">Mã hóa đơn</th>
+              <th class="px-4 py-3 w-[22%]">Khách hàng</th>
+              <th class="px-4 py-3 text-right w-[15%]">Tiền dự kiến</th>
+              <th class="px-4 py-3 w-[15%]">Ngày tạo</th>
+              <th class="px-4 py-3 text-center w-[12%]">Trạng thái</th>
+              <th class="px-4 py-3 text-center w-[6%]">Hành động</th>
+            </template>
 
-          <template #body>
-            <tr
-              v-for="(item, index) in danhSachPhanTrang"
-              :key="item.id"
-              class="transition hover:bg-slate-50/80"
-            >
-              <td class="px-4 py-4 text-center text-slate-500">
-                {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
-              </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">{{ item.ma }}</td>
-              <td class="px-4 py-4 text-slate-600">{{ item.maHoaDon }}</td>
-              <td class="px-4 py-4">
-                <p class="font-medium text-slate-700">{{ item.tenKhachHang || "Khách vãng lai" }}</p>
-                <p class="mt-1 text-xs text-slate-400">{{ item.soDienThoaiKhachHang || "Không có SĐT" }}</p>
-              </td>
-              <td class="px-4 py-4 text-right font-semibold text-primary">
-                {{ dinhDangTien(item.tongTienDuKien) }}
-              </td>
-              <td class="px-4 py-4 text-slate-500">{{ dinhDangNgay(item.ngayTao) }}</td>
-              <td class="px-4 py-4 text-center">
-                <Badge :variant="badgeVariant(item.trangThai)">{{ item.tenTrangThai }}</Badge>
-              </td>
-              <td class="px-4 py-4 text-center">
-                <button
-                  type="button"
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-primary"
-                  title="Xem chi tiết"
-                  @click="xemChiTiet(item.id)"
-                >
-                  <Eye class="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
-            <tr v-if="!danhSachPhanTrang.length">
-              <td colspan="8" class="px-4 py-16 text-center text-sm text-slate-400">
-                Không có phiếu trả hàng phù hợp.
-              </td>
-            </tr>
-          </template>
-        </Table>
+            <template #body>
+              <tr v-if="dangTai">
+                <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải danh sách trả hàng...</td>
+              </tr>
+              <tr v-else-if="!danhSachPhanTrang.length">
+                <td colspan="8" class="px-4 py-16 text-center text-sm text-slate-400">
+                  Không có phiếu trả hàng phù hợp.
+                </td>
+              </tr>
+              <tr
+                v-else
+                v-for="(item, index) in danhSachPhanTrang"
+                :key="item.id"
+                class="transition hover:bg-slate-50/80"
+              >
+                <td class="px-4 py-4 text-center text-slate-500">
+                  {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
+                </td>
+                <td class="px-4 py-4 font-semibold text-slate-800">{{ item.ma }}</td>
+                <td class="px-4 py-4 text-slate-600">{{ item.maHoaDon }}</td>
+                <td class="px-4 py-4">
+                  <p class="font-medium text-slate-700">{{ item.tenKhachHang || "Khách vãng lai" }}</p>
+                  <p class="mt-1 text-xs text-slate-400">{{ item.soDienThoaiKhachHang || "Không có SĐT" }}</p>
+                </td>
+                <td class="px-4 py-4 text-right font-semibold text-primary">
+                  {{ dinhDangTien(item.tongTienDuKien) }}
+                </td>
+                <td class="px-4 py-4 text-slate-500">{{ dinhDangNgay(item.ngayTao) }}</td>
+                <td class="px-4 py-4 text-center">
+                  <Badge :variant="badgeVariant(item.trangThai)">{{ item.tenTrangThai }}</Badge>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <button
+                    type="button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-primary"
+                    title="Xem chi tiết"
+                    @click="xemChiTiet(item.id)"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </Table>
+        </div>
+      </Transition>
 
+      <template #footer>
         <AdminTableFooter
           v-model:current-page="trangHienTai"
           v-model:page-size="soPhanTuMotTrang"
@@ -308,3 +479,19 @@ onMounted(taiDanhSach);
     </Card>
   </div>
 </template>
+
+<style scoped>
+.tab-fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tab-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.tab-fade-leave-to {
+  opacity: 0;
+}
+</style>
