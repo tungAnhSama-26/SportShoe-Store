@@ -23,6 +23,14 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
 
     Optional<PhieuGiamGiaKhachHang> findByPhieuGiamGiaIdAndKhachHangId(Integer phieuGiamGiaId, UUID khachHangId);
 
+    /** Các voucher cá nhân (gửi riêng) mà khách đang sở hữu và CHƯA dùng (trạng thái = 1). */
+    @Query("""
+        SELECT pgk FROM PhieuGiamGiaKhachHang pgk
+        JOIN FETCH pgk.phieuGiamGia
+        WHERE pgk.khachHang.id = :khachHangId AND pgk.trangThai = 1
+    """)
+    List<PhieuGiamGiaKhachHang> findKhaDungByKhachHang(@Param("khachHangId") UUID khachHangId);
+
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyPhieuGiamGiaKhachHangResponse(
     phieuGGKH.id,phieuGGKH.phieuGiamGia.id,phieuGGKH.khachHang.id,phieuGGKH.phieuGiamGia.ma,phieuGGKH.phieuGiamGia.ten,phieuGGKH.khachHang.hoTen,

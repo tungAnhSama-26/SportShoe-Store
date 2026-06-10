@@ -17,6 +17,9 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     Optional<PhieuGiamGia> findByMaIgnoreCase(String ma);
 
+    /** Voucher theo loại phiếu (1=toàn sàn, 2=cá nhân) và trạng thái. Dùng liệt kê voucher công khai khả dụng. */
+    List<PhieuGiamGia> findByLoaiPhieuAndTrangThai(Integer loaiPhieu, Integer trangThai);
+
     boolean existsByTenIgnoreCase(String ten);
 
     boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
