@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/upload", "/api/v1/upload/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/ban-hang-tai-quay/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/hoa-don/**").hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers("/api/v1/admin/tra-hang/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/khach-hang/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/lich-lam-viec/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/chat/**").hasAnyRole("ADMIN", "STAFF")

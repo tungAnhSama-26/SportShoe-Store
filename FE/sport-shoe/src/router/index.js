@@ -9,6 +9,8 @@ import ThongKe from "../pages/admin/thong-ke/ThongKe.vue";
 import PhieuGiamGia from "../pages/admin/khuyen-mai/PhieuGiamGia.vue";
 import HoaDon from "../pages/admin/hoa-don/HoaDon.vue";
 import ChiTietHoaDon from "../pages/admin/hoa-don/ChiTietHoaDon.vue";
+import TraHang from "../pages/admin/tra-hang/TraHang.vue";
+import ChiTietTraHang from "../pages/admin/tra-hang/ChiTietTraHang.vue";
 import BanHangTaiQuay from "../pages/admin/ban-hang/BanHangTaiQuay.vue";
 import DanhSachSanPham from "../pages/admin/san-pham/DanhSachSanPham.vue";
 import DanhSachChiTietSanPham from "../pages/admin/san-pham/DanhSachChiTietSanPham.vue";
@@ -45,6 +47,7 @@ import { showWarning } from "../utils/alert";
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
   "/admin/hoa-don",
+  "/admin/tra-hang",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
   "/admin/chat",
@@ -200,6 +203,16 @@ const router = createRouter({
           path: "hoa-don/:id",
           name: "admin-hoa-don-chi-tiet",
           component: ChiTietHoaDon
+        },
+        {
+          path: "tra-hang",
+          name: "admin-tra-hang",
+          component: TraHang
+        },
+        {
+          path: "tra-hang/:id",
+          name: "admin-tra-hang-chi-tiet",
+          component: ChiTietTraHang
         },
         {
           path: "ban-hang",
