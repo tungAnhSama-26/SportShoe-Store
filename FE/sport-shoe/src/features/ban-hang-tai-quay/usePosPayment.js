@@ -32,18 +32,21 @@ export function usePosPayment({ cartItems, khachCanTra, pageError }) {
     return "";
   });
 
-  function capNhatTienKhachThanhToan(force = false) {
+  function capNhatTienKhachThanhToan(isPaymentMethodChange = false, force = false) {
     if (!cartItems.value.length) {
       amountPaid.value = "";
       return;
     }
-    if (paymentMethod.value !== 1 || force) {
+    if (paymentMethod.value !== 1) {
       amountPaid.value = dinhDangSo(khachCanTra.value);
       return;
     }
-    if (!amountPaid.value.trim()) {
-      amountPaid.value = dinhDangSo(khachCanTra.value);
+    // Nếu là tiền mặt:
+    // 1. Nếu force (tải lại hóa đơn) hoặc vừa chuyển từ phương thức khác sang tiền mặt -> Xóa trắng để nhập lại
+    if (force || isPaymentMethodChange) {
+      amountPaid.value = "";
     }
+    // 2. Ngược lại (chỉ đổi tổng tiền), giữ nguyên số tiền nhân viên ĐÃ nhập (không tự động điền)
   }
 
   function validatePaymentInput() {
@@ -67,8 +70,12 @@ export function usePosPayment({ cartItems, khachCanTra, pageError }) {
     formatCurrencyInput();
   }
 
-  watch([paymentMethod, khachCanTra], () => {
-    capNhatTienKhachThanhToan();
+  watch(khachCanTra, () => {
+    capNhatTienKhachThanhToan(false, false);
+  });
+
+  watch(paymentMethod, () => {
+    capNhatTienKhachThanhToan(true, false);
   });
 
   return {
@@ -78,7 +85,7 @@ export function usePosPayment({ cartItems, khachCanTra, pageError }) {
     tienKhachThanhToan,
     tienThua,
     paymentValidationMessage,
-    capNhatTienKhachThanhToan,
+    capNhatTienKhachThanhToan: (force = false) => capNhatTienKhachThanhToan(false, force),
     validatePaymentInput,
     handleAmountPaidInput
   };

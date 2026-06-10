@@ -4,10 +4,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public record TaoHoaDonChoItemRequest(
-        @NotNull(message = "Chi tiet san pham khong duoc de trong")
+        @NotNull(message = "Chi tiết sản phẩm không được để trống")
         Integer chiTietId,
-        @NotNull(message = "So luong khong duoc de trong")
-        @Min(value = 1, message = "So luong phai lon hon 0")
+        @NotNull(message = "Số lượng không được để trống")
+        @Min(value = 1, message = "Số lượng phải lớn hơn 0")
         Integer soLuong
 ) {
 }

@@ -85,15 +85,16 @@ export function usePosProducts({
   );
 
   const currentPage = ref(1);
-  const pageSize = 6;
+  const pageSize = ref(5);
   const paginatedProducts = computed(() => {
-    const start = (currentPage.value - 1) * pageSize;
-    const end = start + pageSize;
+    const start = (currentPage.value - 1) * pageSize.value;
+    const end = start + pageSize.value;
     return productResults.value.slice(start, end);
   });
-  const totalPages = computed(() => Math.ceil(productResults.value.length / pageSize) || 1);
+  const totalItems = computed(() => productResults.value.length);
+  const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value) || 1);
 
-  watch(productResults, () => {
+  watch([productResults, pageSize], () => {
     currentPage.value = 1;
   });
 
@@ -301,6 +302,8 @@ export function usePosProducts({
     productResults,
     paginatedProducts,
     currentPage,
+    pageSize,
+    totalItems,
     totalPages,
     relatedVariants,
     colorOptions,

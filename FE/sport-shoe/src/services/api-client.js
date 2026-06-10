@@ -7,7 +7,7 @@ export const API_BASE_URL =
 const DEFAULT_FALLBACK =
   "Không thể hoàn tất thao tác này lúc này. Vui lòng thử lại.";
 
-const ERROR_PAGE_STATUSES = new Set([401, 403, 404, 422, 429, 500]);
+const ERROR_PAGE_STATUSES = new Set([401, 403, 404, 429, 500]);
 
 function getStoredAdminToken() {
   return localStorage.getItem("adminToken") ?? "";

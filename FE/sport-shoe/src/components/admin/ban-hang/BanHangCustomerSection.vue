@@ -45,9 +45,9 @@ const emit = defineEmits([
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <div class="relative">
-      <label class="mb-2 block text-sm font-semibold text-slate-700">Tìm khách hàng theo tên hoặc số điện thoại</label>
+  <div class="flex flex-col gap-2">
+    <div v-if="!selectedCustomer" class="relative">
+
       <div class="flex gap-3">
         <input
           :value="customerKeyword"
@@ -60,8 +60,9 @@ const emit = defineEmits([
         />
         <button
           type="button"
-          class="shrink-0 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:text-red-500"
-          @click="emit('select-guest')"
+          class="shrink-0 rounded-2xl border px-4 py-3 text-sm font-semibold transition"
+          :class="isGuestCustomer ? 'border-red-500 bg-red-50 text-red-600' : 'border-dashed border-slate-300 bg-white text-slate-700 hover:border-red-300 hover:text-red-500'"
+          @click="isGuestCustomer ? emit('clear-customer') : emit('select-guest')"
         >
           Khách vãng lai
         </button>
@@ -91,14 +92,13 @@ const emit = defineEmits([
       </div>
     </div>
 
-    <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+    <div v-if="selectedCustomer" class="rounded-2xl border border-slate-100 bg-slate-50 p-3">
       <div class="flex items-start justify-between gap-3">
         <div>
           <p class="text-lg font-bold text-slate-900">{{ tenKhachHangHienThi }}</p>
           <p class="mt-1 text-sm text-slate-500">{{ soDienThoaiKhachHangHienThi }}</p>
         </div>
         <button
-          v-if="selectedCustomer || isGuestCustomer"
           type="button"
           class="text-sm font-semibold text-slate-400 transition hover:text-red-500"
           @click="emit('clear-customer')"

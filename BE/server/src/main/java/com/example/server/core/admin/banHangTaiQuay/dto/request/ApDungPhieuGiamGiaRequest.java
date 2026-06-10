@@ -9,7 +9,7 @@ public record ApDungPhieuGiamGiaRequest(
         Integer hoaDonId,
         UUID khachHangId,
         String maPhieuGiamGia,
-        @NotEmpty(message = "Danh sach san pham khong duoc de trong")
+        @NotEmpty(message = "Danh sách sản phẩm không được để trống")
         List<@Valid TaoHoaDonChoItemRequest> items
 ) {
 }

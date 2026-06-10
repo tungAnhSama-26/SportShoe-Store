@@ -17,6 +17,7 @@ import {
   ChevronsLeft,
   Feather,
   Footprints,
+  Home,
   LayoutDashboard,
   Layers,
   MoveVertical,
@@ -145,6 +146,11 @@ function subItemClass(active) {
     </div>
 
     <nav class="mt-6 flex-1 space-y-1 overflow-x-hidden overflow-y-auto" :class="compactMode ? 'px-2' : 'px-4'">
+      <router-link to="/" :title="compactMode ? 'Trang ch\u1ee7' : undefined" :class="navItemClass(route.path === '/')">
+        <Home :class="navIconClass(route.path === '/')" />
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Trang ch&#7911;</span>
+      </router-link>
+
       <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'T\u1ed5ng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
         <LayoutDashboard :class="navIconClass(isActive('/admin/thong-ke'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">T&#7893;ng quan</span>

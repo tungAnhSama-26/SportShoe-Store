@@ -22,6 +22,8 @@ const {
   productResults,
   paginatedProducts,
   currentPage,
+  pageSize,
+  totalItems,
   totalPages,
   productSearchLabel,
   cartItems,
@@ -64,6 +66,7 @@ const {
   cancelingPendingInvoice,
   dinhDangTien,
   soLuongConLai,
+  fetchProducts,
   resetDraft,
   chonHoaDonCho,
   moDanhSachKhachHang,
@@ -92,8 +95,10 @@ const {
   handleCalculateShippingFee,
   handleAmountPaidInput,
   handleCreatePendingInvoice,
+  handleCreateEmptyInvoice,
   handlePayNow,
-  handleCancelPendingInvoice
+  handleCancelPendingInvoice,
+  handlePrintInvoice
 } = useBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
@@ -130,6 +135,8 @@ onBeforeRouteLeave(async (to, from, next) => {
     :show-product-dropdown="showProductDropdown"
     :product-results="paginatedProducts"
     :current-page="currentPage"
+    :page-size="pageSize"
+    :total-items="totalItems"
     :total-pages="totalPages"
     :product-search-label="productSearchLabel"
     :cart-items="cartItems"
@@ -173,6 +180,7 @@ onBeforeRouteLeave(async (to, from, next) => {
     :dinh-dang-tien="dinhDangTien"
     :so-luong-con-lai="soLuongConLai"
     @reset-draft="resetDraft"
+    @create-empty-invoice="handleCreateEmptyInvoice"
     @select-invoice="chonHoaDonCho"
     @update:customer-keyword="customerKeyword = $event"
     @focus-customer="moDanhSachKhachHang"
@@ -182,6 +190,8 @@ onBeforeRouteLeave(async (to, from, next) => {
     @clear-customer="boChonKhachHang"
     @update:product-keyword="productKeyword = $event"
     @update:current-page="currentPage = $event"
+    @update:page-size="pageSize = $event"
+    @refresh-products="fetchProducts"
     @focus-product="moDanhSachSanPham"
     @blur-product="dongDanhSachSanPham"
     @open-product="moChiTietSanPham"
@@ -205,7 +215,7 @@ onBeforeRouteLeave(async (to, from, next) => {
     @update:payment-method="paymentMethod = $event"
     @amount-input="handleAmountPaidInput"
     @update:payment-note="paymentNote = $event"
-    @create-pending-invoice="handleCreatePendingInvoice"
+    @print-invoice="handlePrintInvoice"
     @pay-now="handlePayNow"
     @cancel-pending-invoice="handleCancelPendingInvoice"
   />
