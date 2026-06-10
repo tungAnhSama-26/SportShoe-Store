@@ -38,4 +38,6 @@ public interface PhieuTraHangRepository extends JpaRepository<PhieuTraHang, Inte
             where p.id = :id
             """)
     Optional<PhieuTraHang> findDetailById(@Param("id") Integer id);
+
+    Optional<PhieuTraHang> findFirstByHoaDonIdOrderByNgayTaoDesc(Integer hoaDonId);
 }

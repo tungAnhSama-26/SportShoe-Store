@@ -20,6 +20,7 @@ import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.LichSuHoaDon;
 import com.example.server.entity.NhanVien;
+import com.example.server.entity.PhieuTraHang;
 import com.example.server.entity.ThanhToan;
 import com.example.server.entity.VanChuyen;
 import com.example.server.infrastructure.exception.BusinessException;
@@ -31,6 +32,7 @@ import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichSuHoaDonRepository;
 import com.example.server.repository.NhanVienRepository;
+import com.example.server.repository.PhieuTraHangRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
@@ -97,6 +99,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final NhanVienRepository nhanVienRepository;
     private final GhnShippingService ghnShippingService;
+    private final PhieuTraHangRepository phieuTraHangRepository;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -107,7 +110,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             LichSuHoaDonRepository lichSuHoaDonRepository,
             GiayChiTietRepository giayChiTietRepository,
             NhanVienRepository nhanVienRepository,
-            GhnShippingService ghnShippingService
+            GhnShippingService ghnShippingService,
+            PhieuTraHangRepository phieuTraHangRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -118,6 +122,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.giayChiTietRepository = giayChiTietRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.ghnShippingService = ghnShippingService;
+        this.phieuTraHangRepository = phieuTraHangRepository;
     }
 
     @Override
@@ -250,7 +255,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 if (vanChuyen.getNgayGui() == null) {
                     vanChuyen.setNgayGui(Instant.now());
                 }
-                xuLyThanhToanKhiGiaoThatBai(hoaDon);
+                if (xuLyThanhToanKhiGiaoThatBai(hoaDon)) {
+                    hoaDon.setTrangThai(TRANG_THAI_CAN_HOAN_TIEN);
+                }
             }
             case "Hoàn thành" -> {
                 if (coThanhToanCodDangCho(hoaDon)) {
@@ -269,8 +276,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 }
             }
             case "Hủy" -> {
-                hoaDon.setTrangThai(TRANG_THAI_HUY);
-                capNhatThanhToanKhiHuyDon(hoaDon);
+                boolean canHoanTien = capNhatThanhToanKhiHuyDon(hoaDon);
+                hoaDon.setTrangThai(canHoanTien
+                        ? TRANG_THAI_CAN_HOAN_TIEN
+                        : TRANG_THAI_HUY);
             }
             case "Yêu cầu hủy" -> hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
             case "Cần hoàn tiền" -> {
@@ -289,7 +298,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             vanChuyenRepository.save(vanChuyen);
         }
 
-        ghiLichSuHoaDon(hoaDon, trangThai, request.ghiChu());
+        ghiLichSuHoaDon(hoaDon, resolveTrangThaiHoaDon(hoaDon, vanChuyen), request.ghiChu());
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -518,6 +527,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 ));
 
         List<LichSuHoaDon> lichSuHoaDons = lichSuHoaDonRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
+        PhieuTraHang phieuTraHang = phieuTraHangRepository
+                .findFirstByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId())
+                .orElse(null);
         ThanhToan thanhToanCoNhanVien = thanhToans.stream()
                 .filter(thanhToan -> thanhToan.getNhanVien() != null)
                 .findFirst()
@@ -554,7 +566,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 thanhToans.stream().map(this::mapThanhToan).toList(),
                 hoaDonChiTiets.stream().map(item -> mapSanPham(item, hinhAnhMap)).toList(),
                 lichSuHoaDons.stream()
-                        .map(this::mapLichSu).toList()
+                        .map(this::mapLichSu).toList(),
+                phieuTraHang != null ? phieuTraHang.getId() : null,
+                phieuTraHang != null ? phieuTraHang.getMa() : null,
+                phieuTraHang != null ? phieuTraHang.getTrangThai() : null
         );
     }
 
@@ -626,7 +641,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 .findFirst();
     }
 
-    private void capNhatThanhToanKhiHuyDon(HoaDon hoaDon) {
+    private boolean capNhatThanhToanKhiHuyDon(HoaDon hoaDon) {
+        boolean canHoanTien = false;
         List<ThanhToan> thanhToans = thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
         for (ThanhToan thanhToan : thanhToans) {
             if (Objects.equals(thanhToan.getTrangThai(), TRANG_THAI_THANH_TOAN_CHO_THANH_TOAN)) {
@@ -637,8 +653,15 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN);
                 thanhToan.setGhiChu(taoGhiChuThanhToan(thanhToan, "Đơn hủy sau khi đã thanh toán, cần hoàn tiền"));
                 thanhToanRepository.save(thanhToan);
+                canHoanTien = true;
+            } else if (Objects.equals(
+                    thanhToan.getTrangThai(),
+                    TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN
+            )) {
+                canHoanTien = true;
             }
         }
+        return canHoanTien;
     }
 
     private void danhDauCanHoanTienNeuDaThanhToan(HoaDon hoaDon) {
@@ -651,7 +674,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 });
     }
 
-    private void xuLyThanhToanKhiGiaoThatBai(HoaDon hoaDon) {
+    private boolean xuLyThanhToanKhiGiaoThatBai(HoaDon hoaDon) {
+        boolean canHoanTien = false;
         List<ThanhToan> thanhToans = thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
         for (ThanhToan thanhToan : thanhToans) {
             if (Objects.equals(thanhToan.getTrangThai(), TRANG_THAI_THANH_TOAN_CHO_THANH_TOAN)) {
@@ -662,8 +686,15 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN);
                 thanhToan.setGhiChu(taoGhiChuThanhToan(thanhToan, "Giao hàng thất bại, cần hoàn tiền cho khách"));
                 thanhToanRepository.save(thanhToan);
+                canHoanTien = true;
+            } else if (Objects.equals(
+                    thanhToan.getTrangThai(),
+                    TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN
+            )) {
+                canHoanTien = true;
             }
         }
+        return canHoanTien;
     }
 
     private String taoGhiChuThanhToan(ThanhToan thanhToan, String ghiChuMoi) {

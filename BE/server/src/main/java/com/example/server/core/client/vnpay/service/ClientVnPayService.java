@@ -5,6 +5,7 @@ import com.example.server.core.client.dathang.dto.DatHangResponse;
 import com.example.server.core.client.dathang.service.ClientDatHangService;
 import com.example.server.infrastructure.exception.BusinessException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,18 +31,20 @@ public class ClientVnPayService {
 
     private static class Phien {
         final DatHangRequest request;
+        final String maGiaoDich;
         volatile String trangThai = TRANG_THAI_CHO;
         volatile String maHoaDon;
 
-        Phien(DatHangRequest request) {
+        Phien(DatHangRequest request, String maGiaoDich) {
             this.request = request;
+            this.maGiaoDich = maGiaoDich;
         }
     }
 
     /** Tạo token cho 1 lần thanh toán; chưa tạo đơn. */
     public String taoMa(DatHangRequest request) {
         String token = UUID.randomUUID().toString().replace("-", "");
-        phienMap.put(token, new Phien(request));
+        phienMap.put(token, new Phien(request, taoMaGiaoDich(token)));
         return token;
     }
 
@@ -52,7 +55,7 @@ public class ClientVnPayService {
             throw new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn");
         }
         if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
-            DatHangResponse ketQua = datHangService.datHang(phien.request);
+            DatHangResponse ketQua = datHangService.datHang(phien.request, phien.maGiaoDich);
             phien.maHoaDon = ketQua.maHoaDon();
             phien.trangThai = TRANG_THAI_DA_THANH_TOAN;
         }
@@ -72,5 +75,17 @@ public class ClientVnPayService {
             result.put("maHoaDon", phien.maHoaDon);
         }
         return result;
+    }
+
+    public String layMaGiaoDich(String token) {
+        Phien phien = phienMap.get(token);
+        return phien != null ? phien.maGiaoDich : taoMaGiaoDich(token);
+    }
+
+    private String taoMaGiaoDich(String token) {
+        String normalized = token == null ? "" : token.replace("-", "");
+        String suffix = normalized.substring(0, Math.min(10, normalized.length()))
+                .toUpperCase(Locale.ROOT);
+        return "VNPAY" + suffix;
     }
 }

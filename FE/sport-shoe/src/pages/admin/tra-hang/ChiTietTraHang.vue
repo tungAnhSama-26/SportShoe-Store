@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Clock3,
+  Image as ImageIcon,
   PackageCheck,
   RefreshCw,
   Truck,
@@ -29,6 +30,7 @@ import {
   xacNhanGuiHangTra,
   xacNhanNhanHangTra,
 } from "../../../services/tra-hang";
+import { API_BASE_URL } from "../../../services/api-client";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showError, showSuccess } from "../../../utils/alert";
 
@@ -53,6 +55,33 @@ const coTheBatDauKiemTra = computed(() => trangThai.value === 4);
 const coTheKiemTra = computed(() => trangThai.value === 5);
 const coTheHoanTien = computed(() => trangThai.value === 6);
 const coTheHuy = computed(() => [1, 2, 10].includes(trangThai.value));
+
+const nhanLyDo = {
+  PRODUCT_DEFECT: "Sản phẩm lỗi hoặc hỏng do nhà sản xuất",
+  WRONG_SIZE: "Giao sai kích cỡ hoặc màu sắc",
+  NOT_AS_DESCRIBED: "Sản phẩm không đúng mô tả hoặc hình ảnh",
+  UNSATISFIED: "Không còn nhu cầu hoặc đổi ý",
+  KHAC: "Lý do khác",
+  KHONG_VUA: "Sản phẩm không vừa",
+  GIAO_SAI: "Giao sai sản phẩm",
+  HANG_LOI: "Sản phẩm bị lỗi",
+};
+
+const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+
+function hienThiLyDo(maLyDo) {
+  const ma = String(maLyDo || "").trim().toUpperCase();
+  return nhanLyDo[ma] || maLyDo || "Lý do khác";
+}
+
+function resolveHinhAnh(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+  if (value.startsWith("/uploads/")) return `${apiOrigin}${value}`;
+  if (value.startsWith("uploads/")) return `${apiOrigin}/${value}`;
+  return value.startsWith("/") ? `${apiOrigin}${value}` : `${apiOrigin}/${value}`;
+}
 
 const cacBuoc = [
   { id: 1, ten: "Chờ duyệt" },
@@ -204,29 +233,34 @@ onMounted(taiChiTiet);
 </script>
 
 <template>
-  <div class="space-y-5 pb-10">
+  <div class="space-y-4 pb-10">
     <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
       <div>
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:text-primary"
-            @click="router.push({ name: 'admin-tra-hang' })"
-          >
-            <ArrowLeft class="h-4 w-4" />
-          </button>
-          <div>
-            <h1 class="text-2xl font-bold text-slate-800">Chi tiết phiếu trả hàng</h1>
-            <p v-if="phieu" class="mt-1 text-sm text-slate-500">
-              {{ phieu.ma }} · Hóa đơn {{ phieu.maHoaDon }}
-            </p>
-          </div>
+        <h1 class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]">Chi Tiết Phiếu Trả Hàng</h1>
+        <div v-if="phieu" class="mt-2 space-y-1 text-[13px] text-slate-500">
+          <p>
+            Mã Phiếu: <span class="font-semibold text-slate-700">{{ phieu.ma }}</span>
+            <span class="mx-2 text-slate-300">|</span>
+            Hóa Đơn: <span class="font-semibold text-slate-700">{{ phieu.maHoaDon }}</span>
+          </p>
+          <p>
+            Khách Hàng:
+            <span class="font-medium text-slate-700">{{ phieu.tenKhachHang || "Khách vãng lai" }}</span>
+            <span class="mx-2 text-slate-300">|</span>
+            Cập Nhật Gần Nhất:
+            <span class="font-medium text-slate-700">{{ dinhDangNgay(phieu.ngayCapNhat) }}</span>
+          </p>
         </div>
       </div>
-      <Button variant="soft" :loading="dangTai" @click="taiChiTiet">
-        <template #prefix><RefreshCw class="h-4 w-4" /></template>
-        Làm mới
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button variant="soft" :loading="dangTai" class="h-10 px-3" title="Làm mới" @click="taiChiTiet">
+          <RefreshCw class="h-4 w-4" />
+        </Button>
+        <Button variant="soft" class="h-10" @click="router.push({ name: 'admin-tra-hang' })">
+          <template #prefix><ArrowLeft class="h-4 w-4" /></template>
+          Quay Lại Danh Sách
+        </Button>
+      </div>
     </div>
 
     <Card v-if="dangTai">
@@ -244,17 +278,13 @@ onMounted(taiChiTiet);
     </Card>
 
     <template v-else>
-      <Card>
+      <section class="grid items-stretch gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
+      <Card class="flex h-full flex-col px-4 py-4 md:px-5 xl:col-span-2">
         <template #header>
           <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3">
-              <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-primary">
-                <PackageCheck class="h-5 w-5" />
-              </div>
-              <div>
-                <h2 class="font-semibold text-slate-800">Tiến trình xử lý</h2>
-                <p class="mt-0.5 text-xs text-slate-400">Cập nhật lần cuối {{ dinhDangNgay(phieu.ngayCapNhat) }}</p>
-              </div>
+              <PackageCheck class="h-4.5 w-4.5 text-slate-500" />
+              <h2 class="text-[15px] font-semibold text-slate-700">Tiến Trình Xử Lý</h2>
             </div>
             <Badge :variant="badgeVariant(phieu.trangThai)">{{ phieu.tenTrangThai }}</Badge>
           </div>
@@ -263,23 +293,23 @@ onMounted(taiChiTiet);
         <div v-if="[8, 9, 10].includes(trangThai)" class="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {{ phieu.lyDoTuChoi || `Phiếu đang ở trạng thái ${phieu.tenTrangThai.toLowerCase()}.` }}
         </div>
-        <div v-else class="relative grid grid-cols-2 gap-4 md:grid-cols-6">
-          <div class="absolute left-[8%] right-[8%] top-6 hidden h-0.5 bg-slate-200 md:block"></div>
+        <div v-else class="relative mt-7 grid grid-cols-2 gap-4 px-2 pt-2 md:grid-cols-6">
+          <div class="absolute left-[8%] right-[8%] top-9 hidden h-0.5 bg-slate-200 md:block"></div>
           <div
             v-for="(buoc, index) in cacBuoc"
             :key="buoc.id"
             class="relative z-10 flex flex-col items-center text-center"
           >
             <div
-              class="flex h-12 w-12 items-center justify-center rounded-full border-2 bg-white transition"
-              :class="index <= buocHienTai ? 'border-primary bg-rose-50 text-primary' : 'border-slate-200 text-slate-300'"
+              class="flex h-[58px] w-[58px] items-center justify-center rounded-full border-[2.5px] transition"
+              :class="index <= buocHienTai ? 'border-primary bg-primary text-white shadow-[0_8px_20px_-8px_rgba(220,38,38,0.65)]' : 'border-slate-200 bg-white text-slate-300'"
             >
               <CheckCircle2 v-if="index < buocHienTai" class="h-5 w-5" />
               <Clock3 v-else class="h-5 w-5" />
             </div>
             <p
-              class="mt-2 text-xs font-semibold"
-              :class="index <= buocHienTai ? 'text-slate-700' : 'text-slate-400'"
+              class="mt-3 whitespace-nowrap text-[12px] font-semibold"
+              :class="index <= buocHienTai ? 'text-primary' : 'text-slate-400'"
             >
               {{ buoc.ten }}
             </p>
@@ -287,12 +317,38 @@ onMounted(taiChiTiet);
         </div>
       </Card>
 
-      <section class="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
-        <Card>
+        <Card class="flex h-full flex-col px-5 py-4">
           <template #header>
-            <div class="flex items-center gap-3">
-              <ClipboardCheck class="h-5 w-5 text-primary" />
-              <h2 class="font-semibold text-slate-800">Thông tin yêu cầu</h2>
+            <div class="flex items-center gap-2">
+              <Banknote class="h-4.5 w-4.5 text-slate-500" />
+              <h2 class="text-[15px] font-semibold text-slate-700">Tổng Kết Hoàn Tiền</h2>
+            </div>
+          </template>
+          <div class="mt-4 flex-1 space-y-4 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Tiền Hoàn Dự Kiến</span>
+              <span class="font-semibold text-slate-700">{{ dinhDangTien(phieu.tongTienDuKien) }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Tiền Hoàn Được Duyệt</span>
+              <span class="font-semibold text-emerald-600">{{ dinhDangTien(phieu.tongTienThucTe) }}</span>
+            </div>
+            <div class="border-t border-slate-200 pt-4">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-800">Trạng Thái</span>
+                <Badge :variant="badgeVariant(phieu.trangThai)">{{ phieu.tenTrangThai }}</Badge>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      <section class="grid items-start gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
+        <Card class="px-5 py-4 xl:col-span-2">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <ClipboardCheck class="h-4.5 w-4.5 text-slate-500" />
+              <h2 class="text-[15px] font-semibold text-slate-700">Thông Tin Yêu Cầu</h2>
             </div>
           </template>
 
@@ -307,7 +363,7 @@ onMounted(taiChiTiet);
             </div>
             <div>
               <dt class="text-slate-400">Lý do</dt>
-              <dd class="mt-1 font-semibold text-slate-700">{{ phieu.lyDoMa || "Khác" }}</dd>
+              <dd class="mt-1 font-semibold text-slate-700">{{ hienThiLyDo(phieu.lyDoMa) }}</dd>
             </div>
             <div>
               <dt class="text-slate-400">Nhân viên xử lý</dt>
@@ -324,39 +380,100 @@ onMounted(taiChiTiet);
               <dd class="mt-1 leading-6 text-slate-700">{{ phieu.moTa || "Không có mô tả bổ sung" }}</dd>
             </div>
           </dl>
+
+          <div class="mt-6 border-t border-slate-100 pt-5">
+            <div class="mb-3 flex items-center gap-2">
+              <ImageIcon class="h-4.5 w-4.5 text-primary" />
+              <h3 class="text-sm font-semibold text-slate-700">Hình ảnh minh chứng</h3>
+              <span
+                v-if="phieu.hinhAnhs?.length"
+                class="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
+                {{ phieu.hinhAnhs.length }} ảnh
+              </span>
+            </div>
+
+            <div v-if="phieu.hinhAnhs?.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <a
+                v-for="(url, index) in phieu.hinhAnhs"
+                :key="`${url}-${index}`"
+                :href="resolveHinhAnh(url)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                :title="`Xem ảnh minh chứng ${index + 1}`"
+              >
+                <img
+                  :src="resolveHinhAnh(url)"
+                  :alt="`Ảnh minh chứng trả hàng ${index + 1}`"
+                  class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
+                <span class="absolute bottom-2 left-2 rounded-md bg-slate-900/65 px-2 py-1 text-[10px] font-medium text-white">
+                  Ảnh {{ index + 1 }}
+                </span>
+              </a>
+            </div>
+
+            <div
+              v-else
+              class="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400"
+            >
+              <ImageIcon class="h-4 w-4" />
+              Khách hàng chưa cung cấp hình ảnh minh chứng.
+            </div>
+          </div>
         </Card>
 
-        <Card>
+        <Card class="flex flex-col px-5 py-4">
           <template #header>
-            <div class="flex items-center gap-3">
-              <Banknote class="h-5 w-5 text-primary" />
-              <h2 class="font-semibold text-slate-800">Tổng kết hoàn tiền</h2>
+            <div class="flex items-center gap-2">
+              <UserRound class="h-4.5 w-4.5 text-slate-500" />
+              <h2 class="text-[15px] font-semibold text-slate-700">Thao Tác Tiếp Theo</h2>
             </div>
           </template>
-          <div class="space-y-4 text-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-slate-500">Tiền hoàn dự kiến</span>
-              <span class="font-semibold text-slate-700">{{ dinhDangTien(phieu.tongTienDuKien) }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-slate-500">Tiền hoàn được duyệt</span>
-              <span class="font-semibold text-emerald-600">{{ dinhDangTien(phieu.tongTienThucTe) }}</span>
-            </div>
-            <div class="border-t border-slate-200 pt-4">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-slate-800">Trạng thái</span>
-                <Badge :variant="badgeVariant(phieu.trangThai)">{{ phieu.tenTrangThai }}</Badge>
-              </div>
+          <div class="grid flex-1 content-start gap-3">
+            <template v-if="coTheDuyet">
+              <Button full-width @click="moModalDuyet">Duyệt Phiếu Trả Hàng</Button>
+              <Button variant="soft" full-width @click="moModalTuChoi">Từ Chối Yêu Cầu</Button>
+            </template>
+            <Button v-if="coTheXacNhanGui" full-width @click="moModalGuiHang">
+              <template #prefix><Truck class="h-4 w-4" /></template>
+              Xác Nhận Khách Đã Gửi Hàng
+            </Button>
+            <Button v-if="coTheXacNhanNhan" full-width @click="xacNhanNhanHang">
+              Xác Nhận Đã Nhận Hàng
+            </Button>
+            <Button v-if="coTheBatDauKiemTra" full-width @click="batDauKiemTra">
+              Bắt Đầu Kiểm Tra
+            </Button>
+            <Button v-if="coTheKiemTra" full-width @click="moModalKiemTra">
+              Nhập Kết Quả Kiểm Tra
+            </Button>
+            <Button v-if="coTheHoanTien" full-width @click="moModalHoanTien">
+              <template #prefix><Banknote class="h-4 w-4" /></template>
+              Xác Nhận Hoàn Tiền
+            </Button>
+            <Button v-if="coTheHuy" variant="outline" full-width @click="huyPhieu">
+              Hủy Phiếu Trả Hàng
+            </Button>
+            <div
+              v-if="![1, 2, 3, 4, 5, 6, 10].includes(trangThai)"
+              class="rounded-xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500"
+            >
+              Phiếu đã kết thúc, không còn thao tác cần xử lý.
             </div>
           </div>
         </Card>
       </section>
 
-      <Card>
+      <Card class="px-5 py-4">
         <template #header>
-          <div>
-            <h2 class="font-semibold text-slate-800">Sản phẩm trả</h2>
-            <p class="mt-1 text-xs text-slate-400">{{ phieu.chiTiet?.length || 0 }} dòng sản phẩm</p>
+          <div class="flex items-center gap-3">
+            <PackageCheck class="h-4.5 w-4.5 text-slate-500" />
+            <div>
+              <h2 class="text-[15px] font-semibold text-slate-700">Danh Sách Sản Phẩm Trả</h2>
+              <p class="mt-1 text-xs text-slate-400">{{ phieu.chiTiet?.length || 0 }} dòng sản phẩm</p>
+            </div>
           </div>
         </template>
         <Table>
@@ -386,12 +503,11 @@ onMounted(taiChiTiet);
         </Table>
       </Card>
 
-      <section class="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
-        <Card>
+      <Card class="px-5 py-4">
           <template #header>
-            <div class="flex items-center gap-3">
-              <Clock3 class="h-5 w-5 text-primary" />
-              <h2 class="font-semibold text-slate-800">Lịch sử xử lý</h2>
+            <div class="flex items-center gap-2">
+              <Clock3 class="h-4.5 w-4.5 text-slate-500" />
+              <h2 class="text-[15px] font-semibold text-slate-700">Lịch Sử Xử Lý</h2>
             </div>
           </template>
           <div class="space-y-0">
@@ -416,49 +532,7 @@ onMounted(taiChiTiet);
               </div>
             </div>
           </div>
-        </Card>
-
-        <Card>
-          <template #header>
-            <div class="flex items-center gap-3">
-              <UserRound class="h-5 w-5 text-primary" />
-              <h2 class="font-semibold text-slate-800">Thao tác tiếp theo</h2>
-            </div>
-          </template>
-          <div class="grid gap-3">
-            <template v-if="coTheDuyet">
-              <Button full-width @click="moModalDuyet">Duyệt phiếu trả hàng</Button>
-              <Button variant="soft" full-width @click="moModalTuChoi">Từ chối yêu cầu</Button>
-            </template>
-            <Button v-if="coTheXacNhanGui" full-width @click="moModalGuiHang">
-              <template #prefix><Truck class="h-4 w-4" /></template>
-              Xác nhận khách đã gửi hàng
-            </Button>
-            <Button v-if="coTheXacNhanNhan" full-width @click="xacNhanNhanHang">
-              Xác nhận đã nhận hàng
-            </Button>
-            <Button v-if="coTheBatDauKiemTra" full-width @click="batDauKiemTra">
-              Bắt đầu kiểm tra
-            </Button>
-            <Button v-if="coTheKiemTra" full-width @click="moModalKiemTra">
-              Nhập kết quả kiểm tra
-            </Button>
-            <Button v-if="coTheHoanTien" full-width @click="moModalHoanTien">
-              <template #prefix><Banknote class="h-4 w-4" /></template>
-              Xác nhận hoàn tiền
-            </Button>
-            <Button v-if="coTheHuy" variant="outline" full-width @click="huyPhieu">
-              Hủy phiếu trả hàng
-            </Button>
-            <div
-              v-if="![1, 2, 3, 4, 5, 6, 10].includes(trangThai)"
-              class="rounded-2xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500"
-            >
-              Phiếu đã kết thúc, không còn thao tác cần xử lý.
-            </div>
-          </div>
-        </Card>
-      </section>
+      </Card>
     </template>
 
     <div

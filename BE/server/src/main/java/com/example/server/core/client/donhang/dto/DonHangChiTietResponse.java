@@ -23,8 +23,19 @@ public record DonHangChiTietResponse(
         BigDecimal tamTinh,
         BigDecimal giamDotGiamGia,
         BigDecimal giamVoucher,
-        BigDecimal tongThanhToan
+        BigDecimal tongThanhToan,
+        Instant ngayCapNhat,
+        List<LichSuTrangThai> lichSuTrangThai,
+        Integer phieuTraHangId,
+        Integer trangThaiTraHang,
+        String trangThaiTraHangText
 ) {
+    public record LichSuTrangThai(
+            String trangThai,
+            Instant ngayTao,
+            String maNhanVien
+    ) {}
+
     public record DongSanPham(
             Integer hoaDonChiTietId,
             Integer giayId,
