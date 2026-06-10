@@ -99,5 +99,14 @@ public class HoaDon {
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
+    /** Hạn giữ hàng tạm khi khách vào thanh toán (null = không giữ). */
+    @Column(name = "han_giu_hang")
+    private Instant hanGiuHang;
+
+    /** Khách đã xác nhận nhận hàng (cho phép đánh giá). */
+    @ColumnDefault("0")
+    @Column(name = "da_nhan_hang", nullable = false)
+    private Boolean daNhanHang = false;
+
 
 }

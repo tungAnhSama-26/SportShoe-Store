@@ -1,5 +1,6 @@
 <script setup>
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
+import anhMacDinh from "../../assets/login-shoe.png";
 
 defineProps({
   sanPham: {
@@ -7,6 +8,13 @@ defineProps({
     required: true,
   },
 });
+
+// Khi ảnh sản phẩm không tải được (đường dẫn trong DB chưa có file), dùng ảnh mặc định.
+function xuLyAnhLoi(event) {
+  if (event.target.src !== anhMacDinh) {
+    event.target.src = anhMacDinh;
+  }
+}
 </script>
 
 <template>
@@ -22,14 +30,18 @@ defineProps({
         </button>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <p v-if="!sanPham.length" class="rounded-2xl border border-dashed border-primary/20 bg-white/60 py-12 text-center text-sm text-slate-400">
+        Chưa có sản phẩm nổi bật để hiển thị.
+      </p>
+
+      <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article
           v-for="muc in sanPham"
-          :key="muc.ten"
+          :key="muc.id ?? muc.ten"
           class="overflow-hidden rounded-2xl border border-primary/15 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
         >
           <div class="relative h-60 overflow-hidden bg-slate-50">
-            <img :src="muc.hinhAnh" :alt="muc.ten" class="h-full w-full object-cover" />
+            <img :src="muc.hinhAnh" :alt="muc.ten" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
             <span
               v-if="muc.nhan"
               class="absolute left-3 top-3 rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-white shadow-sm"
