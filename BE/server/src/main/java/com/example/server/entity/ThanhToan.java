@@ -71,6 +71,19 @@ public class ThanhToan {
     @Column(name = "trang_thai", nullable = false)
     private Integer trangThai;
 
+    @NotNull
+    @ColumnDefault("1")
+    @Column(name = "loai_giao_dich", nullable = false)
+    private Integer loaiGiaoDich;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "phieu_tra_hang_id")
+    private PhieuTraHang phieuTraHang;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "giao_dich_goc_id")
+    private ThanhToan giaoDichGoc;
+
     @Size(max = 500)
     @Nationalized
     @Column(name = "ghi_chu", length = 500)
