@@ -3,7 +3,6 @@ import { onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Save, Package, Search, CheckCircle2, CircleX, X } from "lucide-vue-next";
 import { computed } from "vue";
-<script setup>
 import { onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Save, Package, Search } from "lucide-vue-next";

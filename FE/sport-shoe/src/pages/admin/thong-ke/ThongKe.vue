@@ -1,6 +1,6 @@
 <script setup>
 import { useThongKeDashboard } from "./useThongKeDashboard";
-const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AppPagination, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass } = useThongKeDashboard();
+const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AppPagination, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass } = useThongKeDashboard();
 </script>
 
 <template>
@@ -12,9 +12,48 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
     </div>
 
     <Card>
-      <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-        <Filter class="h-4 w-4 text-primary" />
-        Bộ lọc thống kê
+      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Filter class="h-4 w-4 text-primary" />
+          Bộ lọc thống kê
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300"
+            @click="setQuickPeriod('today')"
+          >
+            Hôm nay
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300"
+            @click="setQuickPeriod('last7days')"
+          >
+            7 ngày qua
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300"
+            @click="setQuickPeriod('thisMonth')"
+          >
+            Tháng này
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300"
+            @click="setQuickPeriod('lastMonth')"
+          >
+            Tháng trước
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300"
+            @click="setQuickPeriod('thisYear')"
+          >
+            Năm nay
+          </button>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
@@ -146,7 +185,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       {{ errorMessage }}
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <div
         v-for="card in summaryCards"
         :key="card.label"
@@ -192,11 +231,19 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       </Card>
 
       <Card>
-        <div class="mb-6">
+        <div class="mb-6 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <PieChart class="h-4 w-4 text-rose-500" />
             Thương hiệu
           </div>
+          <select
+            v-model="brandChartType"
+            class="h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+          >
+            <option value="REVENUE">Theo doanh thu</option>
+            <option value="VOLUME">Theo số lượng bán</option>
+            <option value="STOCK">Theo lượng tồn kho</option>
+          </select>
         </div>
 
         <div v-if="hasBrandData" class="space-y-5">
@@ -207,7 +254,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
           <div class="space-y-3">
             <div
               v-for="(brand, index) in topBrands"
-              :key="brand.thuongHieuId"
+              :key="brand.label"
               class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"
             >
               <div class="flex items-center gap-3 text-sm font-medium text-slate-700">
@@ -215,10 +262,10 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
                   class="h-3 w-3 rounded-full"
                   :style="{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }"
                 />
-                {{ brand.tenThuongHieu }}
+                {{ brand.label }}
               </div>
               <span class="text-sm font-semibold text-slate-800">
-                {{ formatNumber(brand.tongTonKho) }}
+                {{ brand.displayValue }}
               </span>
             </div>
           </div>
