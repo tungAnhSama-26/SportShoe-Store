@@ -328,6 +328,11 @@ public class BanHangTaiQuayService {
 
     @Transactional
     public HoaDonChoChiTietResponse taoHoaDonCho(TaoHoaDonChoRequest request) {
+        long soLuongHoaDonCho = hoaDonRepository.countByKenhBanAndTrangThai(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_XAC_NHAN);
+        if (soLuongHoaDonCho >= 10) {
+            throw new BusinessException("Đã đạt giới hạn tối đa 10 hóa đơn chờ");
+        }
+
         HoaDon savedHoaDon = taoHoaDon(
                 request.khachHangId(),
                 request.tenKhachHang(),
@@ -347,14 +352,14 @@ public class BanHangTaiQuayService {
     @Transactional
     public void huyHoaDonCho(Integer hoaDonId) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
-            throw new BusinessException("Chi ho tro huy hoa don tai quay");
+            throw new BusinessException("Chỉ hỗ trợ hủy hóa đơn tại quầy");
         }
 
         if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
-            throw new BusinessException("Chi duoc huy hoa don dang cho");
+            throw new BusinessException("Chỉ được hủy hóa đơn đang chờ");
         }
 
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
@@ -387,6 +392,9 @@ public class BanHangTaiQuayService {
 
     @Transactional
     public ThanhToanTaiQuayResponse thanhToanTaiQuay(ThanhToanTaiQuayRequest request) {
+        if (request.hoaDonId() == null && (request.items() == null || request.items().isEmpty())) {
+            throw new BusinessException("Hóa đơn phải có ít nhất một sản phẩm để thanh toán");
+        }
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -415,6 +423,7 @@ public class BanHangTaiQuayService {
         thanhToan.setCongThanhToan(paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan()));
         thanhToan.setNgayThanhToan(Instant.now());
         thanhToan.setTrangThai(1);
+        thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
         thanhToan.setGhiChu(request.ghiChu());
         thanhToan.setNgayTao(Instant.now());
         thanhToanRepository.save(thanhToan);
@@ -480,7 +489,7 @@ public class BanHangTaiQuayService {
     @Transactional(readOnly = true)
     public HoaDonChoChiTietResponse layChiTietHoaDonCho(Integer hoaDonId) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
         return mapHoaDonChiTiet(hoaDon, items, vanChuyenRepository.findByHoaDonId(hoaDonId).orElse(null));
     }
@@ -513,15 +522,11 @@ public class BanHangTaiQuayService {
             Integer trangThai,
             String ghiChu
     ) {
-        if (items == null || items.isEmpty()) {
-            throw new BusinessException("Hoa don phai co it nhat mot san pham");
-        }
+        validationUseCase.validateDuplicateItems(items != null ? items : new ArrayList<>());
 
-        validationUseCase.validateDuplicateItems(items);
-
-        List<HoaDonChiTiet> chiTietTam = items.stream()
+        List<HoaDonChiTiet> chiTietTam = items != null && !items.isEmpty() ? items.stream()
                 .map(item -> taoDongHoaDon(item.chiTietId(), item.soLuong()))
-                .toList();
+                .toList() : new ArrayList<>();
 
         BigDecimal tongTienHang = chiTietTam.stream()
                 .map(HoaDonChiTiet::getThanhTien)
@@ -566,14 +571,19 @@ public class BanHangTaiQuayService {
 
     private HoaDon thanhToanHoaDonCho(ThanhToanTaiQuayRequest request) {
         HoaDon hoaDon = hoaDonRepository.findById(request.hoaDonId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
-            throw new BusinessException("Chi ho tro thanh toan hoa don tai quay");
+            throw new BusinessException("Chỉ hỗ trợ thanh toán hóa đơn tại quầy");
         }
 
         if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
-            throw new BusinessException("Hoa don nay khong o trang thai cho thanh toan");
+            throw new BusinessException("Hóa đơn này không ở trạng thái chờ thanh toán");
+        }
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException("Hóa đơn phải có ít nhất một sản phẩm để thanh toán");
         }
 
         KhachHang khachHang = timKhachHang(request.khachHangId());
@@ -665,16 +675,16 @@ public class BanHangTaiQuayService {
             HoaDon hoaDon
     ) {
         if (maPhieuGiamGia == null || maPhieuGiamGia.isBlank()) {
-            throw new BusinessException("Ma phieu giam gia khong duoc de trong");
+            throw new BusinessException("Mã phiếu giảm giá không được để trống");
         }
 
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findByMaIgnoreCase(maPhieuGiamGia)
-                .orElseThrow(() -> new BusinessException("Phieu giam gia không tồn tại"));
+                .orElseThrow(() -> new BusinessException("Phiếu giảm giá không tồn tại"));
 
         validatePhieuGiamGia(phieuGiamGia, khachHang, tongTienHang, hoaDon);
 
         if (validateSoLuong && (phieuGiamGia.getSoLuong() == null || phieuGiamGia.getSoLuong() <= 0)) {
-            throw new BusinessException("Phieu giam gia da het luot su dung");
+            throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng");
         }
 
         BigDecimal soTienGiam = pricingUseCase.tinhSoTienGiam(phieuGiamGia, tongTienHang);
@@ -690,32 +700,32 @@ public class BanHangTaiQuayService {
             HoaDon hoaDon
     ) {
         if (phieuGiamGia.getTrangThai() == null || phieuGiamGia.getTrangThai() != TRANG_THAI_PHIEU_HOAT_DONG) {
-            throw new BusinessException("Phieu giam gia khong hoat dong");
+            throw new BusinessException("Phiếu giảm giá không hoạt động");
         }
 
         Instant now = Instant.now();
         if (phieuGiamGia.getNgayBatDau() != null && now.isBefore(phieuGiamGia.getNgayBatDau())) {
-            throw new BusinessException("Phieu giam gia chua den thoi gian ap dung");
+            throw new BusinessException("Phiếu giảm giá chưa đến thời gian áp dụng");
         }
 
         if (phieuGiamGia.getNgayKetThuc() != null && now.isAfter(phieuGiamGia.getNgayKetThuc())) {
-            throw new BusinessException("Phieu giam gia da het han su dung");
+            throw new BusinessException("Phiếu giảm giá đã hết hạn sử dụng");
         }
 
         if (phieuGiamGia.getGiaTriToiThieu() != null && tongTienHang.compareTo(phieuGiamGia.getGiaTriToiThieu()) < 0) {
-            throw new BusinessException("Gia tri don hang chua dat toi thieu " + phieuGiamGia.getGiaTriToiThieu());
+            throw new BusinessException("Giá trị đơn hàng chưa đạt tối thiểu " + phieuGiamGia.getGiaTriToiThieu());
         }
 
         if (phieuGiamGia.getLoaiPhieu() != null && phieuGiamGia.getLoaiPhieu() == 2) {
             if (khachHang == null) {
-                throw new BusinessException("Phieu giam gia nay chi ap dung cho khach hang thanh vien");
+                throw new BusinessException("Phiếu giảm giá này chỉ áp dụng cho khách hàng thành viên");
             }
             PhieuGiamGiaKhachHang pggh = phieuGiamGiaKhachHangRepository
                     .findByPhieuGiamGiaIdAndKhachHangId(phieuGiamGia.getId(), khachHang.getId())
-                    .orElseThrow(() -> new BusinessException("Khach hang khong so huu phieu giam gia nay"));
+                    .orElseThrow(() -> new BusinessException("Khách hàng không sở hữu phiếu giảm giá này"));
 
             if (pggh.getTrangThai() != TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG) {
-                throw new BusinessException("Phieu giam gia da duoc khach hang su dung");
+                throw new BusinessException("Phiếu giảm giá đã được khách hàng sử dụng");
             }
         }
     }
@@ -741,10 +751,10 @@ public class BanHangTaiQuayService {
         }
 
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hoa don không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
-            throw new BusinessException("Chi ho tro ap dung phieu giam gia cho hoa don tai quay");
+            throw new BusinessException("Chỉ hỗ trợ áp dụng phiếu giảm giá cho hóa đơn tại quầy");
         }
 
         return hoaDon;
@@ -769,7 +779,7 @@ public class BanHangTaiQuayService {
 
     private GiayChiTiet layGiayChiTietHopLe(Integer chiTietId, Integer soLuong) {
         GiayChiTiet giayChiTiet = giayChiTietRepository.findById(chiTietId)
-                .orElseThrow(() -> new ResourceNotFoundException("San pham chi tiet không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm chi tiết không tồn tại"));
 
         inventoryUseCase.validateAvailable(giayChiTiet, soLuong);
         return giayChiTiet;
@@ -803,7 +813,7 @@ public class BanHangTaiQuayService {
 
     private List<HoaDonChiTiet> taoDanhSachDongHoaDonTam(List<TaoHoaDonChoItemRequest> items) {
         if (items == null || items.isEmpty()) {
-            throw new BusinessException("Hoa don phai co it nhat mot san pham");
+            return new ArrayList<>();
         }
 
         validationUseCase.validateDuplicateItems(items);
@@ -842,7 +852,7 @@ public class BanHangTaiQuayService {
         );
 
         if (giaoHang && (soDienThoaiNguoiNhan == null || soDienThoaiNguoiNhan.isBlank() || laGiaTriKhongCo(soDienThoaiNguoiNhan))) {
-            throw new BusinessException("Vui long nhap so dien thoai nguoi nhan");
+            throw new BusinessException("Vui lòng nhập số điện thoại người nhận");
         }
 
         String diaChiGiaoHang = giaoHang ? shippingUseCase.requireDiaChiGiaoHang(thongTinGiaoHang) : DIA_CHI_TAI_QUAY;
@@ -912,7 +922,7 @@ public class BanHangTaiQuayService {
             return null;
         }
         return khachHangRepository.findById(khachHangId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khach hang không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
     }
 
     private String layTenKhachHang(KhachHang khachHang, String tenKhachHang) {

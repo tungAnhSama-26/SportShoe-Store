@@ -11,7 +11,6 @@ public record TaoHoaDonChoRequest(
         String soDienThoai,
         String maPhieuGiamGia,
         ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
-        @NotEmpty(message = "Danh sach san pham khong duoc de trong")
         List<@Valid TaoHoaDonChoItemRequest> items
 ) {
 }

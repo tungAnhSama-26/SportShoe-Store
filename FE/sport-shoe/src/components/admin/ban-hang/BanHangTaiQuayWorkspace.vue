@@ -79,6 +79,14 @@ defineProps({
     type: Number,
     default: 1
   },
+  pageSize: {
+    type: Number,
+    default: 6
+  },
+  totalItems: {
+    type: Number,
+    default: 0
+  },
   totalPages: {
     type: Number,
     default: 1
@@ -251,6 +259,7 @@ defineProps({
 
 const emit = defineEmits([
   "reset-draft",
+  "create-empty-invoice",
   "select-invoice",
   "update:customerKeyword",
   "focus-customer",
@@ -260,6 +269,8 @@ const emit = defineEmits([
   "clear-customer",
   "update:productKeyword",
   "update:currentPage",
+  "update:page-size",
+  "refresh-products",
   "focus-product",
   "blur-product",
   "open-product",
@@ -283,27 +294,14 @@ const emit = defineEmits([
   "update:paymentMethod",
   "amount-input",
   "update:paymentNote",
-  "create-pending-invoice",
+  "print-invoice",
   "pay-now",
   "cancel-pending-invoice"
 ]);
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 class="mt-2 text-3xl font-bold text-slate-900">Bán hàng tại quầy</h1>
-      </div>
-      <button
-        type="button"
-        class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-red-300 hover:text-red-500"
-        @click="emit('reset-draft')"
-      >
-        Tạo phiếu mới
-      </button>
-    </div>
-
+  <div class="flex h-[calc(100vh-80px)] flex-col gap-2 overflow-hidden p-2">
     <BanHangPendingInvoicesSection
       :pending-invoices="pendingInvoices"
       :loading-pending-invoices="loadingPendingInvoices"
@@ -312,23 +310,28 @@ const emit = defineEmits([
       :active-pending-invoice="activePendingInvoice"
       :dinh-dang-tien="dinhDangTien"
       @select-invoice="emit('select-invoice', $event)"
+      @create-empty-invoice="emit('create-empty-invoice')"
     />
 
-    <div class="grid gap-6 xl:grid-cols-[1.5fr_0.8fr]">
-      <div class="flex flex-col gap-6">
-        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+    <div class="grid min-h-0 flex-1 gap-2 xl:grid-cols-[1.6fr_0.8fr]">
+      <div class="flex min-h-0 flex-col gap-2">
+        <section class="flex min-h-0 flex-[3.5] flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <BanHangProductSection
             :product-keyword="productKeyword"
             :loading-products="loadingProducts"
             :show-product-dropdown="showProductDropdown"
             :product-results="productResults"
             :current-page="currentPage"
+            :page-size="pageSize"
+            :total-items="totalItems"
             :total-pages="totalPages"
             :product-search-label="productSearchLabel"
             :dinh-dang-tien="dinhDangTien"
             :so-luong-con-lai="soLuongConLai"
             @update:product-keyword="emit('update:productKeyword', $event)"
             @update:current-page="emit('update:currentPage', $event)"
+            @update:page-size="emit('update:page-size', $event)"
+            @refresh="emit('refresh-products')"
             @focus-product="emit('focus-product')"
             @blur-product="emit('blur-product')"
             @open-product="emit('open-product', $event)"
@@ -336,27 +339,28 @@ const emit = defineEmits([
           />
         </section>
 
-        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-          <div class="mb-4 flex items-center justify-between">
+        <section class="flex min-h-0 flex-[1.5] flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <div class="mb-2 flex shrink-0 items-center justify-between">
             <h2 class="text-lg font-bold text-slate-900">Giỏ hàng</h2>
             <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
               {{ tongSoLuong }} sản phẩm
             </span>
           </div>
 
-          <BanHangCartTable
-            :cart-items="cartItems"
-            :dinh-dang-tien="dinhDangTien"
-            :so-luong-con-lai="soLuongConLai"
-            @increase-item="emit('increase-item', $event)"
-            @decrease-item="emit('decrease-item', $event)"
-          />
+          <div class="flex-1 overflow-y-auto pr-2">
+            <BanHangCartTable
+              :cart-items="cartItems"
+              :dinh-dang-tien="dinhDangTien"
+              :so-luong-con-lai="soLuongConLai"
+              @increase-item="emit('increase-item', $event)"
+              @decrease-item="emit('decrease-item', $event)"
+            />
+          </div>
         </section>
       </div>
 
-      <div class="flex flex-col gap-6">
-        <section class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-          <h2 class="mb-4 text-lg font-bold text-slate-900">Khách hàng</h2>
+      <div class="flex min-h-0 flex-col gap-2">
+        <section class="shrink-0 rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <BanHangCustomerSection
             :customer-keyword="customerKeyword"
             :loading-customers="loadingCustomers"
@@ -375,54 +379,58 @@ const emit = defineEmits([
           />
         </section>
 
-        <BanHangPaymentSection
-          :active-pending-invoice="activePendingInvoice"
-          :invoice-loading="invoiceLoading"
-          :tong-so-luong="tongSoLuong"
-          :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
-          :tien-giam="tienGiam"
-          :tong-tien="tongTien"
-          :san-pham-validation-message="sanPhamValidationMessage"
-          :coupon-code="couponCode"
-          :co-the-ap-dung-phieu="coTheApDungPhieu"
-          :applying-coupon="applyingCoupon"
-          :show-coupon-dropdown="showCouponDropdown"
-          :co-the-tim-phieu="coTheTimPhieu"
-          :loading-coupons="loadingCoupons"
-          :coupon-results="couponResults"
-          :applied-coupon="appliedCoupon"
-          :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
-          :khach-can-tra="khachCanTra"
-          :shipping-info="shippingInfo"
-          :ten-khach-hang-hien-thi="tenKhachHangHienThi"
-          :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
-          :payment-method="paymentMethod"
-          :amount-paid="amountPaid"
-          :payment-validation-message="paymentValidationMessage"
-          :tien-thua="tienThua"
-          :payment-note="paymentNote"
-          :can-create-pending-invoice="canCreatePendingInvoice"
-          :saving-pending-invoice="savingPendingInvoice"
-          :pending-invoice-limit-reached="pendingInvoiceLimitReached"
-          :can-pay="canPay"
-          :paying-invoice="payingInvoice"
-          :canceling-pending-invoice="cancelingPendingInvoice"
-          :dinh-dang-tien="dinhDangTien"
-          @update:coupon-code="emit('update:couponCode', $event)"
-          @focus-coupon="emit('focus-coupon')"
-          @blur-coupon="emit('blur-coupon')"
-          @apply-coupon="emit('apply-coupon')"
-          @select-coupon="emit('select-coupon', $event)"
-          @remove-coupon="emit('remove-coupon')"
-          @update-shipping="emit('update-shipping', $event)"
-          @calculate-shipping="emit('calculate-shipping')"
-          @update:payment-method="emit('update:paymentMethod', $event)"
-          @amount-input="emit('amount-input', $event)"
-          @update:payment-note="emit('update:paymentNote', $event)"
-          @create-pending-invoice="emit('create-pending-invoice')"
-          @pay-now="emit('pay-now')"
-          @cancel-pending-invoice="emit('cancel-pending-invoice')"
-        />
+        <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <BanHangPaymentSection
+            :active-pending-invoice="activePendingInvoice"
+            :invoice-loading="invoiceLoading"
+            :tong-so-luong="tongSoLuong"
+            :tong-tien-sau-giam-hien-thi="tongTienSauGiamHienThi"
+            :tien-giam="tienGiam"
+            :tong-tien="tongTien"
+            :san-pham-validation-message="sanPhamValidationMessage"
+            :coupon-code="couponCode"
+            :co-the-ap-dung-phieu="coTheApDungPhieu"
+            :applying-coupon="applyingCoupon"
+            :show-coupon-dropdown="showCouponDropdown"
+            :co-the-tim-phieu="coTheTimPhieu"
+            :loading-coupons="loadingCoupons"
+            :coupon-results="couponResults"
+            :applied-coupon="appliedCoupon"
+            :ma-phieu-chua-ap-dung="maPhieuChuaApDung"
+            :khach-can-tra="khachCanTra"
+            :is-guest-customer="isGuestCustomer"
+            :shipping-info="shippingInfo"
+            :ten-khach-hang-hien-thi="tenKhachHangHienThi"
+            :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
+            :payment-method="paymentMethod"
+            :amount-paid="amountPaid"
+            :payment-validation-message="paymentValidationMessage"
+            :tien-thua="tienThua"
+            :payment-note="paymentNote"
+            :can-create-pending-invoice="canCreatePendingInvoice"
+            :saving-pending-invoice="savingPendingInvoice"
+            :pending-invoice-limit-reached="pendingInvoiceLimitReached"
+            :can-pay="canPay"
+            :paying-invoice="payingInvoice"
+            :canceling-pending-invoice="cancelingPendingInvoice"
+            :dinh-dang-tien="dinhDangTien"
+            @update:coupon-code="emit('update:couponCode', $event)"
+            @focus-coupon="emit('focus-coupon')"
+            @blur-coupon="emit('blur-coupon')"
+            @apply-coupon="emit('apply-coupon')"
+            @select-coupon="emit('select-coupon', $event)"
+            @remove-coupon="emit('remove-coupon')"
+            @update-shipping="emit('update-shipping', $event)"
+            @calculate-shipping="emit('calculate-shipping')"
+            @update:payment-method="emit('update:paymentMethod', $event)"
+            @amount-input="emit('amount-input', $event)"
+            @update:payment-note="emit('update:paymentNote', $event)"
+            @print-invoice="emit('print-invoice')"
+            @pay-now="emit('pay-now')"
+            @cancel-pending-invoice="emit('cancel-pending-invoice')"
+            @create-empty-invoice="emit('create-empty-invoice')"
+          />
+        </section>
       </div>
     </div>
 

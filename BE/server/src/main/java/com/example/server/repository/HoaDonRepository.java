@@ -12,6 +12,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     List<HoaDon> findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(Integer kenhBan, Integer trangThai);
 
+    long countByKenhBanAndTrangThai(Integer kenhBan, Integer trangThai);
+
     /** Các giỏ đang giữ hàng đã quá hạn (để scheduler hoàn tồn). */
     List<HoaDon> findByTrangThaiAndHanGiuHangIsNotNullAndHanGiuHangBefore(Integer trangThai, Instant moc);
 

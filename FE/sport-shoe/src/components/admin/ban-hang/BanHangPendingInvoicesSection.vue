@@ -1,4 +1,5 @@
 <script setup>
+import { Plus } from "lucide-vue-next";
 defineProps({
   pendingInvoices: {
     type: Array,
@@ -26,14 +27,23 @@ defineProps({
   }
 });
 
-const emit = defineEmits(["select-invoice"]);
+const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
 </script>
 
 <template>
-  <section class="mb-6 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-    <div class="mb-4 flex items-center justify-between">
-      <div>
+  <section class="shrink-0 rounded-[20px] border border-white/70 bg-white/90 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+    <div class="mb-2 flex items-center justify-between">
+      <div class="flex items-center gap-3">
         <h2 class="text-lg font-bold text-slate-900">Hóa đơn chờ</h2>
+        <button
+          type="button"
+          class="flex h-8 px-3 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 transition hover:border-red-300 hover:text-red-500"
+          title="Tạo hóa đơn chờ mới"
+          @click="emit('create-empty-invoice')"
+        >
+          <Plus class="h-4 w-4" />
+          Hóa đơn chờ
+        </button>
       </div>
       <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
         {{ loadingPendingInvoices ? "Đang tải..." : `${pendingInvoices.length}/${maxPendingInvoices} hóa đơn` }}
@@ -41,15 +51,15 @@ const emit = defineEmits(["select-invoice"]);
     </div>
 
     <p v-if="pendingInvoiceLimitReached" class="mb-4 text-xs font-medium text-amber-600">
-      Đã đạt giới hạn tối đa 5 hóa đơn chờ.
+      Đã đạt giới hạn tối đa {{ maxPendingInvoices }} hóa đơn chờ.
     </p>
 
-    <div class="flex flex-wrap gap-3">
+    <div class="flex w-full gap-3 overflow-x-auto pb-2 snap-x">
       <button
         v-for="invoice in pendingInvoices"
         :key="invoice.id"
         type="button"
-        class="min-w-[220px] rounded-2xl border px-4 py-3 text-left transition"
+        class="min-w-[200px] max-w-[300px] flex-1 shrink-0 snap-start rounded-2xl border px-4 py-3 text-left transition"
         :class="
           activePendingInvoice?.id === invoice.id
             ? 'border-red-500 bg-red-50 shadow-[0_16px_30px_rgba(239,68,68,0.15)]'
@@ -57,16 +67,9 @@ const emit = defineEmits(["select-invoice"]);
         "
         @click="emit('select-invoice', invoice)"
       >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-sm font-bold text-slate-900">{{ invoice.ma }}</p>
-            <p class="mt-1 text-sm text-slate-600">{{ invoice.tenKhachHang }}</p>
-          </div>
-          <span class="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-500">
-            {{ invoice.tongSanPham }} SP
-          </span>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm font-bold text-slate-900">{{ invoice.ma }}</p>
         </div>
-        <p class="mt-3 text-sm font-semibold text-red-500">{{ dinhDangTien(invoice.tongTien) }}</p>
       </button>
 
       <div

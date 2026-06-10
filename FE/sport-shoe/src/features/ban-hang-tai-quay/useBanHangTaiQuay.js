@@ -49,14 +49,14 @@ function useBanHangTaiQuay() {
     () => pendingInvoices.value.length >= MAX_PENDING_INVOICES
   );
   const canCreatePendingInvoice = computed(
-    () => !sanPhamValidationMessage.value &&
-      !savingPendingInvoice.value &&
+    () => !savingPendingInvoice.value &&
       !maPhieuChuaApDung.value &&
       !pendingInvoiceLimitReached.value &&
-      coThongTinGiaoHangHopLe.value
+      coThongTinGiaoHangHopLe.value &&
+      !sanPhamValidationMessage.value
   );
   const canPay = computed(() => {
-    if (sanPhamValidationMessage.value || payingInvoice.value || maPhieuChuaApDung.value || !coThongTinGiaoHangHopLe.value) {
+    if (!cartItems.value.length || sanPhamValidationMessage.value || payingInvoice.value || maPhieuChuaApDung.value || !coThongTinGiaoHangHopLe.value) {
       return false;
     }
     if (paymentMethod.value === 1) {
@@ -205,6 +205,8 @@ function useBanHangTaiQuay() {
     productResults,
     paginatedProducts,
     currentPage,
+    pageSize,
+    totalItems,
     totalPages,
     colorOptions,
     sizeOptions,
@@ -266,8 +268,10 @@ function useBanHangTaiQuay() {
     scannedKeyword = "",
     scannedProducts = [],
   } = {}) {
-    productKeyword.value = preserveProductSearch ? scannedKeyword : "";
-    productVariantResults.value = preserveProductSearch ? scannedProducts : [];
+    if (preserveProductSearch) {
+      productKeyword.value = scannedKeyword;
+      productVariantResults.value = scannedProducts;
+    }
     selectedProductDetail.value = null;
     selectedColor.value = "";
     selectedSize.value = "";
@@ -277,7 +281,7 @@ function useBanHangTaiQuay() {
 
   function resetDraft() {
     selectedCustomer.value = null;
-    customerKeyword.value = "";
+    customerKeyword.value = GUEST_LABEL;
     productKeyword.value = "";
     couponCode.value = "";
     customerResults.value = [];
@@ -434,7 +438,7 @@ function useBanHangTaiQuay() {
   }
 
   async function handleCreatePendingInvoice() {
-    if (!validateCartItems()) {
+    if (!validateCartItems(false)) {
       return;
     }
     if (pendingInvoiceLimitReached.value) {
@@ -469,7 +473,7 @@ function useBanHangTaiQuay() {
   }
 
   async function handlePayNow() {
-    if (!validateCartItems() || !validatePaymentInput()) {
+    if (!validateCartItems(true) || !validatePaymentInput()) {
       return;
     }
     if (!canPay.value) {
@@ -520,10 +524,52 @@ function useBanHangTaiQuay() {
     }
   }
 
+  async function handleCreateEmptyInvoice() {
+    if (pendingInvoiceLimitReached.value) {
+      pageError.value = `Chỉ được tạo tối đa ${MAX_PENDING_INVOICES} hóa đơn chờ.`;
+      return;
+    }
+    savingPendingInvoice.value = true;
+    pageError.value = "";
+    successMessage.value = "";
+    try {
+      resetDraft();
+      const createdInvoice = await taoHoaDonCho({
+        khachHangId: null,
+        tenKhachHang: "",
+        soDienThoai: "",
+        maPhieuGiamGia: null,
+        thongTinGiaoHang: {
+          giaoHang: false,
+          tenNguoiNhan: null,
+          soDienThoaiNguoiNhan: null,
+          diaChiGiaoHang: null,
+          phiVanChuyen: 0,
+          donViVanChuyen: null
+        },
+        items: []
+      });
+      successMessage.value = `Đã tạo hóa đơn chờ ${createdInvoice.ma}`;
+      await fetchPendingInvoices();
+      const matchedInvoice = pendingInvoices.value.find((invoice) => invoice.id === createdInvoice.id) ?? null;
+      activePendingInvoice.value = matchedInvoice;
+    } catch (error) {
+      pageError.value = error instanceof Error ? error.message : "Không thể tạo hóa đơn chờ";
+    } finally {
+      savingPendingInvoice.value = false;
+    }
+  }
+
   function clearTimers() {
     clearCustomerTimer();
     clearProductTimer();
     clearCouponTimers();
+  }
+
+  function handlePrintInvoice() {
+    if (!activePendingInvoice.value) return;
+    // Tạm thời chỉ hiển thị thông báo, sau này có thể tích hợp API in hóa đơn thực tế
+    successMessage.value = `Đang in hóa đơn ${activePendingInvoice.value.ma}...`;
   }
 
   onMounted(async () => {
@@ -555,6 +601,8 @@ function useBanHangTaiQuay() {
     productResults,
     paginatedProducts,
     currentPage,
+    pageSize,
+    totalItems,
     totalPages,
     productSearchLabel,
     cartItems,
@@ -625,8 +673,10 @@ function useBanHangTaiQuay() {
     handleCalculateShippingFee,
     handleAmountPaidInput,
     handleCreatePendingInvoice,
+    handleCreateEmptyInvoice,
     handlePayNow,
-    handleCancelPendingInvoice
+    handleCancelPendingInvoice,
+    handlePrintInvoice
   };
 }
 

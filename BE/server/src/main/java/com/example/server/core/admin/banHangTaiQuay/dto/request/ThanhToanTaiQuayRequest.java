@@ -13,7 +13,7 @@ public record ThanhToanTaiQuayRequest(
         String soDienThoai,
         String maPhieuGiamGia,
         ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
-        @NotNull(message = "Hinh thuc thanh toan khong duoc de trong")
+        @NotNull(message = "Hình thức thanh toán không được để trống")
         Integer hinhThucThanhToan,
         BigDecimal tienKhachDua,
         String ghiChu,

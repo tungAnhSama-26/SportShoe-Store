@@ -16,7 +16,7 @@ public record TinhPhiVanChuyenTaiQuayRequest(
         Integer weight,
         Integer insuranceValue,
         String coupon,
-        @NotEmpty(message = "Danh sach san pham khong duoc de trong")
+        @NotEmpty(message = "Danh sách sản phẩm không được để trống")
         List<@Valid TaoHoaDonChoItemRequest> items
 ) {
 }

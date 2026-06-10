@@ -172,13 +172,18 @@ export function usePosShipping({
     calculatingDeliveryFee.value = true;
     pageError.value = "";
     try {
+      const items = cartItems.value.map(item => ({
+        chiTietId: item.chiTietId,
+        soLuong: item.soLuong
+      }));
       const result = await tinhPhiVanChuyenTaiQuay({
-        diaChiGiaoHang: deliveryAddress.value,
+        toAddress: deliveryAddress.value,
         serviceTypeId: deliveryConfig.value.serviceTypeId,
         length: deliveryConfig.value.length,
         width: deliveryConfig.value.width,
         height: deliveryConfig.value.height,
-        weight: deliveryConfig.value.weight
+        weight: deliveryConfig.value.weight,
+        items: items
       });
       deliveryFee.value = result.phiVanChuyen;
       deliveryResolvedAddress.value = result.diaChiDaDo || "";

@@ -21,18 +21,19 @@ export function usePosCart({
     () => cartItems.value.find((item) => !Number.isInteger(Number(item.soLuong)) || Number(item.soLuong) <= 0) ?? null
   );
   const sanPhamValidationMessage = computed(() => {
-    if (!cartItems.value.length) {
-      return "Vui lòng thêm ít nhất 1 sản phẩm vào hóa đơn.";
-    }
     if (sanPhamKhongHopLe.value) {
       return `Số lượng của sản phẩm ${sanPhamKhongHopLe.value.tenSanPham} phải lớn hơn 0.`;
     }
     return "";
   });
 
-  function validateCartItems() {
+  function validateCartItems(isPayment = false) {
     if (sanPhamValidationMessage.value) {
       pageError.value = sanPhamValidationMessage.value;
+      return false;
+    }
+    if (isPayment && !cartItems.value.length) {
+      pageError.value = "Vui lòng thêm ít nhất 1 sản phẩm vào hóa đơn để thanh toán.";
       return false;
     }
     return true;

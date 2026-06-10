@@ -56,6 +56,10 @@ defineProps({
     type: Array,
     default: () => []
   },
+  isGuestCustomer: {
+    type: Boolean,
+    default: false
+  },
   appliedCoupon: {
     type: Object,
     default: null
@@ -142,37 +146,20 @@ const emit = defineEmits([
   "update:paymentMethod",
   "amount-input",
   "update:paymentNote",
-  "create-pending-invoice",
+  "print-invoice",
   "pay-now",
-  "cancel-pending-invoice"
+  "cancel-pending-invoice",
+  "create-empty-invoice"
 ]);
 </script>
 
 <template>
-  <aside class="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-    <div class="rounded-[28px] bg-[linear-gradient(180deg,#fff7f4_0%,#ffffff_100%)] p-5">
-      <p class="text-xs font-semibold uppercase tracking-[0.24em] text-red-400">Tổng quan</p>
-      <h2 class="mt-3 text-2xl font-bold text-slate-900">
-        {{ activePendingInvoice?.ma || "Hóa đơn mới" }}
-      </h2>
-      <p class="mt-2 text-sm text-slate-500">
-        {{ invoiceLoading ? "Đang tải chi tiết hóa đơn..." : "Hóa đơn bán hàng tại quầy đang thao tác." }}
-      </p>
+  <div class="flex h-full flex-col">
+    <div class="flex min-h-0 flex-1 flex-col rounded-[24px] bg-[linear-gradient(180deg,#fff7f4_0%,#ffffff_100%)] p-3">
 
-      <div class="mt-6 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <span class="text-sm text-slate-500">Tổng sản phẩm</span>
-          <span class="text-lg font-bold text-slate-900">{{ tongSoLuong }}</span>
-        </div>
-        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
-          <span class="text-sm text-slate-500">Tổng tiền hàng</span>
-          <div class="text-right">
-            <p class="text-lg font-bold text-slate-900">{{ dinhDangTien(tongTienSauGiamHienThi) }}</p>
-            <p v-if="tienGiam > 0" class="mt-1 text-xs text-slate-400 line-through">
-              {{ dinhDangTien(tongTien) }}
-            </p>
-          </div>
-        </div>
+      <div class="mt-4 flex-1 overflow-y-auto pr-2 space-y-3">
+
+
 
         <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <label class="block text-sm font-semibold text-slate-800">Áp phiếu giảm giá</label>
@@ -259,27 +246,20 @@ const emit = defineEmits([
           </div>
         </div>
 
-        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+        <div v-if="tienGiam > 0" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Tiền giảm</span>
-          <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">{{ dinhDangTien(tienGiam) }}</span>
+          <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">-{{ dinhDangTien(tienGiam) }}</span>
         </div>
         <div v-if="shippingInfo.giaoHang" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Phí ship</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(shippingInfo.phiVanChuyen || 0) }}</span>
         </div>
-        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+        <div v-if="khachCanTra > 0" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Khách cần trả</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
         </div>
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <span class="text-sm text-slate-500">Khách hàng</span>
-          <span class="text-right text-sm font-semibold text-slate-700">{{ tenKhachHangHienThi }}</span>
-        </div>
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <span class="text-sm text-slate-500">Số điện thoại</span>
-          <span class="text-right text-sm font-semibold text-slate-700">{{ soDienThoaiKhachHangHienThi }}</span>
-        </div>
-        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+
+        <div v-if="!isGuestCustomer" class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div class="flex items-center justify-between gap-3">
             <div>
               <p class="text-sm font-semibold text-slate-800">Giao hàng</p>
@@ -433,27 +413,9 @@ const emit = defineEmits([
               />
               <span>Chuyển khoản</span>
             </label>
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
-              <input
-                :checked="paymentMethod === 4"
-                type="radio"
-                class="h-4 w-4 accent-red-500"
-                @change="emit('update:paymentMethod', 4)"
-              />
-              <span>Thẻ</span>
-            </label>
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
-              <input
-                :checked="paymentMethod === 3"
-                type="radio"
-                class="h-4 w-4 accent-red-500"
-                @change="emit('update:paymentMethod', 3)"
-              />
-              <span>Ví</span>
-            </label>
           </div>
         </div>
-        <div>
+        <div v-if="paymentMethod === 1">
           <label class="mb-2 block text-sm text-slate-500">Khách thanh toán</label>
           <input
             :value="amountPaid"
@@ -470,7 +432,7 @@ const emit = defineEmits([
             {{ paymentValidationMessage }}
           </p>
         </div>
-        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+        <div v-if="paymentMethod === 1" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Tiền thừa trả khách</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(tienThua) }}</span>
         </div>
@@ -486,14 +448,14 @@ const emit = defineEmits([
         </div>
       </div>
 
-      <div class="mt-8 grid gap-3 sm:grid-cols-2">
+      <div class="mt-4 shrink-0 border-t border-slate-100 pt-4 grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           class="rounded-2xl bg-slate-200 px-4 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-          :disabled="!canCreatePendingInvoice"
-          @click="emit('create-pending-invoice')"
+          :disabled="!activePendingInvoice"
+          @click="emit('print-invoice')"
         >
-          {{ savingPendingInvoice ? "Đang tạo..." : pendingInvoiceLimitReached ? "Đã đủ 5 hóa đơn chờ" : "Tạo hóa đơn chờ" }}
+          In hóa đơn
         </button>
         <button
           type="button"
@@ -508,14 +470,13 @@ const emit = defineEmits([
         {{ sanPhamValidationMessage }}
       </p>
       <button
-        v-if="activePendingInvoice"
         type="button"
         class="mt-3 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
-        :disabled="cancelingPendingInvoice"
-        @click="emit('cancel-pending-invoice')"
+        :disabled="pendingInvoiceLimitReached"
+        @click="emit('create-empty-invoice')"
       >
-        {{ cancelingPendingInvoice ? "Đang hủy hóa đơn chờ..." : "Hủy hóa đơn chờ" }}
+        Tạo hóa đơn
       </button>
     </div>
-  </aside>
+  </div>
 </template>
