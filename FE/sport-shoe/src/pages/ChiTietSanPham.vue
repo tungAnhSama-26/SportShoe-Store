@@ -160,12 +160,8 @@ function giamSoLuong() {
 }
 
 function kiemTraChon() {
-  if (!mauChon.value) {
-    showWarning('Vui lòng chọn màu sắc.');
-    return false;
-  }
-  if (!sizeChon.value) {
-    showWarning('Vui lòng chọn kích cỡ.');
+  if (!mauChon.value || !sizeChon.value) {
+    showWarning('Bạn chưa chọn thông tin sản phẩm (màu sắc, kích cỡ).');
     return false;
   }
   if (!bienTheChon.value || bienTheChon.value.soLuong <= 0) {

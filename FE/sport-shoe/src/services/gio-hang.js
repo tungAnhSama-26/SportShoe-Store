@@ -126,6 +126,30 @@ export async function trangThaiVnPay(token) {
   });
 }
 
+// Tính phí vận chuyển (GHN) cho giỏ hiện tại tới địa chỉ nhận.
+// Trả về { phiVanChuyen, uocTinh, moTa } hoặc null nếu chưa đăng nhập.
+export async function tinhPhiVanChuyen({ tinhThanh, quanHuyen, phuongXa, diaChiCuThe }) {
+  const id = layKhachId();
+  if (!id) return null;
+  return apiRequest(`/client/phi-van-chuyen`, {
+    method: "POST",
+    authenticated: false,
+    body: JSON.stringify({ khachHangId: id, tinhThanh, quanHuyen, phuongXa, diaChiCuThe }),
+    fallbackMessage: "Không thể tính phí vận chuyển",
+  });
+}
+
+// Danh sách voucher khách có thể dùng cho giỏ hiện tại (toàn sàn + voucher riêng được gửi).
+export async function layVoucherKhaDung() {
+  const id = layKhachId();
+  if (!id) return [];
+  const data = await apiRequest(`/client/voucher/kha-dung?khachHangId=${id}`, {
+    authenticated: false,
+    fallbackMessage: "Không thể tải danh sách voucher",
+  });
+  return Array.isArray(data) ? data : [];
+}
+
 // Kiểm tra / áp mã giảm giá trên giỏ hiện tại.
 export async function kiemTraVoucher(maPhieu) {
   const id = layKhachId();

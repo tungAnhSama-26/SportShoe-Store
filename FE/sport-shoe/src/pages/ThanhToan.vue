@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, giuHang, huyGiuHang, huyGiuHangBeacon, kiemTraVoucher, taoMaVnPay, trangThaiVnPay } from '../services/gio-hang';
+import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, giuHang, huyGiuHang, huyGiuHangBeacon, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -34,11 +34,81 @@ const maVoucher = ref('');
 const voucher = ref(null); // { ma, ten, tienGiam, tongTienHang, tongTienSauGiam }
 const dangApVoucher = ref(false);
 
+// Danh sách voucher khả dụng (toàn sàn + voucher riêng được gửi cho khách)
+const dsVoucher = ref([]);
+const hienDsVoucher = ref(false);
+const dangTaiVoucher = ref(false);
+
+function moTaGiamVoucher(v) {
+  if (Number(v.loai) === 1) {
+    return `Giảm ${Number(v.giaTri)}%` + (v.giamToiDa ? ` (tối đa ${dinhDangTienViet(v.giamToiDa)})` : '');
+  }
+  return `Giảm ${dinhDangTienViet(v.giaTri)}`;
+}
+
+async function moDanhSachVoucher() {
+  hienDsVoucher.value = true;
+  if (dsVoucher.value.length || dangTaiVoucher.value) return;
+  dangTaiVoucher.value = true;
+  try {
+    dsVoucher.value = await layVoucherKhaDung();
+  } catch {
+    dsVoucher.value = [];
+  } finally {
+    dangTaiVoucher.value = false;
+  }
+}
+
+async function chonVoucher(v) {
+  if (!v.apDung) return;
+  maVoucher.value = v.ma;
+  hienDsVoucher.value = false;
+  await apVoucher();
+}
+
 // VNPay (giả lập)
 const qrVnPay = ref(null); // { token, qrData, maGiaoDich }
 let pollTimer = null;
-const tongThanhToan = computed(() =>
+
+// Phí vận chuyển (GHN) - tính lại mỗi khi địa chỉ thay đổi.
+const phiShip = ref(null); // { phiVanChuyen, uocTinh, moTa }
+const dangTinhPhi = ref(false);
+const phiShipSo = computed(() => Number(phiShip.value?.phiVanChuyen || 0));
+
+const tienHang = computed(() =>
   voucher.value ? Number(voucher.value.tongTienSauGiam) : Number(gio.value.tongTien || 0)
+);
+const tongThanhToan = computed(() => tienHang.value + phiShipSo.value);
+
+let phiTimer = null;
+async function capNhatPhiShip() {
+  const f = form.value;
+  if (!f.tinhThanh.trim() || !f.quanHuyen.trim() || !f.phuongXa.trim()) {
+    phiShip.value = null;
+    return;
+  }
+  dangTinhPhi.value = true;
+  try {
+    phiShip.value = await tinhPhiVanChuyen({
+      tinhThanh: f.tinhThanh.trim(),
+      quanHuyen: f.quanHuyen.trim(),
+      phuongXa: f.phuongXa.trim(),
+      diaChiCuThe: f.diaChiCuThe.trim(),
+    });
+  } catch {
+    phiShip.value = null;
+  } finally {
+    dangTinhPhi.value = false;
+  }
+}
+
+// Địa chỉ đổi -> tính lại phí ship (debounce 600ms để tránh gọi liên tục khi gõ).
+watch(
+  () => [form.value.tinhThanh, form.value.quanHuyen, form.value.phuongXa, form.value.diaChiCuThe],
+  () => {
+    if (phiTimer) clearTimeout(phiTimer);
+    phiTimer = setTimeout(capNhatPhiShip, 600);
+  }
 );
 
 onMounted(async () => {
@@ -344,17 +414,51 @@ function xuLyAnhLoi(event) {
           </div>
           <!-- Mã giảm giá -->
           <div class="mt-4 border-t border-slate-100 pt-4">
-            <div v-if="!voucher" class="flex gap-2">
-              <input
-                v-model="maVoucher"
-                type="text"
-                placeholder="Nhập mã giảm giá"
-                class="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                @keyup.enter="apVoucher"
-              />
-              <button @click="apVoucher" :disabled="dangApVoucher" class="rounded-xl bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60">
-                {{ dangApVoucher ? '...' : 'Áp dụng' }}
-              </button>
+            <div v-if="!voucher">
+              <div class="flex gap-2">
+                <input
+                  v-model="maVoucher"
+                  type="text"
+                  placeholder="Nhập hoặc chọn mã giảm giá"
+                  class="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  @focus="moDanhSachVoucher"
+                  @keyup.enter="apVoucher"
+                />
+                <button @click="apVoucher" :disabled="dangApVoucher" class="rounded-xl bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60">
+                  {{ dangApVoucher ? '...' : 'Áp dụng' }}
+                </button>
+              </div>
+
+              <!-- Danh sách voucher khả dụng -->
+              <div v-if="hienDsVoucher" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                <div class="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+                  <span class="text-xs font-semibold text-slate-500">Voucher có thể dùng</span>
+                  <button @click="hienDsVoucher = false" class="text-xs font-medium text-slate-400 hover:text-slate-600">Đóng</button>
+                </div>
+                <p v-if="dangTaiVoucher" class="px-3 py-5 text-center text-xs text-slate-400">Đang tải...</p>
+                <p v-else-if="!dsVoucher.length" class="px-3 py-5 text-center text-xs text-slate-400">Bạn chưa có voucher nào dùng được.</p>
+                <ul v-else class="max-h-64 divide-y divide-slate-50 overflow-y-auto">
+                  <li v-for="v in dsVoucher" :key="v.phieuId">
+                    <button
+                      @click="chonVoucher(v)"
+                      :disabled="!v.apDung"
+                      class="flex w-full items-start gap-3 px-3 py-2.5 text-left transition hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+                    >
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                          <span class="text-sm font-semibold text-slate-800">{{ moTaGiamVoucher(v) }}</span>
+                          <span v-if="v.rieng" class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Của bạn</span>
+                        </div>
+                        <p class="mt-0.5 text-xs text-slate-500">Mã: <span class="font-medium text-slate-700">{{ v.ma }}</span></p>
+                        <p v-if="v.giaTriToiThieu" class="text-[11px]" :class="v.apDung ? 'text-slate-400' : 'text-rose-500'">
+                          Đơn tối thiểu {{ dinhDangTienViet(v.giaTriToiThieu) }}{{ v.apDung ? '' : ' (chưa đủ)' }}
+                        </p>
+                      </div>
+                      <span v-if="v.apDung && v.tienGiam > 0" class="shrink-0 text-xs font-semibold text-emerald-600">-{{ dinhDangTienViet(v.tienGiam) }}</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
             <div v-else class="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2.5">
               <span class="text-sm font-semibold text-emerald-700">✓ Đã áp mã {{ voucher.ma }}</span>
@@ -371,6 +475,15 @@ function xuLyAnhLoi(event) {
             <div v-if="voucher" class="flex items-center justify-between text-sm font-medium text-emerald-600">
               <span>Giảm giá</span>
               <span>-{{ dinhDangTienViet(voucher.tienGiam) }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm text-slate-500">
+              <span>
+                Phí vận chuyển
+                <span v-if="phiShip?.uocTinh" class="ml-1 text-xs text-slate-400">(ước tính)</span>
+              </span>
+              <span v-if="dangTinhPhi" class="text-slate-400">Đang tính...</span>
+              <span v-else-if="phiShip">{{ dinhDangTienViet(phiShipSo) }}</span>
+              <span v-else class="text-xs text-slate-400">Nhập địa chỉ để tính</span>
             </div>
             <div class="flex items-center justify-between pt-1">
               <span class="text-sm font-semibold text-slate-700">Tổng cộng</span>

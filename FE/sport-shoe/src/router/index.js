@@ -416,7 +416,8 @@ router.beforeEach((to) => {
 
   if (!hasRequiredAdminCccd() && !isOwnEmployeeProfile(to.path)) {
     showWarning(
-      "Tài khoản của bạn chưa xác minh CCCD. Vui lòng vào hồ sơ cá nhân và quét CCCD trước khi sử dụng các chức năng khác."
+      "Tài khoản của bạn chưa xác minh CCCD. Vui lòng vào hồ sơ cá nhân và quét CCCD trước khi sử dụng các chức năng khác.",
+      "Cần xác minh CCCD"
     );
     return {
       path: ownEmployeeProfilePath(),

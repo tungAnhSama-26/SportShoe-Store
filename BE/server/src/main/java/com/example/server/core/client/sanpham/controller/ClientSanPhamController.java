@@ -74,25 +74,45 @@ public class ClientSanPhamController {
                 ? List.of() : giayChiTietRepository.findMauSacByGiayIds(ids));
         Map<Integer, List<String>> sizeMap = nhomTheoGiay(ids.isEmpty()
                 ? List.of() : giayChiTietRepository.findKichCoByGiayIds(ids));
-        Map<Integer, String> anhMap = new HashMap<>();
-        if (!ids.isEmpty()) {
-            for (Object[] row : giayRepository.findHinhAnhByIds(ids)) {
-                anhMap.put((Integer) row[0], (String) row[1]);
-            }
-        }
-
-        // Tính giá sau giảm (theo đợt giảm giá) cho từng sản phẩm.
+        // Tính giá sau giảm + tìm biến thể có giá thấp nhất cho từng sản phẩm.
         List<GiayChiTiet> allCts = ids.isEmpty() ? List.of() : giayChiTietRepository.findActiveByGiayIds(ids);
         Map<Integer, BigDecimal> giaSauGiamMap = service.layGiaSauGiam(allCts);
         Map<Integer, BigDecimal> giaHienThiMinMap = new HashMap<>();
         Map<Integer, Boolean> coGiamMap = new HashMap<>();
+        Map<Integer, Integer> bienTheReNhatMap = new HashMap<>(); // giayId -> id biến thể giá thấp nhất
         for (GiayChiTiet gct : allCts) {
             Integer giayId = gct.getGiay().getId();
             BigDecimal gia = giaSauGiamMap.getOrDefault(gct.getId(), gct.getGiaBan());
-            giaHienThiMinMap.merge(giayId, gia, BigDecimal::min);
+            BigDecimal min = giaHienThiMinMap.get(giayId);
+            if (min == null || gia.compareTo(min) < 0) {
+                giaHienThiMinMap.put(giayId, gia);
+                bienTheReNhatMap.put(giayId, gct.getId());
+            }
             if (giaSauGiamMap.containsKey(gct.getId())) {
                 coGiamMap.put(giayId, true);
             }
+        }
+
+        // Ảnh hiển thị = ảnh chính của biến thể giá thấp nhất. Nếu biến thể đó chưa
+        // có ảnh thì lùi về ảnh gốc của sản phẩm để card không bị trống.
+        Map<Integer, String> anhBienTheRe = new HashMap<>();
+        List<Integer> bienTheReNhatIds = new ArrayList<>(bienTheReNhatMap.values());
+        if (!bienTheReNhatIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(bienTheReNhatIds)) {
+                // Đã ORDER BY laHinhChinh DESC -> dòng đầu của mỗi biến thể là ảnh chính.
+                anhBienTheRe.putIfAbsent((Integer) row[0], (String) row[1]);
+            }
+        }
+        Map<Integer, String> anhGocMap = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (Object[] row : giayRepository.findHinhAnhByIds(ids)) {
+                anhGocMap.put((Integer) row[0], (String) row[1]);
+            }
+        }
+        Map<Integer, String> anhMap = new HashMap<>();
+        for (Map.Entry<Integer, Integer> e : bienTheReNhatMap.entrySet()) {
+            String anh = anhBienTheRe.get(e.getValue());
+            anhMap.put(e.getKey(), anh != null ? anh : anhGocMap.get(e.getKey()));
         }
 
         List<ClientSanPhamResponse> data = items.stream()

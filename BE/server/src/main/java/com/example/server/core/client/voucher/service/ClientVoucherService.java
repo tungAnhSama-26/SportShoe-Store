@@ -1,6 +1,7 @@
 package com.example.server.core.client.voucher.service;
 
 import com.example.server.core.admin.banHangTaiQuay.service.usecase.BanHangTaiQuayPricingUseCase;
+import com.example.server.core.client.voucher.dto.VoucherKhaDungResponse;
 import com.example.server.core.client.voucher.dto.VoucherResponse;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.KhachHang;
@@ -13,7 +14,11 @@ import com.example.server.repository.PhieuGiamGiaRepository;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ClientVoucherService {
 
     private static final int TRANG_THAI_PHIEU_HOAT_DONG = 1;
+    private static final int LOAI_PHIEU_TOAN_SAN = 1;
     private static final int LOAI_PHIEU_CA_NHAN = 2;
     private static final int PHIEU_KH_CHUA_DUNG = 1;
     private static final int PHIEU_KH_DA_DUNG = 2;
+    private static final int KIEU_GIAM_PHAN_TRAM = 1;
+    private static final int KIEU_GIAM_TIEN_MAT = 2;
 
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
@@ -53,6 +61,71 @@ public class ClientVoucherService {
         BigDecimal tienGiam = pricingUseCase.tinhSoTienGiam(phieu, tongTienHang);
         BigDecimal sauGiam = tongTienHang.subtract(tienGiam).max(BigDecimal.ZERO);
         return new VoucherResponse(phieu.getId(), phieu.getMa(), phieu.getTen(), tienGiam, tongTienHang, sauGiam);
+    }
+
+    /**
+     * Liệt kê voucher khách có thể dùng cho giỏ hiện tại: voucher cá nhân được gửi riêng
+     * cho khách (chưa dùng) + voucher toàn sàn đang hoạt động. Không thay đổi dữ liệu.
+     */
+    @Transactional(readOnly = true)
+    public List<VoucherKhaDungResponse> layVoucherKhaDung(UUID khachHangId, BigDecimal tongTienHang) {
+        BigDecimal tong = tongTienHang == null ? BigDecimal.ZERO : tongTienHang;
+        Instant now = Instant.now();
+        Map<Integer, VoucherKhaDungResponse> ketQua = new LinkedHashMap<>();
+
+        // Voucher cá nhân (gửi riêng cho khách) - đưa lên trước.
+        if (khachHangId != null) {
+            for (PhieuGiamGiaKhachHang pggh : phieuGiamGiaKhachHangRepository.findKhaDungByKhachHang(khachHangId)) {
+                themNeuHieuLuc(ketQua, pggh.getPhieuGiamGia(), tong, now, true);
+            }
+        }
+        // Voucher toàn sàn (công khai) - ai cũng dùng được.
+        for (PhieuGiamGia phieu : phieuGiamGiaRepository
+                .findByLoaiPhieuAndTrangThai(LOAI_PHIEU_TOAN_SAN, TRANG_THAI_PHIEU_HOAT_DONG)) {
+            themNeuHieuLuc(ketQua, phieu, tong, now, false);
+        }
+
+        // Đủ điều kiện áp lên trước, rồi tới mức giảm cao hơn.
+        return ketQua.values().stream()
+                .sorted(Comparator.comparing(VoucherKhaDungResponse::apDung).reversed()
+                        .thenComparing(Comparator.comparing(VoucherKhaDungResponse::tienGiam).reversed()))
+                .toList();
+    }
+
+    private void themNeuHieuLuc(
+            Map<Integer, VoucherKhaDungResponse> ketQua,
+            PhieuGiamGia phieu,
+            BigDecimal tong,
+            Instant now,
+            boolean rieng
+    ) {
+        if (phieu == null || ketQua.containsKey(phieu.getId()) || !phieuConHieuLuc(phieu, now)) {
+            return;
+        }
+        BigDecimal tienGiam = tong.signum() > 0 ? pricingUseCase.tinhSoTienGiam(phieu, tong) : BigDecimal.ZERO;
+        boolean apDung = phieu.getGiaTriToiThieu() == null || tong.compareTo(phieu.getGiaTriToiThieu()) >= 0;
+        ketQua.put(phieu.getId(), new VoucherKhaDungResponse(
+                phieu.getId(), phieu.getMa(), phieu.getTen(),
+                phieu.getLoai(), phieu.getGiaTri(), phieu.getGiamToiDa(), phieu.getGiaTriToiThieu(),
+                tienGiam, rieng, apDung, phieu.getNgayKetThuc()));
+    }
+
+    /** Phiếu còn hiệu lực: trạng thái hoạt động, đúng thời gian, còn lượt, kiểu giảm hợp lệ. */
+    private boolean phieuConHieuLuc(PhieuGiamGia phieu, Instant now) {
+        if (phieu.getTrangThai() == null || phieu.getTrangThai() != TRANG_THAI_PHIEU_HOAT_DONG) {
+            return false;
+        }
+        if (phieu.getLoai() == null
+                || (phieu.getLoai() != KIEU_GIAM_PHAN_TRAM && phieu.getLoai() != KIEU_GIAM_TIEN_MAT)) {
+            return false;
+        }
+        if (phieu.getNgayBatDau() != null && now.isBefore(phieu.getNgayBatDau())) {
+            return false;
+        }
+        if (phieu.getNgayKetThuc() != null && now.isAfter(phieu.getNgayKetThuc())) {
+            return false;
+        }
+        return phieu.getSoLuong() != null && phieu.getSoLuong() > 0;
     }
 
     /**

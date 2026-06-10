@@ -44,7 +44,7 @@ function mapSanPhamDayDu(item) {
   return {
     id: g.id,
     ten: g.ten,
-    // Ưu tiên ảnh ở cấp sản phẩm; nếu chưa có thì dùng ảnh biến thể, cuối cùng là ảnh mặc định.
+    // hinhAnhSanPham = ảnh của biến thể giá thấp nhất (backend đã chọn); fallback ảnh gốc rồi ảnh mặc định.
     hinhAnh: item.hinhAnhSanPham || g.hinhAnh || ANH_MAC_DINH,
     gia: giaHienThi,
     giaCu: coGiam ? giaNiemYet : null,

@@ -137,7 +137,7 @@ export function showError(text = '', title = 'Thất bại!') {
   });
 }
 
-export function showWarning(text = '', title = 'Cần xác minh CCCD') {
+export function showWarning(text = '', title = 'Thông báo') {
   ensureAlertStyles();
 
   return Swal.fire({
