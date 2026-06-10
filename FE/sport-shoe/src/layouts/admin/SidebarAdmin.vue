@@ -21,6 +21,7 @@ import {
   Layers,
   MoveVertical,
   Package,
+  PackageCheck,
   Palette,
   ReceiptText,
   Ruler,
@@ -157,6 +158,11 @@ function subItemClass(active) {
       <router-link to="/admin/hoa-don" :title="compactMode ? 'Qu\u1ea3n l\u00fd h\u00f3a \u0111\u01a1n' : undefined" :class="navItemClass(isActive('/admin/hoa-don'))">
         <ReceiptText :class="navIconClass(isActive('/admin/hoa-don'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; h&#243;a &#273;&#417;n</span>
+      </router-link>
+
+      <router-link to="/admin/tra-hang" :title="compactMode ? 'Qu\u1ea3n l\u00fd tr\u1ea3 h\u00e0ng' : undefined" :class="navItemClass(isActive('/admin/tra-hang'))">
+        <PackageCheck :class="navIconClass(isActive('/admin/tra-hang'))" />
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Quản lý trả hàng</span>
       </router-link>
 
       <div v-if="laAdmin" class="space-y-1">
