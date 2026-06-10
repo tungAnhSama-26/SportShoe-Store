@@ -96,7 +96,6 @@ public class KhachHangServiceImpl implements KhachHangService {
         }
 
         return toKhachHangResponse(saved);
-    }
 
     @Override
     @Transactional
@@ -146,11 +145,14 @@ public class KhachHangServiceImpl implements KhachHangService {
         }
         return toKhachHangResponse(saved);
     }
+
+    // lkjlkjfdkj
     @Override
     @Transactional
     public void xoaKhachHang(UUID id) {
         KhachHang kh = findKhachHang(id);
         khachHangRepository.delete(kh);
+        
     }
 
     // --- Address ---
