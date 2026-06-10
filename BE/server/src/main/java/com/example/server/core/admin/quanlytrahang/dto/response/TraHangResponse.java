@@ -25,6 +25,7 @@ public record TraHangResponse(
         String lyDoTuChoi,
         Instant ngayTao,
         Instant ngayCapNhat,
+        List<String> hinhAnhs,
         List<ChiTietTraHangResponse> chiTiet,
         List<LichSuTraHangResponse> lichSu
 ) {
