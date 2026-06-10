@@ -12,6 +12,22 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     List<HoaDon> findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(Integer kenhBan, Integer trangThai);
 
+    /** Các giỏ đang giữ hàng đã quá hạn (để scheduler hoàn tồn). */
+    List<HoaDon> findByTrangThaiAndHanGiuHangIsNotNullAndHanGiuHangBefore(Integer trangThai, Instant moc);
+
+    /** Hóa đơn đang là "giỏ hàng" của khách (kênh online, trạng thái giỏ). */
+    @Query("""
+            select hd from HoaDon hd
+            where hd.khachHang.id = :khachHangId
+              and hd.kenhBan = :kenhBan
+              and hd.trangThai = :trangThai
+            """)
+    java.util.Optional<HoaDon> findGioHang(
+            @Param("khachHangId") UUID khachHangId,
+            @Param("kenhBan") Integer kenhBan,
+            @Param("trangThai") Integer trangThai
+    );
+
     @Query("""
             select distinct hd
             from HoaDon hd
