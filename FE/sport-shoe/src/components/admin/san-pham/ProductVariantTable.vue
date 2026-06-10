@@ -50,12 +50,12 @@ const props = defineProps({
 const emit = defineEmits([
   'toggle-status',
   'edit-variant',
+  'open-images',
   'open-discount-detail',
   'open-qr',
   'refresh',
   'update:current-page',
-  'update:page-size',
-  'open-images'
+  'update:page-size'
 ])
 
 function isUpdatingStatus(id) {
@@ -292,8 +292,8 @@ function openDiscountDetail(item) {
                 />
                 <button
                   type="button"
-                  class="admin-table-action text-slate-600 hover:text-sky-500"
-                  title="Quản lý ảnh"
+                  class="admin-table-action text-slate-600 hover:text-violet-500"
+                  title="Quản lý ảnh biến thể"
                   @click="$emit('open-images', item)"
                 >
                   <Images class="h-4 w-4" />
