@@ -50,7 +50,6 @@ const props = defineProps({
 const emit = defineEmits([
   'toggle-status',
   'edit-variant',
-  'open-images',
   'open-discount-detail',
   'open-qr',
   'refresh',
@@ -290,14 +289,6 @@ function openDiscountDetail(item) {
                   :intent="quickToggleIntent(item)"
                   @toggle="$emit('toggle-status', item)"
                 />
-                <button
-                  type="button"
-                  class="admin-table-action text-slate-600 hover:text-violet-500"
-                  title="Quản lý ảnh biến thể"
-                  @click="$emit('open-images', item)"
-                >
-                  <Images class="h-4 w-4" />
-                </button>
                 <button
                   type="button"
                   class="admin-table-action text-slate-600 hover:text-rose-500"
