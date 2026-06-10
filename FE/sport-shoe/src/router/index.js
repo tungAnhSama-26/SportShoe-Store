@@ -2,6 +2,12 @@ import { createRouter, createWebHistory } from "vue-router";
 import TrangMacDinh from "../layouts/TrangMacDinh.vue";
 import TrangChu from "../pages/TrangChu.vue";
 import SanPham from "../pages/SanPham.vue";
+import ChiTietSanPham from "../pages/ChiTietSanPham.vue";
+import GioHang from "../pages/GioHang.vue";
+import ThanhToan from "../pages/ThanhToan.vue";
+import DonHangCuaToi from "../pages/DonHangCuaToi.vue";
+import ChiTietDonHang from "../pages/ChiTietDonHang.vue";
+import DanhGiaDonHang from "../pages/DanhGiaDonHang.vue";
 import SanPhamNoiBat from "../pages/SanPhamNoiBat.vue";
 import GioiThieu from "../pages/GioiThieu.vue";
 import AdminLayout from "../layouts/admin/AdminLayout.vue";
@@ -123,6 +129,41 @@ const router = createRouter({
           path: "danh-muc",
           name: "danh-muc",
           component: SanPham
+        },
+        {
+          path: "san-pham",
+          name: "san-pham",
+          component: SanPham
+        },
+        {
+          path: "san-pham/:id(\\d+)",
+          name: "san-pham-chi-tiet",
+          component: ChiTietSanPham
+        },
+        {
+          path: "gio-hang",
+          name: "gio-hang",
+          component: GioHang
+        },
+        {
+          path: "thanh-toan",
+          name: "thanh-toan",
+          component: ThanhToan
+        },
+        {
+          path: "don-hang",
+          name: "don-hang",
+          component: DonHangCuaToi
+        },
+        {
+          path: "don-hang/:id(\\d+)",
+          name: "don-hang-chi-tiet",
+          component: ChiTietDonHang
+        },
+        {
+          path: "don-hang/:id(\\d+)/danh-gia",
+          name: "don-hang-danh-gia",
+          component: DanhGiaDonHang
         },
         {
           path: "noi-bat",

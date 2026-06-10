@@ -1,10 +1,18 @@
 package com.example.server.repository;
 
 import com.example.server.entity.Giay;
+import java.util.Collection;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface GiayRepository extends JpaRepository<Giay, Integer>, JpaSpecificationExecutor<Giay> {
+
+    /** (giayId, ảnh đại diện sản phẩm) - dùng cho danh sách sản phẩm phía khách hàng. */
+    @Query("select g.id, g.hinhAnh from Giay g where g.id in :ids")
+    List<Object[]> findHinhAnhByIds(@Param("ids") Collection<Integer> ids);
 
     boolean existsByMaIgnoreCase(String ma);
 

@@ -124,4 +124,18 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
 
     @Query("select sum(gct.soLuong) from GiayChiTiet gct where gct.giay.id = :giayId and (gct.kichHoat = 1 or gct.kichHoat = 0)")
     Long sumSoLuongByGiayId(@Param("giayId") Integer giayId);
+
+    /** (giayId, tên màu) của các biến thể đang bán - dùng để lọc màu sắc phía khách hàng. */
+    @Query("select distinct gct.giay.id, ms.ten from GiayChiTiet gct join gct.mauSac ms "
+            + "where gct.giay.id in :ids and gct.kichHoat = 1")
+    List<Object[]> findMauSacByGiayIds(@Param("ids") Collection<Integer> ids);
+
+    /** (giayId, giá trị size) của các biến thể đang bán - dùng để lọc kích cỡ phía khách hàng. */
+    @Query("select distinct gct.giay.id, kc.giaTri from GiayChiTiet gct join gct.kichCo kc "
+            + "where gct.giay.id in :ids and gct.kichHoat = 1")
+    List<Object[]> findKichCoByGiayIds(@Param("ids") Collection<Integer> ids);
+
+    /** Biến thể đang bán của nhiều sản phẩm - dùng để tính giá sau giảm cho danh sách. */
+    @Query("select gct from GiayChiTiet gct join fetch gct.giay where gct.giay.id in :ids and gct.kichHoat = 1")
+    List<GiayChiTiet> findActiveByGiayIds(@Param("ids") Collection<Integer> ids);
 }
