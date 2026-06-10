@@ -26,6 +26,7 @@ import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.GiayChiTietRepository;
+import com.example.server.repository.HinhAnhTraHangRepository;
 import com.example.server.repository.LichSuPhieuTraHangRepository;
 import com.example.server.repository.NhanVienRepository;
 import com.example.server.repository.PhieuTraHangChiTietRepository;
@@ -55,6 +56,7 @@ public class TraHangService {
     private final PhieuTraHangRepository phieuTraHangRepository;
     private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
     private final LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository;
+    private final HinhAnhTraHangRepository hinhAnhTraHangRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final NhanVienRepository nhanVienRepository;
     private final GiayChiTietRepository giayChiTietRepository;
@@ -65,6 +67,7 @@ public class TraHangService {
             PhieuTraHangRepository phieuTraHangRepository,
             PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository,
+            HinhAnhTraHangRepository hinhAnhTraHangRepository,
             ThanhToanRepository thanhToanRepository,
             NhanVienRepository nhanVienRepository,
             GiayChiTietRepository giayChiTietRepository
@@ -74,6 +77,7 @@ public class TraHangService {
         this.phieuTraHangRepository = phieuTraHangRepository;
         this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
         this.lichSuPhieuTraHangRepository = lichSuPhieuTraHangRepository;
+        this.hinhAnhTraHangRepository = hinhAnhTraHangRepository;
         this.thanhToanRepository = thanhToanRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -365,6 +369,12 @@ public class TraHangService {
                 : TrangThaiPhieuTraHang.TU_CHOI;
         chuyenTrangThai(phieu, trangThaiMoi, nhanVien, "Hoàn tất kiểm tra hàng trả", request.ghiChu());
         phieuTraHangRepository.save(phieu);
+        if (trangThaiMoi == TrangThaiPhieuTraHang.CHO_HOAN_TIEN) {
+            HoaDon hoaDon = phieu.getHoaDon();
+            hoaDon.setTrangThai(8);
+            hoaDon.setNgayCapNhat(Instant.now());
+            hoaDonRepository.save(hoaDon);
+        }
         return toResponse(phieu, chiTiet);
     }
 
@@ -432,6 +442,10 @@ public class TraHangService {
                 request.ghiChu()
         );
         phieuTraHangRepository.save(phieu);
+        HoaDon hoaDon = phieu.getHoaDon();
+        hoaDon.setTrangThai(5);
+        hoaDon.setNgayCapNhat(Instant.now());
+        hoaDonRepository.save(hoaDon);
         return toResponse(phieu, chiTiet);
     }
 
@@ -515,6 +529,10 @@ public class TraHangService {
                 phieu.getLyDoTuChoi(),
                 phieu.getNgayTao(),
                 phieu.getNgayCapNhat(),
+                hinhAnhTraHangRepository.findByPhieuTraHangIdOrderByNgayTaoAsc(phieu.getId())
+                        .stream()
+                        .map(hinhAnh -> hinhAnh.getUrl())
+                        .toList(),
                 chiTiet.stream().map(this::toChiTietResponse).toList(),
                 lichSuPhieuTraHangRepository.findByPhieuTraHangIdOrderByNgayTaoAsc(phieu.getId())
                         .stream()

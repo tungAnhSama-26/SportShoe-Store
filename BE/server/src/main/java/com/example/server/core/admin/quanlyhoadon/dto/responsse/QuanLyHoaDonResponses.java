@@ -83,7 +83,10 @@ public final class QuanLyHoaDonResponses {
             String maVanDon,
             List<HoaDonPaymentHistoryResponse> lichSuThanhToan,
             List<HoaDonProductResponse> sanPham,
-            List<HoaDonHistoryResponse> lichSuHoaDon
+            List<HoaDonHistoryResponse> lichSuHoaDon,
+            Integer phieuTraHangId,
+            String maPhieuTraHang,
+            Integer trangThaiPhieuTraHang
     ) {
     }
 }

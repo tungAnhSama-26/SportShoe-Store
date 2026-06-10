@@ -28,7 +28,7 @@ END;
 
 ALTER TABLE dbo.hoa_don WITH NOCHECK
 ADD CONSTRAINT ck_hoa_don_trang_thai
-CHECK (trang_thai IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
 IF EXISTS (
     SELECT 1
@@ -210,7 +210,7 @@ JOIN hoa_don hd ON hd.ma = f.ma
 WHERE f.vc_trang_thai IS NOT NULL;
 
 INSERT INTO thanh_toan
-(hoa_don_id, nhan_vien_id, ma_giao_dich, hinh_thuc, so_tien, tien_thoi_lai, ngan_hang, noi_dung_ck, cong_thanh_toan, ngay_thanh_toan, trang_thai, ghi_chu, ngay_tao)
+(hoa_don_id, nhan_vien_id, ma_giao_dich, hinh_thuc, so_tien, tien_thoi_lai, ngan_hang, noi_dung_ck, cong_thanh_toan, ngay_thanh_toan, trang_thai, loai_giao_dich, ghi_chu, ngay_tao)
 SELECT
     hd.id,
     nv.id,
@@ -228,6 +228,7 @@ SELECT
     END,
     f.tt_ngay,
     f.tt_trang_thai,
+    CASE WHEN f.tt_trang_thai = 5 THEN 2 ELSE 1 END,
     f.tt_ghi_chu,
     f.ngay_tao
 FROM #Flow f

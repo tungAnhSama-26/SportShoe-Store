@@ -44,7 +44,7 @@ public class ClientVnPayController {
         String host = layIpLan(httpRequest);
         String qrData = "http://" + host + ":" + httpRequest.getServerPort()
                 + "/api/v1/client/vnpay/xac-nhan/" + token;
-        String maGiaoDich = "VNPAY" + token.substring(0, 10).toUpperCase();
+        String maGiaoDich = service.layMaGiaoDich(token);
         return ResponseEntity.ok(ApiResponse.success(
                 "Tạo mã thanh toán thành công",
                 new TaoMaVnPayResponse(token, qrData, maGiaoDich)

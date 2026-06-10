@@ -423,18 +423,18 @@ VALUES
 GO
 
 INSERT INTO thanh_toan
-(hoa_don_id, nhan_vien_id, ma_giao_dich, hinh_thuc, so_tien, tien_thoi_lai, ngan_hang, noi_dung_ck, cong_thanh_toan, ngay_thanh_toan, trang_thai, ghi_chu)
+(hoa_don_id, nhan_vien_id, ma_giao_dich, hinh_thuc, so_tien, tien_thoi_lai, ngan_hang, noi_dung_ck, cong_thanh_toan, ngay_thanh_toan, trang_thai, loai_giao_dich, ghi_chu)
 VALUES
-((SELECT id FROM hoa_don WHERE ma = N'HD001'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260501001', 2, 1620000, NULL, N'Vietcombank', N'Thanh toán HD001', N'Bank Transfer', NULL, 2, N'Chờ khách thanh toán.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD002'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'TT20260502002', 1, 4125000, 75000, NULL, NULL, N'POS', '2026-05-02T09:25:00', 1, N'Thanh toán tiền mặt tại quầy.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD003'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'TT20260503003', 2, 3270000, NULL, N'Techcombank', N'Thanh toán HD003', N'Bank Transfer', '2026-05-03T10:35:00', 1, N'Chuyển khoản thành công.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD004'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260504004', 3, 1680000, NULL, NULL, N'Thanh toán ví điện tử HD004', N'Momo', '2026-05-04T11:50:00', 1, N'Ví điện tử.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD005'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'TT20260505005', 1, 2035000, 65000, NULL, NULL, N'POS', '2026-05-05T13:07:00', 1, N'Thanh toán tại quầy.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD006'), (SELECT id FROM nhan_vien WHERE ma = 'NV006'), N'TT20260506006', 2, 2190000, NULL, N'BIDV', N'Thanh toán HD006', N'Bank Transfer', NULL, 0, N'Giao dịch bị hủy theo đơn.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD007'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'TT20260507007', 3, 3335000, NULL, NULL, N'Thanh toán HD007', N'VNPay', '2026-05-07T15:25:00', 1, N'Đã thanh toán, đang chờ xử lý hủy.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD008'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'TT20260508008', 2, 3410000, NULL, N'ACB', N'Thanh toán HD008', N'Bank Transfer', '2026-05-08T16:35:00', 1, N'Cần hoàn tiền sau trả hàng.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD009'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'TT20260509009', 1, 1265000, 35000, NULL, NULL, N'POS', '2026-05-09T17:43:00', 1, N'Đã hoàn tiền cho khách.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD010'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260510010', 2, 1710000, NULL, N'MB Bank', N'Thanh toán HD010', N'Bank Transfer', '2026-05-10T19:05:00', 1, N'Chuyển khoản thành công.');
+((SELECT id FROM hoa_don WHERE ma = N'HD001'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260501001', 2, 1620000, NULL, N'Vietcombank', N'Thanh toán HD001', N'Bank Transfer', NULL, 2, 1, N'Chờ khách thanh toán.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD002'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'TT20260502002', 1, 4125000, 75000, NULL, NULL, N'POS', '2026-05-02T09:25:00', 1, 1, N'Thanh toán tiền mặt tại quầy.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD003'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'TT20260503003', 2, 3270000, NULL, N'Techcombank', N'Thanh toán HD003', N'Bank Transfer', '2026-05-03T10:35:00', 1, 1, N'Chuyển khoản thành công.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD004'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260504004', 3, 1680000, NULL, NULL, N'Thanh toán ví điện tử HD004', N'Momo', '2026-05-04T11:50:00', 1, 1, N'Ví điện tử.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD005'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'TT20260505005', 1, 2035000, 65000, NULL, NULL, N'POS', '2026-05-05T13:07:00', 1, 1, N'Thanh toán tại quầy.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD006'), (SELECT id FROM nhan_vien WHERE ma = 'NV006'), N'TT20260506006', 2, 2190000, NULL, N'BIDV', N'Thanh toán HD006', N'Bank Transfer', NULL, 0, 1, N'Giao dịch bị hủy theo đơn.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD007'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'TT20260507007', 3, 3335000, NULL, NULL, N'Thanh toán HD007', N'VNPay', '2026-05-07T15:25:00', 1, 1, N'Đã thanh toán, đang chờ xử lý hủy.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD008'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'TT20260508008', 2, 3410000, NULL, N'ACB', N'Thanh toán HD008', N'Bank Transfer', '2026-05-08T16:35:00', 1, 1, N'Cần hoàn tiền sau trả hàng.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD009'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'TT20260509009', 1, 1265000, 35000, NULL, NULL, N'POS', '2026-05-09T17:43:00', 1, 1, N'Đã hoàn tiền cho khách.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD010'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260510010', 2, 1710000, NULL, N'MB Bank', N'Thanh toán HD010', N'Bank Transfer', '2026-05-10T19:05:00', 1, 1, N'Chuyển khoản thành công.');
 GO
 
 INSERT INTO phieu_tra_hang
