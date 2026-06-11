@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
+
 @Service
 public class KhachHangServiceImpl implements KhachHangService {
     private final KhachHangRepository khachHangRepository;
@@ -96,6 +98,7 @@ public class KhachHangServiceImpl implements KhachHangService {
         }
 
         return toKhachHangResponse(saved);
+    }
 
     @Override
     @Transactional
@@ -152,7 +155,7 @@ public class KhachHangServiceImpl implements KhachHangService {
     public void xoaKhachHang(UUID id) {
         KhachHang kh = findKhachHang(id);
         khachHangRepository.delete(kh);
-        
+
     }
 
     // --- Address ---
