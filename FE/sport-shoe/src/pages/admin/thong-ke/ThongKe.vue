@@ -1,6 +1,6 @@
 <script setup>
 import { useThongKeDashboard } from "./useThongKeDashboard";
-const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AppPagination, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass } = useThongKeDashboard();
+const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass } = useThongKeDashboard();
 </script>
 
 <template>
@@ -295,7 +295,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         </div>
       </div>
 
-      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_240px]">
+      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_120px]">
         <div class="space-y-2">
           <label class="text-xs font-medium text-slate-500">Tìm nhân viên</label>
           <div class="relative">
@@ -325,30 +325,15 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
           </select>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Hiển thị</label>
-          <div class="flex gap-2">
-            <select
-              v-model="employeeFilters.pageSize"
-              class="h-11 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
-            >
-              <option
-                v-for="size in PRODUCT_PAGE_SIZE_OPTIONS"
-                :key="size"
-                :value="size"
-              >
-                {{ size }} dòng
-              </option>
-            </select>
-            <Button
-              variant="outline"
-              class="inline-flex h-11 items-center justify-center gap-2 px-4"
-              @click="resetEmployeeFilters"
-            >
-              <RefreshCw class="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
+        <div class="space-y-2 xl:self-end">
+          <Button
+            variant="outline"
+            class="inline-flex h-11 w-full items-center justify-center gap-2 px-4"
+            @click="resetEmployeeFilters"
+          >
+            <RefreshCw class="h-4 w-4" />
+            Reset
+          </Button>
         </div>
       </div>
 
@@ -413,12 +398,16 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         </table>
       </div>
 
-      <AppPagination
+      <AdminTableFooter
         v-if="filteredEmployees.length > 0"
-        v-model="employeeCurrentPage"
-        class="mt-4"
-        :total-items="filteredEmployees.length"
+        :current-page="employeeCurrentPage"
         :page-size="employeeFilters.pageSize"
+        :page-size-options="PRODUCT_PAGE_SIZE_OPTIONS"
+        :total-items="filteredEmployees.length"
+        :total-pages="employeeTotalPages"
+        compact
+        @update:current-page="employeeCurrentPage = $event"
+        @update:page-size="employeeFilters.pageSize = $event"
       />
     </Card>
 
@@ -435,7 +424,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         </div>
       </div>
 
-      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_240px]">
+      <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_120px]">
         <div class="space-y-2">
           <label class="text-xs font-medium text-slate-500">Lọc trong bảng</label>
           <div class="relative">
@@ -481,30 +470,15 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
           </select>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Hiển thị</label>
-          <div class="flex gap-2">
-            <select
-              v-model="productFilters.pageSize"
-              class="h-11 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
-            >
-              <option
-                v-for="size in PRODUCT_PAGE_SIZE_OPTIONS"
-                :key="size"
-                :value="size"
-              >
-                {{ size }} dòng
-              </option>
-            </select>
-            <Button
-              variant="outline"
-              class="inline-flex h-11 items-center justify-center gap-2 px-4"
-              @click="resetProductFilters"
-            >
-              <RefreshCw class="h-4 w-4" />
-              Reset
-            </Button>
-          </div>
+        <div class="space-y-2 xl:self-end">
+          <Button
+            variant="outline"
+            class="inline-flex h-11 w-full items-center justify-center gap-2 px-4"
+            @click="resetProductFilters"
+          >
+            <RefreshCw class="h-4 w-4" />
+            Reset
+          </Button>
         </div>
       </div>
 
@@ -581,12 +555,16 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         </table>
       </div>
 
-      <AppPagination
+      <AdminTableFooter
         v-if="filteredProducts.length > 0"
-        v-model="productCurrentPage"
-        class="mt-4"
-        :total-items="filteredProducts.length"
+        :current-page="productCurrentPage"
         :page-size="productFilters.pageSize"
+        :page-size-options="PRODUCT_PAGE_SIZE_OPTIONS"
+        :total-items="filteredProducts.length"
+        :total-pages="productTotalPages"
+        compact
+        @update:current-page="productCurrentPage = $event"
+        @update:page-size="productFilters.pageSize = $event"
       />
     </Card>
   </div>
