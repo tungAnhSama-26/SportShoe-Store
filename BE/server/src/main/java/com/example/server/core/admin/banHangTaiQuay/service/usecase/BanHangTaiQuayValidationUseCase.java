@@ -14,7 +14,7 @@ public class BanHangTaiQuayValidationUseCase {
                 .distinct()
                 .count();
         if (distinctCount != items.size()) {
-            throw new BusinessException("Moi san pham chi duoc xuat hien mot lan trong hoa don");
+            throw new BusinessException("Mỗi sản phẩm chỉ được xuất hiện 1 lần trong hóa đơn");
         }
     }
 }
