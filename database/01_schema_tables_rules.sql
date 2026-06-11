@@ -569,6 +569,17 @@ CREATE TABLE phieu_tra_hang_chi_tiet (
 );
 GO
 
+CREATE TABLE lich_lam_viec (
+    id             UNIQUEIDENTIFIER NOT NULL CONSTRAINT pk_lich_lam_viec PRIMARY KEY DEFAULT NEWID(),
+    nhan_vien_id   UNIQUEIDENTIFIER NOT NULL,
+    ngay           DATE             NOT NULL,
+    ca             VARCHAR(10)      NOT NULL,
+    CONSTRAINT uq_lich_lam_viec_nv_ngay UNIQUE (nhan_vien_id, ngay),
+    CONSTRAINT ck_lich_lam_viec_ca CHECK (ca IN ('sang', 'chieu', 'toi')),
+    CONSTRAINT fk_lich_lam_viec_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id) ON DELETE CASCADE
+);
+GO
+
 -- ============================================================
 -- Indexes
 -- ============================================================
@@ -600,4 +611,6 @@ CREATE INDEX ix_vc_hoa_don ON van_chuyen(hoa_don_id);
 CREATE INDEX ix_tt_hoa_don ON thanh_toan(hoa_don_id);
 CREATE INDEX ix_pth_hoa_don ON phieu_tra_hang(hoa_don_id);
 CREATE INDEX ix_pthct_phieu ON phieu_tra_hang_chi_tiet(phieu_tra_hang_id);
+CREATE INDEX ix_lich_lam_viec_ngay_ca ON lich_lam_viec(ngay, ca);
 GO
+
