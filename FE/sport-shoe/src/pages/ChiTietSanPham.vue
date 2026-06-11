@@ -92,8 +92,31 @@ const bienTheChon = computed(() =>
   bienThe.value.find((b) => b.mauSac === mauChon.value && b.kichCo === sizeChon.value) || null
 );
 
+// Biến thể giá thấp nhất (giá sau giảm) - ảnh mặc định khớp với card ngoài trang danh sách.
+const bienTheReNhat = computed(() => {
+  let min = null;
+  for (const b of bienThe.value) {
+    const gia = Number(b.giaBan);
+    if (!Number.isFinite(gia)) continue;
+    if (!min || gia < Number(min.giaBan)) min = b;
+  }
+  return min;
+});
+
+// Ảnh theo màu đang chọn (khi chưa chọn đủ size): lấy biến thể đầu tiên của màu đó có ảnh.
+const anhTheoMau = computed(() => {
+  if (!mauChon.value) return null;
+  return bienThe.value.find((b) => b.mauSac === mauChon.value && b.hinhAnh)?.hinhAnh || null;
+});
+
+// Ưu tiên: biến thể đã chọn -> màu đang chọn -> biến thể rẻ nhất -> ảnh gốc -> ảnh mặc định.
 const anhHienThi = computed(
-  () => bienTheChon.value?.hinhAnh || sanPham.value?.hinhAnh || anhMacDinh
+  () =>
+    bienTheChon.value?.hinhAnh ||
+    anhTheoMau.value ||
+    bienTheReNhat.value?.hinhAnh ||
+    sanPham.value?.hinhAnh ||
+    anhMacDinh
 );
 
 const giaHienThi = computed(() => {

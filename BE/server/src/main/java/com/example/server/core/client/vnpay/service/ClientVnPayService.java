@@ -4,6 +4,8 @@ import com.example.server.core.client.dathang.dto.DatHangRequest;
 import com.example.server.core.client.dathang.dto.DatHangResponse;
 import com.example.server.core.client.dathang.service.ClientDatHangService;
 import com.example.server.core.client.giohang.service.ClientGioHangService;
+import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
+import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.entity.HoaDon;
@@ -36,6 +38,7 @@ public class ClientVnPayService {
     private final ClientDatHangService datHangService;
     private final ClientGioHangService gioHangService;
     private final ClientVoucherService voucherService;
+    private final ClientPhiVanChuyenService phiVanChuyenService;
     private final Map<String, Phien> phienMap = new ConcurrentHashMap<>();
 
     private final String sepayBank;
@@ -46,6 +49,7 @@ public class ClientVnPayService {
             ClientDatHangService datHangService,
             ClientGioHangService gioHangService,
             ClientVoucherService voucherService,
+            ClientPhiVanChuyenService phiVanChuyenService,
             @Value("${sepay.bank:}") String sepayBank,
             @Value("${sepay.account-number:}") String sepayAccount,
             @Value("${sepay.prefix:SHOE}") String sepayPrefix
@@ -53,6 +57,7 @@ public class ClientVnPayService {
         this.datHangService = datHangService;
         this.gioHangService = gioHangService;
         this.voucherService = voucherService;
+        this.phiVanChuyenService = phiVanChuyenService;
         this.sepayBank = sepayBank;
         this.sepayAccount = sepayAccount;
         this.sepayPrefix = (sepayPrefix == null || sepayPrefix.isBlank()) ? "SHOE" : sepayPrefix;
@@ -88,7 +93,7 @@ public class ClientVnPayService {
         return new TaoMaVnPayResponse(token, qrData, maThanhToan);
     }
 
-    /** Số tiền khách phải chuyển = tổng tiền hàng - giảm giá voucher (nếu có). */
+    /** Số tiền khách phải chuyển = tổng tiền hàng - giảm giá voucher (nếu có) + phí vận chuyển. */
     private long tinhSoTienPhaiTra(DatHangRequest request) {
         HoaDon gio = gioHangService.timGioHang(request.khachHangId())
                 .orElseThrow(() -> new BusinessException("Giỏ hàng đang trống"));
@@ -102,6 +107,18 @@ public class ClientVnPayService {
             } catch (RuntimeException ignored) {
                 // Mã không hợp lệ -> giữ nguyên tổng (đặt hàng sẽ xử lý lại voucher sau).
             }
+        }
+
+        // Cộng phí vận chuyển GHN theo địa chỉ nhận (cùng cách tính với lúc đặt hàng).
+        BigDecimal phiShip = phiVanChuyenService.tinhPhi(new TinhPhiShipRequest(
+                request.khachHangId(),
+                request.tinhThanh(),
+                request.quanHuyen(),
+                request.phuongXa(),
+                request.diaChiCuThe()
+        )).phiVanChuyen();
+        if (phiShip != null && phiShip.signum() > 0) {
+            tong = tong.add(phiShip);
         }
         return tong.setScale(0, RoundingMode.HALF_UP).longValue();
     }

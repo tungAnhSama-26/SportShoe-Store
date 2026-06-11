@@ -23,6 +23,7 @@ public record DonHangChiTietResponse(
         BigDecimal tamTinh,
         BigDecimal giamDotGiamGia,
         BigDecimal giamVoucher,
+        BigDecimal phiVanChuyen,
         BigDecimal tongThanhToan,
         Instant ngayCapNhat,
         List<LichSuTrangThai> lichSuTrangThai,

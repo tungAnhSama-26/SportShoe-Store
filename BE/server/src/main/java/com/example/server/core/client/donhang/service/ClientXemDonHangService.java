@@ -16,6 +16,7 @@ import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichSuHoaDonRepository;
 import com.example.server.repository.PhieuTraHangRepository;
+import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,19 +41,22 @@ public class ClientXemDonHangService {
     private final DanhGiaRepository danhGiaRepository;
     private final PhieuTraHangRepository phieuTraHangRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
+    private final VanChuyenRepository vanChuyenRepository;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             DanhGiaRepository danhGiaRepository,
             PhieuTraHangRepository phieuTraHangRepository,
-            LichSuHoaDonRepository lichSuHoaDonRepository
+            LichSuHoaDonRepository lichSuHoaDonRepository,
+            VanChuyenRepository vanChuyenRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.danhGiaRepository = danhGiaRepository;
         this.phieuTraHangRepository = phieuTraHangRepository;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
+        this.vanChuyenRepository = vanChuyenRepository;
     }
 
     @Transactional(readOnly = true)
@@ -152,6 +156,9 @@ public class ClientXemDonHangService {
         BigDecimal tongTienHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();
         BigDecimal giamDot = tamTinh.subtract(tongTienHang).max(BigDecimal.ZERO);
         BigDecimal giamVoucher = hd.getTienGiam() == null ? BigDecimal.ZERO : hd.getTienGiam();
+        BigDecimal phiVanChuyen = vanChuyenRepository.findByHoaDonId(hd.getId())
+                .map(vc -> vc.getPhiVanChuyen() == null ? BigDecimal.ZERO : vc.getPhiVanChuyen())
+                .orElse(BigDecimal.ZERO);
         String maPhieu = hd.getPhieuGiamGia() != null ? hd.getPhieuGiamGia().getMa() : null;
 
         // Check return slip for this invoice
@@ -181,7 +188,7 @@ public class ClientXemDonHangService {
                 Boolean.TRUE.equals(hd.getDaNhanHang()),
                 hd.getTenNguoiNhan(), hd.getSdtNguoiNhan(), hd.getDiaChiGiaoHang(),
                 maPhieu, sanPhams,
-                tamTinh, giamDot, giamVoucher, hd.getTongTienThanhToan(),
+                tamTinh, giamDot, giamVoucher, phiVanChuyen, hd.getTongTienThanhToan(),
                 hd.getNgayCapNhat(), lichSuTrangThai,
                 phieuTraHangId, trangThaiTraHang, trangThaiTraHangText);
     }
