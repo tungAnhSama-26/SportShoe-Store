@@ -12,6 +12,7 @@ import java.net.URI;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -269,10 +270,9 @@ public class GhnShippingService {
 
     private List<GhnDistrict> getDistricts(Integer provinceId) {
         return districtCache.computeIfAbsent(provinceId, id -> {
-            JsonNode response = getJson(
-                    uriBuilder -> uriBuilder.path(DISTRICT_ENDPOINT).queryParam("province_id", id).build(),
-                    "Khong lay duoc danh sach quan/huyen GHN"
-            );
+            Map<String, Object> body = new HashMap<>();
+            body.put("province_id", id);
+            JsonNode response = postJson(DISTRICT_ENDPOINT, body, "Khong lay duoc danh sach quan/huyen GHN");
             return readArray(response.path("data")).stream()
                     .map(node -> new GhnDistrict(
                             node.path("DistrictID").asInt(),
@@ -285,10 +285,9 @@ public class GhnShippingService {
 
     private List<GhnWard> getWards(Integer districtId) {
         return wardCache.computeIfAbsent(districtId, id -> {
-            JsonNode response = getJson(
-                    uriBuilder -> uriBuilder.path(WARD_ENDPOINT).queryParam("district_id", id).build(),
-                    "Khong lay duoc danh sach phuong/xa GHN"
-            );
+            Map<String, Object> body = new HashMap<>();
+            body.put("district_id", id);
+            JsonNode response = postJson(WARD_ENDPOINT, body, "Khong lay duoc danh sach phuong/xa GHN");
             return readArray(response.path("data")).stream()
                     .map(node -> new GhnWard(
                             node.path("WardCode").asText(),
@@ -308,6 +307,23 @@ public class GhnShippingService {
             String responseBody = restClient.get()
                     .uri(uriFunction)
                     .header(TOKEN_HEADER, token)
+                    .retrieve()
+                    .body(String.class);
+            return readSuccessfulResponse(responseBody, fallbackMessage);
+        } catch (RestClientResponseException exception) {
+            throw new BusinessException(readGhnErrorMessage(exception.getResponseBodyAsString(), fallbackMessage));
+        } catch (RestClientException exception) {
+            throw new BusinessException(fallbackMessage + ": " + exception.getMessage());
+        }
+    }
+
+    private JsonNode postJson(String path, Object body, String fallbackMessage) {
+        try {
+            String responseBody = restClient.post()
+                    .uri(path)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header(TOKEN_HEADER, token)
+                    .body(body)
                     .retrieve()
                     .body(String.class);
             return readSuccessfulResponse(responseBody, fallbackMessage);
