@@ -66,6 +66,30 @@ public class JwtService {
         }
     }
 
+    public String generateCustomerToken(CustomerPrincipal principal) {
+        try {
+            Instant now = Instant.now();
+            Map<String, Object> header = Map.of(
+                    "alg", "HS256",
+                    "typ", "JWT"
+            );
+            Map<String, Object> claims = new LinkedHashMap<>();
+            claims.put("sub", principal.id().toString());
+            claims.put("tenDangNhap", principal.tenDangNhap());
+            claims.put("hoTen", principal.hoTen());
+            claims.put("role", "CUSTOMER");
+            claims.put("iat", now.getEpochSecond());
+            claims.put("exp", now.plusSeconds(expirationSeconds).getEpochSecond());
+
+            String headerPart = encodeJson(header);
+            String payloadPart = encodeJson(claims);
+            String signaturePart = sign(headerPart + "." + payloadPart);
+            return headerPart + "." + payloadPart + "." + signaturePart;
+        } catch (Exception exception) {
+            throw new IllegalStateException("Không thể tạo JWT khách hàng", exception);
+        }
+    }
+
     public AdminPrincipal parseToken(String token) {
         return parseAdminToken(token).principal();
     }
@@ -82,6 +106,36 @@ public class JwtService {
                     String.valueOf(claims.get("role"))
             );
             return new ParsedAdminToken(principal, readAuthVersion(claims));
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("JWT không hợp lệ", exception);
+        }
+    }
+
+    public ParsedCustomerToken parseCustomerToken(String token) {
+        try {
+            Map<String, Object> claims = readVerifiedClaims(token);
+            if (!"CUSTOMER".equals(String.valueOf(claims.get("role")))) {
+                throw new IllegalArgumentException("JWT không phải của khách hàng");
+            }
+            CustomerPrincipal principal = new CustomerPrincipal(
+                    UUID.fromString(String.valueOf(claims.get("sub"))),
+                    String.valueOf(claims.get("tenDangNhap")),
+                    String.valueOf(claims.get("hoTen")),
+                    "CUSTOMER"
+            );
+            return new ParsedCustomerToken(principal);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("JWT khách hàng không hợp lệ", exception);
+        }
+    }
+
+    public ParsedSubjectToken parseSubjectToken(String token) {
+        try {
+            Map<String, Object> claims = readVerifiedClaims(token);
+            return new ParsedSubjectToken(
+                    UUID.fromString(String.valueOf(claims.get("sub"))),
+                    String.valueOf(claims.get("role"))
+            );
         } catch (Exception exception) {
             throw new IllegalArgumentException("JWT không hợp lệ", exception);
         }

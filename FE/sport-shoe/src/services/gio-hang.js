@@ -55,7 +55,7 @@ export async function layDiaChiKhachHang() {
   const id = layKhachId();
   if (!id) return [];
   const data = await apiRequest(`/client/khach-hang/${id}/dia-chi`, {
-    authenticated: false,
+    authenticated: true,
     fallbackMessage: "Không thể tải địa chỉ",
   });
   return Array.isArray(data) ? data : [];

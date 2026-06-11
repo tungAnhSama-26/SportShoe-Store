@@ -11,6 +11,8 @@ public record HoanTienTraHangRequest(
         String maGiaoDich,
 
         @Size(max = 500, message = "Ghi chú không được vượt quá 500 ký tự")
-        String ghiChu
+        String ghiChu,
+
+        Integer taiKhoanNganHangId
 ) {
 }

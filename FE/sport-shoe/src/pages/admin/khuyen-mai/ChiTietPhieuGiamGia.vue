@@ -699,13 +699,12 @@ const mauTrangThai = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600 border border-amber-100",
   "Đã xác nhận": "bg-orange-50 text-orange-600 border border-orange-100",
   "Chờ lấy hàng": "bg-blue-50 text-blue-600 border border-blue-100",
-  "Chờ giao hàng": "bg-violet-50 text-violet-600 border border-violet-100",
+  "Đang giao hàng": "bg-violet-50 text-violet-600 border border-violet-100",
   "Đã giao hàng": "bg-cyan-50 text-cyan-600 border border-cyan-100",
   "Giao hàng thất bại": "bg-rose-50 text-rose-600 border border-rose-100",
   "Hoàn thành": "bg-emerald-50 text-emerald-600 border border-emerald-100",
   Hủy: "bg-stone-100 text-stone-600 border border-stone-200",
   "Yêu cầu hủy": "bg-slate-100 text-slate-600 border border-slate-200",
-  "Cần hoàn tiền": "bg-red-50 text-red-600 border border-red-100",
 };
 
 async function taiHoaDonLienQuan() {

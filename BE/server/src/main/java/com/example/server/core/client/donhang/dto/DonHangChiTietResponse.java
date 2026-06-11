@@ -29,12 +29,18 @@ public record DonHangChiTietResponse(
         List<LichSuTrangThai> lichSuTrangThai,
         Integer phieuTraHangId,
         Integer trangThaiTraHang,
-        String trangThaiTraHangText
+        String trangThaiTraHangText,
+        List<LichSuTraHang> lichSuTraHang
 ) {
     public record LichSuTrangThai(
             String trangThai,
             Instant ngayTao,
             String maNhanVien
+    ) {}
+
+    public record LichSuTraHang(
+            Integer trangThai,
+            Instant ngayTao
     ) {}
 
     public record DongSanPham(

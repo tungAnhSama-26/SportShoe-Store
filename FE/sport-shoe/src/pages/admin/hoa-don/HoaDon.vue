@@ -28,13 +28,12 @@ type TrangThaiLoc =
   | "Chờ xác nhận"
   | "Đã xác nhận"
   | "Chờ lấy hàng"
-  | "Chờ giao hàng"
+  | "Đang giao hàng"
   | "Đã giao hàng"
   | "Giao hàng thất bại"
   | "Hoàn thành"
   | "Hủy"
-  | "Yêu cầu hủy"
-  | "Cần hoàn tiền";
+  | "Yêu cầu hủy";
 
 type HoaDonItem = {
   id: number;
@@ -46,6 +45,9 @@ type HoaDonItem = {
   ngayTao: string;
   loaiDon: string;
   trangThai: string;
+  phieuTraHangId?: number | null;
+  trangThaiPhieuTraHang?: number | null;
+  trangThaiPhieuTraHangText?: string | null;
 };
 
 const router = useRouter();
@@ -59,13 +61,12 @@ const dsTrangThai: TrangThaiLoc[] = [
   "Chờ xác nhận",
   "Đã xác nhận",
   "Chờ lấy hàng",
-  "Chờ giao hàng",
+  "Đang giao hàng",
   "Đã giao hàng",
   "Giao hàng thất bại",
   "Hoàn thành",
   "Hủy",
   "Yêu cầu hủy",
-  "Cần hoàn tiền",
 ];
 const boLoc = ref(taoBoLocMacDinh());
 const tuNgayPicker = ref<HTMLInputElement | null>(null);
@@ -75,14 +76,29 @@ const mauTrangThai: Record<string, string> = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
   "Đã xác nhận": "bg-orange-50 text-orange-600",
   "Chờ lấy hàng": "bg-blue-50 text-blue-600",
-  "Chờ giao hàng": "bg-violet-50 text-violet-600",
+  "Đang giao hàng": "bg-violet-50 text-violet-600",
   "Đã giao hàng": "bg-cyan-50 text-cyan-600",
   "Giao hàng thất bại": "bg-rose-50 text-rose-600",
   "Hoàn thành": "bg-emerald-50 text-emerald-600",
   Hủy: "bg-stone-100 text-stone-600",
   "Yêu cầu hủy": "bg-primary/5 text-primary",
-  "Cần hoàn tiền": "bg-primary/5 text-primary",
 };
+
+function mauTrangThaiTraHang(trangThai?: number | null) {
+  switch (trangThai) {
+    case 1: return "bg-amber-50 text-amber-700";
+    case 2: return "bg-blue-50 text-blue-700";
+    case 3: return "bg-violet-50 text-violet-700";
+    case 4: return "bg-cyan-50 text-cyan-700";
+    case 5: return "bg-purple-50 text-purple-700";
+    case 6: return "bg-orange-50 text-orange-700";
+    case 7: return "bg-emerald-50 text-emerald-700";
+    case 8: return "bg-rose-50 text-rose-700";
+    case 9: return "bg-slate-100 text-slate-600";
+    case 10: return "bg-red-50 text-red-700";
+    default: return "bg-slate-100 text-slate-600";
+  }
+}
 
 function dinhDangTien(value: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -471,12 +487,21 @@ onMounted(taiDanhSach);
               <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
               <td class="px-3 py-3.5">{{ hoaDon.loaiDon }}</td>
               <td class="px-3 py-3.5 text-center">
-                <span
-                  class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
-                  :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
-                >
-                  {{ hoaDon.trangThai }}
-                </span>
+                <div class="flex flex-col items-center gap-1.5">
+                  <span
+                    class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
+                    :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
+                  >
+                    {{ hoaDon.trangThai }}
+                  </span>
+                  <span
+                    v-if="hoaDon.phieuTraHangId != null"
+                    class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
+                    :class="mauTrangThaiTraHang(hoaDon.trangThaiPhieuTraHang)"
+                  >
+                    {{ hoaDon.trangThaiPhieuTraHangText }}
+                  </span>
+                </div>
               </td>
               <td class="rounded-r-2xl px-3 py-3.5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
