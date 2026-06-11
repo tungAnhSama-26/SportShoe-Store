@@ -23,7 +23,7 @@ public class BanHangTaiQuayInvoiceStateUseCase {
     public String labelTrangThaiHoaDon(Integer trangThai) {
         return switch (trangThai) {
             case TRANG_THAI_HOA_DON_CHO_XAC_NHAN -> "Chờ xác nhận";
-            case TRANG_THAI_HOA_DON_CHO_GIAO_HANG -> "Chờ giao hàng";
+            case TRANG_THAI_HOA_DON_CHO_GIAO_HANG -> "Chờ lấy hàng";
             case TRANG_THAI_HOA_DON_HOAN_THANH -> "Hoàn thành";
             case TRANG_THAI_HOA_DON_HUY -> "Hủy";
             default -> "Chờ xác nhận";

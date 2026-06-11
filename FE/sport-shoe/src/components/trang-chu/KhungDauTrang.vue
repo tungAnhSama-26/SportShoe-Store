@@ -123,6 +123,13 @@ onUnmounted(() => {
           <div v-if="menuTaiKhoanMo" @click="menuTaiKhoanMo = false" class="fixed inset-0 z-40"></div>
           <div v-if="menuTaiKhoanMo" class="absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-2 shadow-xl">
             <template v-if="daDangNhap">
+              <router-link to="/profile" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21a8 8 0 1 0-16 0" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Hồ sơ của bạn
+              </router-link>
               <router-link to="/don-hang" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
                 Đơn hàng của bạn
@@ -163,6 +170,7 @@ onUnmounted(() => {
         <router-link :to="{ path: '/', hash: '#noi-bat' }" @click="toggleMenu" class="transition hover:text-primary">Nổi bật</router-link>
         <router-link :to="{ path: '/', hash: '#gia-tri' }" @click="toggleMenu" class="transition hover:text-primary">Giới thiệu</router-link>
         <router-link to="/gio-hang" @click="toggleMenu" class="transition hover:text-primary">Giỏ hàng</router-link>
+        <router-link v-if="daDangNhap" to="/profile" @click="toggleMenu" class="transition hover:text-primary">Hồ sơ của bạn</router-link>
         <router-link v-if="daDangNhap" to="/don-hang" @click="toggleMenu" class="transition hover:text-primary">Đơn hàng của bạn</router-link>
         <button v-if="daDangNhap" @click="dangXuat" class="text-left text-rose-500 transition hover:text-rose-600">Đăng xuất</button>
         <router-link v-else to="/login" @click="toggleMenu" class="transition hover:text-primary">Đăng nhập</router-link>

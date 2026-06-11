@@ -372,7 +372,7 @@ VALUES
 (N'HD005', 1, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach5'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), (SELECT id FROM phieu_giam_gia WHERE ma = N'PGG002'), N'Hoàng Thị Ngọc', '0933333333', N'67 Nguyễn Lương Bằng, Quận 7, Hồ Chí Minh', '2026-05-05T13:05:00', '2026-05-05T13:07:00', 5, 2250000, 250000, 2035000, N'Đơn hoàn thành', '2026-05-05T13:05:00', '2026-05-06T17:00:00'),
 (N'HD006', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach6'), (SELECT id FROM nhan_vien WHERE ma = 'NV006'), NULL, N'Vũ Văn Long', '0912222222', N'89 Võ Văn Tần, Ninh Kiều, Cần Thơ', '2026-05-06T14:10:00', NULL, 6, 2190000, 0, 2190000, N'Khách hủy trước khi giao', '2026-05-06T14:10:00', '2026-05-06T14:35:00'),
 (N'HD007', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach7'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), (SELECT id FROM phieu_giam_gia WHERE ma = N'PGG001'), N'Đặng Thị Hạnh', '0944444444', N'34 Trúc Bạch, Ba Đình, Hà Nội', '2026-05-07T15:20:00', '2026-05-07T15:25:00', 7, 3590000, 300000, 3335000, N'Khách yêu cầu hủy, chờ xác nhận', '2026-05-07T15:20:00', '2026-05-07T16:00:00'),
-(N'HD008', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach8'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), (SELECT id FROM phieu_giam_gia WHERE ma = N'PGG002'), N'Bùi Anh Tuấn', '0966666666', N'23 Lạch Tray, Ngô Quyền, Hải Phòng', '2026-05-08T16:30:00', '2026-05-08T16:35:00', 8, 3580000, 200000, 3410000, N'Cần hoàn tiền do trả hàng', '2026-05-08T16:30:00', '2026-05-09T09:30:00'),
+(N'HD008', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach8'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), (SELECT id FROM phieu_giam_gia WHERE ma = N'PGG002'), N'Bùi Anh Tuấn', '0966666666', N'23 Lạch Tray, Ngô Quyền, Hải Phòng', '2026-05-08T16:30:00', '2026-05-08T16:35:00', 5, 3580000, 200000, 3410000, N'Cần hoàn tiền do trả hàng', '2026-05-08T16:30:00', '2026-05-09T09:30:00'),
 (N'HD009', 1, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach9'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), (SELECT id FROM phieu_giam_gia WHERE ma = N'PGG010'), N'Đỗ Khánh Vy', '0922223333', N'10 Hùng Vương, Nha Trang, Khánh Hòa', '2026-05-09T17:40:00', '2026-05-09T17:43:00', 9, 1290000, 50000, 1265000, N'Đã hoàn tiền sau trả hàng', '2026-05-09T17:40:00', '2026-05-10T10:15:00'),
 (N'HD010', 2, (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach10'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), (SELECT id FROM phieu_giam_gia WHERE ma = N'PGG005'), N'Ngô Gia Bảo', '0955555555', N'5 Lê Lợi, Huế, Thừa Thiên Huế', '2026-05-10T19:00:00', '2026-05-10T19:05:00', 5, 1780000, 100000, 1710000, N'Đơn hoàn thành online', '2026-05-10T19:00:00', '2026-05-12T12:00:00');
 GO
@@ -396,13 +396,13 @@ INSERT INTO lich_su_hoa_don
 (hoa_don_id, nhan_vien_id, trang_thai, ghi_chu, ngay_tao)
 VALUES
 ((SELECT id FROM hoa_don WHERE ma = N'HD001'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'Chờ xác nhận', N'Tạo đơn online từ website.', '2026-05-01T08:15:00'),
-((SELECT id FROM hoa_don WHERE ma = N'HD002'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'Chờ giao hàng', N'Đơn tại quầy đã thanh toán.', '2026-05-02T09:25:00'),
+((SELECT id FROM hoa_don WHERE ma = N'HD002'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'Đang giao hàng', N'Đơn tại quầy đã thanh toán.', '2026-05-02T09:25:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD003'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'Đang vận chuyển', N'Đẩy đơn sang GHN.', '2026-05-03T14:00:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD004'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'Đã giao hàng', N'Khách đã nhận hàng.', '2026-05-05T16:20:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD005'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'Hoàn thành', N'Đơn đã hoàn tất.', '2026-05-06T17:00:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD006'), (SELECT id FROM nhan_vien WHERE ma = 'NV006'), N'Đã hủy', N'Khách hủy trước khi giao.', '2026-05-06T14:35:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD007'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'Yêu cầu hủy', N'Khách yêu cầu hủy đơn.', '2026-05-07T16:00:00'),
-((SELECT id FROM hoa_don WHERE ma = N'HD008'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'Cần hoàn tiền', N'Khách trả hàng, cần hoàn tiền.', '2026-05-09T09:30:00'),
+((SELECT id FROM hoa_don WHERE ma = N'HD008'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'Hoàn thành', N'Khách trả hàng, giao dịch cần hoàn tiền.', '2026-05-09T09:30:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD009'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'Đã hoàn tiền', N'Hoàn tiền thành công.', '2026-05-10T10:15:00'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD010'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'Hoàn thành', N'Đơn hoàn thành online.', '2026-05-12T12:00:00');
 GO
@@ -432,7 +432,7 @@ VALUES
 ((SELECT id FROM hoa_don WHERE ma = N'HD005'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'TT20260505005', 1, 2035000, 65000, NULL, NULL, N'POS', '2026-05-05T13:07:00', 1, 1, N'Thanh toán tại quầy.'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD006'), (SELECT id FROM nhan_vien WHERE ma = 'NV006'), N'TT20260506006', 2, 2190000, NULL, N'BIDV', N'Thanh toán HD006', N'Bank Transfer', NULL, 0, 1, N'Giao dịch bị hủy theo đơn.'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD007'), (SELECT id FROM nhan_vien WHERE ma = 'NV003'), N'TT20260507007', 3, 3335000, NULL, NULL, N'Thanh toán HD007', N'VNPay', '2026-05-07T15:25:00', 1, 1, N'Đã thanh toán, đang chờ xử lý hủy.'),
-((SELECT id FROM hoa_don WHERE ma = N'HD008'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'TT20260508008', 2, 3410000, NULL, N'ACB', N'Thanh toán HD008', N'Bank Transfer', '2026-05-08T16:35:00', 1, 1, N'Cần hoàn tiền sau trả hàng.'),
+((SELECT id FROM hoa_don WHERE ma = N'HD008'), (SELECT id FROM nhan_vien WHERE ma = 'NV004'), N'TT20260508008', 2, 3410000, NULL, N'ACB', N'Thanh toán HD008', N'Bank Transfer', '2026-05-08T16:35:00', 4, 1, N'Cần hoàn tiền sau trả hàng.'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD009'), (SELECT id FROM nhan_vien WHERE ma = 'NV005'), N'TT20260509009', 1, 1265000, 35000, NULL, NULL, N'POS', '2026-05-09T17:43:00', 1, 1, N'Đã hoàn tiền cho khách.'),
 ((SELECT id FROM hoa_don WHERE ma = N'HD010'), (SELECT id FROM nhan_vien WHERE ma = 'NV002'), N'TT20260510010', 2, 1710000, NULL, N'MB Bank', N'Thanh toán HD010', N'Bank Transfer', '2026-05-10T19:05:00', 1, 1, N'Chuyển khoản thành công.');
 GO
