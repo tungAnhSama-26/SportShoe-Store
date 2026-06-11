@@ -241,6 +241,7 @@ function isDiscounted(product) {
               {{ !chiTietDangChon ? 'Vui lòng chọn phân loại' : (soLuongTonKhaDungChiTiet > 0 ? 'Thêm vào hóa đơn' : 'Đã hết hàng') }}
             </button>
           </div>
+          </div>
         </div>
       </div>
     </div>
