@@ -4,16 +4,20 @@ import com.example.server.core.admin.banHangTaiQuay.service.usecase.BanHangTaiQu
 import com.example.server.core.client.dathang.dto.DatHangRequest;
 import com.example.server.core.client.dathang.dto.DatHangResponse;
 import com.example.server.core.client.giohang.service.ClientGioHangService;
+import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
+import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.ThanhToan;
+import com.example.server.entity.VanChuyen;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.ThanhToanRepository;
+import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -39,28 +43,34 @@ public class ClientDatHangService {
 
     private final ClientGioHangService gioHangService;
     private final ClientVoucherService voucherService;
+    private final ClientPhiVanChuyenService phiVanChuyenService;
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final BanHangTaiQuayInventoryUseCase inventoryUseCase;
     private final ThanhToanRepository thanhToanRepository;
+    private final VanChuyenRepository vanChuyenRepository;
 
     public ClientDatHangService(
             ClientGioHangService gioHangService,
             ClientVoucherService voucherService,
+            ClientPhiVanChuyenService phiVanChuyenService,
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             GiayChiTietRepository giayChiTietRepository,
             BanHangTaiQuayInventoryUseCase inventoryUseCase,
-            ThanhToanRepository thanhToanRepository
+            ThanhToanRepository thanhToanRepository,
+            VanChuyenRepository vanChuyenRepository
     ) {
         this.gioHangService = gioHangService;
         this.voucherService = voucherService;
+        this.phiVanChuyenService = phiVanChuyenService;
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.giayChiTietRepository = giayChiTietRepository;
         this.inventoryUseCase = inventoryUseCase;
         this.thanhToanRepository = thanhToanRepository;
+        this.vanChuyenRepository = vanChuyenRepository;
     }
 
     @Transactional
@@ -109,19 +119,24 @@ public class ClientDatHangService {
         hoaDon.setDiaChiGiaoHang(diaChi);
         hoaDon.setGhiChu(request.ghiChu());
 
+        BigDecimal tongTienHang = hoaDon.getTongTienHang() == null
+                ? BigDecimal.ZERO
+                : hoaDon.getTongTienHang();
+        BigDecimal tienGiam = BigDecimal.ZERO;
         if (request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
-            BigDecimal tongTienHang = hoaDon.getTongTienHang() == null
-                    ? BigDecimal.ZERO
-                    : hoaDon.getTongTienHang();
-            BigDecimal tienGiam = voucherService.apDungVaoHoaDon(
+            tienGiam = voucherService.apDungVaoHoaDon(
                     hoaDon,
                     request.maPhieuGiamGia(),
                     hoaDon.getKhachHang(),
                     tongTienHang
             );
             hoaDon.setTienGiam(tienGiam);
-            hoaDon.setTongTienThanhToan(tongTienHang.subtract(tienGiam).max(BigDecimal.ZERO));
         }
+
+        // Phí vận chuyển GHN theo địa chỉ nhận (phải tính khi hóa đơn còn là giỏ - trạng thái 0).
+        BigDecimal phiShip = tinhPhiShip(request);
+        hoaDon.setTongTienThanhToan(
+                tongTienHang.subtract(tienGiam).max(BigDecimal.ZERO).add(phiShip));
 
         String hinhThuc = chuanHoaHinhThucThanhToan(request.hinhThucThanhToan());
         Instant now = Instant.now();
@@ -132,6 +147,7 @@ public class ClientDatHangService {
             hoaDon.setNgayThanhToan(now);
         }
         hoaDonRepository.save(hoaDon);
+        luuVanChuyen(hoaDon, phiShip, now);
         taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
 
         return new DatHangResponse(
@@ -141,6 +157,33 @@ public class ClientDatHangService {
                 hoaDon.getTrangThai(),
                 hinhThuc
         );
+    }
+
+    /** Phí ship theo địa chỉ nhận (GHN, có phí ước tính dự phòng khi GHN không khả dụng). */
+    private BigDecimal tinhPhiShip(DatHangRequest request) {
+        BigDecimal phi = phiVanChuyenService.tinhPhi(new TinhPhiShipRequest(
+                request.khachHangId(),
+                request.tinhThanh(),
+                request.quanHuyen(),
+                request.phuongXa(),
+                request.diaChiCuThe()
+        )).phiVanChuyen();
+        return phi == null ? BigDecimal.ZERO : phi.max(BigDecimal.ZERO);
+    }
+
+    /** Lưu bản ghi vận chuyển (đơn vị + phí ship) gắn với hóa đơn. */
+    private void luuVanChuyen(HoaDon hoaDon, BigDecimal phiShip, Instant now) {
+        VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).orElseGet(() -> {
+            VanChuyen moi = new VanChuyen();
+            moi.setHoaDon(hoaDon);
+            moi.setTrangThai(1);
+            moi.setNgayTao(now);
+            return moi;
+        });
+        vanChuyen.setDonViVanChuyen("GHN");
+        vanChuyen.setPhiVanChuyen(phiShip);
+        vanChuyen.setNgayCapNhat(now);
+        vanChuyenRepository.save(vanChuyen);
     }
 
     private String chuanHoaHinhThucThanhToan(String hinhThuc) {
