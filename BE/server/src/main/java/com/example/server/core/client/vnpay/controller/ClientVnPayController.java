@@ -32,25 +32,8 @@ public class ClientVnPayController {
 
     /** Tạo phiên + ảnh QR VietQR cho đơn (chưa tạo đơn). FE hiển thị qrData làm ảnh QR. */
     @PostMapping("/tao-ma")
-<<<<<<< Updated upstream
-    public ResponseEntity<ApiResponse<TaoMaVnPayResponse>> taoMa(
-            @Valid @RequestBody DatHangRequest request,
-            HttpServletRequest httpRequest
-    ) {
-        String token = service.taoMa(request);
-        // Dùng IP LAN của máy chủ (không dùng localhost) để điện thoại quét QR truy cập được.
-        String host = layIpLan(httpRequest);
-        String qrData = "http://" + host + ":" + httpRequest.getServerPort()
-                + "/api/v1/client/vnpay/xac-nhan/" + token;
-        String maGiaoDich = service.layMaGiaoDich(token);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Tạo mã thanh toán thành công",
-                new TaoMaVnPayResponse(token, qrData, maGiaoDich)
-        ));
-=======
     public ResponseEntity<ApiResponse<TaoMaVnPayResponse>> taoMa(@Valid @RequestBody DatHangRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Tạo mã thanh toán thành công", service.taoMa(request)));
->>>>>>> Stashed changes
     }
 
     /** Xác nhận THỦ CÔNG (mở URL) - chỉ để test không cần chuyển khoản thật. */

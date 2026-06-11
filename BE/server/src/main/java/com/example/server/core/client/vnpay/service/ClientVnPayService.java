@@ -60,16 +60,7 @@ public class ClientVnPayService {
 
     private static class Phien {
         final DatHangRequest request;
-<<<<<<< Updated upstream
-        final String maGiaoDich;
-        volatile String trangThai = TRANG_THAI_CHO;
-        volatile String maHoaDon;
-
-        Phien(DatHangRequest request, String maGiaoDich) {
-            this.request = request;
-            this.maGiaoDich = maGiaoDich;
-=======
-        final String maThanhToan;   // nội dung chuyển khoản, dùng để khớp đơn
+        final String maThanhToan;   // nội dung chuyển khoản, dùng để khớp đơn + lưu làm mã giao dịch
         final long soTienKyVong;    // số tiền khách phải chuyển
         volatile String trangThai = TRANG_THAI_CHO;
         volatile String maHoaDon;
@@ -78,17 +69,12 @@ public class ClientVnPayService {
             this.request = request;
             this.maThanhToan = maThanhToan;
             this.soTienKyVong = soTienKyVong;
->>>>>>> Stashed changes
         }
     }
 
     /** Tạo phiên thanh toán + ảnh QR VietQR (SePay). Chưa tạo đơn. */
     public TaoMaVnPayResponse taoMa(DatHangRequest request) {
         String token = UUID.randomUUID().toString().replace("-", "");
-<<<<<<< Updated upstream
-        phienMap.put(token, new Phien(request, taoMaGiaoDich(token)));
-        return token;
-=======
         String maThanhToan = sepayPrefix + token.substring(0, 10).toUpperCase(Locale.ROOT);
         long soTien = tinhSoTienPhaiTra(request);
         phienMap.put(token, new Phien(request, maThanhToan, soTien));
@@ -100,7 +86,6 @@ public class ClientVnPayService {
                 + "&des=" + maThanhToan
                 + "&template=compact";
         return new TaoMaVnPayResponse(token, qrData, maThanhToan);
->>>>>>> Stashed changes
     }
 
     /** Số tiền khách phải chuyển = tổng tiền hàng - giảm giá voucher (nếu có). */
@@ -121,14 +106,14 @@ public class ClientVnPayService {
         return tong.setScale(0, RoundingMode.HALF_UP).longValue();
     }
 
-    /** Đã xác nhận thanh toán: tạo đơn (1 lần) và đánh dấu đã thanh toán. */
+    /** Đã xác nhận thanh toán: tạo đơn (1 lần, lưu mã giao dịch) và đánh dấu đã thanh toán. */
     public synchronized String xacNhan(String token) {
         Phien phien = phienMap.get(token);
         if (phien == null) {
             throw new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn");
         }
         if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
-            DatHangResponse ketQua = datHangService.datHang(phien.request, phien.maGiaoDich);
+            DatHangResponse ketQua = datHangService.datHang(phien.request, phien.maThanhToan);
             phien.maHoaDon = ketQua.maHoaDon();
             phien.trangThai = TRANG_THAI_DA_THANH_TOAN;
         }
@@ -169,17 +154,5 @@ public class ClientVnPayService {
             result.put("maHoaDon", phien.maHoaDon);
         }
         return result;
-    }
-
-    public String layMaGiaoDich(String token) {
-        Phien phien = phienMap.get(token);
-        return phien != null ? phien.maGiaoDich : taoMaGiaoDich(token);
-    }
-
-    private String taoMaGiaoDich(String token) {
-        String normalized = token == null ? "" : token.replace("-", "");
-        String suffix = normalized.substring(0, Math.min(10, normalized.length()))
-                .toUpperCase(Locale.ROOT);
-        return "VNPAY" + suffix;
     }
 }
