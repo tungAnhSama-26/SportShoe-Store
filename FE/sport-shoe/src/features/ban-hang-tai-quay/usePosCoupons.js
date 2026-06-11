@@ -55,12 +55,12 @@ export function usePosCoupons({
     return null;
   });
   const coTheApDungPhieu = computed(
-    () => Boolean(phieuGiamGiaHopLeDangNhap.value) &&
+    () => Boolean(couponCode.value.trim()) &&
       cartItems.value.length > 0 &&
       !applyingCoupon.value &&
       (
         !appliedCoupon.value ||
-        appliedCoupon.value.ma.toLowerCase() !== phieuGiamGiaHopLeDangNhap.value.ma.toLowerCase()
+        appliedCoupon.value.ma.toLowerCase() !== couponCode.value.trim().toLowerCase()
       )
   );
 
@@ -162,25 +162,13 @@ export function usePosCoupons({
 
   async function handleApplyCoupon() {
     if (!coTheApDungPhieu.value) {
-      if (couponCode.value.trim()) {
-        showCouponDropdown.value = true;
-        pageError.value = "Phiếu giảm giá này chưa đủ điều kiện áp dụng cho hóa đơn hiện tại";
+      if (couponCode.value.trim() && cartItems.value.length === 0) {
+        pageError.value = "Vui lòng thêm sản phẩm vào hóa đơn trước khi áp dụng mã";
       }
       return;
     }
 
-    const couponDaTimThay = phieuGiamGiaHopLeDangNhap.value ?? await timPhieuPhuHopDeApDung();
-    const maPhieuDeApDung = couponDaTimThay?.ma ?? couponCode.value.trim();
-
-    if (couponDaTimThay) {
-      couponCode.value = couponDaTimThay.ma;
-    }
-
-    if (!couponDaTimThay && couponResults.value.length > 1) {
-      showCouponDropdown.value = true;
-      pageError.value = "Vui lòng chọn đúng phiếu giảm giá trong danh sách gợi ý";
-      return;
-    }
+    const maPhieuDeApDung = couponCode.value.trim();
 
     applyingCoupon.value = true;
     pageError.value = "";
@@ -197,7 +185,7 @@ export function usePosCoupons({
       couponResults.value = [];
       showCouponDropdown.value = false;
       capNhatTienKhachThanhToan();
-      successMessage.value = `Đã áp dụng mã ${coupon.ma}`;
+      successMessage.value = "";
     } catch (error) {
       appliedCoupon.value = null;
       pageError.value = error instanceof Error ? error.message : "Không thể áp dụng phiếu giảm giá";
