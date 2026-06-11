@@ -536,6 +536,16 @@ export function useChiTietNhanVien() {
 
     if (hasError) return;
 
+    if (laMoi) {
+      const confirmed = await showConfirm(
+        "Bạn có chắc chắn muốn thêm nhân viên mới này không?",
+        "Xác nhận thêm nhân viên",
+        "Thêm mới",
+        "Hủy"
+      );
+      if (!confirmed) return;
+    }
+
     dangLuu.value = true;
     loiTrang.value = "";
 
