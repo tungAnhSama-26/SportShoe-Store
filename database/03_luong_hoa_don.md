@@ -4,7 +4,7 @@
 Loại đơn: Trực tuyến
 Trạng thái hóa đơn: Chờ xác nhận
 Thanh toán: COD, trạng thái Chờ thanh toán
-Test: vào chi tiết đơn, thử chuyển Chờ xác nhận -> Đã xác nhận -> Chờ lấy hàng -> Chờ giao hàng. 2. HD_TEST_02
+Test: vào chi tiết đơn, thử chuyển Chờ xác nhận -> Đã xác nhận -> Chờ lấy hàng -> Đang giao hàng. 2. HD_TEST_02
 Luồng: Nhân viên bán tại cửa hàng, thu tiền xong.
 
 Loại đơn: Cửa hàng
@@ -15,7 +15,7 @@ Test: đơn đã hoàn thành thì không nên sửa sản phẩm/trạng thái 
 Luồng: Khách online đã chuyển khoản, shop đang giao.
 
 Loại đơn: Trực tuyến
-Trạng thái hóa đơn: Chờ giao hàng
+Trạng thái hóa đơn: Đang giao hàng
 Vận chuyển: Đang giao
 Thanh toán: Chuyển khoản, Đã thanh toán
 Test: chuyển sang Đã giao hàng, hoặc chuyển sang Giao hàng thất bại.
@@ -43,13 +43,13 @@ Trạng thái hóa đơn: Giao hàng thất bại
 Thanh toán: Chuyển khoản, trạng thái Cần hoàn tiền
 Test: khối Lịch sử thanh toán phải hiện nút Hoàn tiền.
 Bấm hoàn tiền, nhập thông tin, xác nhận xong thanh toán thành Đã hoàn tiền. 7. HD_TEST_07
-Luồng: Đơn đã được đánh dấu cần hoàn tiền.
+Luồng: Đơn đã hủy và giao dịch đang cần hoàn tiền.
 
 Loại đơn: Trực tuyến
-Trạng thái hóa đơn: Cần hoàn tiền
+Trạng thái hóa đơn: Hủy
 Thanh toán: Chuyển khoản, trạng thái Cần hoàn tiền
 Test: dùng để test riêng modal Hoàn tiền.
-Sau khi xác nhận hoàn tiền, hóa đơn chuyển về Hủy, thanh toán thành Đã hoàn tiền. 8. HD_TEST_08
+Sau khi xác nhận hoàn tiền, hóa đơn vẫn là Hủy, thanh toán thành Đã hoàn tiền. 8. HD_TEST_08
 Luồng: Đơn đã xử lý hoàn tiền xong.
 
 Loại đơn: Trực tuyến
@@ -69,7 +69,7 @@ Luồng: Nhân viên tạo đơn ở cửa hàng nhưng có giao hàng cho khác
 
 Loại đơn: Cửa hàng
 Nhân viên: NV002
-Trạng thái hóa đơn: Chờ giao hàng
+Trạng thái hóa đơn: Đang giao hàng
 Thanh toán: Tiền mặt, Đã thanh toán
 Test: vẫn dùng logic giao hàng/GHN.
 Có thể chuyển Đã giao hàng -> Hoàn thành.

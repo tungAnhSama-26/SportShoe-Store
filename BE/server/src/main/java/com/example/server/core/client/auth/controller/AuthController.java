@@ -1,11 +1,11 @@
 package com.example.server.core.client.auth.controller;
 
-import com.example.server.core.admin.khachHang.dto.responsse.KhachHangResponse;
 import com.example.server.core.client.auth.dto.request.ForgotPasswordRequest;
 import com.example.server.core.client.auth.dto.request.LoginRequest;
 import com.example.server.core.client.auth.dto.request.RegisterRequest;
 import com.example.server.core.client.auth.dto.request.ResetPasswordRequest;
 import com.example.server.core.client.auth.dto.response.AdminLoginResponse;
+import com.example.server.core.client.auth.dto.response.CustomerLoginResponse;
 import com.example.server.core.client.auth.service.AuthService;
 import com.example.server.core.client.auth.service.PasswordResetService;
 import com.example.server.core.client.auth.service.RegistrationService;
@@ -36,7 +36,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<KhachHangResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<CustomerLoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Đăng nhập thành công",
                 authService.login(request)
