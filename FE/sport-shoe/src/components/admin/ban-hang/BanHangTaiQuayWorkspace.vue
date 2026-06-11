@@ -75,22 +75,7 @@ defineProps({
     type: Array,
     default: () => []
   },
-  currentPage: {
-    type: Number,
-    default: 1
-  },
-  pageSize: {
-    type: Number,
-    default: 6
-  },
-  totalItems: {
-    type: Number,
-    default: 0
-  },
-  totalPages: {
-    type: Number,
-    default: 1
-  },
+
   productSearchLabel: {
     type: String,
     default: ""
@@ -268,8 +253,7 @@ const emit = defineEmits([
   "select-guest",
   "clear-customer",
   "update:productKeyword",
-  "update:currentPage",
-  "update:page-size",
+
   "refresh-products",
   "focus-product",
   "blur-product",
@@ -321,17 +305,11 @@ const emit = defineEmits([
             :loading-products="loadingProducts"
             :show-product-dropdown="showProductDropdown"
             :product-results="productResults"
-            :current-page="currentPage"
-            :page-size="pageSize"
-            :total-items="totalItems"
-            :total-pages="totalPages"
             :product-search-label="productSearchLabel"
             :dinh-dang-tien="dinhDangTien"
             :so-luong-con-lai="soLuongConLai"
             @update:product-keyword="emit('update:productKeyword', $event)"
-            @update:current-page="emit('update:currentPage', $event)"
-            @update:page-size="emit('update:page-size', $event)"
-            @refresh="emit('refresh-products')"
+            @refresh="emit('update:productKeyword', '')"
             @focus-product="emit('focus-product')"
             @blur-product="emit('blur-product')"
             @open-product="emit('open-product', $event)"

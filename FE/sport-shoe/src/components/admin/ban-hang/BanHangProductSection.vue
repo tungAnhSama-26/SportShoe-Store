@@ -2,7 +2,6 @@
 import { ref } from "vue";
 import { QrCode } from "lucide-vue-next";
 import BanHangQrScannerModal from "./BanHangQrScannerModal.vue";
-import AdminTableFooter from "../../common/AdminTableFooter.vue";
 
 defineProps({
   productKeyword: {
@@ -25,22 +24,7 @@ defineProps({
     type: String,
     default: ""
   },
-  currentPage: {
-    type: Number,
-    default: 1
-  },
-  pageSize: {
-    type: Number,
-    default: 5
-  },
-  totalItems: {
-    type: Number,
-    default: 0
-  },
-  totalPages: {
-    type: Number,
-    default: 1
-  },
+
   dinhDangTien: {
     type: Function,
     required: true
@@ -57,8 +41,6 @@ const emit = defineEmits([
   "blur-product",
   "open-product",
   "scan-product",
-  "update:currentPage",
-  "update:page-size",
   "refresh"
 ]);
 
@@ -99,7 +81,7 @@ function xuLyMaQuet(value) {
           <input
             :value="productKeyword"
             type="text"
-            placeholder="Nhập mã, tên sản phẩm, SKU..."
+            placeholder="Nhập mã hoặc tên sản phẩm..."
             class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
             @input="emit('update:productKeyword', $event.target.value)"
             @focus="emit('focus-product')"
@@ -142,7 +124,7 @@ function xuLyMaQuet(value) {
                 <th class="whitespace-nowrap bg-slate-100 px-3 py-3">Mã SP</th>
                 <th class="whitespace-nowrap bg-slate-100 px-3 py-3">Tên sản phẩm</th>
                 <th class="whitespace-nowrap bg-slate-100 px-3 py-3 text-center w-16">Ảnh</th>
-                <th class="whitespace-nowrap bg-slate-100 px-3 py-3">Tồn kho</th>
+                <th class="whitespace-nowrap bg-slate-100 px-3 py-3">Số lượng</th>
                 <th class="whitespace-nowrap bg-slate-100 px-3 py-3">Giá bán</th>
                 <th class="whitespace-nowrap bg-slate-100 px-3 py-3">Giảm giá</th>
               </tr>
@@ -155,7 +137,7 @@ function xuLyMaQuet(value) {
                 @click="emit('open-product', product)"
               >
                 <td class="px-4 py-2 text-center text-slate-500">
-                  {{ (currentPage - 1) * pageSize + index + 1 }}
+                  {{ index + 1 }}
                 </td>
                 <td class="px-4 py-2 font-medium text-slate-700">
                   {{ product.maSanPham }}
@@ -196,21 +178,6 @@ function xuLyMaQuet(value) {
         </div>
       </div>
 
-      <div class="mt-4 shrink-0">
-        <AdminTableFooter
-          v-if="totalPages > 1 || totalItems > 0"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :page-size-options="[5, 10, 20, 50]"
-        :total-items="totalItems"
-        :total-pages="totalPages"
-        compact
-        show-refresh
-        @update:current-page="emit('update:currentPage', $event)"
-        @update:page-size="emit('update:page-size', $event)"
-        @refresh="emit('refresh')"
-        />
-      </div>
     </div>
 
     <BanHangQrScannerModal
