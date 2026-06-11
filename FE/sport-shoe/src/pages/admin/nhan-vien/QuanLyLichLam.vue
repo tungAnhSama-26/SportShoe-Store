@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft,
   CalendarDays,
@@ -13,9 +13,12 @@ import {
   Users,
 } from "lucide-vue-next";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
+import { layLichLamViec, phanCa, xepCaTuDong } from "../../../services/lich-lam";
+import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 
+const route = useRoute();
 const router = useRouter();
 
 // ───────── Dữ liệu ca làm việc ─────────
@@ -121,6 +124,37 @@ const dangTai = ref(false);
 const loiTrang = ref("");
 const danhSachNV = ref<NhanVien[]>([]);
 
+function formatISODate(d: Date) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+async function taiDuLieuLich() {
+  if (danhSachNV.value.length === 0) return;
+  const tuNgay = formatISODate(cacNgayTrongTuan.value[0]);
+  const denNgay = formatISODate(cacNgayTrongTuan.value[6]);
+  try {
+    const lichData = await layLichLamViec(tuNgay, denNgay);
+    danhSachNV.value.forEach(nv => {
+      nv.lich = cacNgayTrongTuan.value.map(date => {
+        const dateStr = formatISODate(date);
+        const item = lichData.find(
+          (l: any) => String(l.nhanVienId) === String(nv.id) && l.ngay === dateStr
+        );
+        return item ? (item.ca as CaLam) : null;
+      });
+      const countCa = nv.lich.filter(c => c !== null).length;
+      nv.tongGio = countCa * 4;
+      nv.overtime = nv.tongGio > 20 ? nv.tongGio - 20 : 0;
+    });
+  } catch (e) {
+    console.error(e);
+    showError(getDisplayErrorMessage(e, "Không thể tải dữ liệu lịch làm việc"));
+  }
+}
+
 async function taiNhanVien() {
   dangTai.value = true;
   loiTrang.value = "";
@@ -134,11 +168,12 @@ async function taiNhanVien() {
       vaiTro: Number(nv.vaiTro) === 1 ? 1 : 2,
       hinhAnh: nv.hinhAnh ?? "",
       mauNen: mauNenNV(Number(nv.vaiTro) === 1 ? 1 : 2),
-      lich: taoLichMock(Number(nv.vaiTro) === 1 ? 1 : 2),
-      tongGio: 32,
-      overtime: +(Math.random() * 5).toFixed(1),
+      lich: Array(7).fill(null),
+      tongGio: 0,
+      overtime: 0,
       gioiHanOT: 5,
     }));
+    await taiDuLieuLich();
   } catch (e) {
     loiTrang.value = getDisplayErrorMessage(e, "Không thể tải danh sách nhân viên");
   } finally {
@@ -148,6 +183,12 @@ async function taiNhanVien() {
 
 onMounted(taiNhanVien);
 
+watch(ngayDauTuan, async () => {
+  dangTai.value = true;
+  await taiDuLieuLich();
+  dangTai.value = false;
+});
+
 // ───────── Bộ lọc vai trò ─────────
 const boLocVaiTro = ref(0); // 0 = tất cả
 const dsVaiTro = [
@@ -156,11 +197,18 @@ const dsVaiTro = [
   { value: 2, label: "Nhân viên" },
 ];
 
-const danhSachLocVaiTro = computed(() =>
-  boLocVaiTro.value === 0
-    ? danhSachNV.value
-    : danhSachNV.value.filter(nv => nv.vaiTro === boLocVaiTro.value)
-);
+const employeeIdFilter = computed(() => route.params.id ? String(route.params.id) : null);
+
+const danhSachLocVaiTro = computed(() => {
+  let list = danhSachNV.value;
+  if (employeeIdFilter.value) {
+    list = list.filter(nv => nv.id === employeeIdFilter.value);
+  }
+  if (boLocVaiTro.value === 0) {
+    return list;
+  }
+  return list.filter(nv => nv.vaiTro === boLocVaiTro.value);
+});
 
 // ───────── Phân trang ─────────
 const soTrang = ref(5);
@@ -177,24 +225,95 @@ const showModalThemCa = ref(false);
 const modalNV = ref<NhanVien | null>(null);
 const modalNgayIndex = ref<number>(-1);
 const modalCaChon = ref<CaLam>(null);
+const chonNhanVienId = ref("");
+const chonNgayVal = ref("");
 
-function moModalThemCa(nv: NhanVien, ngayIdx: number) {
+function moModalThemCa(nv: NhanVien | null, ngayIdx: number) {
   modalNV.value = nv;
   modalNgayIndex.value = ngayIdx;
-  modalCaChon.value = nv.lich[ngayIdx];
+  if (nv && ngayIdx >= 0) {
+    modalCaChon.value = nv.lich[ngayIdx];
+  } else {
+    modalCaChon.value = "sang";
+    chonNhanVienId.value = danhSachNV.value[0]?.id || "";
+    chonNgayVal.value = formatISODate(cacNgayTrongTuan.value[0]);
+  }
   showModalThemCa.value = true;
 }
 
-function luuCa() {
-  if (!modalNV.value || modalNgayIndex.value < 0) return;
-  modalNV.value.lich[modalNgayIndex.value] = modalCaChon.value;
-  showModalThemCa.value = false;
+async function luuCa() {
+  let nvId: string;
+  let ngayStr: string;
+  if (modalNV.value && modalNgayIndex.value >= 0) {
+    nvId = modalNV.value.id;
+    ngayStr = formatISODate(cacNgayTrongTuan.value[modalNgayIndex.value]);
+  } else {
+    if (!chonNhanVienId.value || !chonNgayVal.value) {
+      showError("Vui lòng chọn nhân viên và ngày làm việc!");
+      return;
+    }
+    nvId = chonNhanVienId.value;
+    ngayStr = chonNgayVal.value;
+  }
+  dangTai.value = true;
+  try {
+    await phanCa({
+      nhanVienId: nvId,
+      ngay: ngayStr,
+      ca: modalCaChon.value,
+    });
+    showSuccess("Cập nhật ca làm việc thành công!");
+    showModalThemCa.value = false;
+    await taiDuLieuLich();
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, "Không thể lưu ca làm việc"));
+  } finally {
+    dangTai.value = false;
+  }
 }
 
-function xoaCa() {
+async function xoaCa() {
   if (!modalNV.value || modalNgayIndex.value < 0) return;
-  modalNV.value.lich[modalNgayIndex.value] = null;
-  showModalThemCa.value = false;
+  const xacNhan = await showConfirm(
+    `Bạn có chắc chắn muốn xóa ca làm việc của ${modalNV.value.ten} ngày ${formatNgay(cacNgayTrongTuan.value[modalNgayIndex.value])}?`,
+    "Xác nhận xóa ca"
+  );
+  if (!xacNhan) return;
+  dangTai.value = true;
+  try {
+    await phanCa({
+      nhanVienId: modalNV.value.id,
+      ngay: formatISODate(cacNgayTrongTuan.value[modalNgayIndex.value]),
+      ca: null,
+    });
+    showSuccess("Xóa ca làm việc thành công!");
+    showModalThemCa.value = false;
+    await taiDuLieuLich();
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, "Không thể xóa ca làm việc"));
+  } finally {
+    dangTai.value = false;
+  }
+}
+
+async function xepCaDong() {
+  const tuNgay = formatISODate(cacNgayTrongTuan.value[0]);
+  const denNgay = formatISODate(cacNgayTrongTuan.value[6]);
+  const xacNhan = await showConfirm(
+    `Bạn có chắc muốn tự động xếp ca cho tuần từ ngày ${formatNgay(cacNgayTrongTuan.value[0])} đến ${formatNgay(cacNgayTrongTuan.value[6])}? Các ca làm hiện tại trong tuần này sẽ bị ghi đè.`,
+    "Xác nhận xếp ca tự động"
+  );
+  if (!xacNhan) return;
+  dangTai.value = true;
+  try {
+    await xepCaTuDong(tuNgay, denNgay);
+    showSuccess("Xếp ca tự động thành công!");
+    await taiDuLieuLich();
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, "Không thể xếp ca tự động"));
+  } finally {
+    dangTai.value = false;
+  }
 }
 
 // ───────── Helpers ─────────
@@ -240,16 +359,27 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
         {{ formatTuanHienThi() }}
       </div>
 
-      <button class="admin-btn-soft gap-2">
+      <button @click="xepCaDong" class="admin-btn-soft gap-2">
         <Shuffle class="h-4 w-4" /> Xếp ca tự động
       </button>
       <button class="admin-btn-soft gap-2">
         <Download class="h-4 w-4" /> Xuất Excel
       </button>
-      <button @click="showModalThemCa = true; modalNV = null; modalNgayIndex = -1" class="admin-btn-primary gap-2">
+      <button @click="moModalThemCa(null, -1)" class="admin-btn-primary gap-2">
         <Plus class="h-4 w-4" /> Thêm ca mới
       </button>
     </section>
+
+    <!-- Alert when viewing a specific employee's schedule -->
+    <div v-if="employeeIdFilter" class="flex items-center justify-between rounded-2xl bg-violet-50 p-4 text-sm font-semibold text-violet-700">
+      <div class="flex items-center gap-2">
+        <CalendarDays class="h-5 w-5 text-violet-500" />
+        <span>Đang hiển thị lịch làm việc của nhân viên: <span class="font-bold text-violet-900">{{ danhSachLocVaiTro[0]?.ten || 'Đang tải...' }}</span></span>
+      </div>
+      <button @click="router.push({ name: 'admin-nhan-vien-lich-lam' })" class="text-xs bg-white hover:bg-violet-100 text-violet-700 px-3 py-1.5 rounded-xl border border-violet-200 transition shadow-sm">
+        Xem tất cả nhân viên
+      </button>
+    </div>
 
     <!-- ───── CONTENT ───── -->
     <div class="grid gap-5 xl:grid-cols-[1fr_280px]">
@@ -467,7 +597,38 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
           <p v-if="modalNV" class="mb-5 text-sm text-slate-400">
             {{ modalNV.ten }} – {{ NHAN_TUAN[modalNgayIndex] }} {{ formatNgay(cacNgayTrongTuan[modalNgayIndex]) }}
           </p>
-          <p v-else class="mb-5 text-sm text-slate-400">Chọn nhân viên và ca làm việc cần thêm.</p>
+          <p v-else class="mb-3 text-sm text-slate-400">Chọn nhân viên, ngày và ca làm việc cần thêm.</p>
+
+          <!-- Thêm dropdown chọn nhân viên và ngày nếu modalNV là null -->
+          <div v-if="!modalNV" class="mb-4 space-y-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-slate-500">Nhân viên</label>
+              <select
+                v-model="chonNhanVienId"
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition"
+              >
+                <option v-for="nv in danhSachNV" :key="nv.id" :value="nv.id">
+                  {{ nv.ten }} ({{ nv.chucVu }})
+                </option>
+              </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-slate-500">Ngày làm việc</label>
+              <select
+                v-model="chonNgayVal"
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition"
+              >
+                <option
+                  v-for="(ngay, idx) in cacNgayTrongTuan"
+                  :key="idx"
+                  :value="formatISODate(ngay)"
+                >
+                  {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }})
+                </option>
+              </select>
+            </div>
+          </div>
 
           <div class="space-y-2.5">
             <button

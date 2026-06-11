@@ -208,7 +208,7 @@ function themMoi() {
 }
 
 function quanLyLichLam(id: string) {
-  router.push({ name: "admin-nhan-vien-lich-lam", params: { id } });
+  router.push({ name: "admin-nhan-vien-lich-lam-chi-tiet", params: { id } });
 }
 
 function xuatExcel() {
@@ -377,6 +377,10 @@ onUnmounted(() => {
         <template #prefix><RotateCcw class="h-4 w-4" /></template>
         Đặt lại bộ lọc
       </Button>
+      <Button variant="soft" @click="router.push({ name: 'admin-nhan-vien-lich-lam' })">
+        <template #prefix><CalendarDays class="h-4 w-4" /></template>
+        Lịch làm việc
+      </Button>
       <Button variant="soft" @click="xuatExcel">
         <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
         Xuất Excel
@@ -510,14 +514,14 @@ onUnmounted(() => {
                     :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
                   />
-                  <!-- <button
+                 <button
                     type="button"
                     @click="quanLyLichLam(nv.id)"
                     class="admin-table-action text-violet-500 hover:text-violet-700"
                     title="Quản lý lịch làm"
                   >
                     <CalendarDays :size="14" />
-                  </button> -->
+                  </button> 
                   <button
                     type="button"
                     @click="xemChiTiet(nv.id)"
