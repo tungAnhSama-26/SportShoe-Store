@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { ChevronDown, LogOut, Menu, Moon, Sun, UserCog, UserRound } from "lucide-vue-next";
+import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
@@ -75,6 +75,11 @@ function chuyenDenCapNhatThongTin() {
   router.push(isAdminRole() ? "/admin/profile" : "/nhanvien/profile");
 }
 
+function chuyenDenTrangChu() {
+  hienMenuTaiKhoan.value = false;
+  router.push("/");
+}
+
 function dangXuat() {
   logout();
   hienMenuTaiKhoan.value = false;
@@ -145,6 +150,14 @@ function dangXuat() {
             >
               <UserCog class="h-4 w-4 text-slate-500 dark:text-slate-300" />
               Cập nhật thông tin
+            </button>
+            <button
+              type="button"
+              class="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-700"
+              @click="chuyenDenTrangChu"
+            >
+              <Home class="h-4 w-4 text-slate-500 dark:text-slate-300" />
+              Trang chủ
             </button>
             <button
               type="button"
