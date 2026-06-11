@@ -384,7 +384,7 @@ const emit = defineEmits([
               </div>
               <button
                 type="button"
-                class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                class="rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                 :disabled="!shippingInfo.coTheTinhPhi"
                 @click="emit('calculate-shipping')"
               >
