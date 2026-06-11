@@ -1,4 +1,5 @@
 <script setup>
+import ghnLogo from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
 defineProps({
   activePendingInvoice: {
     type: Object,
@@ -176,7 +177,7 @@ const emit = defineEmits([
               />
               <button
                 type="button"
-                class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                class="rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                 :disabled="!coTheApDungPhieu"
                 @click="emit('apply-coupon')"
               >
@@ -265,9 +266,9 @@ const emit = defineEmits([
 
         <div v-if="!isGuestCustomer" class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div class="flex items-center justify-between gap-3">
-            <div>
+            <div class="flex items-center gap-2">
               <p class="text-sm font-semibold text-slate-800">Giao hàng</p>
-              <p class="mt-1 text-xs text-slate-500">Tính phí ship theo luồng quản lý hóa đơn.</p>
+              <img :src="ghnLogo" alt="GHN" class="h-4 object-contain" />
             </div>
             <label class="inline-flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-700">
               <input
@@ -390,10 +391,6 @@ const emit = defineEmits([
                 {{ shippingInfo.dangTinhPhi ? "Đang tính..." : "Tính phí GHN" }}
               </button>
             </div>
-
-            <p v-if="!shippingInfo.daTinhPhi" class="text-xs font-medium text-amber-600">
-              Vui lòng tính phí ship trước khi lưu hoặc thanh toán.
-            </p>
           </div>
         </div>
         <div>

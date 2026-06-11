@@ -25,31 +25,28 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
           <th class="px-3 py-2">STT</th>
           <th class="px-3 py-2">Mã sản phẩm</th>
           <th class="px-3 py-2">Tên sản phẩm</th>
+          <th class="px-3 py-2">Màu sắc</th>
+          <th class="px-3 py-2">Kích cỡ</th>
           <th class="px-3 py-2">Đơn giá</th>
           <th class="px-3 py-2">Số lượng</th>
         </tr>
       </thead>
       <tbody class="bg-white text-sm text-slate-700">
-        <tr v-for="(item, index) in cartItems" :key="item.chiTietId" class="border-t border-slate-100 text-xs">
-          <td class="px-3 py-2 font-semibold text-slate-900">{{ index + 1 }}</td>
-          <td class="px-3 py-2 font-semibold text-slate-600">{{ item.maSanPham }}</td>
+        <tr v-for="(item, index) in cartItems" :key="item.chiTietId" class="border-t border-slate-100 text-xs font-medium">
+          <td class="px-3 py-2 text-slate-900">{{ index + 1 }}</td>
+          <td class="px-3 py-2 text-slate-600">{{ item.maSanPham }}</td>
           <td class="px-3 py-2">
             <div class="flex items-center gap-2">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-xs font-bold text-red-400">
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
               </div>
-
-              <div class="min-w-0">
-                <p class="font-semibold text-slate-900 line-clamp-1">{{ item.tenSanPham }}</p>
-                <p class="mt-0.5 text-[11px] text-slate-500">
-                  {{ item.mauSac || "--" }} / {{ item.kichCo || "--" }}
-                </p>
-                <p v-if="item.sku" class="text-[11px] text-slate-400">SKU: {{ item.sku }}</p>
-              </div>
+              <p class="font-medium text-slate-900 line-clamp-2">{{ item.tenSanPham }}</p>
             </div>
           </td>
-          <td class="px-3 py-2 font-semibold text-slate-700">{{ dinhDangTien(item.giaBan) }}</td>
+          <td class="px-3 py-2 text-slate-700">{{ item.mauSac || "--" }}</td>
+          <td class="px-3 py-2 text-slate-700">{{ item.kichCo || "--" }}</td>
+          <td class="px-3 py-2 font-medium text-slate-700">{{ dinhDangTien(item.giaBan) }}</td>
           <td class="px-3 py-2">
             <div class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50">
               <button
@@ -73,11 +70,11 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
                 +
               </button>
             </div>
-            <p class="mt-1 text-[10px] text-slate-400">Tồn còn lại: {{ soLuongConLai(item.chiTietId, item.soLuongTon) }}</p>
+            <p class="mt-1 text-[10px] text-slate-400">Còn lại: {{ soLuongConLai(item.chiTietId, item.soLuongTon) }}</p>
           </td>
         </tr>
         <tr v-if="!cartItems.length">
-          <td colspan="5" class="px-3 py-8 text-center text-xs text-slate-400">
+          <td colspan="7" class="px-3 py-8 text-center text-xs text-slate-400">
             Giỏ hàng trống.
           </td>
         </tr>

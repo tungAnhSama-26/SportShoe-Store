@@ -108,10 +108,7 @@ function isDiscounted(product) {
 
             <div class="mt-4 space-y-3 rounded-[24px] border border-slate-200 bg-white px-4 py-4">
               <div class="flex items-center justify-between gap-4">
-                <div>
-                  <p class="text-sm text-slate-500">SKU</p>
-                  <p class="mt-1 text-base font-semibold text-slate-900">{{ chiTietDangChon?.sku }}</p>
-                </div>
+                <div></div>
                 <div class="text-right">
                   <p class="text-sm text-slate-500">Giá bán</p>
                   <p class="mt-1 text-base font-bold text-red-500">{{ dinhDangTien(chiTietDangChon?.giaBan || 0) }}</p>
