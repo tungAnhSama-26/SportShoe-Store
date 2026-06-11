@@ -146,9 +146,9 @@ public class GhnShippingService {
                     .body(String.class);
             return readSuccessfulResponse(responseBody, "GHN tinh phi that bai");
         } catch (RestClientResponseException exception) {
-            throw new BusinessException(readGhnErrorMessage(exception.getResponseBodyAsString(), "GHN tinh phi that bai"));
+            throw new BusinessException(readGhnErrorMessage(exception.getResponseBodyAsString(), "GHN tính phí thất bại"));
         } catch (RestClientException exception) {
-            throw new BusinessException("Khong ket noi duoc GHN: " + exception.getMessage());
+            throw new BusinessException("Không kết nối được GHN: " + exception.getMessage());
         }
     }
 
@@ -187,16 +187,16 @@ public class GhnShippingService {
 
         String rawAddress = request.toAddress() != null ? request.toAddress().trim() : "";
         if (rawAddress.isBlank()) {
-            throw new BusinessException("Can nhap dia chi nguoi nhan hoac ma quan/huyen + phuong/xa GHN");
+            throw new BusinessException("Cần nhập địa chỉ người nhận hoặc mã quận/huyện + phường/xã GHN");
         }
 
         String normalizedAddress = normalizeAddress(rawAddress);
         GhnProvince province = findBestProvince(normalizedAddress)
-                .orElseThrow(() -> new BusinessException("Khong tim thay tinh/thanh GHN tu dia chi: " + rawAddress));
+                .orElseThrow(() -> new BusinessException("Không tìm thấy tỉnh/thành GHN từ địa chỉ: " + rawAddress));
 
         GhnResolvedAddress resolvedAddress = resolveAddressInProvince(normalizedAddress, province);
         if (resolvedAddress == null) {
-            throw new BusinessException("Can nhap day du tinh/thanh, quan/huyen va phuong/xa theo du lieu GHN: " + rawAddress);
+            throw new BusinessException("Cần nhập đầy đủ tỉnh/thành, quận/huyện và phường/xã theo dữ liệu GHN: " + rawAddress);
         }
         return resolvedAddress;
     }
@@ -257,7 +257,7 @@ public class GhnShippingService {
         if (provinceCache != null) {
             return provinceCache;
         }
-        JsonNode response = getJson(PROVINCE_ENDPOINT, "Khong lay duoc danh sach tinh/thanh GHN");
+        JsonNode response = getJson(PROVINCE_ENDPOINT, "Không lấy được danh sách tỉnh/thành GHN");
         provinceCache = readArray(response.path("data")).stream()
                 .map(node -> new GhnProvince(
                         node.path("ProvinceID").asInt(),
@@ -272,7 +272,7 @@ public class GhnShippingService {
         return districtCache.computeIfAbsent(provinceId, id -> {
             Map<String, Object> body = new HashMap<>();
             body.put("province_id", id);
-            JsonNode response = postJson(DISTRICT_ENDPOINT, body, "Khong lay duoc danh sach quan/huyen GHN");
+            JsonNode response = postJson(DISTRICT_ENDPOINT, body, "Không lấy được danh sách quận/huyện GHN");
             return readArray(response.path("data")).stream()
                     .map(node -> new GhnDistrict(
                             node.path("DistrictID").asInt(),
@@ -287,7 +287,7 @@ public class GhnShippingService {
         return wardCache.computeIfAbsent(districtId, id -> {
             Map<String, Object> body = new HashMap<>();
             body.put("district_id", id);
-            JsonNode response = postJson(WARD_ENDPOINT, body, "Khong lay duoc danh sach phuong/xa GHN");
+            JsonNode response = postJson(WARD_ENDPOINT, body, "Không lấy được danh sách phường/xã GHN");
             return readArray(response.path("data")).stream()
                     .map(node -> new GhnWard(
                             node.path("WardCode").asText(),
@@ -349,7 +349,7 @@ public class GhnShippingService {
         try {
             return OBJECT_MAPPER.readTree(responseBody);
         } catch (Exception exception) {
-            throw new BusinessException(fallbackMessage + ": GHN tra ve du lieu khong phai JSON");
+            throw new BusinessException(fallbackMessage + ": GHN trả về dữ liệu không phải JSON");
         }
     }
 
@@ -495,16 +495,16 @@ public class GhnShippingService {
 
     private void validateConfig() {
         if (token == null || token.isBlank()) {
-            throw new BusinessException("Chua cau hinh ghn.token");
+            throw new BusinessException("Chưa cấu hình ghn.token");
         }
         if (shopId == null || shopId <= 0) {
-            throw new BusinessException("Chua cau hinh ghn.shop-id");
+            throw new BusinessException("Chưa cấu hình ghn.shop-id");
         }
         if (fromDistrictId == null || fromDistrictId <= 0) {
-            throw new BusinessException("Chua cau hinh ghn.from-district-id");
+            throw new BusinessException("Chưa cấu hình ghn.from-district-id");
         }
         if (fromWardCode == null || fromWardCode.isBlank()) {
-            throw new BusinessException("Chua cau hinh ghn.from-ward-code");
+            throw new BusinessException("Chưa cấu hình ghn.from-ward-code");
         }
     }
 
