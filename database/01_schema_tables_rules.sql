@@ -75,6 +75,38 @@ CREATE TABLE khach_hang (
 );
 GO
 
+CREATE TABLE tai_khoan_ngan_hang (
+    id                   INT              NOT NULL CONSTRAINT pk_tai_khoan_ngan_hang PRIMARY KEY IDENTITY(1,1),
+    khach_hang_id        UNIQUEIDENTIFIER NOT NULL,
+    ten_ngan_hang        NVARCHAR(100)    NOT NULL,
+    so_tai_khoan         VARCHAR(50)      NOT NULL,
+    ten_chu_tai_khoan    NVARCHAR(100)    NOT NULL,
+    chi_nhanh            NVARCHAR(150)    NULL,
+    la_mac_dinh          BIT              NOT NULL CONSTRAINT df_tknh_la_mac_dinh DEFAULT 0,
+    ngay_tao             DATETIME2        NOT NULL CONSTRAINT df_tknh_ngay_tao DEFAULT SYSDATETIME(),
+    ngay_cap_nhat        DATETIME2        NULL,
+    deleted              BIT              NOT NULL CONSTRAINT df_tknh_deleted DEFAULT 0,
+    CONSTRAINT fk_tknh_khach_hang FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id) ON DELETE CASCADE,
+    CONSTRAINT ck_tknh_ten_ngan_hang CHECK (LEN(LTRIM(RTRIM(ten_ngan_hang))) > 0),
+    CONSTRAINT ck_tknh_so_tai_khoan CHECK (LEN(LTRIM(RTRIM(so_tai_khoan))) > 0),
+    CONSTRAINT ck_tknh_ten_chu_tai_khoan CHECK (LEN(LTRIM(RTRIM(ten_chu_tai_khoan))) > 0)
+);
+GO
+
+CREATE UNIQUE INDEX ux_tknh_khach_hang_tai_khoan_active
+    ON tai_khoan_ngan_hang(khach_hang_id, ten_ngan_hang, so_tai_khoan)
+    WHERE deleted = 0;
+GO
+
+CREATE UNIQUE INDEX ux_tknh_khach_hang_mac_dinh
+    ON tai_khoan_ngan_hang(khach_hang_id)
+    WHERE la_mac_dinh = 1 AND deleted = 0;
+GO
+
+CREATE INDEX ix_tknh_khach_hang
+    ON tai_khoan_ngan_hang(khach_hang_id, deleted, la_mac_dinh);
+GO
+
 CREATE TABLE dia_chi_khach_hang (
     id              INT              NOT NULL CONSTRAINT pk_dia_chi_khach_hang PRIMARY KEY IDENTITY(1,1),
     khach_hang_id   UNIQUEIDENTIFIER NOT NULL,
@@ -409,7 +441,7 @@ CREATE TABLE hoa_don (
     ngay_cap_nhat         DATETIME2        NULL,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
-    CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
+    CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 9, 10)),
     CONSTRAINT ck_hoa_don_tong_tien CHECK (
         tong_tien_hang >= 0 AND tien_giam >= 0 AND tong_tien_thanh_toan >= 0
     ),

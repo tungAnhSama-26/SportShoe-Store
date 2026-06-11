@@ -8,6 +8,7 @@ public record XacNhanHoanTienRequest(
         Integer hinhThucHoanTien,
         BigDecimal soTienHoan,
         String maGiaoDichHoan,
-        String ghiChu
+        String ghiChu,
+        Integer taiKhoanNganHangId
 ) {
 }

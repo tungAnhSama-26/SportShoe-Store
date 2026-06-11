@@ -9,6 +9,22 @@ const productImageFallback =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' rx='14' fill='%23f8fafc'/%3E%3Cpath d='M18 44h35c3 0 5-2 5-5 0-2-1-4-3-5l-10-5-7 8H25l-5-5-6 5v3c0 2 2 4 4 4z' fill='%23e2e8f0'/%3E%3Cpath d='M24 48h30' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
+function mauTrangThaiTraHang(trangThai?: number | null) {
+  switch (trangThai) {
+    case 1: return "bg-amber-50 text-amber-700";
+    case 2: return "bg-blue-50 text-blue-700";
+    case 3: return "bg-violet-50 text-violet-700";
+    case 4: return "bg-cyan-50 text-cyan-700";
+    case 5: return "bg-purple-50 text-purple-700";
+    case 6: return "bg-orange-50 text-orange-700";
+    case 7: return "bg-emerald-50 text-emerald-700";
+    case 8: return "bg-rose-50 text-rose-700";
+    case 9: return "bg-slate-100 text-slate-600";
+    case 10: return "bg-red-50 text-red-700";
+    default: return "bg-slate-100 text-slate-600";
+  }
+}
+
 function resolveProductImageUrl(url?: string) {
   const value = String(url || "").trim();
   if (!value) return productImageFallback;
@@ -76,9 +92,22 @@ function handleProductImageError(event: Event) {
       <section class="grid items-stretch gap-3 xl:grid-cols-[1fr_1fr_0.95fr]">
         <Card class="flex h-full flex-col px-4 py-4 md:px-5 xl:col-span-2">
           <template #header>
-            <div class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
-              <ClipboardList class="h-4.5 w-4.5 text-slate-500" />
-              Trạng Thái Đơn Hàng
+            <div class="flex w-full flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-[15px] font-semibold text-slate-700">
+                <ClipboardList class="h-4.5 w-4.5 text-slate-500" />
+                Trạng Thái Đơn Hàng
+              </div>
+              <div v-if="hoaDon.phieuTraHangId" class="flex flex-wrap items-center justify-end gap-2">
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  {{ hoaDon.trangThai }}
+                </span>
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="mauTrangThaiTraHang(hoaDon.trangThaiPhieuTraHang)"
+                >
+                  {{ hoaDon.trangThaiPhieuTraHangText }}
+                </span>
+              </div>
             </div>
           </template>
 
@@ -597,6 +626,35 @@ function handleProductImageError(event: Event) {
             </select>
           </label>
 
+          <!-- Customer Bank Account Selection & VietQR Code -->
+          <div v-if="formHoanTien.hinhThucHoanTien === 2" class="space-y-4">
+            <div class="space-y-2">
+              <span class="text-sm font-bold text-slate-600">Tài khoản ngân hàng nhận tiền của khách</span>
+              <div v-if="dangTaiNganHangKhach" class="text-xs text-slate-400">Đang tải danh sách tài khoản...</div>
+              <select v-else-if="dsTaiKhoanNganHangKhach.length > 0" v-model="taiKhoanNganHangChon"
+                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100">
+                <option v-for="tk in dsTaiKhoanNganHangKhach" :key="tk.id" :value="tk">
+                  {{ tk.tenNganHang }} - {{ tk.soTaiKhoan }} ({{ tk.tenChuTaiKhoan }}) {{ tk.laMacDinh ? '[Mặc định]' : '' }}
+                </option>
+              </select>
+              <div v-else class="rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-3 text-xs font-semibold text-rose-700">
+                Khách hàng chưa liên kết tài khoản ngân hàng nào.
+              </div>
+            </div>
+
+            <!-- VietQR Code Image -->
+            <div v-if="taiKhoanNganHangChon" class="flex flex-col items-center justify-center border border-slate-100 rounded-3xl p-5 bg-slate-50/80 gap-3">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quét mã VietQR để chuyển tiền</span>
+              <div class="h-52 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2.5 flex items-center justify-center shadow-sm">
+                <img :src="qrHoanTienUrl" alt="VietQR Hoàn Tiền" class="h-full w-full object-contain" />
+              </div>
+              <div class="text-center space-y-0.5">
+                <p class="text-xs font-bold text-slate-700">Chủ TK: <span class="uppercase text-[#B82220]">{{ taiKhoanNganHangChon.tenChuTaiKhoan }}</span></p>
+                <p class="text-xs font-semibold text-slate-500">STK: {{ taiKhoanNganHangChon.soTaiKhoan }} ({{ taiKhoanNganHangChon.tenNganHang }})</p>
+              </div>
+            </div>
+          </div>
+
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block space-y-2">
               <span class="text-sm font-bold text-slate-600">Số tiền hoàn</span>
@@ -626,7 +684,8 @@ function handleProductImageError(event: Event) {
           </button>
           <button type="button"
             class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)] transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="dangXacNhanHoanTien" @click="handleXacNhanHoanTien">
+            :disabled="dangXacNhanHoanTien || (formHoanTien.hinhThucHoanTien === 2 && !taiKhoanNganHangChon)"
+            @click="handleXacNhanHoanTien">
             <CheckCircle2 class="h-4 w-4" />
             {{ dangXacNhanHoanTien ? 'Đang xác nhận...' : 'Xác nhận hoàn tiền' }}
           </button>

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Clock3,
+  History,
   Image as ImageIcon,
   PackageCheck,
   RefreshCw,
@@ -33,6 +34,8 @@ import {
 import { API_BASE_URL } from "../../../services/api-client";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showError, showSuccess } from "../../../utils/alert";
+import { layChiTietHoaDon } from "../../../services/hoa-don";
+import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
 
 const route = useRoute();
 const router = useRouter();
@@ -41,10 +44,16 @@ const dangTai = ref(false);
 const dangXuLy = ref(false);
 const loiTrang = ref("");
 const modal = ref("");
+const hienModalLichSu = ref(false);
 const formDuyet = ref({ nhanHangTrucTiep: false, ghiChu: "" });
 const formVanChuyen = ref({ donViVanChuyen: "", maVanDonHoan: "", ghiChu: "" });
 const formTuChoi = ref({ lyDo: "" });
-const formHoanTien = ref({ hinhThucHoan: 2, maGiaoDich: "", ghiChu: "" });
+const formHoanTien = ref({
+  hinhThucHoan: 2,
+  maGiaoDich: "",
+  ghiChu: "",
+  taiKhoanNganHangId: null,
+});
 const formKiemTra = ref({ sanPhams: [], ghiChu: "" });
 
 const trangThai = computed(() => Number(phieu.value?.trangThai || 0));
@@ -89,7 +98,7 @@ const cacBuoc = [
   { id: 4, ten: "Đã nhận hàng" },
   { id: 5, ten: "Kiểm tra" },
   { id: 6, ten: "Chờ hoàn tiền" },
-  { id: 7, ten: "Hoàn tất" },
+  { id: 7, ten: "Đã hoàn tiền" },
 ];
 
 const buocHienTai = computed(() => {
@@ -179,13 +188,64 @@ function moModalKiemTra() {
   modal.value = "kiem-tra";
 }
 
+const dsTaiKhoanNganHangKhach = ref([]);
+const dangTaiNganHangKhach = ref(false);
+const taiKhoanNganHangChon = ref(null);
+
+const qrHoanTienUrl = computed(() => {
+  if (!taiKhoanNganHangChon.value) return "";
+  const bank = taiKhoanNganHangChon.value.tenNganHang;
+  const account = taiKhoanNganHangChon.value.soTaiKhoan;
+  const name = encodeURIComponent(taiKhoanNganHangChon.value.tenChuTaiKhoan);
+  const amount = Number(phieu.value?.tongTienThucTe) || 0;
+  const desc = encodeURIComponent(`HOAN TIEN TRA HANG ${phieu.value?.ma || ""}`);
+  return `https://img.vietqr.io/image/${bank}-${account}-compact2.png?amount=${amount}&addInfo=${desc}&accountName=${name}`;
+});
+
+async function taiTaiKhoanNganHangKhach() {
+  if (!phieu.value?.hoaDonId) return;
+  dangTaiNganHangKhach.value = true;
+  try {
+    const hd = await layChiTietHoaDon(phieu.value.hoaDonId);
+    if (hd?.khachHangId) {
+      const accounts = await layDanhSachTaiKhoanNganHang(hd.khachHangId);
+      dsTaiKhoanNganHangKhach.value = accounts;
+      const macDinh = accounts.find(a => a.laMacDinh);
+      taiKhoanNganHangChon.value = macDinh || (accounts.length > 0 ? accounts[0] : null);
+    } else {
+      dsTaiKhoanNganHangKhach.value = [];
+      taiKhoanNganHangChon.value = null;
+    }
+  } catch (e) {
+    console.error("Không thể tải danh sách tài khoản ngân hàng của khách", e);
+  } finally {
+    dangTaiNganHangKhach.value = false;
+  }
+}
+
 function moModalHoanTien() {
   formHoanTien.value = {
     hinhThucHoan: phieu.value?.hinhThucHoan || 2,
     maGiaoDich: "",
     ghiChu: "Hoàn tiền theo phiếu trả hàng",
+    taiKhoanNganHangId: null,
   };
+  taiTaiKhoanNganHangKhach();
   modal.value = "hoan-tien";
+}
+
+async function handleHoanTien() {
+  if (Number(formHoanTien.value.hinhThucHoan) === 2 && !taiKhoanNganHangChon.value?.id) {
+    showError("Vui lòng chọn tài khoản ngân hàng nhận tiền của khách hàng.");
+    return;
+  }
+
+  await thucHien("Hoàn tiền trả hàng thành công", () => hoanTienTraHang(phieu.value.id, {
+    ...formHoanTien.value,
+    taiKhoanNganHangId: Number(formHoanTien.value.hinhThucHoan) === 2
+      ? taiKhoanNganHangChon.value?.id
+      : null,
+  }));
 }
 
 function moModalTuChoi() {
@@ -284,7 +344,7 @@ onMounted(taiChiTiet);
           <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3">
               <PackageCheck class="h-4.5 w-4.5 text-slate-500" />
-              <h2 class="text-[15px] font-semibold text-slate-700">Tiến Trình Xử Lý</h2>
+              <h2 class="text-[15px] font-semibold text-slate-700">Trạng thái phiếu trả hàng</h2>
             </div>
             <Badge :variant="badgeVariant(phieu.trangThai)">{{ phieu.tenTrangThai }}</Badge>
           </div>
@@ -314,6 +374,15 @@ onMounted(taiChiTiet);
               {{ buoc.ten }}
             </p>
           </div>
+        </div>
+
+        <div class="mt-5 flex justify-end">
+          <Button variant="primary" @click="hienModalLichSu = true">
+            <template #prefix>
+              <History class="h-4 w-4" />
+            </template>
+            Lịch Sử Thao Tác
+          </Button>
         </div>
       </Card>
 
@@ -503,37 +572,61 @@ onMounted(taiChiTiet);
         </Table>
       </Card>
 
-      <Card class="px-5 py-4">
-          <template #header>
-            <div class="flex items-center gap-2">
-              <Clock3 class="h-4.5 w-4.5 text-slate-500" />
-              <h2 class="text-[15px] font-semibold text-slate-700">Lịch Sử Xử Lý</h2>
-            </div>
-          </template>
-          <div class="space-y-0">
-            <div
-              v-for="(item, index) in phieu.lichSu"
-              :key="item.id || index"
-              class="relative flex gap-4 pb-5 last:pb-0"
-            >
-              <div v-if="index < phieu.lichSu.length - 1" class="absolute left-[15px] top-8 h-[calc(100%-20px)] w-px bg-slate-200"></div>
-              <div class="relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-50 text-primary">
-                <CheckCircle2 class="h-4 w-4" />
-              </div>
-              <div class="min-w-0 flex-1 rounded-2xl bg-slate-50 px-4 py-3">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="font-semibold text-slate-700">{{ item.hanhDong }}</p>
-                  <span class="text-xs text-slate-400">{{ dinhDangNgay(item.ngayTao) }}</span>
+    </template>
+
+    <div
+      v-if="hienModalLichSu"
+      class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+      @click.self="hienModalLichSu = false"
+    >
+      <div class="w-full max-w-2xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div class="flex items-center gap-3">
+            <History class="h-5 w-5 text-slate-500" />
+            <h3 class="text-[17px] font-bold text-slate-800">Lịch sử thao tác</h3>
+          </div>
+          <button
+            type="button"
+            class="text-slate-400 transition hover:text-slate-600"
+            @click="hienModalLichSu = false"
+          >
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+
+        <div class="max-h-[70vh] overflow-y-auto px-6 py-8">
+          <div v-if="!phieu?.lichSu?.length" class="py-10 text-center text-sm text-slate-400">
+            Chưa có lịch sử thao tác.
+          </div>
+          <div v-else class="relative pl-8">
+            <div class="absolute bottom-0 left-[3.5px] top-0 w-[1.5px] bg-[#B82220]/20"></div>
+
+            <div class="space-y-6">
+              <div
+                v-for="(item, index) in phieu.lichSu"
+                :key="item.id || index"
+                class="relative"
+              >
+                <div
+                  class="absolute -left-[32px] top-4 h-2 w-2 rounded-full border-2 border-white bg-[#B82220] shadow-[0_0_0_2px_rgba(184,34,32,0.15)]"
+                ></div>
+
+                <div class="rounded-2xl border border-slate-50 bg-slate-50/50 p-4 transition-colors hover:bg-slate-100/50">
+                  <div class="text-[12px] font-medium text-slate-400">
+                    {{ dinhDangNgay(item.ngayTao) }}
+                  </div>
+                  <div class="mt-1 text-[13px] font-semibold text-slate-400">
+                    {{ item.maNhanVien || "Hệ thống" }} · {{ item.tenTrangThaiMoi }}
+                  </div>
+                  <p class="mt-2 text-[15px] font-bold text-slate-800">{{ item.hanhDong }}</p>
+                  <p v-if="item.ghiChu" class="mt-2 text-[13px] italic text-slate-500">{{ item.ghiChu }}</p>
                 </div>
-                <p class="mt-1 text-xs text-slate-500">
-                  {{ item.maNhanVien || "Hệ thống" }} · {{ item.tenTrangThaiMoi }}
-                </p>
-                <p v-if="item.ghiChu" class="mt-2 text-sm leading-5 text-slate-600">{{ item.ghiChu }}</p>
               </div>
             </div>
           </div>
-      </Card>
-    </template>
+        </div>
+      </div>
+    </div>
 
     <div
       v-if="modal"
@@ -670,6 +763,35 @@ onMounted(taiChiTiet);
                 <option :value="3">Ví điện tử</option>
               </select>
             </label>
+
+            <!-- Customer Bank Account Selection & VietQR Code -->
+            <div v-if="formHoanTien.hinhThucHoan === 2" class="space-y-4 pt-2">
+              <div class="space-y-2">
+                <span class="text-sm font-semibold text-slate-600">Tài khoản ngân hàng nhận tiền của khách</span>
+                <div v-if="dangTaiNganHangKhach" class="text-xs text-slate-400">Đang tải danh sách tài khoản...</div>
+                <select v-else-if="dsTaiKhoanNganHangKhach.length > 0" v-model="taiKhoanNganHangChon"
+                  class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-rose-300">
+                  <option v-for="tk in dsTaiKhoanNganHangKhach" :key="tk.id" :value="tk">
+                    {{ tk.tenNganHang }} - {{ tk.soTaiKhoan }} ({{ tk.tenChuTaiKhoan }}) {{ tk.laMacDinh ? '[Mặc định]' : '' }}
+                  </option>
+                </select>
+                <div v-else class="rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-3 text-xs font-semibold text-rose-700">
+                  Khách hàng chưa liên kết tài khoản ngân hàng nào.
+                </div>
+              </div>
+
+              <!-- VietQR Code Image -->
+              <div v-if="taiKhoanNganHangChon" class="flex flex-col items-center justify-center border border-slate-100 rounded-3xl p-5 bg-slate-50/80 gap-3">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quét mã VietQR để chuyển tiền</span>
+                <div class="h-44 w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 flex items-center justify-center shadow-sm">
+                  <img :src="qrHoanTienUrl" alt="VietQR Hoàn Tiền" class="h-full w-full object-contain" />
+                </div>
+                <div class="text-center space-y-0.5">
+                  <p class="text-xs font-bold text-slate-700">Chủ TK: <span class="uppercase text-[#B82220]">{{ taiKhoanNganHangChon.tenChuTaiKhoan }}</span></p>
+                  <p class="text-xs font-semibold text-slate-500">STK: {{ taiKhoanNganHangChon.soTaiKhoan }} ({{ taiKhoanNganHangChon.tenNganHang }})</p>
+                </div>
+              </div>
+            </div>
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Mã giao dịch</span>
               <input v-model="formHoanTien.maGiaoDich" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="Để trống nếu hoàn tiền mặt" />
@@ -678,7 +800,8 @@ onMounted(taiChiTiet);
             <Button
               full-width
               :loading="dangXuLy"
-              @click="thucHien('Hoàn tiền trả hàng thành công', () => hoanTienTraHang(phieu.id, formHoanTien))"
+              :disabled="formHoanTien.hinhThucHoan === 2 && !taiKhoanNganHangChon"
+              @click="handleHoanTien"
             >
               Xác nhận đã hoàn tiền
             </Button>

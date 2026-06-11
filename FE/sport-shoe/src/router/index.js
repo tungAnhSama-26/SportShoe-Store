@@ -32,6 +32,7 @@ import ChiTietPhieuGiamGia from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.v
 import ChiTietPhieuGiamGiaKhachHang from "../pages/admin/khuyen-mai/ChiTietPhieuGiamGiaKhachHang.vue";
 import ChiTietDotGiamGia from "../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue";
 import Profile from "../pages/admin/profile/Profile.vue";
+import ClientProfile from "../pages/Profile.vue";
 
 import LoaiGiay from "../pages/admin/danh-muc/LoaiGiay.vue";
 import CoGiay from "../pages/admin/danh-muc/CoGiay.vue";
@@ -174,6 +175,11 @@ const router = createRouter({
           path: "gioi-thieu",
           name: "gioi-thieu",
           component: GioiThieu
+        },
+        {
+          path: "profile",
+          name: "client-profile",
+          component: ClientProfile
         }
       ]
     },
