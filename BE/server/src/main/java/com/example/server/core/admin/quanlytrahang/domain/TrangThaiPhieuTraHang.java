@@ -12,7 +12,7 @@ public enum TrangThaiPhieuTraHang {
     DA_NHAN_HANG(4, "Đã nhận hàng"),
     DANG_KIEM_TRA(5, "Đang kiểm tra"),
     CHO_HOAN_TIEN(6, "Chờ hoàn tiền"),
-    HOAN_TAT(7, "Hoàn tất"),
+    HOAN_TAT(7, "Đã hoàn tiền"),
     TU_CHOI(8, "Từ chối"),
     DA_HUY(9, "Đã hủy"),
     HOAN_HANG_THAT_BAI(10, "Hoàn hàng thất bại");

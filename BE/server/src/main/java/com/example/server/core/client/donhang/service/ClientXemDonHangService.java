@@ -2,6 +2,7 @@ package com.example.server.core.client.donhang.service;
 
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.DongSanPham;
+import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTraHang;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
 import com.example.server.entity.DanhGia;
@@ -15,6 +16,7 @@ import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichSuHoaDonRepository;
+import com.example.server.repository.LichSuPhieuTraHangRepository;
 import com.example.server.repository.PhieuTraHangRepository;
 import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
@@ -42,6 +44,7 @@ public class ClientXemDonHangService {
     private final PhieuTraHangRepository phieuTraHangRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final VanChuyenRepository vanChuyenRepository;
+    private final LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
@@ -49,7 +52,8 @@ public class ClientXemDonHangService {
             DanhGiaRepository danhGiaRepository,
             PhieuTraHangRepository phieuTraHangRepository,
             LichSuHoaDonRepository lichSuHoaDonRepository,
-            VanChuyenRepository vanChuyenRepository
+            VanChuyenRepository vanChuyenRepository,
+            LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -57,6 +61,7 @@ public class ClientXemDonHangService {
         this.phieuTraHangRepository = phieuTraHangRepository;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.vanChuyenRepository = vanChuyenRepository;
+        this.lichSuPhieuTraHangRepository = lichSuPhieuTraHangRepository;
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +75,7 @@ public class ClientXemDonHangService {
             int soLuong = dong.stream()
                     .mapToInt(ct -> ct.getSoLuong() == null ? 0 : ct.getSoLuong())
                     .sum();
-            
+
             List<DonHangTomTatResponse.DongSanPhamTomTat> sanPhams = new ArrayList<>();
             for (HoaDonChiTiet ct : dong) {
                 GiayChiTiet gct = ct.getGiayChiTiet();
@@ -87,7 +92,7 @@ public class ClientXemDonHangService {
                         ct.getThanhTien()
                 ));
             }
-            
+
             // Check return slip for this invoice
             Integer phieuTraHangId = null;
             Integer trangThaiTraHang = null;
@@ -99,7 +104,7 @@ public class ClientXemDonHangService {
                 trangThaiTraHang = phieu.getTrangThai();
                 trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
             }
-            
+
             result.add(new DonHangTomTatResponse(
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
                     hd.getTrangThai(), nhanTrangThai(hd.getTrangThai()),
@@ -165,12 +170,21 @@ public class ClientXemDonHangService {
         Integer phieuTraHangId = null;
         Integer trangThaiTraHang = null;
         String trangThaiTraHangText = null;
+        List<LichSuTraHang> lichSuTraHang = List.of();
         var phieuOpt = phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hd.getId());
         if (phieuOpt.isPresent()) {
             PhieuTraHang phieu = phieuOpt.get();
             phieuTraHangId = phieu.getId();
             trangThaiTraHang = phieu.getTrangThai();
             trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
+            lichSuTraHang = lichSuPhieuTraHangRepository
+                    .findByPhieuTraHangIdOrderByNgayTaoAsc(phieu.getId())
+                    .stream()
+                    .map(lichSu -> new LichSuTraHang(
+                            lichSu.getTrangThaiMoi(),
+                            lichSu.getNgayTao()
+                    ))
+                    .toList();
         }
 
         List<LichSuTrangThai> lichSuTrangThai = lichSuHoaDonRepository
@@ -190,7 +204,7 @@ public class ClientXemDonHangService {
                 maPhieu, sanPhams,
                 tamTinh, giamDot, giamVoucher, phiVanChuyen, hd.getTongTienThanhToan(),
                 hd.getNgayCapNhat(), lichSuTrangThai,
-                phieuTraHangId, trangThaiTraHang, trangThaiTraHangText);
+                phieuTraHangId, trangThaiTraHang, trangThaiTraHangText, lichSuTraHang);
     }
 
     /** Khách xác nhận đã nhận hàng (đơn phải đã hoàn thành). */
@@ -217,12 +231,11 @@ public class ClientXemDonHangService {
             case 1 -> "Chờ xác nhận";
             case 9 -> "Đã xác nhận";
             case 2 -> "Chờ lấy hàng";
-            case 3 -> "Chờ giao hàng";
+            case 3 -> "Đang giao hàng";
             case 4 -> "Đã giao hàng";
             case 5 -> "Hoàn thành";
             case 6 -> "Đã hủy";
             case 7 -> "Yêu cầu hủy";
-            case 8 -> "Cần hoàn tiền";
             case 10 -> "Giao hàng thất bại";
             default -> "Không xác định";
         };
@@ -237,7 +250,7 @@ public class ClientXemDonHangService {
             case 4 -> "Đã nhận hàng";
             case 5 -> "Đang kiểm tra";
             case 6 -> "Chờ hoàn tiền";
-            case 7 -> "Hoàn tất";
+            case 7 -> "Đã hoàn tiền";
             case 8 -> "Từ chối";
             case 9 -> "Đã hủy";
             case 10 -> "Hoàn hàng thất bại";

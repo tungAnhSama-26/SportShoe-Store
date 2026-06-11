@@ -28,7 +28,7 @@ END;
 
 ALTER TABLE dbo.hoa_don WITH NOCHECK
 ADD CONSTRAINT ck_hoa_don_trang_thai
-CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 9, 10));
 
 IF EXISTS (
     SELECT 1
@@ -92,7 +92,7 @@ VALUES
 (N'HD1779726539417', N'COD da giao hang, cho xac nhan thu tien', 2, 'khach4', 'NV002', 4, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 4, 0, NULL, N'COD da giao, cho admin xac nhan thanh toan.', DATEADD(MINUTE, 90, @baseTime)),
 (N'HD1779726539418', N'COD giao hang that bai, huy giao dich cho thu tien', 2, 'khach5', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 4, 3, NULL, N'Khach khong nhan hang, huy giao dich COD.', DATEADD(MINUTE, 120, @baseTime)),
 (N'HD1779726539419', N'Online da thanh toan nhung giao that bai, can hoan tien', 2, 'khach6', 'NV002', 10, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 4, 30000, 2, 4, DATEADD(MINUTE, 150, @baseTime), N'Da thu tien truoc, giao that bai nen can hoan tien.', DATEADD(MINUTE, 150, @baseTime)),
-(N'HD1779726539420', N'Don dang can hoan tien', 2, 'khach7', 'NV002', 8, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 3, 30000, 2, 4, DATEADD(MINUTE, 180, @baseTime), N'Cho admin xac nhan hoan tien.', DATEADD(MINUTE, 180, @baseTime)),
+(N'HD1779726539420', N'Don da huy, thanh toan dang can hoan tien', 2, 'khach7', 'NV002', 6, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 5, 30000, 2, 4, DATEADD(MINUTE, 180, @baseTime), N'Cho admin xac nhan hoan tien.', DATEADD(MINUTE, 180, @baseTime)),
 (N'HD1779726539421', N'Don da huy sau khi hoan tien xong', 2, 'khach8', 'NV002', 6, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 5, 30000, 2, 5, DATEADD(MINUTE, 215, @baseTime), N'Da hoan tien cho khach.', DATEADD(MINUTE, 210, @baseTime)),
 (N'HD1779726539422', N'Khach gui yeu cau huy don', 2, 'khach9', NULL, 7, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 1, 30000, 4, 0, NULL, N'Cho nhan vien xu ly yeu cau huy.', DATEADD(MINUTE, 240, @baseTime)),
 (N'HD1779726539423', N'Cua hang tao ho khach va co giao hang', 1, 'khach10', 'NV002', 3, 1690000, 0, 1720000, N'GCT001', 1, 1690000, 2, 30000, 1, 1, DATEADD(MINUTE, 275, @baseTime), N'Thu tien tai quay, tiep tuc giao hang.', DATEADD(MINUTE, 270, @baseTime));
@@ -243,12 +243,11 @@ SELECT
     CASE f.trang_thai
         WHEN 1 THEN N'Cho xac nhan'
         WHEN 2 THEN N'Cho lay hang'
-        WHEN 3 THEN N'Cho giao hang'
+        WHEN 3 THEN N'Dang giao hang'
         WHEN 4 THEN N'Da giao hang'
         WHEN 5 THEN N'Hoan thanh'
         WHEN 6 THEN N'Huy'
         WHEN 7 THEN N'Yeu cau huy'
-        WHEN 8 THEN N'Can hoan tien'
         WHEN 9 THEN N'Da xac nhan'
         WHEN 10 THEN N'Giao hang that bai'
     END,

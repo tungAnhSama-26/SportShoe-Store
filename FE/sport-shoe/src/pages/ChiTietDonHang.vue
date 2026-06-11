@@ -61,23 +61,115 @@ async function taiChiTiet() {
   }
 }
 
-const cacBuoc = CAC_BUOC_DON_HANG;
-const cauHinhTrangThai = computed(() => layCauHinhTrangThaiDonHang(don.value?.trangThai));
-const viTriHienTai = computed(() => layViTriTienTrinhDonHang(don.value?.trangThai));
+const CAC_BUOC_TRA_HANG = Object.freeze([
+  {
+    id: 1,
+    ten: 'Chờ duyệt',
+    icon: 'M12 8v4l3 3 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+  },
+  {
+    id: 2,
+    ten: 'Chờ gửi hàng',
+    icon: 'M3 6h18 M7 3v6 M17 3v6 M5 10h14v10H5z',
+  },
+  {
+    id: 3,
+    ten: 'Đang hoàn hàng',
+    icon: 'M3 12h15 M14 7l5 5-5 5 M5 5v14',
+  },
+  {
+    id: 4,
+    ten: 'Đã nhận hàng',
+    icon: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.3 7 12 12l8.7-5 M12 22V12',
+  },
+  {
+    id: 5,
+    ten: 'Đang kiểm tra',
+    icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+  },
+  {
+    id: 6,
+    ten: 'Chờ hoàn tiền',
+    icon: 'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+  },
+  {
+    id: 7,
+    ten: 'Đã hoàn tiền',
+    icon: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M8 12l3 3 5-6',
+  },
+]);
+
+const TRANG_THAI_TRA_HANG_DAC_BIET = Object.freeze({
+  8: {
+    tieuDe: 'Yêu cầu trả hàng bị từ chối',
+    moTa: 'Yêu cầu trả hàng/hoàn tiền không được chấp nhận.',
+    lopMau: 'bg-rose-50 text-rose-600',
+  },
+  9: {
+    tieuDe: 'Yêu cầu trả hàng đã hủy',
+    moTa: 'Phiếu trả hàng/hoàn tiền này đã được hủy.',
+    lopMau: 'bg-slate-100 text-slate-600',
+  },
+  10: {
+    tieuDe: 'Hoàn hàng thất bại',
+    moTa: 'Hàng trả chưa được giao thành công. Vui lòng liên hệ cửa hàng để được hỗ trợ.',
+    lopMau: 'bg-rose-50 text-rose-600',
+  },
+});
+
+const coPhieuTraHang = computed(() => don.value?.phieuTraHangId != null);
+const viTriHienTai = computed(() => (
+  coPhieuTraHang.value
+    ? Math.min(Math.max(Number(don.value?.trangThaiTraHang) || 0, 0), CAC_BUOC_TRA_HANG.length)
+    : layViTriTienTrinhDonHang(don.value?.trangThai)
+));
+
+const cauHinhTrangThai = computed(() => {
+  if (!coPhieuTraHang.value) {
+    return layCauHinhTrangThaiDonHang(don.value?.trangThai);
+  }
+
+  const trangThai = Number(don.value?.trangThaiTraHang);
+  const dacBiet = TRANG_THAI_TRA_HANG_DAC_BIET[trangThai];
+  if (dacBiet) {
+    return { ...dacBiet, hienStepper: false };
+  }
+
+  return {
+    hienStepper: trangThai >= 1 && trangThai <= 7,
+    tieuDe: 'Trạng thái trả hàng chưa xác định',
+    moTa: 'Vui lòng tải lại trang hoặc liên hệ cửa hàng để được hỗ trợ.',
+    lopMau: 'bg-slate-100 text-slate-600',
+  };
+});
 
 function chuanHoaTrangThai(value) {
-  return String(value || '')
+  const trangThai = String(value || '')
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
+  return trangThai === 'cho giao hang' ? 'dang giao hang' : trangThai;
 }
 
 const thongTinCacBuoc = computed(() => {
+  if (coPhieuTraHang.value) {
+    const lichSuTraHang = Array.isArray(don.value?.lichSuTraHang) ? don.value.lichSuTraHang : [];
+    return CAC_BUOC_TRA_HANG.map((buoc) => {
+      const banGhi = lichSuTraHang.find(
+        (item) => Number(item?.trangThai) === buoc.id,
+      );
+      return {
+        ...buoc,
+        thoiGian: banGhi?.ngayTao || null,
+      };
+    });
+  }
+
   const lichSu = Array.isArray(don.value?.lichSuTrangThai) ? don.value.lichSuTrangThai : [];
 
-  return cacBuoc.map((buoc, index) => {
+  return CAC_BUOC_DON_HANG.map((buoc, index) => {
     const banGhi = lichSu.find(
       (item) => chuanHoaTrangThai(item?.trangThai) === chuanHoaTrangThai(buoc.ten),
     );
@@ -147,7 +239,6 @@ function lopBadge(tt) {
     case 5: return 'bg-emerald-50 text-emerald-600';
     case 6: return 'bg-rose-50 text-rose-600';
     case 7: return 'bg-amber-50 text-amber-700';
-    case 8: return 'bg-orange-50 text-orange-700';
     case 10: return 'bg-rose-50 text-rose-600';
     default: return 'bg-slate-100 text-slate-600';
   }
@@ -197,9 +288,15 @@ function xuLyAnhLoi(event) {
             <p class="mt-1 text-sm text-slate-400">Đặt lúc {{ formatNgay(don.ngayLap) }}</p>
           </div>
           <div class="flex items-center gap-2">
-            <span class="rounded-full px-3.5 py-1.5 text-sm font-semibold" :class="lopBadge(don.trangThai)">{{ don.trangThaiText }}</span>
+            <span
+              v-if="don.phieuTraHangId == null"
+              class="rounded-full px-3.5 py-1.5 text-sm font-semibold"
+              :class="lopBadge(don.trangThai)"
+            >
+              {{ don.trangThaiText }}
+            </span>
             <span v-if="don.phieuTraHangId != null" class="rounded-full px-3.5 py-1.5 text-sm font-semibold" :class="lopBadgeTraHang(don.trangThaiTraHang)">
-              Trả hàng: {{ don.trangThaiTraHangText }}
+              {{ don.trangThaiTraHangText }}
             </span>
           </div>
         </div>
@@ -211,7 +308,7 @@ function xuLyAnhLoi(event) {
               <rect x="7" y="4" width="10" height="16" rx="2" />
               <path d="M9 4.5V3.8A1.8 1.8 0 0 1 10.8 2h2.4A1.8 1.8 0 0 1 15 3.8v.7M10 9h4M10 13h4M10 17h2" />
             </svg>
-            Trạng Thái Đơn Hàng
+            {{ coPhieuTraHang ? 'Trạng Thái Trả Hàng/Hoàn Tiền' : 'Trạng Thái Đơn Hàng' }}
           </div>
 
           <div
@@ -232,7 +329,10 @@ function xuLyAnhLoi(event) {
               :style="{ left: `${100 / thongTinCacBuoc.length / 2}%`, right: `${100 / thongTinCacBuoc.length / 2}%` }"
             ></div>
 
-            <div class="relative z-10 grid w-full grid-cols-6 items-start">
+            <div
+              class="relative z-10 grid w-full items-start"
+              :style="{ gridTemplateColumns: `repeat(${thongTinCacBuoc.length}, minmax(0, 1fr))` }"
+            >
               <div
                 v-for="(buoc, i) in thongTinCacBuoc"
                 :key="buoc.ten"

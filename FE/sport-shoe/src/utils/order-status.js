@@ -12,7 +12,7 @@ export const CAC_BUOC_DON_HANG = Object.freeze([
     icon: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.3 7 12 12l8.7-5 M12 22V12',
   },
   {
-    ten: 'Chờ giao hàng',
+    ten: 'Đang giao hàng',
     icon: 'M1 3h15v13H1z M16 8h4l3 3v5h-7V8z M5.5 18.5a2.5 2.5 0 1 0 0 .01 M18.5 18.5a2.5 2.5 0 1 0 0 .01',
   },
   {
@@ -44,11 +44,6 @@ const TRANG_THAI_DAC_BIET = Object.freeze({
     tieuDe: 'Yêu cầu hủy đang chờ xử lý',
     moTa: 'Cửa hàng đang xem xét yêu cầu hủy đơn của bạn.',
     lopMau: 'bg-amber-50 text-amber-700',
-  },
-  8: {
-    tieuDe: 'Đơn hàng đang chờ hoàn tiền',
-    moTa: 'Cửa hàng đang xử lý khoản tiền cần hoàn cho đơn hàng.',
-    lopMau: 'bg-orange-50 text-orange-700',
   },
   10: {
     tieuDe: 'Giao hàng thất bại',
