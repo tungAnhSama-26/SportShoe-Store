@@ -41,6 +41,7 @@ DELETE FROM mau_sac;
 DELETE FROM kich_co;
 DELETE FROM dia_chi_khach_hang;
 DELETE FROM khach_hang;
+DELETE FROM lich_lam_viec;
 DELETE FROM nhan_vien;
 GO
 
@@ -494,5 +495,35 @@ SELECT N'hoa_don_chi_tiet', COUNT(*) FROM hoa_don_chi_tiet UNION ALL
 SELECT N'van_chuyen', COUNT(*) FROM van_chuyen UNION ALL
 SELECT N'thanh_toan', COUNT(*) FROM thanh_toan UNION ALL
 SELECT N'phieu_tra_hang', COUNT(*) FROM phieu_tra_hang UNION ALL
-SELECT N'phieu_tra_hang_chi_tiet', COUNT(*) FROM phieu_tra_hang_chi_tiet;
+SELECT N'phieu_tra_hang_chi_tiet', COUNT(*) FROM phieu_tra_hang_chi_tiet UNION ALL
+SELECT N'lich_lam_viec', COUNT(*) FROM lich_lam_viec;
 GO
+
+-- ============================================================
+-- Seed lich_lam_viec dynamically for current week
+-- ============================================================
+DECLARE @Monday DATE = DATEADD(wk, DATEDIFF(wk, 0, GETDATE()), 0);
+
+INSERT INTO lich_lam_viec (nhan_vien_id, ngay, ca)
+VALUES
+((SELECT id FROM nhan_vien WHERE ma = 'NV001'), @Monday, 'sang'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV001'), DATEADD(day, 1, @Monday), 'sang'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV001'), DATEADD(day, 2, @Monday), 'sang'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV001'), DATEADD(day, 4, @Monday), 'sang'),
+
+((SELECT id FROM nhan_vien WHERE ma = 'NV002'), DATEADD(day, 1, @Monday), 'chieu'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV002'), DATEADD(day, 2, @Monday), 'chieu'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV002'), DATEADD(day, 3, @Monday), 'chieu'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV002'), DATEADD(day, 5, @Monday), 'chieu'),
+
+((SELECT id FROM nhan_vien WHERE ma = 'NV003'), @Monday, 'toi'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV003'), DATEADD(day, 1, @Monday), 'toi'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV003'), DATEADD(day, 3, @Monday), 'toi'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV003'), DATEADD(day, 6, @Monday), 'toi'),
+
+((SELECT id FROM nhan_vien WHERE ma = 'NV004'), @Monday, 'sang'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV004'), DATEADD(day, 2, @Monday), 'chieu'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV005'), DATEADD(day, 3, @Monday), 'toi'),
+((SELECT id FROM nhan_vien WHERE ma = 'NV006'), DATEADD(day, 4, @Monday), 'sang');
+GO
+
