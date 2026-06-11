@@ -28,6 +28,7 @@ import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhi
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
 import { showSuccess, showError } from "../../../utils/alert";
 import logoGhn from "../../../constants/logoGhn";
 
@@ -101,7 +102,7 @@ export function useChiTietHoaDon() {
     { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
     { id: 2, key: "Đã xác nhận", ten: "Đã Xác Nhận", icon: markRaw(ClipboardCheck) },
     { id: 3, key: "Chờ lấy hàng", ten: "Chờ Lấy Hàng", icon: markRaw(Package) },
-    { id: 4, key: "Chờ giao hàng", ten: "Chờ Giao Hàng", icon: markRaw(Truck) },
+    { id: 4, key: "Đang giao hàng", ten: "Đang Giao Hàng", icon: markRaw(Truck) },
     { id: 5, key: "Đã giao hàng", ten: "Đã Giao Hàng", icon: markRaw(CircleCheck) },
     { id: 6, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
   ];
@@ -110,7 +111,7 @@ export function useChiTietHoaDon() {
     { id: 1, key: "Chờ xác nhận", ten: "Chờ Xác Nhận", icon: markRaw(Hourglass) },
     { id: 2, key: "Đã xác nhận", ten: "Đã Xác Nhận", icon: markRaw(ClipboardCheck) },
     { id: 3, key: "Chờ lấy hàng", ten: "Chờ Lấy Hàng", icon: markRaw(Package) },
-    { id: 4, key: "Chờ giao hàng", ten: "Chờ Giao Hàng", icon: markRaw(Truck) },
+    { id: 4, key: "Đang giao hàng", ten: "Đang Giao Hàng", icon: markRaw(Truck) },
     { id: 8, key: "Giao hàng thất bại", ten: "Giao Hàng Thất Bại", icon: markRaw(TriangleAlert) },
   ];
 
@@ -130,6 +131,11 @@ export function useChiTietHoaDon() {
   });
 
   const laDonTaiQuay = computed(() => {
+    const diaChi = (hoaDon.value?.diaChi || "").trim().toLowerCase();
+    const coDiaChiGiao = diaChi && diaChi !== "mua tại quầy" && diaChi !== "không có" && diaChi !== "—";
+    if (coDiaChiGiao) {
+      return false;
+    }
     return hoaDon.value?.loaiDon === "Cửa hàng" || hoaDon.value?.loaiDon === "Offline" || hoaDon.value?.loaiDon === "Tại cửa hàng" || hoaDon.value?.kenhBan === 1;
   });
 
@@ -199,7 +205,7 @@ export function useChiTietHoaDon() {
     if (stt === "chờ xác nhận" || stt === "cho_xac_nhan") return 1;
     if (stt === "đã xác nhận" || stt === "da_xac_nhan") return 2;
     if (stt === "chờ lấy hàng" || stt === "cho_lay_hang" || stt === "cho_giao_hang") return 3;
-    if (stt === "chờ giao hàng" || stt === "đang vận chuyển" || stt === "chờ vận chuyển" || stt === "dang_van_chuyen") return 4;
+    if (stt === "đang giao hàng" || stt === "chờ giao hàng" || stt === "đang vận chuyển" || stt === "chờ vận chuyển" || stt === "dang_van_chuyen") return 4;
     if (stt === "đã giao hàng" || stt === "vận chuyển" || stt === "da_giao_hang") return 5;
     if (stt === "giao hàng thất bại" || stt === "giao_hang_that_bai") return 8;
     if (stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh") return 6;
@@ -598,7 +604,7 @@ export function useChiTietHoaDon() {
     { key: "Chờ xác nhận", label: "Chờ xác nhận" },
     { key: "Đã xác nhận", label: "Đã xác nhận" },
     { key: "Chờ lấy hàng", label: "Chờ lấy hàng" },
-    { key: "Chờ giao hàng", label: "Chờ giao hàng" },
+    { key: "Đang giao hàng", label: "Đang giao hàng" },
     { key: "Đã giao hàng", label: "Đã giao hàng" },
     { key: "Giao hàng thất bại", label: "Giao hàng thất bại" },
     { key: "Hoàn thành", label: "Hoàn thành" },
@@ -615,7 +621,7 @@ export function useChiTietHoaDon() {
     if (currentStt === 'chờ xác nhận' || currentStt === 'cho_xac_nhan') normalizedStt = "Chờ xác nhận";
     else if (currentStt === 'đã xác nhận' || currentStt === 'da_xac_nhan') normalizedStt = "Đã xác nhận";
     else if (currentStt === 'chờ lấy hàng' || currentStt === 'cho_lay_hang' || currentStt === 'cho_giao_hang') normalizedStt = "Chờ lấy hàng";
-    else if (currentStt === 'chờ giao hàng' || currentStt === 'đang vận chuyển' || currentStt === 'chờ vận chuyển' || currentStt === 'dang_van_chuyen') normalizedStt = "Chờ giao hàng";
+    else if (currentStt === 'đang giao hàng' || currentStt === 'chờ giao hàng' || currentStt === 'đang vận chuyển' || currentStt === 'chờ vận chuyển' || currentStt === 'dang_van_chuyen') normalizedStt = "Đang giao hàng";
     else if (currentStt === 'đã giao hàng' || currentStt === 'vận chuyển' || currentStt === 'da_giao_hang') normalizedStt = "Đã giao hàng";
     else if (currentStt === 'giao hàng thất bại' || currentStt === 'giao_hang_that_bai') normalizedStt = "Giao hàng thất bại";
     else if (currentStt === 'hoàn thành' || currentStt === 'đã hoàn thành' || currentStt === 'hoan_thanh') normalizedStt = "Hoàn thành";
@@ -645,7 +651,7 @@ export function useChiTietHoaDon() {
       return key === "Giao hàng thất bại" || key === "Hủy" || key === "Cần hoàn tiền";
     }
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
-    if (stt === "chờ giao hàng" && key === "Giao hàng thất bại") {
+    if ((stt === "đang giao hàng" || stt === "chờ giao hàng") && key === "Giao hàng thất bại") {
       return true;
     }
     if (stt === "đã giao hàng" && key === "Hoàn thành") {
@@ -668,7 +674,7 @@ export function useChiTietHoaDon() {
     if (stt === 'chờ xác nhận' || stt === 'cho_xac_nhan') defaultStt = "Chờ xác nhận";
     else if (stt === 'đã xác nhận' || stt === 'da_xac_nhan') defaultStt = "Đã xác nhận";
     else if (stt === 'chờ lấy hàng' || stt === 'cho_lay_hang' || stt === 'cho_giao_hang') defaultStt = "Chờ lấy hàng";
-    else if (stt === 'chờ giao hàng' || stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Chờ giao hàng";
+    else if (stt === 'đang giao hàng' || stt === 'chờ giao hàng' || stt === 'đang vận chuyển' || stt === 'chờ vận chuyển' || stt === 'dang_van_chuyen') defaultStt = "Đang giao hàng";
     else if (stt === 'đã giao hàng' || stt === 'vận chuyển' || stt === 'da_giao_hang') defaultStt = "Đã giao hàng";
     else if (stt === 'giao hàng thất bại' || stt === 'giao_hang_that_bai') defaultStt = "Giao hàng thất bại";
     else if (stt === 'hoàn thành' || stt === 'đã hoàn thành' || stt === 'hoan_thanh') defaultStt = "Hoàn thành";
@@ -804,6 +810,39 @@ export function useChiTietHoaDon() {
     }
   }
 
+  const dsTaiKhoanNganHangKhach = ref<any[]>([]);
+  const dangTaiNganHangKhach = ref(false);
+  const taiKhoanNganHangChon = ref<any>(null);
+
+  async function taiTaiKhoanNganHangKhach() {
+    if (!hoaDon.value?.khachHangId) {
+      dsTaiKhoanNganHangKhach.value = [];
+      taiKhoanNganHangChon.value = null;
+      return;
+    }
+    dangTaiNganHangKhach.value = true;
+    try {
+      const accounts = await layDanhSachTaiKhoanNganHang(hoaDon.value.khachHangId);
+      dsTaiKhoanNganHangKhach.value = accounts;
+      const macDinh = accounts.find((a: any) => a.laMacDinh);
+      taiKhoanNganHangChon.value = macDinh || (accounts.length > 0 ? accounts[0] : null);
+    } catch (e) {
+      console.error("Không thể tải danh sách tài khoản ngân hàng của khách", e);
+    } finally {
+      dangTaiNganHangKhach.value = false;
+    }
+  }
+
+  const qrHoanTienUrl = computed(() => {
+    if (!taiKhoanNganHangChon.value) return "";
+    const bank = taiKhoanNganHangChon.value.tenNganHang;
+    const account = taiKhoanNganHangChon.value.soTaiKhoan;
+    const name = encodeURIComponent(taiKhoanNganHangChon.value.tenChuTaiKhoan);
+    const amount = Number(formHoanTien.value.soTienHoan) || 0;
+    const desc = encodeURIComponent(`HOAN TIEN DON ${hoaDon.value?.maHoaDon || hoaDon.value?.ma || ""}`);
+    return `https://img.vietqr.io/image/${bank}-${account}-compact2.png?amount=${amount}&addInfo=${desc}&accountName=${name}`;
+  });
+
   function moModalHoanTien() {
     if (!coTheHoanTien.value) return;
     formHoanTien.value = {
@@ -812,6 +851,7 @@ export function useChiTietHoaDon() {
       maGiaoDichHoan: "",
       ghiChu: "Đã hoàn tiền cho khách hàng",
     };
+    taiTaiKhoanNganHangKhach();
     hienModalHoanTien.value = true;
   }
 
@@ -827,6 +867,15 @@ export function useChiTietHoaDon() {
       return;
     }
 
+    if (Number(formHoanTien.value.hinhThucHoanTien) === 2 && !taiKhoanNganHangChon.value?.id) {
+      hienThiThongBao(
+        "warning",
+        "Chưa chọn tài khoản nhận tiền",
+        "Vui lòng chọn tài khoản ngân hàng của khách trước khi xác nhận hoàn tiền.",
+      );
+      return;
+    }
+
     dangXacNhanHoanTien.value = true;
     try {
       hoaDon.value = await xacNhanHoanTien(hoaDon.value.id, {
@@ -834,6 +883,9 @@ export function useChiTietHoaDon() {
         soTienHoan,
         maGiaoDichHoan: formHoanTien.value.maGiaoDichHoan,
         ghiChu: formHoanTien.value.ghiChu,
+        taiKhoanNganHangId: Number(formHoanTien.value.hinhThucHoanTien) === 2
+          ? taiKhoanNganHangChon.value?.id
+          : null,
       });
       hienThiThongBao("success", "Đã xác nhận hoàn tiền", "Giao dịch hoàn tiền đã được ghi nhận.");
       hienModalHoanTien.value = false;
@@ -845,6 +897,6 @@ export function useChiTietHoaDon() {
   }
 
   onMounted(taiChiTiet);
-  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien };
+  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien, dsTaiKhoanNganHangKhach, dangTaiNganHangKhach, taiKhoanNganHangChon, qrHoanTienUrl };
 
 }

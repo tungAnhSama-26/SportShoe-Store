@@ -14,6 +14,7 @@ import com.example.server.core.admin.quanlytrahang.dto.request.SanPhamTraRequest
 import com.example.server.core.admin.quanlytrahang.dto.request.TaoPhieuTraHangRequest;
 import com.example.server.core.admin.quanlytrahang.dto.request.TuChoiTraHangRequest;
 import com.example.server.core.admin.quanlytrahang.dto.response.TraHangResponse;
+import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
@@ -22,6 +23,7 @@ import com.example.server.entity.NhanVien;
 import com.example.server.entity.PhieuTraHang;
 import com.example.server.entity.PhieuTraHangChiTiet;
 import com.example.server.entity.ThanhToan;
+import com.example.server.entity.TaiKhoanNganHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
@@ -60,6 +62,7 @@ public class TraHangService {
     private final ThanhToanRepository thanhToanRepository;
     private final NhanVienRepository nhanVienRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final RefundBankAccountResolver refundBankAccountResolver;
 
     public TraHangService(
             HoaDonRepository hoaDonRepository,
@@ -70,7 +73,8 @@ public class TraHangService {
             HinhAnhTraHangRepository hinhAnhTraHangRepository,
             ThanhToanRepository thanhToanRepository,
             NhanVienRepository nhanVienRepository,
-            GiayChiTietRepository giayChiTietRepository
+            GiayChiTietRepository giayChiTietRepository,
+            RefundBankAccountResolver refundBankAccountResolver
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -81,6 +85,7 @@ public class TraHangService {
         this.thanhToanRepository = thanhToanRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.refundBankAccountResolver = refundBankAccountResolver;
     }
 
     @Transactional
@@ -369,12 +374,6 @@ public class TraHangService {
                 : TrangThaiPhieuTraHang.TU_CHOI;
         chuyenTrangThai(phieu, trangThaiMoi, nhanVien, "Hoàn tất kiểm tra hàng trả", request.ghiChu());
         phieuTraHangRepository.save(phieu);
-        if (trangThaiMoi == TrangThaiPhieuTraHang.CHO_HOAN_TIEN) {
-            HoaDon hoaDon = phieu.getHoaDon();
-            hoaDon.setTrangThai(8);
-            hoaDon.setNgayCapNhat(Instant.now());
-            hoaDonRepository.save(hoaDon);
-        }
         return toResponse(phieu, chiTiet);
     }
 
@@ -415,6 +414,18 @@ public class TraHangService {
                 maGiaoDich,
                 request.ghiChu()
         );
+        TaiKhoanNganHang taiKhoanNhan = refundBankAccountResolver.resolve(
+                phieu.getKhachHang(),
+                request.taiKhoanNganHangId(),
+                Integer.valueOf(2).equals(request.hinhThucHoan())
+        );
+        if (taiKhoanNhan != null) {
+            giaoDichHoan.setNganHang(taiKhoanNhan.getTenNganHang());
+            giaoDichHoan.setNoiDungCk(
+                    "STK: " + taiKhoanNhan.getSoTaiKhoan()
+                            + " - Chủ TK: " + taiKhoanNhan.getTenChuTaiKhoan()
+            );
+        }
         giaoDichHoan.setNhanVien(nhanVien);
         thanhToanRepository.save(giaoDichHoan);
 

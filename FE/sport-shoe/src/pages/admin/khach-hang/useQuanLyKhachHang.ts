@@ -85,14 +85,13 @@ export function useQuanLyKhachHang() {
   function mauTrangThaiDon(trangThai: string) {
     const map: Record<string, string> = {
       "Hoàn thành": "bg-emerald-50 text-emerald-600",
-      "Chờ giao hàng": "bg-sky-50 text-sky-600",
+      "Đang giao hàng": "bg-sky-50 text-sky-600",
       "Chờ xác nhận": "bg-amber-50 text-amber-600",
       "Đã xác nhận": "bg-orange-50 text-orange-600",
       "Chờ lấy hàng": "bg-violet-50 text-violet-600",
       "Đã giao hàng": "bg-teal-50 text-teal-600",
       "Hủy": "bg-rose-50 text-rose-600",
       "Yêu cầu hủy": "bg-orange-50 text-orange-600",
-      "Cần hoàn tiền": "bg-pink-50 text-pink-600",
     };
     return map[trangThai] ?? "bg-slate-50 text-slate-600";
   }
@@ -100,14 +99,13 @@ export function useQuanLyKhachHang() {
   function badgeTrangThaiDon(trangThai: string) {
     const map: Record<string, string> = {
       "Hoàn thành": "success",
-      "Chờ giao hàng": "info",
+      "Đang giao hàng": "info",
       "Chờ xác nhận": "warning",
       "Đã xác nhận": "primary",
       "Chờ lấy hàng": "info",
       "Đã giao hàng": "success",
       "Hủy": "danger",
       "Yêu cầu hủy": "warning",
-      "Cần hoàn tiền": "danger",
     };
     return map[trangThai] ?? "default";
   }

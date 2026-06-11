@@ -47,7 +47,6 @@ function lopTrangThai(tt) {
     case 5: return 'bg-emerald-50 text-emerald-600';
     case 6: return 'bg-stone-100 text-stone-600';
     case 7: return 'bg-primary/5 text-primary';
-    case 8: return 'bg-primary/5 text-primary';
     case 10: return 'bg-rose-50 text-rose-600';
     default: return 'bg-slate-100 text-slate-600';
   }
@@ -74,7 +73,7 @@ const dsTrangThai = [
   { value: 1, label: "Chờ xác nhận" },
   { value: 9, label: "Đã xác nhận" },
   { value: 2, label: "Chờ lấy hàng" },
-  { value: 3, label: "Chờ giao hàng" },
+  { value: 3, label: "Đang giao hàng" },
   { value: 5, label: "Hoàn thành" },
   { value: 6, label: "Đã hủy" },
   { value: "TRA_HANG", label: "Trả hàng/Hoàn tiền" },
@@ -83,7 +82,7 @@ const dsTrangThai = [
 const trangThaiDangChon = ref("");
 
 const danhSachHopLe = computed(() => {
-  return danhSach.value.filter((d) => [1, 9, 2, 3, 5, 6, 8].includes(d.trangThai));
+  return danhSach.value.filter((d) => [1, 9, 2, 3, 4, 5, 6, 7, 10].includes(d.trangThai));
 });
 
 const danhSachHienThi = computed(() => {
@@ -93,7 +92,9 @@ const danhSachHienThi = computed(() => {
   if (trangThaiDangChon.value === "TRA_HANG") {
     return danhSachHopLe.value.filter((d) => d.phieuTraHangId != null);
   }
-  return danhSachHopLe.value.filter((d) => d.trangThai === trangThaiDangChon.value);
+  return danhSachHopLe.value.filter(
+    (d) => d.phieuTraHangId == null && d.trangThai === trangThaiDangChon.value,
+  );
 });
 
 async function muaLai(don) {
@@ -118,6 +119,12 @@ function laQuaHanTraHang(don) {
 function moYeuCauTraHang(don) {
   dangChonDeTra.value = don;
   laMoTraHangModal.value = true;
+}
+
+async function xuLyTaoPhieuTraHangThanhCong() {
+  laMoTraHangModal.value = false;
+  trangThaiDangChon.value = "TRA_HANG";
+  await taiDanhSach();
 }
 </script>
 
@@ -173,11 +180,15 @@ function moYeuCauTraHang(don) {
                 <span class="text-xs text-slate-400 font-medium">| {{ formatNgay(don.ngayLap) }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="lopTrangThai(don.trangThai)">
+                <span
+                  v-if="don.phieuTraHangId == null"
+                  class="rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="lopTrangThai(don.trangThai)"
+                >
                   {{ don.trangThaiText }}
                 </span>
                 <span v-if="don.phieuTraHangId != null" class="rounded-full px-3 py-1 text-xs font-semibold" :class="lopTrangThaiTraHang(don.trangThaiTraHang)">
-                  Trả hàng: {{ don.trangThaiTraHangText }}
+                  {{ don.trangThaiTraHangText }}
                 </span>
               </div>
             </div>
@@ -262,7 +273,7 @@ function moYeuCauTraHang(don) {
       :isOpen="laMoTraHangModal"
       :don="dangChonDeTra"
       @close="laMoTraHangModal = false"
-      @success="taiDanhSach"
+      @success="xuLyTaoPhieuTraHangThanhCong"
     />
   </main>
 </template>

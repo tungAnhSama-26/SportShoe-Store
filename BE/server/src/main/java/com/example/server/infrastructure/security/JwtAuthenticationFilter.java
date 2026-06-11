@@ -1,6 +1,8 @@
 package com.example.server.infrastructure.security;
 
 import com.example.server.entity.NhanVien;
+import com.example.server.entity.KhachHang;
+import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.NhanVienRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,10 +23,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final NhanVienRepository nhanVienRepository;
+    private final KhachHangRepository khachHangRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService, NhanVienRepository nhanVienRepository) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            NhanVienRepository nhanVienRepository,
+            KhachHangRepository khachHangRepository
+    ) {
         this.jwtService = jwtService;
         this.nhanVienRepository = nhanVienRepository;
+        this.khachHangRepository = khachHangRepository;
     }
 
     @Override
@@ -41,7 +49,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            ParsedAdminToken parsedToken = jwtService.parseAdminToken(authorization.substring(7).trim());
+            String token = authorization.substring(7).trim();
+            ParsedSubjectToken subjectToken = jwtService.parseSubjectToken(token);
+            if ("CUSTOMER".equals(subjectToken.role())) {
+                authenticateCustomer(token);
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            ParsedAdminToken parsedToken = jwtService.parseAdminToken(token);
             AdminPrincipal principal = parsedToken.principal();
             Optional<NhanVien> nhanVienOpt = nhanVienRepository.findById(principal.id());
             if (nhanVienOpt.isEmpty() || nhanVienOpt.get().getTrangThai() != 1) {
@@ -75,6 +91,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void authenticateCustomer(String token) {
+        CustomerPrincipal tokenPrincipal = jwtService.parseCustomerToken(token).principal();
+        Optional<KhachHang> customerOpt = khachHangRepository.findById(tokenPrincipal.id());
+        if (customerOpt.isEmpty() || customerOpt.get().getTrangThai() != 1) {
+            SecurityContextHolder.clearContext();
+            return;
+        }
+
+        KhachHang customer = customerOpt.get();
+        CustomerPrincipal currentPrincipal = new CustomerPrincipal(
+                customer.getId(),
+                customer.getTenDangNhap(),
+                customer.getHoTen(),
+                "CUSTOMER"
+        );
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                currentPrincipal,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     private String resolveRole(Integer vaiTro) {
