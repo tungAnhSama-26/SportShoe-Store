@@ -61,95 +61,98 @@ function isDiscounted(product) {
 </script>
 
 <template>
-  <div
-    v-if="selectedProductDetail"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm transition-opacity"
-    @click.self="emit('close')"
-  >
-    <div class="relative w-full max-w-4xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
-      <!-- Close Button -->
-      <button
-        type="button"
-        class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
-        @click="emit('close')"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-        </svg>
-      </button>
+  <Transition name="modal">
+    <div
+      v-if="selectedProductDetail"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+      @click.self="emit('close')"
+    >
+      <div class="modal-content relative w-full max-w-4xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <!-- Close Button -->
+        <button
+          type="button"
+          class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
+          @click="emit('close')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
 
-      <div class="flex flex-col md:flex-row">
-        <!-- Left: Image -->
-        <div class="bg-slate-50 md:w-5/12 lg:w-1/2">
-          <div class="relative h-64 w-full md:h-full md:min-h-[500px]">
-            <img
-              v-if="currentProductImage"
-              :src="currentProductImage"
-              alt="Product Image"
-              class="absolute inset-0 h-full w-full object-cover"
-            />
-            <div
-              v-else
-              class="absolute inset-0 flex items-center justify-center bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-8xl font-black text-red-300"
-            >
-              {{ selectedProductDetail.tenSanPham?.slice(0, 1) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Content -->
-        <div class="flex flex-col p-6 md:w-7/12 md:p-8 lg:w-1/2 max-h-[85vh] overflow-y-auto">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
-              Mã: {{ selectedProductDetail.maSanPham }}
-            </p>
-            <h3 class="mt-2 text-2xl font-bold text-slate-900 leading-tight">
-              {{ selectedProductDetail.tenSanPham }}
-            </h3>
-
-            <div class="mt-4 flex items-end gap-3">
-              <p class="text-3xl font-bold text-red-500">
-                {{ dinhDangTien(chiTietDangChon?.giaBan || selectedProductDetail.giaBanKhoiDiem || 0) }}
-              </p>
-              <p
-                v-if="isDiscounted(chiTietDangChon)"
-                class="mb-1 text-base font-medium text-slate-400 line-through"
+        <div class="flex flex-col md:flex-row">
+          <!-- Left: Image -->
+          <div class="bg-slate-50 md:w-5/12 lg:w-1/2">
+            <div class="relative h-64 w-full md:h-full md:min-h-[500px]">
+              <img
+                v-if="currentProductImage"
+                :src="currentProductImage"
+                alt="Product Image"
+                class="absolute inset-0 h-full w-full object-cover"
+              />
+              <div
+                v-else
+                class="absolute inset-0 flex items-center justify-center bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-8xl font-black text-red-300"
               >
-                {{ dinhDangTien(chiTietDangChon?.giaGoc || 0) }}
-              </p>
+                {{ selectedProductDetail.tenSanPham?.slice(0, 1) }}
+              </div>
+              
+              <!-- Badge Giảm giá trên ảnh -->
               <span
                 v-if="isDiscounted(chiTietDangChon)"
-                class="mb-1.5 inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600"
+                class="absolute left-4 top-4 inline-flex items-center rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-md"
               >
                 Giảm giá
               </span>
             </div>
           </div>
 
-          <div class="my-6 h-px w-full bg-slate-100"></div>
-
-          <!-- Variants -->
-          <div class="space-y-6 flex-1">
-            <!-- Colors -->
+          <!-- Right: Content -->
+          <div class="flex flex-col p-6 md:w-7/12 md:p-8 lg:w-1/2 max-h-[85vh] overflow-y-auto">
             <div>
-              <div class="mb-3 flex items-center justify-between">
-                <p class="text-sm font-semibold text-slate-900">Màu sắc</p>
-                <span class="text-sm font-medium text-slate-500">{{ selectedColor || "Chưa chọn" }}</span>
-              </div>
-              <div class="flex flex-wrap gap-3">
-                <button
-                  v-for="option in colorOptions"
-                  :key="`color-${option.mauSac || option.maBienThe}`"
-                  type="button"
-                  class="group relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-offset-2 transition-all"
-                  :class="
-                    selectedColor === (option.mauSac || option.maBienThe)
-                      ? 'ring-red-500'
-                      : 'ring-transparent hover:ring-slate-300'
-                  "
-                  @click="emit('select-color', option.mauSac || option.maBienThe)"
-                  :title="option.mauSac || option.maBienThe"
+              <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                Mã: {{ selectedProductDetail.maSanPham }}
+              </p>
+              <h3 class="mt-2 text-2xl font-bold text-slate-900 leading-tight">
+                {{ selectedProductDetail.tenSanPham }}
+              </h3>
+
+              <div class="mt-4 flex flex-col gap-1">
+                <p class="text-3xl font-bold text-red-500">
+                  {{ dinhDangTien(chiTietDangChon?.giaBan || selectedProductDetail.giaBanKhoiDiem || 0) }}
+                </p>
+                <p
+                  v-if="isDiscounted(chiTietDangChon)"
+                  class="text-base font-medium text-slate-400 line-through"
                 >
+                  {{ dinhDangTien(chiTietDangChon?.giaGoc || 0) }}
+                </p>
+              </div>
+            </div>
+
+            <div class="my-6 h-px w-full bg-slate-100"></div>
+
+            <!-- Variants -->
+            <div class="space-y-6 flex-1">
+              <!-- Colors -->
+              <div>
+                <div class="mb-3 flex items-center justify-between">
+                  <p class="text-sm font-semibold text-slate-900">Màu sắc</p>
+                  <span class="text-sm font-medium text-slate-500">{{ selectedColor || "Chưa chọn" }}</span>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    v-for="option in colorOptions"
+                    :key="`color-${option.mauSac || option.maBienThe}`"
+                    type="button"
+                    class="group relative h-12 w-12 overflow-hidden rounded-xl ring-2 ring-offset-2 transition-all"
+                    :class="
+                      selectedColor === (option.mauSac || option.maBienThe)
+                        ? 'ring-red-500'
+                        : 'ring-transparent hover:ring-slate-300'
+                    "
+                    @click="emit('select-color', option.mauSac || option.maBienThe)"
+                    :title="option.mauSac || option.maBienThe"
+                  >
                   <img
                     v-if="option.hinhAnh"
                     :src="option.hinhAnh"
@@ -241,5 +244,25 @@ function isDiscounted(product) {
         </div>
       </div>
     </div>
-  </div>
+  </Transition>
 </template>
+
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-active .modal-content,
+.modal-leave-active .modal-content {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+}
+</style>
