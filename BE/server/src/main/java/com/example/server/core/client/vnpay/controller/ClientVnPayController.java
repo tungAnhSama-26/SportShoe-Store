@@ -4,12 +4,7 @@ import com.example.server.core.client.dathang.dto.DatHangRequest;
 import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.vnpay.service.ClientVnPayService;
 import com.example.server.infrastructure.api.ApiResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Collections;
 import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Thanh toán VNPay giả lập: tạo mã QR; khi khách quét mã (mở URL xác nhận) thì tự tạo đơn.
+ * Thanh toán bằng chuyển khoản thật qua VietQR (SePay): tạo mã QR; đơn chỉ được tạo
+ * khi webhook SePay xác nhận tiền vào (xem ClientSePayController). Endpoint xác nhận
+ * thủ công bên dưới chỉ dùng để TEST khi chưa muốn chuyển khoản thật.
  */
 @RestController
 @RequestMapping("/api/v1/client/vnpay")
@@ -33,8 +30,9 @@ public class ClientVnPayController {
         this.service = service;
     }
 
-    /** Tạo mã QR thanh toán cho đơn (chưa tạo đơn). FE dùng qrData để vẽ QR. */
+    /** Tạo phiên + ảnh QR VietQR cho đơn (chưa tạo đơn). FE hiển thị qrData làm ảnh QR. */
     @PostMapping("/tao-ma")
+<<<<<<< Updated upstream
     public ResponseEntity<ApiResponse<TaoMaVnPayResponse>> taoMa(
             @Valid @RequestBody DatHangRequest request,
             HttpServletRequest httpRequest
@@ -49,9 +47,13 @@ public class ClientVnPayController {
                 "Tạo mã thanh toán thành công",
                 new TaoMaVnPayResponse(token, qrData, maGiaoDich)
         ));
+=======
+    public ResponseEntity<ApiResponse<TaoMaVnPayResponse>> taoMa(@Valid @RequestBody DatHangRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Tạo mã thanh toán thành công", service.taoMa(request)));
+>>>>>>> Stashed changes
     }
 
-    /** Mở khi quét QR (trên điện thoại): tạo đơn + hiển thị trang xác nhận. */
+    /** Xác nhận THỦ CÔNG (mở URL) - chỉ để test không cần chuyển khoản thật. */
     @GetMapping(value = "/xac-nhan/{token}", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> xacNhan(@PathVariable String token) {
         String maHoaDon = service.xacNhan(token);
@@ -74,47 +76,5 @@ public class ClientVnPayController {
     @GetMapping("/trang-thai/{token}")
     public ResponseEntity<ApiResponse<Map<String, String>>> trangThai(@PathVariable String token) {
         return ResponseEntity.ok(ApiResponse.success("OK", service.trangThai(token)));
-    }
-
-    /**
-     * Tìm IPv4 LAN của máy chủ để QR quét được từ điện thoại.
-     * Ưu tiên 192.168.x (Wi-Fi/LAN thật) > 10.x > 172.16-31.x (thường là adapter ảo Hyper-V/Docker).
-     */
-    private String layIpLan(HttpServletRequest fallback) {
-        String ip192 = null;
-        String ip10 = null;
-        String ip172 = null;
-        try {
-            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (ni.isLoopback() || !ni.isUp()) {
-                    continue;
-                }
-                for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
-                    if (!(addr instanceof Inet4Address) || addr.isLoopbackAddress()) {
-                        continue;
-                    }
-                    String ip = addr.getHostAddress();
-                    if (ip.startsWith("192.168.") && ip192 == null) {
-                        ip192 = ip;
-                    } else if (ip.startsWith("10.") && ip10 == null) {
-                        ip10 = ip;
-                    } else if (ip.matches("172\\.(1[6-9]|2\\d|3[01])\\..*") && ip172 == null) {
-                        ip172 = ip;
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-            // Không lấy được IP LAN -> dùng host từ request.
-        }
-        if (ip192 != null) {
-            return ip192;
-        }
-        if (ip10 != null) {
-            return ip10;
-        }
-        if (ip172 != null) {
-            return ip172;
-        }
-        return fallback.getServerName();
     }
 }

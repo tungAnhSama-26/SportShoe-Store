@@ -261,11 +261,8 @@ async function moThanhToanVnPay() {
   }
 }
 
-const anhQrVnPay = computed(() =>
-  qrVnPay.value
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrVnPay.value.qrData)}`
-    : ''
-);
+// qrData từ backend đã là ảnh VietQR (SePay) -> dùng trực tiếp làm src.
+const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
 function batDauPoll() {
   dungPoll();
@@ -394,7 +391,7 @@ function xuLyAnhLoi(event) {
               :class="hinhThucThanhToan === 'VNPAY' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'"
             >
               <input type="radio" value="VNPAY" v-model="hinhThucThanhToan" class="text-primary focus:ring-primary/30" />
-              <span class="text-sm font-medium text-slate-700">Quét mã QR VNPay</span>
+              <span class="text-sm font-medium text-slate-700">Chuyển khoản VietQR (MB Bank)</span>
             </label>
           </section>
         </div>
@@ -498,15 +495,16 @@ function xuLyAnhLoi(event) {
       </div>
     </div>
 
-    <!-- Modal QR VNPay (giả lập) -->
+    <!-- Modal QR chuyển khoản VietQR (SePay) -->
     <Teleport to="body">
       <div v-if="qrVnPay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
         <div class="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl">
-          <h3 class="text-lg font-bold text-slate-900">Quét mã QR để thanh toán</h3>
-          <p class="mt-1 text-sm text-slate-400">VNPay · {{ qrVnPay.maGiaoDich }}</p>
+          <h3 class="text-lg font-bold text-slate-900">Quét VietQR để chuyển khoản</h3>
+          <p class="mt-1 text-sm text-slate-400">Nội dung CK: <b>{{ qrVnPay.maGiaoDich }}</b></p>
           <div class="mt-5 flex justify-center">
-            <img :src="anhQrVnPay" alt="QR VNPay" class="h-60 w-60 rounded-xl border border-slate-100" />
+            <img :src="anhQrVnPay" alt="VietQR" class="h-64 w-64 rounded-xl border border-slate-100" />
           </div>
+          <p class="mt-3 text-xs text-slate-400">Mở app ngân hàng, quét mã — số tiền & nội dung tự điền. Đơn sẽ tự tạo sau khi nhận được tiền.</p>
           <div class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
