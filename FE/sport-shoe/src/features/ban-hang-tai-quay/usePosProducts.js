@@ -84,19 +84,6 @@ export function usePosProducts({
     () => Math.max(soLuongTonKhaDungChiTiet.value - selectedQuantity.value, 0)
   );
 
-  const currentPage = ref(1);
-  const pageSize = ref(5);
-  const paginatedProducts = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value;
-    const end = start + pageSize.value;
-    return productResults.value.slice(start, end);
-  });
-  const totalItems = computed(() => productResults.value.length);
-  const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value) || 1);
-
-  watch([productResults, pageSize], () => {
-    currentPage.value = 1;
-  });
 
   async function fetchProducts(keyword) {
     loadingProducts.value = true;
@@ -146,7 +133,7 @@ export function usePosProducts({
     }
 
     return products.find((product) =>
-      [product.sku, product.maBienThe, product.chiTietId]
+      [product.maBienThe, product.chiTietId]
         .map((value) => String(value ?? "").trim().toLowerCase())
         .some((value) => value && value === normalizedKeyword)
     ) ?? null;
@@ -300,11 +287,6 @@ export function usePosProducts({
     showProductDropdown,
     productSearchLabel,
     productResults,
-    paginatedProducts,
-    currentPage,
-    pageSize,
-    totalItems,
-    totalPages,
     relatedVariants,
     colorOptions,
     sizeOptions,

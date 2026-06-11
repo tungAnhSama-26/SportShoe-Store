@@ -17,6 +17,7 @@ import { usePosCustomers } from "./usePosCustomers";
 import { usePosPayment } from "./usePosPayment";
 import { usePosProducts } from "./usePosProducts";
 import { usePosShipping } from "./usePosShipping";
+import { showConfirm, showSuccess, showError } from "../../utils/alert";
 
 function useBanHangTaiQuay() {
   const pendingInvoices = ref([]);
@@ -337,7 +338,7 @@ function useBanHangTaiQuay() {
     if (!message) {
       return;
     }
-    window.alert(message);
+    showError(message);
     pageError.value = "";
   });
 
@@ -345,7 +346,7 @@ function useBanHangTaiQuay() {
     if (!message) {
       return;
     }
-    window.alert(message);
+    showSuccess(message);
     successMessage.value = "";
   });
 
@@ -479,6 +480,12 @@ function useBanHangTaiQuay() {
     if (!canPay.value) {
       return;
     }
+
+    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn thanh toán đơn hàng này không?');
+    if (!isConfirmed) {
+      return;
+    }
+
     payingInvoice.value = true;
     pageError.value = "";
     successMessage.value = "";

@@ -210,7 +210,10 @@ const emit = defineEmits([
                     </div>
                     <div class="text-right">
                       <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Giảm</p>
-                      <p class="text-sm font-bold text-emerald-600">{{ dinhDangTien(coupon.soTienGiam) }}</p>
+                      <p class="text-sm font-bold text-emerald-600">
+                        {{ dinhDangTien(coupon.soTienGiam) }}
+                        <span v-if="coupon.loai === 1" class="text-xs font-normal">(-{{ coupon.giaTri }}%)</span>
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -218,9 +221,7 @@ const emit = defineEmits([
             </div>
           </div>
 
-          <p v-if="maPhieuChuaApDung" class="mt-2 text-xs font-medium text-amber-600">
-            Mã phiếu đang thay đổi. Vui lòng áp dụng lại trước khi lưu hoặc thanh toán.
-          </p>
+
 
           <div
             v-if="appliedCoupon"
@@ -241,7 +242,10 @@ const emit = defineEmits([
             </div>
             <div class="mt-3 flex items-start justify-between gap-3 text-sm">
               <span class="text-emerald-700">Tiền giảm</span>
-              <span class="max-w-[65%] break-all text-right font-bold text-emerald-700">{{ dinhDangTien(tienGiam) }}</span>
+              <span class="max-w-[65%] break-all text-right font-bold text-emerald-700">
+                {{ dinhDangTien(tienGiam) }}
+                <span v-if="appliedCoupon.loai === 1" class="text-xs font-normal">(-{{ appliedCoupon.giaTri }}%)</span>
+              </span>
             </div>
           </div>
         </div>
@@ -469,14 +473,7 @@ const emit = defineEmits([
       <p v-if="sanPhamValidationMessage" class="mt-3 text-xs font-medium text-rose-500">
         {{ sanPhamValidationMessage }}
       </p>
-      <button
-        type="button"
-        class="mt-3 w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
-        :disabled="pendingInvoiceLimitReached"
-        @click="emit('create-empty-invoice')"
-      >
-        Tạo hóa đơn
-      </button>
+
     </div>
   </div>
 </template>
