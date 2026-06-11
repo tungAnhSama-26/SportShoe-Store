@@ -31,7 +31,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**", "/uploads/**", "/api/v1/upload", "/api/v1/upload/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/uploads/**").permitAll()
+                        .requestMatchers("/api/v1/upload", "/api/v1/upload/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
+                        .requestMatchers("/api/v1/client/khach-hang/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
                         .requestMatchers("/api/v1/nhanvien/profile", "/api/v1/nhanvien/profile/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/ban-hang-tai-quay/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/hoa-don/**").hasAnyRole("ADMIN", "STAFF")
@@ -46,7 +48,7 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Vui lòng đăng nhập hệ thống admin"))
+                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Vui lòng đăng nhập để tiếp tục"))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeError(response, HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập chức năng này"))
                 )
