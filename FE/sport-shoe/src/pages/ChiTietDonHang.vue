@@ -330,6 +330,10 @@ function xuLyAnhLoi(event) {
               <span>Giảm từ voucher<span v-if="don.maPhieuGiamGia"> ({{ don.maPhieuGiamGia }})</span></span>
               <span>-{{ dinhDangTienViet(don.giamVoucher) }}</span>
             </div>
+            <div v-if="Number(don.phiVanChuyen) > 0" class="flex items-center justify-between text-slate-600">
+              <span>Phí vận chuyển</span>
+              <span>+{{ dinhDangTienViet(don.phiVanChuyen) }}</span>
+            </div>
             <div class="flex items-center justify-between border-t border-slate-100 pt-3">
               <span class="text-base font-bold text-slate-800">Tổng thanh toán</span>
               <span class="text-2xl font-bold text-primary">{{ dinhDangTienViet(don.tongThanhToan) }}</span>
