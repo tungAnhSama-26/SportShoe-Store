@@ -14,16 +14,21 @@ export async function request(path, init) {
 }
 
 export async function login(username, password) {
+  localStorage.removeItem("adminToken");
+  localStorage.removeItem("adminUser");
+  localStorage.removeItem("sport-shoe-admin-session");
+
   const result = await request("/auth/login", {
     method: "POST",
     body: JSON.stringify({ username, password }),
   });
 
   if (result.data) {
-    localStorage.setItem("user", JSON.stringify(result.data));
+    localStorage.setItem("customerToken", result.data.token);
+    localStorage.setItem("user", JSON.stringify(result.data.user));
   }
 
-  return result.data;
+  return result.data?.user;
 }
 
 export async function adminLogin(username, password) {
@@ -57,6 +62,7 @@ export async function register(payload) {
 
 export function logout() {
   localStorage.removeItem("user");
+  localStorage.removeItem("customerToken");
   localStorage.removeItem("adminToken");
   localStorage.removeItem("adminUser");
   localStorage.removeItem("sport-shoe-admin-session");
@@ -74,6 +80,10 @@ export function getCurrentAdminUser() {
 
 export function getAdminToken() {
   return localStorage.getItem("adminToken") ?? "";
+}
+
+export function getCustomerToken() {
+  return localStorage.getItem("customerToken") ?? "";
 }
 
 export function getAuthHeaders() {
