@@ -9,12 +9,14 @@ const DEFAULT_FALLBACK =
 
 const ERROR_PAGE_STATUSES = new Set([401, 403, 404, 429, 500]);
 
-function getStoredAdminToken() {
-  return localStorage.getItem("adminToken") ?? "";
+function getStoredToken() {
+  return localStorage.getItem("adminToken")
+    ?? localStorage.getItem("customerToken")
+    ?? "";
 }
 
 export function getAuthHeaders() {
-  const token = getStoredAdminToken();
+  const token = getStoredToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -99,6 +101,7 @@ export async function apiRequest(path, options = {}) {
 
 function clearStoredSession() {
   localStorage.removeItem("user");
+  localStorage.removeItem("customerToken");
   localStorage.removeItem("adminToken");
   localStorage.removeItem("adminUser");
   localStorage.removeItem("sport-shoe-admin-session");

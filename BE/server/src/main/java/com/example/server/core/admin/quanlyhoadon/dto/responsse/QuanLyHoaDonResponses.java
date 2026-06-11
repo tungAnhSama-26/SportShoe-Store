@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanlyhoadon.dto.responsse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 public final class QuanLyHoaDonResponses {
 
@@ -20,7 +21,10 @@ public final class QuanLyHoaDonResponses {
             String loaiDon,
             String trangThai,
             String maPhieuGiamGia,
-            String emailKhachHang
+            String emailKhachHang,
+            Integer phieuTraHangId,
+            Integer trangThaiPhieuTraHang,
+            String trangThaiPhieuTraHangText
     ) {
     }
 
@@ -61,6 +65,7 @@ public final class QuanLyHoaDonResponses {
 
     public record HoaDonDetailResponse(
             Integer id,
+            UUID khachHangId,
             String maHoaDon,
             String tenKhachHang,
             String tenNhanVien,
@@ -86,7 +91,8 @@ public final class QuanLyHoaDonResponses {
             List<HoaDonHistoryResponse> lichSuHoaDon,
             Integer phieuTraHangId,
             String maPhieuTraHang,
-            Integer trangThaiPhieuTraHang
+            Integer trangThaiPhieuTraHang,
+            String trangThaiPhieuTraHangText
     ) {
     }
 }

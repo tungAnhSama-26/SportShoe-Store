@@ -99,7 +99,7 @@ const dsTrangThai = [
   { value: 4, label: "Đã nhận hàng" },
   { value: 5, label: "Đang kiểm tra" },
   { value: 6, label: "Chờ hoàn tiền" },
-  { value: 7, label: "Hoàn tất" },
+  { value: 7, label: "Đã hoàn tiền" },
   { value: 8, label: "Từ chối" },
   { value: 9, label: "Đã hủy" },
   { value: 10, label: "Hoàn hàng thất bại" },
@@ -154,7 +154,7 @@ const thongKe = computed(() => [
     className: "bg-rose-50 text-rose-700",
   },
   {
-    label: "Hoàn tất",
+    label: "Đã hoàn tiền",
     value: danhSachLocBoLoc.value.filter((item) => item.trangThai === 7).length,
     className: "bg-emerald-50 text-emerald-700",
   },
@@ -407,22 +407,23 @@ onMounted(taiDanhSach);
         <div :key="trangThaiDangChon" class="admin-table-scroll">
           <Table>
             <template #header>
-              <th class="px-4 py-3 text-center w-[6%]">STT</th>
-              <th class="px-4 py-3 w-[12%]">Mã phiếu</th>
-              <th class="px-4 py-3 w-[12%]">Mã hóa đơn</th>
-              <th class="px-4 py-3 w-[22%]">Khách hàng</th>
-              <th class="px-4 py-3 text-right w-[15%]">Tiền dự kiến</th>
-              <th class="px-4 py-3 w-[15%]">Ngày tạo</th>
-              <th class="px-4 py-3 text-center w-[12%]">Trạng thái</th>
-              <th class="px-4 py-3 text-center w-[6%]">Hành động</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">STT</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">Mã phiếu</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">Mã hóa đơn</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">Khách hàng</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">SĐT khách hàng</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">Tiền dự kiến</th>
+              <th class="whitespace-nowrap px-3 py-3 text-[13px]">Ngày tạo</th>
+              <th class="whitespace-nowrap px-3 py-3 text-center text-[13px]">Trạng thái</th>
+              <th class="whitespace-nowrap px-3 py-3 text-center text-[13px]">Hành động</th>
             </template>
 
             <template #body>
               <tr v-if="dangTai">
-                <td colspan="8" class="py-10 text-center text-sm text-slate-400">Đang tải danh sách trả hàng...</td>
+                <td colspan="9" class="py-10 text-center text-sm text-slate-400">Đang tải danh sách trả hàng...</td>
               </tr>
               <tr v-else-if="!danhSachPhanTrang.length">
-                <td colspan="8" class="px-4 py-16 text-center text-sm text-slate-400">
+                <td colspan="9" class="px-4 py-16 text-center text-sm text-slate-400">
                   Không có phiếu trả hàng phù hợp.
                 </td>
               </tr>
@@ -430,28 +431,26 @@ onMounted(taiDanhSach);
                 v-else
                 v-for="(item, index) in danhSachPhanTrang"
                 :key="item.id"
-                class="transition hover:bg-slate-50/80"
+                class="bg-white text-[13px] text-slate-700 shadow-sm ring-1 ring-slate-100 transition-colors hover:bg-slate-50 [&>td]:whitespace-nowrap"
               >
-                <td class="px-4 py-4 text-center text-slate-500">
+                <td class="rounded-l-2xl px-3 py-3.5 font-semibold">
                   {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
                 </td>
-                <td class="px-4 py-4 font-semibold text-slate-800">{{ item.ma }}</td>
-                <td class="px-4 py-4 text-slate-600">{{ item.maHoaDon }}</td>
-                <td class="px-4 py-4">
-                  <p class="font-medium text-slate-700">{{ item.tenKhachHang || "Khách vãng lai" }}</p>
-                  <p class="mt-1 text-xs text-slate-400">{{ item.soDienThoaiKhachHang || "Không có SĐT" }}</p>
-                </td>
-                <td class="px-4 py-4 text-right font-semibold text-primary">
+                <td class="px-3 py-3.5 font-semibold text-slate-800">{{ item.ma }}</td>
+                <td class="px-3 py-3.5">{{ item.maHoaDon }}</td>
+                <td class="px-3 py-3.5">{{ item.tenKhachHang || "Khách vãng lai" }}</td>
+                <td class="px-3 py-3.5">{{ item.soDienThoaiKhachHang || "Không có" }}</td>
+                <td class="px-3 py-3.5 font-semibold text-slate-800">
                   {{ dinhDangTien(item.tongTienDuKien) }}
                 </td>
-                <td class="px-4 py-4 text-slate-500">{{ dinhDangNgay(item.ngayTao) }}</td>
-                <td class="px-4 py-4 text-center">
+                <td class="px-3 py-3.5">{{ dinhDangNgay(item.ngayTao) }}</td>
+                <td class="px-3 py-3.5 text-center">
                   <Badge :variant="badgeVariant(item.trangThai)">{{ item.tenTrangThai }}</Badge>
                 </td>
-                <td class="px-4 py-4 text-center">
+                <td class="rounded-r-2xl px-3 py-3.5 text-center">
                   <button
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-primary"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary"
                     title="Xem chi tiết"
                     @click="xemChiTiet(item.id)"
                   >

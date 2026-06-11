@@ -3,10 +3,12 @@ package com.example.server.core.client.auth.service;
 import com.example.server.core.admin.khachHang.dto.responsse.KhachHangResponse;
 import com.example.server.core.client.auth.dto.request.LoginRequest;
 import com.example.server.core.client.auth.dto.response.AdminLoginResponse;
+import com.example.server.core.client.auth.dto.response.CustomerLoginResponse;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.security.AdminPrincipal;
+import com.example.server.infrastructure.security.CustomerPrincipal;
 import com.example.server.infrastructure.security.JwtService;
 import com.example.server.infrastructure.security.PasswordService;
 import com.example.server.repository.DiaChiKhachHangRepository;
@@ -52,7 +54,7 @@ public class AuthService {
     }
 
     @Transactional
-    public KhachHangResponse login(LoginRequest request) {
+    public CustomerLoginResponse login(LoginRequest request) {
         String username = request.username().trim();
         String attemptKey = loginAttemptKey("customer", username);
         assertLoginAllowed(attemptKey);
@@ -79,7 +81,13 @@ public class AuthService {
 
         clearFailedLogin(attemptKey);
         migratePasswordIfNeeded(kh, request.password());
-        return toKhachHangResponse(kh);
+        String token = jwtService.generateCustomerToken(new CustomerPrincipal(
+                kh.getId(),
+                kh.getTenDangNhap(),
+                kh.getHoTen(),
+                "CUSTOMER"
+        ));
+        return new CustomerLoginResponse(token, "Bearer", toKhachHangResponse(kh));
     }
 
     @Transactional

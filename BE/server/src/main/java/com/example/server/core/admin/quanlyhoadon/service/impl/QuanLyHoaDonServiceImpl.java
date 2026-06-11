@@ -13,6 +13,7 @@ import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResp
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
+import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HinhAnhGiay;
 import com.example.server.entity.HoaDon;
@@ -22,7 +23,9 @@ import com.example.server.entity.LichSuHoaDon;
 import com.example.server.entity.NhanVien;
 import com.example.server.entity.PhieuTraHang;
 import com.example.server.entity.ThanhToan;
+import com.example.server.entity.TaiKhoanNganHang;
 import com.example.server.entity.VanChuyen;
+import com.example.server.core.admin.quanlytrahang.domain.TrangThaiPhieuTraHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.AdminPrincipal;
@@ -100,6 +103,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final NhanVienRepository nhanVienRepository;
     private final GhnShippingService ghnShippingService;
     private final PhieuTraHangRepository phieuTraHangRepository;
+    private final RefundBankAccountResolver refundBankAccountResolver;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -111,7 +115,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             GiayChiTietRepository giayChiTietRepository,
             NhanVienRepository nhanVienRepository,
             GhnShippingService ghnShippingService,
-            PhieuTraHangRepository phieuTraHangRepository
+            PhieuTraHangRepository phieuTraHangRepository,
+            RefundBankAccountResolver refundBankAccountResolver
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -123,6 +128,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.nhanVienRepository = nhanVienRepository;
         this.ghnShippingService = ghnShippingService;
         this.phieuTraHangRepository = phieuTraHangRepository;
+        this.refundBankAccountResolver = refundBankAccountResolver;
     }
 
     @Override
@@ -164,6 +170,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                     .ifPresent(lichSu -> latestLichSuNhanVienMap.put(hoaDon.getId(), lichSu));
         }
 
+        List<Integer> hoaDonIds = hoaDons.stream().map(HoaDon::getId).toList();
+        Map<Integer, PhieuTraHang> phieuTraHangMap = phieuTraHangRepository.findByHoaDonIdIn(hoaDonIds)
+                .stream().collect(Collectors.toMap(p -> p.getHoaDon().getId(), Function.identity(), (p1, p2) -> p1));
+
         String searchKeyword = normalize(keyword);
 
         return hoaDons.stream()
@@ -178,12 +188,15 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveMaNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId()), latestLichSuNhanVienMap.get(hoaDon.getId())),
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                    mapLoaiDon(hoaDon),
-                    resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
-                    hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
-                    resolveEmail(hoaDon.getKhachHang())
-            ))
-            .toList();
+                        mapLoaiDon(hoaDon),
+                        resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
+                        hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
+                        resolveEmail(hoaDon.getKhachHang()),
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null
+                ))
+                .toList();
     }
 
     @Override
@@ -194,6 +207,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         Map<Integer, VanChuyen> vanChuyenMap = vanChuyenRepository.findByHoaDonIdIn(
                 hoaDons.stream().map(HoaDon::getId).toList()
         ).stream().collect(Collectors.toMap(vc -> vc.getHoaDon().getId(), Function.identity()));
+
+        List<Integer> hoaDonIds = hoaDons.stream().map(HoaDon::getId).toList();
+        Map<Integer, PhieuTraHang> phieuTraHangMap = phieuTraHangRepository.findByHoaDonIdIn(hoaDonIds)
+                .stream().collect(Collectors.toMap(p -> p.getHoaDon().getId(), Function.identity(), (p1, p2) -> p1));
 
         return hoaDons.stream()
                 .map(hoaDon -> new HoaDonSummaryResponse(
@@ -207,7 +224,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         mapLoaiDon(hoaDon),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
-                        resolveEmail(hoaDon.getKhachHang())
+                        resolveEmail(hoaDon.getKhachHang()),
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null
                 ))
                 .toList();
     }
@@ -235,7 +255,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 hoaDon.setTrangThai(TRANG_THAI_CHO_GIAO_HANG);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
             }
-            case "Chờ giao hàng" -> {
+            case "Chờ giao hàng", "Đang giao hàng" -> {
                 hoaDon.setTrangThai(TRANG_THAI_DANG_VAN_CHUYEN);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_DANG_GIAO);
                 if (vanChuyen.getNgayGui() == null) {
@@ -447,6 +467,18 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         if (request.maGiaoDichHoan() != null && !request.maGiaoDichHoan().isBlank()) {
             thanhToan.setMaGiaoDich(request.maGiaoDichHoan().trim());
         }
+        TaiKhoanNganHang taiKhoan = refundBankAccountResolver.resolve(
+                hoaDon.getKhachHang(),
+                request.taiKhoanNganHangId(),
+                Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_CHUYEN_KHOAN)
+        );
+        if (taiKhoan != null) {
+            thanhToan.setNganHang(taiKhoan.getTenNganHang());
+            thanhToan.setNoiDungCk(
+                    "STK: " + taiKhoan.getSoTaiKhoan()
+                            + " - Chủ TK: " + taiKhoan.getTenChuTaiKhoan()
+            );
+        }
         thanhToan.setNgayThanhToan(now);
         if (nhanVienXuLy != null) {
             thanhToan.setNhanVien(nhanVienXuLy);
@@ -543,6 +575,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         return new HoaDonDetailResponse(
                 hoaDon.getId(),
+                hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getId() : null,
                 hoaDon.getMa(),
                 resolveTenKhachHang(hoaDon),
                 tenNhanVien,
@@ -569,7 +602,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         .map(this::mapLichSu).toList(),
                 phieuTraHang != null ? phieuTraHang.getId() : null,
                 phieuTraHang != null ? phieuTraHang.getMa() : null,
-                phieuTraHang != null ? phieuTraHang.getTrangThai() : null
+                phieuTraHang != null ? phieuTraHang.getTrangThai() : null,
+                phieuTraHang != null ? TrangThaiPhieuTraHang.tuMa(phieuTraHang.getTrangThai()).getTen() : null
         );
     }
 
@@ -767,7 +801,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 case TRANG_THAI_CHO_XAC_NHAN: return "Chờ xác nhận";
                 case TRANG_THAI_DA_XAC_NHAN: return "Đã xác nhận";
                 case TRANG_THAI_CHO_GIAO_HANG: return "Chờ lấy hàng";
-                case TRANG_THAI_DANG_VAN_CHUYEN: return "Chờ giao hàng";
+                case TRANG_THAI_DANG_VAN_CHUYEN: return "Đang giao hàng";
                 case TRANG_THAI_DA_GIAO_HANG: return "Đã giao hàng";
                 case TRANG_THAI_GIAO_HANG_THAT_BAI: return "Giao hàng thất bại";
                 case TRANG_THAI_HOAN_THANH: return "Hoàn thành";
@@ -834,7 +868,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             case "Chờ xác nhận" -> TRANG_THAI_CHO_XAC_NHAN;
             case "Đã xác nhận" -> TRANG_THAI_DA_XAC_NHAN;
             case "Chờ lấy hàng" -> TRANG_THAI_CHO_GIAO_HANG;
-            case "Chờ giao hàng" -> TRANG_THAI_DANG_VAN_CHUYEN;
+            case "Chờ giao hàng", "Đang giao hàng" -> TRANG_THAI_DANG_VAN_CHUYEN;
             case "Đã giao hàng" -> TRANG_THAI_DA_GIAO_HANG;
             case "Giao hàng thất bại" -> TRANG_THAI_GIAO_HANG_THAT_BAI;
             case "Hoàn thành" -> TRANG_THAI_HOAN_THANH;
@@ -1017,7 +1051,7 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
         return switch (normalizeTextKey(value)) {
             case "1" -> "Chờ xác nhận";
             case "2" -> "Chờ lấy hàng";
-            case "3" -> "Chờ giao hàng";
+            case "3" -> "Đang giao hàng";
             case "4" -> "Đã giao hàng";
             case "5" -> "Hoàn thành";
             case "6" -> "Hủy";
