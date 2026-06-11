@@ -37,12 +37,11 @@ const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
         <h2 class="text-lg font-bold text-slate-900">Hóa đơn chờ</h2>
         <button
           type="button"
-          class="flex h-8 px-3 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 transition hover:border-red-300 hover:text-red-500"
+          class="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-red-300 hover:text-red-500"
           title="Tạo hóa đơn chờ mới"
           @click="emit('create-empty-invoice')"
         >
-          <Plus class="h-4 w-4" />
-          Hóa đơn chờ
+          <Plus class="h-5 w-5" />
         </button>
       </div>
       <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
