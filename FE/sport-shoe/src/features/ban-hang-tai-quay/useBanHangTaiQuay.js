@@ -58,11 +58,11 @@ function useBanHangTaiQuay() {
       !sanPhamValidationMessage.value
   );
   const canPay = computed(() => {
-    if (!cartItems.value.length || sanPhamValidationMessage.value || payingInvoice.value || maPhieuChuaApDung.value || !coThongTinGiaoHangHopLe.value) {
+    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || payingInvoice?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value || !daChonKhach?.value) {
       return false;
     }
-    if (paymentMethod.value === 1) {
-      return !paymentValidationMessage.value;
+    if (paymentMethod?.value === 1) {
+      return !paymentValidationMessage?.value;
     }
     return true;
   });
@@ -91,9 +91,15 @@ function useBanHangTaiQuay() {
     pageError
   });
 
-  const daChonKhach = computed(
-    () => Boolean(selectedCustomer.value) || Boolean(activePendingInvoice.value) || isGuestCustomer.value
-  );
+  const daChonKhach = computed(() => {
+    if (selectedCustomer.value) return true;
+    if (isGuestCustomer.value) return true;
+    if (activePendingInvoice.value) {
+      if (activePendingInvoice.value.khachHangId) return true;
+      if (activePendingInvoice.value.tenKhachHang === GUEST_LABEL) return true;
+    }
+    return false;
+  });
 
   const {
     cartItems,
@@ -505,6 +511,10 @@ function useBanHangTaiQuay() {
   }
 
   async function handlePayNow() {
+    if (!daChonKhach.value) {
+      pageError.value = "Vui lòng chọn khách hàng hoặc Khách vãng lai trước khi thanh toán.";
+      return;
+    }
     if (!validateCartItems(true) || !validatePaymentInput()) {
       return;
     }
