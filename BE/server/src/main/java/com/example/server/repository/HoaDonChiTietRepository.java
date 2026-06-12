@@ -48,4 +48,14 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
             order by hd.ngayTao asc, hd.id asc, hdct.id asc
             """)
     List<HoaDonChiTiet> findAllForThongKe(@Param("trangThais") Collection<Integer> trangThais);
+
+    /** Tổng số lượng đã bán theo từng sản phẩm (bỏ giỏ hàng = 0 và đơn đã hủy = 6). */
+    @Query("""
+            select ct.giayChiTiet.giay.id, sum(ct.soLuong)
+            from HoaDonChiTiet ct
+            where ct.giayChiTiet.giay.id in :giayIds
+              and ct.hoaDon.trangThai not in (0, 6)
+            group by ct.giayChiTiet.giay.id
+            """)
+    List<Object[]> tongDaBanTheoGiay(@Param("giayIds") Collection<Integer> giayIds);
 }
