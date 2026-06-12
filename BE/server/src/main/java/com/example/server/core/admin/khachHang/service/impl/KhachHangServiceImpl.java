@@ -72,6 +72,8 @@ public class KhachHangServiceImpl implements KhachHangService {
         if (request.email() != null && !request.email().isBlank() && khachHangRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email đã được sử dụng");
         }
+        kiemTraSdtTrung(request.sdt(), null);
+        kiemTraNgaySinh(request.ngaySinh());
 
         KhachHang kh = new KhachHang();
         kh.setId(UUID.randomUUID());
@@ -110,6 +112,8 @@ public class KhachHangServiceImpl implements KhachHangService {
                     .filter(existing -> !existing.getId().equals(id))
                     .ifPresent(existing -> { throw new BusinessException("Email đã được sử dụng"); });
         }
+        kiemTraSdtTrung(request.sdt(), id);
+        kiemTraNgaySinh(request.ngaySinh());
 
         kh.setHoTen(request.hoTen().trim());
         kh.setEmail(request.email() != null ? request.email().trim().toLowerCase(Locale.ROOT) : null);
@@ -120,6 +124,34 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setNgayCapNhat(Instant.now());
 
         return toKhachHangResponse(khachHangRepository.save(kh));
+    }
+
+    /** Số điện thoại không được trùng với khách hàng khác (bỏ qua chính mình khi cập nhật). */
+    private void kiemTraSdtTrung(String sdt, UUID idHienTai) {
+        if (sdt == null || sdt.isBlank()) {
+            return;
+        }
+        khachHangRepository.findBySdt(sdt.trim())
+                .filter(existing -> idHienTai == null || !existing.getId().equals(idHienTai))
+                .ifPresent(existing -> { throw new BusinessException("Số điện thoại đã được sử dụng"); });
+    }
+
+    /** Ngày sinh: không ở tương lai và tuổi phải từ 18 đến 100. */
+    private void kiemTraNgaySinh(java.time.LocalDate ngaySinh) {
+        if (ngaySinh == null) {
+            return;
+        }
+        java.time.LocalDate homNay = java.time.LocalDate.now();
+        if (ngaySinh.isAfter(homNay)) {
+            throw new BusinessException("Ngày sinh không được ở tương lai");
+        }
+        int tuoi = java.time.Period.between(ngaySinh, homNay).getYears();
+        if (tuoi < 18) {
+            throw new BusinessException("Khách hàng phải đủ 18 tuổi");
+        }
+        if (tuoi > 100) {
+            throw new BusinessException("Tuổi khách hàng không hợp lệ (tối đa 100 tuổi)");
+        }
     }
 
     @Override
