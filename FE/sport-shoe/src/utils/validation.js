@@ -6,6 +6,7 @@ export const VN_PHONE_REGEX = /^(0|\+84)[35789]\d{8}$/;
 
 // Email cơ bản: có ký tự trước @, sau @ và phần đuôi .xxx
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const FULL_NAME_REGEX = /^\p{L}+(?: \p{L}+)*$/u;
 
 export function isValidVnPhone(value) {
   return VN_PHONE_REGEX.test(String(value ?? "").trim());
@@ -13,6 +14,21 @@ export function isValidVnPhone(value) {
 
 export function isValidEmail(value) {
   return EMAIL_REGEX.test(String(value ?? "").trim());
+}
+
+export function validateFullName(value, label = "Họ tên") {
+  const raw = String(value ?? "");
+  const trimmed = raw.trim();
+
+  if (!trimmed) return `${label} không được để trống.`;
+  if (raw !== trimmed) return `${label} không được có khoảng trắng ở đầu hoặc cuối.`;
+  if (trimmed.length <= 3) return `${label} phải lớn hơn 3 ký tự.`;
+  if (trimmed.length >= 100) return `${label} phải nhỏ hơn 100 ký tự.`;
+  if (!FULL_NAME_REGEX.test(trimmed)) {
+    return `${label} chỉ được chứa chữ cái và khoảng trắng, không chứa ký tự đặc biệt.`;
+  }
+
+  return "";
 }
 
 /**
