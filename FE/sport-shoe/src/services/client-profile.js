@@ -27,6 +27,37 @@ export function doiMatKhauProfileKhachHang(khachHangId, payload) {
   });
 }
 
+// --- Customer Address Management ---
+export function layDanhSachDiaChiProfile(khachHangId) {
+  return request(`/client/khach-hang/${khachHangId}/dia-chi`);
+}
+
+export function themDiaChiProfile(khachHangId, payload) {
+  return request(`/client/khach-hang/${khachHangId}/dia-chi`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function capNhatDiaChiProfile(khachHangId, diaChiId, payload) {
+  return request(`/client/khach-hang/${khachHangId}/dia-chi/${diaChiId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function xoaDiaChiProfile(khachHangId, diaChiId) {
+  return request(`/client/khach-hang/${khachHangId}/dia-chi/${diaChiId}`, {
+    method: "DELETE",
+  });
+}
+
+export function datMacDinhDiaChiProfile(khachHangId, diaChiId) {
+  return request(`/client/khach-hang/${khachHangId}/dia-chi/${diaChiId}/mac-dinh`, {
+    method: "PATCH",
+  });
+}
+
 // --- Bank Account Management ---
 export function layDanhSachTaiKhoanNganHang(khachHangId) {
   return request(`/client/khach-hang/${khachHangId}/tai-khoan-ngan-hang`);
