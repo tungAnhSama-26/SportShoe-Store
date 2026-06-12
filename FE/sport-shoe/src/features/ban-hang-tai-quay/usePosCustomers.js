@@ -15,7 +15,7 @@ export function usePosCustomers({
   clearFeedback,
   pageError
 }) {
-  const customerKeyword = ref(GUEST_LABEL);
+  const customerKeyword = ref("");
   const customerResults = ref([]);
   const selectedCustomer = ref(null);
   const loadingCustomers = ref(false);
