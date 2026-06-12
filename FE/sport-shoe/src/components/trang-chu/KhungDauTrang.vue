@@ -1,10 +1,10 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import logoChinh from "../../assets/logo/delete-background-logo.png";
 import { gioHangStore } from "../../stores/gio-hang";
 import { layKhachId } from "../../services/gio-hang";
-import { logout } from "../../services/auth";
+import { logoutCustomer } from "../../services/auth";
 
 defineProps({
   thuongHieu: {
@@ -17,19 +17,20 @@ const router = useRouter();
 const dangCuon = ref(false);
 const menuMo = ref(false);
 const menuTaiKhoanMo = ref(false);
-const daDangNhap = computed(() => Boolean(layKhachId()));
+const daDangNhap = ref(Boolean(layKhachId()));
 
 function toggleTaiKhoan() {
   menuTaiKhoanMo.value = !menuTaiKhoanMo.value;
 }
 
 function dangXuat() {
-  logout();
+  logoutCustomer();
+  daDangNhap.value = false;
   gioHangStore.datSoLuong(0);
   menuTaiKhoanMo.value = false;
   menuMo.value = false;
   document.body.style.overflow = "";
-  router.push("/");
+  router.replace("/login");
 }
 
 function capNhatTrangThaiCuon() {
@@ -46,6 +47,7 @@ function toggleMenu() {
 }
 
 onMounted(() => {
+  daDangNhap.value = Boolean(layKhachId());
   capNhatTrangThaiCuon();
   window.addEventListener("scroll", capNhatTrangThaiCuon, { passive: true });
   gioHangStore.lamMoi();
