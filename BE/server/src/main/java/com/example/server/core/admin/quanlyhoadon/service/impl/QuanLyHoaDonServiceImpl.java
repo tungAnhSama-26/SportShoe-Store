@@ -275,9 +275,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 if (vanChuyen.getNgayGui() == null) {
                     vanChuyen.setNgayGui(Instant.now());
                 }
-                if (xuLyThanhToanKhiGiaoThatBai(hoaDon)) {
-                    hoaDon.setTrangThai(TRANG_THAI_CAN_HOAN_TIEN);
-                }
+                xuLyThanhToanKhiGiaoThatBai(hoaDon);
             }
             case "Hoàn thành" -> {
                 if (coThanhToanCodDangCho(hoaDon)) {
@@ -296,16 +294,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 }
             }
             case "Hủy" -> {
-                boolean canHoanTien = capNhatThanhToanKhiHuyDon(hoaDon);
-                hoaDon.setTrangThai(canHoanTien
-                        ? TRANG_THAI_CAN_HOAN_TIEN
-                        : TRANG_THAI_HUY);
+                capNhatThanhToanKhiHuyDon(hoaDon);
+                hoaDon.setTrangThai(TRANG_THAI_HUY);
             }
             case "Yêu cầu hủy" -> hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
-            case "Cần hoàn tiền" -> {
-                hoaDon.setTrangThai(TRANG_THAI_CAN_HOAN_TIEN);
-                danhDauCanHoanTienNeuDaThanhToan(hoaDon);
-            }
             default -> throw new BusinessException("Trạng thái hóa đơn không hợp lệ");
         }
 

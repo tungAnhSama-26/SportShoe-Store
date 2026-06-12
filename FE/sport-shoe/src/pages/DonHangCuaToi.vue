@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { layDonHangCuaToi } from '../services/don-hang';
+import { layDonHangCuaToi, yeuCauHuyDonHang } from '../services/don-hang';
 import { layKhachId, themVaoGio } from '../services/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
-import { showSuccess, showError } from '../utils/alert';
+import { showSuccess, showError, showConfirm } from '../utils/alert';
+import { getDisplayErrorMessage } from '../utils/error-message';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 
 const router = useRouter();
@@ -14,6 +15,7 @@ const daDangNhap = computed(() => Boolean(layKhachId()));
 
 const dangChonDeTra = ref(null);
 const laMoTraHangModal = ref(false);
+const donDangGuiYeuCauHuy = ref(null);
 
 onMounted(taiDanhSach);
 
@@ -125,6 +127,27 @@ async function xuLyTaoPhieuTraHangThanhCong() {
   laMoTraHangModal.value = false;
   trangThaiDangChon.value = "TRA_HANG";
   await taiDanhSach();
+}
+
+async function guiYeuCauHuy(don) {
+  const daXacNhan = await showConfirm(
+    'Sau khi gửi yêu cầu, cửa hàng sẽ xem xét và xác nhận hủy đơn.',
+    'Yêu cầu hủy đơn hàng',
+    'Gửi yêu cầu',
+    'Quay lại',
+  );
+  if (!daXacNhan) return;
+
+  donDangGuiYeuCauHuy.value = don.id;
+  try {
+    await yeuCauHuyDonHang(don.id);
+    await taiDanhSach();
+    showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, 'Không thể gửi yêu cầu hủy đơn hàng'));
+  } finally {
+    donDangGuiYeuCauHuy.value = null;
+  }
 }
 </script>
 
@@ -239,6 +262,14 @@ async function xuLyTaoPhieuTraHangThanhCong() {
                 <span class="text-xl font-bold text-primary">{{ dinhDangTienViet(don.tongThanhToan) }}</span>
               </div>
               <div class="flex items-center gap-2">
+                <button
+                  v-if="[1, 9, 2].includes(Number(don.trangThai))"
+                  @click="guiYeuCauHuy(don)"
+                  :disabled="donDangGuiYeuCauHuy === don.id"
+                  class="px-5 py-2 text-xs md:text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {{ donDangGuiYeuCauHuy === don.id ? 'Đang gửi...' : 'Yêu cầu hủy' }}
+                </button>
                 <!-- Yêu cầu trả hàng button: Shown if order is Hoàn thành (5) AND (phieuTraHangId is null OR return status is Rejected(8) or Cancelled(9)) AND not expired (under 3 days) -->
                 <button
                   v-if="don.trangThai === 5 && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
