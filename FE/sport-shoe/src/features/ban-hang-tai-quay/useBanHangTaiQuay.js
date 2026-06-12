@@ -624,6 +624,18 @@ function useBanHangTaiQuay() {
     
     successMessage.value = `Đang tạo PDF hóa đơn ${activePendingInvoice.value.ma}...`;
 
+    const rowsHtml = cartItems.value.map(item => `
+      <tr style="border-bottom: 1px dashed #eee;">
+        <td style="padding: 8px 0;">
+          <div style="font-weight: bold;">${item.tenSanPham}</div>
+          <div style="font-size: 12px; color: #666;">Mã: ${item.maSanPham} | Màu: ${item.mauSac} | Size: ${item.kichCo}</div>
+        </td>
+        <td style="text-align: center; padding: 8px 0;">${item.soLuong}</td>
+        <td style="text-align: right; padding: 8px 0;">${item.giaBan.toLocaleString('vi-VN')} đ</td>
+        <td style="text-align: right; padding: 8px 0;">${(item.soLuong * item.giaBan).toLocaleString('vi-VN')} đ</td>
+      </tr>
+    `).join('');
+
     const invoiceHtml = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: auto; line-height: 1.5;">
         <div style="text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 20px;">
@@ -653,17 +665,7 @@ function useBanHangTaiQuay() {
             </tr>
           </thead>
           <tbody>
-            ${cartItems.value.map(item => `
-              <tr style="border-bottom: 1px dashed #eee;">
-                <td style="padding: 8px 0;">
-                  <div style="font-weight: bold;">${item.tenSanPham}</div>
-                  <div style="font-size: 12px; color: #666;">Mã: ${item.maSanPham} | Màu: ${item.mauSac} | Size: ${item.kichCo}</div>
-                </td>
-                <td style="text-align: center; padding: 8px 0;">${item.soLuong}</td>
-                <td style="text-align: right; padding: 8px 0;">${item.giaBan.toLocaleString('vi-VN')} đ</td>
-                <td style="text-align: right; padding: 8px 0;">${(item.soLuong * item.giaBan).toLocaleString('vi-VN')} đ</td>
-              </tr>
-            `).join('')}
+            ${rowsHtml}
           </tbody>
         </table>
 
