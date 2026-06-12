@@ -24,4 +24,17 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
     /** Đánh giá theo danh sách dòng hóa đơn chi tiết (để hiển thị đã đánh giá hay chưa). */
     @Query("select dg from DanhGia dg where dg.hoaDonChiTiet.id in :ids")
     List<DanhGia> findByHoaDonChiTietIdIn(@Param("ids") Collection<Integer> ids);
+
+    /** Điểm trung bình + tổng số đánh giá đang hiển thị của toàn cửa hàng (1 dòng). */
+    @Query("select avg(dg.soSao), count(dg) from DanhGia dg where dg.trangThai = 1")
+    List<Object[]> thongKeTongQuan();
+
+    /** Điểm sao trung bình + số lượt đánh giá (đang hiển thị) theo từng sản phẩm. */
+    @Query("""
+            select dg.giay.id, avg(dg.soSao), count(dg)
+            from DanhGia dg
+            where dg.giay.id in :giayIds and dg.trangThai = 1
+            group by dg.giay.id
+            """)
+    List<Object[]> thongKeSaoTheoGiay(@Param("giayIds") Collection<Integer> giayIds);
 }

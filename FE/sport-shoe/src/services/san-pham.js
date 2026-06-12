@@ -4,29 +4,14 @@ import { apiRequest, buildQuery } from "./api-client";
 const ANH_MAC_DINH =
   "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80";
 
-// Chuyển dữ liệu sản phẩm từ API (GiayListItemResponse) sang đúng các trường
-// mà card sản phẩm ở trang chủ đang dùng: ten, hinhAnh, gia, giaCu, soMau, nhan.
-function mapSanPhamNoiBat(g) {
-  const coGiam =
-    Boolean(g.coGiamGia) && g.giaGocMin != null && Number(g.giaGocMin) > Number(g.giaMin);
-  return {
-    id: g.id,
-    ten: g.ten,
-    hinhAnh: g.hinhAnh || ANH_MAC_DINH,
-    gia: g.giaMin ?? g.giaMax ?? 0,
-    giaCu: coGiam ? g.giaGocMin : null,
-    soMau: g.thuongHieu || g.loaiGiay || "",
-    nhan: coGiam ? "Giảm giá" : null,
-  };
-}
-
-// Lấy danh sách sản phẩm nổi bật từ DB (public, không cần đăng nhập).
+// Lấy sản phẩm nổi bật (backend đã xếp hạng: bán chạy > giảm giá sâu > đánh giá cao & nhiều).
+// Cùng cấu trúc dữ liệu với trang danh sách sản phẩm.
 async function laySanPhamNoiBat(limit = 8) {
   const data = await apiRequest(`/client/san-pham/noi-bat${buildQuery({ limit })}`, {
     authenticated: false,
     fallbackMessage: "Không thể tải sản phẩm nổi bật",
   });
-  return Array.isArray(data) ? data.map(mapSanPhamNoiBat) : [];
+  return Array.isArray(data) ? data.map(mapSanPhamDayDu) : [];
 }
 
 const NHAN_GIOI_TINH = { 1: "Nam", 2: "Nữ", 3: "Unisex" };
@@ -59,6 +44,9 @@ function mapSanPhamDayDu(item) {
     gioiTinhNhan: NHAN_GIOI_TINH[g.gioiTinh] || "Khác",
     mauSac: Array.isArray(item.mauSac) ? item.mauSac : [],
     kichCo: Array.isArray(item.kichCo) ? item.kichCo : [],
+    soSao: Number(item.soSaoTrungBinh || 0),
+    soDanhGia: Number(item.soDanhGia || 0),
+    daBan: Number(item.daBan || 0),
   };
 }
 
@@ -97,6 +85,14 @@ async function guiDanhGia(giayId, payload) {
   });
 }
 
+// Số liệu thật cho banner trang chủ: { soKhachHang, soSanPham, diemTrungBinh, soDanhGia }.
+async function layThongKeTrangChu() {
+  return apiRequest(`/client/thong-ke`, {
+    authenticated: false,
+    fallbackMessage: "Không thể tải thống kê",
+  });
+}
+
 // Chuyển dữ liệu hãng (ThuongHieuNoiBatResponse) sang trường mà card ở trang chủ dùng.
 function mapHangNoiBat(h) {
   return {
@@ -123,4 +119,5 @@ export {
   layChiTietSanPham,
   layDanhGia,
   guiDanhGia,
+  layThongKeTrangChu,
 };
