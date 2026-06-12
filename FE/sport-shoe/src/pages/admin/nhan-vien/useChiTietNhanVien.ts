@@ -170,19 +170,21 @@ export function useChiTietNhanVien() {
   const laChinhMinh = computed(() => {
     return nhanVien.value && adminHienTai && String(nhanVien.value.id) === String(adminHienTai.id);
   });
-  const homNay = computed(() => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+  const formatDateInputValue = (date: Date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
+  };
+  const ngaySinhToiDa = computed(() => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() - 18);
+    return formatDateInputValue(today);
   });
-  const tramTuoi = computed(() => {
+  const ngaySinhToiThieu = computed(() => {
     const today = new Date();
-    const yyyy = today.getFullYear() - 100;
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    today.setFullYear(today.getFullYear() - 80);
+    return formatDateInputValue(today);
   });
   const fileInputAvatar = ref<HTMLInputElement | null>(null);
   const matKhauMoi = ref("");
@@ -543,12 +545,12 @@ export function useChiTietNhanVien() {
           hasError = true;
         }
 
-        // Tuổi phải < 80
+        // Tuổi không được lớn hơn 80
         const birth80 = new Date(today);
         birth80.setFullYear(birth80.getFullYear() - 80);
 
-        if (selectedDate <= birth80) {
-          loiForm.value.ngaySinh = "Tuổi phải nhỏ hơn 80.";
+        if (selectedDate < birth80) {
+          loiForm.value.ngaySinh = "Tuổi không được lớn hơn 80.";
           hasError = true;
         }
       }
@@ -717,5 +719,5 @@ export function useChiTietNhanVien() {
     dungQuet();
   });
 
-  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, homNay, tramTuoi };
+  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu };
 }

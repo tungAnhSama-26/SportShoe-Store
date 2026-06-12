@@ -12,8 +12,8 @@ import java.time.LocalDate;
 
 public record CapNhatNhanVienRequest(
         @NotBlank(message = "Họ tên không được để trống")
-        @Size(max = 100, message = "Họ tên không quá 100 ký tự")
-        @Pattern(regexp = ValidationPatterns.FULL_NAME, message = "Họ tên chỉ được chứa chữ cái và khoảng trắng đơn, không có khoảng trắng ở đầu hoặc cuối")
+        @Size(min = 4, max = 99, message = "Họ tên phải lớn hơn 3 và nhỏ hơn 100 ký tự")
+        @Pattern(regexp = ValidationPatterns.FULL_NAME, message = "Họ tên chỉ được chứa chữ cái và khoảng trắng, không có khoảng trắng ở đầu hoặc cuối")
         String hoTen,
         @NotBlank @Size(max = 100) String tenDangNhap,
         @NotBlank(message = "Email không được để trống")
