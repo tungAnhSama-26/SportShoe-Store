@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
 import { useAdminSession } from "../../composable/useAdminSession";
-import { isAdminRole, logout } from "../../services/auth";
+import { isAdminRole, logoutAdmin } from "../../services/auth";
 
 const route = useRoute();
 const router = useRouter();
@@ -81,7 +81,7 @@ function chuyenDenTrangChu() {
 }
 
 function dangXuat() {
-  logout();
+  logoutAdmin();
   hienMenuTaiKhoan.value = false;
   router.push("/admin/login");
 }
