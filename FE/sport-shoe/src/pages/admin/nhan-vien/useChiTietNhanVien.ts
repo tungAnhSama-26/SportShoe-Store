@@ -119,7 +119,7 @@ export function useChiTietNhanVien() {
 
   function formatNgaySinh(ddmmyyyy: string) {
     if (!ddmmyyyy || ddmmyyyy.length !== 8) return '';
-    return `${ddmmyyyy.slice(4,8)}-${ddmmyyyy.slice(2,4)}-${ddmmyyyy.slice(0,2)}`;
+    return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
   }
 
   function syncCurrentAdminCccd(updated: any) {
@@ -358,12 +358,12 @@ export function useChiTietNhanVien() {
     form.value.quanHuyen = "";
     form.value.xaPhuong = "";
     dsXaPhuong.value = [];
-    
+
     if (!newVal) {
       dsQuanHuyen.value = [];
       return;
     }
-    
+
     try {
       // Đây là URL API lấy quận huyện theo mã tỉnh (newVal là mã số như '01', '79')
       const res = await fetch(`https://provinces.open-api.vn/api/p/${newVal}?depth=2`);
@@ -384,7 +384,7 @@ export function useChiTietNhanVien() {
       dsXaPhuong.value = [];
       return;
     }
-    
+
     try {
       const res = await fetch(`https://provinces.open-api.vn/api/d/${newVal}?depth=2`);
       const data = await res.json();
@@ -432,9 +432,9 @@ export function useChiTietNhanVien() {
       const dataTinh = await responseTinh.json();
       dsQuanHuyen.value = Array.isArray(dataTinh.districts)
         ? dataTinh.districts.map((district: any) => ({
-            value: district.code.toString(),
-            label: district.name,
-          }))
+          value: district.code.toString(),
+          label: district.name,
+        }))
         : [];
     } catch (error) {
       console.error("Không thể tải quận huyện từ dữ liệu QR", error);
@@ -454,9 +454,9 @@ export function useChiTietNhanVien() {
       const dataHuyen = await responseHuyen.json();
       dsXaPhuong.value = Array.isArray(dataHuyen.wards)
         ? dataHuyen.wards.map((ward: any) => ({
-            value: ward.code.toString(),
-            label: ward.name,
-          }))
+          value: ward.code.toString(),
+          label: ward.name,
+        }))
         : [];
     } catch (error) {
       console.error("Không thể tải xã phường từ dữ liệu QR", error);
@@ -529,15 +529,26 @@ export function useChiTietNhanVien() {
       const selectedDate = new Date(form.value.ngaySinh);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       if (selectedDate > today) {
         loiForm.value.ngaySinh = "Ngày sinh không được là ngày trong tương lai.";
         hasError = true;
       } else {
-        const minDate = new Date();
-        minDate.setFullYear(minDate.getFullYear() - 100);
-        minDate.setHours(0, 0, 0, 0);
-        if (selectedDate < minDate) {
-          loiForm.value.ngaySinh = "Ngày sinh không được quá 100 tuổi.";
+        // Tuổi phải > 17 (tức từ đủ 18 tuổi)
+        const birth18 = new Date(today);
+        birth18.setFullYear(birth18.getFullYear() - 18);
+
+        if (selectedDate > birth18) {
+          loiForm.value.ngaySinh = "Người dùng phải từ 18 tuổi trở lên.";
+          hasError = true;
+        }
+
+        // Tuổi phải < 80
+        const birth80 = new Date(today);
+        birth80.setFullYear(birth80.getFullYear() - 80);
+
+        if (selectedDate <= birth80) {
+          loiForm.value.ngaySinh = "Tuổi phải nhỏ hơn 80.";
           hasError = true;
         }
       }
