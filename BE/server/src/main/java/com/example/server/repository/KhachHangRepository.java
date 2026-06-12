@@ -43,6 +43,8 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, UUID> {
 
     boolean existsByEmail(String email);
 
+    Optional<KhachHang> findBySdt(String sdt);
+
     Optional<KhachHang> findByEmail(String email);
 
     @Query("SELECT kh.email FROM KhachHang kh WHERE kh.email IS NOT NULL AND kh.trangThai = 1")
