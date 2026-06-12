@@ -9,14 +9,32 @@ const DEFAULT_FALLBACK =
 
 const ERROR_PAGE_STATUSES = new Set([401, 403, 404, 429, 500]);
 
-function getStoredToken() {
-  return localStorage.getItem("adminToken")
-    ?? localStorage.getItem("customerToken")
-    ?? "";
+function resolveAuthScope(path, authScope) {
+  if (authScope === "admin" || authScope === "customer") {
+    return authScope;
+  }
+  if (path.startsWith("/admin/") || path === "/admin" || path.startsWith("/nhanvien/")) {
+    return "admin";
+  }
+  if (path.startsWith("/client/")) {
+    return "customer";
+  }
+
+  const currentPath = typeof window === "undefined" ? "" : window.location.pathname;
+  return currentPath.startsWith("/admin") || currentPath.startsWith("/nhanvien")
+    ? "admin"
+    : "customer";
 }
 
-export function getAuthHeaders() {
-  const token = getStoredToken();
+function getStoredToken(authScope = "auto", path = "") {
+  const scope = resolveAuthScope(path, authScope);
+  return scope === "admin"
+    ? localStorage.getItem("adminToken") ?? ""
+    : localStorage.getItem("customerToken") ?? "";
+}
+
+export function getAuthHeaders(authScope = "auto", path = "") {
+  const token = getStoredToken(authScope, path);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -31,13 +49,13 @@ function getFirstFieldError(errors) {
   return entry ? sanitizeErrorMessage(entry[1], entry[1], entry[0]) : "";
 }
 
-function buildHeaders(init, authenticated) {
+function buildHeaders(path, init, authenticated, authScope) {
   const initHeaders = init?.headers ?? {};
   const body = init?.body;
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   return {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    ...(authenticated ? getAuthHeaders() : {}),
+    ...(authenticated ? getAuthHeaders(authScope, path) : {}),
     "Cache-Control": "no-cache, no-store, must-revalidate",
     "Pragma": "no-cache",
     "Expires": "0",
@@ -60,15 +78,17 @@ export async function apiRequest(path, options = {}) {
   const {
     fallbackMessage = DEFAULT_FALLBACK,
     authenticated = true,
+    authScope = "auto",
     unwrapData = true,
     ...init
   } = options;
+  const resolvedAuthScope = resolveAuthScope(path, authScope);
 
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
-      headers: buildHeaders(init, authenticated),
+      headers: buildHeaders(path, init, authenticated, resolvedAuthScope),
     });
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -82,7 +102,7 @@ export async function apiRequest(path, options = {}) {
   if (!response.ok) {
     const message = getFirstFieldError(payload?.errors) || payload?.message || `HTTP ${response.status}`;
     if (response.status === 401) {
-      clearStoredSession();
+      clearStoredSession(resolvedAuthScope);
     }
     redirectToErrorPage(response.status, message);
 
@@ -99,12 +119,16 @@ export async function apiRequest(path, options = {}) {
   return unwrapData ? payload?.data ?? payload : payload;
 }
 
-function clearStoredSession() {
+function clearStoredSession(authScope) {
+  if (authScope === "admin") {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+    localStorage.removeItem("sport-shoe-admin-session");
+    return;
+  }
+
   localStorage.removeItem("user");
   localStorage.removeItem("customerToken");
-  localStorage.removeItem("adminToken");
-  localStorage.removeItem("adminUser");
-  localStorage.removeItem("sport-shoe-admin-session");
 }
 
 function redirectToErrorPage(status, message) {
