@@ -453,7 +453,7 @@ function useBanHangTaiQuay() {
         // ignore error when switching tabs
       }
     }
-    hasPrintedInvoice.value = false;
+
     invoiceLoading.value = true;
     pageError.value = "";
     try {
