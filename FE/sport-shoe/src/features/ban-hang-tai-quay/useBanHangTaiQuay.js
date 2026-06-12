@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import html2pdf from "html2pdf.js";
 import {
   huyHoaDonCho,
   layChiTietHoaDonCho,
@@ -620,8 +621,92 @@ function useBanHangTaiQuay() {
 
   function handlePrintInvoice() {
     if (!activePendingInvoice.value) return;
-    // Tạm thời chỉ hiển thị thông báo, sau này có thể tích hợp API in hóa đơn thực tế
-    successMessage.value = `Đang in hóa đơn ${activePendingInvoice.value.ma}...`;
+    
+    successMessage.value = `Đang tạo PDF hóa đơn ${activePendingInvoice.value.ma}...`;
+
+    const invoiceHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: auto; line-height: 1.5;">
+        <div style="text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 24px; color: #d32f2f;">SPORT SHOE STORE</h2>
+          <p style="margin: 5px 0 0; font-size: 14px;">Địa chỉ: 123 Đường Bán Giày, Hà Nội</p>
+          <p style="margin: 0; font-size: 14px;">Điện thoại: 0123.456.789</p>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h3 style="margin: 0; font-size: 20px;">HÓA ĐƠN BÁN HÀNG</h3>
+          <p style="margin: 5px 0 0; font-size: 14px;">Mã HĐ: <strong>${activePendingInvoice.value.ma}</strong></p>
+          <p style="margin: 5px 0 0; font-size: 14px;">Ngày: ${new Date().toLocaleString('vi-VN')}</p>
+        </div>
+
+        <div style="margin-bottom: 20px; font-size: 14px;">
+          <p style="margin: 5px 0;"><strong>Khách hàng:</strong> ${tenKhachHangHienThi.value}</p>
+          <p style="margin: 5px 0;"><strong>SĐT:</strong> ${soDienThoaiKhachHangHienThi.value}</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+          <thead>
+            <tr style="border-bottom: 1px solid #ccc;">
+              <th style="text-align: left; padding: 8px 0;">Sản phẩm</th>
+              <th style="text-align: center; padding: 8px 0;">SL</th>
+              <th style="text-align: right; padding: 8px 0;">Đơn giá</th>
+              <th style="text-align: right; padding: 8px 0;">Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cartItems.value.map(item => `
+              <tr style="border-bottom: 1px dashed #eee;">
+                <td style="padding: 8px 0;">
+                  <div style="font-weight: bold;">${item.tenSanPham}</div>
+                  <div style="font-size: 12px; color: #666;">Mã: ${item.maSanPham} | Màu: ${item.mauSac} | Size: ${item.kichCo}</div>
+                </td>
+                <td style="text-align: center; padding: 8px 0;">${item.soLuong}</td>
+                <td style="text-align: right; padding: 8px 0;">${item.giaBan.toLocaleString('vi-VN')} đ</td>
+                <td style="text-align: right; padding: 8px 0;">${(item.soLuong * item.giaBan).toLocaleString('vi-VN')} đ</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div style="border-top: 1px solid #ccc; padding-top: 10px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>Tổng tiền hàng:</span>
+            <span>${tongTien.value.toLocaleString('vi-VN')} đ</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>Phí giao hàng:</span>
+            <span>${phiGiaoHang.value.toLocaleString('vi-VN')} đ</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>Giảm giá:</span>
+            <span>-${tienGiamGia.value.toLocaleString('vi-VN')} đ</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 16px; font-weight: bold;">
+            <span>Khách cần trả:</span>
+            <span>${khachCanTra.value.toLocaleString('vi-VN')} đ</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; font-size: 14px; font-style: italic;">
+          <p>Cảm ơn quý khách đã mua hàng!</p>
+          <p>Hẹn gặp lại!</p>
+        </div>
+      </div>
+    `;
+
+    const opt = {
+      margin:       10,
+      filename:     \`HoaDon_${activePendingInvoice.value.ma}.pdf\`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(invoiceHtml).save().then(() => {
+       successMessage.value = \`Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.\`;
+       setTimeout(() => { successMessage.value = ""; }, 3000);
+    }).catch(err => {
+       pageError.value = "Có lỗi xảy ra khi in PDF: " + err.message;
+    });
   }
 
   onMounted(async () => {
