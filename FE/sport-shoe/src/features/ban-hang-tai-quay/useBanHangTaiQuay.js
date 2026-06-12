@@ -695,14 +695,14 @@ function useBanHangTaiQuay() {
 
     const opt = {
       margin:       10,
-      filename:     \`HoaDon_${activePendingInvoice.value.ma}.pdf\`,
+      filename:     `HoaDon_${activePendingInvoice.value.ma}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(invoiceHtml).save().then(() => {
-       successMessage.value = \`Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.\`;
+       successMessage.value = `Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.`;
        setTimeout(() => { successMessage.value = ""; }, 3000);
     }).catch(err => {
        pageError.value = "Có lỗi xảy ra khi in PDF: " + err.message;
