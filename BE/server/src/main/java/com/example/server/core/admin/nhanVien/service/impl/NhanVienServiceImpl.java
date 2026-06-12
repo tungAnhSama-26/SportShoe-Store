@@ -72,9 +72,7 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienResponse taoNhanVien(TaoNhanVienRequest request) {
-        if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
-            throw new BusinessException("Ngày sinh không được quá 100 tuổi");
-        }
+        validateNgaySinhNhanVien(request.ngaySinh());
         Integer vaiTro = validateVaiTro(request.vaiTro());
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
@@ -127,9 +125,7 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request) {
-        if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
-            throw new BusinessException("Ngày sinh không được quá 100 tuổi");
-        }
+        validateNgaySinhNhanVien(request.ngaySinh());
         Integer vaiTro = validateVaiTro(request.vaiTro());
         NhanVien nv = findNhanVien(id);
 
@@ -312,6 +308,22 @@ public class NhanVienServiceImpl implements NhanVienService {
             return vaiTro;
         }
         throw new BusinessException("Vai tro khong hop le");
+    }
+
+    private void validateNgaySinhNhanVien(LocalDate ngaySinh) {
+        if (ngaySinh == null) {
+            return;
+        }
+        LocalDate today = LocalDate.now();
+        if (ngaySinh.isAfter(today)) {
+            throw new BusinessException("Ngày sinh không được là ngày trong tương lai");
+        }
+        if (ngaySinh.isAfter(today.minusYears(18))) {
+            throw new BusinessException("Nhân viên phải từ đủ 18 tuổi");
+        }
+        if (ngaySinh.isBefore(today.minusYears(80))) {
+            throw new BusinessException("Tuổi nhân viên không được lớn hơn 80");
+        }
     }
 
     private Integer normalizeVaiTro(Integer vaiTro) {
