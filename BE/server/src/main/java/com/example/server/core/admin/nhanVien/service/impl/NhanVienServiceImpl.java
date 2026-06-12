@@ -109,7 +109,11 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
         nv.setTrangThai(1);
-        nv.setNgayTao(Instant.now());
+        Instant now = Instant.now();
+        nv.setNgayTao(now);
+        boolean requiresTemporaryPasswordChange = isStaffRole(vaiTro);
+        nv.setBatBuocDoiMatKhau(requiresTemporaryPasswordChange);
+        nv.setHanDoiMatKhau(null);
 
         NhanVien saved = nhanVienRepository.save(nv);
         EmailDispatchResult emailDispatchResult = emailService.trySendRegistrationEmail(
@@ -164,6 +168,10 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setDiaChi(normalizeOptional(request.diaChi()));
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
+        if (!isStaffRole(vaiTro)) {
+            nv.setBatBuocDoiMatKhau(false);
+            nv.setHanDoiMatKhau(null);
+        }
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
     }
@@ -185,6 +193,8 @@ public class NhanVienServiceImpl implements NhanVienService {
     public NhanVienResponse doiMatKhau(UUID id, DoiMatKhauRequest request) {
         NhanVien nv = findNhanVien(id);
         nv.setMatKhau(passwordService.hash(request.matKhauMoi()));
+        nv.setBatBuocDoiMatKhau(false);
+        nv.setHanDoiMatKhau(null);
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
     }
@@ -293,7 +303,9 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getNgayTao(),
                 matKhauTamThoi,
                 emailDispatchResult != null ? emailDispatchResult.sent() : null,
-                emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null
+                emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null,
+                mustChangeTemporaryPassword(nv),
+                mustChangeTemporaryPassword(nv) ? nv.getHanDoiMatKhau() : null
         );
     }
 
@@ -336,6 +348,16 @@ public class NhanVienServiceImpl implements NhanVienService {
 
     private Integer normalizeVaiTro(Integer vaiTro) {
         return Integer.valueOf(1).equals(vaiTro) ? 1 : 2;
+    }
+
+    private boolean isStaffRole(Integer vaiTro) {
+        return Integer.valueOf(2).equals(normalizeVaiTro(vaiTro));
+    }
+
+    private boolean mustChangeTemporaryPassword(NhanVien nv) {
+        return isStaffRole(nv.getVaiTro())
+                && Boolean.TRUE.equals(nv.getBatBuocDoiMatKhau())
+                && nv.getHanDoiMatKhau() != null;
     }
 
     private String generateTemporaryPassword() {
