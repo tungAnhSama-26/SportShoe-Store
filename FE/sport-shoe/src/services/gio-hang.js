@@ -54,6 +54,9 @@ export async function xoaItemGio(itemId) {
 export async function layDiaChiKhachHang() {
   const id = layKhachId();
   if (!id) return [];
+  // Phiên đăng nhập cũ (trước khi có customerToken) -> bỏ qua để không bị chặn 403,
+  // khách tự nhập địa chỉ; đăng nhập lại là có token và load được địa chỉ đã lưu.
+  if (!localStorage.getItem("customerToken")) return [];
   const data = await apiRequest(`/client/khach-hang/${id}/dia-chi`, {
     authenticated: true,
     fallbackMessage: "Không thể tải địa chỉ",
