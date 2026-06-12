@@ -2,7 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { X, UploadCloud, Trash2, AlertCircle, Check } from "lucide-vue-next";
 import { yeuCauTraHang } from "../../services/client-tra-hang";
-import { API_BASE_URL } from "../../services/api-client";
+import { uploadFileRequest } from "../../services/api-client";
 import { showSuccess, showError } from "../../utils/alert";
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
 
@@ -77,32 +77,11 @@ const handleFileUpload = async (event) => {
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // Gọi API Upload
-      const token = localStorage.getItem("token");
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/upload`, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error("Tải ảnh thất bại");
-      }
-
-      const responseData = await res.json();
-      if (responseData.success && responseData.data?.url) {
-        hinhAnhs.value.push(responseData.data.url);
-      } else {
-        throw new Error(responseData.message || "Tải ảnh thất bại");
-      }
+      const imageUrl = await uploadFileRequest(
+        file,
+        "Không thể tải ảnh bằng chứng lên lúc này."
+      );
+      hinhAnhs.value.push(imageUrl);
     }
   } catch (error) {
     showError(error.message || "Không thể tải lên hình ảnh. Vui lòng thử lại.");
@@ -273,7 +252,7 @@ const submitYeuCau = async () => {
             <label class="text-xs md:text-sm font-bold text-slate-700">2. Lý do trả hàng</label>
             <select
               v-model="lyDoMa"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary bg-slate-50"
+              class="return-form-control w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary bg-slate-50"
             >
               <option v-for="ld in dsLyDo" :key="ld.value" :value="ld.value">
                 {{ ld.label }}
@@ -285,7 +264,7 @@ const submitYeuCau = async () => {
             <label class="text-xs md:text-sm font-bold text-slate-700">3. Hình thức hoàn tiền mong muốn</label>
             <select
               v-model="hinhThucHoan"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary bg-slate-50"
+              class="return-form-control w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary bg-slate-50"
             >
               <option v-for="ht in dsHinhThucHoan" :key="ht.value" :value="ht.value">
                 {{ ht.label }}
@@ -300,7 +279,7 @@ const submitYeuCau = async () => {
             v-model="moTa"
             rows="3"
             placeholder="Nhập mô tả cụ thể về tình trạng sản phẩm hoặc lý do trả hàng..."
-            class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary bg-slate-50 resize-none"
+            class="return-form-control w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary bg-slate-50 resize-none"
           ></textarea>
         </div>
 
@@ -371,6 +350,23 @@ const submitYeuCau = async () => {
 </template>
 
 <style scoped>
+.return-form-control {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155;
+  color-scheme: light;
+}
+
+.return-form-control::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8;
+  opacity: 1;
+}
+
+.return-form-control option {
+  color: #334155;
+  background: #ffffff;
+}
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
