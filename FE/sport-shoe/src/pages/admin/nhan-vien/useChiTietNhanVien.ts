@@ -14,6 +14,7 @@ import {
 import { getCurrentAdminUser } from "../../../services/auth";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
+import { isValidEmail, isValidVnPhone, validateFullName } from "../../../utils/validation";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 
@@ -498,21 +499,29 @@ export function useChiTietNhanVien() {
     loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "", ngaySinh: "" };
     let hasError = false;
 
-    if (!form.value.hoTen.trim()) {
-      loiForm.value.hoTen = "Vui lòng nhập họ và tên nhân viên.";
+    const loiHoTen = validateFullName(form.value.hoTen, "Họ và tên nhân viên");
+    if (loiHoTen) {
+      loiForm.value.hoTen = loiHoTen;
       hasError = true;
     }
 
-    if (!form.value.email.trim()) {
+    const email = form.value.email.trim();
+    if (!email) {
       loiForm.value.email = "Vui lòng nhập email nhân viên.";
       hasError = true;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
+    } else if (form.value.email !== email) {
+      loiForm.value.email = "Email không được có khoảng trắng ở đầu hoặc cuối.";
+      hasError = true;
+    } else if (email.length > 100) {
+      loiForm.value.email = "Email không quá 100 ký tự.";
+      hasError = true;
+    } else if (!isValidEmail(email)) {
       loiForm.value.email = "Email nhân viên chưa đúng định dạng.";
       hasError = true;
     }
 
-    if (!/^\d{10}$/.test(form.value.sdt.trim())) {
-      loiForm.value.sdt = "Số điện thoại phải gồm đúng 10 chữ số.";
+    if (!isValidVnPhone(form.value.sdt)) {
+      loiForm.value.sdt = "Số điện thoại không đúng định dạng (VD: 0901234567).";
       hasError = true;
     }
 
