@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Save, User, Mail, Phone, Calendar, Lock, Pencil, Plus, Trash2, ShieldCheck, Landmark } from "lucide-vue-next";
+import { Save, User, Mail, Phone, Calendar, Lock, Pencil, Plus, Trash2, ShieldCheck, Landmark, MapPin, CheckCircle2, X } from "lucide-vue-next";
 import { layKhachId } from "../services/gio-hang";
 import {
   layProfileKhachHang,
   capNhatProfileKhachHang,
   doiMatKhauProfileKhachHang,
+  layDanhSachDiaChiProfile,
+  themDiaChiProfile,
+  capNhatDiaChiProfile,
+  xoaDiaChiProfile,
+  datMacDinhDiaChiProfile,
   layDanhSachTaiKhoanNganHang,
   themTaiKhoanNganHang,
   capNhatTaiKhoanNganHang,
@@ -44,6 +49,35 @@ const loiForm = ref({
   hoTen: "",
   email: "",
   sdt: ""
+});
+
+// Address book state
+const dsDiaChi = ref<any[]>([]);
+const dangTaiDiaChi = ref(false);
+const dangLuuDiaChi = ref(false);
+const hienFormDiaChi = ref(false);
+const diaChiDangSua = ref<any>(null);
+const dsTinh = ref<any[]>([]);
+const dsHuyen = ref<any[]>([]);
+const dsXa = ref<any[]>([]);
+const maTinhChon = ref<number | null>(null);
+const maHuyenChon = ref<number | null>(null);
+const formDiaChi = ref({
+  hoTen: "",
+  sdt: "",
+  tinhThanh: "",
+  quanHuyen: "",
+  phuongXa: "",
+  diaChiCuThe: "",
+  laMacDinh: false
+});
+const loiDiaChi = ref({
+  hoTen: "",
+  sdt: "",
+  tinhThanh: "",
+  quanHuyen: "",
+  phuongXa: "",
+  diaChiCuThe: ""
 });
 
 // Password State
@@ -104,6 +138,237 @@ async function taiProfile() {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể tải thông tin cá nhân");
   } finally {
     dangTai.value = false;
+  }
+}
+
+async function taiDanhSachDiaChi() {
+  if (!khachHangId) return;
+  dangTaiDiaChi.value = true;
+  try {
+    dsDiaChi.value = await layDanhSachDiaChiProfile(khachHangId);
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Không thể tải danh sách địa chỉ"));
+    dsDiaChi.value = [];
+  } finally {
+    dangTaiDiaChi.value = false;
+  }
+}
+
+async function taiDanhSachTinh() {
+  if (dsTinh.value.length) return;
+  try {
+    const response = await fetch("https://provinces.open-api.vn/api/p/");
+    dsTinh.value = await response.json();
+  } catch {
+    dsTinh.value = [];
+    showError("Không thể tải danh sách tỉnh/thành phố. Vui lòng thử lại.");
+  }
+}
+
+async function chonTinh(code: number | null) {
+  maTinhChon.value = code;
+  maHuyenChon.value = null;
+  dsHuyen.value = [];
+  dsXa.value = [];
+  formDiaChi.value.tinhThanh = dsTinh.value.find((item) => item.code === code)?.name ?? "";
+  formDiaChi.value.quanHuyen = "";
+  formDiaChi.value.phuongXa = "";
+  if (!code) return;
+
+  try {
+    const response = await fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`);
+    const data = await response.json();
+    dsHuyen.value = data.districts ?? [];
+  } catch {
+    dsHuyen.value = [];
+    showError("Không thể tải danh sách quận/huyện. Vui lòng thử lại.");
+  }
+}
+
+async function chonHuyen(code: number | null) {
+  maHuyenChon.value = code;
+  dsXa.value = [];
+  formDiaChi.value.quanHuyen = dsHuyen.value.find((item) => item.code === code)?.name ?? "";
+  formDiaChi.value.phuongXa = "";
+  if (!code) return;
+
+  try {
+    const response = await fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`);
+    const data = await response.json();
+    dsXa.value = data.wards ?? [];
+  } catch {
+    dsXa.value = [];
+    showError("Không thể tải danh sách phường/xã. Vui lòng thử lại.");
+  }
+}
+
+async function dienDanhSachDiaPhuong(diaChi: any) {
+  await taiDanhSachTinh();
+  const tinh = dsTinh.value.find((item) => item.name === diaChi.tinhThanh);
+  if (!tinh) return;
+
+  maTinhChon.value = tinh.code;
+  const tinhResponse = await fetch(`https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`);
+  const tinhData = await tinhResponse.json();
+  dsHuyen.value = tinhData.districts ?? [];
+
+  const huyen = dsHuyen.value.find((item) => item.name === diaChi.quanHuyen);
+  if (!huyen) return;
+
+  maHuyenChon.value = huyen.code;
+  const huyenResponse = await fetch(`https://provinces.open-api.vn/api/d/${huyen.code}?depth=2`);
+  const huyenData = await huyenResponse.json();
+  dsXa.value = huyenData.wards ?? [];
+}
+
+function resetLoiDiaChi() {
+  loiDiaChi.value = {
+    hoTen: "",
+    sdt: "",
+    tinhThanh: "",
+    quanHuyen: "",
+    phuongXa: "",
+    diaChiCuThe: ""
+  };
+}
+
+async function moThemDiaChi() {
+  diaChiDangSua.value = null;
+  formDiaChi.value = {
+    hoTen: form.value.hoTen || "",
+    sdt: form.value.sdt || "",
+    tinhThanh: "",
+    quanHuyen: "",
+    phuongXa: "",
+    diaChiCuThe: "",
+    laMacDinh: dsDiaChi.value.length === 0
+  };
+  resetLoiDiaChi();
+  maTinhChon.value = null;
+  maHuyenChon.value = null;
+  dsHuyen.value = [];
+  dsXa.value = [];
+  hienFormDiaChi.value = true;
+  await taiDanhSachTinh();
+}
+
+async function moSuaDiaChi(diaChi: any) {
+  diaChiDangSua.value = diaChi;
+  formDiaChi.value = {
+    hoTen: diaChi.hoTen ?? "",
+    sdt: diaChi.sdt ?? "",
+    tinhThanh: diaChi.tinhThanh ?? "",
+    quanHuyen: diaChi.quanHuyen ?? "",
+    phuongXa: diaChi.phuongXa ?? "",
+    diaChiCuThe: diaChi.diaChiCuThe ?? "",
+    laMacDinh: Boolean(diaChi.laMacDinh)
+  };
+  resetLoiDiaChi();
+  hienFormDiaChi.value = true;
+  try {
+    await dienDanhSachDiaPhuong(diaChi);
+  } catch {
+    showError("Không thể tải dữ liệu địa phương của địa chỉ này.");
+  }
+}
+
+function huyFormDiaChi() {
+  hienFormDiaChi.value = false;
+  diaChiDangSua.value = null;
+  resetLoiDiaChi();
+}
+
+function validateDiaChi() {
+  resetLoiDiaChi();
+  let hopLe = true;
+  const diaChi = formDiaChi.value;
+
+  if (!diaChi.hoTen.trim()) {
+    loiDiaChi.value.hoTen = "Vui lòng nhập họ tên người nhận.";
+    hopLe = false;
+  }
+  if (!/^(0|\+84)[35789]\d{8}$/.test(diaChi.sdt.trim())) {
+    loiDiaChi.value.sdt = "Số điện thoại không đúng định dạng.";
+    hopLe = false;
+  }
+  if (!diaChi.tinhThanh) {
+    loiDiaChi.value.tinhThanh = "Vui lòng chọn tỉnh/thành phố.";
+    hopLe = false;
+  }
+  if (!diaChi.quanHuyen) {
+    loiDiaChi.value.quanHuyen = "Vui lòng chọn quận/huyện.";
+    hopLe = false;
+  }
+  if (!diaChi.phuongXa) {
+    loiDiaChi.value.phuongXa = "Vui lòng chọn phường/xã.";
+    hopLe = false;
+  }
+  if (!diaChi.diaChiCuThe.trim()) {
+    loiDiaChi.value.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+    hopLe = false;
+  }
+  return hopLe;
+}
+
+function taoPayloadDiaChi() {
+  return {
+    hoTen: formDiaChi.value.hoTen.trim(),
+    sdt: formDiaChi.value.sdt.trim(),
+    tinhThanh: formDiaChi.value.tinhThanh,
+    quanHuyen: formDiaChi.value.quanHuyen,
+    phuongXa: formDiaChi.value.phuongXa,
+    diaChiCuThe: formDiaChi.value.diaChiCuThe.trim(),
+    laMacDinh: Boolean(formDiaChi.value.laMacDinh)
+  };
+}
+
+async function luuDiaChi() {
+  if (!khachHangId || !validateDiaChi()) return;
+  dangLuuDiaChi.value = true;
+  try {
+    if (diaChiDangSua.value) {
+      await capNhatDiaChiProfile(khachHangId, diaChiDangSua.value.id, taoPayloadDiaChi());
+      showSuccess("Cập nhật địa chỉ thành công.", "Thành công");
+    } else {
+      await themDiaChiProfile(khachHangId, taoPayloadDiaChi());
+      showSuccess("Thêm địa chỉ thành công.", "Thành công");
+    }
+    await taiDanhSachDiaChi();
+    huyFormDiaChi();
+  } catch (error) {
+    Object.assign(loiDiaChi.value, getFieldErrors(error));
+    showError(getDisplayErrorMessage(error, "Không thể lưu địa chỉ"));
+  } finally {
+    dangLuuDiaChi.value = false;
+  }
+}
+
+async function xoaDiaChi(diaChiId: number) {
+  if (!khachHangId) return;
+  const confirmed = await showConfirm(
+    "Bạn có chắc chắn muốn xóa địa chỉ này?",
+    "Xóa địa chỉ",
+    "Xóa"
+  );
+  if (!confirmed) return;
+
+  try {
+    await xoaDiaChiProfile(khachHangId, diaChiId);
+    await taiDanhSachDiaChi();
+    showSuccess("Xóa địa chỉ thành công.", "Thành công");
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Không thể xóa địa chỉ"));
+  }
+}
+
+async function datDiaChiMacDinh(diaChiId: number) {
+  if (!khachHangId) return;
+  try {
+    await datMacDinhDiaChiProfile(khachHangId, diaChiId);
+    await taiDanhSachDiaChi();
+    showSuccess("Đã đặt làm địa chỉ mặc định.", "Thành công");
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Không thể đặt địa chỉ mặc định"));
   }
 }
 
@@ -330,6 +595,7 @@ function layLogoNganHang(tenNganHang: string) {
 
 onMounted(() => {
   taiProfile();
+  taiDanhSachDiaChi();
   taiDanhSachNganHang();
   taiVietQrBanks();
 });
@@ -530,6 +796,218 @@ onMounted(() => {
                   Khác
                 </label>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="tabHienTai === 'thongTin'" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3">
+              <div class="flex size-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-500">
+                <MapPin class="size-5" />
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-slate-800 text-balance">Sổ địa chỉ</h3>
+                <p class="mt-0.5 text-xs text-slate-400 text-pretty">Quản lý địa chỉ nhận hàng dùng khi đặt mua sản phẩm.</p>
+              </div>
+            </div>
+            <button
+              v-if="!hienFormDiaChi"
+              type="button"
+              @click="moThemDiaChi"
+              class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#B82220] px-4 text-xs font-bold text-white transition hover:bg-[#a11a19]"
+            >
+              <Plus class="size-4" />
+              Thêm địa chỉ
+            </button>
+          </div>
+
+          <div v-if="hienFormDiaChi" class="space-y-5 border-t border-slate-100 pt-5">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-slate-700">
+                {{ diaChiDangSua ? "Cập nhật địa chỉ" : "Thêm địa chỉ mới" }}
+              </h4>
+              <button
+                type="button"
+                aria-label="Đóng form địa chỉ"
+                @click="huyFormDiaChi"
+                class="inline-flex size-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
+              >
+                <X class="size-4" />
+              </button>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="space-y-1.5">
+                <span class="text-[13px] font-bold text-slate-600">Họ tên người nhận <span class="text-rose-500">*</span></span>
+                <input
+                  v-model="formDiaChi.hoTen"
+                  type="text"
+                  placeholder="Nhập họ tên người nhận"
+                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.hoTen ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                />
+                <p v-if="loiDiaChi.hoTen" class="text-xs text-rose-500">{{ loiDiaChi.hoTen }}</p>
+              </label>
+
+              <label class="space-y-1.5">
+                <span class="text-[13px] font-bold text-slate-600">Số điện thoại <span class="text-rose-500">*</span></span>
+                <input
+                  v-model="formDiaChi.sdt"
+                  type="tel"
+                  placeholder="VD: 0901234567"
+                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.sdt ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                />
+                <p v-if="loiDiaChi.sdt" class="text-xs text-rose-500">{{ loiDiaChi.sdt }}</p>
+              </label>
+
+              <label class="space-y-1.5">
+                <span class="text-[13px] font-bold text-slate-600">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
+                <select
+                  :value="maTinhChon ?? ''"
+                  @change="chonTinh(Number(($event.target as HTMLSelectElement).value) || null)"
+                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.tinhThanh ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                >
+                  <option value="">-- Chọn tỉnh/thành --</option>
+                  <option v-for="tinh in dsTinh" :key="tinh.code" :value="tinh.code">{{ tinh.name }}</option>
+                </select>
+                <p v-if="loiDiaChi.tinhThanh" class="text-xs text-rose-500">{{ loiDiaChi.tinhThanh }}</p>
+              </label>
+
+              <label class="space-y-1.5">
+                <span class="text-[13px] font-bold text-slate-600">Quận/Huyện <span class="text-rose-500">*</span></span>
+                <select
+                  :value="maHuyenChon ?? ''"
+                  :disabled="!maTinhChon"
+                  @change="chonHuyen(Number(($event.target as HTMLSelectElement).value) || null)"
+                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50', loiDiaChi.quanHuyen ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                >
+                  <option value="">-- Chọn quận/huyện --</option>
+                  <option v-for="huyen in dsHuyen" :key="huyen.code" :value="huyen.code">{{ huyen.name }}</option>
+                </select>
+                <p v-if="loiDiaChi.quanHuyen" class="text-xs text-rose-500">{{ loiDiaChi.quanHuyen }}</p>
+              </label>
+
+              <label class="space-y-1.5">
+                <span class="text-[13px] font-bold text-slate-600">Phường/Xã <span class="text-rose-500">*</span></span>
+                <select
+                  v-model="formDiaChi.phuongXa"
+                  :disabled="!maHuyenChon"
+                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50', loiDiaChi.phuongXa ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                >
+                  <option value="">-- Chọn phường/xã --</option>
+                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">{{ xa.name }}</option>
+                </select>
+                <p v-if="loiDiaChi.phuongXa" class="text-xs text-rose-500">{{ loiDiaChi.phuongXa }}</p>
+              </label>
+
+              <label class="space-y-1.5 md:col-span-2">
+                <span class="text-[13px] font-bold text-slate-600">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
+                <input
+                  v-model="formDiaChi.diaChiCuThe"
+                  type="text"
+                  placeholder="Số nhà, tên đường..."
+                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.diaChiCuThe ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                />
+                <p v-if="loiDiaChi.diaChiCuThe" class="text-xs text-rose-500">{{ loiDiaChi.diaChiCuThe }}</p>
+              </label>
+
+              <label class="flex cursor-pointer items-center gap-2 md:col-span-2">
+                <input v-model="formDiaChi.laMacDinh" type="checkbox" class="size-4 rounded border-slate-300 text-[#B82220] focus:ring-[#B82220]" />
+                <span class="text-sm font-semibold text-slate-600">Đặt làm địa chỉ mặc định</span>
+              </label>
+            </div>
+
+            <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                :disabled="dangLuuDiaChi"
+                @click="luuDiaChi"
+                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#B82220] px-5 text-sm font-bold text-white transition hover:bg-[#a11a19] disabled:opacity-50"
+              >
+                <Save class="size-4" />
+                {{ dangLuuDiaChi ? "Đang lưu..." : "Lưu địa chỉ" }}
+              </button>
+              <button
+                type="button"
+                @click="huyFormDiaChi"
+                class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="border-t border-slate-100 pt-5">
+            <div v-if="dangTaiDiaChi" class="py-8 text-center text-sm text-slate-400">Đang tải địa chỉ...</div>
+            <div v-else-if="!dsDiaChi.length" class="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <div class="flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <MapPin class="size-5" />
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-700">Bạn chưa có địa chỉ nhận hàng</p>
+                <p class="mt-1 text-xs text-slate-400">Thêm địa chỉ để đặt hàng nhanh hơn.</p>
+              </div>
+              <button type="button" @click="moThemDiaChi" class="text-sm font-bold text-[#B82220] hover:underline">
+                Thêm địa chỉ đầu tiên
+              </button>
+            </div>
+
+            <div v-else class="grid gap-4 md:grid-cols-2">
+              <article
+                v-for="diaChi in dsDiaChi"
+                :key="diaChi.id"
+                class="flex min-h-48 flex-col justify-between rounded-2xl border border-slate-200 p-5"
+              >
+                <div>
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="font-bold text-slate-800">{{ diaChi.hoTen }}</p>
+                      <p class="mt-1 text-sm tabular-nums text-slate-500">{{ diaChi.sdt }}</p>
+                    </div>
+                    <span
+                      v-if="diaChi.laMacDinh"
+                      class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-600"
+                    >
+                      <CheckCircle2 class="size-3" />
+                      Mặc định
+                    </span>
+                  </div>
+                  <p class="mt-4 text-sm leading-6 text-slate-600">
+                    {{ diaChi.diaChiCuThe }}, {{ diaChi.phuongXa }}, {{ diaChi.quanHuyen }}, {{ diaChi.tinhThanh }}
+                  </p>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                  <button
+                    v-if="!diaChi.laMacDinh"
+                    type="button"
+                    @click="datDiaChiMacDinh(diaChi.id)"
+                    class="text-xs font-bold text-slate-500 transition hover:text-emerald-600"
+                  >
+                    Đặt làm mặc định
+                  </button>
+                  <span v-else class="text-xs font-semibold text-emerald-600">Địa chỉ đang sử dụng</span>
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Sửa địa chỉ"
+                      @click="moSuaDiaChi(diaChi)"
+                      class="inline-flex size-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-[#B82220]"
+                    >
+                      <Pencil class="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Xóa địa chỉ"
+                      @click="xoaDiaChi(diaChi.id)"
+                      class="inline-flex size-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Trash2 class="size-4" />
+                    </button>
+                  </div>
+                </div>
+              </article>
             </div>
           </div>
         </div>
