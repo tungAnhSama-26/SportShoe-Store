@@ -676,11 +676,11 @@ function useBanHangTaiQuay() {
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span>Phí giao hàng:</span>
-            <span>${phiGiaoHang.value.toLocaleString('vi-VN')} đ</span>
+            <span>${deliveryFee.value.toLocaleString('vi-VN')} đ</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span>Giảm giá:</span>
-            <span>-${tienGiamGia.value.toLocaleString('vi-VN')} đ</span>
+            <span>-${tienGiam.value.toLocaleString('vi-VN')} đ</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 16px; font-weight: bold;">
             <span>Khách cần trả:</span>
