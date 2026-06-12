@@ -11,11 +11,14 @@ import com.example.server.entity.Giay;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.api.PageResponse;
+import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.GiayRepository;
 import com.example.server.repository.HinhAnhGiayRepository;
+import com.example.server.repository.HoaDonChiTietRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,17 +44,23 @@ public class ClientSanPhamController {
     private final GiayChiTietRepository giayChiTietRepository;
     private final GiayRepository giayRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
+    private final DanhGiaRepository danhGiaRepository;
+    private final HoaDonChiTietRepository hoaDonChiTietRepository;
 
     public ClientSanPhamController(
             QuanLySanPhamService service,
             GiayChiTietRepository giayChiTietRepository,
             GiayRepository giayRepository,
-            HinhAnhGiayRepository hinhAnhGiayRepository
+            HinhAnhGiayRepository hinhAnhGiayRepository,
+            DanhGiaRepository danhGiaRepository,
+            HoaDonChiTietRepository hoaDonChiTietRepository
     ) {
         this.service = service;
         this.giayChiTietRepository = giayChiTietRepository;
         this.giayRepository = giayRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
+        this.danhGiaRepository = danhGiaRepository;
+        this.hoaDonChiTietRepository = hoaDonChiTietRepository;
     }
 
     /** Tất cả sản phẩm đang bán cho trang danh sách sản phẩm (public), kèm màu sắc & kích cỡ để lọc. */
@@ -62,6 +71,14 @@ public class ClientSanPhamController {
             @RequestParam(required = false) Integer loaiGiayId,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice
+    ) {
+        List<ClientSanPhamResponse> data = taoDanhSach(keyword, thuongHieuId, loaiGiayId, minPrice, maxPrice);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách sản phẩm thành công", data));
+    }
+
+    /** Dựng danh sách sản phẩm đầy đủ (giá sau giảm, ảnh biến thể rẻ nhất, sao TB, lượt bán). */
+    private List<ClientSanPhamResponse> taoDanhSach(
+            String keyword, Integer thuongHieuId, Integer loaiGiayId, BigDecimal minPrice, BigDecimal maxPrice
     ) {
         var pageable = PageRequest.of(0, 1000,
                 Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
@@ -115,16 +132,32 @@ public class ClientSanPhamController {
             anhMap.put(e.getKey(), anh != null ? anh : anhGocMap.get(e.getKey()));
         }
 
-        List<ClientSanPhamResponse> data = items.stream()
+        // Sao trung bình + số lượt đánh giá và tổng đã bán theo từng sản phẩm.
+        Map<Integer, Double> saoMap = new HashMap<>();
+        Map<Integer, Long> soDanhGiaMap = new HashMap<>();
+        Map<Integer, Long> daBanMap = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (Object[] row : danhGiaRepository.thongKeSaoTheoGiay(ids)) {
+                saoMap.put((Integer) row[0], row[1] == null ? 0d : ((Number) row[1]).doubleValue());
+                soDanhGiaMap.put((Integer) row[0], ((Number) row[2]).longValue());
+            }
+            for (Object[] row : hoaDonChiTietRepository.tongDaBanTheoGiay(ids)) {
+                daBanMap.put((Integer) row[0], row[1] == null ? 0L : ((Number) row[1]).longValue());
+            }
+        }
+
+        return items.stream()
                 .map(it -> new ClientSanPhamResponse(
                         it,
                         anhMap.get(it.id()),
                         giaHienThiMinMap.get(it.id()),
                         coGiamMap.getOrDefault(it.id(), false),
                         mauMap.getOrDefault(it.id(), List.of()),
-                        sizeMap.getOrDefault(it.id(), List.of())))
+                        sizeMap.getOrDefault(it.id(), List.of()),
+                        saoMap.getOrDefault(it.id(), 0d),
+                        soDanhGiaMap.getOrDefault(it.id(), 0L),
+                        daBanMap.getOrDefault(it.id(), 0L)))
                 .toList();
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách sản phẩm thành công", data));
     }
 
     /** Gom các dòng (giayId, giá trị) thành map giayId -> danh sách giá trị. */
@@ -176,6 +209,12 @@ public class ClientSanPhamController {
                 })
                 .toList();
 
+        // Tổng số lượng đã bán của sản phẩm (mọi biến thể, bỏ giỏ và đơn hủy).
+        long daBan = hoaDonChiTietRepository.tongDaBanTheoGiay(List.of(id)).stream()
+                .findFirst()
+                .map(row -> row[1] == null ? 0L : ((Number) row[1]).longValue())
+                .orElse(0L);
+
         ThuocTinhResponse tt = detail.thuocTinh();
         ClientChiTietSanPhamResponse data = new ClientChiTietSanPhamResponse(
                 detail.id(), detail.ten(), detail.moTa(),
@@ -184,20 +223,43 @@ public class ClientSanPhamController {
                 tt != null ? tt.coGiay() : null,
                 tt != null ? tt.congNgheDem() : null,
                 tt != null ? tt.trongLuong() : null,
-                detail.gioiTinh(), hinhAnhSanPham, items);
+                detail.gioiTinh(), hinhAnhSanPham, daBan, items);
         return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết sản phẩm thành công", data));
     }
 
-    /** Sản phẩm nổi bật cho trang chủ: chỉ lấy sản phẩm đang bán, mới nhất trước. */
+    /**
+     * Sản phẩm nổi bật cho trang chủ: cùng dữ liệu với trang danh sách nhưng xếp theo
+     * mức độ nổi bật - bán chạy nhất trước, rồi giảm giá sâu hơn, rồi đánh giá cao & nhiều hơn.
+     */
     @GetMapping("/noi-bat")
-    public ResponseEntity<ApiResponse<List<GiayListItemResponse>>> sanPhamNoiBat(
+    public ResponseEntity<ApiResponse<List<ClientSanPhamResponse>>> sanPhamNoiBat(
             @RequestParam(defaultValue = "8") int limit
     ) {
         int size = Math.max(1, Math.min(limit, 50));
-        var pageable = PageRequest.of(0, size,
-                Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
-        PageResponse<GiayListItemResponse> page =
-                service.danhSachGiay(null, null, null, 1, null, null, pageable);
-        return ResponseEntity.ok(ApiResponse.success("Lấy sản phẩm nổi bật thành công", page.items()));
+        List<ClientSanPhamResponse> data = taoDanhSach(null, null, null, null, null).stream()
+                .sorted(Comparator
+                        .comparingLong((ClientSanPhamResponse sp) -> sp.daBan() == null ? 0L : sp.daBan()).reversed()
+                        .thenComparing(Comparator.comparingInt(ClientSanPhamController::phanTramGiam).reversed())
+                        .thenComparing(Comparator.comparingDouble(
+                                (ClientSanPhamResponse sp) -> sp.soSaoTrungBinh() == null ? 0d : sp.soSaoTrungBinh()).reversed())
+                        .thenComparing(Comparator.comparingLong(
+                                (ClientSanPhamResponse sp) -> sp.soDanhGia() == null ? 0L : sp.soDanhGia()).reversed()))
+                .limit(size)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success("Lấy sản phẩm nổi bật thành công", data));
+    }
+
+    /** % giảm giá của sản phẩm = (niêm yết thấp nhất - giá hiển thị thấp nhất) / niêm yết. */
+    private static int phanTramGiam(ClientSanPhamResponse sp) {
+        BigDecimal niemYet = sp.thongTin() != null ? sp.thongTin().giaMin() : null;
+        BigDecimal hienThi = sp.giaHienThiMin();
+        if (!sp.coGiam() || niemYet == null || hienThi == null || niemYet.signum() <= 0
+                || hienThi.compareTo(niemYet) >= 0) {
+            return 0;
+        }
+        return niemYet.subtract(hienThi)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(niemYet, 0, java.math.RoundingMode.HALF_UP)
+                .intValue();
     }
 }
