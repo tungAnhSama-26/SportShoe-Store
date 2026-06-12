@@ -561,7 +561,7 @@ export function useChiTietNhanVien() {
       vaiTro: form.value.vaiTro,
     };
     if (!laMoi) {
-      payload.tenDangNhap = form.value.email.trim();
+      payload.tenDangNhap = form.value.tenDangNhap.trim();
     }
 
     try {

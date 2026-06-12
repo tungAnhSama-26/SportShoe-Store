@@ -50,4 +50,14 @@ public class ClientXemDonHangController {
         service.xacNhanDaNhanHang(khachHangId, id);
         return ResponseEntity.ok(ApiResponse.success("Đã xác nhận nhận hàng", null));
     }
+
+    /** Khách gửi yêu cầu hủy khi đơn chưa chuyển sang bước giao hàng. */
+    @PostMapping("/{id}/yeu-cau-huy")
+    public ResponseEntity<ApiResponse<Void>> yeuCauHuy(
+            @PathVariable Integer id,
+            @RequestParam UUID khachHangId
+    ) {
+        service.yeuCauHuy(khachHangId, id);
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi yêu cầu hủy đơn hàng", null));
+    }
 }
