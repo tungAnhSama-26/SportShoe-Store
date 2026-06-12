@@ -4,7 +4,8 @@ import {
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
   thanhToanTaiQuay,
-  taoHoaDonCho
+  taoHoaDonCho,
+  capNhatHoaDonCho
 } from "../../services/ban-hang-tai-quay";
 import {
   GUEST_LABEL,
