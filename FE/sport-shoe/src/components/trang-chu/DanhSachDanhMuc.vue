@@ -29,10 +29,12 @@ function xuLyAnhLoi(event) {
       </p>
 
       <div v-else class="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <article
+        <!-- Bấm vào hãng -> sang trang sản phẩm và tự tích bộ lọc hãng đó. -->
+        <router-link
           v-for="(muc, index) in danhMuc"
           :key="muc.id ?? muc.ten"
-          class="group overflow-hidden rounded-2xl border border-primary/20 bg-white transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
+          :to="{ path: '/san-pham', query: { hang: muc.ten } }"
+          class="group block overflow-hidden rounded-2xl border border-primary/20 bg-white transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
         >
           <div class="relative h-72 overflow-hidden">
             <img
@@ -48,7 +50,7 @@ function xuLyAnhLoi(event) {
               <p v-if="muc.moTa" class="mt-2 text-sm text-white/85">{{ muc.moTa }}</p>
             </div>
           </div>
-        </article>
+        </router-link>
       </div>
     </div>
   </section>

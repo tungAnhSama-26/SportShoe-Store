@@ -14,5 +14,8 @@ public record ClientSanPhamResponse(
         BigDecimal giaHienThiMin,
         boolean coGiam,
         List<String> mauSac,
-        List<String> kichCo
+        List<String> kichCo,
+        Double soSaoTrungBinh,
+        Long soDanhGia,
+        Long daBan
 ) {}
