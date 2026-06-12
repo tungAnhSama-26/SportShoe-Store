@@ -36,6 +36,15 @@ const dangUpload = ref(false);
 const loiTrang = ref("");
 const loiForm = ref({ tenDangNhap: "", hoTen: "", email: "", sdt: "", ngaySinh: "", matKhau: "" });
 
+// Giới hạn ô chọn ngày sinh: khách phải đủ 18 tuổi và tối đa 100 tuổi.
+function ngayCachDayNam(nam: number): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - nam);
+  return d.toISOString().slice(0, 10);
+}
+const ngaySinhMax = ngayCachDayNam(18);
+const ngaySinhMin = ngayCachDayNam(100);
+
 function taoMatKhauNgauNhien(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!';
   let result = '';
@@ -622,7 +631,7 @@ onMounted(taiChiTiet);
 
               <label class="space-y-2 sm:col-span-2">
                 <span class="text-[13px] font-semibold text-slate-500">Ngày sinh</span>
-                <input v-model="form.ngaySinh" type="date" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.ngaySinh ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
+                <input v-model="form.ngaySinh" type="date" :min="ngaySinhMin" :max="ngaySinhMax" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.ngaySinh ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
                 <p v-if="loiForm.ngaySinh" class="text-xs text-rose-500">{{ loiForm.ngaySinh }}</p>
               </label>
             </div>

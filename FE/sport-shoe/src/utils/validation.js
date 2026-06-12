@@ -16,7 +16,7 @@ export function isValidEmail(value) {
 }
 
 /**
- * Kiểm tra ngày sinh hợp lệ.
+ * Kiểm tra ngày sinh hợp lệ: không ở tương lai và tuổi phải từ 18 đến 100.
  * @returns {string} chuỗi lỗi (rỗng nếu hợp lệ).
  */
 export function validateNgaySinh(value) {
@@ -29,9 +29,19 @@ export function validateNgaySinh(value) {
   homNay.setHours(0, 0, 0, 0);
   if (ngay.getTime() > homNay.getTime()) return "Ngày sinh không được ở tương lai.";
 
-  const gioiHanTuoi = new Date();
-  gioiHanTuoi.setFullYear(gioiHanTuoi.getFullYear() - 120);
-  if (ngay.getTime() < gioiHanTuoi.getTime()) return "Ngày sinh không hợp lệ.";
+  const tuoi = tinhTuoi(ngay, homNay);
+  if (tuoi < 18) return "Khách hàng phải đủ 18 tuổi.";
+  if (tuoi > 100) return "Tuổi không hợp lệ (tối đa 100 tuổi).";
 
   return "";
+}
+
+/** Tuổi tròn tính đến hôm nay (trừ 1 nếu chưa tới sinh nhật năm nay). */
+function tinhTuoi(ngaySinh, homNay) {
+  let tuoi = homNay.getFullYear() - ngaySinh.getFullYear();
+  const chuaToiSinhNhat =
+    homNay.getMonth() < ngaySinh.getMonth() ||
+    (homNay.getMonth() === ngaySinh.getMonth() && homNay.getDate() < ngaySinh.getDate());
+  if (chuaToiSinhNhat) tuoi -= 1;
+  return tuoi;
 }
