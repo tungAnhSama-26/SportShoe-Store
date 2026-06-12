@@ -31,6 +31,15 @@ export async function xacNhanDaNhanHang(donId) {
   });
 }
 
+export async function yeuCauHuyDonHang(donId) {
+  const id = layKhachId();
+  return apiRequest(`/client/don-hang/${donId}/yeu-cau-huy?khachHangId=${id}`, {
+    method: "POST",
+    authenticated: false,
+    fallbackMessage: "Không thể gửi yêu cầu hủy đơn hàng",
+  });
+}
+
 // Gửi đánh giá cho một sản phẩm trong đơn (theo dòng hóa đơn chi tiết).
 export async function guiDanhGiaSanPham(hoaDonChiTietId, soSao, noiDung) {
   const id = layKhachId();

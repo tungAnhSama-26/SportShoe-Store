@@ -5,8 +5,8 @@ SET NOCOUNT ON;
 GO
 
 -- ============================================================
--- SPORTSHOE STORE - FULL SAMPLE DATA
--- Run after: 01_schema_tables_rules.sql
+-- SPORTSHOE STORE - CONSOLIDATED SAMPLE DATA
+-- Run after: 01_schema.sql
 --
 -- This script resets demo data and inserts 10 rows for every table.
 -- Default login samples:
@@ -15,9 +15,13 @@ GO
 --   Customer: khach1 / 123456
 -- ============================================================
 
+DELETE FROM hinh_anh_tra_hang;
+DELETE FROM lich_su_phieu_tra_hang;
+DELETE FROM danh_gia;
+UPDATE thanh_toan SET giao_dich_goc_id = NULL WHERE giao_dich_goc_id IS NOT NULL;
+DELETE FROM thanh_toan;
 DELETE FROM phieu_tra_hang_chi_tiet;
 DELETE FROM phieu_tra_hang;
-DELETE FROM thanh_toan;
 DELETE FROM van_chuyen;
 DELETE FROM hoa_don_chi_tiet;
 DELETE FROM lich_su_hoa_don;
@@ -40,14 +44,18 @@ DELETE FROM thuong_hieu;
 DELETE FROM mau_sac;
 DELETE FROM kich_co;
 DELETE FROM dia_chi_khach_hang;
+DELETE FROM tai_khoan_ngan_hang;
 DELETE FROM khach_hang;
 DELETE FROM lich_lam_viec;
 DELETE FROM nhan_vien;
 GO
 
+DBCC CHECKIDENT ('hinh_anh_tra_hang', RESEED, 0);
+DBCC CHECKIDENT ('lich_su_phieu_tra_hang', RESEED, 0);
+DBCC CHECKIDENT ('danh_gia', RESEED, 0);
+DBCC CHECKIDENT ('thanh_toan', RESEED, 0);
 DBCC CHECKIDENT ('phieu_tra_hang_chi_tiet', RESEED, 0);
 DBCC CHECKIDENT ('phieu_tra_hang', RESEED, 0);
-DBCC CHECKIDENT ('thanh_toan', RESEED, 0);
 DBCC CHECKIDENT ('van_chuyen', RESEED, 0);
 DBCC CHECKIDENT ('hoa_don_chi_tiet', RESEED, 0);
 DBCC CHECKIDENT ('lich_su_hoa_don', RESEED, 0);
@@ -70,6 +78,7 @@ DBCC CHECKIDENT ('thuong_hieu', RESEED, 0);
 DBCC CHECKIDENT ('mau_sac', RESEED, 0);
 DBCC CHECKIDENT ('kich_co', RESEED, 0);
 DBCC CHECKIDENT ('dia_chi_khach_hang', RESEED, 0);
+DBCC CHECKIDENT ('tai_khoan_ngan_hang', RESEED, 0);
 GO
 
 INSERT INTO nhan_vien
@@ -100,6 +109,21 @@ VALUES
 ('khach8', N'Bùi Anh Tuấn', 'tuan.bui@gmail.com', '0966666666', '1994-06-03', 1, N'/assets/avatar/kh008.png', '123456', 1),
 ('khach9', N'Đỗ Khánh Vy', 'vy.do@gmail.com', '0922223333', '2002-02-14', 0, N'/assets/avatar/kh009.png', '123456', 1),
 ('khach10', N'Ngô Gia Bảo', 'bao.ngo@gmail.com', '0955555555', '1993-10-10', 1, N'/assets/avatar/kh010.png', '123456', 1);
+GO
+
+INSERT INTO tai_khoan_ngan_hang
+(khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh)
+VALUES
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach1'), N'MB Bank', '0867524519', N'NGUYỄN THỊ LAN', N'Hà Nội', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach2'), N'Vietcombank', '0011002002', N'TRẦN VĂN HẢI', N'TP. Hồ Chí Minh', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach3'), N'Techcombank', '1903003003', N'LÊ THỊ MAI', N'Đà Nẵng', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach4'), N'BIDV', '2151004004', N'PHẠM MINH QUÂN', N'Hà Nội', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach5'), N'ACB', '1305005005', N'HOÀNG THỊ NGỌC', N'TP. Hồ Chí Minh', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach6'), N'VietinBank', '1026006006', N'VŨ VĂN LONG', N'Cần Thơ', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach7'), N'Agribank', '1507007007', N'ĐẶNG THỊ HẠNH', N'Hà Nội', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach8'), N'Sacombank', '0408008008', N'BÙI ANH TUẤN', N'Hải Phòng', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach9'), N'VPBank', '0919009009', N'ĐỖ KHÁNH VY', N'Khánh Hòa', 1),
+((SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach10'), N'TPBank', '0001010010', N'NGÔ GIA BẢO', N'Huế', 1);
 GO
 
 INSERT INTO dia_chi_khach_hang
@@ -393,6 +417,21 @@ VALUES
 ((SELECT id FROM hoa_don WHERE ma = N'HD010'), (SELECT id FROM giay_chi_tiet WHERE ma_bien_the = N'GCT010'), 2, 890000, 1780000, 1);
 GO
 
+INSERT INTO danh_gia
+(giay_id, khach_hang_id, hoa_don_chi_tiet_id, so_sao, noi_dung, trang_thai, ngay_tao)
+VALUES
+((SELECT id FROM giay WHERE ma = N'G001'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach1'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD001')), 5, N'Giày đẹp, đúng kích cỡ.', 1, '2026-05-06T09:00:00'),
+((SELECT id FROM giay WHERE ma = N'G002'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach2'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD002')), 4, N'Chất lượng tốt, đóng gói chắc chắn.', 1, '2026-05-07T10:00:00'),
+((SELECT id FROM giay WHERE ma = N'G003'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach3'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD003')), 4, N'Mang êm chân.', 1, '2026-05-08T11:00:00'),
+((SELECT id FROM giay WHERE ma = N'G004'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach4'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD004')), 3, N'Sản phẩm ổn nhưng giao hơi chậm.', 1, '2026-05-09T12:00:00'),
+((SELECT id FROM giay WHERE ma = N'G005'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach5'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD005')), 5, N'Màu sắc giống hình.', 1, '2026-05-10T13:00:00'),
+((SELECT id FROM giay WHERE ma = N'G006'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach6'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD006')), 2, N'Đơn đã hủy, dữ liệu phục vụ kiểm thử.', 0, '2026-05-11T14:00:00'),
+((SELECT id FROM giay WHERE ma = N'G007'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach7'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD007')), 4, N'Thiết kế đẹp.', 1, '2026-05-12T15:00:00'),
+((SELECT id FROM giay WHERE ma = N'G008'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach8'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD008')), 2, N'Sản phẩm có lỗi keo.', 1, '2026-05-13T16:00:00'),
+((SELECT id FROM giay WHERE ma = N'G009'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach9'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD009')), 3, N'Đã được hỗ trợ hoàn tiền.', 1, '2026-05-14T17:00:00'),
+((SELECT id FROM giay WHERE ma = N'G010'), (SELECT id FROM khach_hang WHERE ten_dang_nhap = 'khach10'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD010')), 5, N'Sẽ tiếp tục mua hàng.', 1, '2026-05-15T18:00:00');
+GO
+
 INSERT INTO lich_su_hoa_don
 (hoa_don_id, nhan_vien_id, trang_thai, ghi_chu, ngay_tao)
 VALUES
@@ -468,9 +507,110 @@ VALUES
 ((SELECT id FROM phieu_tra_hang WHERE ma = N'TH010'), (SELECT id FROM hoa_don_chi_tiet WHERE hoa_don_id = (SELECT id FROM hoa_don WHERE ma = N'HD010')), (SELECT id FROM giay_chi_tiet WHERE ma_bien_the = N'GCT010'), 1, 890000, 890000, 1, N'Đổi size.');
 GO
 
--- Quick count check: every table below should return 10.
+UPDATE phieu_tra_hang
+SET
+    loai_yeu_cau = CASE WHEN ma IN (N'TH001', N'TH006', N'TH007') THEN 2 ELSE 1 END,
+    ly_do_ma = CASE
+        WHEN ma IN (N'TH004', N'TH010') THEN N'WRONG_SIZE'
+        WHEN ma = N'TH008' THEN N'PRODUCT_DEFECT'
+        WHEN ma IN (N'TH001', N'TH006', N'TH007') THEN N'CANCEL_ORDER'
+        ELSE N'CHANGE_MIND'
+    END,
+    mo_ta = ly_do,
+    tong_tien_du_kien = tong_tien_hoan,
+    tong_tien_thuc_te = CASE WHEN ma IN (N'TH005', N'TH009') THEN tong_tien_hoan ELSE 0 END,
+    trang_thai = CASE
+        WHEN ma = N'TH001' THEN 1
+        WHEN ma = N'TH002' THEN 2
+        WHEN ma = N'TH003' THEN 3
+        WHEN ma = N'TH004' THEN 4
+        WHEN ma = N'TH005' THEN 10
+        WHEN ma = N'TH006' THEN 7
+        WHEN ma = N'TH007' THEN 1
+        WHEN ma = N'TH008' THEN 6
+        WHEN ma = N'TH009' THEN 8
+        ELSE 2
+    END,
+    ngay_duyet = CASE WHEN ma IN (N'TH002', N'TH003', N'TH004', N'TH005', N'TH006', N'TH008', N'TH009', N'TH010') THEN DATEADD(MINUTE, 30, ngay_tao) END,
+    ngay_hoan_tat = CASE WHEN ma IN (N'TH005', N'TH009') THEN ngay_cap_nhat END;
+GO
+
+UPDATE phieu_tra_hang_chi_tiet
+SET
+    so_luong_nhan = CASE WHEN phieu_tra_hang_id IN (
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (5, 6, 7, 8, 9, 10)
+    ) THEN so_luong_tra ELSE 0 END,
+    so_luong_chap_nhan = CASE WHEN phieu_tra_hang_id IN (
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7, 8, 9)
+    ) THEN so_luong_tra ELSE 0 END,
+    so_luong_tu_choi = CASE WHEN phieu_tra_hang_id IN (
+        SELECT id FROM phieu_tra_hang WHERE trang_thai = 10
+    ) THEN so_luong_tra ELSE 0 END,
+    tinh_trang_san_pham = N'Dữ liệu kiểm thử quy trình trả hàng',
+    so_tien_hoan = CASE WHEN phieu_tra_hang_id IN (
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (7, 8, 9)
+    ) THEN thanh_tien ELSE 0 END,
+    nhap_lai_ton_kho = CASE WHEN phieu_tra_hang_id IN (
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (7, 8, 9)
+    ) THEN 1 ELSE 0 END,
+    da_cap_nhat_ton = CASE WHEN phieu_tra_hang_id IN (
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (8, 9)
+    ) THEN 1 ELSE 0 END;
+GO
+
+INSERT INTO lich_su_phieu_tra_hang
+(phieu_tra_hang_id, nhan_vien_id, trang_thai_cu, trang_thai_moi, hanh_dong, ghi_chu, ngay_tao)
+SELECT p.id, p.nhan_vien_id, NULL, p.trang_thai,
+       N'Khởi tạo dữ liệu kiểm thử', p.ly_do, p.ngay_tao
+FROM phieu_tra_hang p;
+GO
+
+INSERT INTO hinh_anh_tra_hang
+(phieu_tra_hang_id, phieu_tra_hang_chi_tiet_id, url, loai_anh, ghi_chu, ngay_tao)
+SELECT
+    p.id,
+    ct.id,
+    COALESCE(
+        (SELECT TOP 1 ha.url
+         FROM hinh_anh_giay ha
+         WHERE ha.giay_chi_tiet_id = ct.giay_chi_tiet_id
+         ORDER BY ha.la_hinh_chinh DESC, ha.id),
+        N'/assets/images/placeholder-shoe.png'
+    ),
+    1,
+    N'Ảnh bằng chứng mẫu',
+    p.ngay_tao
+FROM phieu_tra_hang p
+JOIN phieu_tra_hang_chi_tiet ct ON ct.phieu_tra_hang_id = p.id;
+GO
+
+INSERT INTO thanh_toan
+(hoa_don_id, nhan_vien_id, phieu_tra_hang_id, giao_dich_goc_id, ma_giao_dich, hinh_thuc, loai_giao_dich, so_tien, ngay_thanh_toan, trang_thai, ghi_chu)
+SELECT
+    p.hoa_don_id,
+    p.nhan_vien_id,
+    p.id,
+    (
+        SELECT TOP 1 tt.id
+        FROM thanh_toan tt
+        WHERE tt.hoa_don_id = p.hoa_don_id AND tt.loai_giao_dich = 1
+        ORDER BY tt.id
+    ),
+    CONCAT(N'HT-', p.ma),
+    p.hinh_thuc_hoan,
+    2,
+    p.tong_tien_thuc_te,
+    p.ngay_hoan_tat,
+    1,
+    N'Hoàn tiền theo phiếu trả hàng'
+FROM phieu_tra_hang p
+WHERE p.trang_thai IN (8, 9) AND p.tong_tien_thuc_te > 0;
+GO
+
+-- Quick count check for all consolidated tables.
 SELECT N'nhan_vien' AS bang, COUNT(*) AS so_ban_ghi FROM nhan_vien UNION ALL
 SELECT N'khach_hang', COUNT(*) FROM khach_hang UNION ALL
+SELECT N'tai_khoan_ngan_hang', COUNT(*) FROM tai_khoan_ngan_hang UNION ALL
 SELECT N'dia_chi_khach_hang', COUNT(*) FROM dia_chi_khach_hang UNION ALL
 SELECT N'kich_co', COUNT(*) FROM kich_co UNION ALL
 SELECT N'mau_sac', COUNT(*) FROM mau_sac UNION ALL
@@ -492,11 +632,13 @@ SELECT N'phieu_giam_gia_khach_hang', COUNT(*) FROM phieu_giam_gia_khach_hang UNI
 SELECT N'hoa_don', COUNT(*) FROM hoa_don UNION ALL
 SELECT N'lich_su_hoa_don', COUNT(*) FROM lich_su_hoa_don UNION ALL
 SELECT N'hoa_don_chi_tiet', COUNT(*) FROM hoa_don_chi_tiet UNION ALL
+SELECT N'danh_gia', COUNT(*) FROM danh_gia UNION ALL
 SELECT N'van_chuyen', COUNT(*) FROM van_chuyen UNION ALL
 SELECT N'thanh_toan', COUNT(*) FROM thanh_toan UNION ALL
 SELECT N'phieu_tra_hang', COUNT(*) FROM phieu_tra_hang UNION ALL
 SELECT N'phieu_tra_hang_chi_tiet', COUNT(*) FROM phieu_tra_hang_chi_tiet UNION ALL
-SELECT N'lich_lam_viec', COUNT(*) FROM lich_lam_viec;
+SELECT N'lich_su_phieu_tra_hang', COUNT(*) FROM lich_su_phieu_tra_hang UNION ALL
+SELECT N'hinh_anh_tra_hang', COUNT(*) FROM hinh_anh_tra_hang;
 GO
 
 -- ============================================================
@@ -525,5 +667,8 @@ VALUES
 ((SELECT id FROM nhan_vien WHERE ma = 'NV004'), DATEADD(day, 2, @Monday), 'chieu'),
 ((SELECT id FROM nhan_vien WHERE ma = 'NV005'), DATEADD(day, 3, @Monday), 'toi'),
 ((SELECT id FROM nhan_vien WHERE ma = 'NV006'), DATEADD(day, 4, @Monday), 'sang');
+GO
+
+SELECT N'lich_lam_viec' AS bang, COUNT(*) AS so_ban_ghi FROM lich_lam_viec;
 GO
 

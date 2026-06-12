@@ -80,7 +80,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException("Email đã được sử dụng");
         }
-        String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail);
+        String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail, null);
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
@@ -133,19 +133,13 @@ public class NhanVienServiceImpl implements NhanVienService {
         Integer vaiTro = validateVaiTro(request.vaiTro());
         NhanVien nv = findNhanVien(id);
 
-        String normalizedTenDangNhap = normalizeRequired(request.tenDangNhap(), "Ten dang nhap khong duoc de trong");
-        nhanVienRepository.findByTenDangNhapIgnoreCase(normalizedTenDangNhap)
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> {
-                    throw new BusinessException("Ten dang nhap da duoc su dung");
-                });
-
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         nhanVienRepository.findByEmail(normalizedEmail)
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
                     throw new BusinessException("Email đã được sử dụng");
                 });
+        String normalizedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail, id);
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null) {
@@ -238,26 +232,24 @@ public class NhanVienServiceImpl implements NhanVienService {
         return resolved.isBlank() ? null : resolved;
     }
 
-    private String normalizeRequired(String value, String message) {
-        String resolved = normalize(value);
-        if (resolved == null) {
-            throw new BusinessException(message);
-        }
-        return resolved;
-    }
-
-    private String generateTenDangNhapFromEmail(String email) {
+    private String generateTenDangNhapFromEmail(String email, UUID currentEmployeeId) {
         String baseUsername = email.split("@")[0].trim().toLowerCase(Locale.ROOT);
         if (baseUsername.isBlank()) {
-            throw new BusinessException("Email khong hop le de tao ten dang nhap");
+            throw new BusinessException("Email không hợp lệ để tạo tên đăng nhập");
         }
 
         String username = baseUsername;
         int counter = 1;
-        while (nhanVienRepository.existsByTenDangNhapIgnoreCase(username)) {
+        while (isUsernameUsedByAnotherEmployee(username, currentEmployeeId)) {
             username = baseUsername + counter++;
         }
         return username;
+    }
+
+    private boolean isUsernameUsedByAnotherEmployee(String username, UUID currentEmployeeId) {
+        return nhanVienRepository.findByTenDangNhapIgnoreCase(username)
+                .filter(existing -> currentEmployeeId == null || !existing.getId().equals(currentEmployeeId))
+                .isPresent();
     }
 
     private String normalizeOptional(String value) {
