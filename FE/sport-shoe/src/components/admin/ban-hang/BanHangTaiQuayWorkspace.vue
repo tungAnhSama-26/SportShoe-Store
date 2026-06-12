@@ -239,6 +239,10 @@ defineProps({
   soLuongConLai: {
     type: Function,
     required: true
+  },
+  hasPrintedInvoice: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -301,6 +305,7 @@ const emit = defineEmits([
       <div class="flex min-h-0 flex-col gap-2">
         <section class="flex min-h-0 flex-[3.5] flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <BanHangProductSection
+            :active-pending-invoice="activePendingInvoice"
             :product-keyword="productKeyword"
             :loading-products="loadingProducts"
             :show-product-dropdown="showProductDropdown"
@@ -392,6 +397,7 @@ const emit = defineEmits([
             :paying-invoice="payingInvoice"
             :canceling-pending-invoice="cancelingPendingInvoice"
             :dinh-dang-tien="dinhDangTien"
+            :has-printed-invoice="hasPrintedInvoice"
             @update:coupon-code="emit('update:couponCode', $event)"
             @focus-coupon="emit('focus-coupon')"
             @blur-coupon="emit('blur-coupon')"
