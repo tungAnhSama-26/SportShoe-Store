@@ -1,9 +1,9 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { layChiTietDonHang, xacNhanDaNhanHang } from '../services/don-hang';
+import { layChiTietDonHang, xacNhanDaNhanHang, yeuCauHuyDonHang } from '../services/don-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
-import { showSuccess, showError } from '../utils/alert';
+import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import {
   CAC_BUOC_DON_HANG,
@@ -246,6 +246,28 @@ function lopBadge(tt) {
 
 const dangXuLy = ref(false);
 const daHoanThanh = computed(() => don.value?.trangThai === 5);
+const coTheYeuCauHuy = computed(() => [1, 9, 2].includes(Number(don.value?.trangThai)));
+
+async function guiYeuCauHuy() {
+  const daXacNhan = await showConfirm(
+    'Sau khi gửi yêu cầu, cửa hàng sẽ xem xét và xác nhận hủy đơn.',
+    'Yêu cầu hủy đơn hàng',
+    'Gửi yêu cầu',
+    'Quay lại',
+  );
+  if (!daXacNhan) return;
+
+  dangXuLy.value = true;
+  try {
+    await yeuCauHuyDonHang(route.params.id);
+    await taiChiTiet();
+    showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, 'Không thể gửi yêu cầu hủy đơn hàng'));
+  } finally {
+    dangXuLy.value = false;
+  }
+}
 
 async function xacNhanNhan() {
   dangXuLy.value = true;
@@ -360,6 +382,16 @@ function xuLyAnhLoi(event) {
               </div>
             </div>
           </div>
+        </section>
+
+        <section v-if="coTheYeuCauHuy" class="mt-6 flex flex-wrap gap-3 items-center">
+          <button
+            @click="guiYeuCauHuy"
+            :disabled="dangXuLy"
+            class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3 text-sm font-bold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ dangXuLy ? 'Đang gửi...' : 'Yêu cầu hủy' }}
+          </button>
         </section>
 
         <!-- Hành động khi đơn hoàn thành -->
