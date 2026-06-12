@@ -2,8 +2,13 @@
 import { ref } from "vue";
 import { QrCode } from "lucide-vue-next";
 import BanHangQrScannerModal from "./BanHangQrScannerModal.vue";
+import { showError } from "../../../utils/alert";
 
-defineProps({
+const props = defineProps({
+  activePendingInvoice: {
+    type: Object,
+    default: null
+  },
   productKeyword: {
     type: String,
     default: ""
@@ -58,7 +63,19 @@ function formatDiscountPercent(product) {
   return pct % 1 === 0 ? `-${pct.toFixed(0)}%` : `-${pct.toFixed(1)}%`;
 }
 
+function handleOpenProduct(product) {
+  if (!props.activePendingInvoice) {
+    showError("Vui lòng tạo hóa đơn trước khi chọn sản phẩm.");
+    return;
+  }
+  emit("open-product", product);
+}
+
 function moQuetQr() {
+  if (!props.activePendingInvoice) {
+    showError("Vui lòng tạo hóa đơn trước khi chọn sản phẩm.");
+    return;
+  }
   showQrScanner.value = true;
 }
 
@@ -134,7 +151,7 @@ function xuLyMaQuet(value) {
                 v-for="(product, index) in productResults"
                 :key="`panel-${product.chiTietId || product.sanPhamId || product.id}`"
                 class="group cursor-pointer bg-white transition hover:bg-red-50/30"
-                @click="emit('open-product', product)"
+                @click="handleOpenProduct(product)"
               >
                 <td class="px-4 py-2 text-center text-slate-500">
                   {{ index + 1 }}

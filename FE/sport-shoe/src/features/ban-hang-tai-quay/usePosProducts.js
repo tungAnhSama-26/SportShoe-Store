@@ -4,7 +4,6 @@ import { GUEST_LABEL } from "./constants";
 import { extractProductKeywordFromQr } from "./qr-product";
 
 export function usePosProducts({
-  daChonKhach,
   soLuongConLai,
   themSanPham,
   clearFeedback,
@@ -144,10 +143,6 @@ export function usePosProducts({
   }
 
   function moChiTietSanPham(product) {
-    if (!daChonKhach.value) {
-      pageError.value = `Vui lòng chọn khách hàng hoặc ${GUEST_LABEL} trước khi thêm sản phẩm`;
-      return;
-    }
     selectedProductDetail.value = product;
     selectedColor.value = product.mauSac || product.maBienThe;
     selectedSize.value = product.kichCo || "";
@@ -163,11 +158,6 @@ export function usePosProducts({
 
   async function handleProductQrScan(rawValue) {
     clearFeedback();
-
-    if (!daChonKhach.value) {
-      pageError.value = `Vui lòng chọn khách hàng hoặc ${GUEST_LABEL} trước khi quét sản phẩm`;
-      return;
-    }
 
     const keyword = extractProductKeywordFromQr(rawValue);
     if (!keyword) {
@@ -243,11 +233,6 @@ export function usePosProducts({
   }
 
   function moDanhSachSanPham() {
-    if (!daChonKhach.value) {
-      showProductDropdown.value = false;
-      pageError.value = `Vui lòng chọn khách hàng hoặc ${GUEST_LABEL} trước khi thêm sản phẩm`;
-      return Promise.resolve();
-    }
     showProductDropdown.value = true;
     return fetchProducts(productKeyword.value);
   }
@@ -266,10 +251,6 @@ export function usePosProducts({
 
   watch(productKeyword, (value) => {
     clearProductTimer();
-    if (!daChonKhach.value) {
-      showProductDropdown.value = false;
-      return;
-    }
     showProductDropdown.value = value.trim().length > 0;
     productTimer = window.setTimeout(() => {
       void fetchProducts(value);

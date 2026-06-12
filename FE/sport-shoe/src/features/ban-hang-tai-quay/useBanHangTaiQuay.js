@@ -282,7 +282,7 @@ function useBanHangTaiQuay() {
 
   function resetDraft() {
     selectedCustomer.value = null;
-    customerKeyword.value = GUEST_LABEL;
+    customerKeyword.value = "";
     productKeyword.value = "";
     couponCode.value = "";
     customerResults.value = [];
@@ -364,7 +364,7 @@ function useBanHangTaiQuay() {
     );
     const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
 
-    customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || GUEST_LABEL;
+    customerKeyword.value = invoice.tenKhachHang || invoice.soDienThoai || "";
     selectedCustomer.value = invoice.khachHangId
       ? {
         id: invoice.khachHangId,
@@ -423,7 +423,37 @@ function useBanHangTaiQuay() {
     capNhatTienKhachThanhToan(true);
   }
 
+  async function saveCurrentInvoice() {
+    if (!activePendingInvoice.value) return;
+    try {
+      const payload = {
+        tenKhachHang: selectedCustomer.value?.hoTen || deliveryRecipientName.value || (isGuestCustomer.value ? GUEST_LABEL : ""),
+        soDienThoai: selectedCustomer.value?.sdt || deliveryRecipientPhone.value || "",
+        ghiChu: "",
+        khachHangId: selectedCustomer.value?.id || null,
+        maPhieuGiamGia: appliedCoupon.value?.ma || null,
+        thongTinGiaoHang: deliveryEnabled.value ? buildShippingPayload() : null,
+        items: cartItems.value.map(item => ({
+          chiTietId: item.chiTietId,
+          soLuong: item.soLuong
+        })),
+      };
+      await capNhatHoaDonCho(activePendingInvoice.value.id, payload);
+    } catch (error) {
+      console.error("Lỗi khi lưu hóa đơn chờ trước khi chuyển trang", error);
+      throw error;
+    }
+  }
+
   async function chonHoaDonCho(invoice) {
+    if (activePendingInvoice.value && activePendingInvoice.value.id !== invoice.id) {
+      try {
+        await saveCurrentInvoice();
+      } catch (e) {
+        // ignore error when switching tabs
+      }
+    }
+    hasPrintedInvoice.value = false;
     invoiceLoading.value = true;
     pageError.value = "";
     try {
@@ -455,7 +485,7 @@ function useBanHangTaiQuay() {
     try {
       const createdInvoice = await taoHoaDonCho({
         khachHangId: layKhachHangIdHienTai(),
-        tenKhachHang: tenKhachHangHienThi.value,
+        tenKhachHang: selectedCustomer.value?.hoTen || (isGuestCustomer.value ? GUEST_LABEL : ""),
         soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
         maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
         thongTinGiaoHang: buildShippingPayload(),
@@ -490,10 +520,14 @@ function useBanHangTaiQuay() {
     pageError.value = "";
     successMessage.value = "";
     try {
+      if (activePendingInvoice.value) {
+        await saveCurrentInvoice();
+      }
+
       const response = await thanhToanTaiQuay({
         hoaDonId: activePendingInvoice.value?.id ?? null,
         khachHangId: layKhachHangIdHienTai(),
-        tenKhachHang: tenKhachHangHienThi.value,
+        tenKhachHang: selectedCustomer.value?.hoTen || (isGuestCustomer.value ? GUEST_LABEL : ""),
         soDienThoai: selectedCustomer.value?.sdt || activePendingInvoice.value?.soDienThoai || "",
         maPhieuGiamGia: appliedCoupon.value?.ma ?? null,
         thongTinGiaoHang: buildShippingPayload(),

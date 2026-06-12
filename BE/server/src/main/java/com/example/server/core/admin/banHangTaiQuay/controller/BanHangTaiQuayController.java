@@ -98,16 +98,6 @@ public class BanHangTaiQuayController {
         ));
     }
 
-    @PostMapping("/phi-van-chuyen/ghn")
-    public ResponseEntity<ApiResponse<TinhPhiVanChuyenGhnResponse>> tinhPhiVanChuyenGhn(
-            @Valid @RequestBody TinhPhiVanChuyenTaiQuayRequest request
-    ) {
-        return ResponseEntity.ok(ApiResponse.success(
-                "Tính phí vận chuyển GHN thành công",
-                banHangTaiQuayService.tinhPhiVanChuyenGhn(request)
-        ));
-    }
-
     @PostMapping("/hoa-don-cho")
     public ResponseEntity<ApiResponse<HoaDonChoChiTietResponse>> taoHoaDonCho(
             @Valid @RequestBody TaoHoaDonChoRequest request
@@ -115,6 +105,17 @@ public class BanHangTaiQuayController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Tạo hóa đơn chờ thành công",
                 banHangTaiQuayService.taoHoaDonCho(request)
+        ));
+    }
+
+    @PatchMapping("/hoa-don-cho/{hoaDonId}")
+    public ResponseEntity<ApiResponse<HoaDonChoChiTietResponse>> capNhatHoaDonCho(
+            @PathVariable Integer hoaDonId,
+            @Valid @RequestBody TaoHoaDonChoRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Cập nhật hóa đơn chờ thành công",
+                banHangTaiQuayService.capNhatHoaDonCho(hoaDonId, request)
         ));
     }
 
@@ -132,5 +133,15 @@ public class BanHangTaiQuayController {
     public ResponseEntity<ApiResponse<Void>> huyHoaDonCho(@PathVariable Integer hoaDonId) {
         banHangTaiQuayService.huyHoaDonCho(hoaDonId);
         return ResponseEntity.ok(ApiResponse.success("Hủy hóa đơn chờ thành công", null));
+    }
+
+    @PostMapping("/phi-van-chuyen/ghn")
+    public ResponseEntity<ApiResponse<TinhPhiVanChuyenGhnResponse>> tinhPhiVanChuyenGhn(
+            @Valid @RequestBody TinhPhiVanChuyenTaiQuayRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tính phí vận chuyển GHN thành công",
+                banHangTaiQuayService.tinhPhiVanChuyenGhn(request)
+        ));
     }
 }

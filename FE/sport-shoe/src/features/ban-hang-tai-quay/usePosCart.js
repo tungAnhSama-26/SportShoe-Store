@@ -1,7 +1,6 @@
 import { computed, ref } from "vue";
 
 export function usePosCart({
-  daChonKhach,
   markShippingFeeDirty,
   capNhatTienKhachThanhToan,
   danhDauCanApDungLaiPhieu,
@@ -55,10 +54,6 @@ export function usePosCart({
   }
 
   function themSanPham(product, quantity = 1, options = {}) {
-    if (!daChonKhach.value) {
-      pageError.value = "Vui lòng chọn khách hàng hoặc Khách vãng lai trước khi thêm sản phẩm";
-      return false;
-    }
     const soLuongCoTheThem = soLuongConLai(product.chiTietId, product.soLuongTon);
     const existing = cartItems.value.find((item) => item.chiTietId === product.chiTietId);
     if (existing) {

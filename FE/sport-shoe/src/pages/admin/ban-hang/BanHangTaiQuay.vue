@@ -98,7 +98,8 @@ const {
   handleCreateEmptyInvoice,
   handlePayNow,
   handleCancelPendingInvoice,
-  handlePrintInvoice
+  handlePrintInvoice,
+  hasPrintedInvoice
 } = useBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
@@ -175,6 +176,7 @@ onBeforeRouteLeave(async (to, from, next) => {
     :canceling-pending-invoice="cancelingPendingInvoice"
     :dinh-dang-tien="dinhDangTien"
     :so-luong-con-lai="soLuongConLai"
+    :has-printed-invoice="hasPrintedInvoice"
     @reset-draft="resetDraft"
     @create-empty-invoice="handleCreateEmptyInvoice"
     @select-invoice="chonHoaDonCho"
