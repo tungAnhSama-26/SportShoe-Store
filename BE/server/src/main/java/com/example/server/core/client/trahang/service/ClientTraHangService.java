@@ -1,6 +1,7 @@
 package com.example.server.core.client.trahang.service;
 
 import com.example.server.core.client.trahang.dto.ClientYeuCauTraHangRequest;
+import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.*;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.*;
@@ -25,6 +26,7 @@ public class ClientTraHangService {
     private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
     private final LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository;
     private final HinhAnhTraHangRepository hinhAnhTraHangRepository;
+    private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
 
     public ClientTraHangService(
             HoaDonRepository hoaDonRepository,
@@ -32,7 +34,8 @@ public class ClientTraHangService {
             PhieuTraHangRepository phieuTraHangRepository,
             PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository,
-            HinhAnhTraHangRepository hinhAnhTraHangRepository
+            HinhAnhTraHangRepository hinhAnhTraHangRepository,
+            HoaDonRealtimePublisher hoaDonRealtimePublisher
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -40,6 +43,7 @@ public class ClientTraHangService {
         this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
         this.lichSuPhieuTraHangRepository = lichSuPhieuTraHangRepository;
         this.hinhAnhTraHangRepository = hinhAnhTraHangRepository;
+        this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
     }
 
     @Transactional
@@ -160,5 +164,6 @@ public class ClientTraHangService {
         ls.setGhiChu(request.moTa());
         ls.setNgayTao(now);
         lichSuPhieuTraHangRepository.save(ls);
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRA_HANG");
     }
 }

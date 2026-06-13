@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/uploads/**").permitAll()
                         .requestMatchers("/api/v1/upload", "/api/v1/upload/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
+                        .requestMatchers("/api/v1/realtime/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
                         .requestMatchers("/api/v1/client/khach-hang/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
                         .requestMatchers("/api/v1/nhanvien/profile", "/api/v1/nhanvien/profile/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/ban-hang-tai-quay/**").hasAnyRole("ADMIN", "STAFF")

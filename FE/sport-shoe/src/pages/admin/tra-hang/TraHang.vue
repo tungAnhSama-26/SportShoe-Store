@@ -258,7 +258,7 @@ onMounted(taiDanhSach);
 </script>
 
 <template>
-  <div class="space-y-5 pb-8">
+  <div class="invoice-flat space-y-5 pb-8">
     <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div
         v-for="item in thongKe"
@@ -480,6 +480,9 @@ onMounted(taiDanhSach);
 </template>
 
 <style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
 .tab-fade-enter-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
