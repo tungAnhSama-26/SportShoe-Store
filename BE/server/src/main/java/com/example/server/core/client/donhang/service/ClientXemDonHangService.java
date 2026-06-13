@@ -264,36 +264,6 @@ public class ClientXemDonHangService {
         hoaDonRealtimePublisher.publishAfterCommit(hd, "YEU_CAU_HUY");
     }
 
-    @Transactional
-    public void yeuCauHuy(UUID khachHangId, Integer id) {
-        HoaDon hd = hoaDonRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
-        if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
-            throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
-        }
-
-        Integer trangThai = hd.getTrangThai();
-        boolean coTheYeuCauHuy = trangThai != null
-                && (trangThai == TRANG_THAI_CHO_XAC_NHAN
-                || trangThai == TRANG_THAI_DA_XAC_NHAN
-                || trangThai == TRANG_THAI_CHO_LAY_HANG);
-        if (!coTheYeuCauHuy) {
-            throw new BusinessException("Chỉ có thể yêu cầu hủy khi đơn đang chờ xác nhận, đã xác nhận hoặc chờ lấy hàng");
-        }
-
-        hd.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
-        hd.setNgayCapNhat(Instant.now());
-        hoaDonRepository.save(hd);
-
-        LichSuHoaDon lichSu = new LichSuHoaDon();
-        lichSu.setHoaDon(hd);
-        lichSu.setNhanVien(null);
-        lichSu.setTrangThai("Yêu cầu hủy");
-        lichSu.setGhiChu("Khách hàng gửi yêu cầu hủy đơn hàng");
-        lichSu.setNgayTao(Instant.now());
-        lichSuHoaDonRepository.save(lichSu);
-    }
-
     private String nhanTrangThai(Integer trangThai) {
         if (trangThai == null) {
             return "Không xác định";
