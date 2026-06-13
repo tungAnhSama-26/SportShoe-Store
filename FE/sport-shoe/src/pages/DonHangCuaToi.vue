@@ -139,7 +139,14 @@ const danhSachHienThi = computed(() => {
 async function muaLai(don) {
   if (!don.sanPhams || don.sanPhams.length === 0) return;
   try {
-    await Promise.all(don.sanPhams.map(item => themVaoGio(item.giayChiTietId, item.soLuong)));
+    await Promise.all(don.sanPhams.map(item => themVaoGio(item.giayChiTietId, item.soLuong, {
+      tenSanPham: item.ten,
+      mauSac: item.mauSac,
+      kichCo: item.kichCo,
+      hinhAnh: item.hinhAnh,
+      giaBan: item.giaDonVi,
+      tonKho: Math.max(Number(item.soLuong), 10),
+    })));
     showSuccess("Đã thêm các sản phẩm vào giỏ hàng!");
     router.push('/gio-hang');
   } catch (error) {

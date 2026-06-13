@@ -3,13 +3,11 @@ package com.example.server.core.client.vanchuyen.service;
 import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
-import com.example.server.core.client.giohang.service.ClientGioHangService;
+import com.example.server.core.client.dathang.service.ClientCheckoutItemService;
 import com.example.server.core.client.vanchuyen.dto.PhiVanChuyenResponse;
 import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
-import com.example.server.infrastructure.exception.BusinessException;
-import com.example.server.repository.HoaDonChiTietRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,27 +29,22 @@ public class ClientPhiVanChuyenService {
     private static final BigDecimal PHI_MAC_DINH = BigDecimal.valueOf(30_000);
 
     private final GhnShippingService ghnShippingService;
-    private final ClientGioHangService gioHangService;
-    private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final ClientCheckoutItemService checkoutItemService;
 
     public ClientPhiVanChuyenService(
             GhnShippingService ghnShippingService,
-            ClientGioHangService gioHangService,
-            HoaDonChiTietRepository hoaDonChiTietRepository
+            ClientCheckoutItemService checkoutItemService
     ) {
         this.ghnShippingService = ghnShippingService;
-        this.gioHangService = gioHangService;
-        this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.checkoutItemService = checkoutItemService;
     }
 
     @Transactional(readOnly = true)
     public PhiVanChuyenResponse tinhPhi(TinhPhiShipRequest request) {
-        HoaDon gio = gioHangService.timGioHang(request.khachHangId())
-                .orElseThrow(() -> new BusinessException("Giỏ hàng đang trống"));
-        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonId(gio.getId());
-        if (items.isEmpty()) {
-            throw new BusinessException("Giỏ hàng đang trống");
-        }
+        ClientCheckoutItemService.KetQua checkout = checkoutItemService.chuanBi(request.sanPhams());
+        List<HoaDonChiTiet> items = checkout.chiTiets();
+        HoaDon hoaDonTam = new HoaDon();
+        hoaDonTam.setTongTienHang(checkout.tongTienHang());
 
         String toAddress = Stream.of(
                         request.diaChiCuThe(),
@@ -71,7 +64,7 @@ public class ClientPhiVanChuyenService {
                 null, null, null, null, null, null, null, null
         );
         try {
-            TinhPhiVanChuyenGhnResponse ghn = ghnShippingService.tinhPhi(gio, items, ghnRequest);
+            TinhPhiVanChuyenGhnResponse ghn = ghnShippingService.tinhPhi(hoaDonTam, items, ghnRequest);
             BigDecimal phi = ghn.phiVanChuyen() != null ? ghn.phiVanChuyen() : PHI_MAC_DINH;
             return new PhiVanChuyenResponse(phi, false, "Phí GHN");
         } catch (RuntimeException e) {

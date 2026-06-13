@@ -2,13 +2,12 @@ package com.example.server.core.client.vnpay.service;
 
 import com.example.server.core.client.dathang.dto.DatHangRequest;
 import com.example.server.core.client.dathang.dto.DatHangResponse;
+import com.example.server.core.client.dathang.service.ClientCheckoutItemService;
 import com.example.server.core.client.dathang.service.ClientDatHangService;
-import com.example.server.core.client.giohang.service.ClientGioHangService;
 import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
-import com.example.server.entity.HoaDon;
 import com.example.server.infrastructure.exception.BusinessException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,7 +35,7 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
 
     private final ClientDatHangService datHangService;
-    private final ClientGioHangService gioHangService;
+    private final ClientCheckoutItemService checkoutItemService;
     private final ClientVoucherService voucherService;
     private final ClientPhiVanChuyenService phiVanChuyenService;
     private final Map<String, Phien> phienMap = new ConcurrentHashMap<>();
@@ -47,7 +46,7 @@ public class ClientVnPayService {
 
     public ClientVnPayService(
             ClientDatHangService datHangService,
-            ClientGioHangService gioHangService,
+            ClientCheckoutItemService checkoutItemService,
             ClientVoucherService voucherService,
             ClientPhiVanChuyenService phiVanChuyenService,
             @Value("${sepay.bank:}") String sepayBank,
@@ -55,7 +54,7 @@ public class ClientVnPayService {
             @Value("${sepay.prefix:SHOE}") String sepayPrefix
     ) {
         this.datHangService = datHangService;
-        this.gioHangService = gioHangService;
+        this.checkoutItemService = checkoutItemService;
         this.voucherService = voucherService;
         this.phiVanChuyenService = phiVanChuyenService;
         this.sepayBank = sepayBank;
@@ -95,9 +94,7 @@ public class ClientVnPayService {
 
     /** Số tiền khách phải chuyển = tổng tiền hàng - giảm giá voucher (nếu có) + phí vận chuyển. */
     private long tinhSoTienPhaiTra(DatHangRequest request) {
-        HoaDon gio = gioHangService.timGioHang(request.khachHangId())
-                .orElseThrow(() -> new BusinessException("Giỏ hàng đang trống"));
-        BigDecimal tong = gio.getTongTienHang() == null ? BigDecimal.ZERO : gio.getTongTienHang();
+        BigDecimal tong = checkoutItemService.chuanBi(request.sanPhams()).tongTienHang();
         if (request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
             try {
                 BigDecimal giam = voucherService
@@ -112,6 +109,7 @@ public class ClientVnPayService {
         // Cộng phí vận chuyển GHN theo địa chỉ nhận (cùng cách tính với lúc đặt hàng).
         BigDecimal phiShip = phiVanChuyenService.tinhPhi(new TinhPhiShipRequest(
                 request.khachHangId(),
+                request.sanPhams(),
                 request.tinhThanh(),
                 request.quanHuyen(),
                 request.phuongXa(),

@@ -302,17 +302,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 }
             }
             case "Hủy" -> {
-<<<<<<< Updated upstream
                 capNhatThanhToanKhiHuyDon(hoaDon);
-                hoaDon.setTrangThai(TRANG_THAI_HUY);
-=======
-                boolean canHoanTien = capNhatThanhToanKhiHuyDon(hoaDon);
-                // Đơn online đã trừ kho (đã xác nhận trước đó) -> cộng trả lại tồn.
+                // Đơn online đã trừ kho trước đó phải được hoàn lại đúng một lần khi hủy.
                 hoanKhoDonOnlineNeuDaTru(hoaDon);
-                hoaDon.setTrangThai(canHoanTien
-                        ? TRANG_THAI_CAN_HOAN_TIEN
-                        : TRANG_THAI_HUY);
->>>>>>> Stashed changes
+                hoaDon.setTrangThai(TRANG_THAI_HUY);
             }
             case "Yêu cầu hủy" -> hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
             default -> throw new BusinessException("Trạng thái hóa đơn không hợp lệ");

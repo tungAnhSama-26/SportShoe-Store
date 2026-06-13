@@ -191,7 +191,16 @@ function yeuCauDangNhap() {
 async function themVaoGio() {
   if (!kiemTraChon() || yeuCauDangNhap()) return;
   try {
-    const gio = await apiThemGio(bienTheChon.value.id, soLuongMua.value);
+    const b = bienTheChon.value;
+    const gio = await apiThemGio(b.id, soLuongMua.value, {
+      giayId: sanPham.value.id,
+      tenSanPham: sanPham.value.ten,
+      mauSac: b.mauSac,
+      kichCo: b.kichCo,
+      hinhAnh: b.hinhAnh || anhHienThi.value,
+      giaBan: b.giaBan,
+      tonKho: b.soLuong,
+    });
     gioHangStore.datSoLuong(gio.tongSoLuong);
     showSuccess('Đã thêm sản phẩm vào giỏ hàng!');
   } catch (e) {
@@ -202,7 +211,16 @@ async function themVaoGio() {
 async function muaNgay() {
   if (!kiemTraChon() || yeuCauDangNhap()) return;
   try {
-    const gio = await apiThemGio(bienTheChon.value.id, soLuongMua.value);
+    const b = bienTheChon.value;
+    const gio = await apiThemGio(b.id, soLuongMua.value, {
+      giayId: sanPham.value.id,
+      tenSanPham: sanPham.value.ten,
+      mauSac: b.mauSac,
+      kichCo: b.kichCo,
+      hinhAnh: b.hinhAnh || anhHienThi.value,
+      giaBan: b.giaBan,
+      tonKho: b.soLuong,
+    });
     gioHangStore.datSoLuong(gio.tongSoLuong);
     router.push('/gio-hang');
   } catch (e) {

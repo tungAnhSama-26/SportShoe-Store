@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, giuHang, huyGiuHang, huyGiuHangBeacon, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
+import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -111,33 +111,13 @@ watch(
   }
 );
 
-onMounted(async () => {
-  await tai();
-  if (gio.value.items.length) {
-    try {
-      // Giữ hàng tạm (trừ tồn) trong 90 giây.
-      await giuHang();
-    } catch (e) {
-      showError(getDisplayErrorMessage(e, 'Một số sản phẩm trong giỏ đã hết hàng.'));
-      router.push('/gio-hang');
-      return;
-    }
-  }
-  window.addEventListener('beforeunload', onTruocKhiDongTab);
-});
+onMounted(tai);
 
 onUnmounted(() => {
-  window.removeEventListener('beforeunload', onTruocKhiDongTab);
   dungPoll();
 });
 
-function onTruocKhiDongTab() {
-  if (!daDatHang.value) huyGiuHangBeacon();
-}
-
-// Rời trang thanh toán (back, chuyển trang) mà chưa đặt -> hoàn tồn ngay.
 onBeforeRouteLeave(() => {
-  if (!daDatHang.value) huyGiuHang();
   return true;
 });
 
@@ -226,7 +206,8 @@ function hopLeThongTin() {
 }
 
 async function hoanTatDatHang(maHoaDon) {
-  daDatHang.value = true; // đã thành đơn -> không hủy giữ hàng khi rời trang
+  daDatHang.value = true;
+  xoaGioHang();
   gioHangStore.datSoLuong(0);
   await showSuccess(`Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`, 'Thành công');
   router.push('/san-pham');
