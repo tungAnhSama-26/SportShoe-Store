@@ -49,6 +49,9 @@ const {
   statusText,
   loaiGiamText,
   loaiPhieuText,
+  mauLoaiPhieu,
+  Globe,
+  User,
   formatGiaTri,
   formatTien,
   toDisplayDate,
@@ -257,8 +260,14 @@ const {
                 {{ item.ma }}
               </td>
               <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                {{ loaiPhieuText(item.loaiPhieu) }}
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  :class="mauLoaiPhieu(item.loaiPhieu)"
+                >
+                  <component :is="Number(item.loaiPhieu) === 2 ? User : Globe" class="h-3 w-3" />
+                  {{ loaiPhieuText(item.loaiPhieu) }}
+                </span>
               </td>
               <td class="px-4 py-3 whitespace-nowrap">
                 {{ formatGiaTri(item.giaTri, item.loai) }}

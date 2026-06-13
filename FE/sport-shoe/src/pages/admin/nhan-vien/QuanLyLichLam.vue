@@ -16,13 +16,18 @@ import { layDanhSachNhanVien } from "../../../services/nhan-vien";
 import { layLichLamViec, phanCa, xepCaTuDong } from "../../../services/lich-lam";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { exportRowsToExcel } from "../../../utils/export-excel";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
 
 // ───────── Dữ liệu ca làm việc ─────────
-const DS_CA = [
+type CaLamId = "sang" | "chieu" | "toi";
+
+const MAX_NHAN_VIEN_MOI_CA = 3;
+
+const DS_CA: Array<{ id: CaLamId; nhan: string; gio: string; mau: string; muaNhat: string }> = [
   { id: "sang",  nhan: "Sáng",  gio: "08:00 - 12:00", mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700" },
   { id: "chieu", nhan: "Chiều", gio: "13:00 - 17:00", mau: "bg-orange-400",  muaNhat: "bg-orange-50 border-orange-200 text-orange-700" },
   { id: "toi",   nhan: "Tối",   gio: "18:00 - 22:00", mau: "bg-violet-400",  muaNhat: "bg-violet-50 border-violet-200 text-violet-700" },
@@ -81,7 +86,7 @@ function homNay() {
 }
 
 // ───────── Nhân viên & lịch ─────────
-type CaLam = "sang" | "chieu" | "toi" | null;
+type CaLam = CaLamId | null;
 
 interface NhanVien {
   id: string;
@@ -228,6 +233,34 @@ const modalCaChon = ref<CaLam>(null);
 const chonNhanVienId = ref("");
 const chonNgayVal = ref("");
 
+function layNgayDangChon() {
+  if (modalNV.value && modalNgayIndex.value >= 0) {
+    return formatISODate(cacNgayTrongTuan.value[modalNgayIndex.value]);
+  }
+  return chonNgayVal.value;
+}
+
+function demNhanVienTrongCa(ca: CaLamId) {
+  const ngayStr = layNgayDangChon();
+  const ngayIndex = cacNgayTrongTuan.value.findIndex(ngay => formatISODate(ngay) === ngayStr);
+  if (ngayIndex < 0) return 0;
+  return danhSachNV.value.filter(nv => nv.lich[ngayIndex] === ca).length;
+}
+
+function laCaHienTaiCuaModal(ca: CaLamId) {
+  if (modalNV.value && modalNgayIndex.value >= 0) {
+    return modalNV.value.lich[modalNgayIndex.value] === ca;
+  }
+  const ngayStr = chonNgayVal.value;
+  const ngayIndex = cacNgayTrongTuan.value.findIndex(ngay => formatISODate(ngay) === ngayStr);
+  const nhanVien = danhSachNV.value.find(nv => nv.id === chonNhanVienId.value);
+  return Boolean(nhanVien && ngayIndex >= 0 && nhanVien.lich[ngayIndex] === ca);
+}
+
+function caDaDay(ca: CaLamId) {
+  return demNhanVienTrongCa(ca) >= MAX_NHAN_VIEN_MOI_CA && !laCaHienTaiCuaModal(ca);
+}
+
 function moModalThemCa(nv: NhanVien | null, ngayIdx: number) {
   modalNV.value = nv;
   modalNgayIndex.value = ngayIdx;
@@ -254,6 +287,10 @@ async function luuCa() {
     }
     nvId = chonNhanVienId.value;
     ngayStr = chonNgayVal.value;
+  }
+  if (modalCaChon.value && caDaDay(modalCaChon.value)) {
+    showError(`Ca này đã đủ tối đa ${MAX_NHAN_VIEN_MOI_CA} nhân viên.`);
+    return;
   }
   dangTai.value = true;
   try {
@@ -316,6 +353,48 @@ async function xepCaDong() {
   }
 }
 
+function tenCaXuatExcel(ca: CaLam) {
+  const thongTinCa = layThongTinCa(ca);
+  return thongTinCa ? `${thongTinCa.nhan} (${thongTinCa.gio})` : "Nghỉ";
+}
+
+function tenFileXuatExcel() {
+  const tuNgay = formatISODate(cacNgayTrongTuan.value[0]);
+  const denNgay = formatISODate(cacNgayTrongTuan.value[6]);
+  return `lich-lam-viec-${tuNgay}_den_${denNgay}.xls`;
+}
+
+function xuatExcel() {
+  const rows = danhSachLocVaiTro.value;
+  if (!rows.length) {
+    showError("Không có dữ liệu để xuất Excel.");
+    return;
+  }
+
+  const exported = exportRowsToExcel({
+    filename: tenFileXuatExcel(),
+    sheetName: "Lịch làm việc",
+    columns: [
+      { label: "STT", value: (_row: NhanVien, index: number) => index + 1 },
+      { label: "Nhân viên", value: (row: NhanVien) => row.ten },
+      { label: "Vai trò", value: (row: NhanVien) => row.chucVu },
+      ...cacNgayTrongTuan.value.map((ngay, index) => ({
+        label: `${NHAN_TUAN[index]} ${formatNgay(ngay)}`,
+        value: (row: NhanVien) => tenCaXuatExcel(row.lich[index]),
+      })),
+      { label: "Tổng giờ", value: (row: NhanVien) => `${row.tongGio}h` },
+      { label: "Tăng ca", value: (row: NhanVien) => `${row.overtime}h / ${row.gioiHanOT}h` },
+    ],
+    rows,
+  });
+
+  if (exported) {
+    showSuccess("Xuất Excel thành công!");
+  } else {
+    showError("Không có dữ liệu để xuất Excel.");
+  }
+}
+
 // ───────── Helpers ─────────
 function layThongTinCa(id: CaLam) {
   return id ? DS_CA.find(c => c.id === id) : null;
@@ -362,7 +441,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
       <button @click="xepCaDong" class="admin-btn-soft gap-2">
         <Shuffle class="h-4 w-4" /> Xếp ca tự động
       </button>
-      <button class="admin-btn-soft gap-2">
+      <button @click="xuatExcel" class="admin-btn-soft gap-2">
         <Download class="h-4 w-4" /> Xuất Excel
       </button>
       <button @click="moModalThemCa(null, -1)" class="admin-btn-primary gap-2">
@@ -564,7 +643,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
             <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <CalendarDays class="h-5 w-5" />
             </div>
-            <p class="text-xs font-semibold text-primary">Ca chưa gắn</p>
+            <p class="text-xs font-semibold text-primary">Nhân viên chưa phân công</p>
             <p class="mt-1 text-2xl font-bold text-primary">{{ String(caUnassigned).padStart(2, '0') }}</p>
           </div>
         </div>
@@ -634,13 +713,16 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
             <button
               v-for="ca in DS_CA"
               :key="ca.id"
-              @click="modalCaChon = ca.id as CaLam"
+              :disabled="caDaDay(ca.id)"
+              :title="caDaDay(ca.id) ? `Ca ${ca.nhan} đã đủ tối đa ${MAX_NHAN_VIEN_MOI_CA} nhân viên` : ''"
+              @click="modalCaChon = ca.id"
               :class="['flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm font-semibold transition',
-                modalCaChon === ca.id ? 'border-primary/50 bg-primary-light text-primary' : 'border-slate-200 hover:border-slate-300']"
+                modalCaChon === ca.id ? 'border-primary/50 bg-primary-light text-primary' : 'border-slate-200 hover:border-slate-300',
+                caDaDay(ca.id) ? 'cursor-not-allowed opacity-50 hover:border-slate-200' : '']"
             >
               <div :class="['h-4 w-4 rounded-sm', ca.mau]" />
               <span>{{ ca.nhan }}</span>
-              <span class="ml-auto text-slate-400">{{ ca.gio }}</span>
+              <span class="ml-auto text-right text-slate-400">{{ demNhanVienTrongCa(ca.id) }}/{{ MAX_NHAN_VIEN_MOI_CA }} - {{ ca.gio }}</span>
             </button>
             <button
               @click="modalCaChon = null"

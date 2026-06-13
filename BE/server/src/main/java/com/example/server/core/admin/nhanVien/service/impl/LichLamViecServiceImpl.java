@@ -20,6 +20,8 @@ import java.util.Optional;
 @Service
 public class LichLamViecServiceImpl implements LichLamViecService {
 
+    private static final int MAX_NHAN_VIEN_MOI_CA = 3;
+
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanVienRepository nhanVienRepository;
 
@@ -61,15 +63,15 @@ public class LichLamViecServiceImpl implements LichLamViecService {
             throw new BusinessException("Ca làm việc không hợp lệ. Phải là 'sang', 'chieu' hoặc 'toi'");
         }
 
-        // Validate max 6 people rule:
+        // Validate max people per shift rule:
         // If the employee is not already scheduled for this shift on this day, we must check the capacity.
         boolean isAlreadyAssignedToThisShift = lichLamViecRepository.existsByNhanVienIdAndNgayAndCa(request.nhanVienId(), request.ngay(), ca);
         if (!isAlreadyAssignedToThisShift) {
             long count = lichLamViecRepository.countByNgayAndCa(request.ngay(), ca);
-            if (count >= 6) {
+            if (count >= MAX_NHAN_VIEN_MOI_CA) {
                 String tenCa = mapCaName(ca);
                 String formatNgay = request.ngay().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                throw new BusinessException("Ca " + tenCa + " ngày " + formatNgay + " đã đạt số lượng tối đa 6 người!");
+                throw new BusinessException("Ca " + tenCa + " ngày " + formatNgay + " đã đạt số lượng tối đa " + MAX_NHAN_VIEN_MOI_CA + " người!");
             }
         }
 
@@ -91,6 +93,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
 
         // Delete existing shifts in the date range
         lichLamViecRepository.deleteByNgayBetween(tuNgay, denNgay);
+        lichLamViecRepository.flush();
 
         // Fetch active employees
         List<NhanVien> activeEmployees = nhanVienRepository.findAll().stream()
@@ -117,13 +120,13 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 String ca = caTypes[shiftIndex];
 
                 if (ca != null) {
-                    if ("sang".equals(ca) && countSang < 6) {
+                    if ("sang".equals(ca) && countSang < MAX_NHAN_VIEN_MOI_CA) {
                         saveLich(nv, date, ca);
                         countSang++;
-                    } else if ("chieu".equals(ca) && countChieu < 6) {
+                    } else if ("chieu".equals(ca) && countChieu < MAX_NHAN_VIEN_MOI_CA) {
                         saveLich(nv, date, ca);
                         countChieu++;
-                    } else if ("toi".equals(ca) && countToi < 6) {
+                    } else if ("toi".equals(ca) && countToi < MAX_NHAN_VIEN_MOI_CA) {
                         saveLich(nv, date, ca);
                         countToi++;
                     }
