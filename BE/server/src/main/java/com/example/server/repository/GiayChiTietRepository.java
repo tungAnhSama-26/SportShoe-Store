@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
+
 public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Integer> {
 
     boolean existsByGiayIdAndMauSacIdAndKichCoId(Integer giayId, Integer mauSacId, Integer kichCoId);
@@ -138,4 +141,23 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
     /** Biến thể đang bán của nhiều sản phẩm - dùng để tính giá sau giảm cho danh sách. */
     @Query("select gct from GiayChiTiet gct join fetch gct.giay where gct.giay.id in :ids and gct.kichHoat = 1")
     List<GiayChiTiet> findActiveByGiayIds(@Param("ids") Collection<Integer> ids);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE GiayChiTiet gct
+        SET gct.ngayCapNhat = :now
+        WHERE gct.id IN (
+            SELECT link.giayChiTiet.id
+            FROM DotGiamGiaSanPham link
+            JOIN link.dotGiamGia d
+            WHERE d.kichHoat != 0
+              AND d.kichHoat != CASE
+                  WHEN d.ngayKetThuc <= :today THEN 2
+                  WHEN d.ngayBatDau > :today THEN 4
+                  ELSE 1
+              END
+        )
+    """)
+    int touchAffectedVariants(@Param("today") java.time.LocalDate today, @Param("now") java.time.Instant now);
 }
