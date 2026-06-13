@@ -126,14 +126,21 @@ public class KhachHangServiceImpl implements KhachHangService {
         return toKhachHangResponse(khachHangRepository.save(kh));
     }
 
-    /** Số điện thoại không được trùng với khách hàng khác (bỏ qua chính mình khi cập nhật). */
+    /**
+     * Số điện thoại không được trùng với khách hàng khác (bỏ qua chính mình khi cập nhật).
+     * Dùng exists thay vì find để không lỗi khi dữ liệu cũ đã có sẵn nhiều khách trùng số.
+     */
     private void kiemTraSdtTrung(String sdt, UUID idHienTai) {
         if (sdt == null || sdt.isBlank()) {
             return;
         }
-        khachHangRepository.findBySdt(sdt.trim())
-                .filter(existing -> idHienTai == null || !existing.getId().equals(idHienTai))
-                .ifPresent(existing -> { throw new BusinessException("Số điện thoại đã được sử dụng"); });
+        String sdtChuan = sdt.trim();
+        boolean trung = idHienTai == null
+                ? khachHangRepository.existsBySdt(sdtChuan)
+                : khachHangRepository.existsBySdtAndIdNot(sdtChuan, idHienTai);
+        if (trung) {
+            throw new BusinessException("Số điện thoại đã được sử dụng");
+        }
     }
 
     /** Ngày sinh: không ở tương lai và tuổi phải từ 18 đến 100. */

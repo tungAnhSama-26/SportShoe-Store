@@ -155,10 +155,10 @@ public class ClientGioHangService {
     }
 
     /**
-     * Giữ hàng tạm khi khách vào thanh toán: trừ tồn kho và đặt hạn giữ.
-     * Nếu đã đang giữ thì chỉ gia hạn (không trừ lại).
+     * Khách vào trang thanh toán: chỉ KIỂM TRA tồn kho còn đủ, KHÔNG trừ kho.
+     * Tồn kho chỉ bị trừ khi nhân viên xác nhận đơn (bên quản lý hóa đơn).
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public void giuHang(UUID khachHangId) {
         HoaDon gio = timGioHang(khachHangId)
                 .orElseThrow(() -> new BusinessException("Giỏ hàng đang trống"));
@@ -166,20 +166,9 @@ public class ClientGioHangService {
         if (dong.isEmpty()) {
             throw new BusinessException("Giỏ hàng đang trống");
         }
-
-        if (gio.getHanGiuHang() == null) {
-            // Chưa giữ: kiểm tra tồn tất cả trước, rồi mới trừ tạm.
-            for (HoaDonChiTiet ct : dong) {
-                inventoryUseCase.validateAvailable(ct.getGiayChiTiet(), ct.getSoLuong());
-            }
-            for (HoaDonChiTiet ct : dong) {
-                GiayChiTiet gct = ct.getGiayChiTiet();
-                inventoryUseCase.deductStock(gct, ct.getSoLuong());
-                giayChiTietRepository.save(gct);
-            }
+        for (HoaDonChiTiet ct : dong) {
+            inventoryUseCase.validateAvailable(ct.getGiayChiTiet(), ct.getSoLuong());
         }
-        gio.setHanGiuHang(Instant.now().plusSeconds(THOI_GIAN_GIU_GIAY));
-        hoaDonRepository.save(gio);
     }
 
     /** Hủy giữ hàng (khách rời thanh toán): hoàn tồn nếu đang giữ. */

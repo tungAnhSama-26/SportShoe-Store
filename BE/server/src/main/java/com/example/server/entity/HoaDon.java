@@ -108,5 +108,10 @@ public class HoaDon {
     @Column(name = "da_nhan_hang", nullable = false)
     private Boolean daNhanHang = false;
 
+    /** Đơn đã bị trừ tồn kho chưa (online: chỉ trừ khi nhân viên xác nhận đơn). */
+    @ColumnDefault("0")
+    @Column(name = "da_tru_kho", nullable = false)
+    private Boolean daTruKho = false;
+
 
 }

@@ -7,14 +7,16 @@ import com.example.server.core.client.giohang.service.ClientGioHangService;
 import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
+<<<<<<< Updated upstream
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.GiayChiTiet;
+=======
+>>>>>>> Stashed changes
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.ThanhToan;
 import com.example.server.entity.VanChuyen;
 import com.example.server.infrastructure.exception.BusinessException;
-import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.ThanhToanRepository;
@@ -47,7 +49,6 @@ public class ClientDatHangService {
     private final ClientPhiVanChuyenService phiVanChuyenService;
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
-    private final GiayChiTietRepository giayChiTietRepository;
     private final BanHangTaiQuayInventoryUseCase inventoryUseCase;
     private final ThanhToanRepository thanhToanRepository;
     private final VanChuyenRepository vanChuyenRepository;
@@ -59,7 +60,6 @@ public class ClientDatHangService {
             ClientPhiVanChuyenService phiVanChuyenService,
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
-            GiayChiTietRepository giayChiTietRepository,
             BanHangTaiQuayInventoryUseCase inventoryUseCase,
             ThanhToanRepository thanhToanRepository,
             VanChuyenRepository vanChuyenRepository,
@@ -70,7 +70,6 @@ public class ClientDatHangService {
         this.phiVanChuyenService = phiVanChuyenService;
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
-        this.giayChiTietRepository = giayChiTietRepository;
         this.inventoryUseCase = inventoryUseCase;
         this.thanhToanRepository = thanhToanRepository;
         this.vanChuyenRepository = vanChuyenRepository;
@@ -93,19 +92,15 @@ public class ClientDatHangService {
         }
 
         if (hoaDon.getHanGiuHang() != null) {
-            // Tồn kho đã được trừ khi vào thanh toán, chỉ cần chốt đơn.
-            hoaDon.setHanGiuHang(null);
-        } else {
-            // Chưa giữ hoặc phiên giữ đã hết: kiểm tra toàn bộ trước khi trừ.
-            for (HoaDonChiTiet ct : dong) {
-                inventoryUseCase.validateAvailable(ct.getGiayChiTiet(), ct.getSoLuong());
-            }
-            for (HoaDonChiTiet ct : dong) {
-                GiayChiTiet gct = ct.getGiayChiTiet();
-                inventoryUseCase.deductStock(gct, ct.getSoLuong());
-                giayChiTietRepository.save(gct);
-            }
+            // Giỏ còn giữ hàng theo mô hình cũ (trước khi đổi) -> hoàn tồn đã trừ tạm.
+            gioHangService.hoanTonChoHoaDon(hoaDon);
         }
+        // KHÔNG trừ tồn kho khi đặt hàng - chỉ kiểm tra còn đủ. Tồn kho sẽ bị trừ
+        // khi nhân viên chuyển đơn sang "Đã xác nhận" ở quản lý hóa đơn.
+        for (HoaDonChiTiet ct : dong) {
+            inventoryUseCase.validateAvailable(ct.getGiayChiTiet(), ct.getSoLuong());
+        }
+        hoaDon.setDaTruKho(false);
 
         String diaChi = Stream.of(
                         request.diaChiCuThe(),

@@ -254,7 +254,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         switch (trangThai) {
             case "Chờ xác nhận" -> hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
-            case "Đã xác nhận" -> hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
+            case "Đã xác nhận" -> {
+                // Đơn online: tồn kho chỉ bị trừ tại bước xác nhận này (không trừ lúc khách đặt).
+                truKhoDonOnlineNeuChua(hoaDon);
+                hoaDon.setTrangThai(TRANG_THAI_DA_XAC_NHAN);
+            }
             case "Chờ lấy hàng" -> {
                 hoaDon.setTrangThai(TRANG_THAI_CHO_GIAO_HANG);
                 vanChuyen = upsertVanChuyen(hoaDon, vanChuyen, request, TRANG_THAI_VAN_CHUYEN_CHO_XU_LY);
@@ -298,8 +302,17 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 }
             }
             case "Hủy" -> {
+<<<<<<< Updated upstream
                 capNhatThanhToanKhiHuyDon(hoaDon);
                 hoaDon.setTrangThai(TRANG_THAI_HUY);
+=======
+                boolean canHoanTien = capNhatThanhToanKhiHuyDon(hoaDon);
+                // Đơn online đã trừ kho (đã xác nhận trước đó) -> cộng trả lại tồn.
+                hoanKhoDonOnlineNeuDaTru(hoaDon);
+                hoaDon.setTrangThai(canHoanTien
+                        ? TRANG_THAI_CAN_HOAN_TIEN
+                        : TRANG_THAI_HUY);
+>>>>>>> Stashed changes
             }
             case "Yêu cầu hủy" -> hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
             default -> throw new BusinessException("Trạng thái hóa đơn không hợp lệ");
@@ -891,6 +904,42 @@ private boolean isTaiQuay(HoaDon hoaDon) {
 private boolean isTaiQuay(Integer kenhBan) {
     return kenhBan != null && kenhBan == KENH_BAN_TAI_QUAY;
 }
+
+    /** Đơn online: trừ tồn kho khi nhân viên xác nhận (chỉ trừ đúng 1 lần, thiếu hàng thì chặn). */
+    private void truKhoDonOnlineNeuChua(HoaDon hoaDon) {
+        if (isTaiQuay(hoaDon) || Boolean.TRUE.equals(hoaDon.getDaTruKho())) {
+            return;
+        }
+        List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        for (HoaDonChiTiet ct : dong) {
+            GiayChiTiet giayChiTiet = ct.getGiayChiTiet();
+            int ton = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
+            if (ton < ct.getSoLuong()) {
+                throw new BusinessException(
+                        "Số lượng tồn không đủ cho sản phẩm: " + giayChiTiet.getGiay().getTen());
+            }
+        }
+        for (HoaDonChiTiet ct : dong) {
+            GiayChiTiet giayChiTiet = ct.getGiayChiTiet();
+            giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() - ct.getSoLuong());
+            giayChiTietRepository.save(giayChiTiet);
+        }
+        hoaDon.setDaTruKho(true);
+    }
+
+    /** Đơn online bị hủy sau khi đã trừ kho: cộng trả lại tồn (không hoàn trùng). */
+    private void hoanKhoDonOnlineNeuDaTru(HoaDon hoaDon) {
+        if (isTaiQuay(hoaDon) || !Boolean.TRUE.equals(hoaDon.getDaTruKho())) {
+            return;
+        }
+        for (HoaDonChiTiet ct : hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId())) {
+            GiayChiTiet giayChiTiet = ct.getGiayChiTiet();
+            int ton = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
+            giayChiTiet.setSoLuong(ton + ct.getSoLuong());
+            giayChiTietRepository.save(giayChiTiet);
+        }
+        hoaDon.setDaTruKho(false);
+    }
 
 private boolean isDonGiaoHang(HoaDon hoaDon) {
     String diaChi = safeValue(hoaDon.getDiaChiGiaoHang());
