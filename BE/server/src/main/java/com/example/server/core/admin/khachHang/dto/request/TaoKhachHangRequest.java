@@ -17,6 +17,7 @@ public record TaoKhachHangRequest(
         @Size(max = 100, message = "Họ tên không quá 100 ký tự")
         String hoTen,
 
+        @NotBlank(message = "Email không được để trống")
         @Email(message = "Email không hợp lệ")
         @Size(max = 100, message = "Email không quá 100 ký tự")
         String email,
