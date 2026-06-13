@@ -68,7 +68,7 @@ function thanhTien(item) {
 </script>
 
 <template>
-  <main class="bg-slate-50 min-h-screen pb-20">
+  <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
       <h1 class="text-3xl font-bold text-slate-900 mb-8">Giỏ hàng</h1>
 
@@ -144,3 +144,8 @@ function thanhTien(item) {
     </div>
   </main>
 </template>
+<style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
+  </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { layDonHangCuaToi, yeuCauHuyDonHang } from '../services/don-hang';
 import { layKhachId, themVaoGio } from '../services/gio-hang';
@@ -7,6 +7,7 @@ import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
+import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
 
 const router = useRouter();
 const danhSach = ref([]);
@@ -17,7 +18,43 @@ const dangChonDeTra = ref(null);
 const laMoTraHangModal = ref(false);
 const donDangGuiYeuCauHuy = ref(null);
 
-onMounted(taiDanhSach);
+let ngatKetNoiRealtime = null;
+let realtimeRefreshTimeout = null;
+
+function lenLichTaiLaiDanhSach() {
+  if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+  realtimeRefreshTimeout = setTimeout(taiDanhSach, 150);
+}
+
+function dongBoKhiQuayLaiTrang() {
+  if (document.visibilityState === 'visible') {
+    lenLichTaiLaiDanhSach();
+  }
+}
+
+onMounted(() => {
+  taiDanhSach();
+  if (!daDangNhap.value) return;
+
+  window.addEventListener('focus', lenLichTaiLaiDanhSach);
+  document.addEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
+  ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+    authScope: 'customer',
+    onHoaDonThayDoi: lenLichTaiLaiDanhSach,
+    onConnectionChange: (status) => {
+      if (status === 'connected') {
+        lenLichTaiLaiDanhSach();
+      }
+    },
+  });
+});
+
+onBeforeUnmount(() => {
+  ngatKetNoiRealtime?.();
+  window.removeEventListener('focus', lenLichTaiLaiDanhSach);
+  document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
+  if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+});
 
 async function taiDanhSach() {
   dangTai.value = true;
@@ -152,7 +189,7 @@ async function guiYeuCauHuy(don) {
 </script>
 
 <template>
-  <main class="bg-slate-50 min-h-screen pb-20">
+  <main class="orders-six-radius bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-5xl px-6 lg:px-10 pt-10">
       <h1 class="text-3xl font-bold text-slate-900 mb-8">Đơn hàng của bạn</h1>
 
@@ -308,3 +345,9 @@ async function guiYeuCauHuy(don) {
     />
   </main>
 </template>
+
+<style scoped>
+.orders-six-radius :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
+</style>

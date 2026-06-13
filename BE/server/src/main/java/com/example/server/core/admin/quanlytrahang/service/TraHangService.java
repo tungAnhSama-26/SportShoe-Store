@@ -14,6 +14,7 @@ import com.example.server.core.admin.quanlytrahang.dto.request.SanPhamTraRequest
 import com.example.server.core.admin.quanlytrahang.dto.request.TaoPhieuTraHangRequest;
 import com.example.server.core.admin.quanlytrahang.dto.request.TuChoiTraHangRequest;
 import com.example.server.core.admin.quanlytrahang.dto.response.TraHangResponse;
+import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
@@ -63,6 +64,7 @@ public class TraHangService {
     private final NhanVienRepository nhanVienRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final RefundBankAccountResolver refundBankAccountResolver;
+    private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
 
     public TraHangService(
             HoaDonRepository hoaDonRepository,
@@ -74,7 +76,8 @@ public class TraHangService {
             ThanhToanRepository thanhToanRepository,
             NhanVienRepository nhanVienRepository,
             GiayChiTietRepository giayChiTietRepository,
-            RefundBankAccountResolver refundBankAccountResolver
+            RefundBankAccountResolver refundBankAccountResolver,
+            HoaDonRealtimePublisher hoaDonRealtimePublisher
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -86,6 +89,7 @@ public class TraHangService {
         this.nhanVienRepository = nhanVienRepository;
         this.giayChiTietRepository = giayChiTietRepository;
         this.refundBankAccountResolver = refundBankAccountResolver;
+        this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
     }
 
     @Transactional
@@ -166,6 +170,7 @@ public class TraHangService {
         phieuTraHangRepository.save(phieu);
         chiTietDaTao.forEach(phieuTraHangChiTietRepository::save);
         luuLichSu(phieu, nhanVien, null, phieu.getTrangThai(), "Tạo phiếu trả hàng", request.moTa());
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRA_HANG");
         return toResponse(phieu, chiTietDaTao);
     }
 
@@ -494,6 +499,7 @@ public class TraHangService {
                 hanhDong,
                 ghiChu
         );
+        hoaDonRealtimePublisher.publishAfterCommit(phieu.getHoaDon(), "TRA_HANG");
     }
 
     private void luuLichSu(

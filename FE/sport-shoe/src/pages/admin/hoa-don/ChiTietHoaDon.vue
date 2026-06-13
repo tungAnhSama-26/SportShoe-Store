@@ -9,22 +9,6 @@ const productImageFallback =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' rx='14' fill='%23f8fafc'/%3E%3Cpath d='M18 44h35c3 0 5-2 5-5 0-2-1-4-3-5l-10-5-7 8H25l-5-5-6 5v3c0 2 2 4 4 4z' fill='%23e2e8f0'/%3E%3Cpath d='M24 48h30' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
-function mauTrangThaiTraHang(trangThai?: number | null) {
-  switch (trangThai) {
-    case 1: return "bg-amber-50 text-amber-700";
-    case 2: return "bg-blue-50 text-blue-700";
-    case 3: return "bg-violet-50 text-violet-700";
-    case 4: return "bg-cyan-50 text-cyan-700";
-    case 5: return "bg-purple-50 text-purple-700";
-    case 6: return "bg-orange-50 text-orange-700";
-    case 7: return "bg-emerald-50 text-emerald-700";
-    case 8: return "bg-rose-50 text-rose-700";
-    case 9: return "bg-slate-100 text-slate-600";
-    case 10: return "bg-red-50 text-red-700";
-    default: return "bg-slate-100 text-slate-600";
-  }
-}
-
 function resolveProductImageUrl(url?: string) {
   const value = String(url || "").trim();
   if (!value) return productImageFallback;
@@ -44,7 +28,7 @@ function handleProductImageError(event: Event) {
 </script>
 
 <template>
-  <div class="space-y-4 pb-10">
+  <div class="invoice-flat space-y-4 pb-10">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]">Chi Tiết Đơn Hàng</h1>
@@ -97,15 +81,9 @@ function handleProductImageError(event: Event) {
                 <ClipboardList class="h-4.5 w-4.5 text-slate-500" />
                 Trạng Thái Đơn Hàng
               </div>
-              <div v-if="hoaDon.phieuTraHangId" class="flex flex-wrap items-center justify-end gap-2">
+              <div class="flex flex-wrap items-center justify-end gap-2">
                 <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                   {{ hoaDon.trangThai }}
-                </span>
-                <span
-                  class="rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="mauTrangThaiTraHang(hoaDon.trangThaiPhieuTraHang)"
-                >
-                  {{ hoaDon.trangThaiPhieuTraHangText }}
                 </span>
               </div>
             </div>
@@ -953,6 +931,9 @@ function handleProductImageError(event: Event) {
 </template>
 
 <style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
 .price-range-input {
   display: block;
   pointer-events: none;

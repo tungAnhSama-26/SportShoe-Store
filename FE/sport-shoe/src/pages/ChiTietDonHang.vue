@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { layChiTietDonHang, xacNhanDaNhanHang, yeuCauHuyDonHang } from '../services/don-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -12,6 +12,7 @@ import {
 } from '../utils/order-status';
 import anhMacDinh from '../assets/login-shoe.png';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
+import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
 
 const route = useRoute();
 const router = useRouter();
@@ -45,7 +46,45 @@ function lopBadgeTraHang(tt) {
   }
 }
 
-onMounted(taiChiTiet);
+let ngatKetNoiRealtime = null;
+let realtimeRefreshTimeout = null;
+
+function lenLichTaiLaiChiTiet() {
+  if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+  realtimeRefreshTimeout = setTimeout(taiChiTiet, 150);
+}
+
+function dongBoKhiQuayLaiTrang() {
+  if (document.visibilityState === 'visible') {
+    lenLichTaiLaiChiTiet();
+  }
+}
+
+onMounted(() => {
+  taiChiTiet();
+  window.addEventListener('focus', lenLichTaiLaiChiTiet);
+  document.addEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
+  ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+    authScope: 'customer',
+    onHoaDonThayDoi: (event) => {
+      if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+      lenLichTaiLaiChiTiet();
+    },
+    onConnectionChange: (status) => {
+      if (status === 'connected') {
+        lenLichTaiLaiChiTiet();
+      }
+    },
+  });
+});
+
+onBeforeUnmount(() => {
+  ngatKetNoiRealtime?.();
+  window.removeEventListener('focus', lenLichTaiLaiChiTiet);
+  document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
+  if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+});
+
 watch(() => route.params.id, taiChiTiet);
 
 async function taiChiTiet() {
@@ -292,7 +331,7 @@ function xuLyAnhLoi(event) {
 </script>
 
 <template>
-  <main class="bg-slate-50 min-h-screen pb-20">
+  <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-4xl px-6 lg:px-10 pt-8">
       <button @click="router.push('/don-hang')" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
@@ -484,3 +523,8 @@ function xuLyAnhLoi(event) {
     />
   </main>
 </template>
+<style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
+  </style>

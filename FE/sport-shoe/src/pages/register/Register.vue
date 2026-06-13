@@ -139,6 +139,7 @@ const handleImageError = (event) => {
 </script>
 
 <style scoped>
+
 .register-box {
   min-height: calc(365px * var(--scale));
   top: calc(50% - (140px * var(--scale)));

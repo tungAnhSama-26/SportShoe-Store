@@ -7,6 +7,7 @@ import com.example.server.core.client.giohang.service.ClientGioHangService;
 import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
+import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
@@ -50,6 +51,7 @@ public class ClientDatHangService {
     private final BanHangTaiQuayInventoryUseCase inventoryUseCase;
     private final ThanhToanRepository thanhToanRepository;
     private final VanChuyenRepository vanChuyenRepository;
+    private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
 
     public ClientDatHangService(
             ClientGioHangService gioHangService,
@@ -60,7 +62,8 @@ public class ClientDatHangService {
             GiayChiTietRepository giayChiTietRepository,
             BanHangTaiQuayInventoryUseCase inventoryUseCase,
             ThanhToanRepository thanhToanRepository,
-            VanChuyenRepository vanChuyenRepository
+            VanChuyenRepository vanChuyenRepository,
+            HoaDonRealtimePublisher hoaDonRealtimePublisher
     ) {
         this.gioHangService = gioHangService;
         this.voucherService = voucherService;
@@ -71,6 +74,7 @@ public class ClientDatHangService {
         this.inventoryUseCase = inventoryUseCase;
         this.thanhToanRepository = thanhToanRepository;
         this.vanChuyenRepository = vanChuyenRepository;
+        this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
     }
 
     @Transactional
@@ -149,6 +153,7 @@ public class ClientDatHangService {
         hoaDonRepository.save(hoaDon);
         luuVanChuyen(hoaDon, phiShip, now);
         taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
 
         return new DatHangResponse(
                 hoaDon.getId(),

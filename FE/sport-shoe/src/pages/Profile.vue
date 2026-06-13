@@ -602,7 +602,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl px-4 py-8 space-y-6 pb-20">
+  <div class="invoice-flat mx-auto max-w-6xl px-4 py-8 space-y-6 pb-20">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
       <router-link to="/" class="hover:text-primary transition">Trang chủ</router-link>
@@ -1224,6 +1224,9 @@ onMounted(() => {
 
 <style scoped>
 /* Optional custom transitions */
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   CalendarDays,
@@ -22,6 +22,7 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showError } from "../../../utils/alert";
+import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 
 type TrangThaiLoc =
   | "Tất cả"
@@ -83,22 +84,6 @@ const mauTrangThai: Record<string, string> = {
   Hủy: "bg-stone-100 text-stone-600",
   "Yêu cầu hủy": "bg-primary/5 text-primary",
 };
-
-function mauTrangThaiTraHang(trangThai?: number | null) {
-  switch (trangThai) {
-    case 1: return "bg-amber-50 text-amber-700";
-    case 2: return "bg-blue-50 text-blue-700";
-    case 3: return "bg-violet-50 text-violet-700";
-    case 4: return "bg-cyan-50 text-cyan-700";
-    case 5: return "bg-purple-50 text-purple-700";
-    case 6: return "bg-orange-50 text-orange-700";
-    case 7: return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100";
-    case 8: return "bg-rose-50 text-rose-700";
-    case 9: return "bg-slate-100 text-slate-600";
-    case 10: return "bg-red-50 text-red-700";
-    default: return "bg-slate-100 text-slate-600";
-  }
-}
 
 function dinhDangTien(value: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -305,11 +290,28 @@ watch(
   { deep: true },
 );
 
-onMounted(taiDanhSach);
+let ngatKetNoiRealtime: (() => void) | null = null;
+let realtimeRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
+
+onMounted(() => {
+  taiDanhSach();
+  ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+    authScope: "admin",
+    onHoaDonThayDoi: () => {
+      if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+      realtimeRefreshTimeout = setTimeout(taiDanhSach, 150);
+    },
+  });
+});
+
+onBeforeUnmount(() => {
+  ngatKetNoiRealtime?.();
+  if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+});
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="invoice-flat space-y-5">
     <!-- Header removed -->
 
     <Card>
@@ -487,21 +489,12 @@ onMounted(taiDanhSach);
               <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
               <td class="px-3 py-3.5">{{ hoaDon.loaiDon }}</td>
               <td class="px-3 py-3.5 text-center">
-                <div class="flex flex-col items-center gap-1.5">
-                  <span
-                    class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
-                    :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
-                  >
-                    {{ hoaDon.trangThai }}
-                  </span>
-                  <span
-                    v-if="hoaDon.phieuTraHangId != null"
-                    class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
-                    :class="mauTrangThaiTraHang(hoaDon.trangThaiPhieuTraHang)"
-                  >
-                    {{ hoaDon.trangThaiPhieuTraHangText }}
-                  </span>
-                </div>
+                <span
+                  class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
+                  :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
+                >
+                  {{ hoaDon.trangThai }}
+                </span>
               </td>
               <td class="rounded-r-2xl px-3 py-3.5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
@@ -549,6 +542,9 @@ onMounted(taiDanhSach);
 </template>
 
 <style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
 .tab-fade-enter-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
