@@ -27,6 +27,8 @@ public final class NhanVienResponses {
             Instant ngayTao,
             String matKhauTamThoi,
             Boolean emailDaGuiThanhCong,
-            String canhBaoEmail
+            String canhBaoEmail,
+            Boolean batBuocDoiMatKhau,
+            Instant hanDoiMatKhau
     ) {}
 }
