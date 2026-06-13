@@ -303,6 +303,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             }
             case "Hủy" -> {
                 capNhatThanhToanKhiHuyDon(hoaDon);
+                // Đơn online đã trừ kho (đã xác nhận trước đó) -> cộng trả lại tồn.
+                hoanKhoDonOnlineNeuDaTru(hoaDon);
                 hoaDon.setTrangThai(TRANG_THAI_HUY);
             }
             case "Yêu cầu hủy" -> hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
