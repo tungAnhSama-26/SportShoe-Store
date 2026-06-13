@@ -18,8 +18,8 @@ SET NOCOUNT ON;
 GO
 
 -- ============================================================
--- SPORTSHOE STORE - SCHEMA + RULES
--- Run this file first, then run: 02_seed_full_10_records.sql
+-- SPORTSHOE STORE - DATABASE SCHEMA
+-- Run this file first, then run: 02_data.sql
 --
 -- Common status rules:
 -- 0 = inactive/locked/cancelled where applicable
@@ -288,6 +288,7 @@ CREATE TABLE giay (
     gioi_tinh      INT           NULL,
     chat_lieu      NVARCHAR(100) NULL,
     mo_ta          NVARCHAR(MAX) NULL,
+    hinh_anh       NVARCHAR(500) NULL,
     trang_thai     INT           NOT NULL CONSTRAINT df_giay_trang_thai DEFAULT 1,
     ngay_tao       DATETIME2     NOT NULL CONSTRAINT df_giay_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat  DATETIME2     NULL,
@@ -439,6 +440,8 @@ CREATE TABLE hoa_don (
     ghi_chu               NVARCHAR(1000)   NULL,
     ngay_tao              DATETIME2        NOT NULL CONSTRAINT df_hoa_don_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat         DATETIME2        NULL,
+    han_giu_hang           DATETIME2        NULL,
+    da_nhan_hang           BIT              NOT NULL CONSTRAINT df_hoa_don_da_nhan_hang DEFAULT 0,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
     CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 9, 10)),
@@ -502,46 +505,39 @@ CREATE TABLE van_chuyen (
 );
 GO
 
-CREATE TABLE thanh_toan (
-    id                INT              NOT NULL CONSTRAINT pk_thanh_toan PRIMARY KEY IDENTITY(1,1),
-    hoa_don_id        INT              NOT NULL,
-    nhan_vien_id      UNIQUEIDENTIFIER NULL,
-    ma_giao_dich      NVARCHAR(200)    NULL,
-    hinh_thuc         INT              NOT NULL,
-    so_tien           DECIMAL(18,2)    NOT NULL,
-    tien_thoi_lai     DECIMAL(18,2)    NULL,
-    ngan_hang         NVARCHAR(100)    NULL,
-    noi_dung_ck       NVARCHAR(300)    NULL,
-    cong_thanh_toan   NVARCHAR(100)    NULL,
-    ngay_thanh_toan   DATETIME2        NULL,
-    trang_thai        INT              NOT NULL,
-    ghi_chu           NVARCHAR(500)    NULL,
-    ngay_tao          DATETIME2        NOT NULL CONSTRAINT df_tt_ngay_tao DEFAULT SYSDATETIME(),
-    CONSTRAINT ck_tt_hinh_thuc CHECK (hinh_thuc IN (1, 2, 3, 4)),
-    CONSTRAINT ck_tt_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5)),
-    CONSTRAINT ck_tt_so_tien CHECK (so_tien > 0),
-    CONSTRAINT ck_tt_thoi_lai CHECK (tien_thoi_lai IS NULL OR tien_thoi_lai >= 0),
-    CONSTRAINT fk_tt_hoa_don FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id) ON DELETE CASCADE,
-    CONSTRAINT fk_tt_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id)
-);
-GO
-
 CREATE TABLE phieu_tra_hang (
-    id              INT              NOT NULL CONSTRAINT pk_phieu_tra_hang PRIMARY KEY IDENTITY(1,1),
-    ma              NVARCHAR(150)    NOT NULL,
-    hoa_don_id      INT              NOT NULL,
-    khach_hang_id   UNIQUEIDENTIFIER NOT NULL,
-    nhan_vien_id    UNIQUEIDENTIFIER NULL,
-    ly_do           NVARCHAR(500)    NULL,
-    tong_tien_hoan  DECIMAL(18,2)    NOT NULL,
-    hinh_thuc_hoan  INT              NOT NULL,
-    trang_thai      INT              NOT NULL CONSTRAINT df_pth_trang_thai DEFAULT 1,
-    ngay_tao        DATETIME2        NOT NULL CONSTRAINT df_pth_ngay_tao DEFAULT SYSDATETIME(),
-    ngay_cap_nhat   DATETIME2        NULL,
+    id                     INT              NOT NULL CONSTRAINT pk_phieu_tra_hang PRIMARY KEY IDENTITY(1,1),
+    ma                     NVARCHAR(150)    NOT NULL,
+    hoa_don_id             INT              NOT NULL,
+    khach_hang_id          UNIQUEIDENTIFIER NULL,
+    nhan_vien_id           UNIQUEIDENTIFIER NULL,
+    ly_do                  NVARCHAR(500)    NULL,
+    tong_tien_hoan         DECIMAL(18,2)    NOT NULL,
+    hinh_thuc_hoan         INT              NOT NULL,
+    loai_yeu_cau           INT              NOT NULL CONSTRAINT df_pth_loai_yeu_cau DEFAULT 1,
+    ly_do_ma               NVARCHAR(50)     NULL,
+    mo_ta                  NVARCHAR(1000)   NULL,
+    tong_tien_du_kien      DECIMAL(18,2)    NOT NULL CONSTRAINT df_pth_tien_du_kien DEFAULT 0,
+    tong_tien_thuc_te      DECIMAL(18,2)    NOT NULL CONSTRAINT df_pth_tien_thuc_te DEFAULT 0,
+    don_vi_van_chuyen      NVARCHAR(100)    NULL,
+    ma_van_don_hoan        NVARCHAR(150)    NULL,
+    trang_thai_van_chuyen  INT              NULL,
+    ly_do_tu_choi          NVARCHAR(500)    NULL,
+    trang_thai             INT              NOT NULL CONSTRAINT df_pth_trang_thai DEFAULT 1,
+    ngay_duyet             DATETIME2        NULL,
+    ngay_gui_hang          DATETIME2        NULL,
+    ngay_nhan_hang         DATETIME2        NULL,
+    ngay_kiem_tra          DATETIME2        NULL,
+    ngay_hoan_tat          DATETIME2        NULL,
+    ngay_tao               DATETIME2        NOT NULL CONSTRAINT df_pth_ngay_tao DEFAULT SYSDATETIME(),
+    ngay_cap_nhat          DATETIME2        NULL,
     CONSTRAINT uq_pth_ma UNIQUE (ma),
     CONSTRAINT ck_pth_hinh_thuc CHECK (hinh_thuc_hoan IN (1, 2, 3)),
-    CONSTRAINT ck_pth_trang_thai CHECK (trang_thai IN (1, 2, 3)),
+    CONSTRAINT ck_pth_loai_yeu_cau CHECK (loai_yeu_cau IN (1, 2)),
+    CONSTRAINT ck_pth_trang_thai CHECK (trang_thai BETWEEN 1 AND 10),
     CONSTRAINT ck_pth_tong_tien CHECK (tong_tien_hoan >= 0),
+    CONSTRAINT ck_pth_tien_du_kien CHECK (tong_tien_du_kien >= 0),
+    CONSTRAINT ck_pth_tien_thuc_te CHECK (tong_tien_thuc_te >= 0),
     CONSTRAINT fk_pth_hoa_don FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id),
     CONSTRAINT fk_pth_khach_hang FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id),
     CONSTRAINT fk_pth_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id)
@@ -556,16 +552,107 @@ CREATE TABLE phieu_tra_hang_chi_tiet (
     so_luong_tra         INT           NOT NULL CONSTRAINT df_pthct_so_luong_tra DEFAULT 1,
     gia_ban              DECIMAL(18,2) NOT NULL,
     thanh_tien           DECIMAL(18,2) NOT NULL,
+    so_luong_nhan        INT           NOT NULL CONSTRAINT df_pthct_so_luong_nhan DEFAULT 0,
+    so_luong_chap_nhan   INT           NOT NULL CONSTRAINT df_pthct_so_luong_chap_nhan DEFAULT 0,
+    so_luong_tu_choi     INT           NOT NULL CONSTRAINT df_pthct_so_luong_tu_choi DEFAULT 0,
+    tinh_trang_san_pham  NVARCHAR(500) NULL,
+    so_tien_hoan         DECIMAL(18,2) NOT NULL CONSTRAINT df_pthct_so_tien_hoan DEFAULT 0,
+    nhap_lai_ton_kho     BIT           NOT NULL CONSTRAINT df_pthct_nhap_lai_ton DEFAULT 0,
+    da_cap_nhat_ton      BIT           NOT NULL CONSTRAINT df_pthct_da_cap_nhat_ton DEFAULT 0,
     trang_thai           INT           NOT NULL CONSTRAINT df_pthct_trang_thai DEFAULT 1,
     ghi_chu              NVARCHAR(500) NULL,
     ngay_tao             DATETIME2     NOT NULL CONSTRAINT df_pthct_ngay_tao DEFAULT SYSDATETIME(),
     CONSTRAINT ck_pthct_so_luong CHECK (so_luong_tra > 0),
     CONSTRAINT ck_pthct_gia_ban CHECK (gia_ban >= 0),
     CONSTRAINT ck_pthct_thanh_tien CHECK (thanh_tien = so_luong_tra * gia_ban),
+    CONSTRAINT ck_pthct_so_luong_xu_ly CHECK (
+        so_luong_nhan >= 0
+        AND so_luong_chap_nhan >= 0
+        AND so_luong_tu_choi >= 0
+        AND so_luong_chap_nhan + so_luong_tu_choi <= so_luong_nhan
+        AND so_luong_nhan <= so_luong_tra
+    ),
+    CONSTRAINT ck_pthct_so_tien_hoan CHECK (so_tien_hoan >= 0),
     CONSTRAINT ck_pthct_trang_thai CHECK (trang_thai IN (0, 1)),
     CONSTRAINT fk_pthct_phieu FOREIGN KEY (phieu_tra_hang_id) REFERENCES phieu_tra_hang(id) ON DELETE CASCADE,
     CONSTRAINT fk_pthct_hdct FOREIGN KEY (hoa_don_chi_tiet_id) REFERENCES hoa_don_chi_tiet(id),
     CONSTRAINT fk_pthct_gct FOREIGN KEY (giay_chi_tiet_id) REFERENCES giay_chi_tiet(id)
+);
+GO
+
+CREATE TABLE lich_su_phieu_tra_hang (
+    id                  INT              NOT NULL CONSTRAINT pk_ls_pth PRIMARY KEY IDENTITY(1,1),
+    phieu_tra_hang_id   INT              NOT NULL,
+    nhan_vien_id        UNIQUEIDENTIFIER NULL,
+    trang_thai_cu       INT              NULL,
+    trang_thai_moi      INT              NOT NULL,
+    hanh_dong           NVARCHAR(200)    NOT NULL,
+    ghi_chu             NVARCHAR(1000)   NULL,
+    ngay_tao            DATETIME2        NOT NULL CONSTRAINT df_ls_pth_ngay_tao DEFAULT SYSDATETIME(),
+    CONSTRAINT fk_ls_pth_phieu FOREIGN KEY (phieu_tra_hang_id) REFERENCES phieu_tra_hang(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ls_pth_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id)
+);
+GO
+
+CREATE TABLE hinh_anh_tra_hang (
+    id                         INT            NOT NULL CONSTRAINT pk_hinh_anh_tra_hang PRIMARY KEY IDENTITY(1,1),
+    phieu_tra_hang_id          INT            NOT NULL,
+    phieu_tra_hang_chi_tiet_id INT            NULL,
+    url                        NVARCHAR(1000) NOT NULL,
+    loai_anh                   INT            NOT NULL CONSTRAINT df_hat_loai_anh DEFAULT 1,
+    ghi_chu                    NVARCHAR(500)  NULL,
+    ngay_tao                   DATETIME2      NOT NULL CONSTRAINT df_hat_ngay_tao DEFAULT SYSDATETIME(),
+    CONSTRAINT ck_hat_loai_anh CHECK (loai_anh IN (1, 2)),
+    CONSTRAINT fk_hat_phieu FOREIGN KEY (phieu_tra_hang_id) REFERENCES phieu_tra_hang(id) ON DELETE CASCADE,
+    CONSTRAINT fk_hat_chi_tiet FOREIGN KEY (phieu_tra_hang_chi_tiet_id) REFERENCES phieu_tra_hang_chi_tiet(id)
+);
+GO
+
+CREATE TABLE thanh_toan (
+    id                 INT              NOT NULL CONSTRAINT pk_thanh_toan PRIMARY KEY IDENTITY(1,1),
+    hoa_don_id         INT              NOT NULL,
+    nhan_vien_id       UNIQUEIDENTIFIER NULL,
+    phieu_tra_hang_id  INT              NULL,
+    giao_dich_goc_id   INT              NULL,
+    ma_giao_dich       NVARCHAR(200)    NULL,
+    hinh_thuc          INT              NOT NULL,
+    loai_giao_dich     INT              NOT NULL CONSTRAINT df_tt_loai_giao_dich DEFAULT 1,
+    so_tien            DECIMAL(18,2)    NOT NULL,
+    tien_thoi_lai      DECIMAL(18,2)    NULL,
+    ngan_hang          NVARCHAR(100)    NULL,
+    noi_dung_ck        NVARCHAR(300)    NULL,
+    cong_thanh_toan    NVARCHAR(100)    NULL,
+    ngay_thanh_toan    DATETIME2        NULL,
+    trang_thai         INT              NOT NULL,
+    ghi_chu            NVARCHAR(500)    NULL,
+    ngay_tao           DATETIME2        NOT NULL CONSTRAINT df_tt_ngay_tao DEFAULT SYSDATETIME(),
+    CONSTRAINT ck_tt_hinh_thuc CHECK (hinh_thuc IN (1, 2, 3, 4)),
+    CONSTRAINT ck_tt_loai_giao_dich CHECK (loai_giao_dich IN (1, 2)),
+    CONSTRAINT ck_tt_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5)),
+    CONSTRAINT ck_tt_so_tien CHECK (so_tien > 0),
+    CONSTRAINT ck_tt_thoi_lai CHECK (tien_thoi_lai IS NULL OR tien_thoi_lai >= 0),
+    CONSTRAINT fk_tt_hoa_don FOREIGN KEY (hoa_don_id) REFERENCES hoa_don(id) ON DELETE CASCADE,
+    CONSTRAINT fk_tt_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id),
+    CONSTRAINT fk_tt_phieu_tra_hang FOREIGN KEY (phieu_tra_hang_id) REFERENCES phieu_tra_hang(id),
+    CONSTRAINT fk_tt_giao_dich_goc FOREIGN KEY (giao_dich_goc_id) REFERENCES thanh_toan(id)
+);
+GO
+
+CREATE TABLE danh_gia (
+    id                   INT              NOT NULL CONSTRAINT pk_danh_gia PRIMARY KEY IDENTITY(1,1),
+    giay_id              INT              NOT NULL,
+    khach_hang_id        UNIQUEIDENTIFIER NOT NULL,
+    hoa_don_chi_tiet_id  INT              NULL,
+    so_sao               INT              NOT NULL,
+    noi_dung             NVARCHAR(1000)   NULL,
+    trang_thai           INT              NOT NULL CONSTRAINT df_danh_gia_trang_thai DEFAULT 1,
+    ngay_tao             DATETIME2        NOT NULL CONSTRAINT df_danh_gia_ngay_tao DEFAULT SYSDATETIME(),
+    ngay_cap_nhat         DATETIME2        NULL,
+    CONSTRAINT ck_danh_gia_so_sao CHECK (so_sao BETWEEN 1 AND 5),
+    CONSTRAINT ck_danh_gia_trang_thai CHECK (trang_thai IN (0, 1)),
+    CONSTRAINT fk_danh_gia_giay FOREIGN KEY (giay_id) REFERENCES giay(id),
+    CONSTRAINT fk_danh_gia_khach_hang FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id),
+    CONSTRAINT fk_danh_gia_hdct FOREIGN KEY (hoa_don_chi_tiet_id) REFERENCES hoa_don_chi_tiet(id)
 );
 GO
 
@@ -609,8 +696,15 @@ CREATE INDEX ix_hdct_hoa_don ON hoa_don_chi_tiet(hoa_don_id);
 CREATE INDEX ix_hdct_gct ON hoa_don_chi_tiet(giay_chi_tiet_id);
 CREATE INDEX ix_vc_hoa_don ON van_chuyen(hoa_don_id);
 CREATE INDEX ix_tt_hoa_don ON thanh_toan(hoa_don_id);
+CREATE INDEX ix_tt_phieu_tra_hang ON thanh_toan(phieu_tra_hang_id);
+CREATE INDEX ix_tt_giao_dich_goc ON thanh_toan(giao_dich_goc_id);
 CREATE INDEX ix_pth_hoa_don ON phieu_tra_hang(hoa_don_id);
 CREATE INDEX ix_pthct_phieu ON phieu_tra_hang_chi_tiet(phieu_tra_hang_id);
+CREATE INDEX ix_ls_pth_phieu ON lich_su_phieu_tra_hang(phieu_tra_hang_id);
+CREATE INDEX ix_hat_phieu ON hinh_anh_tra_hang(phieu_tra_hang_id);
+CREATE INDEX ix_danh_gia_giay ON danh_gia(giay_id);
+CREATE INDEX ix_danh_gia_khach_hang ON danh_gia(khach_hang_id);
+CREATE INDEX ix_danh_gia_hdct ON danh_gia(hoa_don_chi_tiet_id);
 CREATE INDEX ix_lich_lam_viec_ngay_ca ON lich_lam_viec(ngay, ca);
 GO
 

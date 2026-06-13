@@ -33,6 +33,12 @@ function taoHoaDonCho(payload) {
     body: JSON.stringify(payload)
   });
 }
+function capNhatHoaDonCho(id, payload) {
+  return request(`/admin/ban-hang-tai-quay/hoa-don-cho/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
 function apDungPhieuGiamGiaTaiQuay(payload) {
   return request("/admin/ban-hang-tai-quay/phieu-giam-gia/ap-dung", {
     method: "POST",
@@ -79,6 +85,7 @@ export {
   layDanhSachHoaDonCho,
   tinhPhiVanChuyenTaiQuay,
   taoHoaDonCho,
+  capNhatHoaDonCho,
   thanhToanTaiQuay,
   timKhachHangTheoSoDienThoai,
   timPhieuGiamGiaTaiQuay,

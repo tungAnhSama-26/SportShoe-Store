@@ -72,15 +72,13 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienResponse taoNhanVien(TaoNhanVienRequest request) {
-        if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
-            throw new BusinessException("Ngày sinh không được quá 100 tuổi");
-        }
+        validateNgaySinhNhanVien(request.ngaySinh());
         Integer vaiTro = validateVaiTro(request.vaiTro());
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         if (nhanVienRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException("Email đã được sử dụng");
         }
-        String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail);
+        String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail, null);
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
@@ -127,18 +125,9 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request) {
-        if (request.ngaySinh() != null && request.ngaySinh().isBefore(LocalDate.now().minusYears(100))) {
-            throw new BusinessException("Ngày sinh không được quá 100 tuổi");
-        }
+        validateNgaySinhNhanVien(request.ngaySinh());
         Integer vaiTro = validateVaiTro(request.vaiTro());
         NhanVien nv = findNhanVien(id);
-
-        String normalizedTenDangNhap = normalizeRequired(request.tenDangNhap(), "Ten dang nhap khong duoc de trong");
-        nhanVienRepository.findByTenDangNhapIgnoreCase(normalizedTenDangNhap)
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> {
-                    throw new BusinessException("Ten dang nhap da duoc su dung");
-                });
 
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         nhanVienRepository.findByEmail(normalizedEmail)
@@ -146,6 +135,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 .ifPresent(existing -> {
                     throw new BusinessException("Email đã được sử dụng");
                 });
+        String normalizedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail, id);
 
         String normalizedCccd = normalizeCccd(request.cccd());
         if (normalizedCccd != null) {
@@ -238,26 +228,24 @@ public class NhanVienServiceImpl implements NhanVienService {
         return resolved.isBlank() ? null : resolved;
     }
 
-    private String normalizeRequired(String value, String message) {
-        String resolved = normalize(value);
-        if (resolved == null) {
-            throw new BusinessException(message);
-        }
-        return resolved;
-    }
-
-    private String generateTenDangNhapFromEmail(String email) {
+    private String generateTenDangNhapFromEmail(String email, UUID currentEmployeeId) {
         String baseUsername = email.split("@")[0].trim().toLowerCase(Locale.ROOT);
         if (baseUsername.isBlank()) {
-            throw new BusinessException("Email khong hop le de tao ten dang nhap");
+            throw new BusinessException("Email không hợp lệ để tạo tên đăng nhập");
         }
 
         String username = baseUsername;
         int counter = 1;
-        while (nhanVienRepository.existsByTenDangNhapIgnoreCase(username)) {
+        while (isUsernameUsedByAnotherEmployee(username, currentEmployeeId)) {
             username = baseUsername + counter++;
         }
         return username;
+    }
+
+    private boolean isUsernameUsedByAnotherEmployee(String username, UUID currentEmployeeId) {
+        return nhanVienRepository.findByTenDangNhapIgnoreCase(username)
+                .filter(existing -> currentEmployeeId == null || !existing.getId().equals(currentEmployeeId))
+                .isPresent();
     }
 
     private String normalizeOptional(String value) {
@@ -320,6 +308,22 @@ public class NhanVienServiceImpl implements NhanVienService {
             return vaiTro;
         }
         throw new BusinessException("Vai tro khong hop le");
+    }
+
+    private void validateNgaySinhNhanVien(LocalDate ngaySinh) {
+        if (ngaySinh == null) {
+            return;
+        }
+        LocalDate today = LocalDate.now();
+        if (ngaySinh.isAfter(today)) {
+            throw new BusinessException("Ngày sinh không được là ngày trong tương lai");
+        }
+        if (ngaySinh.isAfter(today.minusYears(18))) {
+            throw new BusinessException("Nhân viên phải từ đủ 18 tuổi");
+        }
+        if (ngaySinh.isBefore(today.minusYears(80))) {
+            throw new BusinessException("Tuổi nhân viên không được lớn hơn 80");
+        }
     }
 
     private Integer normalizeVaiTro(Integer vaiTro) {

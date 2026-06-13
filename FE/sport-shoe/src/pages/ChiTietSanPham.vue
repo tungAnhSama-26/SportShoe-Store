@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { layChiTietSanPham, layDanhGia, guiDanhGia } from '../services/san-pham';
+import { layChiTietSanPham, layDanhGia } from '../services/san-pham';
 import { themVaoGio as apiThemGio, layKhachId } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -20,21 +20,8 @@ const mauChon = ref('');
 const sizeChon = ref('');
 const soLuongMua = ref(1);
 
-// Đánh giá
+// Đánh giá (chỉ hiển thị - khách đánh giá qua trang Đơn hàng sau khi nhận hàng).
 const danhGia = ref({ diemTrungBinh: 0, soLuong: 0, danhSach: [] });
-const soSaoMoi = ref(0);
-const noiDungMoi = ref('');
-const dangGui = ref(false);
-const khachHienTai = ref(layKhachHienTai());
-
-function layKhachHienTai() {
-  try {
-    const raw = localStorage.getItem('user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 onMounted(taiTatCa);
 watch(() => route.params.id, taiTatCa);
@@ -241,33 +228,6 @@ function chuCaiDau(ten) {
   return String(ten || '?').trim().charAt(0).toUpperCase() || '?';
 }
 
-async function guiDanhGiaMoi() {
-  if (!khachHienTai.value?.id) {
-    showWarning('Vui lòng đăng nhập để gửi đánh giá.');
-    return;
-  }
-  if (!soSaoMoi.value) {
-    showWarning('Vui lòng chọn số sao.');
-    return;
-  }
-  dangGui.value = true;
-  try {
-    await guiDanhGia(route.params.id, {
-      khachHangId: khachHienTai.value.id,
-      soSao: soSaoMoi.value,
-      noiDung: noiDungMoi.value.trim() || null,
-    });
-    soSaoMoi.value = 0;
-    noiDungMoi.value = '';
-    await taiDanhGia();
-    showSuccess('Cảm ơn bạn đã đánh giá sản phẩm!');
-  } catch (e) {
-    showError(getDisplayErrorMessage(e, 'Không thể gửi đánh giá'));
-  } finally {
-    dangGui.value = false;
-  }
-}
-
 function xuLyAnhLoi(event) {
   if (event.target.src !== anhMacDinh) event.target.src = anhMacDinh;
 }
@@ -303,6 +263,8 @@ function xuLyAnhLoi(event) {
                 <span v-for="i in 5" :key="i" class="text-base" :class="saoSang(danhGia.diemTrungBinh, i) ? 'text-amber-400' : 'text-slate-300'">★</span>
               </div>
               <span class="text-sm text-slate-500">{{ danhGia.diemTrungBinh || 0 }} ({{ danhGia.soLuong }} đánh giá)</span>
+              <span class="text-slate-300">|</span>
+              <span class="text-sm text-slate-500">Đã bán {{ sanPham.daBan || 0 }}</span>
             </div>
 
             <p v-if="gioiTinhNhan" class="mt-1 text-sm text-slate-400">Giới tính: {{ gioiTinhNhan }}</p>
@@ -409,30 +371,7 @@ function xuLyAnhLoi(event) {
             </div>
           </div>
 
-          <!-- Form gửi đánh giá -->
-          <div v-if="khachHienTai?.id" class="mb-7 rounded-2xl bg-slate-50 p-5">
-            <p class="text-sm font-semibold text-slate-700 mb-3">Viết đánh giá của bạn</p>
-            <div class="flex items-center gap-1 mb-3">
-              <button v-for="i in 5" :key="i" @click="soSaoMoi = i" type="button" class="text-2xl transition" :class="i <= soSaoMoi ? 'text-amber-400' : 'text-slate-300 hover:text-amber-300'">★</button>
-            </div>
-            <textarea
-              v-model="noiDungMoi"
-              rows="3"
-              maxlength="1000"
-              placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
-              class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
-            ></textarea>
-            <div class="mt-3 flex justify-end">
-              <button @click="guiDanhGiaMoi" :disabled="dangGui" class="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90 disabled:opacity-60">
-                {{ dangGui ? 'Đang gửi...' : 'Gửi đánh giá' }}
-              </button>
-            </div>
-          </div>
-          <div v-else class="mb-7 rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500">
-            <router-link to="/login" class="font-semibold text-primary hover:underline">Đăng nhập</router-link> để gửi đánh giá cho sản phẩm này.
-          </div>
-
-          <!-- Danh sách đánh giá -->
+          <!-- Danh sách đánh giá (chỉ khách đã mua và nhận hàng mới đánh giá được, từ trang đơn hàng) -->
           <div v-if="danhGia.danhSach.length" class="space-y-5">
             <div v-for="dg in danhGia.danhSach" :key="dg.id" class="flex gap-4">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
@@ -450,7 +389,7 @@ function xuLyAnhLoi(event) {
               </div>
             </div>
           </div>
-          <p v-else class="text-sm text-slate-400">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+          <p v-else class="text-sm text-slate-400">Chưa có đánh giá nào. Khách hàng đã mua và nhận hàng có thể đánh giá trong mục Đơn hàng của bạn.</p>
         </section>
       </template>
     </div>

@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface KhachHangRepository extends JpaRepository<KhachHang, UUID> {
 
+    /** Số khách theo trạng thái (1 = đang hoạt động) - cho thống kê trang chủ. */
+    long countByTrangThai(Integer trangThai);
+
     @Query("""
             select kh
             from KhachHang kh
@@ -39,6 +42,8 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, UUID> {
     boolean existsByTenDangNhap(String tenDangNhap);
 
     boolean existsByEmail(String email);
+
+    Optional<KhachHang> findBySdt(String sdt);
 
     Optional<KhachHang> findByEmail(String email);
 

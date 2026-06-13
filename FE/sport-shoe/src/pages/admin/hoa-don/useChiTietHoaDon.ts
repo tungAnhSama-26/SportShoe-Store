@@ -609,8 +609,7 @@ export function useChiTietHoaDon() {
     { key: "Giao hàng thất bại", label: "Giao hàng thất bại" },
     { key: "Hoàn thành", label: "Hoàn thành" },
     { key: "Hủy", label: "Hủy" },
-    { key: "Yêu cầu hủy", label: "Yêu cầu hủy" },
-    { key: "Cần hoàn tiền", label: "Cần hoàn tiền" }
+    { key: "Yêu cầu hủy", label: "Yêu cầu hủy" }
   ];
 
   const indexTrangThaiHienTai = computed(() => {
@@ -648,7 +647,7 @@ export function useChiTietHoaDon() {
       return key === "Hoàn thành";
     }
     if (donGiaoThatBai.value) {
-      return key === "Giao hàng thất bại" || key === "Hủy" || key === "Cần hoàn tiền";
+      return key === "Giao hàng thất bại" || key === "Hủy";
     }
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     if ((stt === "đang giao hàng" || stt === "chờ giao hàng") && key === "Giao hàng thất bại") {
