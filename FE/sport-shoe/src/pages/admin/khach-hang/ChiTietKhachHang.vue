@@ -6,8 +6,6 @@ import {
   capNhatDiaChi,
   capNhatKhachHang,
   datMacDinhDiaChi,
-  doiMatKhauKhachHang,
-  doiTrangThaiKhachHang,
   layChiTietKhachHang,
   layDanhSachDiaChi,
   taoKhachHang,
@@ -199,8 +197,6 @@ watch([() => form.value.email, () => form.value.sdt, () => form.value.hoTen], ()
   form.value.tenDangNhap = taoTenDangNhapKhachHang();
 });
 
-const matKhauMoi = ref("");
-const showDoiMatKhau = ref(false);
 
 async function taiChiTiet() {
   if (laMoi) {
@@ -247,7 +243,10 @@ function validateThongTin(): boolean {
     hasError = true;
   }
 
-  if (email) {
+  if (!email && laMoi) {
+    loiForm.value.email = "Vui lòng nhập email khách hàng.";
+    hasError = true;
+  } else if (email) {
     if (!isValidEmail(email)) {
       loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
       hasError = true;
@@ -460,39 +459,6 @@ async function datLamMacDinh(diaChiId: number) {
   }
 }
 
-async function doiMatKhau() {
-  if (!matKhauMoi.value.trim() || matKhauMoi.value.length < 6) {
-    loiTrang.value = "Mật khẩu mới phải có ít nhất 6 ký tự.";
-    return;
-  }
-  dangLuu.value = true;
-  loiTrang.value = "";
-  try {
-    await doiMatKhauKhachHang(id!, matKhauMoi.value);
-    matKhauMoi.value = "";
-    showDoiMatKhau.value = false;
-    showSuccess("Đã đổi mật khẩu thành công!", "Thành công");
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể đổi mật khẩu khách hàng");
-  } finally {
-    dangLuu.value = false;
-  }
-}
-
-async function doiTrangThai(trangThai: number) {
-  const hanhDong = trangThai === 1 ? "kích hoạt" : "khóa";
-  const tenKhachHang = form.value.hoTen || form.value.tenDangNhap || "khách hàng này";
-  const isConfirmed = await showConfirm(`Bạn có chắc muốn ${hanhDong} ${tenKhachHang} không?`);
-  if (!isConfirmed) return;
-  try {
-    const updated = await doiTrangThaiKhachHang(id!, trangThai);
-    khachHang.value = updated;
-    showSuccess(trangThai === 1 ? "Đã kích hoạt khách hàng!" : "Đã khóa khách hàng!", "Thành công");
-  } catch (e) {
-    loiTrang.value = getDisplayErrorMessage(e, "Không thể cập nhật trạng thái khách hàng");
-  }
-}
-
 async function xuLyUploadAnh(event: Event) {
   const target = event.target as HTMLInputElement;
   if (!target.files?.length) return;
@@ -562,28 +528,6 @@ onMounted(taiChiTiet);
             <p v-else class="mt-2 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
           </Card>
 
-          <!-- Extra functions for edit mode -->
-          <template v-if="!laMoi">
-            <Card>
-              <h3 class="mb-3 text-sm font-bold text-slate-800">Đổi mật khẩu</h3>
-              <div v-if="!showDoiMatKhau">
-                <Button variant="outline" class="w-full justify-center" @click="showDoiMatKhau = true">Đổi mật khẩu</Button>
-              </div>
-              <div v-else class="space-y-3">
-                <input v-model="matKhauMoi" type="password" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)" class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" />
-                <div class="flex gap-2">
-                  <Button variant="primary" class="flex-1 justify-center" @click="doiMatKhau" :disabled="dangLuu">Xác nhận</Button>
-                  <Button variant="soft" class="flex-1 justify-center" @click="showDoiMatKhau = false; matKhauMoi = ''">Hủy</Button>
-                </div>
-              </div>
-            </Card>
-
-            <Card class="space-y-2">
-              <h3 class="mb-3 text-sm font-bold text-slate-800">Trạng thái tài khoản</h3>
-              <Button v-if="khachHang?.trangThai === 1" variant="soft" class="w-full justify-center text-rose-600 bg-rose-50 hover:bg-rose-100" @click="doiTrangThai(0)">🔒 Khóa tài khoản</Button>
-              <Button v-else variant="soft" class="w-full justify-center text-emerald-600 bg-emerald-50 hover:bg-emerald-100" @click="doiTrangThai(1)">✓ Kích hoạt tài khoản</Button>
-            </Card>
-          </template>
         </div>
 
         <!-- Main content -->
@@ -608,7 +552,7 @@ onMounted(taiChiTiet);
               </label>
 
               <label class="space-y-2">
-                <span class="text-[13px] font-semibold text-slate-500">Email</span>
+                <span class="text-[13px] font-semibold text-slate-500">Email <span v-if="laMoi" class="text-rose-500">*</span></span>
                 <input v-model="form.email" type="email" placeholder="Nhập email" :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiForm.email ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300']" />
                 <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
               </label>
