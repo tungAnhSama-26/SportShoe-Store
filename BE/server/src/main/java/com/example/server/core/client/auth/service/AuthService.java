@@ -37,6 +37,7 @@ public class AuthService {
 
     private static final int MAX_LOGIN_FAILED_ATTEMPTS = 5;
     private static final Duration LOGIN_ATTEMPT_TTL = Duration.ofMinutes(15);
+    private static final Duration TEMP_PASSWORD_CHANGE_DEADLINE = Duration.ofMinutes(5);
     private static final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
 
     public AuthService(
@@ -116,6 +117,7 @@ public class AuthService {
 
         clearFailedLogin(attemptKey);
         migratePasswordIfNeeded(nhanVien, request.password());
+        initializeTemporaryPasswordDeadlineIfNeeded(nhanVien);
 
         Integer vaiTro = normalizeVaiTro(nhanVien.getVaiTro());
         String role = resolveAdminRole(vaiTro);
@@ -139,7 +141,9 @@ public class AuthService {
                 nhanVien.getCccd(),
                 vaiTro,
                 isAdmin(nhanVien) ? "Quản trị viên" : "Nhân viên",
-                nhanVien.getHinhAnh()
+                nhanVien.getHinhAnh(),
+                mustChangeTemporaryPassword(nhanVien),
+                mustChangeTemporaryPassword(nhanVien) ? nhanVien.getHanDoiMatKhau() : null
         );
     }
 
@@ -185,6 +189,24 @@ public class AuthService {
 
     private boolean isAdmin(NhanVien nhanVien) {
         return Integer.valueOf(1).equals(nhanVien.getVaiTro());
+    }
+
+    private boolean mustChangeTemporaryPassword(NhanVien nhanVien) {
+        return !isAdmin(nhanVien)
+                && Boolean.TRUE.equals(nhanVien.getBatBuocDoiMatKhau())
+                && nhanVien.getHanDoiMatKhau() != null;
+    }
+
+    private void initializeTemporaryPasswordDeadlineIfNeeded(NhanVien nhanVien) {
+        if (isAdmin(nhanVien)
+                || !Boolean.TRUE.equals(nhanVien.getBatBuocDoiMatKhau())
+                || nhanVien.getHanDoiMatKhau() != null) {
+            return;
+        }
+        Instant now = Instant.now();
+        nhanVien.setHanDoiMatKhau(now.plus(TEMP_PASSWORD_CHANGE_DEADLINE));
+        nhanVien.setNgayCapNhat(now);
+        nhanVienRepository.save(nhanVien);
     }
 
     private String resolveAdminRole(Integer vaiTro) {

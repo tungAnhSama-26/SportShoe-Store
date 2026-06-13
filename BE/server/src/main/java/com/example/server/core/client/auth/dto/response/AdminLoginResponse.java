@@ -1,6 +1,7 @@
 package com.example.server.core.client.auth.dto.response;
 
 import java.util.UUID;
+import java.time.Instant;
 
 public record AdminLoginResponse(
         String token,
@@ -13,6 +14,8 @@ public record AdminLoginResponse(
         String cccd,
         Integer vaiTro,
         String tenVaiTro,
-        String hinhAnh
+        String hinhAnh,
+        Boolean batBuocDoiMatKhau,
+        Instant hanDoiMatKhau
 ) {
 }

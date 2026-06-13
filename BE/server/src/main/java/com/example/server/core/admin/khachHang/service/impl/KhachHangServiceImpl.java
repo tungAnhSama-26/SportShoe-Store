@@ -88,17 +88,9 @@ public class KhachHangServiceImpl implements KhachHangService {
         kh.setTrangThai(1);
         kh.setNgayTao(Instant.now());
 
+        // Nhân viên tạo khách hàng tại quầy -> KHÔNG gửi email.
+        // Email chào mừng chỉ gửi khi khách TỰ đăng ký (xem RegistrationService).
         KhachHang saved = khachHangRepository.save(kh);
-        // Gửi email chào mừng ở luồng nền để không làm chậm thao tác tạo khách hàng.
-        if (saved.getEmail() != null && !saved.getEmail().isBlank()) {
-            emailService.sendCustomerRegistrationEmailAsync(
-                    saved.getEmail(),
-                    saved.getHoTen(),
-                    saved.getTenDangNhap(),
-                    request.matKhau()
-            );
-        }
-
         return toKhachHangResponse(saved);
     }
 
