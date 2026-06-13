@@ -14,6 +14,7 @@ import {
 import { getCurrentAdminUser } from "../../../services/auth";
 import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
+import { isValidEmail, isValidVnPhone, validateFullName } from "../../../utils/validation";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 
@@ -118,7 +119,7 @@ export function useChiTietNhanVien() {
 
   function formatNgaySinh(ddmmyyyy: string) {
     if (!ddmmyyyy || ddmmyyyy.length !== 8) return '';
-    return `${ddmmyyyy.slice(4,8)}-${ddmmyyyy.slice(2,4)}-${ddmmyyyy.slice(0,2)}`;
+    return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
   }
 
   function syncCurrentAdminCccd(updated: any) {
@@ -169,19 +170,21 @@ export function useChiTietNhanVien() {
   const laChinhMinh = computed(() => {
     return nhanVien.value && adminHienTai && String(nhanVien.value.id) === String(adminHienTai.id);
   });
-  const homNay = computed(() => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+  const formatDateInputValue = (date: Date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
+  };
+  const ngaySinhToiDa = computed(() => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() - 18);
+    return formatDateInputValue(today);
   });
-  const tramTuoi = computed(() => {
+  const ngaySinhToiThieu = computed(() => {
     const today = new Date();
-    const yyyy = today.getFullYear() - 100;
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    today.setFullYear(today.getFullYear() - 80);
+    return formatDateInputValue(today);
   });
   const fileInputAvatar = ref<HTMLInputElement | null>(null);
   const matKhauMoi = ref("");
@@ -357,12 +360,12 @@ export function useChiTietNhanVien() {
     form.value.quanHuyen = "";
     form.value.xaPhuong = "";
     dsXaPhuong.value = [];
-    
+
     if (!newVal) {
       dsQuanHuyen.value = [];
       return;
     }
-    
+
     try {
       // Đây là URL API lấy quận huyện theo mã tỉnh (newVal là mã số như '01', '79')
       const res = await fetch(`https://provinces.open-api.vn/api/p/${newVal}?depth=2`);
@@ -383,7 +386,7 @@ export function useChiTietNhanVien() {
       dsXaPhuong.value = [];
       return;
     }
-    
+
     try {
       const res = await fetch(`https://provinces.open-api.vn/api/d/${newVal}?depth=2`);
       const data = await res.json();
@@ -431,9 +434,9 @@ export function useChiTietNhanVien() {
       const dataTinh = await responseTinh.json();
       dsQuanHuyen.value = Array.isArray(dataTinh.districts)
         ? dataTinh.districts.map((district: any) => ({
-            value: district.code.toString(),
-            label: district.name,
-          }))
+          value: district.code.toString(),
+          label: district.name,
+        }))
         : [];
     } catch (error) {
       console.error("Không thể tải quận huyện từ dữ liệu QR", error);
@@ -453,9 +456,9 @@ export function useChiTietNhanVien() {
       const dataHuyen = await responseHuyen.json();
       dsXaPhuong.value = Array.isArray(dataHuyen.wards)
         ? dataHuyen.wards.map((ward: any) => ({
-            value: ward.code.toString(),
-            label: ward.name,
-          }))
+          value: ward.code.toString(),
+          label: ward.name,
+        }))
         : [];
     } catch (error) {
       console.error("Không thể tải xã phường từ dữ liệu QR", error);
@@ -498,21 +501,29 @@ export function useChiTietNhanVien() {
     loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "", ngaySinh: "" };
     let hasError = false;
 
-    if (!form.value.hoTen.trim()) {
-      loiForm.value.hoTen = "Vui lòng nhập họ và tên nhân viên.";
+    const loiHoTen = validateFullName(form.value.hoTen, "Họ và tên nhân viên");
+    if (loiHoTen) {
+      loiForm.value.hoTen = loiHoTen;
       hasError = true;
     }
 
-    if (!form.value.email.trim()) {
+    const email = form.value.email.trim();
+    if (!email) {
       loiForm.value.email = "Vui lòng nhập email nhân viên.";
       hasError = true;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
+    } else if (form.value.email !== email) {
+      loiForm.value.email = "Email không được có khoảng trắng ở đầu hoặc cuối.";
+      hasError = true;
+    } else if (email.length > 100) {
+      loiForm.value.email = "Email không quá 100 ký tự.";
+      hasError = true;
+    } else if (!isValidEmail(email)) {
       loiForm.value.email = "Email nhân viên chưa đúng định dạng.";
       hasError = true;
     }
 
-    if (!/^\d{10}$/.test(form.value.sdt.trim())) {
-      loiForm.value.sdt = "Số điện thoại phải gồm đúng 10 chữ số.";
+    if (!isValidVnPhone(form.value.sdt)) {
+      loiForm.value.sdt = "Số điện thoại không đúng định dạng (VD: 0901234567).";
       hasError = true;
     }
 
@@ -520,15 +531,26 @@ export function useChiTietNhanVien() {
       const selectedDate = new Date(form.value.ngaySinh);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       if (selectedDate > today) {
         loiForm.value.ngaySinh = "Ngày sinh không được là ngày trong tương lai.";
         hasError = true;
       } else {
-        const minDate = new Date();
-        minDate.setFullYear(minDate.getFullYear() - 100);
-        minDate.setHours(0, 0, 0, 0);
-        if (selectedDate < minDate) {
-          loiForm.value.ngaySinh = "Ngày sinh không được quá 100 tuổi.";
+        // Tuổi phải > 17 (tức từ đủ 18 tuổi)
+        const birth18 = new Date(today);
+        birth18.setFullYear(birth18.getFullYear() - 18);
+
+        if (selectedDate > birth18) {
+          loiForm.value.ngaySinh = "Người dùng phải từ 18 tuổi trở lên.";
+          hasError = true;
+        }
+
+        // Tuổi không được lớn hơn 80
+        const birth80 = new Date(today);
+        birth80.setFullYear(birth80.getFullYear() - 80);
+
+        if (selectedDate < birth80) {
+          loiForm.value.ngaySinh = "Tuổi không được lớn hơn 80.";
           hasError = true;
         }
       }
@@ -561,7 +583,7 @@ export function useChiTietNhanVien() {
       vaiTro: form.value.vaiTro,
     };
     if (!laMoi) {
-      payload.tenDangNhap = form.value.email.trim();
+      payload.tenDangNhap = form.value.tenDangNhap.trim();
     }
 
     try {
@@ -697,5 +719,5 @@ export function useChiTietNhanVien() {
     dungQuet();
   });
 
-  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, homNay, tramTuoi };
+  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu };
 }

@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import Card from '../components/ui/Card.vue';
 import { layTatCaSanPham } from '../services/san-pham';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -31,7 +32,18 @@ const NHOM_LOC = [
 // Giá trị đã chọn cho mỗi nhóm (mảng).
 const boLoc = ref(Object.fromEntries(NHOM_LOC.map((n) => [n.khoa, []])));
 
+const route = useRoute();
+
+// Vào trang với ?hang=<tên hãng> (từ ô hãng ở trang chủ) -> tự tích bộ lọc hãng đó.
+function apLocTuQuery() {
+  const hang = route.query.hang;
+  if (hang) boLoc.value.thuongHieu = [String(hang)];
+}
+
+watch(() => route.query.hang, apLocTuQuery);
+
 onMounted(async () => {
+  apLocTuQuery();
   try {
     tatCaSanPham.value = await layTatCaSanPham();
   } catch {
@@ -198,6 +210,13 @@ function xuLyAnhLoi(event) {
                 <div class="mt-auto flex items-end gap-2">
                   <p class="font-bold text-lg text-primary">{{ dinhDangTienViet(sp.gia) }}</p>
                   <p v-if="sp.giaCu" class="text-xs text-slate-400 line-through pb-1">{{ dinhDangTienViet(sp.giaCu) }}</p>
+                </div>
+                <!-- Sao trung bình dưới giá -->
+                <div class="mt-1.5 flex items-center gap-1.5">
+                  <div class="flex text-xs">
+                    <span v-for="i in 5" :key="i" :class="i <= Math.round(sp.soSao) ? 'text-amber-400' : 'text-slate-300'">★</span>
+                  </div>
+                  <span class="text-xs text-slate-400">{{ sp.soDanhGia ? `${sp.soSao.toFixed(1)} (${sp.soDanhGia})` : 'Chưa có đánh giá' }}</span>
                 </div>
               </div>
             </Card>

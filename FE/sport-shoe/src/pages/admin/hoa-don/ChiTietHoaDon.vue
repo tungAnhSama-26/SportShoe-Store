@@ -330,14 +330,15 @@ function handleProductImageError(event: Event) {
             </div>
           </div>
 
-          <Button @click="handlePrint" class="w-full bg-sky-500 hover:bg-sky-600 text-white border-transparent">
+          <Button v-if="donDaHoanThanh" @click="handlePrint"
+            class="w-full bg-sky-500 hover:bg-sky-600 text-white border-transparent">
             <template #prefix>
               <Printer class="h-4 w-4" />
             </template>
             In Hóa Đơn
           </Button>
 
-          <TaoPhieuTraHangModal :hoa-don="hoaDon" />
+          <TaoPhieuTraHangModal v-if="laDonTaiQuay" :hoa-don="hoaDon" />
 
           <Button v-if="!donDaKetThuc" @click="moModalThongTin"
             class="w-full bg-amber-500 hover:bg-amber-600 text-white border-transparent">

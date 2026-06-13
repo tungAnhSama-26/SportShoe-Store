@@ -648,6 +648,13 @@ public class QuanLySanPhamService {
         giay.setNgayCapNhat(Instant.now());
         if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
             updateTrangThaiTuSoLuong(giay);
+        } else {
+            List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
+            for (GiayChiTiet ct : chiTiets) {
+                ct.setKichHoat(0);
+                ct.setNgayCapNhat(Instant.now());
+                giayChiTietRepository.save(ct);
+            }
         }
     }
 
@@ -663,6 +670,12 @@ public class QuanLySanPhamService {
                 updateTrangThaiTuSoLuong(giay);
             } else {
                 giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
+                List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
+                for (GiayChiTiet ct : chiTiets) {
+                    ct.setKichHoat(0);
+                    ct.setNgayCapNhat(Instant.now());
+                    giayChiTietRepository.save(ct);
+                }
             }
             giay.setNgayCapNhat(Instant.now());
         } catch (Exception e) {

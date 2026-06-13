@@ -21,7 +21,7 @@ export function usePosPayment({ cartItems, khachCanTra, pageError }) {
       return "";
     }
     if (!amountPaid.value.trim()) {
-      return "Vui lòng nhập số tiền khách đưa.";
+      return "";
     }
     if (tienKhachThanhToan.value <= 0) {
       return "Số tiền khách đưa phải lớn hơn 0.";
@@ -50,6 +50,10 @@ export function usePosPayment({ cartItems, khachCanTra, pageError }) {
   }
 
   function validatePaymentInput() {
+    if (paymentMethod.value === 1 && !amountPaid.value.trim()) {
+      pageError.value = "Vui lòng nhập số tiền khách đưa.";
+      return false;
+    }
     if (paymentValidationMessage.value) {
       pageError.value = paymentValidationMessage.value;
       return false;

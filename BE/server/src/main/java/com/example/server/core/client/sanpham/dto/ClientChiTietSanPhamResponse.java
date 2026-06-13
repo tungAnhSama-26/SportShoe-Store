@@ -20,6 +20,7 @@ public record ClientChiTietSanPhamResponse(
         String trongLuong,
         Integer gioiTinh,
         String hinhAnh,
+        Long daBan,
         List<BienTheItem> bienThe
 ) {
     public record BienTheItem(

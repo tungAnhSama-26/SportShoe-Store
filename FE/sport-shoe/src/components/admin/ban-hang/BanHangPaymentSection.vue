@@ -1,4 +1,5 @@
 <script setup>
+import { Printer } from "lucide-vue-next";
 import ghnLogo from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
 defineProps({
   activePendingInvoice: {
@@ -126,6 +127,10 @@ defineProps({
     default: false
   },
   cancelingPendingInvoice: {
+    type: Boolean,
+    default: false
+  },
+  hasPrintedInvoice: {
     type: Boolean,
     default: false
   },
@@ -449,22 +454,34 @@ const emit = defineEmits([
         </div>
       </div>
 
-      <div class="mt-4 shrink-0 border-t border-slate-100 pt-4 grid gap-3 sm:grid-cols-2">
+      <div class="mt-4 shrink-0 border-t border-slate-100 pt-4 flex flex-col gap-3">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            class="rounded-2xl bg-slate-200 px-4 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            :disabled="!activePendingInvoice || cancelingPendingInvoice"
+            @click="emit('cancel-pending-invoice')"
+          >
+            {{ cancelingPendingInvoice ? "Đang hủy..." : "Hủy hóa đơn" }}
+          </button>
+          <button
+            type="button"
+            class="rounded-2xl bg-red-500 px-4 py-4 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.35)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+            :disabled="!canPay || payingInvoice"
+            @click="emit('pay-now')"
+          >
+            {{ payingInvoice ? "Đang thanh toán..." : "Thanh toán" }}
+          </button>
+        </div>
         <button
+          v-if="!hasPrintedInvoice"
           type="button"
-          class="rounded-2xl bg-slate-200 px-4 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(14,165,233,0.2)] transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
           :disabled="!activePendingInvoice"
           @click="emit('print-invoice')"
         >
+          <Printer class="h-5 w-5" />
           In hóa đơn
-        </button>
-        <button
-          type="button"
-          class="rounded-2xl bg-red-500 px-4 py-4 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.35)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-          :disabled="!canPay"
-          @click="emit('pay-now')"
-        >
-          {{ payingInvoice ? "Đang thanh toán..." : "Thanh toán" }}
         </button>
       </div>
       <p v-if="sanPhamValidationMessage" class="mt-3 text-xs font-medium text-rose-500">

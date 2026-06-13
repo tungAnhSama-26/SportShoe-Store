@@ -350,6 +350,67 @@ public class BanHangTaiQuayService {
     }
 
     @Transactional
+    public HoaDonChoChiTietResponse capNhatHoaDonCho(Integer hoaDonId, TaoHoaDonChoRequest request) {
+        HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
+
+        if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
+            throw new BusinessException("Chỉ hỗ trợ cập nhật hóa đơn tại quầy");
+        }
+
+        if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
+            throw new BusinessException("Chỉ được cập nhật hóa đơn đang chờ");
+        }
+
+        // Return old items to stock and delete them
+        List<HoaDonChiTiet> oldItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
+        for (HoaDonChiTiet item : oldItems) {
+            GiayChiTiet giayChiTiet = item.getGiayChiTiet();
+            giayChiTiet.setSoLuong((giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong()) + item.getSoLuong());
+            giayChiTiet.setNgayCapNhat(Instant.now());
+            giayChiTietRepository.save(giayChiTiet);
+            hoaDonChiTietRepository.delete(item);
+        }
+
+        // Add new items
+        validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new java.util.ArrayList<>());
+        List<HoaDonChiTiet> chiTietTam = request.items() != null && !request.items().isEmpty() ? request.items().stream()
+                .map(item -> taoDongHoaDon(item.chiTietId(), item.soLuong()))
+                .toList() : new java.util.ArrayList<>();
+
+        BigDecimal tongTienHang = chiTietTam.stream()
+                .map(HoaDonChiTiet::getThanhTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        KhachHang khachHang = request.khachHangId() != null ? timKhachHang(request.khachHangId()) : null;
+        String tenKhachHang = layTenKhachHang(khachHang, request.tenKhachHang());
+        String soDienThoai = laySoDienThoai(khachHang, request.soDienThoai());
+
+        if (hoaDon.getPhieuGiamGia() != null) {
+            giaiPhongPhieuGiamGia(hoaDon.getPhieuGiamGia(), hoaDon.getKhachHang());
+        }
+
+        hoaDon.setTongTienHang(tongTienHang);
+        hoaDon.setTongTienThanhToan(tongTienHang);
+        
+        ganPhieuGiamGiaChoHoaDon(hoaDon, request.maPhieuGiamGia(), khachHang, tongTienHang);
+        hoaDon.setKhachHang(khachHang);
+        apDungThongTinGiaoHangChoHoaDon(hoaDon, request.thongTinGiaoHang(), tenKhachHang, soDienThoai);
+        
+        hoaDon.setNgayCapNhat(Instant.now());
+        HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
+        dongBoVanChuyen(savedHoaDon, request.thongTinGiaoHang());
+
+        List<HoaDonChiTiet> chiTietCanLuu = new java.util.ArrayList<>();
+        for (HoaDonChiTiet item : chiTietTam) {
+            item.setHoaDon(savedHoaDon);
+            chiTietCanLuu.add(hoaDonChiTietRepository.save(item));
+        }
+
+        return mapHoaDonChiTiet(savedHoaDon, chiTietCanLuu, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
+    }
+
+    @Transactional
     public void huyHoaDonCho(Integer hoaDonId) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
@@ -590,6 +651,9 @@ public class BanHangTaiQuayService {
         String tenKhachHang = layTenKhachHang(khachHang, request.tenKhachHang());
         String soDienThoai = laySoDienThoai(khachHang, request.soDienThoai());
 
+        if (hoaDon.getPhieuGiamGia() != null) {
+            giaiPhongPhieuGiamGia(hoaDon.getPhieuGiamGia(), hoaDon.getKhachHang());
+        }
         ganPhieuGiamGiaChoHoaDon(hoaDon, request.maPhieuGiamGia(), khachHang, hoaDon.getTongTienHang());
         hoaDon.setKhachHang(khachHang);
         apDungThongTinGiaoHangChoHoaDon(hoaDon, request.thongTinGiaoHang(), tenKhachHang, soDienThoai);
@@ -683,7 +747,9 @@ public class BanHangTaiQuayService {
 
         validatePhieuGiamGia(phieuGiamGia, khachHang, tongTienHang, hoaDon);
 
-        if (validateSoLuong && (phieuGiamGia.getSoLuong() == null || phieuGiamGia.getSoLuong() <= 0)) {
+        boolean isAlreadyApplied = hoaDon != null && hoaDon.getPhieuGiamGia() != null && hoaDon.getPhieuGiamGia().getId().equals(phieuGiamGia.getId());
+
+        if (validateSoLuong && !isAlreadyApplied && (phieuGiamGia.getSoLuong() == null || phieuGiamGia.getSoLuong() <= 0)) {
             throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng");
         }
 
@@ -716,6 +782,8 @@ public class BanHangTaiQuayService {
             throw new BusinessException("Giá trị đơn hàng chưa đạt tối thiểu " + phieuGiamGia.getGiaTriToiThieu());
         }
 
+        boolean isAlreadyApplied = hoaDon != null && hoaDon.getPhieuGiamGia() != null && hoaDon.getPhieuGiamGia().getId().equals(phieuGiamGia.getId());
+
         if (phieuGiamGia.getLoaiPhieu() != null && phieuGiamGia.getLoaiPhieu() == 2) {
             if (khachHang == null) {
                 throw new BusinessException("Phiếu giảm giá này chỉ áp dụng cho khách hàng thành viên");
@@ -724,25 +792,25 @@ public class BanHangTaiQuayService {
                     .findByPhieuGiamGiaIdAndKhachHangId(phieuGiamGia.getId(), khachHang.getId())
                     .orElseThrow(() -> new BusinessException("Khách hàng không sở hữu phiếu giảm giá này"));
 
-            if (pggh.getTrangThai() != TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG) {
+            if (!isAlreadyApplied && pggh.getTrangThai() != TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG) {
                 throw new BusinessException("Phiếu giảm giá đã được khách hàng sử dụng");
             }
         }
     }
 
     private BigDecimal xacDinhTongTienHangKhiApPhieu(ApDungPhieuGiamGiaRequest request, HoaDon hoaDonHienTai) {
+        if (request.items() != null && !request.items().isEmpty()) {
+            List<HoaDonChiTiet> itemsTam = taoDanhSachDongHoaDonTam(request.items());
+            return itemsTam.stream()
+                    .map(HoaDonChiTiet::getThanhTien)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+
         if (hoaDonHienTai != null) {
             return hoaDonHienTai.getTongTienHang();
         }
 
-        if (request.items() == null || request.items().isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        List<HoaDonChiTiet> itemsTam = taoDanhSachDongHoaDonTam(request.items());
-        return itemsTam.stream()
-                .map(HoaDonChiTiet::getThanhTien)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return BigDecimal.ZERO;
     }
 
     private HoaDon layHoaDonTaiQuayNeuCo(Integer hoaDonId) {

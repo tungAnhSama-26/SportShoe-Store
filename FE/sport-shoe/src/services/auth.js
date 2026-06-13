@@ -14,9 +14,7 @@ export async function request(path, init) {
 }
 
 export async function login(username, password) {
-  localStorage.removeItem("adminToken");
-  localStorage.removeItem("adminUser");
-  localStorage.removeItem("sport-shoe-admin-session");
+  logoutCustomer();
 
   const result = await request("/auth/login", {
     method: "POST",
@@ -60,12 +58,20 @@ export async function register(payload) {
   });
 }
 
-export function logout() {
+export function logoutCustomer() {
   localStorage.removeItem("user");
   localStorage.removeItem("customerToken");
+}
+
+export function logoutAdmin() {
   localStorage.removeItem("adminToken");
   localStorage.removeItem("adminUser");
   localStorage.removeItem("sport-shoe-admin-session");
+}
+
+export function logout() {
+  logoutCustomer();
+  logoutAdmin();
 }
 
 export function getCurrentUser() {

@@ -9,6 +9,7 @@ import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
+import com.example.server.entity.LichSuHoaDon;
 import com.example.server.entity.PhieuTraHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
@@ -37,6 +38,10 @@ public class ClientXemDonHangService {
 
     /** Trạng thái đơn đã hoàn thành (giao xong) - mới được xác nhận nhận hàng / đánh giá. */
     private static final int TRANG_THAI_HOAN_THANH = 5;
+    private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_DA_XAC_NHAN = 9;
+    private static final int TRANG_THAI_CHO_LAY_HANG = 2;
+    private static final int TRANG_THAI_YEU_CAU_HUY = 7;
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
@@ -221,6 +226,36 @@ public class ClientXemDonHangService {
         hd.setDaNhanHang(true);
         hd.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hd);
+    }
+
+    @Transactional
+    public void yeuCauHuy(UUID khachHangId, Integer id) {
+        HoaDon hd = hoaDonRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
+            throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
+        }
+
+        Integer trangThai = hd.getTrangThai();
+        boolean coTheYeuCauHuy = trangThai != null
+                && (trangThai == TRANG_THAI_CHO_XAC_NHAN
+                || trangThai == TRANG_THAI_DA_XAC_NHAN
+                || trangThai == TRANG_THAI_CHO_LAY_HANG);
+        if (!coTheYeuCauHuy) {
+            throw new BusinessException("Chỉ có thể yêu cầu hủy khi đơn đang chờ xác nhận, đã xác nhận hoặc chờ lấy hàng");
+        }
+
+        hd.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
+        hd.setNgayCapNhat(Instant.now());
+        hoaDonRepository.save(hd);
+
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hd);
+        lichSu.setNhanVien(null);
+        lichSu.setTrangThai("Yêu cầu hủy");
+        lichSu.setGhiChu("Khách hàng gửi yêu cầu hủy đơn hàng");
+        lichSu.setNgayTao(Instant.now());
+        lichSuHoaDonRepository.save(lichSu);
     }
 
     private String nhanTrangThai(Integer trangThai) {
