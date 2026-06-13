@@ -13,6 +13,7 @@ import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResp
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
+import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HinhAnhGiay;
@@ -104,6 +105,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final GhnShippingService ghnShippingService;
     private final PhieuTraHangRepository phieuTraHangRepository;
     private final RefundBankAccountResolver refundBankAccountResolver;
+    private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -116,7 +118,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             NhanVienRepository nhanVienRepository,
             GhnShippingService ghnShippingService,
             PhieuTraHangRepository phieuTraHangRepository,
-            RefundBankAccountResolver refundBankAccountResolver
+            RefundBankAccountResolver refundBankAccountResolver,
+            HoaDonRealtimePublisher hoaDonRealtimePublisher
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -129,6 +132,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.ghnShippingService = ghnShippingService;
         this.phieuTraHangRepository = phieuTraHangRepository;
         this.refundBankAccountResolver = refundBankAccountResolver;
+        this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
     }
 
     @Override
@@ -311,6 +315,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         }
 
         ghiLichSuHoaDon(hoaDon, resolveTrangThaiHoaDon(hoaDon, vanChuyen), request.ghiChu());
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRANG_THAI");
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -377,6 +382,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDonRepository.save(hoaDon);
 
         ghiLichSuHoaDon(hoaDon, "Cập nhật sản phẩm", "Thay đổi danh sách sản phẩm trong hóa đơn");
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "SAN_PHAM");
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -424,6 +430,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDon.setNgayCapNhat(now);
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Xác nhận thanh toán COD", thanhToan.getGhiChu());
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "THANH_TOAN");
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -486,6 +493,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDon.setNgayCapNhat(now);
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Xác nhận hoàn tiền", ghiChu);
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "HOAN_TIEN");
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -529,6 +537,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDon.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Cập nhật phí vận chuyển", "Tính lại phí vận chuyển GHN");
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "VAN_CHUYEN");
 
         return phiGhn;
     }

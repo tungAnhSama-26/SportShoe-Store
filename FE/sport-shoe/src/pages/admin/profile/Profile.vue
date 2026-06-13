@@ -356,7 +356,7 @@ onUnmounted(dungQuet);
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl space-y-6 pb-12">
+  <div class="invoice-flat mx-auto max-w-5xl space-y-6 pb-12">
     <!-- Header -->
     <section class="flex items-center justify-between">
       <div class="flex items-center gap-4">
@@ -633,7 +633,9 @@ onUnmounted(dungQuet);
   animation: scanMove 2s linear infinite;
   box-shadow: 0 0 8px 2px rgba(56, 189, 248, 0.6);
 }
-
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
 @keyframes scanMove {
   0%   { top: 0%; opacity: 1; }
   48%  { top: 100%; opacity: 1; }

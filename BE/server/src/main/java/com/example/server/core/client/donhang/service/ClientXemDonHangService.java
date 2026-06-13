@@ -5,6 +5,7 @@ import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.DongSan
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTraHang;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
+import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
@@ -50,6 +51,7 @@ public class ClientXemDonHangService {
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final VanChuyenRepository vanChuyenRepository;
     private final LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository;
+    private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
@@ -58,7 +60,8 @@ public class ClientXemDonHangService {
             PhieuTraHangRepository phieuTraHangRepository,
             LichSuHoaDonRepository lichSuHoaDonRepository,
             VanChuyenRepository vanChuyenRepository,
-            LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository
+            LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository,
+            HoaDonRealtimePublisher hoaDonRealtimePublisher
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -67,6 +70,7 @@ public class ClientXemDonHangService {
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.vanChuyenRepository = vanChuyenRepository;
         this.lichSuPhieuTraHangRepository = lichSuPhieuTraHangRepository;
+        this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
     }
 
     @Transactional(readOnly = true)
@@ -226,6 +230,38 @@ public class ClientXemDonHangService {
         hd.setDaNhanHang(true);
         hd.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hd);
+        hoaDonRealtimePublisher.publishAfterCommit(hd, "DA_NHAN_HANG");
+    }
+
+    @Transactional
+    public void yeuCauHuy(UUID khachHangId, Integer id) {
+        HoaDon hd = hoaDonRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
+            throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
+        }
+
+        Integer trangThai = hd.getTrangThai();
+        boolean coTheYeuCauHuy = trangThai != null
+                && (trangThai == TRANG_THAI_CHO_XAC_NHAN
+                || trangThai == TRANG_THAI_DA_XAC_NHAN
+                || trangThai == TRANG_THAI_CHO_LAY_HANG);
+        if (!coTheYeuCauHuy) {
+            throw new BusinessException("Chỉ có thể yêu cầu hủy khi đơn đang chờ xác nhận, đã xác nhận hoặc chờ lấy hàng");
+        }
+
+        hd.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
+        hd.setNgayCapNhat(Instant.now());
+        hoaDonRepository.save(hd);
+
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hd);
+        lichSu.setNhanVien(null);
+        lichSu.setTrangThai("Yêu cầu hủy");
+        lichSu.setGhiChu("Khách hàng gửi yêu cầu hủy đơn hàng");
+        lichSu.setNgayTao(Instant.now());
+        lichSuHoaDonRepository.save(lichSu);
+        hoaDonRealtimePublisher.publishAfterCommit(hd, "YEU_CAU_HUY");
     }
 
     @Transactional

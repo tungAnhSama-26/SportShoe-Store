@@ -300,7 +300,7 @@ function xuLyAnhLoi(event) {
 </script>
 
 <template>
-  <main class="bg-slate-50 min-h-screen pb-20">
+  <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
       <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
       <p class="text-sm text-slate-400 mb-8">Bước 1: Thông tin giao hàng</p>
@@ -517,3 +517,8 @@ function xuLyAnhLoi(event) {
     </Teleport>
   </main>
 </template>
+<style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
+  </style>

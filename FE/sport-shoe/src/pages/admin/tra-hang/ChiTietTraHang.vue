@@ -293,7 +293,7 @@ onMounted(taiChiTiet);
 </script>
 
 <template>
-  <div class="space-y-4 pb-10">
+  <div class="invoice-flat space-y-4 pb-10">
     <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
       <div>
         <h1 class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]">Chi Tiết Phiếu Trả Hàng</h1>
@@ -823,3 +823,8 @@ onMounted(taiChiTiet);
     </div>
   </div>
 </template>
+<style scoped>
+.invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
+  border-radius: 6px !important;
+}
+  </style>

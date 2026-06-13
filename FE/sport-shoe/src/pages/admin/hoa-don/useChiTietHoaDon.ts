@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch, markRaw } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch, markRaw } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft,
@@ -31,6 +31,7 @@ import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
 import { showSuccess, showError } from "../../../utils/alert";
 import logoGhn from "../../../constants/logoGhn";
+import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 
 export function useChiTietHoaDon() {
   const route = useRoute();
@@ -895,7 +896,25 @@ export function useChiTietHoaDon() {
     }
   }
 
-  onMounted(taiChiTiet);
+  let ngatKetNoiRealtime: (() => void) | null = null;
+  let realtimeRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  onMounted(() => {
+    taiChiTiet();
+    ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+      authScope: "admin",
+      onHoaDonThayDoi: (event: any) => {
+        if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+        if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+        realtimeRefreshTimeout = setTimeout(taiChiTiet, 150);
+      },
+    });
+  });
+
+  onBeforeUnmount(() => {
+    ngatKetNoiRealtime?.();
+    if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+  });
   return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien, dsTaiKhoanNganHangKhach, dangTaiNganHangKhach, taiKhoanNganHangChon, qrHoanTienUrl };
 
 }
