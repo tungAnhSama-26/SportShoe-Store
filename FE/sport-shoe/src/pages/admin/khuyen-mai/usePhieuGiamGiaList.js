@@ -10,6 +10,8 @@ import {
   RotateCcw,
   Search,
   X,
+  Globe,
+  User,
 } from "lucide-vue-next";
 import {
   getPhieuGiamGiaKhachHangList,
@@ -124,6 +126,12 @@ export function usePhieuGiamGiaList() {
 
   function loaiPhieuText(loaiPhieu) {
     return Number(loaiPhieu) === 2 ? "Cá nhân" : "Công khai";
+  }
+
+  function mauLoaiPhieu(loaiPhieu) {
+    return Number(loaiPhieu) === 2
+      ? "bg-orange-50 text-orange-600 ring-1 ring-orange-200/60"
+      : "bg-red-50 text-red-600 ring-1 ring-red-200/60";
   }
 
   function formatGiaTri(giaTri, loai) {
@@ -557,5 +565,5 @@ export function usePhieuGiamGiaList() {
     taiDanhSach();
   });
 
-  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
+  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
 }

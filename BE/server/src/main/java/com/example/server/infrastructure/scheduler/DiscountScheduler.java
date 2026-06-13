@@ -1,28 +1,26 @@
 package com.example.server.infrastructure.scheduler;
 
-import com.example.server.core.admin.quanlykhuyenmai.service.DotGiamGiaSanPhamService;
-import com.example.server.repository.DotGiamGiaSanPhamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 import com.example.server.repository.PhieuGiamGiaRepository;
 import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.DotGiamGiaRepository;
+import com.example.server.repository.GiayChiTietRepository;
+import java.time.LocalDate;
+import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DiscountScheduler {
 
-    private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
-    private final DotGiamGiaSanPhamService dotGiamGiaSanPhamService;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final DotGiamGiaRepository dotGiamGiaRepository;
+    private final GiayChiTietRepository giayChiTietRepository;
 
     /**
      * Tác vụ quét và cập nhật lại giá bán trong DB và trạng thái phiếu giảm giá.
@@ -33,19 +31,16 @@ public class DiscountScheduler {
         log.info("Bắt đầu quét và đồng bộ giá bán khuyến mãi và phiếu giảm giá...");
         
         try {
-            // Lấy danh sách tất cả các ID biến thể giày có tham gia bất kỳ đợt khuyến mãi nào
-            List<Integer> giayChiTietIds = dotGiamGiaSanPhamRepository.findDistinctGiayChiTietIds();
-            
-            if (giayChiTietIds.isEmpty()) {
-                log.info("Không có sản phẩm nào cần đồng bộ giá.");
-            } else {
-                log.info("Đang đồng bộ giá cho {} biến thể sản phẩm...", giayChiTietIds.size());
-                for (Integer id : giayChiTietIds) {
-                    dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(id);
-                }
+            LocalDate today = LocalDate.now();
+            Instant now = Instant.now();
+
+            // 1. Cập nhật ngayCapNhat của các biến thể có đợt giảm giá thay đổi trạng thái (Bulk Update)
+            int affectedVariants = giayChiTietRepository.touchAffectedVariants(today, now);
+            if (affectedVariants > 0) {
+                log.info("Đã đồng bộ thời gian cập nhật cho {} biến thể sản phẩm có khuyến mãi thay đổi trạng thái.", affectedVariants);
             }
             
-            // Cập nhật trạng thái phiếu giảm giá và đợt giảm giá
+            // 2. Cập nhật trạng thái phiếu giảm giá và đợt giảm giá (Bulk Update)
             log.info("Đang đồng bộ trạng thái phiếu giảm giá và đợt giảm giá...");
             dotGiamGiaRepository.capNhatTrangThaiTuDong();
             phieuGiamGiaRepository.capNhatTrangThaiTuDong();
