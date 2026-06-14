@@ -12,6 +12,7 @@ import {
   exceedsMaxLength,
   generateWeightAttributeCode,
   normalizeOptionalText
+, hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham'
 import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
@@ -128,9 +129,6 @@ function validate() {
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {
-    errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
-  }
-  else if (moTa && hasSpecialCharacters(moTa)) {
     errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
   }
   else if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {

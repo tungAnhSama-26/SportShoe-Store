@@ -33,6 +33,7 @@ const selectedQrItem = ref(null)
 
 const showScannerModal = ref(false)
 const tableRef = ref(null)
+const hasSelectedVariants = ref(false)
 
 const filters = reactive({
   keyword: '',
@@ -655,6 +656,7 @@ onUnmounted(() => {
       :filters="filters"
       :danh-muc="danhMuc"
       :selected-product="selectedProduct"
+      :has-selected-variants="hasSelectedVariants"
       @reset-filters="resetFilters"
       @export-excel="xuatExcel"
       @download-qr="triggerDownloadQr"
@@ -680,6 +682,7 @@ onUnmounted(() => {
       @open-qr="openVariantQr"
       @bulk-qr="handleBulkQr"
       @refresh="loadData"
+      @selection-changed="hasSelectedVariants = $event"
       @update:current-page="loadData"
       @update:page-size="handlePageSizeChange"
       @open-discount-detail="openDiscountDetail"
