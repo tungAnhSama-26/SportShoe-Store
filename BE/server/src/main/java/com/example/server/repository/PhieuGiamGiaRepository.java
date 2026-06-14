@@ -8,14 +8,28 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.LockModeType;
 
 public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Integer> {
 
     Optional<PhieuGiamGia> findByMaIgnoreCase(String ma);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from PhieuGiamGia p where lower(p.ma) = lower(:ma)")
+    Optional<PhieuGiamGia> findByMaIgnoreCaseForUpdate(@Param("ma") String ma);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from PhieuGiamGia p where p.id = :id")
+    Optional<PhieuGiamGia> findByIdForUpdate(@Param("id") Integer id);
+
+    boolean existsByMaIgnoreCase(String ma);
+
+    boolean existsByMaIgnoreCaseAndIdNot(String ma, Integer id);
 
     /** Voucher theo loại phiếu (1=toàn sàn, 2=cá nhân) và trạng thái. Dùng liệt kê voucher công khai khả dụng. */
     List<PhieuGiamGia> findByLoaiPhieuAndTrangThai(Integer loaiPhieu, Integer trangThai);
@@ -102,17 +116,17 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
         UPDATE PhieuGiamGia p
         SET p.trangThai = 
             CASE 
-                WHEN p.ngayKetThuc <= CURRENT_TIMESTAMP THEN 2
+                WHEN p.ngayKetThuc < CURRENT_TIMESTAMP THEN 2
                 WHEN p.soLuong > 0 AND p.soLuong != 999999 AND p.soLuongDaDung >= p.soLuong THEN 3
                 WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
                 ELSE 1
             END
-        WHERE (p.ngayKetThuc <= CURRENT_TIMESTAMP AND p.trangThai != 2)
+        WHERE (p.ngayKetThuc < CURRENT_TIMESTAMP AND p.trangThai != 2)
            OR (
                p.trangThai != 0 
                AND p.trangThai != (
                    CASE 
-                       WHEN p.ngayKetThuc <= CURRENT_TIMESTAMP THEN 2
+                       WHEN p.ngayKetThuc < CURRENT_TIMESTAMP THEN 2
                        WHEN p.soLuong > 0 AND p.soLuong != 999999 AND p.soLuongDaDung >= p.soLuong THEN 3
                        WHEN p.ngayBatDau > CURRENT_TIMESTAMP THEN 4
                        ELSE 1

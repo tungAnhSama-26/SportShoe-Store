@@ -153,7 +153,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             JOIN link.dotGiamGia d
             WHERE d.kichHoat != 0
               AND d.kichHoat != CASE
-                  WHEN d.ngayKetThuc <= :today THEN 2
+                  WHEN d.ngayKetThuc < :today THEN 2
                   WHEN d.ngayBatDau > :today THEN 4
                   ELSE 1
               END
