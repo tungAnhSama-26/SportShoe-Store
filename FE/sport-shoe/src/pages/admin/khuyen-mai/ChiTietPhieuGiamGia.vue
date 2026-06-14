@@ -25,7 +25,10 @@ import {
 } from "../../../services/khuyen-mai";
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
-import { getDisplayErrorMessage } from "../../../utils/error-message";
+import {
+  getDisplayErrorMessage,
+  getFieldErrors,
+} from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 
@@ -98,6 +101,7 @@ const form = reactive({
   ngayBatDau: "",
   ngayKetThuc: "",
   soLuong: "",
+  soLuongDaDung: 0,
   trangThai: "1",
 });
 
@@ -432,6 +436,7 @@ async function taiChiTiet() {
       ngayBatDau: detail.ngayBatDau ?? "",
       ngayKetThuc: detail.ngayKetThuc ?? "",
       soLuong,
+      soLuongDaDung: Number(detail.soLuongDaDung ?? 0),
       trangThai: String(detail.trangThai ?? 1),
     });
 
@@ -495,9 +500,19 @@ async function submitForm() {
   if (!form.ma.trim()) {
     formErrors.ma = "Vui lòng nhập mã phiếu giảm giá";
     isValid = false;
+  } else if (form.ma.trim().length > 100) {
+    formErrors.ma = "Mã phiếu giảm giá không được vượt quá 100 ký tự";
+    isValid = false;
+  } else if (!/^[A-Za-z0-9_-]+$/.test(form.ma.trim())) {
+    formErrors.ma =
+      "Mã phiếu chỉ được chứa chữ, số, dấu gạch ngang và gạch dưới";
+    isValid = false;
   }
   if (!form.ten.trim()) {
     formErrors.ten = "Vui lòng nhập tên phiếu giảm giá";
+    isValid = false;
+  } else if (form.ten.trim().length > 200) {
+    formErrors.ten = "Tên phiếu giảm giá không được vượt quá 200 ký tự";
     isValid = false;
   }
   if (Number(form.loai) === 1) {
@@ -516,13 +531,36 @@ async function submitForm() {
       isValid = false;
     }
   }
-  if (form.giaTriToiThieu && parseVndNumber(form.giaTriToiThieu) < 1) {
-    formErrors.giaTriToiThieu = "Giá trị đơn tối thiểu phải lớn hơn 0";
+  const giaTriToiThieu = parseVndNumber(form.giaTriToiThieu);
+  const giamToiDa = parseVndNumber(form.giamToiDa);
+  if (giaTriToiThieu < 0) {
+    formErrors.giaTriToiThieu =
+      "Giá trị đơn tối thiểu không được nhỏ hơn 0";
+    isValid = false;
+  }
+  if (giamToiDa < 0) {
+    formErrors.giamToiDa = "Mức giảm tối đa không được nhỏ hơn 0";
+    isValid = false;
+  }
+  if (
+    Number(form.loai) === 2 &&
+    giaTriToiThieu > 0 &&
+    parseVndNumber(form.giaTri) > giaTriToiThieu
+  ) {
+    formErrors.giaTri =
+      "Số tiền giảm không được lớn hơn giá trị đơn tối thiểu";
     isValid = false;
   }
   if (!soLuongVoHan.value) {
     if (!form.soLuong || Number(form.soLuong) <= 0) {
       formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0";
+      isValid = false;
+    } else if (
+      !laMoi &&
+      Number(form.soLuong) < Number(form.soLuongDaDung || 0)
+    ) {
+      formErrors.soLuong =
+        "Số lượng phiếu không được nhỏ hơn số lượng đã sử dụng";
       isValid = false;
     }
   } else {
@@ -544,7 +582,8 @@ async function submitForm() {
     form.ngayKetThuc &&
     form.ngayBatDau > form.ngayKetThuc
   ) {
-    formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
+    formErrors.ngayKetThuc =
+      "Ngày kết thúc không được trước ngày bắt đầu";
     isValid = false;
   }
   if (form.loaiPhieu === "2" && dsEmailChon.value.length === 0) {
@@ -581,8 +620,6 @@ async function submitForm() {
       ngayKetThuc: form.ngayKetThuc,
       soLuong: Number(form.soLuong),
       trangThai: laMoi ? undefined : form.trangThai,
-      ngayTao: laMoi ? getToday() : undefined,
-      ngayCapNhat: !laMoi ? getToday() : undefined,
     };
 
     let phieuId = id;
@@ -612,6 +649,7 @@ async function submitForm() {
       router.push({ name: "admin-phieu-giam-gia" });
     }, 900);
   } catch (error) {
+    Object.assign(formErrors, getFieldErrors(error));
     loiTrang.value = getDisplayErrorMessage(
       error,
       "Không thể lưu phiếu giảm giá",
@@ -985,6 +1023,9 @@ onMounted(taiChiTiet);
             />
             <p v-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-slate-400">
               Không cần giảm tối đa khi giảm 100%
+            </p>
+            <p v-if="formErrors.giamToiDa" class="text-xs text-rose-500">
+              {{ formErrors.giamToiDa }}
             </p>
           </div>
 

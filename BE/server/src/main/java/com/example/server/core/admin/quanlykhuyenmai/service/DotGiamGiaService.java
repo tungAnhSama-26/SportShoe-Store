@@ -12,11 +12,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -50,25 +52,33 @@ public class DotGiamGiaService {
         return dotGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loaiGiam, tuNgay, denNgay, pageable);
     }
 
+    @Transactional
     public void remove(Integer id) {
-        // Trước khi xóa, lấy các giayId liên quan để cập nhật lại giá sau này
         List<DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
+        if (!links.isEmpty()) {
+            dotGiamGiaSanPhamRepository.deleteAll(links);
+            dotGiamGiaSanPhamRepository.flush();
+        }
         dotGiamGiaRepository.deleteById(id);
-        // Cập nhật lại giá cho các biến thể sản phẩm từng thuộc đợt này
         for (DotGiamGiaSanPham link : links) {
             dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
         }
     }
 
     public DotGiamGia add(DotGiamGiaRequest request) {
+        normalize(request);
+        validateBusinessRules(request, null);
         DotGiamGia dotGiamGia = new DotGiamGia();
         mapRequestToEntity(request, dotGiamGia);
+        dotGiamGia.setNgayTao(LocalDate.now());
         return dotGiamGiaRepository.save(dotGiamGia);
     }
 
     public DotGiamGia update(Integer id, DotGiamGiaRequest request) {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
+        normalize(request);
+        validateBusinessRules(request, id);
 
         // Cho phép toggle kichHoat 0 <-> 1 (ngừng/đang hoạt động)
 
@@ -99,8 +109,8 @@ public class DotGiamGiaService {
         LocalDate start = dotGiamGia.getNgayBatDau();
         LocalDate end = dotGiamGia.getNgayKetThuc();
 
-        if (end != null && (end.isBefore(now) || end.isEqual(now))) {
-            dotGiamGia.setKichHoat(2); // Hết hạn (bao gồm cả ngày hôm nay)
+        if (end != null && end.isBefore(now)) {
+            dotGiamGia.setKichHoat(2);
         } else {
             Integer requestedStatus = request.getKichHoat();
             if (requestedStatus != null && requestedStatus == 0) {
@@ -113,11 +123,53 @@ public class DotGiamGiaService {
         }
 
         if (dotGiamGia.getNgayTao() == null) {
-            dotGiamGia.setNgayTao(request.getNgayTao() == null ? LocalDate.now() : request.getNgayTao());
+            dotGiamGia.setNgayTao(LocalDate.now());
         }
 
         if (dotGiamGia.getId() != null) {
             dotGiamGia.setNgayCapNhat(LocalDate.now());
+        }
+    }
+
+    private void normalize(DotGiamGiaRequest request) {
+        request.setMa(request.getMa() == null ? null : request.getMa().trim().toUpperCase());
+        request.setTen(request.getTen() == null ? null : request.getTen().trim());
+        request.setMoTa(request.getMoTa() == null ? null : request.getMoTa().trim());
+    }
+
+    private void validateBusinessRules(DotGiamGiaRequest request, Integer currentId) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        boolean duplicateCode = currentId == null
+                ? dotGiamGiaRepository.existsByMaIgnoreCase(request.getMa())
+                : dotGiamGiaRepository.existsByMaIgnoreCaseAndIdNot(request.getMa(), currentId);
+        boolean duplicateName = currentId == null
+                ? dotGiamGiaRepository.existsByTenIgnoreCase(request.getTen())
+                : dotGiamGiaRepository.existsByTenIgnoreCaseAndIdNot(request.getTen(), currentId);
+
+        if (duplicateCode) {
+            errors.put("ma", "Mã đợt giảm giá đã tồn tại");
+        }
+        if (duplicateName) {
+            errors.put("ten", "Tên đợt giảm giá đã tồn tại");
+        }
+        if (request.getNgayBatDau() != null
+                && request.getNgayKetThuc() != null
+                && request.getNgayKetThuc().isBefore(request.getNgayBatDau())) {
+            errors.put("ngayKetThuc", "Ngày kết thúc không được trước ngày bắt đầu");
+        }
+        if (request.getKichHoat() != null
+                && request.getKichHoat() != 0
+                && request.getKichHoat() != 1
+                && request.getKichHoat() != 2
+                && request.getKichHoat() != 4) {
+            errors.put("kichHoat", "Trạng thái đợt giảm giá không hợp lệ");
+        }
+        if (!errors.isEmpty()) {
+            throw new BusinessException(
+                    com.example.server.infrastructure.exception.ErrorCode.VALIDATION_ERROR,
+                    "Vui lòng kiểm tra lại thông tin đợt giảm giá",
+                    errors
+            );
         }
     }
 }

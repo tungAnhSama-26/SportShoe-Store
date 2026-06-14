@@ -60,7 +60,7 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setKhachHang(khachHang);
         phieuGiamGiaKhachHang.setNgaySuDung(toInstant(request.getNgaySuDung()));
         phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai() == null ? 1 : request.getTrangThai());
-        phieuGiamGiaKhachHang.setNgayTao(resolveNgayTao(request.getNgayTao()));
+        phieuGiamGiaKhachHang.setNgayTao(Instant.now());
 
         PhieuGiamGiaKhachHang saved = phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
 
@@ -99,21 +99,15 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setKhachHang(khachHang);
         phieuGiamGiaKhachHang.setNgaySuDung(toInstant(request.getNgaySuDung()));
         phieuGiamGiaKhachHang.setTrangThai(request.getTrangThai() == null ? phieuGiamGiaKhachHang.getTrangThai() : request.getTrangThai());
-        if (request.getNgayTao() != null) {
-            phieuGiamGiaKhachHang.setNgayTao(toInstant(request.getNgayTao()));
-        } else if (phieuGiamGiaKhachHang.getNgayTao() == null) {
+        if (phieuGiamGiaKhachHang.getNgayTao() == null) {
             phieuGiamGiaKhachHang.setNgayTao(Instant.now());
         }
 
         return phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
     }
 
-    private Instant resolveNgayTao(LocalDate value) {
-        return value == null ? Instant.now() : toInstant(value);
-    }
-
     private Instant toInstant(LocalDate value) {
-        return value == null ? null : value.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return value == null ? null : value.atStartOfDay(ZoneId.of("Asia/Bangkok")).toInstant();
     }
 
     private PhieuGiamGia getPhieuGiamGia(Integer phieuGiamGiaId) {
@@ -133,7 +127,7 @@ public class PhieuGiamGiaKhachHangService {
             PhieuGiamGiaKhachHang lienKetHienTai
     ) {
         if (phieuGiamGia.getLoaiPhieu() == null || phieuGiamGia.getLoaiPhieu() != LOAI_PHIEU_CA_NHAN) {
-            throw new BusinessException("Chi co the tang phieu ca nhan cho khach hang.");
+            throw new BusinessException("Chỉ có thể tặng phiếu cá nhân cho khách hàng");
         }
 
         Integer lienKetHienTaiId = lienKetHienTai == null ? null : lienKetHienTai.getId();
@@ -142,7 +136,7 @@ public class PhieuGiamGiaKhachHangService {
                 khachHang.getId()
         );
         if (lienKetTrung.isPresent() && !lienKetTrung.get().getId().equals(lienKetHienTaiId)) {
-            throw new BusinessException("Khach hang nay da duoc tang phieu nay.");
+            throw new BusinessException("Khách hàng này đã được tặng phiếu giảm giá này");
         }
 
         long soLienKetHienTai = phieuGiamGiaKhachHangRepository.countByPhieuGiamGiaId(phieuGiamGia.getId());
@@ -152,7 +146,7 @@ public class PhieuGiamGiaKhachHangService {
         long tongLienKetSauCapNhat = giuNguyenSlotPhieu ? soLienKetHienTai : soLienKetHienTai + 1;
 
         if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() != 999999 && tongLienKetSauCapNhat > phieuGiamGia.getSoLuong()) {
-            throw new BusinessException("Phieu nay da duoc tang het so luong.");
+            throw new BusinessException("Phiếu giảm giá này đã được tặng hết số lượng");
         }
     }
 
