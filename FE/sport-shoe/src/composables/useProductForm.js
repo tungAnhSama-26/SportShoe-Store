@@ -376,6 +376,11 @@ export function useProductForm() {
 
   function goBack() {
     const routeName = String(route.name || '')
+    if (routeName === 'admin-san-pham-them') {
+      router.push({ name: 'admin-san-pham' })
+      return
+    }
+
     const shouldReturnToVariantList =
       Boolean(currentProductId.value) || routeName === 'admin-bien-the-san-pham-them'
 
@@ -448,5 +453,6 @@ export function useProductForm() {
     validateProductForm,
     buildCreateProductPayload,
     regenerateDraftProductCode,
+    router,
   }
 }

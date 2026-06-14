@@ -318,11 +318,25 @@ export function layDanhMuc(): Promise<DanhMucSanPhamResponse> {
   })
 }
 
-export function checkTenGiay(ten: string, id?: number | null): Promise<{ exists: boolean }> {
+export function checkTenGiay(ten: string, id?: number | null): Promise<{ exists: boolean, id?: number }> {
   const params = new URLSearchParams()
   params.set('ten', ten)
   if (id != null) params.set('id', String(id))
-  return request<{ exists: boolean }>(`/admin/san-pham/check-ten?${params}`)
+  return request<{ exists: boolean, id?: number }>(`/admin/san-pham/check-ten?${params}`)
+}
+
+export function checkMaGiay(ma: string, id?: number | null): Promise<{ exists: boolean, id?: number }> {
+  const params = new URLSearchParams()
+  params.set('ma', ma)
+  if (id != null) params.set('id', String(id))
+  return request<{ exists: boolean, id?: number }>(`/admin/san-pham/check-ma?${params}`)
+}
+
+export function checkTrungThuocTinh(body: TaoGiayRequest): Promise<GiayDetail> {
+  return request<GiayDetail>('/admin/san-pham/check-trung-thuoc-tinh', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
 export function chiTietGiay(id: number): Promise<GiayDetail> {

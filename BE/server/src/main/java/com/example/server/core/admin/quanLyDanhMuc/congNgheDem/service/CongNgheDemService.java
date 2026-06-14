@@ -42,8 +42,17 @@ public class CongNgheDemService {
         }
 
         String ten = req.ten().trim();
-        if (congNgheDemRepository.existsByTenIgnoreCase(ten)) {
-            throw new BusinessException("Công nghệ đệm '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        var existingOpt = congNgheDemRepository.findByTenIgnoreCase(req.ten().trim());
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
+                existing.setMoTa(req.moTa());
+                existing.setMa(ma);
+                return toCongNgheDem(congNgheDemRepository.save(existing));
+            } else {
+                throw new BusinessException("T�n c�ng ngh? d?m '" + req.ten() + "' d� t?n t?i");
+            }
         }
 
         var entity = new CongNgheDem();

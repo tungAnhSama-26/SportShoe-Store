@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface LoaiGiayRepository extends JpaRepository<LoaiGiay, Integer> {
 
     @Query("select l from LoaiGiay l where (:kw is null or lower(l.ma) like lower(concat('%',:kw,'%')) or lower(l.ten) like lower(concat('%',:kw,'%')))")
@@ -19,4 +21,5 @@ public interface LoaiGiayRepository extends JpaRepository<LoaiGiay, Integer> {
     boolean existsByTenIgnoreCase(String ten);
 
     boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
+    Optional<LoaiGiay> findByTenIgnoreCase(String ten);
 }

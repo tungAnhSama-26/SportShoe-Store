@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface TrongLuongRepository extends JpaRepository<TrongLuong, Integer> {
 
     @Query("select t from TrongLuong t where (:kw is null or lower(t.ma) like lower(concat('%',:kw,'%')))")
@@ -19,4 +21,5 @@ public interface TrongLuongRepository extends JpaRepository<TrongLuong, Integer>
     boolean existsByGiaTri(Integer giaTri);
 
     boolean existsByGiaTriAndIdNot(Integer giaTri, Integer id);
+    Optional<TrongLuong> findByGiaTri(Integer giaTri);
 }
