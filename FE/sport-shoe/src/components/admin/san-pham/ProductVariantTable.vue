@@ -106,12 +106,15 @@ function discountTitle(item) {
 }
 
 function bienTheTrangThaiLabel(item) {
-  return Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0 ? 'Đang bán' : 'Ngừng bán'
+  if (Number(item.kichHoat) === 0) return 'Ngừng bán'
+  if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
+  return 'Đang bán'
 }
 
 function bienTheTrangThaiClass(item) {
-  if (Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0) return 'bg-emerald-50 text-emerald-600'
-  return 'bg-slate-100 text-slate-600'
+  if (Number(item.kichHoat) === 0) return 'bg-slate-100 text-slate-600'
+  if (Number(item.soLuong || 0) <= 0) return 'bg-amber-50 text-amber-600'
+  return 'bg-emerald-50 text-emerald-600'
 }
 
 function quickToggleLabel(item) {
@@ -145,6 +148,31 @@ function openDiscountDetail(item) {
   if (!item?.dotGiamGiaId) return
   emit('open-discount-detail', item)
 }
+
+const selectedVariantIds = ref(new Set())
+
+function toggleSelectAll(event) {
+  if (event.target.checked) {
+    props.items.forEach(item => selectedVariantIds.value.add(item.id))
+  } else {
+    selectedVariantIds.value.clear()
+  }
+}
+
+function toggleSelectVariant(id) {
+  if (selectedVariantIds.value.has(id)) {
+    selectedVariantIds.value.delete(id)
+  } else {
+    selectedVariantIds.value.add(id)
+  }
+}
+
+function handleBulkQr() {
+  const selectedItems = props.items.filter(i => selectedVariantIds.value.has(i.id))
+  if (!selectedItems.length) return
+  emit('bulk-qr', selectedItems)
+  selectedVariantIds.value.clear()
+}
 </script>
 
 <template>
@@ -154,6 +182,7 @@ function openDiscountDetail(item) {
       <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
           <col class="w-[4%]" />
+          <col class="w-[4%]" />
           <col class="w-[8%]" />
           <col class="w-[9%]" />
           <col class="w-[6%]" />
@@ -161,13 +190,18 @@ function openDiscountDetail(item) {
           <col class="w-[7%]" />
           <col class="w-[7%]" />
           <col class="w-[11%]" />
-          <col class="w-[8%]" />
+          <col class="w-[7%]" />
           <col class="w-[11%]" />
           <col class="w-[9%]" />
         </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
             <th class="rounded-tl-2xl bg-slate-100">STT</th>
+            <th class="bg-slate-100 text-center">
+              <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500" 
+                     :checked="items.length > 0 && selectedVariantIds.size === items.length"
+                     @change="toggleSelectAll" />
+            </th>
             <th class="bg-slate-100">Mã SP</th>
             <th class="bg-slate-100">Mã CTSP</th>
             <th class="bg-slate-100 text-center">Ảnh</th>
@@ -182,10 +216,10 @@ function openDiscountDetail(item) {
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="11" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+            <td colspan="12" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
           </tr>
           <tr v-else-if="!items.length">
-            <td colspan="11" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
+            <td colspan="12" class="py-10 text-center text-sm text-slate-400">Chưa có chi tiết sản phẩm nào</td>
           </tr>
           <tr
             v-for="(item, index) in items"
@@ -197,6 +231,11 @@ function openDiscountDetail(item) {
           >
             <td class="rounded-l-2xl px-2.5 py-4 align-middle font-semibold text-slate-500 whitespace-nowrap">
               {{ currentPage * pageSize + index + 1 }}
+            </td>
+            <td class="px-2.5 py-4 align-middle text-center">
+              <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                     :checked="selectedVariantIds.has(item.id)"
+                     @change="toggleSelectVariant(item.id)" />
             </td>
             <td class="px-2.5 py-4 align-middle font-bold text-slate-950 break-words">
               {{ item.maSanPham }}
@@ -312,9 +351,18 @@ function openDiscountDetail(item) {
       </table>
     </div>
 
-    <AdminTableFooter
-      v-if="!hidePagination"
-      :current-page="currentPage"
+    <div class="flex items-center justify-between border-t border-slate-100 pt-4 mt-4" v-if="!hidePagination || selectedVariantIds.size > 0">
+      <div class="flex items-center gap-3">
+        <button v-if="selectedVariantIds.size > 0"
+                type="button" 
+                class="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+                @click="handleBulkQr">
+          Tải/In QR ({{ selectedVariantIds.size }})
+        </button>
+      </div>
+      <AdminTableFooter
+        v-if="!hidePagination"
+        :current-page="currentPage"
       :page-size="pageSize"
       :page-size-options="pageSizeOptions"
       :total-items="totalItems"

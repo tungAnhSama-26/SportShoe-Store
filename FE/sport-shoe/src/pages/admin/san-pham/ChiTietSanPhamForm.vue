@@ -40,8 +40,24 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
           @inline-create-attribute="handleInlineCreateAttribute"
           @clear-selected-values="clearSelectedValues"
           @toggle-selected-value="toggleSelectedValue"
+          @toggle-selected-value="toggleSelectedValue"
           @generate-variants="handleGenerateVariants"
         />
+
+        <article class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <label class="block">
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Mô tả</span>
+            <textarea
+              v-model="productForm.moTa"
+              rows="5"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              placeholder="Mô tả sản phẩm"
+            ></textarea>
+            <p v-if="productErrors.moTa" class="mt-1 text-xs text-rose-500">
+              {{ productErrors.moTa }}
+            </p>
+          </label>
+        </article>
       </section>
 
       <ChiTietSanPhamGeneratedVariantsSection

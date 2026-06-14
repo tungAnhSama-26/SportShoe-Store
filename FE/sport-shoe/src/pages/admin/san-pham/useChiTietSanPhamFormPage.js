@@ -30,7 +30,8 @@ import {
   isValidHexColor,
   normalizeAttributeText,
   normalizeRequiredText,
-  normalizeSizeValue
+  normalizeSizeValue,
+  hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham.js'
 export function useChiTietSanPhamFormPage() {
   const {
@@ -414,6 +415,9 @@ export function useChiTietSanPhamFormPage() {
     if (!ten) {
       throw new Error(`Vui lòng nhập ${config.label} để thêm nhanh`)
     }
+    if (hasSpecialCharacters(ten)) {
+      throw new Error(`${config.label} không được chứa ký tự đặc biệt`)
+    }
     return {
       create: config.create,
       body: config.buildBody(ten, seed)
@@ -452,6 +456,8 @@ export function useChiTietSanPhamFormPage() {
         }
         if (!ten) {
           quickCreateErrors.ten = 'Vui lòng nhập tên màu sắc'
+        } else if (hasSpecialCharacters(ten)) {
+          quickCreateErrors.ten = 'Tên màu sắc không được chứa ký tự đặc biệt'
         }
         if (!isValidHexColor(quickCreateForm.maMauHex)) {
           quickCreateErrors.maMauHex = 'Mã màu HEX chưa đúng định dạng'
@@ -479,6 +485,11 @@ export function useChiTietSanPhamFormPage() {
         }
         if (!giaTri) {
           quickCreateErrors.giaTri = 'Kích cỡ không hợp lệ, vui lòng nhập lại'
+        } else if (hasSpecialCharacters(giaTri)) {
+          quickCreateErrors.giaTri = 'Kích cỡ không được chứa ký tự đặc biệt'
+        }
+        if (quickCreateForm.ghiChu && hasSpecialCharacters(quickCreateForm.ghiChu)) {
+          quickCreateErrors.ghiChu = 'Ghi chú không được chứa ký tự đặc biệt'
         }
         if (Object.keys(quickCreateErrors).length) {
           return

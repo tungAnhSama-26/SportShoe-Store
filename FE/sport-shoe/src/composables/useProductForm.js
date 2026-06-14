@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as api from '../services/san-pham-api.ts'
+import { hasSpecialCharacters } from '../utils/thuoc-tinh-san-pham.js'
 
 export function useProductForm() {
   const route = useRoute()
@@ -237,6 +238,8 @@ export function useProductForm() {
 
     if (!productName) {
       productErrors.ten = 'Vui lòng nhập tên sản phẩm'
+    } else if (hasSpecialCharacters(productName)) {
+      productErrors.ten = 'Tên sản phẩm không được chứa ký tự đặc biệt'
     } else if (productName.length < 3) {
       productErrors.ten = 'Tên sản phẩm phải có ít nhất 3 ký tự'
     } else if (productName.length > 300) {
@@ -279,7 +282,9 @@ export function useProductForm() {
       productErrors.trongLuongId = 'Trọng lượng đã chọn không hợp lệ'
     }
 
-    if (productDescription.length > 2000) {
+    if (hasSpecialCharacters(productDescription)) {
+      productErrors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
+    } else if (productDescription.length > 2000) {
       productErrors.moTa = 'Mô tả không được vượt quá 2000 ký tự'
     }
 

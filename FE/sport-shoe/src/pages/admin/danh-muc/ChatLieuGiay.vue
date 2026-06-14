@@ -5,6 +5,13 @@ import { chatLieuGiayApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
 import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
+<script setup>
+import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { Search, Plus, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { chatLieuGiayApi } from '../../../services/danh-muc-api'
+import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
+import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
+import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import {
@@ -12,7 +19,8 @@ import {
   exceedsMaxLength,
   generateAttributeCode,
   normalizeOptionalText,
-  normalizeRequiredText
+  normalizeRequiredText,
+  hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham'
 import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
@@ -130,12 +138,16 @@ function validate() {
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã chất liệu giày'
   if (!ten) errors.ten = 'Vui lòng nhập tên chất liệu giày'
+  else if (hasSpecialCharacters(ten)) {
+    errors.ten = 'Tên chất liệu giày không được chứa ký tự đặc biệt'
+  }
   else if (exceedsMaxLength(ten, TEN_MAX_LENGTH)) {
     errors.ten = `Tên chất liệu giày không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }
 
-  if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {
-    errors.moTa = `Mô tả không được vượt quá ${MO_TA_MAX_LENGTH} ký tự`
+  if (moTa && hasSpecialCharacters(moTa)) {
+    errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
+  }
   }
 
   return Object.keys(errors).length === 0
