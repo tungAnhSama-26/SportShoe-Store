@@ -7,7 +7,7 @@ import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMuc
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
-import { exceedsMaxLength, normalizeOptionalText, normalizeSizeValue   hasSpecialCharacters,
+import { exceedsMaxLength, normalizeOptionalText, normalizeSizeValue, hasSpecialCharacters,
 } from '../../../utils/thuoc-tinh-san-pham'
 import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
