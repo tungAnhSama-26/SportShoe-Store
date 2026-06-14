@@ -40,17 +40,7 @@ public class MauSacService {
         var existingOpt = mauSacRepository.findByTenIgnoreCase(ten);
         
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
-                throw new BusinessException("Tên màu sắc '" + ten + "' đã tồn tại");
-            }
-            // Khôi phục nếu đang bị ngừng bán
-            existing.setTrangThai(1);
-            if (req.maMauHex() != null && !req.maMauHex().isBlank()) {
-                existing.setMaMauHex(req.maMauHex());
-            }
-            existing.setNgayCapNhat(Instant.now());
-            return toMauSac(mauSacRepository.save(existing));
+            throw new BusinessException("Tên màu sắc '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
         }
 
         String ma = req.ma().trim().toUpperCase();

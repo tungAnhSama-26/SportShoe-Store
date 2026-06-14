@@ -41,9 +41,14 @@ public class CongNgheDemService {
             throw new BusinessException("Mã công nghệ đệm '" + ma + "' đã tồn tại");
         }
 
+        String ten = req.ten().trim();
+        if (congNgheDemRepository.existsByTenIgnoreCase(ten)) {
+            throw new BusinessException("Công nghệ đệm '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        }
+
         var entity = new CongNgheDem();
         entity.setMa(ma);
-        entity.setTen(req.ten().trim());
+        entity.setTen(ten);
         entity.setMoTa(req.moTa());
         entity.setTrangThai(1);
         entity.setNgayTao(Instant.now());
@@ -57,6 +62,11 @@ public class CongNgheDemService {
         String ma = req.ma().trim().toUpperCase();
         if (congNgheDemRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
             throw new BusinessException("Mã công nghệ đệm '" + ma + "' đã tồn tại");
+        }
+
+        String ten = req.ten().trim();
+        if (congNgheDemRepository.existsByTenIgnoreCaseAndIdNot(ten, id)) {
+            throw new BusinessException("Công nghệ đệm '" + ten + "' đã tồn tại");
         }
 
         entity.setMa(ma);

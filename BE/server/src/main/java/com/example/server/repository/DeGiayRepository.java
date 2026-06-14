@@ -15,4 +15,8 @@ public interface DeGiayRepository extends JpaRepository<DeGiay, Integer> {
     boolean existsByMaIgnoreCase(String ma);
 
     boolean existsByMaIgnoreCaseAndIdNot(String ma, Integer id);
+
+    boolean existsByTenIgnoreCase(String ten);
+
+    boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
 }

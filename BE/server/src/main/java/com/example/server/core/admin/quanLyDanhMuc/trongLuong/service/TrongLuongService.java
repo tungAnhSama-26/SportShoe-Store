@@ -41,6 +41,10 @@ public class TrongLuongService {
             throw new BusinessException("Mã trọng lượng '" + ma + "' đã tồn tại");
         }
 
+        if (trongLuongRepository.existsByGiaTri(req.giaTri())) {
+            throw new BusinessException("Giá trị trọng lượng '" + req.giaTri() + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        }
+
         var entity = new TrongLuong();
         entity.setMa(ma);
         entity.setGiaTri(req.giaTri());
@@ -57,6 +61,10 @@ public class TrongLuongService {
         String ma = req.ma().trim().toUpperCase();
         if (trongLuongRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
             throw new BusinessException("Mã trọng lượng '" + ma + "' đã tồn tại");
+        }
+
+        if (trongLuongRepository.existsByGiaTriAndIdNot(req.giaTri(), id)) {
+            throw new BusinessException("Giá trị trọng lượng '" + req.giaTri() + "' đã tồn tại");
         }
 
         entity.setMa(ma);
