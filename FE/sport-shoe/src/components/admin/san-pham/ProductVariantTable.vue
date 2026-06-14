@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Eye, Images, Layers3, Pencil, Tag, RefreshCw } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
@@ -54,7 +54,8 @@ const emit = defineEmits([
   'open-qr',
   'refresh',
   'update:current-page',
-  'update:page-size'
+  'update:page-size',
+  'selection-changed'
 ])
 
 function isUpdatingStatus(id) {
@@ -166,6 +167,10 @@ function toggleSelectVariant(id) {
     selectedVariantIds.value.add(id)
   }
 }
+
+watch(() => selectedVariantIds.value.size, (newSize) => {
+  emit('selection-changed', newSize > 0)
+})
 
 function handleBulkQr() {
   const selectedItems = props.items.filter(i => selectedVariantIds.value.has(i.id))
