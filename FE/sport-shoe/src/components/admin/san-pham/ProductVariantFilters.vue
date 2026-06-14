@@ -75,7 +75,12 @@ function handleFilterChange() {
             <FileSpreadsheet class="h-4 w-4" />
             Xuất Excel
           </button>
-          <button v-if="hasSelectedVariants" type="button" class="admin-btn-primary" @click="$emit('download-qr')">
+          <button 
+            type="button" 
+            class="admin-btn-primary disabled:opacity-50 disabled:cursor-not-allowed" 
+            :disabled="!hasSelectedVariants"
+            @click="$emit('download-qr')"
+          >
             <QrCode class="h-4 w-4" />
             Tải mã QR
           </button>
