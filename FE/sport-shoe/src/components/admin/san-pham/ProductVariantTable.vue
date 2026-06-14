@@ -205,12 +205,12 @@ defineExpose({
         </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
-            <th class="rounded-tl-2xl bg-slate-100">STT</th>
-            <th class="bg-slate-100 text-center">
+            <th class="rounded-tl-2xl bg-slate-100 text-center">
               <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500" 
                      :checked="items.length > 0 && selectedVariantIds.size === items.length"
                      @change="toggleSelectAll" />
             </th>
+            <th class="bg-slate-100">STT</th>
             <th class="bg-slate-100">Mã SP</th>
             <th class="bg-slate-100">Mã CTSP</th>
             <th class="bg-slate-100 text-center">Ảnh</th>
@@ -238,13 +238,13 @@ defineExpose({
               isFocusedVariant(item) ? 'bg-rose-50 ring-2 ring-rose-200' : 'bg-white ring-1 ring-slate-100'
             ]"
           >
-            <td class="rounded-l-2xl px-2.5 py-4 align-middle font-semibold text-slate-500 whitespace-nowrap">
-              {{ currentPage * pageSize + index + 1 }}
-            </td>
-            <td class="px-2.5 py-4 align-middle text-center">
+            <td class="rounded-l-2xl px-2.5 py-4 align-middle text-center">
               <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
                      :checked="selectedVariantIds.has(item.id)"
                      @change="toggleSelectVariant(item.id)" />
+            </td>
+            <td class="px-2.5 py-4 align-middle font-semibold text-slate-500 whitespace-nowrap">
+              {{ currentPage * pageSize + index + 1 }}
             </td>
             <td class="px-2.5 py-4 align-middle font-bold text-slate-950 break-words">
               {{ item.maSanPham }}

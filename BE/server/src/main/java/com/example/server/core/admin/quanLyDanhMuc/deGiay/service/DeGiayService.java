@@ -42,8 +42,17 @@ public class DeGiayService {
         }
 
         String ten = req.ten().trim();
-        if (deGiayRepository.existsByTenIgnoreCase(ten)) {
-            throw new BusinessException("Đế giày '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        var existingOpt = deGiayRepository.findByTenIgnoreCase(req.ten().trim());
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
+                existing.setMoTa(req.moTa());
+                existing.setMa(ma);
+                return toDeGiay(deGiayRepository.save(existing));
+            } else {
+                throw new BusinessException("T�n �? gi�y '" + req.ten() + "' d� t?n t?i");
+            }
         }
 
         var entity = new DeGiay();

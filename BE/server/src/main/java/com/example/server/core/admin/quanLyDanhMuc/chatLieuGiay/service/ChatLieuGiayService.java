@@ -42,8 +42,17 @@ public class ChatLieuGiayService {
         }
 
         String ten = req.ten().trim();
-        if (chatLieuGiayRepository.existsByTenIgnoreCase(ten)) {
-            throw new BusinessException("Chất liệu giày '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        var existingOpt = chatLieuGiayRepository.findByTenIgnoreCase(req.ten().trim());
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
+                existing.setMoTa(req.moTa());
+                existing.setMa(ma);
+                return toChatLieuGiay(chatLieuGiayRepository.save(existing));
+            } else {
+                throw new BusinessException("T�n ch?t li?u gi�y '" + req.ten() + "' d� t?n t?i");
+            }
         }
 
         var entity = new ChatLieuGiay();

@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Pageable;
@@ -126,14 +127,64 @@ public class QuanLySanPhamService {
     // ─── Danh mục ────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+    public Map<String, Object> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
+        Integer conflictingId = null;
         if (id != null && id > 0) {
             exists = giayRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
         } else {
-            exists = giayRepository.existsByTenIgnoreCase(ten);
+            Optional<Giay> conflicting = giayRepository.findFirstByTenIgnoreCase(ten);
+            if (conflicting.isPresent()) {
+                exists = true;
+                conflictingId = conflicting.get().getId();
+            }
         }
-        return Map.of("exists", exists);
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("exists", exists);
+        if (conflictingId != null) {
+            result.put("id", conflictingId);
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkMaTrung(String ma, Integer id) {
+        boolean exists = false;
+        Integer conflictingId = null;
+        if (id != null && id > 0) {
+            exists = giayRepository.existsByMaIgnoreCaseAndIdNot(ma, id);
+        } else {
+            Optional<Giay> conflicting = giayRepository.findFirstByMaIgnoreCase(ma);
+            if (conflicting.isPresent()) {
+                exists = true;
+                conflictingId = conflicting.get().getId();
+            }
+        }
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("exists", exists);
+        if (conflictingId != null) {
+            result.put("id", conflictingId);
+        }
+        return result;
+    }
+
+    public GiayDetailResponse checkTrungThuocTinh(TaoGiayRequest req) {
+        List<Giay> existing = giayRepository.findByThuocTinh(
+                req.thuongHieuId(),
+                req.loaiGiayId(),
+                req.gioiTinh(),
+                req.chatLieuGiayId(),
+                req.deGiayId(),
+                req.coGiayId(),
+                req.congNgheDemId(),
+                req.trongLuongId()
+        );
+        if (!existing.isEmpty()) {
+            return chiTietGiay(existing.get(0).getId());
+        }
+        return null;
     }
 
     @Transactional(readOnly = true)

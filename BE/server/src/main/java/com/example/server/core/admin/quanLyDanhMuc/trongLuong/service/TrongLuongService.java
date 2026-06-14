@@ -41,8 +41,17 @@ public class TrongLuongService {
             throw new BusinessException("Mã trọng lượng '" + ma + "' đã tồn tại");
         }
 
-        if (trongLuongRepository.existsByGiaTri(req.giaTri())) {
-            throw new BusinessException("Giá trị trọng lượng '" + req.giaTri() + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        var existingOpt = trongLuongRepository.findByGiaTri(req.giaTri());
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
+                existing.setMoTa(req.moTa());
+                existing.setMa(ma);
+                return toTrongLuong(trongLuongRepository.save(existing));
+            } else {
+                throw new BusinessException("Gi� tr? tr?ng lu?ng '" + req.giaTri() + "' d� t?n t?i");
+            }
         }
 
         var entity = new TrongLuong();

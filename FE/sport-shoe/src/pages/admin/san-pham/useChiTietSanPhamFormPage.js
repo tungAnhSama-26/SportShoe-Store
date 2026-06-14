@@ -21,6 +21,7 @@ import {
 } from '../../../services/danh-muc-api.ts'
 import * as api from '../../../services/san-pham-api.ts'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
+import { showConfirm } from '../../../utils/alert.js'
 import {
   createAttributeCodeSeed,
   generateAttributeCode,
@@ -54,7 +55,8 @@ export function useChiTietSanPhamFormPage() {
     setCreatedImageManagerRef,
     validateProductForm,
     buildCreateProductPayload,
-    regenerateDraftProductCode
+    regenerateDraftProductCode,
+    router
   } = useProductForm()
   const {
     variantBuilder,
@@ -683,6 +685,63 @@ export function useChiTietSanPhamFormPage() {
         giaBan: variant.giaBan
       }))
       let variantsResult
+
+      if (!isExistingProduct.value) {
+        if (productForm.ma && productForm.ma.trim() !== '') {
+          const checkMa = await api.checkMaGiay(productForm.ma.trim());
+          if (checkMa.exists && checkMa.id) {
+            saving.value = false;
+            const confirmed = await showConfirm(
+              `Mã sản phẩm <b>${productForm.ma}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
+              'Trùng mã sản phẩm'
+            );
+            if (confirmed) {
+              currentProductId.value = checkMa.id;
+              isExistingProduct.value = true;
+              saving.value = true;
+            } else {
+              return;
+            }
+          }
+        }
+        
+        if (!isExistingProduct.value && productForm.ten && productForm.ten.trim() !== '') {
+          const checkTen = await api.checkTenGiay(productForm.ten.trim());
+          if (checkTen.exists && checkTen.id) {
+            saving.value = false;
+            const confirmed = await showConfirm(
+              `Sản phẩm với tên <b>${productForm.ten}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
+              'Trùng tên sản phẩm'
+            );
+            if (confirmed) {
+              currentProductId.value = checkTen.id;
+              isExistingProduct.value = true;
+              saving.value = true;
+            } else {
+              return;
+            }
+          }
+        }
+
+        if (!isExistingProduct.value) {
+          const checkTrung = await api.checkTrungThuocTinh(buildCreateProductPayload());
+          if (checkTrung && checkTrung.id) {
+            saving.value = false;
+            const confirmed = await showConfirm(
+              `Sản phẩm <b>${checkTrung.ten}</b> đang có các thuộc tính giống hệt với các thuộc tính bạn vừa chọn. Bạn có muốn gộp các biến thể này vào sản phẩm <b>${checkTrung.ten}</b> không?`,
+              'Trùng thuộc tính sản phẩm'
+            );
+            if (confirmed) {
+              currentProductId.value = checkTrung.id;
+              isExistingProduct.value = true;
+              saving.value = true;
+            } else {
+              return;
+            }
+          }
+        }
+      }
+
       if (isExistingProduct.value) {
         await api.capNhatGiay(currentProductId.value, buildCreateProductPayload())
         variantsResult = await api.taoChiTietSanPhamHangLoat({
@@ -731,12 +790,9 @@ export function useChiTietSanPhamFormPage() {
       } else {
         showToast(`Lưu sản phẩm thành công!${skippedMessage}`, 'success')
       }
-      
-      if (representativeCreatedVariants.value.length === 0) {
-        setTimeout(() => {
-          goBack()
-        }, 1000)
-      }
+      setTimeout(() => {
+        router.push({ name: 'admin-san-pham' })
+      }, 1000)
     } catch (error) {
       console.error('Error saving product:', error)
       const fieldErrors = getFieldErrors(error)

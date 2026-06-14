@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@zxing/browser": "^0.1.5"
+    "@zxing/browser": "^0.1.5",
+    "mssql": "^12.5.5"
   }
 }

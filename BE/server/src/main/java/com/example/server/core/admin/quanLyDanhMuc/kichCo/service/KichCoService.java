@@ -46,7 +46,14 @@ public class KichCoService {
         var existingOpt = kichCoRepository.findByGiaTriIgnoreCase(giaTri);
         
         if (existingOpt.isPresent()) {
-            throw new BusinessException("Kích cỡ '" + giaTri + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
+                existing.setGhiChu(hasText(req.ghiChu()) ? req.ghiChu().trim() : null);
+                return toKichCo(kichCoRepository.save(existing));
+            } else {
+                throw new BusinessException("Kích cỡ '" + req.giaTri() + "' đã tồn tại");
+            }
         }
 
         var entity = new KichCo();
