@@ -12,6 +12,14 @@ import java.util.Collection;
 import java.util.List;
 
 public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSanPham, Integer> {
+    boolean existsByDotGiamGiaIdAndGiayChiTietId(Integer dotGiamGiaId, Integer giayChiTietId);
+
+    boolean existsByDotGiamGiaIdAndGiayChiTietIdAndIdNot(
+            Integer dotGiamGiaId,
+            Integer giayChiTietId,
+            Integer id
+    );
+
     @Query("""
     SELECT new com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse(
     dotGiamGiaSP.id, dotGiamGiaSP.dotGiamGia.id, dotGiamGiaSP.giayChiTiet.id, dotGiamGiaSP.giayChiTiet.giay.id, dotGiamGiaSP.dotGiamGia.ma, dotGiamGiaSP.dotGiamGia.ten, 

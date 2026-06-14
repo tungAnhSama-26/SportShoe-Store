@@ -291,6 +291,9 @@ const filteredSelectedVariants = computed(() => {
                   class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
                   placeholder="Nhập mô tả..."
                 ></textarea>
+                <p v-if="formErrors.moTa" class="text-xs text-rose-500">
+                  {{ formErrors.moTa }}
+                </p>
               </div>
             </div>
           </fieldset>
@@ -340,6 +343,12 @@ const filteredSelectedVariants = computed(() => {
                 </h2>
                 <p class="text-[13px] text-slate-400">
                   Đã chọn {{ selectedVariants.length }} biến thể
+                </p>
+                <p
+                  v-if="formErrors.giayChiTietIds"
+                  class="mt-1 text-xs text-rose-500"
+                >
+                  {{ formErrors.giayChiTietIds }}
                 </p>
               </div>
             </div>
