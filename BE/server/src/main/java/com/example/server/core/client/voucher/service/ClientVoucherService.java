@@ -125,7 +125,9 @@ public class ClientVoucherService {
         if (phieu.getNgayKetThuc() != null && now.isAfter(phieu.getNgayKetThuc())) {
             return false;
         }
-        return phieu.getSoLuong() != null && phieu.getSoLuong() > 0;
+        int tongSoLuong = phieu.getSoLuong() == null ? 0 : phieu.getSoLuong();
+        int daDung = phieu.getSoLuongDaDung() == null ? 0 : phieu.getSoLuongDaDung();
+        return tongSoLuong == 999999 || daDung < tongSoLuong;
     }
 
     /**
@@ -138,7 +140,6 @@ public class ClientVoucherService {
         BigDecimal tienGiam = pricingUseCase.tinhSoTienGiam(phieu, tongTienHang);
 
         hoaDon.setPhieuGiamGia(phieu);
-        phieu.setSoLuong(phieu.getSoLuong() - 1);
         phieu.setSoLuongDaDung((phieu.getSoLuongDaDung() == null ? 0 : phieu.getSoLuongDaDung()) + 1);
         phieuGiamGiaRepository.save(phieu);
 
@@ -158,7 +159,9 @@ public class ClientVoucherService {
         if (maPhieu == null || maPhieu.isBlank()) {
             throw new BusinessException("Vui lòng nhập mã giảm giá");
         }
-        PhieuGiamGia phieu = phieuGiamGiaRepository.findByMaIgnoreCase(maPhieu.trim())
+        PhieuGiamGia phieu = (kiemTraLuot
+                ? phieuGiamGiaRepository.findByMaIgnoreCaseForUpdate(maPhieu.trim())
+                : phieuGiamGiaRepository.findByMaIgnoreCase(maPhieu.trim()))
                 .orElseThrow(() -> new BusinessException("Mã giảm giá không tồn tại"));
 
         if (phieu.getTrangThai() == null || phieu.getTrangThai() != TRANG_THAI_PHIEU_HOAT_DONG) {
@@ -174,7 +177,9 @@ public class ClientVoucherService {
         if (phieu.getGiaTriToiThieu() != null && tongTienHang.compareTo(phieu.getGiaTriToiThieu()) < 0) {
             throw new BusinessException("Đơn hàng cần tối thiểu " + dinhDangTien(phieu.getGiaTriToiThieu()) + " để dùng mã này");
         }
-        if (kiemTraLuot && (phieu.getSoLuong() == null || phieu.getSoLuong() <= 0)) {
+        int tongSoLuong = phieu.getSoLuong() == null ? 0 : phieu.getSoLuong();
+        int daDung = phieu.getSoLuongDaDung() == null ? 0 : phieu.getSoLuongDaDung();
+        if (kiemTraLuot && tongSoLuong != 999999 && daDung >= tongSoLuong) {
             throw new BusinessException("Mã giảm giá đã hết lượt sử dụng");
         }
 

@@ -4,12 +4,10 @@ import com.example.server.core.admin.quanlykhuyenmai.dto.request.DotGiamGiaSanPh
 import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamGiaSanPhamResponse;
 import com.example.server.entity.DotGiamGia;
 import com.example.server.entity.DotGiamGiaSanPham;
-import com.example.server.entity.Giay;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DotGiamGiaRepository;
 import com.example.server.repository.DotGiamGiaSanPhamRepository;
-import com.example.server.repository.GiayRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +31,6 @@ public class DotGiamGiaSanPhamService {
 
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final DotGiamGiaRepository dotGiamGiaRepository;
-    private final GiayRepository giayRepository;
     private final GiayChiTietRepository giayChiTietRepository;
 
     public List<QuanLyDotGiamGiaSanPhamResponse> getAll() {
@@ -65,7 +62,14 @@ public class DotGiamGiaSanPhamService {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
         GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm"));
+
+        if (dotGiamGiaSanPhamRepository.existsByDotGiamGiaIdAndGiayChiTietId(
+                request.getDotGiamGiaId(),
+                request.getGiayChiTietId()
+        )) {
+            throw new BusinessException("Biến thể sản phẩm đã có trong đợt giảm giá này");
+        }
 
         // List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
         // if (!actives.isEmpty() && request.getTrangThai() == 1) {
@@ -76,7 +80,7 @@ public class DotGiamGiaSanPhamService {
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
         dotGiamGiaSanPham.setGiayChiTiet(gct);
         dotGiamGiaSanPham.setTrangThai(request.getTrangThai());
-        dotGiamGiaSanPham.setNgayTao(request.getNgayTao());
+        dotGiamGiaSanPham.setNgayTao(LocalDate.now());
 
         DotGiamGiaSanPham saved = dotGiamGiaSanPhamRepository.save(dotGiamGiaSanPham);
         dotGiamGiaSanPhamRepository.flush();
@@ -92,7 +96,15 @@ public class DotGiamGiaSanPhamService {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(request.getDotGiamGiaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
         GiayChiTiet gct = giayChiTietRepository.findById(request.getGiayChiTietId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the san pham"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm"));
+
+        if (dotGiamGiaSanPhamRepository.existsByDotGiamGiaIdAndGiayChiTietIdAndIdNot(
+                request.getDotGiamGiaId(),
+                request.getGiayChiTietId(),
+                id
+        )) {
+            throw new BusinessException("Biến thể sản phẩm đã có trong đợt giảm giá này");
+        }
 
         // if (request.getTrangThai() == 1) {
         //     List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
@@ -106,7 +118,9 @@ public class DotGiamGiaSanPhamService {
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
         dotGiamGiaSanPham.setGiayChiTiet(gct);
         dotGiamGiaSanPham.setTrangThai(request.getTrangThai());
-        dotGiamGiaSanPham.setNgayTao(request.getNgayTao());
+        if (dotGiamGiaSanPham.getNgayTao() == null) {
+            dotGiamGiaSanPham.setNgayTao(LocalDate.now());
+        }
 
         DotGiamGiaSanPham saved = dotGiamGiaSanPhamRepository.save(dotGiamGiaSanPham);
         dotGiamGiaSanPhamRepository.flush();
@@ -159,7 +173,7 @@ public class DotGiamGiaSanPhamService {
         for (Integer vId : targetVariantIds) {
             if (!currentVariantIds.contains(vId)) {
                 GiayChiTiet gct = giayChiTietRepository.findById(vId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bien the #" + vId));
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể #" + vId));
 
                 // Kiểm tra xem biến thể này có đang trong đợt khác không
                 // List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(vId);

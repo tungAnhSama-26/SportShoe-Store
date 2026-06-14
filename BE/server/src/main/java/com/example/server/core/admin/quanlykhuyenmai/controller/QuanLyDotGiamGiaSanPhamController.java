@@ -6,6 +6,7 @@ import com.example.server.core.admin.quanlykhuyenmai.dto.response.QuanLyDotGiamG
 import com.example.server.core.admin.quanlykhuyenmai.service.DotGiamGiaSanPhamService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -40,17 +41,17 @@ public class QuanLyDotGiamGiaSanPhamController {
     }
 
     @PostMapping("add")
-    public void add(@RequestBody DotGiamGiaSanPhamRequest request) {
+    public void add(@Valid @RequestBody DotGiamGiaSanPhamRequest request) {
         dotGiamGiaSanPhamService.add(request);
     }
 
     @PutMapping("update")
-    public void update(@RequestParam("id") Integer id, @RequestBody DotGiamGiaSanPhamRequest request) {
+    public void update(@RequestParam("id") Integer id, @Valid @RequestBody DotGiamGiaSanPhamRequest request) {
         dotGiamGiaSanPhamService.update(id, request);
     }
 
     @PostMapping("bulk-sync")
-    public void bulkSync(@RequestBody DotGiamGiaSanPhamBulkRequest request) {
+    public void bulkSync(@Valid @RequestBody DotGiamGiaSanPhamBulkRequest request) {
         dotGiamGiaSanPhamService.saveAll(request);
     }
 }
