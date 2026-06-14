@@ -42,30 +42,7 @@ export function useProductForm() {
 
   const productErrors = reactive({})
 
-  let tenCheckTimeout = null
-  function validateTenGiayRealtime(newTen) {
-    if (tenCheckTimeout) clearTimeout(tenCheckTimeout)
-    if (!newTen || newTen.trim() === '') {
-      delete productErrors.ten
-      return
-    }
-    tenCheckTimeout = setTimeout(async () => {
-      try {
-        const res = await api.checkTenGiay(newTen.trim(), currentProductId.value)
-        if (res.exists) {
-          productErrors.ten = 'Tên sản phẩm đã tồn tại'
-        } else if (productErrors.ten === 'Tên sản phẩm đã tồn tại') {
-          delete productErrors.ten
-        }
-      } catch (e) {
-        // Ignore error
-      }
-    }, 500)
-  }
-
-  watch(() => productForm.ten, (newVal) => {
-    validateTenGiayRealtime(newVal)
-  })
+  // Removed validateTenGiayRealtime as per request
 
   const pageTitle = computed(() =>
     currentProductId.value ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM SẢN PHẨM'

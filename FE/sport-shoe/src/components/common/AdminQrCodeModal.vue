@@ -105,21 +105,43 @@ function createSafeFilename(value) {
 
 
 
-function downloadSvg() {
+function downloadImage() {
   if (!qrPreview.value.svg) {
     return;
   }
 
-  const blob = new Blob([qrPreview.value.svg], {
-    type: "image/svg+xml;charset=utf-8",
-  });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${createSafeFilename(normalizedValue.value)}.svg`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  const svgData = qrPreview.value.svg;
+  const canvas = document.createElement("canvas");
+  // Set a high resolution for a clear QR code image
+  canvas.width = 1000;
+  canvas.height = 1000;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return;
+
+  // Fill background with white to avoid transparent PNG issues
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const img = new Image();
+  const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const pngUrl = canvas.toDataURL("image/png");
+
+    const link = document.createElement("a");
+    link.href = pngUrl;
+    link.download = `${createSafeFilename(normalizedValue.value)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+
+  img.src = url;
 }
 </script>
 
@@ -247,7 +269,7 @@ function downloadSvg() {
                   type="button"
                   class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 shadow-sm shadow-rose-200"
                   :disabled="!qrPreview.svg"
-                  @click="downloadSvg"
+                  @click="downloadImage"
                 >
                   <Save :size="18" />
                   Lưu QR sản phẩm về máy

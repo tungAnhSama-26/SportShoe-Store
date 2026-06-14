@@ -516,51 +516,92 @@ function triggerDownloadQr() {
   selectedIds.clear()
 }
 
-function handleBulkQr(selectedItems) {
+async function handleBulkQr(selectedItems) {
   if (!selectedItems?.length) return
-  const htmlParts = []
-  htmlParts.push(`
-    <html><head><title>In mã QR (${selectedItems.length} biến thể)</title>
-    <style>
-      body { font-family: sans-serif; display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; }
-      .qr-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; width: 200px; page-break-inside: avoid; }
-      .qr-svg { width: 150px; height: 150px; margin: 0 auto; }
-      .qr-svg svg { width: 100%; height: 100%; }
-      .title { font-weight: bold; font-size: 14px; margin-top: 10px; }
-      .subtitle { font-size: 12px; color: #666; margin-top: 5px; }
-      @media print {
-        body { padding: 0; }
-        .no-print { display: none; }
-      }
-    </style>
-    </head><body>
-    <div class="no-print" style="width: 100%; margin-bottom: 20px;">
-      <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; background: #f43f5e; color: white; border: none; border-radius: 6px; font-weight: bold;">In tất cả mã QR</button>
-    </div>
-  `)
-
+  
+  const qrDataList = [];
   for (const item of selectedItems) {
-    const qrValue = String(item.sku || item.maChiTietSanPham || '').trim()
-    if (!qrValue) continue
+    const qrValue = String(item.sku || item.maChiTietSanPham || '').trim();
+    if (!qrValue) continue;
     try {
-      const svg = createQrCodeSvg(qrValue)
-      htmlParts.push(`
-        <div class="qr-card">
-          <div class="qr-svg">${svg}</div>
-          <div class="title">${item.tenSanPham || 'Chi tiết sản phẩm'}</div>
-          <div class="subtitle">${item.mauSac} / ${item.kichCo}</div>
-          <div class="subtitle" style="font-weight:bold">${qrValue}</div>
-        </div>
-      `)
+      const svg = createQrCodeSvg(qrValue);
+      qrDataList.push({ item, qrValue, svg });
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
   }
-  htmlParts.push(`</body></html>`)
+
+  if (qrDataList.length === 0) {
+    showToast('Không có dữ liệu hợp lệ để tạo QR', 'error');
+    return;
+  }
+
+  showToast('Đang tạo ảnh QR, vui lòng đợi...', 'info');
+
+  const CARD_WIDTH = 300;
+  const CARD_HEIGHT = 380;
+  const COLS = Math.min(qrDataList.length, 4);
+  const ROWS = Math.ceil(qrDataList.length / COLS);
   
-  const blob = new Blob([htmlParts.join('')], { type: 'text/html' })
-  const url = URL.createObjectURL(blob)
-  window.open(url, '_blank')
+  const canvas = document.createElement('canvas');
+  canvas.width = COLS * CARD_WIDTH;
+  canvas.height = ROWS * CARD_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  await Promise.all(qrDataList.map((data, index) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const blob = new Blob([data.svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      
+      img.onload = () => {
+        const col = index % COLS;
+        const row = Math.floor(index / COLS);
+        const x = col * CARD_WIDTH;
+        const y = row * CARD_HEIGHT;
+        
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 10, y + 10, CARD_WIDTH - 20, CARD_HEIGHT - 20);
+        
+        const qrSize = 200;
+        const qrX = x + (CARD_WIDTH - qrSize) / 2;
+        const qrY = y + 30;
+        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+        
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px sans-serif';
+        // handle long text
+        let title = data.item.tenSanPham || 'Chi tiết sản phẩm';
+        if (title.length > 25) title = title.substring(0, 22) + '...';
+        ctx.fillText(title, x + CARD_WIDTH / 2, qrY + qrSize + 40);
+        
+        ctx.fillStyle = '#64748b';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`${data.item.mauSac} / ${data.item.kichCo}`, x + CARD_WIDTH / 2, qrY + qrSize + 65);
+        
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillText(data.qrValue, x + CARD_WIDTH / 2, qrY + qrSize + 95);
+        
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      img.src = url;
+    });
+  }));
+
+  const pngUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = pngUrl;
+  link.download = `DanhSach_QRCode_${new Date().getTime()}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 async function toggleBienTheStatus(item) {

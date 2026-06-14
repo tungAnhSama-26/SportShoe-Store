@@ -15,4 +15,8 @@ public interface TrongLuongRepository extends JpaRepository<TrongLuong, Integer>
     boolean existsByMaIgnoreCase(String ma);
 
     boolean existsByMaIgnoreCaseAndIdNot(String ma, Integer id);
+
+    boolean existsByGiaTri(Integer giaTri);
+
+    boolean existsByGiaTriAndIdNot(Integer giaTri, Integer id);
 }

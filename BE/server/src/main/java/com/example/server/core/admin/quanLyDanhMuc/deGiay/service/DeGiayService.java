@@ -41,9 +41,14 @@ public class DeGiayService {
             throw new BusinessException("Mã đế giày '" + ma + "' đã tồn tại");
         }
 
+        String ten = req.ten().trim();
+        if (deGiayRepository.existsByTenIgnoreCase(ten)) {
+            throw new BusinessException("Đế giày '" + ten + "' đã tồn tại trong hệ thống. Nếu không thấy, vui lòng kiểm tra xem nó có đang bị ngừng hoạt động không.");
+        }
+
         var entity = new DeGiay();
         entity.setMa(ma);
-        entity.setTen(req.ten().trim());
+        entity.setTen(ten);
         entity.setMoTa(req.moTa());
         entity.setTrangThai(1);
         entity.setNgayTao(Instant.now());
@@ -57,6 +62,11 @@ public class DeGiayService {
         String ma = req.ma().trim().toUpperCase();
         if (deGiayRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
             throw new BusinessException("Mã đế giày '" + ma + "' đã tồn tại");
+        }
+
+        String ten = req.ten().trim();
+        if (deGiayRepository.existsByTenIgnoreCaseAndIdNot(ten, id)) {
+            throw new BusinessException("Đế giày '" + ten + "' đã tồn tại");
         }
 
         entity.setMa(ma);

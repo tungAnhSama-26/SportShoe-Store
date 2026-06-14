@@ -706,28 +706,68 @@ export function useChiTietSanPhamFormPage() {
           }
         }
       }
+      
       createdVariants.value = variantsResult?.bienThes || []
       existingProductVariants.value = [
         ...(existingProductVariants.value || []),
         ...createdVariants.value
       ]
+      
+      if (!isExistingProduct.value && variantsResult?.giay?.id) {
+        currentProductId.value = variantsResult.giay.id
+        isExistingProduct.value = true
+      }
+      
       const syncedDraftImages = await syncDraftImagesToVariants(createdVariants.value)
       clearSavedDraftImages(createdVariants.value)
+      
       const skippedNames = skippedVariants.slice(0, 3).map(getVariantDisplayName).join('; ')
       const skippedMessage = skippedVariants.length
         ? ` Đã bỏ qua ${skippedVariants.length} biến thể đã tồn tại${skippedNames ? `: ${skippedNames}` : ''}.`
         : ''
+        
       if (syncedDraftImages) {
         showToast(`Lưu sản phẩm và đồng bộ ảnh thành công!${skippedMessage}`, 'success')
       } else {
         showToast(`Lưu sản phẩm thành công!${skippedMessage}`, 'success')
       }
-      setTimeout(() => {
-        goBack()
-      }, 1000)
+      
+      if (representativeCreatedVariants.value.length === 0) {
+        setTimeout(() => {
+          goBack()
+        }, 1000)
+      }
     } catch (error) {
       console.error('Error saving product:', error)
-      const fieldErrorSummary = collectValidationMessages(getFieldErrors(error))
+      const fieldErrors = getFieldErrors(error)
+      const duplicateIndices = []
+      
+      Object.keys(fieldErrors).forEach(key => {
+        const match = key.match(/^bienThes\[(\d+)\]/)
+        const msg = String(fieldErrors[key] || '').toLowerCase()
+        if (match && (msg.includes('đã tồn tại') || msg.includes('da ton tai'))) {
+          duplicateIndices.push(Number(match[1]))
+        }
+      })
+
+      if (duplicateIndices.length > 0) {
+        const duplicateNames = duplicateIndices.map(i => {
+           const v = newVariants[i]
+           return v ? getVariantDisplayName(v) : ''
+        }).filter(Boolean).join('; ')
+        
+        variantErrors.general = `Các biến thể sau đã tồn tại trong hệ thống: ${duplicateNames}. Vui lòng bỏ chọn chúng.`
+        showToast(variantErrors.general, 'error')
+        
+        duplicateIndices.forEach(i => {
+          if (newVariants[i]) {
+            newVariants[i].selected = false
+          }
+        })
+        return
+      }
+
+      const fieldErrorSummary = collectValidationMessages(fieldErrors)
       showToast(fieldErrorSummary || getDisplayErrorMessage(error), 'error')
     } finally {
       saving.value = false
