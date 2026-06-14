@@ -360,10 +360,9 @@ defineExpose({
       </table>
     </div>
 
-    <div class="flex items-center justify-end border-t border-slate-100 pt-4 mt-4" v-if="!hidePagination">
-      <AdminTableFooter
-        v-if="!hidePagination"
-        :current-page="currentPage"
+    <AdminTableFooter
+      v-if="!hidePagination"
+      :current-page="currentPage"
       :page-size="pageSize"
       :page-size-options="pageSizeOptions"
       :total-items="totalItems"
@@ -375,6 +374,5 @@ defineExpose({
       @update:current-page="$emit('update:current-page', $event)"
       @update:page-size="handlePageSizeChange"
     />
-    </div>
   </section>
 </template>
