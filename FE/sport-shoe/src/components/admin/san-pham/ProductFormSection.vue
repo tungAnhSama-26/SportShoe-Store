@@ -152,16 +152,7 @@ function updateProductField(field, value, numeric = false) {
           </label>
         </div>
 
-        <label class="block">
-          <span class="mb-1 block text-[13px] font-semibold text-slate-500">Mô tả</span>
-          <textarea
-            :value="productForm.moTa"
-            rows="5"
-            class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-            placeholder="Mô tả sản phẩm"
-            @input="updateProductField('moTa', $event.target.value)"
-          ></textarea>
-        </label>
+
     </section>
 
     <div class="mt-5 border-t border-slate-100 pt-5">

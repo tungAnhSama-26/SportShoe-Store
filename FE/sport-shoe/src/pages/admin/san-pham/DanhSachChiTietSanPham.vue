@@ -14,6 +14,7 @@ import QuanLySanPhamHinhAnhModal from '../../../components/admin/san-pham/QuanLy
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import { showSuccess, showError } from '../../../utils/alert'
+import { createQrCodeSvg } from '../../../utils/qr-code'
 
 const route = useRoute()
 const router = useRouter()
@@ -202,12 +203,15 @@ function openDiscountDetail(item) {
 }
 
 function bienTheTrangThaiLabel(item) {
-  return Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0 ? 'Đang bán' : 'Ngừng bán'
+  if (Number(item.kichHoat) === 0) return 'Ngừng bán'
+  if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
+  return 'Đang bán'
 }
 
 function bienTheTrangThaiClass(item) {
-  if (Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0) return 'bg-emerald-50 text-emerald-600'
-  return 'bg-slate-100 text-slate-600'
+  if (Number(item.kichHoat) === 0) return 'bg-slate-100 text-slate-600'
+  if (Number(item.soLuong || 0) <= 0) return 'bg-amber-50 text-amber-600'
+  return 'bg-emerald-50 text-emerald-600'
 }
 
 function nextBienTheStatus(item) {
@@ -499,6 +503,53 @@ function handleScannerResult(result) {
   }
 }
 
+function handleBulkQr(selectedItems) {
+  if (!selectedItems?.length) return
+  const htmlParts = []
+  htmlParts.push(`
+    <html><head><title>In mã QR (${selectedItems.length} biến thể)</title>
+    <style>
+      body { font-family: sans-serif; display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; }
+      .qr-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; width: 200px; page-break-inside: avoid; }
+      .qr-svg { width: 150px; height: 150px; margin: 0 auto; }
+      .qr-svg svg { width: 100%; height: 100%; }
+      .title { font-weight: bold; font-size: 14px; margin-top: 10px; }
+      .subtitle { font-size: 12px; color: #666; margin-top: 5px; }
+      @media print {
+        body { padding: 0; }
+        .no-print { display: none; }
+      }
+    </style>
+    </head><body>
+    <div class="no-print" style="width: 100%; margin-bottom: 20px;">
+      <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; background: #f43f5e; color: white; border: none; border-radius: 6px; font-weight: bold;">In tất cả mã QR</button>
+    </div>
+  `)
+
+  for (const item of selectedItems) {
+    const qrValue = String(item.sku || item.maChiTietSanPham || '').trim()
+    if (!qrValue) continue
+    try {
+      const svg = createQrCodeSvg(qrValue)
+      htmlParts.push(`
+        <div class="qr-card">
+          <div class="qr-svg">${svg}</div>
+          <div class="title">${item.tenSanPham || 'Chi tiết sản phẩm'}</div>
+          <div class="subtitle">${item.mauSac} / ${item.kichCo}</div>
+          <div class="subtitle" style="font-weight:bold">${qrValue}</div>
+        </div>
+      `)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+  htmlParts.push(`</body></html>`)
+  
+  const blob = new Blob([htmlParts.join('')], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  window.open(url, '_blank')
+}
+
 async function toggleBienTheStatus(item) {
   if (updatingStatusIds.has(item.id)) return
 
@@ -613,6 +664,7 @@ onUnmounted(() => {
       @toggle-status="toggleBienTheStatus"
       @edit-variant="openEditVariantModal"
       @open-qr="openVariantQr"
+      @bulk-qr="handleBulkQr"
       @refresh="loadData"
       @update:current-page="loadData"
       @update:page-size="handlePageSizeChange"

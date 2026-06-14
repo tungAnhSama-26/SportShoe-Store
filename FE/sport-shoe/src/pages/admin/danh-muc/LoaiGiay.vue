@@ -134,7 +134,13 @@ function validate() {
     errors.ten = `Tên loại giày không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }
 
-  if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {
+  if (moTa && hasSpecialCharacters(moTa)) {
+    errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
+  }
+  else if (moTa && hasSpecialCharacters(moTa)) {
+    errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
+  }
+  else if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {
     errors.moTa = `Mô tả không được vượt quá ${MO_TA_MAX_LENGTH} ký tự`
   }
 
