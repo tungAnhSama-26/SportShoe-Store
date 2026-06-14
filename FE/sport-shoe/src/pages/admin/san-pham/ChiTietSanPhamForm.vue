@@ -40,7 +40,6 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
           @inline-create-attribute="handleInlineCreateAttribute"
           @clear-selected-values="clearSelectedValues"
           @toggle-selected-value="toggleSelectedValue"
-          @toggle-selected-value="toggleSelectedValue"
           @generate-variants="handleGenerateVariants"
         />
 

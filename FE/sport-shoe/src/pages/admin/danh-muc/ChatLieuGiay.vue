@@ -5,13 +5,6 @@ import { chatLieuGiayApi } from '../../../services/danh-muc-api'
 import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
 import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
-<script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { Search, Plus, Eye, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
-import { chatLieuGiayApi } from '../../../services/danh-muc-api'
-import DanhMucPageShell from '../../../components/admin/danh-muc/DanhMucPageShell.vue'
-import DanhMucQuickStatusToggle from '../../../components/admin/danh-muc/DanhMucQuickStatusToggle.vue'
-import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import {
@@ -147,7 +140,6 @@ function validate() {
 
   if (moTa && hasSpecialCharacters(moTa)) {
     errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
-  }
   }
 
   return Object.keys(errors).length === 0

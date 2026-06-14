@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'open-scanner'])
+const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'open-scanner', 'download-qr'])
 
 function handleKeywordEnter() {
   emit('load-data', 0)
@@ -70,6 +70,10 @@ function handleFilterChange() {
           <button type="button" class="admin-btn-soft" @click="$emit('export-excel')">
             <FileSpreadsheet class="h-4 w-4" />
             Xuất Excel
+          </button>
+          <button type="button" class="admin-btn-primary" @click="$emit('download-qr')">
+            <QrCode class="h-4 w-4" />
+            Tải mã QR
           </button>
         </div>
       </div>

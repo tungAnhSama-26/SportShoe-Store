@@ -32,6 +32,7 @@ const showQrModal = ref(false)
 const selectedQrItem = ref(null)
 
 const showScannerModal = ref(false)
+const tableRef = ref(null)
 
 const filters = reactive({
   keyword: '',
@@ -503,6 +504,17 @@ function handleScannerResult(result) {
   }
 }
 
+function triggerDownloadQr() {
+  const selectedIds = tableRef.value?.selectedVariantIds
+  if (!selectedIds || selectedIds.size === 0) {
+    showToast('Vui lòng chọn ít nhất 1 biến thể để tải mã QR', 'error')
+    return
+  }
+  const selectedItems = items.value.filter(i => selectedIds.has(i.id))
+  handleBulkQr(selectedItems)
+  selectedIds.clear()
+}
+
 function handleBulkQr(selectedItems) {
   if (!selectedItems?.length) return
   const htmlParts = []
@@ -645,12 +657,14 @@ onUnmounted(() => {
       :selected-product="selectedProduct"
       @reset-filters="resetFilters"
       @export-excel="xuatExcel"
+      @download-qr="triggerDownloadQr"
       @go-to-form="goToForm"
       @load-data="loadData"
       @open-scanner="showScannerModal = true"
     />
 
     <ProductVariantTable
+      ref="tableRef"
       :items="items"
       :loading="loading"
       :current-page="currentPage"

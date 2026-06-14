@@ -173,6 +173,10 @@ function handleBulkQr() {
   emit('bulk-qr', selectedItems)
   selectedVariantIds.value.clear()
 }
+
+defineExpose({
+  selectedVariantIds
+})
 </script>
 
 <template>
@@ -351,15 +355,7 @@ function handleBulkQr() {
       </table>
     </div>
 
-    <div class="flex items-center justify-between border-t border-slate-100 pt-4 mt-4" v-if="!hidePagination || selectedVariantIds.size > 0">
-      <div class="flex items-center gap-3">
-        <button v-if="selectedVariantIds.size > 0"
-                type="button" 
-                class="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
-                @click="handleBulkQr">
-          Tải/In QR ({{ selectedVariantIds.size }})
-        </button>
-      </div>
+    <div class="flex items-center justify-end border-t border-slate-100 pt-4 mt-4" v-if="!hidePagination">
       <AdminTableFooter
         v-if="!hidePagination"
         :current-page="currentPage"
@@ -374,5 +370,6 @@ function handleBulkQr() {
       @update:current-page="$emit('update:current-page', $event)"
       @update:page-size="handlePageSizeChange"
     />
+    </div>
   </section>
 </template>
