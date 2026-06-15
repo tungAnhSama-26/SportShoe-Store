@@ -12,9 +12,11 @@ import {
   PackageCheck,
   RefreshCw,
   Truck,
+  UploadCloud,
   UserRound,
   X,
   XCircle,
+  Trash2,
 } from "lucide-vue-next";
 import Badge from "../../../components/ui/Badge.vue";
 import Button from "../../../components/ui/Button.vue";
@@ -32,12 +34,13 @@ import {
   xacNhanGuiHangTra,
   xacNhanNhanHangTra,
 } from "../../../services/tra-hang";
-import { API_BASE_URL } from "../../../services/api-client";
+import { API_BASE_URL, uploadFileRequest } from "../../../services/api-client";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showError, showSuccess } from "../../../utils/alert";
 import { layChiTietHoaDon } from "../../../services/hoa-don";
 import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
 import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
+import logoGhn from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
 
 const route = useRoute();
 const router = useRouter();
@@ -134,11 +137,38 @@ function badgeVariant(value) {
   return "warning";
 }
 
+const hoaDonGoc = ref(null);
+
+const tongTienSanPhamHoan = computed(() => {
+  return phieu.value?.chiTiet?.reduce((sum, item) => sum + (Number(item.soTienHoan) || 0), 0) || 0;
+});
+
+const isLoiShop = computed(() => {
+  const lyDo = String(phieu.value?.lyDoMa || "").trim().toUpperCase();
+  return ["PRODUCT_DEFECT", "WRONG_SIZE", "NOT_AS_DESCRIBED", "GIAO_SAI", "HANG_LOI"].includes(lyDo);
+});
+
+const hoanPhiVanChuyen = computed(() => {
+  if (!phieu.value || !hoaDonGoc.value) return 0;
+  return (isLoiShop.value && tongTienSanPhamHoan.value > 0) ? (Number(hoaDonGoc.value.phiVanChuyen) || 0) : 0;
+});
+
+const coPhieuGiamGia = computed(() => {
+  return hoaDonGoc.value && hoaDonGoc.value.voucher && Number(hoaDonGoc.value.giamGia || 0) > 0;
+});
+
 async function taiChiTiet() {
   dangTai.value = true;
   loiTrang.value = "";
   try {
     phieu.value = await layChiTietTraHang(route.params.id);
+    if (phieu.value?.hoaDonId) {
+      try {
+        hoaDonGoc.value = await layChiTietHoaDon(phieu.value.hoaDonId);
+      } catch (hdError) {
+        console.error("Không thể tải thông tin hóa đơn gốc", hdError);
+      }
+    }
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể tải phiếu trả hàng");
   } finally {
@@ -185,11 +215,63 @@ function moModalKiemTra() {
       soLuongTra: item.soLuongTra,
       tenSanPham: item.tenSanPham,
       maBienThe: item.maBienThe,
+      hinhAnhs: [],
     })),
     ghiChu: "",
   };
   modal.value = "kiem-tra";
 }
+
+const kiemTraFileInput = ref(null);
+const dangUploadChoId = ref(null);
+const dangTaiAnhKiemTra = ref(false);
+
+const clickTaiAnhKiemTra = (chiTietTraHangId) => {
+  dangUploadChoId.value = chiTietTraHangId;
+  if (kiemTraFileInput.value) {
+    kiemTraFileInput.value.click();
+  }
+};
+
+const handleKiemTraFileUpload = async (event) => {
+  const files = event.target.files;
+  if (!files || files.length === 0 || !dangUploadChoId.value) return;
+
+  const targetItem = formKiemTra.value.sanPhams.find(
+    (sp) => sp.chiTietTraHangId === dangUploadChoId.value
+  );
+  if (!targetItem) return;
+
+  dangTaiAnhKiemTra.value = true;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const imageUrl = await uploadFileRequest(
+        file,
+        "Không thể tải ảnh bằng chứng lên lúc này."
+      );
+      if (!targetItem.hinhAnhs) {
+        targetItem.hinhAnhs = [];
+      }
+      targetItem.hinhAnhs.push(imageUrl);
+    }
+    showSuccess("Tải lên hình ảnh thành công");
+  } catch (error) {
+    showError(error.message || "Không thể tải lên hình ảnh. Vui lòng thử lại.");
+  } finally {
+    dangTaiAnhKiemTra.value = false;
+    dangUploadChoId.value = null;
+    if (event.target) {
+      event.target.value = ""; // Reset file input
+    }
+  }
+};
+
+const removeKiemTraImage = (item, index) => {
+  if (item.hinhAnhs) {
+    item.hinhAnhs.splice(index, 1);
+  }
+};
 
 const dsTaiKhoanNganHangKhach = ref([]);
 const dangTaiNganHangKhach = ref(false);
@@ -434,13 +516,61 @@ onBeforeUnmount(() => {
               <span class="text-slate-500">Tiền Hoàn Dự Kiến</span>
               <span class="font-semibold text-slate-700">{{ dinhDangTien(phieu.tongTienDuKien) }}</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-slate-500">Tiền Hoàn Được Duyệt</span>
-              <span class="font-semibold text-emerald-600">{{ dinhDangTien(phieu.tongTienThucTe) }}</span>
+
+            <!-- Chi tiết tính toán số tiền hoàn -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Chi tiết tiền hoàn</p>
+              
+              <div class="flex items-center justify-between text-slate-600 pl-1">
+                <span>Tiền sản phẩm hoàn trả</span>
+                <span>{{ dinhDangTien(tongTienSanPhamHoan) }}</span>
+              </div>
+
+              <div v-if="hoaDonGoc && hoanPhiVanChuyen > 0" class="flex items-center justify-between text-slate-600 pl-1">
+                <span class="flex items-center gap-1.5">
+                  Phí vận chuyển gốc được hoàn
+                  <img :src="logoGhn" alt="GHN" class="h-3.5 w-auto object-contain" />
+                  <span class="relative group inline-flex items-center cursor-help text-slate-400 hover:text-slate-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span class="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-xl bg-slate-800 p-2.5 text-center text-[10px] font-normal leading-normal text-white shadow-lg transition-all duration-75 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
+                      Hoàn phí ship GHN do lỗi của shop: {{ hienThiLyDo(phieu.lyDoMa) }}
+                    </span>
+                  </span>
+                </span>
+                <span class="text-slate-700 font-semibold">
+                  +{{ dinhDangTien(hoanPhiVanChuyen) }}
+                </span>
+              </div>
+
+              <div v-if="coPhieuGiamGia" class="bg-slate-50 rounded-xl p-2.5 mt-2 space-y-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Mã giảm giá đã dùng</span>
+                  <span class="font-bold text-slate-700">{{ hoaDonGoc.voucher }}</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                  <span class="flex items-center gap-1">
+                    Tiền voucher giảm
+                    <span class="relative group inline-flex items-center cursor-help text-slate-400 hover:text-slate-600 transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <span class="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-xl bg-slate-800 p-2.5 text-center text-[10px] font-normal leading-normal text-white shadow-lg transition-all duration-75 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
+                        Số tiền hoàn của sản phẩm đã được tự động khấu trừ theo tỷ lệ áp dụng voucher của đơn hàng gốc.
+                      </span>
+                    </span>
+                  </span>
+                  <span class="text-emerald-600 font-semibold">-{{ dinhDangTien(hoaDonGoc.giamGia) }}</span>
+                </div>
+              </div>
             </div>
+
             <div class="border-t border-slate-200 pt-4">
               <div class="flex items-center justify-between">
-                <span class="font-bold text-slate-800">Trạng Thái</span>
+                <span class="text-[15px] font-bold text-slate-800">Tiền Hoàn Được Duyệt</span>
+                <span class="text-lg font-bold text-emerald-600">{{ dinhDangTien(phieu.tongTienThucTe) }}</span>
+              </div>
+            </div>
+            <div class="border-t border-slate-100 pt-3">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-slate-700">Trạng Thái</span>
                 <Badge :variant="badgeVariant(phieu.trangThai)">{{ phieu.tenTrangThai }}</Badge>
               </div>
             </div>
@@ -775,8 +905,52 @@ onBeforeUnmount(() => {
                 </label>
               </div>
               <input v-model="item.tinhTrangSanPham" class="mt-3 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-rose-300" placeholder="Tình trạng sản phẩm..." />
+              
+              <!-- Tải ảnh minh chứng trong bước kiểm tra -->
+              <div class="mt-4 space-y-2">
+                <span class="text-xs font-semibold text-slate-500 block text-left">Hình ảnh thực tế sản phẩm (Không bắt buộc)</span>
+                <div class="flex flex-wrap gap-2 items-center">
+                  <!-- Button tải ảnh -->
+                  <button
+                    type="button"
+                    @click="clickTaiAnhKiemTra(item.chiTietTraHangId)"
+                    :disabled="dangTaiAnhKiemTra"
+                    class="w-16 h-16 rounded-xl border border-dashed border-slate-300 hover:border-rose-400 bg-slate-50 flex flex-col items-center justify-center text-slate-400 hover:text-rose-500 transition group"
+                  >
+                    <UploadCloud class="w-5 h-5 group-hover:scale-110 transition duration-300" />
+                    <span class="text-[9px] font-semibold mt-1">{{ (dangTaiAnhKiemTra && dangUploadChoId === item.chiTietTraHangId) ? "..." : "Tải ảnh" }}</span>
+                  </button>
+
+                  <!-- Preview danh sách ảnh -->
+                  <div
+                    v-for="(url, idx) in item.hinhAnhs"
+                    :key="idx"
+                    class="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 flex-shrink-0 group"
+                  >
+                    <img :src="resolveHinhAnh(url)" alt="Preview" class="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      @click="removeKiemTraImage(item, idx)"
+                      class="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-300"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
+            
             <textarea v-model="formKiemTra.ghiChu" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Kết luận kiểm tra..."></textarea>
+            
+            <input
+              type="file"
+              multiple
+              ref="kiemTraFileInput"
+              class="hidden"
+              accept="image/*"
+              @change="handleKiemTraFileUpload"
+            />
+
             <Button
               full-width
               :loading="dangXuLy"
@@ -791,8 +965,53 @@ onBeforeUnmount(() => {
 
           <template v-else-if="modal === 'hoan-tien'">
             <div class="rounded-2xl bg-rose-50 px-5 py-4">
-              <p class="text-sm text-rose-600">Số tiền cần hoàn</p>
+              <p class="text-sm text-rose-600 font-semibold">Số tiền cần hoàn</p>
               <p class="mt-1 text-2xl font-bold text-primary">{{ dinhDangTien(phieu.tongTienThucTe) }}</p>
+            </div>
+
+            <!-- Chi tiết phân tích số tiền hoàn trong modal -->
+            <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-2 text-xs">
+              <p class="font-bold text-slate-500 uppercase tracking-wider">Chi tiết cách tính tiền hoàn</p>
+              
+              <div class="flex items-center justify-between text-slate-600">
+                <span>Tiền sản phẩm hoàn trả</span>
+                <span class="font-semibold">{{ dinhDangTien(tongTienSanPhamHoan) }}</span>
+              </div>
+
+              <div v-if="hoaDonGoc && hoanPhiVanChuyen > 0" class="flex items-center justify-between text-slate-600">
+                <span class="flex items-center gap-1.5">
+                  Phí vận chuyển gốc được hoàn
+                  <img :src="logoGhn" alt="GHN" class="h-3.5 w-auto object-contain" />
+                  <span class="relative group inline-flex items-center cursor-help text-slate-400 hover:text-slate-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span class="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-xl bg-slate-800 p-2.5 text-center text-[10px] font-normal leading-normal text-white shadow-lg transition-all duration-75 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
+                      Hoàn phí ship GHN do lỗi của shop: {{ hienThiLyDo(phieu.lyDoMa) }}
+                    </span>
+                  </span>
+                </span>
+                <span class="text-slate-700 font-semibold">
+                  +{{ dinhDangTien(hoanPhiVanChuyen) }}
+                </span>
+              </div>
+
+              <div v-if="coPhieuGiamGia" class="bg-white rounded-xl p-2.5 mt-2 space-y-1 border border-slate-100">
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Mã giảm giá đơn hàng</span>
+                  <span class="font-bold text-slate-700">{{ hoaDonGoc.voucher }}</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                  <span class="flex items-center gap-1">
+                    Tiền giảm giá voucher gốc
+                    <span class="relative group inline-flex items-center cursor-help text-slate-400 hover:text-slate-600 transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <span class="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-xl bg-slate-800 p-2.5 text-center text-[10px] font-normal leading-normal text-white shadow-lg transition-all duration-75 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
+                        Số tiền hoàn của sản phẩm đã được tự động khấu trừ theo tỷ lệ áp dụng voucher của đơn hàng gốc.
+                      </span>
+                    </span>
+                  </span>
+                  <span class="text-emerald-600 font-semibold">-{{ dinhDangTien(hoaDonGoc.giamGia) }}</span>
+                </div>
+              </div>
             </div>
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Hình thức hoàn tiền</span>
