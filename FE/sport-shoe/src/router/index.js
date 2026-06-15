@@ -13,10 +13,6 @@ import GioiThieu from "../pages/GioiThieu.vue";
 import AdminLayout from "../layouts/admin/AdminLayout.vue";
 import ThongKe from "../pages/admin/thong-ke/ThongKe.vue";
 import PhieuGiamGia from "../pages/admin/khuyen-mai/PhieuGiamGia.vue";
-import HoaDon from "../pages/admin/hoa-don/HoaDon.vue";
-import ChiTietHoaDon from "../pages/admin/hoa-don/ChiTietHoaDon.vue";
-import TraHang from "../pages/admin/tra-hang/TraHang.vue";
-import ChiTietTraHang from "../pages/admin/tra-hang/ChiTietTraHang.vue";
 import BanHangTaiQuay from "../pages/admin/ban-hang/BanHangTaiQuay.vue";
 import DanhSachSanPham from "../pages/admin/san-pham/DanhSachSanPham.vue";
 import DanhSachChiTietSanPham from "../pages/admin/san-pham/DanhSachChiTietSanPham.vue";
@@ -50,6 +46,11 @@ import ForgotPassword from "../pages/login/ForgotPassword.vue";
 import ErrorPage from "../pages/error/ErrorPage.vue";
 import { getCurrentAdminUser, hasRequiredAdminCccd, isAdminAuthenticated, isAdminRole } from "../services/auth";
 import { showWarning } from "../utils/alert";
+
+const HoaDon = () => import("../pages/admin/hoa-don/HoaDon.vue");
+const ChiTietHoaDon = () => import("../pages/admin/hoa-don/ChiTietHoaDon.vue");
+const TraHang = () => import("../pages/admin/tra-hang/TraHang.vue");
+const ChiTietTraHang = () => import("../pages/admin/tra-hang/ChiTietTraHang.vue");
 
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft,
@@ -23,6 +23,7 @@ import Table from "../../../components/ui/Table.vue";
 import {
   batDauKiemTraHang,
   capNhatKiemTraHang,
+  danhDauHoanHangThatBai,
   duyetPhieuTraHang,
   hoanTienTraHang,
   huyPhieuTraHang,
@@ -36,6 +37,7 @@ import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showError, showSuccess } from "../../../utils/alert";
 import { layChiTietHoaDon } from "../../../services/hoa-don";
 import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
+import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 
 const route = useRoute();
 const router = useRouter();
@@ -60,6 +62,7 @@ const trangThai = computed(() => Number(phieu.value?.trangThai || 0));
 const coTheDuyet = computed(() => trangThai.value === 1);
 const coTheXacNhanGui = computed(() => trangThai.value === 2);
 const coTheXacNhanNhan = computed(() => trangThai.value === 3);
+const coTheBaoHoanThatBai = computed(() => trangThai.value === 3);
 const coTheBatDauKiemTra = computed(() => trangThai.value === 4);
 const coTheKiemTra = computed(() => trangThai.value === 5);
 const coTheHoanTien = computed(() => trangThai.value === 6);
@@ -265,6 +268,20 @@ async function xacNhanNhanHang() {
   );
 }
 
+async function baoHoanHangThatBai() {
+  const confirmed = await showConfirm(
+    "Xác nhận kiện hàng trả không giao được về cửa hàng?",
+    "Hoàn hàng thất bại",
+    "Xác nhận thất bại",
+  );
+  if (!confirmed) return;
+  await thucHien("Đã ghi nhận hoàn hàng thất bại", () =>
+    danhDauHoanHangThatBai(phieu.value.id, {
+      ghiChu: "Đơn vị vận chuyển không giao được kiện hàng trả",
+    }),
+  );
+}
+
 async function batDauKiemTra() {
   const confirmed = await showConfirm(
     "Bắt đầu kiểm tra tình trạng các sản phẩm khách gửi trả?",
@@ -289,7 +306,26 @@ async function huyPhieu() {
   );
 }
 
-onMounted(taiChiTiet);
+let ngatKetNoiRealtime = null;
+let realtimeRefreshTimeout = null;
+
+onMounted(() => {
+  taiChiTiet();
+  ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+    authScope: "admin",
+    onHoaDonThayDoi: (event) => {
+      if (event?.loaiSuKien !== "TRA_HANG") return;
+      if (Number(event?.hoaDonId) !== Number(phieu.value?.hoaDonId)) return;
+      if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
+      realtimeRefreshTimeout = window.setTimeout(taiChiTiet, 150);
+    },
+  });
+});
+
+onBeforeUnmount(() => {
+  ngatKetNoiRealtime?.();
+  if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
+});
 </script>
 
 <template>
@@ -511,6 +547,9 @@ onMounted(taiChiTiet);
             </Button>
             <Button v-if="coTheXacNhanNhan" full-width @click="xacNhanNhanHang">
               Xác Nhận Đã Nhận Hàng
+            </Button>
+            <Button v-if="coTheBaoHoanThatBai" variant="soft" full-width @click="baoHoanHangThatBai">
+              Báo Hoàn Hàng Thất Bại
             </Button>
             <Button v-if="coTheBatDauKiemTra" full-width @click="batDauKiemTra">
               Bắt Đầu Kiểm Tra

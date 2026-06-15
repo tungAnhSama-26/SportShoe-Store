@@ -1,6 +1,7 @@
 package com.example.server.core.admin.quanlyhoadon.controller;
 
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatThongTinGiaoHangRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.XacNhanHoanTienRequest;
@@ -76,6 +77,17 @@ public class QuanLyHoaDonController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Cập nhật sản phẩm hóa đơn thành công",
                 quanLyHoaDonService.capNhatSanPhamHoaDon(id, request)
+        ));
+    }
+
+    @PutMapping("/{id}/thong-tin-giao-hang")
+    public ResponseEntity<ApiResponse<HoaDonDetailResponse>> capNhatThongTinGiaoHang(
+            @PathVariable Integer id,
+            @Valid @RequestBody CapNhatThongTinGiaoHangRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Cập nhật thông tin giao hàng thành công",
+                quanLyHoaDonService.capNhatThongTinGiaoHang(id, request)
         ));
     }
 

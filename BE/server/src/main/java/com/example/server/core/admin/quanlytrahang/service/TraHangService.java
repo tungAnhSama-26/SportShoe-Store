@@ -2,6 +2,7 @@ package com.example.server.core.admin.quanlytrahang.service;
 
 import com.example.server.core.admin.quanlytrahang.domain.TinhTienHoanTraHang;
 import com.example.server.core.admin.quanlytrahang.domain.TraHangValidator;
+import com.example.server.core.admin.quanlytrahang.domain.TraHangPolicy;
 import com.example.server.core.admin.quanlytrahang.domain.TrangThaiPhieuTraHang;
 import com.example.server.core.admin.quanlytrahang.domain.GiaoDichHoanTienFactory;
 import com.example.server.core.admin.quanlytrahang.dto.request.DuyetPhieuTraHangRequest;
@@ -41,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,6 +55,7 @@ import java.util.stream.Collectors;
 public class TraHangService {
 
     private static final int LOAI_YEU_CAU_TRA_HANG_HOAN_TIEN = 2;
+    private static final int LOAI_GIAO_DICH_HOAN_TIEN = 2;
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
@@ -65,6 +68,7 @@ public class TraHangService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final RefundBankAccountResolver refundBankAccountResolver;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    private final TraHangPolicy traHangPolicy;
 
     public TraHangService(
             HoaDonRepository hoaDonRepository,
@@ -77,7 +81,8 @@ public class TraHangService {
             NhanVienRepository nhanVienRepository,
             GiayChiTietRepository giayChiTietRepository,
             RefundBankAccountResolver refundBankAccountResolver,
-            HoaDonRealtimePublisher hoaDonRealtimePublisher
+            HoaDonRealtimePublisher hoaDonRealtimePublisher,
+            TraHangPolicy traHangPolicy
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -90,13 +95,22 @@ public class TraHangService {
         this.giayChiTietRepository = giayChiTietRepository;
         this.refundBankAccountResolver = refundBankAccountResolver;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
+        this.traHangPolicy = traHangPolicy;
     }
 
     @Transactional
     public TraHangResponse taoPhieu(TaoPhieuTraHangRequest request, UUID nhanVienId) {
         HoaDon hoaDon = hoaDonRepository.findDetailById(request.hoaDonId())
                 .orElseThrow(() -> new BusinessException("Không tìm thấy hóa đơn"));
-        TraHangValidator.kiemTraTrangThaiHoaDon(hoaDon.getTrangThai());
+        traHangPolicy.kiemTraHoaDonChoAdmin(hoaDon);
+        phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId())
+                .filter(phieuCu -> !isTrangThaiKetThuc(phieuCu.getTrangThai()))
+                .ifPresent(phieuCu -> {
+                    throw new BusinessException("Hóa đơn đang có một phiếu trả hàng được xử lý");
+                });
+        kiemTraSanPhamKhongTrung(
+                request.sanPhams().stream().map(SanPhamTraRequest::hoaDonChiTietId).toList()
+        );
 
         NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy nhân viên xử lý"));
@@ -178,7 +192,7 @@ public class TraHangService {
     public List<TraHangResponse> layDanhSach(String keyword, Integer trangThai) {
         String normalizedKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
         return phieuTraHangRepository.search(normalizedKeyword, trangThai).stream()
-                .map(phieu -> toResponse(phieu, layDanhSachChiTiet(phieu.getId())))
+                .map(this::toSummaryResponse)
                 .toList();
     }
 
@@ -195,7 +209,8 @@ public class TraHangService {
             DuyetPhieuTraHangRequest request,
             UUID nhanVienId
     ) {
-        PhieuTraHang phieu = layPhieu(phieuId);
+        PhieuTraHang phieu = phieuTraHangRepository.findByIdForUpdate(phieuId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy phiếu trả hàng"));
         NhanVien nhanVien = layNhanVien(nhanVienId);
         TrangThaiPhieuTraHang trangThaiMoi = request.nhanHangTrucTiep()
                 ? TrangThaiPhieuTraHang.DA_NHAN_HANG
@@ -249,6 +264,25 @@ public class TraHangService {
                 TrangThaiPhieuTraHang.DA_NHAN_HANG,
                 nhanVien,
                 "Xác nhận đã nhận hàng trả",
+                request.ghiChu()
+        );
+        phieuTraHangRepository.save(phieu);
+        return toResponse(phieu, layDanhSachChiTiet(phieuId));
+    }
+
+    @Transactional
+    public TraHangResponse danhDauHoanHangThatBai(
+            Integer phieuId,
+            GhiChuTraHangRequest request,
+            UUID nhanVienId
+    ) {
+        PhieuTraHang phieu = layPhieu(phieuId);
+        NhanVien nhanVien = layNhanVien(nhanVienId);
+        chuyenTrangThai(
+                phieu,
+                TrangThaiPhieuTraHang.HOAN_HANG_THAT_BAI,
+                nhanVien,
+                "Hoàn hàng thất bại",
                 request.ghiChu()
         );
         phieuTraHangRepository.save(phieu);
@@ -314,6 +348,31 @@ public class TraHangService {
     }
 
     @Transactional
+    public boolean huyQuaHanGuiHang(Integer phieuId) {
+        PhieuTraHang phieu = layPhieu(phieuId);
+        if (TrangThaiPhieuTraHang.tuMa(phieu.getTrangThai())
+                != TrangThaiPhieuTraHang.CHO_KHACH_GUI_HANG) {
+            return false;
+        }
+        if (!traHangPolicy.daQuaHanGuiHang(phieu)) {
+            return false;
+        }
+
+        String ghiChu = "Khách hàng không gửi hàng về cửa hàng trong "
+                + traHangPolicy.getSoNgayGuiHangVeCuaHang()
+                + " ngày kể từ khi phiếu được duyệt";
+        chuyenTrangThai(
+                phieu,
+                TrangThaiPhieuTraHang.DA_HUY,
+                null,
+                "Tự động hủy phiếu quá hạn gửi hàng",
+                ghiChu
+        );
+        phieuTraHangRepository.save(phieu);
+        return true;
+    }
+
+    @Transactional
     public TraHangResponse kiemTraHang(
             Integer phieuId,
             KiemTraPhieuTraHangRequest request,
@@ -333,6 +392,9 @@ public class TraHangService {
                         Function.identity(),
                         (first, ignored) -> first
                 ));
+        if (ketQuaTheoChiTiet.size() != request.sanPhams().size()) {
+            throw new BusinessException("Kết quả kiểm tra không được chứa sản phẩm trùng lặp");
+        }
         if (ketQuaTheoChiTiet.size() != chiTiet.size()) {
             throw new BusinessException("Vui lòng kiểm tra đầy đủ các sản phẩm trong phiếu trả hàng");
         }
@@ -388,7 +450,8 @@ public class TraHangService {
             HoanTienTraHangRequest request,
             UUID nhanVienId
     ) {
-        PhieuTraHang phieu = layPhieu(phieuId);
+        PhieuTraHang phieu = phieuTraHangRepository.findByIdForUpdate(phieuId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy phiếu trả hàng"));
         NhanVien nhanVien = layNhanVien(nhanVienId);
         if (TrangThaiPhieuTraHang.tuMa(phieu.getTrangThai())
                 != TrangThaiPhieuTraHang.CHO_HOAN_TIEN) {
@@ -397,6 +460,12 @@ public class TraHangService {
         if (phieu.getTongTienThucTe() == null
                 || phieu.getTongTienThucTe().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Phiếu trả hàng không có số tiền cần hoàn");
+        }
+        if (thanhToanRepository.existsByPhieuTraHangIdAndLoaiGiaoDich(
+                phieuId,
+                LOAI_GIAO_DICH_HOAN_TIEN
+        )) {
+            throw new BusinessException("Phiếu trả hàng đã được hoàn tiền");
         }
 
         ThanhToan giaoDichGoc = thanhToanRepository
@@ -439,7 +508,8 @@ public class TraHangService {
             if (Boolean.TRUE.equals(dong.getNhapLaiTonKho())
                     && !Boolean.TRUE.equals(dong.getDaCapNhatTon())
                     && dong.getSoLuongChapNhan() > 0) {
-                GiayChiTiet bienThe = dong.getGiayChiTiet();
+                GiayChiTiet bienThe = giayChiTietRepository.findByIdForUpdate(dong.getGiayChiTiet().getId())
+                        .orElseThrow(() -> new BusinessException("Không tìm thấy biến thể để nhập lại tồn kho"));
                 bienThe.setSoLuong(bienThe.getSoLuong() + dong.getSoLuongChapNhan());
                 bienThe.setNgayCapNhat(Instant.now());
                 giayChiTietRepository.save(bienThe);
@@ -458,16 +528,26 @@ public class TraHangService {
                 request.ghiChu()
         );
         phieuTraHangRepository.save(phieu);
-        HoaDon hoaDon = phieu.getHoaDon();
-        hoaDon.setTrangThai(5);
-        hoaDon.setNgayCapNhat(Instant.now());
-        hoaDonRepository.save(hoaDon);
         return toResponse(phieu, chiTiet);
     }
 
     private PhieuTraHang layPhieu(Integer phieuId) {
-        return phieuTraHangRepository.findById(phieuId)
+        return phieuTraHangRepository.findByIdForUpdate(phieuId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy phiếu trả hàng"));
+    }
+
+    private void kiemTraSanPhamKhongTrung(List<Integer> hoaDonChiTietIds) {
+        if (new HashSet<>(hoaDonChiTietIds).size() != hoaDonChiTietIds.size()) {
+            throw new BusinessException("Danh sách trả hàng không được chứa sản phẩm trùng lặp");
+        }
+    }
+
+    private boolean isTrangThaiKetThuc(Integer trangThai) {
+        return trangThai != null && List.of(
+                TrangThaiPhieuTraHang.HOAN_TAT.getMa(),
+                TrangThaiPhieuTraHang.TU_CHOI.getMa(),
+                TrangThaiPhieuTraHang.DA_HUY.getMa()
+        ).contains(trangThai);
     }
 
     private NhanVien layNhanVien(UUID nhanVienId) {
@@ -564,6 +644,34 @@ public class TraHangService {
                                 lichSu.getNgayTao()
                         ))
                         .toList()
+        );
+    }
+
+    private TraHangResponse toSummaryResponse(PhieuTraHang phieu) {
+        return new TraHangResponse(
+                phieu.getId(),
+                phieu.getMa(),
+                phieu.getHoaDon().getId(),
+                phieu.getHoaDon().getMa(),
+                phieu.getTrangThai(),
+                TrangThaiPhieuTraHang.tuMa(phieu.getTrangThai()).getTen(),
+                phieu.getLoaiYeuCau(),
+                phieu.getLyDoMa(),
+                phieu.getMoTa(),
+                phieu.getHinhThucHoan(),
+                phieu.getTongTienDuKien(),
+                phieu.getTongTienThucTe(),
+                phieu.getNhanVien() != null ? phieu.getNhanVien().getMa() : null,
+                phieu.getHoaDon().getTenNguoiNhan(),
+                phieu.getHoaDon().getSdtNguoiNhan(),
+                phieu.getDonViVanChuyen(),
+                phieu.getMaVanDonHoan(),
+                phieu.getLyDoTuChoi(),
+                phieu.getNgayTao(),
+                phieu.getNgayCapNhat(),
+                List.of(),
+                List.of(),
+                List.of()
         );
     }
 
