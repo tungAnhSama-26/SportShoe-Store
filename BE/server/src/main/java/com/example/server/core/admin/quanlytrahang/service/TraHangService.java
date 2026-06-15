@@ -18,6 +18,7 @@ import com.example.server.core.admin.quanlytrahang.dto.response.TraHangResponse;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.GiayChiTiet;
+import com.example.server.entity.HinhAnhTraHang;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.LichSuPhieuTraHang;
@@ -26,6 +27,7 @@ import com.example.server.entity.PhieuTraHang;
 import com.example.server.entity.PhieuTraHangChiTiet;
 import com.example.server.entity.ThanhToan;
 import com.example.server.entity.TaiKhoanNganHang;
+import com.example.server.entity.VanChuyen;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
@@ -36,6 +38,7 @@ import com.example.server.repository.NhanVienRepository;
 import com.example.server.repository.PhieuTraHangChiTietRepository;
 import com.example.server.repository.PhieuTraHangRepository;
 import com.example.server.repository.ThanhToanRepository;
+import com.example.server.repository.VanChuyenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +47,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +61,10 @@ public class TraHangService {
     private static final int LOAI_YEU_CAU_TRA_HANG_HOAN_TIEN = 2;
     private static final int LOAI_GIAO_DICH_HOAN_TIEN = 2;
 
+    private static final Set<String> LY_DO_LOI_SHOP = Set.of(
+            "PRODUCT_DEFECT", "WRONG_SIZE", "NOT_AS_DESCRIBED", "GIAO_SAI", "HANG_LOI"
+    );
+
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final PhieuTraHangRepository phieuTraHangRepository;
@@ -69,6 +77,7 @@ public class TraHangService {
     private final RefundBankAccountResolver refundBankAccountResolver;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final TraHangPolicy traHangPolicy;
+    private final VanChuyenRepository vanChuyenRepository;
 
     public TraHangService(
             HoaDonRepository hoaDonRepository,
@@ -82,7 +91,8 @@ public class TraHangService {
             GiayChiTietRepository giayChiTietRepository,
             RefundBankAccountResolver refundBankAccountResolver,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
-            TraHangPolicy traHangPolicy
+            TraHangPolicy traHangPolicy,
+            VanChuyenRepository vanChuyenRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -96,6 +106,11 @@ public class TraHangService {
         this.refundBankAccountResolver = refundBankAccountResolver;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.traHangPolicy = traHangPolicy;
+        this.vanChuyenRepository = vanChuyenRepository;
+    }
+
+    private boolean isLoiShop(String lyDoMa) {
+        return lyDoMa != null && LY_DO_LOI_SHOP.contains(lyDoMa.trim().toUpperCase(Locale.ROOT));
     }
 
     @Transactional
@@ -180,12 +195,20 @@ public class TraHangService {
             tongTienDuKien = tongTienDuKien.add(tienDuKien);
         }
 
+        if (isLoiShop(request.lyDoMa())) {
+            BigDecimal phiVanChuyen = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                    .map(VanChuyen::getPhiVanChuyen)
+                    .orElse(BigDecimal.ZERO);
+            tongTienDuKien = tongTienDuKien.add(phiVanChuyen);
+        }
+
         phieu.setTongTienDuKien(tongTienDuKien);
-        phieuTraHangRepository.save(phieu);
+        PhieuTraHang savedPhieu = phieuTraHangRepository.save(phieu);
+        chiTietDaTao.forEach(chiTiet -> chiTiet.setPhieuTraHang(savedPhieu));
         chiTietDaTao.forEach(phieuTraHangChiTietRepository::save);
-        luuLichSu(phieu, nhanVien, null, phieu.getTrangThai(), "Tạo phiếu trả hàng", request.moTa());
+        luuLichSu(savedPhieu, nhanVien, null, savedPhieu.getTrangThai(), "Tạo phiếu trả hàng", request.moTa());
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRA_HANG");
-        return toResponse(phieu, chiTietDaTao);
+        return toResponse(savedPhieu, chiTietDaTao);
     }
 
     @Transactional(readOnly = true)
@@ -430,7 +453,27 @@ public class TraHangService {
             dong.setSoTienHoan(soTienHoan);
             dong.setTrangThai(ketQua.soLuongChapNhan() > 0 ? 1 : 0);
             phieuTraHangChiTietRepository.save(dong);
+
+            if (ketQua.hinhAnhs() != null) {
+                for (String url : ketQua.hinhAnhs()) {
+                    HinhAnhTraHang ha = new HinhAnhTraHang();
+                    ha.setPhieuTraHang(phieu);
+                    ha.setPhieuTraHangChiTiet(dong);
+                    ha.setUrl(url);
+                    ha.setLoaiAnh(2); // 2: Admin/Nhân viên upload
+                    ha.setNgayTao(Instant.now());
+                    hinhAnhTraHangRepository.save(ha);
+                }
+            }
+
             tongTienThucTe = tongTienThucTe.add(soTienHoan);
+        }
+
+        if (tongTienThucTe.compareTo(BigDecimal.ZERO) > 0 && isLoiShop(phieu.getLyDoMa())) {
+            BigDecimal phiVanChuyen = vanChuyenRepository.findByHoaDonId(phieu.getHoaDon().getId())
+                    .map(VanChuyen::getPhiVanChuyen)
+                    .orElse(BigDecimal.ZERO);
+            tongTienThucTe = tongTienThucTe.add(phiVanChuyen);
         }
 
         phieu.setTongTienThucTe(tongTienThucTe);

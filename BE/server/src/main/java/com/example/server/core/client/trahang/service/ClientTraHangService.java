@@ -146,14 +146,15 @@ public class ClientTraHangService {
         }
 
         phieu.setTongTienDuKien(tongTienDuKien);
-        phieuTraHangRepository.save(phieu);
+        PhieuTraHang savedPhieu = phieuTraHangRepository.save(phieu);
+        chiTietList.forEach(ct -> ct.setPhieuTraHang(savedPhieu));
         phieuTraHangChiTietRepository.saveAll(chiTietList);
 
         // Lưu hình ảnh nếu có
         if (request.hinhAnhs() != null) {
             for (String url : request.hinhAnhs()) {
                 HinhAnhTraHang ha = new HinhAnhTraHang();
-                ha.setPhieuTraHang(phieu);
+                ha.setPhieuTraHang(savedPhieu);
                 ha.setPhieuTraHangChiTiet(null);
                 ha.setUrl(url);
                 ha.setLoaiAnh(1); // 1: Khách hàng upload
@@ -164,7 +165,7 @@ public class ClientTraHangService {
 
         // Lưu lịch sử
         LichSuPhieuTraHang ls = new LichSuPhieuTraHang();
-        ls.setPhieuTraHang(phieu);
+        ls.setPhieuTraHang(savedPhieu);
         ls.setNhanVien(null);
         ls.setTrangThaiCu(null);
         ls.setTrangThaiMoi(1); // Chờ duyệt
