@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
       <template #header>
         <div class="flex items-center gap-3">
           <div
-            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
+            class="flex h-11 w-11 items-center justify-center rounded-[6px] bg-slate-100 text-slate-600"
           >
             <Filter class="h-5 w-5" />
           </div>
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
               v-model="boLoc.keyword"
               type="text"
               placeholder="Mã hóa đơn / mã nhân viên..."
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
             />
           </div>
         </label>
@@ -361,11 +361,11 @@ onBeforeUnmount(() => {
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(tuNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -389,11 +389,11 @@ onBeforeUnmount(() => {
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(denNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -413,7 +413,7 @@ onBeforeUnmount(() => {
           <span class="admin-filter-label mb-1">Loại đơn</span>
           <select
             v-model="boLoc.loaiDon"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
           >
             <option value="">Tất cả loại đơn</option>
             <option value="Cửa hàng">Cửa hàng</option>
@@ -438,7 +438,7 @@ onBeforeUnmount(() => {
       <template #header>
         <div class="flex items-center gap-3">
           <div
-            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary"
+            class="flex h-11 w-11 items-center justify-center rounded-[6px] bg-primary/5 text-primary"
           >
             <FileText class="h-5 w-5" />
           </div>
@@ -454,7 +454,7 @@ onBeforeUnmount(() => {
           :key="item.ten"
           type="button"
           @click="trangThaiDangChon = item.ten"
-          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
+          class="inline-flex items-center whitespace-nowrap rounded-[6px] px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
           :class="
             trangThaiDangChon === item.ten
               ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]'
@@ -471,7 +471,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="loiTrang"
-        class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600"
+        class="mb-4 rounded-[6px] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600"
       >
         {{ loiTrang }}
       </div>

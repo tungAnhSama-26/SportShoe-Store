@@ -22,6 +22,11 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:sqlserver://db:1433;databaseName=giay;encrypt=true;trustServerCertificate=true
       - SPRING_DATASOURCE_USERNAME=sa
       - SPRING_DATASOURCE_PASSWORD=TungAnh@123456
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=dummy@example.com
+      - SPRING_MAIL_PASSWORD=dummy
     depends_on:
       - db
     restart: unless-stopped

@@ -311,14 +311,14 @@ function handleProductImageError(event) {
 
           <div
             v-if="donYeuCauHuy"
-            class="mt-5 flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700"
+            class="mt-5 flex items-center justify-center gap-2 rounded-[6px] border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700"
           >
             <TriangleAlert class="h-4 w-4" />
             Khách hàng yêu cầu hủy - đang chờ xác nhận
           </div>
           <div
             v-if="donDaHuy"
-            class="mt-5 flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700"
+            class="mt-5 flex items-center justify-center gap-2 rounded-[6px] border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700"
           >
             <CircleX class="h-4 w-4" />
             Đơn hàng đã bị hủy
@@ -529,7 +529,7 @@ function handleProductImageError(event) {
               <div
                 v-for="thanhToan in hoaDon.lichSuThanhToan"
                 :key="thanhToan.id"
-                class="rounded-2xl border border-slate-100 bg-slate-50/60 p-3"
+                class="rounded-[6px] border border-slate-100 bg-slate-50/60 p-3"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
@@ -647,7 +647,7 @@ function handleProductImageError(event) {
                 class="flex shrink-0 items-center gap-2 whitespace-nowrap text-base font-semibold text-slate-700"
               >
                 <span
-                  class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500"
+                  class="flex h-9 w-9 items-center justify-center rounded-[6px] bg-slate-50 text-slate-500"
                 >
                   <Package class="h-5 w-5" />
                 </span>
@@ -659,7 +659,7 @@ function handleProductImageError(event) {
           </template>
 
           <div
-            class="mb-6 space-y-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-4"
+            class="mb-6 space-y-4 rounded-[6px] border border-slate-100 bg-slate-50/50 p-4"
           >
             <div
               class="grid gap-3 lg:grid-cols-[minmax(260px,1.35fr)_minmax(190px,0.85fr)_minmax(210px,0.9fr)]"
@@ -675,7 +675,7 @@ function handleProductImageError(event) {
                   <input
                     v-model.trim="tuKhoaLocSanPham"
                     type="text"
-                    class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
+                    class="h-11 w-full rounded-[6px] border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
                     placeholder="Tên sản phẩm, màu, size..."
                   />
                 </div>
@@ -687,7 +687,7 @@ function handleProductImageError(event) {
                 >
                 <select
                   v-model="loaiSanPhamDangLoc"
-                  class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
+                  class="h-11 w-full rounded-[6px] border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
                 >
                   <option value="">Tất cả loại</option>
                   <option
@@ -706,7 +706,7 @@ function handleProductImageError(event) {
                 >
                 <select
                   v-model="sapXepSanPham"
-                  class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
+                  class="h-11 w-full rounded-[6px] border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#B82220] focus:ring-2 focus:ring-rose-100"
                 >
                   <option value="macDinh">Mặc định</option>
                   <option value="giaTang">Giá thấp đến cao</option>
@@ -791,7 +791,7 @@ function handleProductImageError(event) {
                     <img
                       :src="resolveProductImageUrl(item.hinhAnh)"
                       @error="handleProductImageError"
-                      class="h-14 w-14 rounded-xl object-cover"
+                      class="h-14 w-14 rounded-[6px] object-cover"
                     />
                   </td>
                   <td class="px-5 py-6">
@@ -858,7 +858,7 @@ function handleProductImageError(event) {
           </button>
           <div class="flex items-center gap-3">
             <div
-              class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220] text-white shadow-[0_14px_30px_rgba(184,34,32,0.25)]"
+              class="flex h-11 w-11 items-center justify-center rounded-[6px] bg-[#B82220] text-white shadow-[0_14px_30px_rgba(184,34,32,0.25)]"
             >
               <Banknote class="h-6 w-6" />
             </div>
@@ -875,7 +875,7 @@ function handleProductImageError(event) {
           </div>
 
           <div
-            class="mt-4 rounded-2xl border border-rose-100 bg-white/80 px-4 py-3"
+            class="mt-4 rounded-[6px] border border-rose-100 bg-white/80 px-4 py-3"
           >
             <div class="flex items-center justify-between">
               <span class="text-sm font-semibold text-slate-500"
@@ -889,10 +889,10 @@ function handleProductImageError(event) {
         </div>
 
         <div class="min-h-0 flex-1 space-y-3 overflow-hidden px-5 py-4">
-          <div class="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+          <div class="grid grid-cols-2 gap-2 rounded-[6px] bg-slate-100 p-1">
             <button
               type="button"
-              class="h-10 rounded-xl text-sm font-bold outline-none transition focus-visible:ring-4 focus-visible:ring-rose-100"
+              class="h-10 rounded-[6px] text-sm font-bold outline-none transition focus-visible:ring-4 focus-visible:ring-rose-100"
               :class="
                 formThanhToanCod.hinhThucThanhToan === 2
                   ? 'bg-[#B82220] text-white shadow-sm'
@@ -904,7 +904,7 @@ function handleProductImageError(event) {
             </button>
             <button
               type="button"
-              class="h-10 rounded-xl text-sm font-bold outline-none transition focus-visible:ring-4 focus-visible:ring-rose-100"
+              class="h-10 rounded-[6px] text-sm font-bold outline-none transition focus-visible:ring-4 focus-visible:ring-rose-100"
               :class="
                 formThanhToanCod.hinhThucThanhToan === 1
                   ? 'bg-[#B82220] text-white shadow-sm'
@@ -926,7 +926,7 @@ function handleProductImageError(event) {
           >
             <div
               v-if="formThanhToanCod.hinhThucThanhToan === 2"
-              class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm"
+              class="rounded-[6px] border border-slate-200 bg-white p-4 text-center shadow-sm"
             >
               <div class="space-y-1 text-sm">
                 <p>
@@ -945,7 +945,7 @@ function handleProductImageError(event) {
                 </p>
               </div>
               <div
-                class="mx-auto mt-3 flex w-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-inner"
+                class="mx-auto mt-3 flex w-fit rounded-[6px] border border-slate-200 bg-white p-3 shadow-inner"
               >
                 <img
                   :src="qrThanhToanCodUrl"
@@ -977,11 +977,11 @@ function handleProductImageError(event) {
                   min="0"
                   inputmode="numeric"
                   placeholder="Nhập số tiền..."
-                  class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+                  class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
                 />
               </label>
 
-              <div class="overflow-hidden rounded-2xl border border-slate-200">
+              <div class="overflow-hidden rounded-[6px] border border-slate-200">
                 <table class="w-full text-sm">
                   <thead class="bg-slate-50 text-xs font-bold text-slate-500">
                     <tr>
@@ -1013,12 +1013,12 @@ function handleProductImageError(event) {
                 <textarea
                   v-model="formThanhToanCod.ghiChu"
                   rows="2"
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+                  class="w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
                 ></textarea>
               </label>
 
               <div
-                class="flex items-center justify-between rounded-2xl bg-rose-50 px-4 py-3"
+                class="flex items-center justify-between rounded-[6px] bg-rose-50 px-4 py-3"
               >
                 <span class="text-sm font-bold text-slate-600">Tiền thiếu</span>
                 <span class="text-lg font-extrabold text-[#B82220]">{{
@@ -1037,14 +1037,14 @@ function handleProductImageError(event) {
           >
             <button
               type="button"
-              class="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 outline-none transition hover:bg-slate-100 focus-visible:ring-4 focus-visible:ring-slate-200"
+              class="h-11 rounded-[6px] border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 outline-none transition hover:bg-slate-100 focus-visible:ring-4 focus-visible:ring-slate-200"
               @click="hienModalThanhToanCod = false"
             >
               Hủy
             </button>
             <button
               type="button"
-              class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#B82220] px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(184,34,32,0.24)] outline-none transition hover:bg-[#991b1b] focus-visible:ring-4 focus-visible:ring-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] bg-[#B82220] px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(184,34,32,0.24)] outline-none transition hover:bg-[#991b1b] focus-visible:ring-4 focus-visible:ring-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="dangXacNhanThanhToanCod"
               @click="handleXacNhanThanhToanCod"
             >
@@ -1071,7 +1071,7 @@ function handleProductImageError(event) {
           <div class="flex items-start justify-between gap-4">
             <div class="flex items-start gap-3">
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] bg-amber-500 text-white"
               >
                 <Banknote class="h-5 w-5" />
               </div>
@@ -1098,7 +1098,7 @@ function handleProductImageError(event) {
 
         <div class="space-y-4 px-6 py-5">
           <div
-            class="flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50/60 px-4 py-3"
+            class="flex items-center justify-between rounded-[6px] border border-amber-100 bg-amber-50/60 px-4 py-3"
           >
             <span class="text-sm font-bold text-slate-600"
               >Số tiền cần hoàn</span
@@ -1114,7 +1114,7 @@ function handleProductImageError(event) {
             >
             <select
               v-model.number="formHoanTien.hinhThucHoanTien"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
             >
               <option :value="2">Chuyển khoản</option>
               <option :value="1">Tiền mặt</option>
@@ -1134,7 +1134,7 @@ function handleProductImageError(event) {
               <select
                 v-else-if="dsTaiKhoanNganHangKhach.length > 0"
                 v-model="taiKhoanNganHangChon"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
               >
                 <option
                   v-for="tk in dsTaiKhoanNganHangKhach"
@@ -1148,7 +1148,7 @@ function handleProductImageError(event) {
               </select>
               <div
                 v-else
-                class="rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-3 text-xs font-semibold text-rose-700"
+                class="rounded-[6px] border border-rose-100 bg-rose-50/50 px-4 py-3 text-xs font-semibold text-rose-700"
               >
                 Khách hàng chưa liên kết tài khoản ngân hàng nào.
               </div>
@@ -1157,14 +1157,14 @@ function handleProductImageError(event) {
             <!-- VietQR Code Image -->
             <div
               v-if="taiKhoanNganHangChon"
-              class="flex flex-col items-center justify-center border border-slate-100 rounded-3xl p-5 bg-slate-50/80 gap-3"
+              class="flex flex-col items-center justify-center border border-slate-100 rounded-[6px] p-5 bg-slate-50/80 gap-3"
             >
               <span
                 class="text-xs font-bold text-slate-500 uppercase tracking-wider"
                 >Quét mã VietQR để chuyển tiền</span
               >
               <div
-                class="h-52 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2.5 flex items-center justify-center shadow-sm"
+                class="h-52 w-52 overflow-hidden rounded-[6px] border border-slate-200 bg-white p-2.5 flex items-center justify-center shadow-sm"
               >
                 <img
                   :src="qrHoanTienUrl"
@@ -1196,7 +1196,7 @@ function handleProductImageError(event) {
                 type="number"
                 min="0"
                 inputmode="numeric"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
               />
             </label>
             <label class="block space-y-2">
@@ -1207,7 +1207,7 @@ function handleProductImageError(event) {
                 v-model="formHoanTien.maGiaoDichHoan"
                 type="text"
                 placeholder="VD: RF20260524..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
               />
             </label>
           </div>
@@ -1217,7 +1217,7 @@ function handleProductImageError(event) {
             <textarea
               v-model="formHoanTien.ghiChu"
               rows="3"
-              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+              class="w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
             ></textarea>
           </label>
         </div>
@@ -1227,14 +1227,14 @@ function handleProductImageError(event) {
         >
           <button
             type="button"
-            class="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+            class="h-11 rounded-[6px] border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
             @click="hienModalHoanTien = false"
           >
             Hủy
           </button>
           <button
             type="button"
-            class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)] transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] bg-amber-500 px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)] transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="
               dangXacNhanHoanTien ||
               (formHoanTien.hinhThucHoanTien === 2 && !taiKhoanNganHangChon)
@@ -1276,7 +1276,7 @@ function handleProductImageError(event) {
               v-model="ghiChuXacNhan"
               rows="4"
               placeholder="Nhập Ghi Chú Cho Bước Này..."
-              class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             ></textarea>
           </div>
           <div class="mt-7 flex gap-3">
@@ -1392,7 +1392,7 @@ function handleProductImageError(event) {
                 ></div>
 
                 <div
-                  class="rounded-2xl border border-slate-50 bg-slate-50/50 p-4 transition-colors hover:bg-slate-100/50"
+                  class="rounded-[6px] border border-slate-50 bg-slate-50/50 p-4 transition-colors hover:bg-slate-100/50"
                 >
                   <div class="text-[12px] text-slate-400 font-medium">
                     {{ dinhDangGio(log.ngayTao) }}
@@ -1438,7 +1438,7 @@ function handleProductImageError(event) {
                 @input="timKiemSanPham"
                 type="text"
                 placeholder="Tên Sản Phẩm, SKU..."
-                class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                class="h-12 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
             <div class="mt-6 max-h-[420px] space-y-3 overflow-y-auto pr-2">
@@ -1458,7 +1458,7 @@ function handleProductImageError(event) {
                 v-for="sp in ketQuaTimKiem"
                 :key="sp.chiTietId"
                 @click="themSanPham(sp)"
-                class="cursor-pointer rounded-2xl border border-slate-100 p-4 transition hover:border-rose-200 hover:bg-rose-50/40"
+                class="cursor-pointer rounded-[6px] border border-slate-100 p-4 transition hover:border-rose-200 hover:bg-rose-50/40"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div>
@@ -1490,7 +1490,7 @@ function handleProductImageError(event) {
               <div
                 v-for="item in danhSachSanPhamUpdate"
                 :key="item.chiTietId"
-                class="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm"
+                class="flex items-center gap-4 rounded-[6px] bg-white p-4 shadow-sm"
               >
                 <div class="flex-1">
                   <p class="font-semibold text-slate-800">
@@ -1504,11 +1504,11 @@ function handleProductImageError(event) {
                   v-model.number="item.soLuong"
                   type="number"
                   min="1"
-                  class="h-10 w-16 rounded-xl border border-slate-200 bg-slate-50 text-center text-sm font-semibold outline-none focus:border-rose-300"
+                  class="h-10 w-16 rounded-[6px] border border-slate-200 bg-slate-50 text-center text-sm font-semibold outline-none focus:border-rose-300"
                 />
                 <button
                   @click="removeSanPham(item.chiTietId)"
-                  class="rounded-xl bg-[#B82220]/10 p-2 text-[#B82220] transition hover:bg-[#B82220]/20"
+                  class="rounded-[6px] bg-[#B82220]/10 p-2 text-[#B82220] transition hover:bg-[#B82220]/20"
                 >
                   <Trash2 class="h-4 w-4" />
                 </button>
@@ -1725,7 +1725,7 @@ function handleProductImageError(event) {
             </div>
             <p
               v-if="!coTheSuaThongTinGiaoHang"
-              class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700"
+              class="rounded-[6px] bg-amber-50 px-3 py-2 text-xs text-amber-700"
             >
               Thông tin giao hàng đã khóa vì đơn đã bắt đầu giao.
             </p>

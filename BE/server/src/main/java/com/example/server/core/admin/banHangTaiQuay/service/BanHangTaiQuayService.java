@@ -371,6 +371,7 @@ public class BanHangTaiQuayService {
             giayChiTietRepository.save(giayChiTiet);
             hoaDonChiTietRepository.delete(item);
         }
+        hoaDonChiTietRepository.flush();
 
         // Add new items
         validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new java.util.ArrayList<>());
