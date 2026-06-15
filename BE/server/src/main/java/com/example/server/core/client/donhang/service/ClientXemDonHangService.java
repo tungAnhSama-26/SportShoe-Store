@@ -1,6 +1,7 @@
 package com.example.server.core.client.donhang.service;
 
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse;
+import com.example.server.core.client.donhang.dto.CapNhatThongTinGiaoHangRequest;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.DongSanPham;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTraHang;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
@@ -250,6 +251,7 @@ public class ClientXemDonHangService {
             throw new BusinessException("Chỉ có thể yêu cầu hủy khi đơn đang chờ xác nhận, đã xác nhận hoặc chờ lấy hàng");
         }
 
+        hd.setTrangThaiTruocYeuCauHuy(trangThai);
         hd.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
         hd.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hd);
@@ -262,6 +264,47 @@ public class ClientXemDonHangService {
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
         hoaDonRealtimePublisher.publishAfterCommit(hd, "YEU_CAU_HUY");
+    }
+
+    @Transactional
+    public DonHangChiTietResponse capNhatThongTinGiaoHang(
+            UUID khachHangId,
+            Integer id,
+            CapNhatThongTinGiaoHangRequest request
+    ) {
+        HoaDon hd = hoaDonRepository.findDetailByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+        if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
+            throw new BusinessException("Bạn không có quyền cập nhật đơn hàng này");
+        }
+
+        Integer trangThai = hd.getTrangThai();
+        if (trangThai == null
+                || (trangThai != TRANG_THAI_CHO_XAC_NHAN
+                && trangThai != TRANG_THAI_DA_XAC_NHAN
+                && trangThai != TRANG_THAI_CHO_LAY_HANG)) {
+            throw new BusinessException(
+                    "Chỉ có thể cập nhật thông tin giao hàng khi đơn đang chờ xác nhận, "
+                            + "đã xác nhận hoặc chờ lấy hàng"
+            );
+        }
+
+        hd.setTenNguoiNhan(request.tenNguoiNhan().trim());
+        hd.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
+        hd.setDiaChiGiaoHang(request.diaChiGiaoHang().trim());
+        hd.setNgayCapNhat(Instant.now());
+        hoaDonRepository.save(hd);
+
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hd);
+        lichSu.setNhanVien(null);
+        lichSu.setTrangThai("Cập nhật thông tin giao hàng");
+        lichSu.setGhiChu("Khách hàng cập nhật người nhận và địa chỉ giao hàng");
+        lichSu.setNgayTao(Instant.now());
+        lichSuHoaDonRepository.save(lichSu);
+
+        hoaDonRealtimePublisher.publishAfterCommit(hd, "THONG_TIN_GIAO_HANG");
+        return chiTiet(khachHangId, id);
     }
 
     private String nhanTrangThai(Integer trangThai) {

@@ -93,6 +93,15 @@ public class TraHangController {
                 traHangService.xacNhanDaNhanHang(id, request, currentPrincipal().id()));
     }
 
+    @PatchMapping("/{id}/hoan-hang-that-bai")
+    public ResponseEntity<ApiResponse<TraHangResponse>> danhDauHoanHangThatBai(
+            @PathVariable Integer id,
+            @Valid @RequestBody GhiChuTraHangRequest request
+    ) {
+        return ok("Đã ghi nhận hoàn hàng thất bại",
+                traHangService.danhDauHoanHangThatBai(id, request, currentPrincipal().id()));
+    }
+
     @PatchMapping("/{id}/bat-dau-kiem-tra")
     public ResponseEntity<ApiResponse<TraHangResponse>> batDauKiemTra(
             @PathVariable Integer id,

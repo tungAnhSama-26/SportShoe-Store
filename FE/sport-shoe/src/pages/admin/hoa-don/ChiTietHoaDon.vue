@@ -2,6 +2,7 @@
 import { useChiTietHoaDon } from "./useChiTietHoaDon";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import TaoPhieuTraHangModal from "../../../components/admin/hoa-don/TaoPhieuTraHangModal.vue";
+import ChinhSuaGiaoHangModal from "../../../components/common/ChinhSuaGiaoHangModal.vue";
 import { API_BASE_URL } from "../../../services/api-client";
 const {
   computed,
@@ -60,6 +61,9 @@ const {
   dangXacNhanHoanTien,
   formHoanTien,
   hienModalThongTin,
+  hienModalGiaoHang,
+  dangLuuGiaoHang,
+  diaChiDaLuu,
   tabHienTai,
   formThongTin,
   formGhn,
@@ -102,9 +106,12 @@ const {
   donYeuCauHuy,
   donDaHuy,
   donDaKetThuc,
+  coTheSuaThongTinGiaoHang,
   hienThiThongBao,
   thongBaoDonDaHoanThanh,
   moModalThongTin,
+  moModalSuaDiaChi,
+  handleLuuGiaoHang,
   tongTienHang,
   tongKhachCanTra,
   coPhieuGiamGia,
@@ -1648,12 +1655,18 @@ function handleProductImageError(event) {
           <div v-if="tabHienTai === 'khachHang'" class="space-y-4">
             <div>
               <label class="mb-1.5 block text-[13px] font-medium text-slate-600"
-                >Tên khách hàng</label
+                >Tên người nhận</label
               >
               <input
                 type="text"
                 v-model="formThongTin.tenKhachHang"
-                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-blue-400"
+                :readonly="!coTheSuaThongTinGiaoHang"
+                :class="
+                  coTheSuaThongTinGiaoHang
+                    ? 'bg-white focus:border-rose-300'
+                    : 'cursor-not-allowed bg-slate-100 text-slate-500'
+                "
+                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition"
               />
             </div>
             <div>
@@ -1663,7 +1676,13 @@ function handleProductImageError(event) {
               <input
                 type="text"
                 v-model="formThongTin.soDienThoai"
-                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-blue-400"
+                :readonly="!coTheSuaThongTinGiaoHang"
+                :class="
+                  coTheSuaThongTinGiaoHang
+                    ? 'bg-white focus:border-rose-300'
+                    : 'cursor-not-allowed bg-slate-100 text-slate-500'
+                "
+                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition"
               />
             </div>
             <div>
@@ -1673,9 +1692,43 @@ function handleProductImageError(event) {
               <input
                 type="text"
                 v-model="formThongTin.email"
-                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-blue-400"
+                readonly
+                class="w-full cursor-not-allowed rounded-[8px] border border-slate-200 bg-slate-100 px-3 py-2.5 text-[14px] text-slate-500 outline-none"
               />
             </div>
+            <div>
+              <div class="mb-1.5 flex items-center justify-between gap-3">
+                <label class="block text-[13px] font-medium text-slate-600"
+                  >Địa chỉ giao hàng</label
+                >
+                <button
+                  v-if="coTheSuaThongTinGiaoHang"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 text-xs font-bold text-[#B82220] hover:text-[#9f1d1b]"
+                  @click="moModalSuaDiaChi"
+                >
+                  <Pencil class="h-3.5 w-3.5" />
+                  Sửa địa chỉ
+                </button>
+              </div>
+              <input
+                type="text"
+                v-model="formThongTin.diaChi"
+                :readonly="!coTheSuaThongTinGiaoHang"
+                :class="
+                  coTheSuaThongTinGiaoHang
+                    ? 'bg-white focus:border-rose-300'
+                    : 'cursor-not-allowed bg-slate-100 text-slate-500'
+                "
+                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition"
+              />
+            </div>
+            <p
+              v-if="!coTheSuaThongTinGiaoHang"
+              class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700"
+            >
+              Thông tin giao hàng đã khóa vì đơn đã bắt đầu giao.
+            </p>
           </div>
         </div>
 
@@ -1689,13 +1742,26 @@ function handleProductImageError(event) {
           <Button
             @click="handleLuuThongTin"
             :disabled="dangCapNhat || donDaHoanThanh"
-            class="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent rounded-full"
+            class="bg-[#B82220] hover:bg-[#9f1d1b] text-white border-transparent rounded-full"
           >
             {{ dangCapNhat ? "Đang Lưu..." : "Lưu" }}
           </Button>
         </div>
       </div>
     </div>
+
+    <ChinhSuaGiaoHangModal
+      v-model="hienModalGiaoHang"
+      title="Chỉnh sửa thông tin nhận hàng"
+      :initial-data="{
+        tenNguoiNhan: formThongTin.tenKhachHang,
+        sdtNguoiNhan: formThongTin.soDienThoai,
+        diaChiGiaoHang: formThongTin.diaChi,
+      }"
+      :saved-addresses="diaChiDaLuu"
+      :saving="dangLuuGiaoHang"
+      @save="handleLuuGiaoHang"
+    />
   </div>
 </template>
 
