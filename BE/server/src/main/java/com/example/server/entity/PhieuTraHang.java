@@ -24,7 +24,7 @@ public class PhieuTraHang {
     @Version
     @ColumnDefault("0")
     @Column(name = "version", nullable = false)
-    private Long version = 0L;
+    private Long version;
 
     @Size(max = 150)
     @NotNull

@@ -13,6 +13,12 @@ function resolveAuthScope(path, authScope) {
   if (authScope === "admin" || authScope === "customer") {
     return authScope;
   }
+
+  const currentPath = typeof window === "undefined" ? "" : window.location.pathname;
+  if (currentPath.startsWith("/admin") || currentPath.startsWith("/nhanvien")) {
+    return "admin";
+  }
+
   if (path.startsWith("/admin/") || path === "/admin" || path.startsWith("/nhanvien/")) {
     return "admin";
   }
@@ -20,10 +26,7 @@ function resolveAuthScope(path, authScope) {
     return "customer";
   }
 
-  const currentPath = typeof window === "undefined" ? "" : window.location.pathname;
-  return currentPath.startsWith("/admin") || currentPath.startsWith("/nhanvien")
-    ? "admin"
-    : "customer";
+  return "customer";
 }
 
 function getStoredToken(authScope = "auto", path = "") {

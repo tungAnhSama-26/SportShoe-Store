@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 public record KiemTraSanPhamTraRequest(
         @NotNull(message = "Thiếu chi tiết sản phẩm trả")
         Integer chiTietTraHangId,
@@ -20,6 +22,12 @@ public record KiemTraSanPhamTraRequest(
         String tinhTrangSanPham,
 
         @NotNull(message = "Vui lòng xác định có nhập lại tồn kho hay không")
-        Boolean nhapLaiTonKho
+        Boolean nhapLaiTonKho,
+
+        @Size(max = 10, message = "Chỉ được tải tối đa 10 hình ảnh minh chứng")
+        List<
+                @Size(max = 1000, message = "Đường dẫn hình ảnh không được vượt quá 1000 ký tự")
+                String
+        > hinhAnhs
 ) {
 }
