@@ -37,6 +37,13 @@ export function capNhatSanPhamHoaDon(id, payload) {
   });
 }
 
+export function capNhatThongTinGiaoHang(id, payload) {
+  return request(`/admin/hoa-don/${id}/thong-tin-giao-hang`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function tinhPhiVanChuyenGhn(id, payload) {
   return request(`/admin/hoa-don/${id}/phi-van-chuyen/ghn`, {
     method: "POST",

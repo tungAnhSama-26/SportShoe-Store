@@ -73,6 +73,10 @@ public class HoaDon {
     @Column(name = "trang_thai", nullable = false)
     private Integer trangThai;
 
+    /** Trạng thái trước khi khách gửi yêu cầu hủy, dùng để khôi phục khi admin từ chối. */
+    @Column(name = "trang_thai_truoc_yeu_cau_huy")
+    private Integer trangThaiTruocYeuCauHuy;
+
     @NotNull
     @Column(name = "tong_tien_hang", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTienHang;
