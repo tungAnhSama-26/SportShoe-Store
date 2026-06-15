@@ -1,7 +1,19 @@
-<script setup lang="ts">
+<script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Camera, Save, ScanLine, X, User, Mail, Phone, Calendar, MapPin, Lock, ArrowLeft } from "lucide-vue-next";
+import {
+  Camera,
+  Save,
+  ScanLine,
+  X,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Lock,
+  ArrowLeft,
+} from "lucide-vue-next";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import {
   capNhatHoSoNhanVien,
@@ -10,7 +22,10 @@ import {
   uploadFile,
 } from "../../../services/nhan-vien";
 import { getCurrentAdminUser } from "../../../services/auth";
-import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import {
+  getDisplayErrorMessage,
+  getFieldErrors,
+} from "../../../utils/error-message";
 import { showSuccess } from "../../../utils/alert";
 import { useAdminSession } from "../../../composable/useAdminSession";
 
@@ -25,7 +40,7 @@ const dangLuu = ref(false);
 const dangUpload = ref(false);
 const loiTrang = ref("");
 
-const fileInputAvatar = ref<HTMLInputElement | null>(null);
+const fileInputAvatar = ref(null);
 
 const showDoiMatKhau = ref(false);
 const matKhauMoi = ref("");
@@ -53,7 +68,9 @@ const form = ref({
   xaPhuong: "",
 });
 
-const cccdDaXacMinh = computed(() => /^\d{12}$/.test(String(form.value.cccd ?? "").trim()));
+const cccdDaXacMinh = computed(() =>
+  /^\d{12}$/.test(String(form.value.cccd ?? "").trim()),
+);
 
 const dsTinhThanh = [
   { value: "01", label: "Thành phố Hà Nội" },
@@ -118,36 +135,36 @@ const dsTinhThanh = [
   { value: "93", label: "Tỉnh Hậu Giang" },
   { value: "94", label: "Tỉnh Sóc Trăng" },
   { value: "95", label: "Tỉnh Bạc Liêu" },
-  { value: "96", label: "Tỉnh Cà Mau" }
+  { value: "96", label: "Tỉnh Cà Mau" },
 ];
 
-const dsQuanHuyen = ref<any[]>([]);
-const dsXaPhuong = ref<any[]>([]);
+const dsQuanHuyen = ref([]);
+const dsXaPhuong = ref([]);
 
 // QR Scanner
 const dangQuet = ref(false);
-const loiCamera = ref('');
-const videoRef = ref<HTMLVideoElement | null>(null);
-const thongBaoQrOk = ref('');
-let zxingReader: BrowserMultiFormatReader | null = null;
+const loiCamera = ref("");
+const videoRef = ref(null);
+const thongBaoQrOk = ref("");
+let zxingReader = null;
 let daXuLyQr = false;
 
 async function batDauQuet() {
   daXuLyQr = false;
-  loiCamera.value = '';
+  loiCamera.value = "";
   dungQuet();
   dangQuet.value = true;
   await nextTick();
   try {
-    if (!videoRef.value) throw new Error('Không tìm thấy video element');
+    if (!videoRef.value) throw new Error("Không tìm thấy video element");
     zxingReader = new BrowserMultiFormatReader();
 
-    const constraints: MediaStreamConstraints = {
+    const constraints = {
       video: {
-        facingMode: { ideal: 'environment' },
+        facingMode: { ideal: "environment" },
         width: { ideal: 1280 },
         height: { ideal: 720 },
-      }
+      },
     };
 
     await zxingReader.decodeFromConstraints(
@@ -157,24 +174,28 @@ async function batDauQuet() {
         if (result) {
           xuLyKetQuaQr(result.getText());
         }
-        if (err && err.name !== 'NotFoundException') {
-          console.warn('[ZXing scan error]', err);
+        if (err && err.name !== "NotFoundException") {
+          console.warn("[ZXing scan error]", err);
         }
-      }
+      },
     );
-  } catch (e: any) {
-    console.error('[batDauQuet]', e);
-    const msg = String(e?.message ?? '');
-    if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')) {
-      loiCamera.value = 'Vui lòng cho phép truy cập camera và thử lại.';
+  } catch (e) {
+    console.error("[batDauQuet]", e);
+    const msg = String(e?.message ?? "");
+    if (
+      msg.toLowerCase().includes("permission") ||
+      msg.toLowerCase().includes("notallowed")
+    ) {
+      loiCamera.value = "Vui lòng cho phép truy cập camera và thử lại.";
     } else {
-      loiCamera.value = 'Không thể mở camera. Hãy kiểm tra quyền truy cập và thử lại.';
+      loiCamera.value =
+        "Không thể mở camera. Hãy kiểm tra quyền truy cập và thử lại.";
     }
     zxingReader = null;
   }
 }
 
-function xuLyKetQuaQr(raw: string) {
+function xuLyKetQuaQr(raw) {
   if (daXuLyQr) return;
   daXuLyQr = true;
   dungQuet();
@@ -183,16 +204,18 @@ function xuLyKetQuaQr(raw: string) {
   loiCamera.value = "";
   try {
     if (isVneIdSecureQr(resolvedRaw)) {
-      loiForm.value.cccd = "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+      loiForm.value.cccd =
+        "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
       return;
     }
 
     // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
-    const parts = resolvedRaw.split('|');
+    const parts = resolvedRaw.split("|");
     if (parts.length >= 3) {
       const scannedCccd = parts[0]?.trim() ?? "";
       if (!/^\d{12}$/.test(scannedCccd)) {
-        loiForm.value.cccd = "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+        loiForm.value.cccd =
+          "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
         return;
       }
       form.value.cccd = scannedCccd;
@@ -200,42 +223,49 @@ function xuLyKetQuaQr(raw: string) {
       if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
       if (parts[4]) {
         const gt = parts[4].trim().toLowerCase();
-        form.value.gioiTinh = (gt === 'nam' || gt === '0') ? 'Nam' : 'Nữ';
+        form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
       }
       if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
     } else if (/^\d{12}$/.test(resolvedRaw)) {
       form.value.cccd = resolvedRaw;
     } else {
-      loiForm.value.cccd = "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+      loiForm.value.cccd =
+        "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
       return;
     }
-    thongBaoQrOk.value = 'Đã điền thông tin từ CCCD';
-    setTimeout(() => { thongBaoQrOk.value = ''; }, 4000);
+    thongBaoQrOk.value = "Đã điền thông tin từ CCCD";
+    setTimeout(() => {
+      thongBaoQrOk.value = "";
+    }, 4000);
   } catch {
     loiForm.value.cccd = "Không thể đọc dữ liệu CCCD từ mã QR này.";
   }
 }
 
-function isVneIdSecureQr(raw: string) {
-  return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw)
-    || raw.length > 100;
+function isVneIdSecureQr(raw) {
+  return (
+    /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw) ||
+    raw.length > 100
+  );
 }
 
-function formatNgaySinh(ddmmyyyy: string) {
-  if (!ddmmyyyy || ddmmyyyy.length !== 8) return '';
-  return `${ddmmyyyy.slice(4,8)}-${ddmmyyyy.slice(2,4)}-${ddmmyyyy.slice(0,2)}`;
+function formatNgaySinh(ddmmyyyy) {
+  if (!ddmmyyyy || ddmmyyyy.length !== 8) return "";
+  return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
 }
 
 function dungQuet() {
   dangQuet.value = false;
   // Explicitly stop all camera tracks
   if (videoRef.value && videoRef.value.srcObject instanceof MediaStream) {
-    videoRef.value.srcObject.getTracks().forEach(track => track.stop());
+    videoRef.value.srcObject.getTracks().forEach((track) => track.stop());
     videoRef.value.srcObject = null;
   }
   try {
     zxingReader?.reset();
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   zxingReader = null;
 }
 
@@ -260,7 +290,10 @@ async function taiChiTiet() {
       xaPhuong: "",
     };
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải thông tin cá nhân");
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải thông tin cá nhân",
+    );
   } finally {
     dangTai.value = false;
   }
@@ -299,7 +332,7 @@ async function luu() {
     const updated = await capNhatHoSoNhanVien(payload);
     // Cập nhật lại session storage
     const storageKeys = ["adminUser", "sport-shoe-admin-session"];
-    storageKeys.forEach(key => {
+    storageKeys.forEach((key) => {
       const raw = localStorage.getItem(key);
       if (raw) {
         const current = JSON.parse(raw);
@@ -312,7 +345,10 @@ async function luu() {
     showSuccess("Cập nhật thông tin thành công.", "Thành công");
   } catch (error) {
     Object.assign(loiForm.value, getFieldErrors(error));
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể cập nhật thông tin");
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể cập nhật thông tin",
+    );
   } finally {
     dangLuu.value = false;
   }
@@ -337,8 +373,8 @@ async function doiMatKhau() {
   }
 }
 
-async function xuLyUploadAnh(event: Event) {
-  const target = event.target as HTMLInputElement;
+async function xuLyUploadAnh(event) {
+  const target = event.target;
   if (!target.files?.length) return;
   dangUpload.value = true;
   try {
@@ -381,8 +417,10 @@ onUnmounted(dungQuet);
       </button>
     </section>
 
-
-    <div v-if="loiTrang" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700">
+    <div
+      v-if="loiTrang"
+      class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700"
+    >
       {{ loiTrang }}
     </div>
 
@@ -392,9 +430,16 @@ onUnmounted(dungQuet);
         <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div class="flex flex-col items-center">
             <div class="group relative">
-              <div class="h-40 w-40 overflow-hidden rounded-full border-4 border-slate-50 ring-1 ring-slate-200">
+              <div
+                class="h-40 w-40 overflow-hidden rounded-full border-4 border-slate-50 ring-1 ring-slate-200"
+              >
                 <img
-                  :src="form.hinhAnh || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(form.hoTen) + '&background=f1f5f9&color=475569&size=256'"
+                  :src="
+                    form.hinhAnh ||
+                    'https://ui-avatars.com/api/?name=' +
+                      encodeURIComponent(form.hoTen) +
+                      '&background=f1f5f9&color=475569&size=256'
+                  "
                   alt="Avatar"
                   class="h-full w-full object-cover transition duration-300 group-hover:scale-110"
                 />
@@ -406,18 +451,34 @@ onUnmounted(dungQuet);
               >
                 <Camera class="h-5 w-5" />
               </button>
-              <input ref="fileInputAvatar" type="file" accept="image/*" class="hidden" @change="xuLyUploadAnh" />
+              <input
+                ref="fileInputAvatar"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="xuLyUploadAnh"
+              />
             </div>
-            <h2 class="mt-5 text-xl font-bold text-slate-800">{{ form.hoTen }}</h2>
-            <p class="text-sm font-medium text-slate-500">{{ form.tenDangNhap }}</p>
+            <h2 class="mt-5 text-xl font-bold text-slate-800">
+              {{ form.hoTen }}
+            </h2>
+            <p class="text-sm font-medium text-slate-500">
+              {{ form.tenDangNhap }}
+            </p>
           </div>
 
           <div class="mt-8 space-y-4">
             <div class="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
               <User class="h-5 w-5 text-slate-400" />
               <div class="flex-1">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tên đăng nhập</p>
-                <p class="text-sm font-semibold text-slate-700">{{ form.tenDangNhap }}</p>
+                <p
+                  class="text-[11px] font-bold uppercase tracking-wider text-slate-400"
+                >
+                  Tên đăng nhập
+                </p>
+                <p class="text-sm font-semibold text-slate-700">
+                  {{ form.tenDangNhap }}
+                </p>
               </div>
             </div>
           </div>
@@ -425,7 +486,9 @@ onUnmounted(dungQuet);
 
         <!-- Password Change -->
         <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h3 class="flex items-center gap-2 text-base font-bold text-slate-800">
+          <h3
+            class="flex items-center gap-2 text-base font-bold text-slate-800"
+          >
             <Lock class="h-4 w-4 text-slate-400" />
             Bảo mật
           </h3>
@@ -439,8 +502,19 @@ onUnmounted(dungQuet);
                   class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
                 />
                 <div class="flex gap-2">
-                  <button @click="doiMatKhau" :disabled="dangLuu" class="admin-btn-primary flex-1 h-10 rounded-xl">Lưu</button>
-                  <button @click="showDoiMatKhau = false" class="admin-btn-soft h-10 rounded-xl px-4">Hủy</button>
+                  <button
+                    @click="doiMatKhau"
+                    :disabled="dangLuu"
+                    class="admin-btn-primary flex-1 h-10 rounded-xl"
+                  >
+                    Lưu
+                  </button>
+                  <button
+                    @click="showDoiMatKhau = false"
+                    class="admin-btn-soft h-10 rounded-xl px-4"
+                  >
+                    Hủy
+                  </button>
                 </div>
               </div>
             </template>
@@ -462,9 +536,13 @@ onUnmounted(dungQuet);
           <div class="mt-6 grid gap-6 sm:grid-cols-2">
             <!-- Full Name -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Họ và tên <span class="text-rose-500">*</span></label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Họ và tên <span class="text-rose-500">*</span></label
+              >
               <div class="relative">
-                <User class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <User
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.hoTen"
                   type="text"
@@ -472,14 +550,20 @@ onUnmounted(dungQuet);
                   class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
                 />
               </div>
-              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
+              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">
+                {{ loiForm.hoTen }}
+              </p>
             </div>
 
             <!-- Email -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Email <span class="text-rose-500">*</span></label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Email <span class="text-rose-500">*</span></label
+              >
               <div class="relative">
-                <Mail class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Mail
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.email"
                   type="email"
@@ -487,14 +571,20 @@ onUnmounted(dungQuet);
                   class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
                 />
               </div>
-              <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
+              <p v-if="loiForm.email" class="text-xs text-rose-500">
+                {{ loiForm.email }}
+              </p>
             </div>
 
             <!-- Phone -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Số điện thoại</label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Số điện thoại</label
+              >
               <div class="relative">
-                <Phone class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Phone
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.sdt"
                   type="tel"
@@ -506,9 +596,13 @@ onUnmounted(dungQuet);
 
             <!-- Birthday -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Ngày sinh</label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Ngày sinh</label
+              >
               <div class="relative">
-                <Calendar class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Calendar
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.ngaySinh"
                   type="date"
@@ -519,14 +613,28 @@ onUnmounted(dungQuet);
 
             <!-- Gender -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Giới tính</label>
-              <div class="flex h-11 items-center gap-8 rounded-2xl border border-slate-200 bg-slate-50 px-6">
+              <label class="text-[13px] font-bold text-slate-600"
+                >Giới tính</label
+              >
+              <div
+                class="flex h-11 items-center gap-8 rounded-2xl border border-slate-200 bg-slate-50 px-6"
+              >
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input v-model="form.gioiTinh" type="radio" value="Nam" class="h-4 w-4 accent-rose-500" />
+                  <input
+                    v-model="form.gioiTinh"
+                    type="radio"
+                    value="Nam"
+                    class="h-4 w-4 accent-rose-500"
+                  />
                   <span class="text-sm font-medium text-slate-700">Nam</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input v-model="form.gioiTinh" type="radio" value="Nữ" class="h-4 w-4 accent-rose-500" />
+                  <input
+                    v-model="form.gioiTinh"
+                    type="radio"
+                    value="Nữ"
+                    class="h-4 w-4 accent-rose-500"
+                  />
                   <span class="text-sm font-medium text-slate-700">Nữ</span>
                 </label>
               </div>
@@ -534,14 +642,22 @@ onUnmounted(dungQuet);
 
             <!-- CCCD -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Xác minh CCCD</label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Xác minh CCCD</label
+              >
               <div class="flex gap-2">
                 <div
                   class="flex h-11 flex-1 items-center gap-3 rounded-2xl border px-4 text-sm font-semibold"
-                  :class="cccdDaXacMinh ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'"
+                  :class="
+                    cccdDaXacMinh
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-amber-200 bg-amber-50 text-amber-700'
+                  "
                 >
                   <ScanLine class="h-4 w-4 shrink-0" />
-                  <span>{{ cccdDaXacMinh ? "Đã xác minh CCCD" : "Chưa xác minh CCCD" }}</span>
+                  <span>{{
+                    cccdDaXacMinh ? "Đã xác minh CCCD" : "Chưa xác minh CCCD"
+                  }}</span>
                 </div>
                 <button
                   type="button"
@@ -552,7 +668,9 @@ onUnmounted(dungQuet);
                   <ScanLine class="h-5 w-5" />
                 </button>
               </div>
-              <p v-if="loiForm.cccd" class="text-xs text-rose-500">{{ loiForm.cccd }}</p>
+              <p v-if="loiForm.cccd" class="text-xs text-rose-500">
+                {{ loiForm.cccd }}
+              </p>
             </div>
           </div>
 
@@ -576,28 +694,59 @@ onUnmounted(dungQuet);
 
     <!-- QR Scanner Modal -->
     <Teleport to="body">
-      <div v-show="dangQuet" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div class="relative w-full max-w-lg rounded-[32px] bg-white p-6 shadow-2xl">
+      <div
+        v-show="dangQuet"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      >
+        <div
+          class="relative w-full max-w-lg rounded-[32px] bg-white p-6 shadow-2xl"
+        >
           <div class="mb-4 flex items-center justify-between">
             <h3 class="text-xl font-bold text-slate-900">Quét mã CCCD</h3>
-            <button @click="dungQuet" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition">
+            <button
+              @click="dungQuet"
+              class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
+            >
               <X class="h-5 w-5" />
             </button>
           </div>
-          <div class="relative overflow-hidden rounded-2xl bg-black aspect-video">
-            <video ref="videoRef" class="h-full w-full object-cover" autoplay playsinline muted></video>
+          <div
+            class="relative overflow-hidden rounded-2xl bg-black aspect-video"
+          >
+            <video
+              ref="videoRef"
+              class="h-full w-full object-cover"
+              autoplay
+              playsinline
+              muted
+            ></video>
             <!-- Khung quét overlay -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              class="absolute inset-0 flex items-center justify-center pointer-events-none"
+            >
               <div class="relative h-48 w-64">
-                <span class="absolute top-0 left-0 h-8 w-8 border-t-[3px] border-l-[3px] border-white rounded-tl-md"></span>
-                <span class="absolute top-0 right-0 h-8 w-8 border-t-[3px] border-r-[3px] border-white rounded-tr-md"></span>
-                <span class="absolute bottom-0 left-0 h-8 w-8 border-b-[3px] border-l-[3px] border-white rounded-bl-md"></span>
-                <span class="absolute bottom-0 right-0 h-8 w-8 border-b-[3px] border-r-[3px] border-white rounded-br-md"></span>
+                <span
+                  class="absolute top-0 left-0 h-8 w-8 border-t-[3px] border-l-[3px] border-white rounded-tl-md"
+                ></span>
+                <span
+                  class="absolute top-0 right-0 h-8 w-8 border-t-[3px] border-r-[3px] border-white rounded-tr-md"
+                ></span>
+                <span
+                  class="absolute bottom-0 left-0 h-8 w-8 border-b-[3px] border-l-[3px] border-white rounded-bl-md"
+                ></span>
+                <span
+                  class="absolute bottom-0 right-0 h-8 w-8 border-b-[3px] border-r-[3px] border-white rounded-br-md"
+                ></span>
                 <div class="scan-line"></div>
               </div>
             </div>
           </div>
-          <p v-if="loiCamera" class="mt-4 text-center text-sm font-medium text-rose-500">{{ loiCamera }}</p>
+          <p
+            v-if="loiCamera"
+            class="mt-4 text-center text-sm font-medium text-rose-500"
+          >
+            {{ loiCamera }}
+          </p>
         </div>
       </div>
     </Teleport>
@@ -612,7 +761,10 @@ onUnmounted(dungQuet);
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-4"
       >
-        <div v-if="thongBaoQrOk" class="fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 flex items-center gap-3 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-xl">
+        <div
+          v-if="thongBaoQrOk"
+          class="fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 flex items-center gap-3 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-xl"
+        >
           <ScanLine class="h-4 w-4 text-emerald-400" />
           {{ thongBaoQrOk }}
         </div>
@@ -628,7 +780,14 @@ onUnmounted(dungQuet);
   right: 0;
   top: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #38bdf8, #0ea5e9, #38bdf8, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #38bdf8,
+    #0ea5e9,
+    #38bdf8,
+    transparent
+  );
   border-radius: 2px;
   animation: scanMove 2s linear infinite;
   box-shadow: 0 0 8px 2px rgba(56, 189, 248, 0.6);
@@ -637,11 +796,29 @@ onUnmounted(dungQuet);
   border-radius: 6px !important;
 }
 @keyframes scanMove {
-  0%   { top: 0%; opacity: 1; }
-  48%  { top: 100%; opacity: 1; }
-  50%  { top: 100%; opacity: 0; }
-  52%  { top: 0%;   opacity: 0; }
-  54%  { top: 0%;   opacity: 1; }
-  100% { top: 100%; opacity: 1; }
+  0% {
+    top: 0%;
+    opacity: 1;
+  }
+  48% {
+    top: 100%;
+    opacity: 1;
+  }
+  50% {
+    top: 100%;
+    opacity: 0;
+  }
+  52% {
+    top: 0%;
+    opacity: 0;
+  }
+  54% {
+    top: 0%;
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 1;
+  }
 }
 </style>

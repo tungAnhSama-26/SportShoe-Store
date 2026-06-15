@@ -12,39 +12,43 @@ import {
   xoaNhanVien,
 } from "../../../services/nhan-vien";
 import { getCurrentAdminUser } from "../../../services/auth";
-import { getDisplayErrorMessage, getFieldErrors } from "../../../utils/error-message";
+import {
+  getDisplayErrorMessage,
+  getFieldErrors,
+} from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
-import { isValidEmail, isValidVnPhone, validateFullName } from "../../../utils/validation";
-import Card from "../../../components/ui/Card.vue";
-import Button from "../../../components/ui/Button.vue";
+import {
+  isValidEmail,
+  isValidVnPhone,
+  validateFullName,
+} from "../../../utils/validation";
 
 export function useChiTietNhanVien() {
-
   // QR Scanner - dùng @zxing/browser
   const dangQuet = ref(false);
-  const loiCamera = ref('');
-  const videoRef = ref<HTMLVideoElement | null>(null);
+  const loiCamera = ref("");
+  const videoRef = ref(null);
   const dangQuetFile = ref(false);
-  const thongBaoQrOk = ref('');
-  let zxingReader: BrowserMultiFormatReader | null = null;
+  const thongBaoQrOk = ref("");
+  let zxingReader = null;
   let daXuLyQr = false;
 
   async function batDauQuet() {
     daXuLyQr = false;
-    loiCamera.value = '';
+    loiCamera.value = "";
     dungQuet();
     dangQuet.value = true;
     await nextTick();
     try {
-      if (!videoRef.value) throw new Error('Không tìm thấy video element');
+      if (!videoRef.value) throw new Error("Không tìm thấy video element");
       zxingReader = new BrowserMultiFormatReader();
 
-      const constraints: MediaStreamConstraints = {
+      const constraints = {
         video: {
-          facingMode: { ideal: 'environment' },
+          facingMode: { ideal: "environment" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
-        }
+        },
       };
 
       await zxingReader.decodeFromConstraints(
@@ -54,24 +58,28 @@ export function useChiTietNhanVien() {
           if (result) {
             xuLyKetQuaQr(result.getText());
           }
-          if (err && err.name !== 'NotFoundException') {
-            console.warn('[ZXing scan error]', err);
+          if (err && err.name !== "NotFoundException") {
+            console.warn("[ZXing scan error]", err);
           }
-        }
+        },
       );
-    } catch (e: any) {
-      console.error('[batDauQuet]', e);
-      const msg = String(e?.message ?? '');
-      if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')) {
-        loiCamera.value = 'Vui lòng cho phép truy cập camera và thử lại.';
+    } catch (e) {
+      console.error("[batDauQuet]", e);
+      const msg = String(e?.message ?? "");
+      if (
+        msg.toLowerCase().includes("permission") ||
+        msg.toLowerCase().includes("notallowed")
+      ) {
+        loiCamera.value = "Vui lòng cho phép truy cập camera và thử lại.";
       } else {
-        loiCamera.value = 'Không thể mở camera. Hãy kiểm tra quyền truy cập và thử lại.';
+        loiCamera.value =
+          "Không thể mở camera. Hãy kiểm tra quyền truy cập và thử lại.";
       }
       zxingReader = null;
     }
   }
 
-  function xuLyKetQuaQr(raw: string) {
+  function xuLyKetQuaQr(raw) {
     if (daXuLyQr) return;
     daXuLyQr = true;
     dungQuet();
@@ -80,16 +88,18 @@ export function useChiTietNhanVien() {
     loiCamera.value = "";
     try {
       if (isVneIdSecureQr(resolvedRaw)) {
-        loiForm.value.cccd = "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+        loiForm.value.cccd =
+          "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
         return;
       }
 
       // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
-      const parts = resolvedRaw.split('|');
+      const parts = resolvedRaw.split("|");
       if (parts.length >= 3) {
         const scannedCccd = parts[0]?.trim() ?? "";
         if (!/^\d{12}$/.test(scannedCccd)) {
-          loiForm.value.cccd = "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+          loiForm.value.cccd =
+            "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
           return;
         }
         form.value.cccd = scannedCccd;
@@ -97,13 +107,14 @@ export function useChiTietNhanVien() {
         if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
         if (parts[4]) {
           const gt = parts[4].trim().toLowerCase();
-          form.value.gioiTinh = (gt === 'nam' || gt === '0') ? 'Nam' : 'Nữ';
+          form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
         }
         if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
       } else if (/^\d{12}$/.test(resolvedRaw)) {
         form.value.cccd = resolvedRaw;
       } else {
-        loiForm.value.cccd = "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+        loiForm.value.cccd =
+          "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
         return;
       }
       showSuccess("Đã điền thông tin từ CCCD", "Thành công");
@@ -112,17 +123,19 @@ export function useChiTietNhanVien() {
     }
   }
 
-  function isVneIdSecureQr(raw: string) {
-    return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw)
-      || raw.length > 100;
+  function isVneIdSecureQr(raw) {
+    return (
+      /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw) ||
+      raw.length > 100
+    );
   }
 
-  function formatNgaySinh(ddmmyyyy: string) {
-    if (!ddmmyyyy || ddmmyyyy.length !== 8) return '';
+  function formatNgaySinh(ddmmyyyy) {
+    if (!ddmmyyyy || ddmmyyyy.length !== 8) return "";
     return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
   }
 
-  function syncCurrentAdminCccd(updated: any) {
+  function syncCurrentAdminCccd(updated) {
     if (typeof window === "undefined" || !updated?.id) return;
 
     const storageKeys = ["adminUser", "sport-shoe-admin-session"];
@@ -145,19 +158,21 @@ export function useChiTietNhanVien() {
     dangQuet.value = false;
     // Explicitly stop all camera tracks
     if (videoRef.value && videoRef.value.srcObject instanceof MediaStream) {
-      videoRef.value.srcObject.getTracks().forEach(track => track.stop());
+      videoRef.value.srcObject.getTracks().forEach((track) => track.stop());
       videoRef.value.srcObject = null;
     }
     try {
       zxingReader?.reset();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     zxingReader = null;
   }
 
   const route = useRoute();
   const router = useRouter();
 
-  const id = route.params.id as string | undefined;
+  const id = route.params.id;
   const laMoi = !id;
   const EMPLOYEE_CREATE_TOAST_KEY = "admin-nhan-vien-toast";
 
@@ -165,12 +180,16 @@ export function useChiTietNhanVien() {
   const dangLuu = ref(false);
   const dangUpload = ref(false);
   const loiTrang = ref("");
-  const nhanVien = ref<any>(null);
+  const nhanVien = ref(null);
   const adminHienTai = getCurrentAdminUser();
   const laChinhMinh = computed(() => {
-    return nhanVien.value && adminHienTai && String(nhanVien.value.id) === String(adminHienTai.id);
+    return (
+      nhanVien.value &&
+      adminHienTai &&
+      String(nhanVien.value.id) === String(adminHienTai.id)
+    );
   });
-  const formatDateInputValue = (date: Date) => {
+  const formatDateInputValue = (date) => {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
@@ -186,7 +205,7 @@ export function useChiTietNhanVien() {
     today.setFullYear(today.getFullYear() - 80);
     return formatDateInputValue(today);
   });
-  const fileInputAvatar = ref<HTMLInputElement | null>(null);
+  const fileInputAvatar = ref(null);
   const matKhauMoi = ref("");
   const showDoiMatKhau = ref(false);
 
@@ -220,9 +239,7 @@ export function useChiTietNhanVien() {
     { value: 2, label: "Nhân viên" },
   ];
 
-
-
-  const dsQuanHuyenTheoTinh: Record<string, Array<{ value: string; label: string }>> = {
+  const dsQuanHuyenTheoTinh = {
     "ha-noi": [
       { value: "cau-giay", label: "Cầu Giấy" },
       { value: "dong-da", label: "Đống Đa" },
@@ -302,9 +319,9 @@ export function useChiTietNhanVien() {
     { value: "93", label: "Tỉnh Hậu Giang" },
     { value: "94", label: "Tỉnh Sóc Trăng" },
     { value: "95", label: "Tỉnh Bạc Liêu" },
-    { value: "96", label: "Tỉnh Cà Mau" }
+    { value: "96", label: "Tỉnh Cà Mau" },
   ];
-  const dsXaPhuongTheoQuan: Record<string, Array<{ value: string; label: string }>> = {
+  const dsXaPhuongTheoQuan = {
     "cau-giay": [
       { value: "dich-vong", label: "Dịch Vọng" },
       { value: "mai-dich", label: "Mai Dịch" },
@@ -352,53 +369,63 @@ export function useChiTietNhanVien() {
     ],
   };
   // 1. Thêm hàm fetch dữ liệu từ API (Ví dụ dùng pro-vinces.open-api.vn)
-  const dsQuanHuyen = ref<any[]>([]);
-  const dsXaPhuong = ref<any[]>([]);
+  const dsQuanHuyen = ref([]);
+  const dsXaPhuong = ref([]);
 
   // Theo dõi thay đổi Tỉnh/Thành để load Quận/Huyện
-  watch(() => form.value.tinhThanh, async (newVal) => {
-    form.value.quanHuyen = "";
-    form.value.xaPhuong = "";
-    dsXaPhuong.value = [];
+  watch(
+    () => form.value.tinhThanh,
+    async (newVal) => {
+      form.value.quanHuyen = "";
+      form.value.xaPhuong = "";
+      dsXaPhuong.value = [];
 
-    if (!newVal) {
-      dsQuanHuyen.value = [];
-      return;
-    }
+      if (!newVal) {
+        dsQuanHuyen.value = [];
+        return;
+      }
 
-    try {
-      // Đây là URL API lấy quận huyện theo mã tỉnh (newVal là mã số như '01', '79')
-      const res = await fetch(`https://provinces.open-api.vn/api/p/${newVal}?depth=2`);
-      const data = await res.json();
-      dsQuanHuyen.value = data.districts.map((d: any) => ({
-        value: d.code.toString(),
-        label: d.name
-      }));
-    } catch (e) {
-      console.error("Lỗi tải quận huyện", e);
-    }
-  });
+      try {
+        // Đây là URL API lấy quận huyện theo mã tỉnh (newVal là mã số như '01', '79')
+        const res = await fetch(
+          `https://provinces.open-api.vn/api/p/${newVal}?depth=2`,
+        );
+        const data = await res.json();
+        dsQuanHuyen.value = data.districts.map((d) => ({
+          value: d.code.toString(),
+          label: d.name,
+        }));
+      } catch (e) {
+        console.error("Lỗi tải quận huyện", e);
+      }
+    },
+  );
 
   // Theo dõi thay đổi Quận/Huyện để load Xã/Phường
-  watch(() => form.value.quanHuyen, async (newVal) => {
-    form.value.xaPhuong = "";
-    if (!newVal) {
-      dsXaPhuong.value = [];
-      return;
-    }
+  watch(
+    () => form.value.quanHuyen,
+    async (newVal) => {
+      form.value.xaPhuong = "";
+      if (!newVal) {
+        dsXaPhuong.value = [];
+        return;
+      }
 
-    try {
-      const res = await fetch(`https://provinces.open-api.vn/api/d/${newVal}?depth=2`);
-      const data = await res.json();
-      dsXaPhuong.value = data.wards.map((w: any) => ({
-        value: w.code.toString(),
-        label: w.name
-      }));
-    } catch (e) {
-      console.error("Lỗi tải xã phường", e);
-    }
-  });
-  function layLabel(options: any[], value: string) {
+      try {
+        const res = await fetch(
+          `https://provinces.open-api.vn/api/d/${newVal}?depth=2`,
+        );
+        const data = await res.json();
+        dsXaPhuong.value = data.wards.map((w) => ({
+          value: w.code.toString(),
+          label: w.name,
+        }));
+      } catch (e) {
+        console.error("Lỗi tải xã phường", e);
+      }
+    },
+  );
+  function layLabel(options, value) {
     return options.find((item) => item.value == value)?.label ?? "";
   }
 
@@ -414,7 +441,7 @@ export function useChiTietNhanVien() {
     return diaChiFull;
   }
 
-  async function apDungMaDiaChiDaQuet(duLieuQr: Record<string, any>) {
+  async function apDungMaDiaChiDaQuet(duLieuQr) {
     const maTinhThanh = String(duLieuQr.tinhThanh ?? "").trim();
     const maQuanHuyen = String(duLieuQr.quanHuyen ?? "").trim();
     const maXaPhuong = String(duLieuQr.xaPhuong ?? "").trim();
@@ -430,13 +457,15 @@ export function useChiTietNhanVien() {
     }
 
     try {
-      const responseTinh = await fetch(`https://provinces.open-api.vn/api/p/${maTinhThanh}?depth=2`);
+      const responseTinh = await fetch(
+        `https://provinces.open-api.vn/api/p/${maTinhThanh}?depth=2`,
+      );
       const dataTinh = await responseTinh.json();
       dsQuanHuyen.value = Array.isArray(dataTinh.districts)
-        ? dataTinh.districts.map((district: any) => ({
-          value: district.code.toString(),
-          label: district.name,
-        }))
+        ? dataTinh.districts.map((district) => ({
+            value: district.code.toString(),
+            label: district.name,
+          }))
         : [];
     } catch (error) {
       console.error("Không thể tải quận huyện từ dữ liệu QR", error);
@@ -452,13 +481,15 @@ export function useChiTietNhanVien() {
     }
 
     try {
-      const responseHuyen = await fetch(`https://provinces.open-api.vn/api/d/${maQuanHuyen}?depth=2`);
+      const responseHuyen = await fetch(
+        `https://provinces.open-api.vn/api/d/${maQuanHuyen}?depth=2`,
+      );
       const dataHuyen = await responseHuyen.json();
       dsXaPhuong.value = Array.isArray(dataHuyen.wards)
-        ? dataHuyen.wards.map((ward: any) => ({
-          value: ward.code.toString(),
-          label: ward.name,
-        }))
+        ? dataHuyen.wards.map((ward) => ({
+            value: ward.code.toString(),
+            label: ward.name,
+          }))
         : [];
     } catch (error) {
       console.error("Không thể tải xã phường từ dữ liệu QR", error);
@@ -472,7 +503,7 @@ export function useChiTietNhanVien() {
     if (laMoi) return;
     dangTai.value = true;
     try {
-      const data = await layChiTietNhanVien(id!);
+      const data = await layChiTietNhanVien(id);
       nhanVien.value = data;
       form.value = {
         hoTen: data.hoTen ?? "",
@@ -491,7 +522,10 @@ export function useChiTietNhanVien() {
         xaPhuong: "",
       };
     } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải thông tin nhân viên");
+      loiTrang.value = getDisplayErrorMessage(
+        error,
+        "Không thể tải thông tin nhân viên",
+      );
     } finally {
       dangTai.value = false;
     }
@@ -523,7 +557,8 @@ export function useChiTietNhanVien() {
     }
 
     if (!isValidVnPhone(form.value.sdt)) {
-      loiForm.value.sdt = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+      loiForm.value.sdt =
+        "Số điện thoại không đúng định dạng (VD: 0901234567).";
       hasError = true;
     }
 
@@ -533,7 +568,8 @@ export function useChiTietNhanVien() {
       today.setHours(0, 0, 0, 0);
 
       if (selectedDate > today) {
-        loiForm.value.ngaySinh = "Ngày sinh không được là ngày trong tương lai.";
+        loiForm.value.ngaySinh =
+          "Ngày sinh không được là ngày trong tương lai.";
         hasError = true;
       } else {
         // Tuổi phải > 17 (tức từ đủ 18 tuổi)
@@ -563,7 +599,7 @@ export function useChiTietNhanVien() {
         "Bạn có chắc chắn muốn thêm nhân viên mới này không?",
         "Xác nhận thêm nhân viên",
         "Thêm mới",
-        "Hủy"
+        "Hủy",
       );
       if (!confirmed) return;
     }
@@ -597,10 +633,16 @@ export function useChiTietNhanVien() {
                 ? `Đã gửi thông tin đăng nhập tới email: ${created.email}`
                 : `Email tài khoản: ${created.email}`
               : "",
-            !emailGuiThanhCong && created.canhBaoEmail ? created.canhBaoEmail : "",
+            !emailGuiThanhCong && created.canhBaoEmail
+              ? created.canhBaoEmail
+              : "",
             created.tenDangNhap ? `Tên đăng nhập: ${created.tenDangNhap}` : "",
-            created.matKhauTamThoi ? `Mật khẩu tạm thời: ${created.matKhauTamThoi}` : "",
-          ].filter(Boolean).join(" | ");
+            created.matKhauTamThoi
+              ? `Mật khẩu tạm thời: ${created.matKhauTamThoi}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" | ");
 
           window.sessionStorage.setItem(
             EMPLOYEE_CREATE_TOAST_KEY,
@@ -616,12 +658,20 @@ export function useChiTietNhanVien() {
         return;
       }
 
-      const updated = await capNhatNhanVien(id!, payload);
+      const updated = await capNhatNhanVien(id, payload);
       nhanVien.value = updated;
       syncCurrentAdminCccd(updated);
-      if (route.query.requireCccd === "1" && /^\d{12}$/.test(String(updated.cccd ?? ""))) {
-        const redirectPath = typeof route.query.redirect === "string" ? route.query.redirect : "/admin";
-        router.push(redirectPath.startsWith("/admin") ? redirectPath : "/admin");
+      if (
+        route.query.requireCccd === "1" &&
+        /^\d{12}$/.test(String(updated.cccd ?? ""))
+      ) {
+        const redirectPath =
+          typeof route.query.redirect === "string"
+            ? route.query.redirect
+            : "/admin";
+        router.push(
+          redirectPath.startsWith("/admin") ? redirectPath : "/admin",
+        );
         return;
       }
       await showSuccess("Đã lưu thay đổi thành công.", "Thành công");
@@ -648,28 +698,37 @@ export function useChiTietNhanVien() {
     dangLuu.value = true;
     loiTrang.value = "";
     try {
-      await doiMatKhauNhanVien(id!, matKhauMoi.value.trim());
+      await doiMatKhauNhanVien(id, matKhauMoi.value.trim());
       showSuccess("Đã đổi mật khẩu thành công.", "Thành công");
       matKhauMoi.value = "";
       showDoiMatKhau.value = false;
     } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(error, "Không thể đổi mật khẩu nhân viên");
+      loiTrang.value = getDisplayErrorMessage(
+        error,
+        "Không thể đổi mật khẩu nhân viên",
+      );
     } finally {
       dangLuu.value = false;
     }
   }
 
-  async function doiTrangThai(trangThai: number) {
+  async function doiTrangThai(trangThai) {
     if (trangThai === 0 && laChinhMinh.value) {
       showError("Bạn không thể tự khóa tài khoản của chính mình.");
       return;
     }
     try {
-      const updated = await doiTrangThaiNhanVien(id!, trangThai);
+      const updated = await doiTrangThaiNhanVien(id, trangThai);
       nhanVien.value = updated;
-      showSuccess(trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.", "Thành công");
+      showSuccess(
+        trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.",
+        "Thành công",
+      );
     } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(error, "Không thể cập nhật trạng thái nhân viên");
+      loiTrang.value = getDisplayErrorMessage(
+        error,
+        "Không thể cập nhật trạng thái nhân viên",
+      );
     }
   }
 
@@ -682,19 +741,19 @@ export function useChiTietNhanVien() {
       "Bạn có chắc chắn muốn xóa nhân viên này không?",
       "Xác nhận xóa",
       "Xóa",
-      "Hủy"
+      "Hủy",
     );
     if (!confirmed) return;
     try {
-      await xoaNhanVien(id!);
+      await xoaNhanVien(id);
       router.push({ name: "admin-nhan-vien" });
     } catch (error) {
       loiTrang.value = getDisplayErrorMessage(error, "Không thể xóa nhân viên");
     }
   }
 
-  async function xuLyUploadAnh(event: Event) {
-    const target = event.target as HTMLInputElement;
+  async function xuLyUploadAnh(event) {
+    const target = event.target;
     if (!target.files?.length) return;
 
     dangUpload.value = true;
@@ -703,7 +762,10 @@ export function useChiTietNhanVien() {
       const url = await uploadFile(target.files[0]);
       form.value.hinhAnh = url;
     } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải ảnh nhân viên");
+      loiTrang.value = getDisplayErrorMessage(
+        error,
+        "Không thể tải ảnh nhân viên",
+      );
     } finally {
       dangUpload.value = false;
     }
@@ -719,5 +781,63 @@ export function useChiTietNhanVien() {
     dungQuet();
   });
 
-  return { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, thongBaoQrOk, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu };
+  return {
+    nextTick,
+    onMounted,
+    onUnmounted,
+    ref,
+    watch,
+    useRoute,
+    useRouter,
+    ArrowLeft,
+    Camera,
+    Save,
+    ScanLine,
+    X,
+    dangQuet,
+    loiCamera,
+    videoRef,
+    dangQuetFile,
+    thongBaoQrOk,
+    zxingReader,
+    daXuLyQr,
+    batDauQuet,
+    xuLyKetQuaQr,
+    isVneIdSecureQr,
+    formatNgaySinh,
+    syncCurrentAdminCccd,
+    dungQuet,
+    route,
+    router,
+    id,
+    laMoi,
+    dangTai,
+    dangLuu,
+    dangUpload,
+    loiTrang,
+    nhanVien,
+    fileInputAvatar,
+    matKhauMoi,
+    showDoiMatKhau,
+    loiForm,
+    form,
+    dsVaiTro,
+    dsQuanHuyenTheoTinh,
+    dsTinhThanh,
+    dsXaPhuongTheoQuan,
+    dsQuanHuyen,
+    dsXaPhuong,
+    layLabel,
+    gopDiaChi,
+    apDungMaDiaChiDaQuet,
+    taiChiTiet,
+    luu,
+    doiMatKhau,
+    doiTrangThai,
+    xoaNhanVienHienTai,
+    xuLyUploadAnh,
+    laChinhMinh,
+    ngaySinhToiDa,
+    ngaySinhToiThieu,
+  };
 }

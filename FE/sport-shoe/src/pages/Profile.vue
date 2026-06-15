@@ -1,7 +1,22 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Save, User, Mail, Phone, Calendar, Lock, Pencil, Plus, Trash2, ShieldCheck, Landmark, MapPin, CheckCircle2, X } from "lucide-vue-next";
+import {
+  Save,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Lock,
+  Pencil,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  Landmark,
+  MapPin,
+  CheckCircle2,
+  X,
+} from "lucide-vue-next";
 import { layKhachId } from "../services/gio-hang";
 import {
   layProfileKhachHang,
@@ -16,7 +31,7 @@ import {
   themTaiKhoanNganHang,
   capNhatTaiKhoanNganHang,
   xoaTaiKhoanNganHang,
-  datMacDinhTaiKhoanNganHang
+  datMacDinhTaiKhoanNganHang,
 } from "../services/client-profile";
 import { getDisplayErrorMessage, getFieldErrors } from "../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../utils/alert";
@@ -42,26 +57,26 @@ const form = ref({
   email: "",
   sdt: "",
   gioiTinh: 1, // 0 = Nữ, 1 = Nam, 2 = Khác
-  ngaySinh: ""
+  ngaySinh: "",
 });
 
 const loiForm = ref({
   hoTen: "",
   email: "",
-  sdt: ""
+  sdt: "",
 });
 
 // Address book state
-const dsDiaChi = ref<any[]>([]);
+const dsDiaChi = ref([]);
 const dangTaiDiaChi = ref(false);
 const dangLuuDiaChi = ref(false);
 const hienFormDiaChi = ref(false);
-const diaChiDangSua = ref<any>(null);
-const dsTinh = ref<any[]>([]);
-const dsHuyen = ref<any[]>([]);
-const dsXa = ref<any[]>([]);
-const maTinhChon = ref<number | null>(null);
-const maHuyenChon = ref<number | null>(null);
+const diaChiDangSua = ref(null);
+const dsTinh = ref([]);
+const dsHuyen = ref([]);
+const dsXa = ref([]);
+const maTinhChon = ref(null);
+const maHuyenChon = ref(null);
 const formDiaChi = ref({
   hoTen: "",
   sdt: "",
@@ -69,7 +84,7 @@ const formDiaChi = ref({
   quanHuyen: "",
   phuongXa: "",
   diaChiCuThe: "",
-  laMacDinh: false
+  laMacDinh: false,
 });
 const loiDiaChi = ref({
   hoTen: "",
@@ -77,7 +92,7 @@ const loiDiaChi = ref({
   tinhThanh: "",
   quanHuyen: "",
   phuongXa: "",
-  diaChiCuThe: ""
+  diaChiCuThe: "",
 });
 
 // Password State
@@ -87,13 +102,13 @@ const matKhauMoi = ref("");
 const loiMatKhau = ref("");
 
 // Bank Accounts State
-const dsTaiKhoan = ref<any[]>([]);
-const dsNganHang = ref<any[]>([]);
+const dsTaiKhoan = ref([]);
+const dsNganHang = ref([]);
 const loadingNganHang = ref(false);
 
 // Add Bank Modal State
 const showModalNganHang = ref(false);
-const editBankId = ref<number | null>(null);
+const editBankId = ref(null);
 const searchNganHangText = ref("");
 const dropdownNganHangMo = ref(false);
 const bankForm = ref({
@@ -101,22 +116,23 @@ const bankForm = ref({
   soTaiKhoan: "",
   tenChuTaiKhoan: "",
   chiNhanh: "",
-  laMacDinh: false
+  laMacDinh: false,
 });
 
 const bankFormErrors = ref({
   tenNganHang: "",
   soTaiKhoan: "",
-  tenChuTaiKhoan: ""
+  tenChuTaiKhoan: "",
 });
 
 const filteredBanks = computed(() => {
   const q = searchNganHangText.value.toLowerCase().trim();
   if (!q) return dsNganHang.value;
-  return dsNganHang.value.filter(bank => 
-    bank.shortName.toLowerCase().includes(q) || 
-    bank.name.toLowerCase().includes(q) ||
-    bank.code.toLowerCase().includes(q)
+  return dsNganHang.value.filter(
+    (bank) =>
+      bank.shortName.toLowerCase().includes(q) ||
+      bank.name.toLowerCase().includes(q) ||
+      bank.code.toLowerCase().includes(q),
   );
 });
 
@@ -132,10 +148,13 @@ async function taiProfile() {
       email: data.email ?? "",
       sdt: data.sdt ?? "",
       gioiTinh: data.gioiTinh ?? 1,
-      ngaySinh: data.ngaySinh ?? ""
+      ngaySinh: data.ngaySinh ?? "",
     };
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải thông tin cá nhân");
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải thông tin cá nhân",
+    );
   } finally {
     dangTai.value = false;
   }
@@ -165,18 +184,21 @@ async function taiDanhSachTinh() {
   }
 }
 
-async function chonTinh(code: number | null) {
+async function chonTinh(code) {
   maTinhChon.value = code;
   maHuyenChon.value = null;
   dsHuyen.value = [];
   dsXa.value = [];
-  formDiaChi.value.tinhThanh = dsTinh.value.find((item) => item.code === code)?.name ?? "";
+  formDiaChi.value.tinhThanh =
+    dsTinh.value.find((item) => item.code === code)?.name ?? "";
   formDiaChi.value.quanHuyen = "";
   formDiaChi.value.phuongXa = "";
   if (!code) return;
 
   try {
-    const response = await fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`);
+    const response = await fetch(
+      `https://provinces.open-api.vn/api/p/${code}?depth=2`,
+    );
     const data = await response.json();
     dsHuyen.value = data.districts ?? [];
   } catch {
@@ -185,15 +207,18 @@ async function chonTinh(code: number | null) {
   }
 }
 
-async function chonHuyen(code: number | null) {
+async function chonHuyen(code) {
   maHuyenChon.value = code;
   dsXa.value = [];
-  formDiaChi.value.quanHuyen = dsHuyen.value.find((item) => item.code === code)?.name ?? "";
+  formDiaChi.value.quanHuyen =
+    dsHuyen.value.find((item) => item.code === code)?.name ?? "";
   formDiaChi.value.phuongXa = "";
   if (!code) return;
 
   try {
-    const response = await fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`);
+    const response = await fetch(
+      `https://provinces.open-api.vn/api/d/${code}?depth=2`,
+    );
     const data = await response.json();
     dsXa.value = data.wards ?? [];
   } catch {
@@ -202,13 +227,15 @@ async function chonHuyen(code: number | null) {
   }
 }
 
-async function dienDanhSachDiaPhuong(diaChi: any) {
+async function dienDanhSachDiaPhuong(diaChi) {
   await taiDanhSachTinh();
   const tinh = dsTinh.value.find((item) => item.name === diaChi.tinhThanh);
   if (!tinh) return;
 
   maTinhChon.value = tinh.code;
-  const tinhResponse = await fetch(`https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`);
+  const tinhResponse = await fetch(
+    `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`,
+  );
   const tinhData = await tinhResponse.json();
   dsHuyen.value = tinhData.districts ?? [];
 
@@ -216,7 +243,9 @@ async function dienDanhSachDiaPhuong(diaChi: any) {
   if (!huyen) return;
 
   maHuyenChon.value = huyen.code;
-  const huyenResponse = await fetch(`https://provinces.open-api.vn/api/d/${huyen.code}?depth=2`);
+  const huyenResponse = await fetch(
+    `https://provinces.open-api.vn/api/d/${huyen.code}?depth=2`,
+  );
   const huyenData = await huyenResponse.json();
   dsXa.value = huyenData.wards ?? [];
 }
@@ -228,7 +257,7 @@ function resetLoiDiaChi() {
     tinhThanh: "",
     quanHuyen: "",
     phuongXa: "",
-    diaChiCuThe: ""
+    diaChiCuThe: "",
   };
 }
 
@@ -241,7 +270,7 @@ async function moThemDiaChi() {
     quanHuyen: "",
     phuongXa: "",
     diaChiCuThe: "",
-    laMacDinh: dsDiaChi.value.length === 0
+    laMacDinh: dsDiaChi.value.length === 0,
   };
   resetLoiDiaChi();
   maTinhChon.value = null;
@@ -252,7 +281,7 @@ async function moThemDiaChi() {
   await taiDanhSachTinh();
 }
 
-async function moSuaDiaChi(diaChi: any) {
+async function moSuaDiaChi(diaChi) {
   diaChiDangSua.value = diaChi;
   formDiaChi.value = {
     hoTen: diaChi.hoTen ?? "",
@@ -261,7 +290,7 @@ async function moSuaDiaChi(diaChi: any) {
     quanHuyen: diaChi.quanHuyen ?? "",
     phuongXa: diaChi.phuongXa ?? "",
     diaChiCuThe: diaChi.diaChiCuThe ?? "",
-    laMacDinh: Boolean(diaChi.laMacDinh)
+    laMacDinh: Boolean(diaChi.laMacDinh),
   };
   resetLoiDiaChi();
   hienFormDiaChi.value = true;
@@ -318,7 +347,7 @@ function taoPayloadDiaChi() {
     quanHuyen: formDiaChi.value.quanHuyen,
     phuongXa: formDiaChi.value.phuongXa,
     diaChiCuThe: formDiaChi.value.diaChiCuThe.trim(),
-    laMacDinh: Boolean(formDiaChi.value.laMacDinh)
+    laMacDinh: Boolean(formDiaChi.value.laMacDinh),
   };
 }
 
@@ -327,7 +356,11 @@ async function luuDiaChi() {
   dangLuuDiaChi.value = true;
   try {
     if (diaChiDangSua.value) {
-      await capNhatDiaChiProfile(khachHangId, diaChiDangSua.value.id, taoPayloadDiaChi());
+      await capNhatDiaChiProfile(
+        khachHangId,
+        diaChiDangSua.value.id,
+        taoPayloadDiaChi(),
+      );
       showSuccess("Cập nhật địa chỉ thành công.", "Thành công");
     } else {
       await themDiaChiProfile(khachHangId, taoPayloadDiaChi());
@@ -343,12 +376,12 @@ async function luuDiaChi() {
   }
 }
 
-async function xoaDiaChi(diaChiId: number) {
+async function xoaDiaChi(diaChiId) {
   if (!khachHangId) return;
   const confirmed = await showConfirm(
     "Bạn có chắc chắn muốn xóa địa chỉ này?",
     "Xóa địa chỉ",
-    "Xóa"
+    "Xóa",
   );
   if (!confirmed) return;
 
@@ -361,7 +394,7 @@ async function xoaDiaChi(diaChiId: number) {
   }
 }
 
-async function datDiaChiMacDinh(diaChiId: number) {
+async function datDiaChiMacDinh(diaChiId) {
   if (!khachHangId) return;
   try {
     await datMacDinhDiaChiProfile(khachHangId, diaChiId);
@@ -418,7 +451,7 @@ async function luuProfile() {
       email: form.value.email.trim(),
       sdt: form.value.sdt.trim() || undefined,
       gioiTinh: Number(form.value.gioiTinh),
-      ngaySinh: form.value.ngaySinh || undefined
+      ngaySinh: form.value.ngaySinh || undefined,
     });
 
     // Cập nhật lại session storage cho khách hàng
@@ -431,7 +464,9 @@ async function luuProfile() {
     showSuccess("Cập nhật thông tin thành công.", "Thành công");
   } catch (error) {
     Object.assign(loiForm.value, getFieldErrors(error));
-    showError(getDisplayErrorMessage(error, "Không thể cập nhật thông tin cá nhân"));
+    showError(
+      getDisplayErrorMessage(error, "Không thể cập nhật thông tin cá nhân"),
+    );
   } finally {
     dangLuu.value = false;
   }
@@ -454,7 +489,7 @@ async function handleDoiMatKhau() {
   try {
     await doiMatKhauProfileKhachHang(khachHangId, {
       matKhauCu: matKhauCu.value,
-      matKhauMoi: matKhauMoi.value
+      matKhauMoi: matKhauMoi.value,
     });
     showSuccess("Đổi mật khẩu thành công.", "Thành công");
     matKhauCu.value = "";
@@ -476,17 +511,17 @@ function moModalThemNganHang() {
     soTaiKhoan: "",
     tenChuTaiKhoan: form.value.hoTen.toUpperCase(),
     chiNhanh: "",
-    laMacDinh: dsTaiKhoan.value.length === 0
+    laMacDinh: dsTaiKhoan.value.length === 0,
   };
   bankFormErrors.value = {
     tenNganHang: "",
     soTaiKhoan: "",
-    tenChuTaiKhoan: ""
+    tenChuTaiKhoan: "",
   };
   showModalNganHang.value = true;
 }
 
-function moModalSuaNganHang(taiKhoan: any) {
+function moModalSuaNganHang(taiKhoan) {
   editBankId.value = taiKhoan.id;
   searchNganHangText.value = taiKhoan.tenNganHang;
   bankForm.value = {
@@ -504,7 +539,7 @@ function moModalSuaNganHang(taiKhoan: any) {
   showModalNganHang.value = true;
 }
 
-function selectBank(bank: any) {
+function selectBank(bank) {
   bankForm.value.tenNganHang = bank.shortName;
   searchNganHangText.value = `${bank.shortName} - ${bank.name}`;
   dropdownNganHangMo.value = false;
@@ -512,7 +547,11 @@ function selectBank(bank: any) {
 
 async function luuNganHang() {
   if (!khachHangId) return;
-  bankFormErrors.value = { tenNganHang: "", soTaiKhoan: "", tenChuTaiKhoan: "" };
+  bankFormErrors.value = {
+    tenNganHang: "",
+    soTaiKhoan: "",
+    tenChuTaiKhoan: "",
+  };
   let coLoi = false;
 
   if (!bankForm.value.tenNganHang) {
@@ -537,7 +576,7 @@ async function luuNganHang() {
       soTaiKhoan: bankForm.value.soTaiKhoan.trim(),
       tenChuTaiKhoan: bankForm.value.tenChuTaiKhoan.trim(),
       chiNhanh: bankForm.value.chiNhanh.trim() || undefined,
-      laMacDinh: bankForm.value.laMacDinh
+      laMacDinh: bankForm.value.laMacDinh,
     };
 
     if (editBankId.value) {
@@ -550,13 +589,15 @@ async function luuNganHang() {
     showModalNganHang.value = false;
     await taiDanhSachNganHang();
   } catch (error) {
-    showError(getDisplayErrorMessage(error, "Không thể lưu tài khoản ngân hàng"));
+    showError(
+      getDisplayErrorMessage(error, "Không thể lưu tài khoản ngân hàng"),
+    );
   } finally {
     dangLuuNganHang.value = false;
   }
 }
 
-async function handleXoaNganHang(id: number) {
+async function handleXoaNganHang(id) {
   if (!khachHangId) return;
   const confirmed = await showConfirm(
     "Bạn có chắc chắn muốn xóa liên kết tài khoản ngân hàng này?",
@@ -569,11 +610,13 @@ async function handleXoaNganHang(id: number) {
     showSuccess("Đã xóa tài khoản ngân hàng thành công.", "Thành công");
     await taiDanhSachNganHang();
   } catch (error) {
-    showError(getDisplayErrorMessage(error, "Không thể xóa tài khoản ngân hàng"));
+    showError(
+      getDisplayErrorMessage(error, "Không thể xóa tài khoản ngân hàng"),
+    );
   }
 }
 
-async function handleDatMacDinhNganHang(id: number) {
+async function handleDatMacDinhNganHang(id) {
   if (!khachHangId) return;
   try {
     await datMacDinhTaiKhoanNganHang(khachHangId, id);
@@ -584,11 +627,12 @@ async function handleDatMacDinhNganHang(id: number) {
   }
 }
 
-function layLogoNganHang(tenNganHang: string) {
+function layLogoNganHang(tenNganHang) {
   if (!tenNganHang || dsNganHang.value.length === 0) return null;
-  const bank = dsNganHang.value.find(b => 
-    b.shortName.toLowerCase() === tenNganHang.toLowerCase() ||
-    b.code.toLowerCase() === tenNganHang.toLowerCase()
+  const bank = dsNganHang.value.find(
+    (b) =>
+      b.shortName.toLowerCase() === tenNganHang.toLowerCase() ||
+      b.code.toLowerCase() === tenNganHang.toLowerCase(),
   );
   return bank ? bank.logo : null;
 }
@@ -605,18 +649,25 @@ onMounted(() => {
   <div class="invoice-flat mx-auto max-w-6xl px-4 py-8 space-y-6 pb-20">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
-      <router-link to="/" class="hover:text-primary transition">Trang chủ</router-link>
+      <router-link to="/" class="hover:text-primary transition"
+        >Trang chủ</router-link
+      >
       <span>/</span>
       <span class="text-slate-800">Tài khoản</span>
     </div>
 
     <!-- Layout: Header -->
-    <section class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6">
+    <section
+      class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6"
+    >
       <div>
         <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">
           Thông tin cá nhân
         </h1>
-        <p class="text-sm text-slate-500 mt-1">Cập nhật thông tin cá nhân, bảo mật và tài khoản ngân hàng liên kết thụ hưởng.</p>
+        <p class="text-sm text-slate-500 mt-1">
+          Cập nhật thông tin cá nhân, bảo mật và tài khoản ngân hàng liên kết
+          thụ hưởng.
+        </p>
       </div>
       <button
         v-if="tabHienTai === 'thongTin'"
@@ -629,7 +680,10 @@ onMounted(() => {
       </button>
     </section>
 
-    <div v-if="loiTrang" class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700">
+    <div
+      v-if="loiTrang"
+      class="rounded-2xl border border-rose-100 bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700"
+    >
       {{ loiTrang }}
     </div>
 
@@ -638,22 +692,38 @@ onMounted(() => {
       <!-- Left side: Navigation / User info card -->
       <div class="lg:col-span-1 space-y-6">
         <!-- Avatar card -->
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center">
-          <div class="h-28 w-28 overflow-hidden rounded-full border-4 border-slate-50 ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center">
+        <div
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center"
+        >
+          <div
+            class="h-28 w-28 overflow-hidden rounded-full border-4 border-slate-50 ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center"
+          >
             <img
-              :src="'https://ui-avatars.com/api/?name=' + encodeURIComponent(form.hoTen) + '&background=B82220&color=ffffff&size=256'"
+              :src="
+                'https://ui-avatars.com/api/?name=' +
+                encodeURIComponent(form.hoTen) +
+                '&background=B82220&color=ffffff&size=256'
+              "
               alt="Avatar"
               class="h-full w-full object-cover"
             />
           </div>
-          <h2 class="mt-4 text-lg font-bold text-slate-800 text-center">{{ form.hoTen }}</h2>
-          <p class="text-xs font-semibold text-slate-400">@{{ form.tenDangNhap }}</p>
+          <h2 class="mt-4 text-lg font-bold text-slate-800 text-center">
+            {{ form.hoTen }}
+          </h2>
+          <p class="text-xs font-semibold text-slate-400">
+            @{{ form.tenDangNhap }}
+          </p>
 
           <div class="w-full mt-6 space-y-2 border-t border-slate-100 pt-4">
             <button
               @click="tabHienTai = 'thongTin'"
               class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
-              :class="tabHienTai === 'thongTin' ? 'bg-rose-50 text-[#B82220]' : 'text-slate-600 hover:bg-slate-50'"
+              :class="
+                tabHienTai === 'thongTin'
+                  ? 'bg-rose-50 text-[#B82220]'
+                  : 'text-slate-600 hover:bg-slate-50'
+              "
             >
               <User class="h-4 w-4" />
               Thông tin cá nhân
@@ -661,7 +731,11 @@ onMounted(() => {
             <button
               @click="tabHienTai = 'nganHang'"
               class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
-              :class="tabHienTai === 'nganHang' ? 'bg-rose-50 text-[#B82220]' : 'text-slate-600 hover:bg-slate-50'"
+              :class="
+                tabHienTai === 'nganHang'
+                  ? 'bg-rose-50 text-[#B82220]'
+                  : 'text-slate-600 hover:bg-slate-50'
+              "
             >
               <Landmark class="h-4 w-4" />
               Tài khoản ngân hàng
@@ -670,15 +744,19 @@ onMounted(() => {
         </div>
 
         <!-- Security password change card -->
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4"
+        >
           <h3 class="flex items-center gap-2 text-sm font-bold text-slate-800">
             <Lock class="h-4 w-4 text-slate-400" />
             Bảo mật & Mật khẩu
           </h3>
-          
+
           <div v-if="showDoiMatKhau" class="space-y-3 pt-2">
             <div class="space-y-1">
-              <span class="text-[11px] font-bold text-slate-500 uppercase">Mật khẩu cũ</span>
+              <span class="text-[11px] font-bold text-slate-500 uppercase"
+                >Mật khẩu cũ</span
+              >
               <input
                 v-model="matKhauCu"
                 type="password"
@@ -687,7 +765,9 @@ onMounted(() => {
               />
             </div>
             <div class="space-y-1">
-              <span class="text-[11px] font-bold text-slate-500 uppercase">Mật khẩu mới</span>
+              <span class="text-[11px] font-bold text-slate-500 uppercase"
+                >Mật khẩu mới</span
+              >
               <input
                 v-model="matKhauMoi"
                 type="password"
@@ -695,10 +775,23 @@ onMounted(() => {
                 class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
               />
             </div>
-            <p v-if="loiMatKhau" class="text-xs text-rose-500 leading-tight">{{ loiMatKhau }}</p>
+            <p v-if="loiMatKhau" class="text-xs text-rose-500 leading-tight">
+              {{ loiMatKhau }}
+            </p>
             <div class="flex gap-2 pt-1">
-              <button @click="handleDoiMatKhau" :disabled="dangLuu" class="inline-flex items-center justify-center flex-1 h-9 rounded-xl bg-[#B82220] hover:bg-[#a11a19] text-white text-xs font-bold transition">Đổi mật khẩu</button>
-              <button @click="showDoiMatKhau = false" class="inline-flex items-center justify-center h-9 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">Hủy</button>
+              <button
+                @click="handleDoiMatKhau"
+                :disabled="dangLuu"
+                class="inline-flex items-center justify-center flex-1 h-9 rounded-xl bg-[#B82220] hover:bg-[#a11a19] text-white text-xs font-bold transition"
+              >
+                Đổi mật khẩu
+              </button>
+              <button
+                @click="showDoiMatKhau = false"
+                class="inline-flex items-center justify-center h-9 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-500 hover:bg-slate-50 transition"
+              >
+                Hủy
+              </button>
             </div>
           </div>
           <button
@@ -714,18 +807,28 @@ onMounted(() => {
       <!-- Right side: Content details -->
       <div class="lg:col-span-3 space-y-6">
         <!-- Tab 1: Profile Information form -->
-        <div v-if="tabHienTai === 'thongTin'" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6">
+        <div
+          v-if="tabHienTai === 'thongTin'"
+          class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6"
+        >
           <div>
             <h3 class="text-lg font-bold text-slate-800">Thông tin cơ bản</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Những thông tin này được dùng khi thực hiện giao dịch và đặt hàng tại shop.</p>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Những thông tin này được dùng khi thực hiện giao dịch và đặt hàng
+              tại shop.
+            </p>
           </div>
 
           <div class="grid gap-6 md:grid-cols-2">
             <!-- Fullname -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Họ và tên <span class="text-rose-500">*</span></label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Họ và tên <span class="text-rose-500">*</span></label
+              >
               <div class="relative">
-                <User class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <User
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.hoTen"
                   type="text"
@@ -733,14 +836,20 @@ onMounted(() => {
                   class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
                 />
               </div>
-              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">{{ loiForm.hoTen }}</p>
+              <p v-if="loiForm.hoTen" class="text-xs text-rose-500">
+                {{ loiForm.hoTen }}
+              </p>
             </div>
 
             <!-- Email -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Email <span class="text-rose-500">*</span></label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Email <span class="text-rose-500">*</span></label
+              >
               <div class="relative">
-                <Mail class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Mail
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.email"
                   type="email"
@@ -748,14 +857,20 @@ onMounted(() => {
                   class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
                 />
               </div>
-              <p v-if="loiForm.email" class="text-xs text-rose-500">{{ loiForm.email }}</p>
+              <p v-if="loiForm.email" class="text-xs text-rose-500">
+                {{ loiForm.email }}
+              </p>
             </div>
 
             <!-- Phone -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Số điện thoại</label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Số điện thoại</label
+              >
               <div class="relative">
-                <Phone class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Phone
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.sdt"
                   type="tel"
@@ -763,14 +878,20 @@ onMounted(() => {
                   class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
                 />
               </div>
-              <p v-if="loiForm.sdt" class="text-xs text-rose-500">{{ loiForm.sdt }}</p>
+              <p v-if="loiForm.sdt" class="text-xs text-rose-500">
+                {{ loiForm.sdt }}
+              </p>
             </div>
 
             <!-- Birthday -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Ngày sinh</label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Ngày sinh</label
+              >
               <div class="relative">
-                <Calendar class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Calendar
+                  class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   v-model="form.ngaySinh"
                   type="date"
@@ -781,18 +902,41 @@ onMounted(() => {
 
             <!-- Gender -->
             <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600">Giới tính</label>
+              <label class="text-[13px] font-bold text-slate-600"
+                >Giới tính</label
+              >
               <div class="flex gap-4 h-11 items-center">
-                <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600">
-                  <input v-model="form.gioiTinh" type="radio" :value="1" class="text-rose-500 focus:ring-rose-500" />
+                <label
+                  class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600"
+                >
+                  <input
+                    v-model="form.gioiTinh"
+                    type="radio"
+                    :value="1"
+                    class="text-rose-500 focus:ring-rose-500"
+                  />
                   Nam
                 </label>
-                <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600">
-                  <input v-model="form.gioiTinh" type="radio" :value="0" class="text-rose-500 focus:ring-rose-500" />
+                <label
+                  class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600"
+                >
+                  <input
+                    v-model="form.gioiTinh"
+                    type="radio"
+                    :value="0"
+                    class="text-rose-500 focus:ring-rose-500"
+                  />
                   Nữ
                 </label>
-                <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600">
-                  <input v-model="form.gioiTinh" type="radio" :value="2" class="text-rose-500 focus:ring-rose-500" />
+                <label
+                  class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600"
+                >
+                  <input
+                    v-model="form.gioiTinh"
+                    type="radio"
+                    :value="2"
+                    class="text-rose-500 focus:ring-rose-500"
+                  />
                   Khác
                 </label>
               </div>
@@ -800,15 +944,26 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="tabHienTai === 'thongTin'" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          v-if="tabHienTai === 'thongTin'"
+          class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6"
+        >
+          <div
+            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div class="flex items-center gap-3">
-              <div class="flex size-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-500">
+              <div
+                class="flex size-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-500"
+              >
                 <MapPin class="size-5" />
               </div>
               <div>
-                <h3 class="text-lg font-bold text-slate-800 text-balance">Sổ địa chỉ</h3>
-                <p class="mt-0.5 text-xs text-slate-400 text-pretty">Quản lý địa chỉ nhận hàng dùng khi đặt mua sản phẩm.</p>
+                <h3 class="text-lg font-bold text-slate-800 text-balance">
+                  Sổ địa chỉ
+                </h3>
+                <p class="mt-0.5 text-xs text-slate-400 text-pretty">
+                  Quản lý địa chỉ nhận hàng dùng khi đặt mua sản phẩm.
+                </p>
               </div>
             </div>
             <button
@@ -822,7 +977,10 @@ onMounted(() => {
             </button>
           </div>
 
-          <div v-if="hienFormDiaChi" class="space-y-5 border-t border-slate-100 pt-5">
+          <div
+            v-if="hienFormDiaChi"
+            class="space-y-5 border-t border-slate-100 pt-5"
+          >
             <div class="flex items-center justify-between">
               <h4 class="text-sm font-bold text-slate-700">
                 {{ diaChiDangSua ? "Cập nhật địa chỉ" : "Thêm địa chỉ mới" }}
@@ -839,81 +997,157 @@ onMounted(() => {
 
             <div class="grid gap-4 md:grid-cols-2">
               <label class="space-y-1.5">
-                <span class="text-[13px] font-bold text-slate-600">Họ tên người nhận <span class="text-rose-500">*</span></span>
+                <span class="text-[13px] font-bold text-slate-600"
+                  >Họ tên người nhận <span class="text-rose-500">*</span></span
+                >
                 <input
                   v-model="formDiaChi.hoTen"
                   type="text"
                   placeholder="Nhập họ tên người nhận"
-                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.hoTen ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                  :class="[
+                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
+                    loiDiaChi.hoTen
+                      ? 'border-rose-500'
+                      : 'border-slate-200 focus:border-rose-300',
+                  ]"
                 />
-                <p v-if="loiDiaChi.hoTen" class="text-xs text-rose-500">{{ loiDiaChi.hoTen }}</p>
+                <p v-if="loiDiaChi.hoTen" class="text-xs text-rose-500">
+                  {{ loiDiaChi.hoTen }}
+                </p>
               </label>
 
               <label class="space-y-1.5">
-                <span class="text-[13px] font-bold text-slate-600">Số điện thoại <span class="text-rose-500">*</span></span>
+                <span class="text-[13px] font-bold text-slate-600"
+                  >Số điện thoại <span class="text-rose-500">*</span></span
+                >
                 <input
                   v-model="formDiaChi.sdt"
                   type="tel"
                   placeholder="VD: 0901234567"
-                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.sdt ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                  :class="[
+                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
+                    loiDiaChi.sdt
+                      ? 'border-rose-500'
+                      : 'border-slate-200 focus:border-rose-300',
+                  ]"
                 />
-                <p v-if="loiDiaChi.sdt" class="text-xs text-rose-500">{{ loiDiaChi.sdt }}</p>
+                <p v-if="loiDiaChi.sdt" class="text-xs text-rose-500">
+                  {{ loiDiaChi.sdt }}
+                </p>
               </label>
 
               <label class="space-y-1.5">
-                <span class="text-[13px] font-bold text-slate-600">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
+                <span class="text-[13px] font-bold text-slate-600"
+                  >Tỉnh/Thành phố <span class="text-rose-500">*</span></span
+                >
                 <select
                   :value="maTinhChon ?? ''"
                   @change="chonTinh(Number(($event.target as HTMLSelectElement).value) || null)"
-                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.tinhThanh ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                  :class="[
+                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
+                    loiDiaChi.tinhThanh
+                      ? 'border-rose-500'
+                      : 'border-slate-200 focus:border-rose-300',
+                  ]"
                 >
                   <option value="">-- Chọn tỉnh/thành --</option>
-                  <option v-for="tinh in dsTinh" :key="tinh.code" :value="tinh.code">{{ tinh.name }}</option>
+                  <option
+                    v-for="tinh in dsTinh"
+                    :key="tinh.code"
+                    :value="tinh.code"
+                  >
+                    {{ tinh.name }}
+                  </option>
                 </select>
-                <p v-if="loiDiaChi.tinhThanh" class="text-xs text-rose-500">{{ loiDiaChi.tinhThanh }}</p>
+                <p v-if="loiDiaChi.tinhThanh" class="text-xs text-rose-500">
+                  {{ loiDiaChi.tinhThanh }}
+                </p>
               </label>
 
               <label class="space-y-1.5">
-                <span class="text-[13px] font-bold text-slate-600">Quận/Huyện <span class="text-rose-500">*</span></span>
+                <span class="text-[13px] font-bold text-slate-600"
+                  >Quận/Huyện <span class="text-rose-500">*</span></span
+                >
                 <select
                   :value="maHuyenChon ?? ''"
                   :disabled="!maTinhChon"
                   @change="chonHuyen(Number(($event.target as HTMLSelectElement).value) || null)"
-                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50', loiDiaChi.quanHuyen ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                  :class="[
+                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50',
+                    loiDiaChi.quanHuyen
+                      ? 'border-rose-500'
+                      : 'border-slate-200 focus:border-rose-300',
+                  ]"
                 >
                   <option value="">-- Chọn quận/huyện --</option>
-                  <option v-for="huyen in dsHuyen" :key="huyen.code" :value="huyen.code">{{ huyen.name }}</option>
+                  <option
+                    v-for="huyen in dsHuyen"
+                    :key="huyen.code"
+                    :value="huyen.code"
+                  >
+                    {{ huyen.name }}
+                  </option>
                 </select>
-                <p v-if="loiDiaChi.quanHuyen" class="text-xs text-rose-500">{{ loiDiaChi.quanHuyen }}</p>
+                <p v-if="loiDiaChi.quanHuyen" class="text-xs text-rose-500">
+                  {{ loiDiaChi.quanHuyen }}
+                </p>
               </label>
 
               <label class="space-y-1.5">
-                <span class="text-[13px] font-bold text-slate-600">Phường/Xã <span class="text-rose-500">*</span></span>
+                <span class="text-[13px] font-bold text-slate-600"
+                  >Phường/Xã <span class="text-rose-500">*</span></span
+                >
                 <select
                   v-model="formDiaChi.phuongXa"
                   :disabled="!maHuyenChon"
-                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50', loiDiaChi.phuongXa ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                  :class="[
+                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50',
+                    loiDiaChi.phuongXa
+                      ? 'border-rose-500'
+                      : 'border-slate-200 focus:border-rose-300',
+                  ]"
                 >
                   <option value="">-- Chọn phường/xã --</option>
-                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">{{ xa.name }}</option>
+                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">
+                    {{ xa.name }}
+                  </option>
                 </select>
-                <p v-if="loiDiaChi.phuongXa" class="text-xs text-rose-500">{{ loiDiaChi.phuongXa }}</p>
+                <p v-if="loiDiaChi.phuongXa" class="text-xs text-rose-500">
+                  {{ loiDiaChi.phuongXa }}
+                </p>
               </label>
 
               <label class="space-y-1.5 md:col-span-2">
-                <span class="text-[13px] font-bold text-slate-600">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
+                <span class="text-[13px] font-bold text-slate-600"
+                  >Địa chỉ cụ thể <span class="text-rose-500">*</span></span
+                >
                 <input
                   v-model="formDiaChi.diaChiCuThe"
                   type="text"
                   placeholder="Số nhà, tên đường..."
-                  :class="['h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white', loiDiaChi.diaChiCuThe ? 'border-rose-500' : 'border-slate-200 focus:border-rose-300']"
+                  :class="[
+                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
+                    loiDiaChi.diaChiCuThe
+                      ? 'border-rose-500'
+                      : 'border-slate-200 focus:border-rose-300',
+                  ]"
                 />
-                <p v-if="loiDiaChi.diaChiCuThe" class="text-xs text-rose-500">{{ loiDiaChi.diaChiCuThe }}</p>
+                <p v-if="loiDiaChi.diaChiCuThe" class="text-xs text-rose-500">
+                  {{ loiDiaChi.diaChiCuThe }}
+                </p>
               </label>
 
-              <label class="flex cursor-pointer items-center gap-2 md:col-span-2">
-                <input v-model="formDiaChi.laMacDinh" type="checkbox" class="size-4 rounded border-slate-300 text-[#B82220] focus:ring-[#B82220]" />
-                <span class="text-sm font-semibold text-slate-600">Đặt làm địa chỉ mặc định</span>
+              <label
+                class="flex cursor-pointer items-center gap-2 md:col-span-2"
+              >
+                <input
+                  v-model="formDiaChi.laMacDinh"
+                  type="checkbox"
+                  class="size-4 rounded border-slate-300 text-[#B82220] focus:ring-[#B82220]"
+                />
+                <span class="text-sm font-semibold text-slate-600"
+                  >Đặt làm địa chỉ mặc định</span
+                >
               </label>
             </div>
 
@@ -938,16 +1172,34 @@ onMounted(() => {
           </div>
 
           <div v-else class="border-t border-slate-100 pt-5">
-            <div v-if="dangTaiDiaChi" class="py-8 text-center text-sm text-slate-400">Đang tải địa chỉ...</div>
-            <div v-else-if="!dsDiaChi.length" class="flex flex-col items-center justify-center gap-3 py-10 text-center">
-              <div class="flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <div
+              v-if="dangTaiDiaChi"
+              class="py-8 text-center text-sm text-slate-400"
+            >
+              Đang tải địa chỉ...
+            </div>
+            <div
+              v-else-if="!dsDiaChi.length"
+              class="flex flex-col items-center justify-center gap-3 py-10 text-center"
+            >
+              <div
+                class="flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400"
+              >
                 <MapPin class="size-5" />
               </div>
               <div>
-                <p class="text-sm font-bold text-slate-700">Bạn chưa có địa chỉ nhận hàng</p>
-                <p class="mt-1 text-xs text-slate-400">Thêm địa chỉ để đặt hàng nhanh hơn.</p>
+                <p class="text-sm font-bold text-slate-700">
+                  Bạn chưa có địa chỉ nhận hàng
+                </p>
+                <p class="mt-1 text-xs text-slate-400">
+                  Thêm địa chỉ để đặt hàng nhanh hơn.
+                </p>
               </div>
-              <button type="button" @click="moThemDiaChi" class="text-sm font-bold text-[#B82220] hover:underline">
+              <button
+                type="button"
+                @click="moThemDiaChi"
+                class="text-sm font-bold text-[#B82220] hover:underline"
+              >
                 Thêm địa chỉ đầu tiên
               </button>
             </div>
@@ -962,7 +1214,9 @@ onMounted(() => {
                   <div class="flex items-start justify-between gap-3">
                     <div>
                       <p class="font-bold text-slate-800">{{ diaChi.hoTen }}</p>
-                      <p class="mt-1 text-sm tabular-nums text-slate-500">{{ diaChi.sdt }}</p>
+                      <p class="mt-1 text-sm tabular-nums text-slate-500">
+                        {{ diaChi.sdt }}
+                      </p>
                     </div>
                     <span
                       v-if="diaChi.laMacDinh"
@@ -973,11 +1227,14 @@ onMounted(() => {
                     </span>
                   </div>
                   <p class="mt-4 text-sm leading-6 text-slate-600">
-                    {{ diaChi.diaChiCuThe }}, {{ diaChi.phuongXa }}, {{ diaChi.quanHuyen }}, {{ diaChi.tinhThanh }}
+                    {{ diaChi.diaChiCuThe }}, {{ diaChi.phuongXa }},
+                    {{ diaChi.quanHuyen }}, {{ diaChi.tinhThanh }}
                   </p>
                 </div>
 
-                <div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                <div
+                  class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4"
+                >
                   <button
                     v-if="!diaChi.laMacDinh"
                     type="button"
@@ -986,7 +1243,9 @@ onMounted(() => {
                   >
                     Đặt làm mặc định
                   </button>
-                  <span v-else class="text-xs font-semibold text-emerald-600">Địa chỉ đang sử dụng</span>
+                  <span v-else class="text-xs font-semibold text-emerald-600"
+                    >Địa chỉ đang sử dụng</span
+                  >
 
                   <div class="flex items-center gap-2">
                     <button
@@ -1013,11 +1272,19 @@ onMounted(() => {
         </div>
 
         <!-- Tab 2: Bank accounts list -->
-        <div v-else class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6">
+        <div
+          v-else
+          class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm space-y-6"
+        >
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="text-lg font-bold text-slate-800">Tài khoản ngân hàng liên kết</h3>
-              <p class="text-xs text-slate-400 mt-0.5">Lưu danh sách tài khoản ngân hàng để nhận tiền hoàn trả khi hủy đơn / hoàn hàng nhanh chóng.</p>
+              <h3 class="text-lg font-bold text-slate-800">
+                Tài khoản ngân hàng liên kết
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Lưu danh sách tài khoản ngân hàng để nhận tiền hoàn trả khi hủy
+                đơn / hoàn hàng nhanh chóng.
+              </p>
             </div>
             <button
               @click="moModalThemNganHang"
@@ -1038,41 +1305,71 @@ onMounted(() => {
               <div class="space-y-4">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <img 
-                      v-if="layLogoNganHang(tk.tenNganHang)" 
-                      :src="layLogoNganHang(tk.tenNganHang)" 
-                      :alt="tk.tenNganHang" 
-                      class="h-8 w-auto max-h-8 object-contain bg-white px-2 py-0.5 rounded-lg border border-slate-200" 
+                    <img
+                      v-if="layLogoNganHang(tk.tenNganHang)"
+                      :src="layLogoNganHang(tk.tenNganHang)"
+                      :alt="tk.tenNganHang"
+                      class="h-8 w-auto max-h-8 object-contain bg-white px-2 py-0.5 rounded-lg border border-slate-200"
                     />
-                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white font-bold text-xs uppercase">
+                    <span
+                      v-else
+                      class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white font-bold text-xs uppercase"
+                    >
                       {{ tk.tenNganHang.slice(0, 2) }}
                     </span>
-                    <h4 class="font-bold text-slate-800">{{ tk.tenNganHang }}</h4>
+                    <h4 class="font-bold text-slate-800">
+                      {{ tk.tenNganHang }}
+                    </h4>
                   </div>
-                  <span v-if="tk.laMacDinh" class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600 border border-emerald-100">
+                  <span
+                    v-if="tk.laMacDinh"
+                    class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600 border border-emerald-100"
+                  >
                     <ShieldCheck class="h-3 w-3" />
                     Mặc định
                   </span>
                 </div>
 
                 <div class="space-y-1">
-                  <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Số tài khoản</p>
-                  <p class="text-base font-extrabold text-slate-800 tracking-wide">{{ tk.soTaiKhoan }}</p>
+                  <p
+                    class="text-[11px] font-bold text-slate-400 uppercase tracking-wider"
+                  >
+                    Số tài khoản
+                  </p>
+                  <p
+                    class="text-base font-extrabold text-slate-800 tracking-wide"
+                  >
+                    {{ tk.soTaiKhoan }}
+                  </p>
                 </div>
 
                 <div class="space-y-1">
-                  <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Chủ tài khoản</p>
-                  <p class="text-xs font-bold text-slate-700 uppercase">{{ tk.tenChuTaiKhoan }}</p>
+                  <p
+                    class="text-[11px] font-bold text-slate-400 uppercase tracking-wider"
+                  >
+                    Chủ tài khoản
+                  </p>
+                  <p class="text-xs font-bold text-slate-700 uppercase">
+                    {{ tk.tenChuTaiKhoan }}
+                  </p>
                 </div>
 
                 <div v-if="tk.chiNhanh" class="space-y-1">
-                  <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Chi nhánh</p>
-                  <p class="text-xs font-medium text-slate-500">{{ tk.chiNhanh }}</p>
+                  <p
+                    class="text-[11px] font-bold text-slate-400 uppercase tracking-wider"
+                  >
+                    Chi nhánh
+                  </p>
+                  <p class="text-xs font-medium text-slate-500">
+                    {{ tk.chiNhanh }}
+                  </p>
                 </div>
               </div>
 
               <!-- Actions -->
-              <div class="mt-6 pt-4 border-t border-slate-200/60 flex items-center justify-between">
+              <div
+                class="mt-6 pt-4 border-t border-slate-200/60 flex items-center justify-between"
+              >
                 <button
                   v-if="!tk.laMacDinh"
                   @click="handleDatMacDinhNganHang(tk.id)"
@@ -1080,8 +1377,10 @@ onMounted(() => {
                 >
                   Đặt làm mặc định
                 </button>
-                <div v-else class="text-xs font-bold text-emerald-600">Đang chọn nhận tiền</div>
-                
+                <div v-else class="text-xs font-bold text-emerald-600">
+                  Đang chọn nhận tiền
+                </div>
+
                 <div class="flex items-center gap-3">
                   <button
                     @click="moModalSuaNganHang(tk)"
@@ -1102,36 +1401,65 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-else class="flex flex-col items-center justify-center py-12 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50">
+          <div
+            v-else
+            class="flex flex-col items-center justify-center py-12 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50"
+          >
             <Landmark class="h-10 w-10 text-slate-400 mb-3" />
-            <p class="text-sm font-bold text-slate-700">Chưa có tài khoản ngân hàng nào</p>
-            <p class="text-xs text-slate-400 mt-1">Vui lòng liên kết tài khoản ngân hàng của bạn để nhận tiền hoàn trả.</p>
+            <p class="text-sm font-bold text-slate-700">
+              Chưa có tài khoản ngân hàng nào
+            </p>
+            <p class="text-xs text-slate-400 mt-1">
+              Vui lòng liên kết tài khoản ngân hàng của bạn để nhận tiền hoàn
+              trả.
+            </p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Modal: Add Bank Account -->
-    <div v-if="showModalNganHang" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div class="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-2xl relative space-y-6">
+    <div
+      v-if="showModalNganHang"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+    >
+      <div
+        class="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-2xl relative space-y-6"
+      >
         <button
           @click="showModalNganHang = false"
           class="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 transition"
         >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
         </button>
 
         <div>
           <h3 class="text-lg font-bold text-slate-800">
-            {{ editBankId ? "Cập nhật tài khoản ngân hàng" : "Thêm tài khoản ngân hàng" }}
+            {{
+              editBankId
+                ? "Cập nhật tài khoản ngân hàng"
+                : "Thêm tài khoản ngân hàng"
+            }}
           </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Vui lòng điền đúng thông tin số tài khoản và ngân hàng của bạn.</p>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Vui lòng điền đúng thông tin số tài khoản và ngân hàng của bạn.
+          </p>
         </div>
 
         <div class="space-y-4">
           <!-- Searchable Bank Select -->
           <div class="space-y-1.5 relative">
-            <label class="text-[13px] font-bold text-slate-600">Ngân hàng <span class="text-rose-500">*</span></label>
+            <label class="text-[13px] font-bold text-slate-600"
+              >Ngân hàng <span class="text-rose-500">*</span></label
+            >
             <input
               v-model="searchNganHangText"
               type="text"
@@ -1139,54 +1467,95 @@ onMounted(() => {
               @focus="dropdownNganHangMo = true"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
             />
-            <p v-if="bankFormErrors.tenNganHang" class="text-xs text-rose-500 mt-0.5">{{ bankFormErrors.tenNganHang }}</p>
+            <p
+              v-if="bankFormErrors.tenNganHang"
+              class="text-xs text-rose-500 mt-0.5"
+            >
+              {{ bankFormErrors.tenNganHang }}
+            </p>
 
             <!-- Search Dropdown List -->
-            <div v-if="dropdownNganHangMo" class="absolute left-0 right-0 z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-xl py-2">
-              <div v-if="filteredBanks.length === 0" class="px-4 py-3 text-xs text-slate-400 text-center">Không tìm thấy ngân hàng hợp lệ</div>
+            <div
+              v-if="dropdownNganHangMo"
+              class="absolute left-0 right-0 z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-xl py-2"
+            >
+              <div
+                v-if="filteredBanks.length === 0"
+                class="px-4 py-3 text-xs text-slate-400 text-center"
+              >
+                Không tìm thấy ngân hàng hợp lệ
+              </div>
               <button
                 v-for="bank in filteredBanks"
                 :key="bank.id"
                 @click="selectBank(bank)"
                 class="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition text-left"
               >
-                <img :src="bank.logo" :alt="bank.shortName" class="h-5 w-auto object-contain shrink-0" />
+                <img
+                  :src="bank.logo"
+                  :alt="bank.shortName"
+                  class="h-5 w-auto object-contain shrink-0"
+                />
                 <div class="flex-1">
-                  <span class="text-sm font-bold text-slate-800">{{ bank.shortName }}</span>
-                  <span class="text-xs text-slate-400 block truncate">{{ bank.name }}</span>
+                  <span class="text-sm font-bold text-slate-800">{{
+                    bank.shortName
+                  }}</span>
+                  <span class="text-xs text-slate-400 block truncate">{{
+                    bank.name
+                  }}</span>
                 </div>
               </button>
             </div>
-            <div v-if="dropdownNganHangMo" @click="dropdownNganHangMo = false" class="fixed inset-0 z-30"></div>
+            <div
+              v-if="dropdownNganHangMo"
+              @click="dropdownNganHangMo = false"
+              class="fixed inset-0 z-30"
+            ></div>
           </div>
 
           <!-- Account Number -->
           <div class="space-y-1.5">
-            <label class="text-[13px] font-bold text-slate-600">Số tài khoản <span class="text-rose-500">*</span></label>
+            <label class="text-[13px] font-bold text-slate-600"
+              >Số tài khoản <span class="text-rose-500">*</span></label
+            >
             <input
               v-model="bankForm.soTaiKhoan"
               type="text"
               placeholder="Nhập số tài khoản ngân hàng"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
             />
-            <p v-if="bankFormErrors.soTaiKhoan" class="text-xs text-rose-500 mt-0.5">{{ bankFormErrors.soTaiKhoan }}</p>
+            <p
+              v-if="bankFormErrors.soTaiKhoan"
+              class="text-xs text-rose-500 mt-0.5"
+            >
+              {{ bankFormErrors.soTaiKhoan }}
+            </p>
           </div>
 
           <!-- Account Holder Name -->
           <div class="space-y-1.5">
-            <label class="text-[13px] font-bold text-slate-600">Tên chủ tài khoản <span class="text-rose-500">*</span></label>
+            <label class="text-[13px] font-bold text-slate-600"
+              >Tên chủ tài khoản <span class="text-rose-500">*</span></label
+            >
             <input
               v-model="bankForm.tenChuTaiKhoan"
               type="text"
               placeholder="Ví dụ: NGUYEN QUOC HUY"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white uppercase transition"
             />
-            <p v-if="bankFormErrors.tenChuTaiKhoan" class="text-xs text-rose-500 mt-0.5">{{ bankFormErrors.tenChuTaiKhoan }}</p>
+            <p
+              v-if="bankFormErrors.tenChuTaiKhoan"
+              class="text-xs text-rose-500 mt-0.5"
+            >
+              {{ bankFormErrors.tenChuTaiKhoan }}
+            </p>
           </div>
 
           <!-- Branch -->
           <div class="space-y-1.5">
-            <label class="text-[13px] font-bold text-slate-600">Chi nhánh (Không bắt buộc)</label>
+            <label class="text-[13px] font-bold text-slate-600"
+              >Chi nhánh (Không bắt buộc)</label
+            >
             <input
               v-model="bankForm.chiNhanh"
               type="text"
@@ -1197,8 +1566,14 @@ onMounted(() => {
 
           <!-- Set Default Checkbox -->
           <label class="flex items-center gap-2 cursor-pointer py-1">
-            <input v-model="bankForm.laMacDinh" type="checkbox" class="text-rose-500 focus:ring-rose-500 rounded" />
-            <span class="text-sm font-semibold text-slate-600">Đặt làm tài khoản mặc định để nhận tiền</span>
+            <input
+              v-model="bankForm.laMacDinh"
+              type="checkbox"
+              class="text-rose-500 focus:ring-rose-500 rounded"
+            />
+            <span class="text-sm font-semibold text-slate-600"
+              >Đặt làm tài khoản mặc định để nhận tiền</span
+            >
           </label>
         </div>
 
@@ -1208,7 +1583,13 @@ onMounted(() => {
             :disabled="dangLuuNganHang"
             class="flex-1 inline-flex items-center justify-center h-11 rounded-2xl bg-[#B82220] hover:bg-[#a11a19] text-white text-sm font-bold shadow-lg shadow-rose-100 transition duration-300"
           >
-            {{ dangLuuNganHang ? "Đang lưu..." : (editBankId ? "Lưu thay đổi" : "Thêm tài khoản") }}
+            {{
+              dangLuuNganHang
+                ? "Đang lưu..."
+                : editBankId
+                  ? "Lưu thay đổi"
+                  : "Thêm tài khoản"
+            }}
           </button>
           <button
             @click="showModalNganHang = false"
@@ -1227,10 +1608,12 @@ onMounted(() => {
 .invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
   border-radius: 6px !important;
 }
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>

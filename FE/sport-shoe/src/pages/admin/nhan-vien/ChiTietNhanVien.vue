@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup >
 import { useChiTietNhanVien } from "./useChiTietNhanVien";
 import { Lock, MapPin, User } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
