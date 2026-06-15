@@ -1042,7 +1042,7 @@ onMounted(() => {
                 >
                 <select
                   :value="maTinhChon ?? ''"
-                  @change="chonTinh(Number(($event.target as HTMLSelectElement).value) || null)"
+                  @change="chonTinh(Number(($event.target).value) || null)"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
                     loiDiaChi.tinhThanh
@@ -1071,7 +1071,7 @@ onMounted(() => {
                 <select
                   :value="maHuyenChon ?? ''"
                   :disabled="!maTinhChon"
-                  @change="chonHuyen(Number(($event.target as HTMLSelectElement).value) || null)"
+                  @change="chonHuyen(Number(($event.target).value) || null)"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50',
                     loiDiaChi.quanHuyen
@@ -1617,3 +1617,4 @@ onMounted(() => {
   opacity: 0;
 }
 </style>
+
