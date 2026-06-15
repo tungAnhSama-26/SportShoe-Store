@@ -2,7 +2,7 @@ import { createRequestError, sanitizeErrorMessage } from "../utils/error-message
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-  "http://localhost:8080/api/v1";
+  "http://3.27.152.29:8080/api/v1";
 
 const DEFAULT_FALLBACK =
   "Không thể hoàn tất thao tác này lúc này. Vui lòng thử lại.";
