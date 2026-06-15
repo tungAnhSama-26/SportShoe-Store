@@ -282,13 +282,13 @@ onBeforeUnmount(() => {
       <div
         v-for="item in thongKe"
         :key="item.label"
-        class="flex min-h-24 items-center justify-between rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm"
+        class="flex min-h-24 items-center justify-between rounded-[6px] border border-slate-100 bg-white px-5 py-4 shadow-sm"
       >
         <div>
           <p class="text-sm font-medium text-slate-500">{{ item.label }}</p>
           <p class="mt-1 text-2xl font-bold text-slate-800">{{ item.value }}</p>
         </div>
-        <div :class="['rounded-2xl p-3', item.className]">
+        <div :class="['rounded-[6px] p-3', item.className]">
           <PackageCheck class="h-5 w-5" />
         </div>
       </div>
@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-primary">
+          <div class="flex h-10 w-10 items-center justify-center rounded-[6px] bg-rose-50 text-primary">
             <Filter class="h-5 w-5" />
           </div>
           <div>
@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               v-model="boLoc.keyword"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               placeholder="Mã phiếu / mã hóa đơn / khách hàng..."
             />
           </div>
@@ -328,11 +328,11 @@ onBeforeUnmount(() => {
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(tuNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -356,11 +356,11 @@ onBeforeUnmount(() => {
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(denNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -392,7 +392,7 @@ onBeforeUnmount(() => {
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-primary">
+          <div class="flex h-10 w-10 items-center justify-center rounded-[6px] bg-rose-50 text-primary">
             <ClipboardCheck class="h-5 w-5" />
           </div>
           <div>
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
         </div>
       </template>
 
-      <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
+      <div v-if="loiTrang" class="mb-4 rounded-[6px] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
         {{ loiTrang }}
       </div>
 
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
           :key="item.value"
           type="button"
           @click="trangThaiDangChon = item.value"
-          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
+          class="inline-flex items-center whitespace-nowrap rounded-[6px] px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
           :class="trangThaiDangChon === item.value ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:scale-[1.02]'"
         >
           {{ item.label }}

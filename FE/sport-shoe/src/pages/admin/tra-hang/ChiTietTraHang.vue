@@ -468,7 +468,7 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <div v-if="[8, 9, 10].includes(trangThai)" class="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div v-if="[8, 9, 10].includes(trangThai)" class="rounded-[6px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {{ phieu.lyDoTuChoi || `Phiếu đang ở trạng thái ${phieu.tenTrangThai.toLowerCase()}.` }}
         </div>
         <div v-else class="relative mt-7 grid grid-cols-2 gap-4 px-2 pt-2 md:grid-cols-6">
@@ -635,7 +635,7 @@ onBeforeUnmount(() => {
                 :href="resolveHinhAnh(url)"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                class="group relative aspect-square overflow-hidden rounded-[6px] border border-slate-200 bg-slate-50"
                 :title="`Xem ảnh minh chứng ${index + 1}`"
               >
                 <img
@@ -651,7 +651,7 @@ onBeforeUnmount(() => {
 
             <div
               v-else
-              class="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400"
+              class="flex items-center gap-2 rounded-[6px] border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400"
             >
               <ImageIcon class="h-4 w-4" />
               Khách hàng chưa cung cấp hình ảnh minh chứng.
@@ -696,7 +696,7 @@ onBeforeUnmount(() => {
             </Button>
             <div
               v-if="![1, 2, 3, 4, 5, 6, 10].includes(trangThai)"
-              class="rounded-xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500"
+              class="rounded-[6px] bg-slate-50 px-4 py-5 text-center text-sm text-slate-500"
             >
               Phiếu đã kết thúc, không còn thao tác cần xử lý.
             </div>
@@ -780,7 +780,7 @@ onBeforeUnmount(() => {
                   class="absolute -left-[32px] top-4 h-2 w-2 rounded-full border-2 border-white bg-[#B82220] shadow-[0_0_0_2px_rgba(184,34,32,0.15)]"
                 ></div>
 
-                <div class="rounded-2xl border border-slate-50 bg-slate-50/50 p-4 transition-colors hover:bg-slate-100/50">
+                <div class="rounded-[6px] border border-slate-50 bg-slate-50/50 p-4 transition-colors hover:bg-slate-100/50">
                   <div class="text-[12px] font-medium text-slate-400">
                     {{ dinhDangNgay(item.ngayTao) }}
                   </div>
@@ -802,7 +802,7 @@ onBeforeUnmount(() => {
       class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm"
       @click.self="modal = ''"
     >
-      <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-rose-100 bg-white shadow-2xl">
+      <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[6px] border border-rose-100 bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
           <h3 class="text-lg font-bold text-slate-800">
             {{
@@ -825,7 +825,7 @@ onBeforeUnmount(() => {
             <div class="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                class="rounded-2xl border p-4 text-left transition"
+                class="rounded-[6px] border p-4 text-left transition"
                 :class="!formDuyet.nhanHangTrucTiep ? 'border-primary bg-rose-50' : 'border-slate-200'"
                 @click="formDuyet.nhanHangTrucTiep = false"
               >
@@ -835,7 +835,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 type="button"
-                class="rounded-2xl border p-4 text-left transition"
+                class="rounded-[6px] border p-4 text-left transition"
                 :class="formDuyet.nhanHangTrucTiep ? 'border-primary bg-rose-50' : 'border-slate-200'"
                 @click="formDuyet.nhanHangTrucTiep = true"
               >
@@ -847,7 +847,7 @@ onBeforeUnmount(() => {
             <textarea
               v-model="formDuyet.ghiChu"
               rows="3"
-              class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
+              class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
               placeholder="Ghi chú duyệt phiếu..."
             ></textarea>
             <Button
@@ -862,13 +862,13 @@ onBeforeUnmount(() => {
           <template v-else-if="modal === 'gui-hang'">
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Đơn vị vận chuyển</span>
-              <input v-model="formVanChuyen.donViVanChuyen" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="VD: GHN, GHTK..." />
+              <input v-model="formVanChuyen.donViVanChuyen" class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="VD: GHN, GHTK..." />
             </label>
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Mã vận đơn hoàn</span>
-              <input v-model="formVanChuyen.maVanDonHoan" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="Nhập mã vận đơn..." />
+              <input v-model="formVanChuyen.maVanDonHoan" class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="Nhập mã vận đơn..." />
             </label>
-            <textarea v-model="formVanChuyen.ghiChu" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Ghi chú..."></textarea>
+            <textarea v-model="formVanChuyen.ghiChu" rows="3" class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Ghi chú..."></textarea>
             <Button
               full-width
               :loading="dangXuLy"
@@ -882,7 +882,7 @@ onBeforeUnmount(() => {
             <div
               v-for="item in formKiemTra.sanPhams"
               :key="item.chiTietTraHangId"
-              class="rounded-2xl border border-slate-200 p-4"
+              class="rounded-[6px] border border-slate-200 p-4"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -897,14 +897,14 @@ onBeforeUnmount(() => {
               <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <label class="space-y-2">
                   <span class="text-xs font-semibold text-slate-500">Số lượng đã nhận</span>
-                  <input v-model.number="item.soLuongNhan" type="number" min="0" :max="item.soLuongTra" class="h-10 w-full rounded-xl border border-slate-200 px-3 outline-none focus:border-rose-300" />
+                  <input v-model.number="item.soLuongNhan" type="number" min="0" :max="item.soLuongTra" class="h-10 w-full rounded-[6px] border border-slate-200 px-3 outline-none focus:border-rose-300" />
                 </label>
                 <label class="space-y-2">
                   <span class="text-xs font-semibold text-slate-500">Số lượng chấp nhận</span>
-                  <input v-model.number="item.soLuongChapNhan" type="number" min="0" :max="item.soLuongNhan" class="h-10 w-full rounded-xl border border-slate-200 px-3 outline-none focus:border-rose-300" />
+                  <input v-model.number="item.soLuongChapNhan" type="number" min="0" :max="item.soLuongNhan" class="h-10 w-full rounded-[6px] border border-slate-200 px-3 outline-none focus:border-rose-300" />
                 </label>
               </div>
-              <input v-model="item.tinhTrangSanPham" class="mt-3 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-rose-300" placeholder="Tình trạng sản phẩm..." />
+              <input v-model="item.tinhTrangSanPham" class="mt-3 h-10 w-full rounded-[6px] border border-slate-200 px-3 text-sm outline-none focus:border-rose-300" placeholder="Tình trạng sản phẩm..." />
               
               <!-- Tải ảnh minh chứng trong bước kiểm tra -->
               <div class="mt-4 space-y-2">
@@ -915,7 +915,7 @@ onBeforeUnmount(() => {
                     type="button"
                     @click="clickTaiAnhKiemTra(item.chiTietTraHangId)"
                     :disabled="dangTaiAnhKiemTra"
-                    class="w-16 h-16 rounded-xl border border-dashed border-slate-300 hover:border-rose-400 bg-slate-50 flex flex-col items-center justify-center text-slate-400 hover:text-rose-500 transition group"
+                    class="w-16 h-16 rounded-[6px] border border-dashed border-slate-300 hover:border-rose-400 bg-slate-50 flex flex-col items-center justify-center text-slate-400 hover:text-rose-500 transition group"
                   >
                     <UploadCloud class="w-5 h-5 group-hover:scale-110 transition duration-300" />
                     <span class="text-[9px] font-semibold mt-1">{{ (dangTaiAnhKiemTra && dangUploadChoId === item.chiTietTraHangId) ? "..." : "Tải ảnh" }}</span>
@@ -925,7 +925,7 @@ onBeforeUnmount(() => {
                   <div
                     v-for="(url, idx) in item.hinhAnhs"
                     :key="idx"
-                    class="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 flex-shrink-0 group"
+                    class="relative w-16 h-16 rounded-[6px] border border-slate-200 overflow-hidden bg-slate-100 flex-shrink-0 group"
                   >
                     <img :src="resolveHinhAnh(url)" alt="Preview" class="w-full h-full object-cover" />
                     <button
@@ -940,7 +940,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             
-            <textarea v-model="formKiemTra.ghiChu" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Kết luận kiểm tra..."></textarea>
+            <textarea v-model="formKiemTra.ghiChu" rows="3" class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Kết luận kiểm tra..."></textarea>
             
             <input
               type="file"
@@ -950,6 +950,7 @@ onBeforeUnmount(() => {
               accept="image/*"
               @change="handleKiemTraFileUpload"
             />
+
 
             <Button
               full-width
@@ -964,7 +965,7 @@ onBeforeUnmount(() => {
           </template>
 
           <template v-else-if="modal === 'hoan-tien'">
-            <div class="rounded-2xl bg-rose-50 px-5 py-4">
+            <div class="rounded-[6px] bg-rose-50 px-5 py-4">
               <p class="text-sm text-rose-600 font-semibold">Số tiền cần hoàn</p>
               <p class="mt-1 text-2xl font-bold text-primary">{{ dinhDangTien(phieu.tongTienThucTe) }}</p>
             </div>
@@ -1015,7 +1016,7 @@ onBeforeUnmount(() => {
             </div>
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Hình thức hoàn tiền</span>
-              <select v-model.number="formHoanTien.hinhThucHoan" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300">
+              <select v-model.number="formHoanTien.hinhThucHoan" class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300">
                 <option :value="1">Tiền mặt</option>
                 <option :value="2">Chuyển khoản</option>
                 <option :value="3">Ví điện tử</option>
@@ -1028,20 +1029,20 @@ onBeforeUnmount(() => {
                 <span class="text-sm font-semibold text-slate-600">Tài khoản ngân hàng nhận tiền của khách</span>
                 <div v-if="dangTaiNganHangKhach" class="text-xs text-slate-400">Đang tải danh sách tài khoản...</div>
                 <select v-else-if="dsTaiKhoanNganHangKhach.length > 0" v-model="taiKhoanNganHangChon"
-                  class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-rose-300">
+                  class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-rose-300">
                   <option v-for="tk in dsTaiKhoanNganHangKhach" :key="tk.id" :value="tk">
                     {{ tk.tenNganHang }} - {{ tk.soTaiKhoan }} ({{ tk.tenChuTaiKhoan }}) {{ tk.laMacDinh ? '[Mặc định]' : '' }}
                   </option>
                 </select>
-                <div v-else class="rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-3 text-xs font-semibold text-rose-700">
+                <div v-else class="rounded-[6px] border border-rose-100 bg-rose-50/50 px-4 py-3 text-xs font-semibold text-rose-700">
                   Khách hàng chưa liên kết tài khoản ngân hàng nào.
                 </div>
               </div>
 
               <!-- VietQR Code Image -->
-              <div v-if="taiKhoanNganHangChon" class="flex flex-col items-center justify-center border border-slate-100 rounded-3xl p-5 bg-slate-50/80 gap-3">
+              <div v-if="taiKhoanNganHangChon" class="flex flex-col items-center justify-center border border-slate-100 rounded-[6px] p-5 bg-slate-50/80 gap-3">
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quét mã VietQR để chuyển tiền</span>
-                <div class="h-44 w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 flex items-center justify-center shadow-sm">
+                <div class="h-44 w-44 overflow-hidden rounded-[6px] border border-slate-200 bg-white p-2 flex items-center justify-center shadow-sm">
                   <img :src="qrHoanTienUrl" alt="VietQR Hoàn Tiền" class="h-full w-full object-contain" />
                 </div>
                 <div class="text-center space-y-0.5">
@@ -1052,9 +1053,9 @@ onBeforeUnmount(() => {
             </div>
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Mã giao dịch</span>
-              <input v-model="formHoanTien.maGiaoDich" class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="Để trống nếu hoàn tiền mặt" />
+              <input v-model="formHoanTien.maGiaoDich" class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" placeholder="Để trống nếu hoàn tiền mặt" />
             </label>
-            <textarea v-model="formHoanTien.ghiChu" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300"></textarea>
+            <textarea v-model="formHoanTien.ghiChu" rows="3" class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300"></textarea>
             <Button
               full-width
               :loading="dangXuLy"
@@ -1066,7 +1067,7 @@ onBeforeUnmount(() => {
           </template>
 
           <template v-else-if="modal === 'tu-choi'">
-            <textarea v-model="formTuChoi.lyDo" rows="5" class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Nhập lý do từ chối..."></textarea>
+            <textarea v-model="formTuChoi.lyDo" rows="5" class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-rose-300" placeholder="Nhập lý do từ chối..."></textarea>
             <Button
               variant="danger"
               full-width
