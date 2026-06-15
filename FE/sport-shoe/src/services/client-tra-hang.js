@@ -1,12 +1,9 @@
 import { apiRequest } from "./api-client";
-import { layKhachId } from "./gio-hang";
 
 export async function yeuCauTraHang(payload) {
-  const id = layKhachId();
-  if (!id) throw new Error("Vui lòng đăng nhập");
-  return apiRequest(`/client/tra-hang/yeu-cau?khachHangId=${id}`, {
+  return apiRequest("/client/tra-hang/yeu-cau", {
     method: "POST",
-    authenticated: false,
+    authScope: "customer",
     body: JSON.stringify(payload),
     fallbackMessage: "Không thể gửi yêu cầu trả hàng",
   });

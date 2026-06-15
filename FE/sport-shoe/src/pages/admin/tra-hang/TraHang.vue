@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   CalendarDays,
@@ -17,6 +17,7 @@ import Button from "../../../components/ui/Button.vue";
 import Card from "../../../components/ui/Card.vue";
 import Table from "../../../components/ui/Table.vue";
 import { layDanhSachTraHang } from "../../../services/tra-hang";
+import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { showError } from "../../../utils/alert";
@@ -254,7 +255,25 @@ function badgeVariant(trangThai) {
   return "default";
 }
 
-onMounted(taiDanhSach);
+let ngatKetNoiRealtime = null;
+let realtimeRefreshTimeout = null;
+
+onMounted(() => {
+  taiDanhSach();
+  ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+    authScope: "admin",
+    onHoaDonThayDoi: (event) => {
+      if (event?.loaiSuKien !== "TRA_HANG") return;
+      if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
+      realtimeRefreshTimeout = window.setTimeout(taiDanhSach, 150);
+    },
+  });
+});
+
+onBeforeUnmount(() => {
+  ngatKetNoiRealtime?.();
+  if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
+});
 </script>
 
 <template>

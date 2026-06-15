@@ -24,7 +24,16 @@ import {
 } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
-import { capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod } from "../../../services/hoa-don";
+import {
+  capNhatSanPhamHoaDon,
+  capNhatThongTinGiaoHang,
+  capNhatTrangThaiHoaDon,
+  layChiTietHoaDon,
+  tinhPhiVanChuyenGhn,
+  xacNhanHoanTien,
+  xacNhanThanhToanCod,
+} from "../../../services/hoa-don";
+import { layDanhSachDiaChi } from "../../../services/khach-hang";
 import { timSanPhamTaiQuay, type SanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
@@ -63,6 +72,9 @@ export function useChiTietHoaDon() {
   });
 
   const hienModalThongTin = ref(false);
+  const hienModalGiaoHang = ref(false);
+  const dangLuuGiaoHang = ref(false);
+  const diaChiDaLuu = ref<any[]>([]);
   const tabHienTai = ref("donHang");
   const formThongTin = ref({
     trangThai: "",
@@ -237,6 +249,7 @@ export function useChiTietHoaDon() {
   });
 
   const donDaKetThuc = computed(() => donDaHoanThanh.value || donDaHuy.value || donDangChoHoanTien.value);
+  const coTheSuaThongTinGiaoHang = computed(() => [1, 2, 3].includes(buocHienTai.value));
 
   function hienThiThongBao(loai: "success" | "warning" | "error", tieuDe: string, noiDung = "") {
     if (loai === "success") {
@@ -256,6 +269,45 @@ export function useChiTietHoaDon() {
       return;
     }
     hienModalThongTin.value = true;
+  }
+
+  async function moModalSuaDiaChi() {
+    if (!coTheSuaThongTinGiaoHang.value) {
+      showError("Chỉ có thể sửa thông tin giao hàng trước khi đơn bắt đầu giao.");
+      return;
+    }
+
+    diaChiDaLuu.value = [];
+    if (hoaDon.value?.khachHangId) {
+      try {
+        const data = await layDanhSachDiaChi(hoaDon.value.khachHangId);
+        diaChiDaLuu.value = Array.isArray(data) ? data : [];
+      } catch {
+        diaChiDaLuu.value = [];
+      }
+    }
+    hienModalGiaoHang.value = true;
+  }
+
+  async function handleLuuGiaoHang(payload: {
+    tenNguoiNhan: string;
+    sdtNguoiNhan: string;
+    diaChiGiaoHang: string;
+  }) {
+    if (!hoaDon.value || dangLuuGiaoHang.value) return;
+    dangLuuGiaoHang.value = true;
+    try {
+      hoaDon.value = await capNhatThongTinGiaoHang(hoaDon.value.id, payload);
+      formThongTin.value.tenKhachHang = hoaDon.value.tenKhachHang || "";
+      formThongTin.value.soDienThoai = hoaDon.value.soDienThoai || "";
+      formThongTin.value.diaChi = hoaDon.value.diaChi || "";
+      hienModalGiaoHang.value = false;
+      showSuccess("Thông tin nhận hàng đã được cập nhật.");
+    } catch (error) {
+      showError(getDisplayErrorMessage(error, "Không thể cập nhật thông tin nhận hàng"));
+    } finally {
+      dangLuuGiaoHang.value = false;
+    }
   }
 
   const tongTienHang = computed(() => hoaDon.value?.sanPham?.reduce((tong: number, sp: any) => tong + sp.thanhTien, 0) ?? 0);
@@ -513,7 +565,9 @@ export function useChiTietHoaDon() {
       hienThiThongBao(
         "success",
         trangThai === "Hủy" ? "Đã Xác Nhận Hủy" : "Đã Từ Chối Hủy",
-        trangThai === "Hủy" ? "Đơn hàng đã được chuyển sang trạng thái hủy." : "Đơn hàng đã quay lại trạng thái chờ xác nhận.",
+        trangThai === "Hủy"
+          ? "Đơn hàng đã được chuyển sang trạng thái hủy."
+          : "Đơn hàng đã quay lại trạng thái trước khi khách yêu cầu hủy.",
       );
     } catch (error) {
       hienThiThongBao("error", "Lỗi Xử Lý Yêu Cầu Hủy", getDisplayErrorMessage(error, "Không thể xử lý yêu cầu hủy đơn hàng."));
@@ -718,6 +772,22 @@ export function useChiTietHoaDon() {
     }
     dangCapNhat.value = true;
     try {
+      const thongTinGiaoHangThayDoi =
+        formThongTin.value.tenKhachHang.trim() !== String(hoaDon.value.tenKhachHang || "").trim()
+        || formThongTin.value.soDienThoai.trim() !== String(hoaDon.value.soDienThoai || "").trim()
+        || formThongTin.value.diaChi.trim() !== String(hoaDon.value.diaChi || "").trim();
+
+      if (thongTinGiaoHangThayDoi) {
+        if (!coTheSuaThongTinGiaoHang.value) {
+          throw new Error("Chỉ có thể sửa thông tin giao hàng trước khi đơn bắt đầu giao.");
+        }
+        hoaDon.value = await capNhatThongTinGiaoHang(hoaDon.value.id, {
+          tenNguoiNhan: formThongTin.value.tenKhachHang.trim(),
+          sdtNguoiNhan: formThongTin.value.soDienThoai.trim(),
+          diaChiGiaoHang: formThongTin.value.diaChi.trim(),
+        });
+      }
+
       if (formThongTin.value.trangThai !== hoaDon.value.trangThai) {
         hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
           trangThai: formThongTin.value.trangThai,
@@ -915,6 +985,6 @@ export function useChiTietHoaDon() {
     ngatKetNoiRealtime?.();
     if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
   });
-  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien, dsTaiKhoanNganHangKhach, dangTaiNganHangKhach, taiKhoanNganHangChon, qrHoanTienUrl };
+  return { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, hienModalGiaoHang, dangLuuGiaoHang, diaChiDaLuu, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocGiaoThatBai, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donGiaoThatBai, donDaHuy, donDaKetThuc, coTheSuaThongTinGiaoHang, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, moModalSuaDiaChi, handleLuuGiaoHang, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien, dsTaiKhoanNganHangKhach, dangTaiNganHangKhach, taiKhoanNganHangChon, qrHoanTienUrl };
 
 }

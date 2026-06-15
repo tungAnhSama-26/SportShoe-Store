@@ -518,25 +518,26 @@ SET
     END,
     mo_ta = ly_do,
     tong_tien_du_kien = tong_tien_hoan,
-    tong_tien_thuc_te = CASE WHEN ma IN (N'TH005', N'TH009') THEN tong_tien_hoan ELSE 0 END,
+    tong_tien_thuc_te = CASE WHEN ma IN (N'TH008', N'TH009') THEN tong_tien_hoan ELSE 0 END,
     trang_thai = CASE
         WHEN ma = N'TH001' THEN 1
         WHEN ma = N'TH002' THEN 2
         WHEN ma = N'TH003' THEN 3
         WHEN ma = N'TH004' THEN 4
-        WHEN ma = N'TH005' THEN 10
-        WHEN ma = N'TH006' THEN 7
+        WHEN ma = N'TH005' THEN 8
+        WHEN ma = N'TH006' THEN 9
         WHEN ma = N'TH007' THEN 1
         WHEN ma = N'TH008' THEN 6
-        WHEN ma = N'TH009' THEN 8
-        ELSE 2
+        WHEN ma = N'TH009' THEN 7
+        WHEN ma = N'TH010' THEN 5
+        ELSE 1
     END,
     ngay_duyet = CASE
         WHEN ma IN (N'TH002', N'TH003', N'TH004', N'TH005', N'TH006', N'TH008', N'TH009', N'TH010')
         THEN TODATETIMEOFFSET(DATEADD(MINUTE, 30, ngay_tao), '+07:00')
     END,
     ngay_hoan_tat = CASE
-        WHEN ma IN (N'TH005', N'TH009')
+        WHEN ma = N'TH009'
         THEN TODATETIMEOFFSET(ngay_cap_nhat, '+07:00')
     END;
 GO
@@ -544,23 +545,23 @@ GO
 UPDATE phieu_tra_hang_chi_tiet
 SET
     so_luong_nhan = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (5, 6, 7, 8, 9, 10)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (4, 5, 6, 7)
     ) THEN so_luong_tra ELSE 0 END,
     so_luong_chap_nhan = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7, 8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7)
     ) THEN so_luong_tra ELSE 0 END,
     so_luong_tu_choi = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai = 10
+        SELECT id FROM phieu_tra_hang WHERE ma = N'TH005'
     ) THEN so_luong_tra ELSE 0 END,
     tinh_trang_san_pham = N'Dữ liệu kiểm thử quy trình trả hàng',
     so_tien_hoan = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (7, 8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7)
     ) THEN thanh_tien ELSE 0 END,
     nhap_lai_ton_kho = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (7, 8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai = 7
     ) THEN 1 ELSE 0 END,
     da_cap_nhat_ton = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai = 7
     ) THEN 1 ELSE 0 END;
 GO
 

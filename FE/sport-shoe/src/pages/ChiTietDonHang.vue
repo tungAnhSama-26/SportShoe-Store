@@ -1,7 +1,14 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { layChiTietDonHang, xacNhanDaNhanHang, yeuCauHuyDonHang } from '../services/don-hang';
+import {
+  capNhatThongTinGiaoHang,
+  layChiTietDonHang,
+  xacNhanDaNhanHang,
+  yeuCauHuyDonHang,
+} from '../services/don-hang';
+import { layDanhSachDiaChiProfile } from '../services/client-profile';
+import { layKhachId } from '../services/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
@@ -12,6 +19,7 @@ import {
 } from '../utils/order-status';
 import anhMacDinh from '../assets/login-shoe.png';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
+import ChinhSuaGiaoHangModal from '../components/common/ChinhSuaGiaoHangModal.vue';
 import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
 
 const route = useRoute();
@@ -21,13 +29,17 @@ const don = ref(null);
 const dangTai = ref(true);
 const loi = ref('');
 const hienModalTraHang = ref(false);
+const hienModalGiaoHang = ref(false);
+const dangLuuGiaoHang = ref(false);
+const diaChiDaLuu = ref([]);
+const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
 
 const daQuaHanTraHang = computed(() => {
   if (!don.value || !don.value.ngayCapNhat) return true;
   const thoiGianHoanThanh = new Date(don.value.ngayCapNhat).getTime();
   const bayGio = new Date().getTime();
-  const baNgayMs = 3 * 24 * 60 * 60 * 1000;
-  return (bayGio - thoiGianHoanThanh) > baNgayMs;
+  const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
+  return (bayGio - thoiGianHoanThanh) > thoiHanTraHangMs;
 });
 
 function lopBadgeTraHang(tt) {
@@ -286,6 +298,35 @@ function lopBadge(tt) {
 const dangXuLy = ref(false);
 const daHoanThanh = computed(() => don.value?.trangThai === 5);
 const coTheYeuCauHuy = computed(() => [1, 9, 2].includes(Number(don.value?.trangThai)));
+const coTheSuaThongTinGiaoHang = computed(() => [1, 9, 2].includes(Number(don.value?.trangThai)));
+
+async function moModalSuaThongTinGiaoHang() {
+  const khachHangId = layKhachId();
+  diaChiDaLuu.value = [];
+  if (khachHangId) {
+    try {
+      const data = await layDanhSachDiaChiProfile(khachHangId);
+      diaChiDaLuu.value = Array.isArray(data) ? data : [];
+    } catch {
+      diaChiDaLuu.value = [];
+    }
+  }
+  hienModalGiaoHang.value = true;
+}
+
+async function luuThongTinGiaoHang(payload) {
+  if (dangLuuGiaoHang.value) return;
+  dangLuuGiaoHang.value = true;
+  try {
+    don.value = await capNhatThongTinGiaoHang(route.params.id, payload);
+    hienModalGiaoHang.value = false;
+    showSuccess('Thông tin nhận hàng đã được cập nhật.');
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, 'Không thể cập nhật thông tin nhận hàng'));
+  } finally {
+    dangLuuGiaoHang.value = false;
+  }
+}
 
 async function guiYeuCauHuy() {
   const daXacNhan = await showConfirm(
@@ -443,7 +484,7 @@ function xuLyAnhLoi(event) {
             Đánh giá sản phẩm
           </button>
 
-          <!-- Yêu cầu trả hàng (ẩn và vô hiệu hóa sau 3 ngày hoàn thành) -->
+          <!-- Yêu cầu trả hàng chỉ hiển thị trong thời hạn chính sách. -->
           <button
             v-if="(don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !daQuaHanTraHang"
             @click="hienModalTraHang = true"
@@ -459,7 +500,21 @@ function xuLyAnhLoi(event) {
 
         <!-- Thông tin nhận hàng -->
         <section class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
-          <h2 class="text-base font-bold text-slate-800 mb-3">Thông tin nhận hàng</h2>
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-base font-bold text-slate-800">Thông tin nhận hàng</h2>
+            <button
+              v-if="coTheSuaThongTinGiaoHang"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
+              @click="moModalSuaThongTinGiaoHang"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+              </svg>
+              Chỉnh sửa thông tin
+            </button>
+          </div>
           <div class="rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
             <p class="font-semibold text-slate-800">{{ don.tenNguoiNhan }} · {{ don.sdtNguoiNhan }}</p>
             <p class="mt-1">{{ don.diaChiGiaoHang }}</p>
@@ -520,6 +575,18 @@ function xuLyAnhLoi(event) {
       :don="don"
       @close="hienModalTraHang = false"
       @success="taiChiTiet"
+    />
+    <ChinhSuaGiaoHangModal
+      v-model="hienModalGiaoHang"
+      title="Chỉnh sửa thông tin nhận hàng"
+      :initial-data="{
+        tenNguoiNhan: don?.tenNguoiNhan,
+        sdtNguoiNhan: don?.sdtNguoiNhan,
+        diaChiGiaoHang: don?.diaChiGiaoHang,
+      }"
+      :saved-addresses="diaChiDaLuu"
+      :saving="dangLuuGiaoHang"
+      @save="luuThongTinGiaoHang"
     />
   </main>
 </template>
