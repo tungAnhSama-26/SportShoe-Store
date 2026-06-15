@@ -5,6 +5,6 @@ skill/
 docs/
 .codex-chrome-test/
 build/
-
+.agents/
 ### Node ###
 node_modules/

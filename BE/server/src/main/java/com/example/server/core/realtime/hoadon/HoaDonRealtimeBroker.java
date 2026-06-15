@@ -101,7 +101,6 @@ public class HoaDonRealtimeBroker {
                         .data(event));
             } catch (IOException | IllegalStateException exception) {
                 emitters.remove(emitter);
-                emitter.complete();
             }
         });
     }
@@ -112,7 +111,6 @@ public class HoaDonRealtimeBroker {
                 emitter.send(SseEmitter.event().comment("heartbeat"));
             } catch (IOException | IllegalStateException exception) {
                 emitters.remove(emitter);
-                emitter.complete();
             }
         });
     }
