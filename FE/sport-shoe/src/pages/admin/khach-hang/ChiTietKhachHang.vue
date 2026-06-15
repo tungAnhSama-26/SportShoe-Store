@@ -666,7 +666,7 @@ onMounted(taiChiTiet);
           <Card class="text-center">
             <div
               class="relative inline-block cursor-pointer"
-              @click="($refs.fileInputAvatar as HTMLInputElement)?.click()"
+              @click="($refs.fileInputAvatar)?.click()"
               title="Bấm để thay đổi hình ảnh"
             >
               <img
@@ -919,7 +919,7 @@ onMounted(taiChiTiet);
                 >
                 <select
                   :value="maTinhChon"
-                  @change="onTinhChange(Number(($event.target as HTMLSelectElement).value) || null)"
+                  @change="onTinhChange(Number(($event.target).value) || null)"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
                     loiDiaChi.tinhThanh
@@ -943,7 +943,7 @@ onMounted(taiChiTiet);
                 >
                 <select
                   :value="maHuyenChon"
-                  @change="onHuyenChange(Number(($event.target as HTMLSelectElement).value) || null)"
+                  @change="onHuyenChange(Number(($event.target).value) || null)"
                   :disabled="!maTinhChon"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:opacity-50',
@@ -968,7 +968,7 @@ onMounted(taiChiTiet);
                 >
                 <select
                   :value="formDiaChi.phuongXa"
-                  @change="formDiaChi.phuongXa = ($event.target as HTMLSelectElement).value"
+                  @change="formDiaChi.phuongXa = ($event.target).value"
                   :disabled="!maHuyenChon"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:opacity-50',
@@ -1114,7 +1114,7 @@ onMounted(taiChiTiet);
                   >
                   <select
                     :value="maTinhChon"
-                    @change="onTinhChange(Number(($event.target as HTMLSelectElement).value) || null)"
+                    @change="onTinhChange(Number(($event.target).value) || null)"
                     :class="[
                       'h-10 w-full rounded-2xl border bg-white px-4 text-sm outline-none transition focus:bg-white',
                       loiDiaChi.tinhThanh
@@ -1138,7 +1138,7 @@ onMounted(taiChiTiet);
                   >
                   <select
                     :value="maHuyenChon"
-                    @change="onHuyenChange(Number(($event.target as HTMLSelectElement).value) || null)"
+                    @change="onHuyenChange(Number(($event.target).value) || null)"
                     :disabled="!maTinhChon"
                     :class="[
                       'h-10 w-full rounded-2xl border bg-white px-4 text-sm outline-none transition focus:bg-white disabled:opacity-50',
@@ -1163,7 +1163,7 @@ onMounted(taiChiTiet);
                   >
                   <select
                     :value="formDiaChi.phuongXa"
-                    @change="formDiaChi.phuongXa = ($event.target as HTMLSelectElement).value"
+                    @change="formDiaChi.phuongXa = ($event.target).value"
                     :disabled="!maHuyenChon"
                     :class="[
                       'h-10 w-full rounded-2xl border bg-white px-4 text-sm outline-none transition focus:bg-white disabled:opacity-50',
@@ -1327,3 +1327,4 @@ onMounted(taiChiTiet);
     </template>
   </div>
 </template>
+
