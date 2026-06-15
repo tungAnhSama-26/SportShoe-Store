@@ -3,10 +3,9 @@ import { layKhachId } from "./gio-hang";
 
 // Danh sách đơn hàng của khách đang đăng nhập.
 export async function layDonHangCuaToi() {
-  const id = layKhachId();
-  if (!id) return [];
-  const data = await apiRequest(`/client/don-hang?khachHangId=${id}`, {
-    authenticated: false,
+  if (!layKhachId()) return [];
+  const data = await apiRequest("/client/don-hang", {
+    authScope: "customer",
     fallbackMessage: "Không thể tải đơn hàng",
   });
   return Array.isArray(data) ? data : [];
@@ -14,29 +13,35 @@ export async function layDonHangCuaToi() {
 
 // Chi tiết 1 đơn hàng (sản phẩm, địa chỉ, phân tích giá).
 export async function layChiTietDonHang(donId) {
-  const id = layKhachId();
-  return apiRequest(`/client/don-hang/${donId}?khachHangId=${id}`, {
-    authenticated: false,
+  return apiRequest(`/client/don-hang/${donId}`, {
+    authScope: "customer",
     fallbackMessage: "Không thể tải chi tiết đơn hàng",
   });
 }
 
 // Khách xác nhận đã nhận hàng.
 export async function xacNhanDaNhanHang(donId) {
-  const id = layKhachId();
-  return apiRequest(`/client/don-hang/${donId}/da-nhan-hang?khachHangId=${id}`, {
+  return apiRequest(`/client/don-hang/${donId}/da-nhan-hang`, {
     method: "POST",
-    authenticated: false,
+    authScope: "customer",
     fallbackMessage: "Không thể xác nhận nhận hàng",
   });
 }
 
 export async function yeuCauHuyDonHang(donId) {
-  const id = layKhachId();
-  return apiRequest(`/client/don-hang/${donId}/yeu-cau-huy?khachHangId=${id}`, {
+  return apiRequest(`/client/don-hang/${donId}/yeu-cau-huy`, {
     method: "POST",
-    authenticated: false,
+    authScope: "customer",
     fallbackMessage: "Không thể gửi yêu cầu hủy đơn hàng",
+  });
+}
+
+export async function capNhatThongTinGiaoHang(donId, payload) {
+  return apiRequest(`/client/don-hang/${donId}/thong-tin-giao-hang`, {
+    method: "PUT",
+    authScope: "customer",
+    body: JSON.stringify(payload),
+    fallbackMessage: "Không thể cập nhật thông tin giao hàng",
   });
 }
 
