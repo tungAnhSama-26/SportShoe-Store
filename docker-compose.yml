@@ -27,11 +27,18 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./FE/sport-shoe
-      dockerfile: Dockerfile
+    image: caddy:alpine
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./FE/sport-shoe/build:/srv
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - backend
     restart: unless-stopped
+volumes:
+  caddy_data:
+  caddy_config:
