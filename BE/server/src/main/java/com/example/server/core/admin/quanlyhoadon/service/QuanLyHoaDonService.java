@@ -1,6 +1,7 @@
 package com.example.server.core.admin.quanlyhoadon.service;
 
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatThongTinGiaoHangRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.XacNhanHoanTienRequest;
@@ -27,6 +28,8 @@ public interface QuanLyHoaDonService {
     HoaDonDetailResponse capNhatTrangThaiHoaDon(Integer id, CapNhatTrangThaiHoaDonRequest request);
 
     HoaDonDetailResponse capNhatSanPhamHoaDon(Integer id, CapNhatSanPhamHoaDonRequest request);
+
+    HoaDonDetailResponse capNhatThongTinGiaoHang(Integer id, CapNhatThongTinGiaoHangRequest request);
 
     TinhPhiVanChuyenGhnResponse tinhVaCapNhatPhiVanChuyenGhn(Integer id, TinhPhiVanChuyenGhnRequest request);
 

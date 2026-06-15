@@ -26,9 +26,6 @@ public final class GiaoDichHoanTienFactory {
         if (giaoDichGoc == null || giaoDichGoc.getHoaDon() == null) {
             throw new BusinessException("Không tìm thấy giao dịch thanh toán gốc hợp lệ");
         }
-        if (phieuTraHang == null) {
-            throw new BusinessException("Phiếu trả hàng không hợp lệ");
-        }
         if (soTienHoan == null || soTienHoan.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Số tiền hoàn phải lớn hơn 0");
         }
@@ -52,5 +49,22 @@ public final class GiaoDichHoanTienFactory {
         giaoDichHoan.setNgayThanhToan(now);
         giaoDichHoan.setNgayTao(now);
         return giaoDichHoan;
+    }
+
+    public static ThanhToan taoKhongQuaPhieuTraHang(
+            ThanhToan giaoDichGoc,
+            BigDecimal soTienHoan,
+            Integer hinhThucHoan,
+            String maGiaoDich,
+            String ghiChu
+    ) {
+        return tao(
+                giaoDichGoc,
+                null,
+                soTienHoan,
+                hinhThucHoan,
+                maGiaoDich,
+                ghiChu
+        );
     }
 }

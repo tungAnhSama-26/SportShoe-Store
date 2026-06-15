@@ -2,8 +2,9 @@
 import { useChiTietHoaDon } from "./useChiTietHoaDon";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import TaoPhieuTraHangModal from "../../../components/admin/hoa-don/TaoPhieuTraHangModal.vue";
+import ChinhSuaGiaoHangModal from "../../../components/common/ChinhSuaGiaoHangModal.vue";
 import { API_BASE_URL } from "../../../services/api-client";
-const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien } = useChiTietHoaDon();
+const { computed, onMounted, ref, watch, markRaw, useRoute, useRouter, ArrowLeft, Banknote, CheckCircle2, CircleCheck, CircleX, ClipboardList, ClipboardCheck, Flag, History, Hourglass, MapPin, Package, Pencil, Printer, Search, Trash2, TriangleAlert, Truck, User, X, Card, Button, capNhatSanPhamHoaDon, capNhatTrangThaiHoaDon, layChiTietHoaDon, tinhPhiVanChuyenGhn, xacNhanHoanTien, xacNhanThanhToanCod, timSanPhamTaiQuay, printInvoiceToPdf, getDisplayErrorMessage, logoGhn, route, router, hoaDon, dangTai, loiTrang, dangCapNhat, hienModalXacNhan, hienModalLichSu, hienModalSanPham, hienModalXacNhanHuy, hienModalThanhToanCod, dangXacNhanThanhToanCod, formThanhToanCod, hienModalHoanTien, dangXacNhanHoanTien, formHoanTien, hienModalThongTin, hienModalGiaoHang, dangLuuGiaoHang, diaChiDaLuu, tabHienTai, formThongTin, formGhn, dangTinhPhiGhn, diaChiGhnDaDo, trangThaiMoiXacNhan, ghiChuXacNhan, tuKhoaSanPham, ketQuaTimKiem, dangTimKiem, giaTuSanPham, giaDenSanPham, tuKhoaLocSanPham, loaiSanPhamDangLoc, sapXepSanPham, danhSachLoaiSanPham, giaTuSanPhamSo, giaDenSanPhamSo, giaLonNhatSanPham, nhanKhoangGiaSanPham, styleKhoangGiaSanPham, trangSanPhamHienTai, soSanPhamMoiTrang, danhSachSanPhamDaLoc, danhSachSanPhamPhanTrang, tongTrangSanPham, hienPhanTrangSanPham, danhSachSanPhamUpdate, cacBuocCoDinh, cacBuocYeuCauHuy, cacBuocDaHuy, laDonTaiQuay, cacBuoc, dinhDangTien, dinhDangNgay, dinhDangGio, vietHoaChuCaiDau, buocHienTai, donDaHoanThanh, donYeuCauHuy, donDaHuy, donDaKetThuc, coTheSuaThongTinGiaoHang, hienThiThongBao, thongBaoDonDaHoanThanh, moModalThongTin, moModalSuaDiaChi, handleLuuGiaoHang, tongTienHang, tongKhachCanTra, coPhieuGiamGia, moTaGiaTriPhieuGiamGia, thanhToanGanNhat, thanhToanCodDangCho, coTheThanhToanCod, thanhToanCanHoanTien, coTheHoanTien, tongTienHoan, tongTienThanhToanCod, noiDungChuyenKhoanCod, qrThanhToanCodUrl, tienThieuThanhToanCod, lichSuRutGon, thongTinBuoc, cacBuocHienThi, lopVongTrangThai, lopTenTrangThai, taiChiTiet, openModalXacNhan, handleXacNhanTrangThai, handleXuLyYeuCauHuy, moModalXacNhanHuy, handleXacNhanHuyDon, timKiemSanPham, themSanPham, removeSanPham, handleSaveSanPham, danhSachTrangThaiHienThi, indexTrangThaiHienTai, isOptionDisabled, hienThiOptionTrangThai, handleLuuThongTin, handleTinhPhiGhn, handlePrint, moModalThanhToanCod, handleXacNhanThanhToanCod, moModalHoanTien, handleXacNhanHoanTien } = useChiTietHoaDon();
 
 const productImageFallback =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' rx='14' fill='%23f8fafc'/%3E%3Cpath d='M18 44h35c3 0 5-2 5-5 0-2-1-4-3-5l-10-5-7 8H25l-5-5-6 5v3c0 2 2 4 4 4z' fill='%23e2e8f0'/%3E%3Cpath d='M24 48h30' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
@@ -897,20 +898,45 @@ function handleProductImageError(event: Event) {
 
           <div v-if="tabHienTai === 'khachHang'" class="space-y-4">
             <div>
-              <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Tên khách hàng</label>
+              <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Tên người nhận</label>
               <input type="text" v-model="formThongTin.tenKhachHang"
-                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-blue-400" />
+                :readonly="!coTheSuaThongTinGiaoHang"
+                :class="coTheSuaThongTinGiaoHang ? 'bg-white focus:border-rose-300' : 'cursor-not-allowed bg-slate-100 text-slate-500'"
+                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition" />
             </div>
             <div>
               <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Số điện thoại</label>
               <input type="text" v-model="formThongTin.soDienThoai"
-                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-blue-400" />
+                :readonly="!coTheSuaThongTinGiaoHang"
+                :class="coTheSuaThongTinGiaoHang ? 'bg-white focus:border-rose-300' : 'cursor-not-allowed bg-slate-100 text-slate-500'"
+                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition" />
             </div>
             <div>
               <label class="mb-1.5 block text-[13px] font-medium text-slate-600">Email</label>
-              <input type="text" v-model="formThongTin.email"
-                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-blue-400" />
+              <input type="text" v-model="formThongTin.email" readonly
+                class="w-full cursor-not-allowed rounded-[8px] border border-slate-200 bg-slate-100 px-3 py-2.5 text-[14px] text-slate-500 outline-none" />
             </div>
+            <div>
+              <div class="mb-1.5 flex items-center justify-between gap-3">
+                <label class="block text-[13px] font-medium text-slate-600">Địa chỉ giao hàng</label>
+                <button
+                  v-if="coTheSuaThongTinGiaoHang"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 text-xs font-bold text-[#B82220] hover:text-[#9f1d1b]"
+                  @click="moModalSuaDiaChi"
+                >
+                  <Pencil class="h-3.5 w-3.5" />
+                  Sửa địa chỉ
+                </button>
+              </div>
+              <input type="text" v-model="formThongTin.diaChi"
+                :readonly="!coTheSuaThongTinGiaoHang"
+                :class="coTheSuaThongTinGiaoHang ? 'bg-white focus:border-rose-300' : 'cursor-not-allowed bg-slate-100 text-slate-500'"
+                class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition" />
+            </div>
+            <p v-if="!coTheSuaThongTinGiaoHang" class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              Thông tin giao hàng đã khóa vì đơn đã bắt đầu giao.
+            </p>
           </div>
 
         </div>
@@ -921,12 +947,25 @@ function handleProductImageError(event: Event) {
             Hủy
           </Button>
           <Button @click="handleLuuThongTin" :disabled="dangCapNhat || donDaHoanThanh"
-            class="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent rounded-full">
+            class="bg-[#B82220] hover:bg-[#9f1d1b] text-white border-transparent rounded-full">
             {{ dangCapNhat ? 'Đang Lưu...' : 'Lưu' }}
           </Button>
         </div>
       </div>
     </div>
+
+    <ChinhSuaGiaoHangModal
+      v-model="hienModalGiaoHang"
+      title="Chỉnh sửa thông tin nhận hàng"
+      :initial-data="{
+        tenNguoiNhan: formThongTin.tenKhachHang,
+        sdtNguoiNhan: formThongTin.soDienThoai,
+        diaChiGiaoHang: formThongTin.diaChi,
+      }"
+      :saved-addresses="diaChiDaLuu"
+      :saving="dangLuuGiaoHang"
+      @save="handleLuuGiaoHang"
+    />
   </div>
 </template>
 
