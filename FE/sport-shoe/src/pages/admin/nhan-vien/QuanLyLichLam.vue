@@ -416,7 +416,7 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="schedule-page space-y-5">
 
     <!-- ───── HEADER ───── -->
     <section class="flex flex-wrap items-center gap-3">
@@ -461,10 +461,10 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
     </div>
 
     <!-- ───── CONTENT ───── -->
-    <div class="grid gap-5 xl:grid-cols-[1fr_280px]">
+    <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_320px]">
 
       <!-- ── Bảng lịch ── -->
-      <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+      <section class="schedule-board rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
 
         <!-- Thanh điều hướng tuần -->
         <div class="mb-5 flex flex-wrap items-center gap-3">
@@ -497,12 +497,12 @@ const caUnassigned = computed(() => danhSachNV.value.filter(nv => nv.lich.every(
         </div>
 
         <!-- Bảng lịch -->
-        <div class="overflow-x-auto">
-          <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
+        <div class="schedule-table-scroll overflow-x-auto">
+          <table class="schedule-table w-full table-fixed border-separate border-spacing-0 text-sm">
             <colgroup>
-              <col style="width:160px" />
-              <col v-for="_ in 7" :key="_" />
-              <col style="width:70px" />
+              <col style="width:210px" />
+              <col v-for="_ in 7" :key="_" style="width:124px" />
+              <col style="width:86px" />
             </colgroup>
             <thead>
               <tr>

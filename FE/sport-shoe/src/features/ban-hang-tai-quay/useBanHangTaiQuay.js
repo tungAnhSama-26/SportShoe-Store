@@ -264,6 +264,12 @@ function useBanHangTaiQuay() {
     markShippingFeeDirty();
   }
 
+  watch(isGuestCustomer, (newVal) => {
+    if (newVal) {
+      updateShippingInfo({ giaoHang: false });
+    }
+  });
+
   function markCouponDirty() {
     danhDauCanApDungLaiPhieu();
   }
@@ -363,7 +369,11 @@ function useBanHangTaiQuay() {
       pageError.value = "Vui lòng chọn màu sắc và kích cỡ phù hợp";
       return;
     }
-    themSanPham(selectedVariant.value, selectedQuantity.value);
+    const success = themSanPham(selectedVariant.value, selectedQuantity.value);
+    if (success) {
+      dongChiTietSanPham();
+      showSuccess(`Đã thêm ${selectedQuantity.value} sản phẩm vào hóa đơn`);
+    }
   }
 
   function mapInvoiceToDraft(invoice) {

@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import * as api from '../services/san-pham-api.ts'
+import * as api from '../services/san-pham-api.js'
 import {
   chatLieuGiayApi,
   coGiayApi,
@@ -9,7 +9,7 @@ import {
   mauSacApi,
   thuongHieuApi,
   trongLuongApi,
-} from '../services/danh-muc-api.ts'
+} from '../services/danh-muc-api.js'
 import { hasSpecialCharacters } from '../utils/thuoc-tinh-san-pham.js'
 
 export function useQuickCreate() {

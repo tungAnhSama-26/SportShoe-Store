@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="w-full overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
       <table class="w-full min-w-[800px] border-collapse text-left text-sm text-slate-600">
         <thead :class="redHeader ? 'bg-primary text-white font-semibold' : 'bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold'">

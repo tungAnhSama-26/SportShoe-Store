@@ -1,6 +1,6 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import * as api from '../services/san-pham-api.ts'
+import * as api from '../services/san-pham-api.js'
 import { hasSpecialCharacters } from '../utils/thuoc-tinh-san-pham.js'
 
 export function useProductForm() {
@@ -456,3 +456,4 @@ export function useProductForm() {
     router,
   }
 }
+

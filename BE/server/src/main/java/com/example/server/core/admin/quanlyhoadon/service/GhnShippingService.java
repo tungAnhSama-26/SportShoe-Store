@@ -2,6 +2,7 @@ package com.example.server.core.admin.quanlyhoadon.service;
 
 import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
+import com.example.server.entity.Giay;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.infrastructure.exception.BusinessException;
@@ -174,7 +175,7 @@ public class GhnShippingService {
         body.put("width", valueOrDefault(request.width(), defaultWidth));
         body.put("height", valueOrDefault(request.height(), defaultHeight));
         body.put("weight", valueOrDefault(request.weight(), tinhCanNangMacDinh(items)));
-        body.put("insurance_value", request.insuranceValue() != null ? request.insuranceValue() : safeInsuranceValue(hoaDon.getTongTienHang()));
+        body.put("insurance_value", request.insuranceValue() != null ? request.insuranceValue() : 0);
         body.put("coupon", request.coupon());
         body.put("items", items.stream().map(this::mapItem).toList());
         return body;
@@ -460,6 +461,18 @@ public class GhnShippingService {
         return WHITESPACE.matcher(normalized).replaceAll(" ").trim();
     }
 
+    private Integer layCanNangSanPham(HoaDonChiTiet item) {
+        if (item.getGiayChiTiet() != null && item.getGiayChiTiet().getGiay() != null) {
+            Giay giay = item.getGiayChiTiet().getGiay();
+            if (giay.getGiayThuocTinh() != null 
+                    && giay.getGiayThuocTinh().getTrongLuong() != null 
+                    && giay.getGiayThuocTinh().getTrongLuong().getGiaTri() != null) {
+                return giay.getGiayThuocTinh().getTrongLuong().getGiaTri();
+            }
+        }
+        return defaultWeight;
+    }
+
     private Map<String, Object> mapItem(HoaDonChiTiet item) {
         Map<String, Object> mapped = new LinkedHashMap<>();
         mapped.put("name", item.getGiayChiTiet().getGiay().getTen());
@@ -467,15 +480,18 @@ public class GhnShippingService {
         mapped.put("length", defaultLength);
         mapped.put("width", defaultWidth);
         mapped.put("height", defaultHeight);
-        mapped.put("weight", defaultWeight);
+        mapped.put("weight", layCanNangSanPham(item));
         return mapped;
     }
 
     private Integer tinhCanNangMacDinh(List<HoaDonChiTiet> items) {
-        int quantity = items.stream()
-                .mapToInt(item -> item.getSoLuong() != null ? item.getSoLuong() : 0)
-                .sum();
-        return Math.max(defaultWeight, defaultWeight * Math.max(quantity, 1));
+        int tongCanNang = 0;
+        for (HoaDonChiTiet item : items) {
+            int quantity = item.getSoLuong() != null ? item.getSoLuong() : 0;
+            if (quantity <= 0) continue;
+            tongCanNang += layCanNangSanPham(item) * quantity;
+        }
+        return tongCanNang > 0 ? tongCanNang : defaultWeight;
     }
 
     private Integer valueOrDefault(Integer value, Integer defaultValue) {

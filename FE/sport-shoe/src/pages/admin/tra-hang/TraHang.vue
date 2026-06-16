@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   CalendarDays,
@@ -17,6 +17,7 @@ import Button from "../../../components/ui/Button.vue";
 import Card from "../../../components/ui/Card.vue";
 import Table from "../../../components/ui/Table.vue";
 import { layDanhSachTraHang } from "../../../services/tra-hang";
+import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { showError } from "../../../utils/alert";
@@ -254,7 +255,25 @@ function badgeVariant(trangThai) {
   return "default";
 }
 
-onMounted(taiDanhSach);
+let ngatKetNoiRealtime = null;
+let realtimeRefreshTimeout = null;
+
+onMounted(() => {
+  taiDanhSach();
+  ngatKetNoiRealtime = ketNoiHoaDonRealtime({
+    authScope: "admin",
+    onHoaDonThayDoi: (event) => {
+      if (event?.loaiSuKien !== "TRA_HANG") return;
+      if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
+      realtimeRefreshTimeout = window.setTimeout(taiDanhSach, 150);
+    },
+  });
+});
+
+onBeforeUnmount(() => {
+  ngatKetNoiRealtime?.();
+  if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
+});
 </script>
 
 <template>
@@ -263,13 +282,13 @@ onMounted(taiDanhSach);
       <div
         v-for="item in thongKe"
         :key="item.label"
-        class="flex min-h-24 items-center justify-between rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm"
+        class="flex min-h-24 items-center justify-between rounded-[6px] border border-slate-100 bg-white px-5 py-4 shadow-sm"
       >
         <div>
           <p class="text-sm font-medium text-slate-500">{{ item.label }}</p>
           <p class="mt-1 text-2xl font-bold text-slate-800">{{ item.value }}</p>
         </div>
-        <div :class="['rounded-2xl p-3', item.className]">
+        <div :class="['rounded-[6px] p-3', item.className]">
           <PackageCheck class="h-5 w-5" />
         </div>
       </div>
@@ -278,7 +297,7 @@ onMounted(taiDanhSach);
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-primary">
+          <div class="flex h-10 w-10 items-center justify-center rounded-[6px] bg-rose-50 text-primary">
             <Filter class="h-5 w-5" />
           </div>
           <div>
@@ -295,7 +314,7 @@ onMounted(taiDanhSach);
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               v-model="boLoc.keyword"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               placeholder="Mã phiếu / mã hóa đơn / khách hàng..."
             />
           </div>
@@ -309,11 +328,11 @@ onMounted(taiDanhSach);
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(tuNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -337,11 +356,11 @@ onMounted(taiDanhSach);
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(denNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -373,7 +392,7 @@ onMounted(taiDanhSach);
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-primary">
+          <div class="flex h-10 w-10 items-center justify-center rounded-[6px] bg-rose-50 text-primary">
             <ClipboardCheck class="h-5 w-5" />
           </div>
           <div>
@@ -385,7 +404,7 @@ onMounted(taiDanhSach);
         </div>
       </template>
 
-      <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
+      <div v-if="loiTrang" class="mb-4 rounded-[6px] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
         {{ loiTrang }}
       </div>
 
@@ -395,7 +414,7 @@ onMounted(taiDanhSach);
           :key="item.value"
           type="button"
           @click="trangThaiDangChon = item.value"
-          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
+          class="inline-flex items-center whitespace-nowrap rounded-[6px] px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
           :class="trangThaiDangChon === item.value ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:scale-[1.02]'"
         >
           {{ item.label }}

@@ -1,11 +1,11 @@
-<script setup lang="ts">
+<script setup >
 import { useChiTietNhanVien } from "./useChiTietNhanVien";
 import { Lock, MapPin, User } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 const { nextTick, onMounted, onUnmounted, ref, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
 
-function taoChuCaiDaiDien(value?: string) {
+function taoChuCaiDaiDien(value) {
   return String(value || "NV")
     .trim()
     .split(/\s+/)

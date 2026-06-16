@@ -1,7 +1,8 @@
 <script setup>
+import { ref, computed, watch, onUnmounted } from "vue";
 import { Printer } from "lucide-vue-next";
 import ghnLogo from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
-defineProps({
+const props = defineProps({
   activePendingInvoice: {
     type: Object,
     default: null
@@ -157,6 +158,57 @@ const emit = defineEmits([
   "cancel-pending-invoice",
   "create-empty-invoice"
 ]);
+
+const timeLeft = ref(300);
+let timer = null;
+
+watch(() => props.paymentMethod, (newVal) => {
+  if (newVal === 2) {
+    timeLeft.value = 300;
+    startTimer();
+  } else {
+    stopTimer();
+  }
+});
+
+function startTimer() {
+  stopTimer();
+  timer = setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+    } else {
+      stopTimer();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+}
+
+onUnmounted(() => {
+  stopTimer();
+});
+
+const formattedTimeLeft = computed(() => {
+  const m = Math.floor(timeLeft.value / 60);
+  const s = timeLeft.value % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+});
+
+const sepayQrUrl = computed(() => {
+  if (!props.activePendingInvoice) return '';
+  const bank = 'MB';
+  const acc = '894932828';
+  const prefix = 'SHOE';
+  const amount = Math.max(Number(props.khachCanTra) || 0, 0);
+  const description = encodeURIComponent(`${prefix}${props.activePendingInvoice.maHoaDon}`);
+  const accountName = encodeURIComponent('TRAN VU TUNG ANH');
+  return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${accountName}`;
+});
 </script>
 
 <template>
@@ -260,7 +312,7 @@ const emit = defineEmits([
           <span class="text-sm text-slate-500">Tiền giảm</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">-{{ dinhDangTien(tienGiam) }}</span>
         </div>
-        <div v-if="shippingInfo.giaoHang" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+        <div v-if="!isGuestCustomer && shippingInfo.giaoHang" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Phí ship</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(shippingInfo.phiVanChuyen || 0) }}</span>
         </div>
@@ -275,14 +327,18 @@ const emit = defineEmits([
               <p class="text-sm font-semibold text-slate-800">Giao hàng</p>
               <img :src="ghnLogo" alt="GHN" class="h-4 object-contain" />
             </div>
-            <label class="inline-flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-700">
-              <input
-                :checked="shippingInfo.giaoHang"
-                type="checkbox"
-                class="h-4 w-4 rounded accent-red-500"
-                @change="emit('update-shipping', { giaoHang: $event.target.checked })"
-              />
-              <span>{{ shippingInfo.giaoHang ? "Bật" : "Tắt" }}</span>
+            <label class="relative inline-flex cursor-pointer items-center gap-3">
+              <div class="relative flex items-center">
+                <input
+                  type="checkbox"
+                  class="peer sr-only"
+                  :checked="shippingInfo.giaoHang"
+                  @change="emit('update-shipping', { giaoHang: $event.target.checked })"
+                />
+                <div class="h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-red-500 peer-focus:outline-none"></div>
+                <div class="absolute left-[2px] top-[2px] h-5 w-5 rounded-full border border-slate-300 bg-white transition-all peer-checked:translate-x-full peer-checked:border-white"></div>
+              </div>
+              <span class="text-sm font-medium text-slate-700">{{ shippingInfo.giaoHang ? "Bật" : "Tắt" }}</span>
             </label>
           </div>
 
@@ -438,9 +494,27 @@ const emit = defineEmits([
             {{ paymentValidationMessage }}
           </p>
         </div>
+        
         <div v-if="paymentMethod === 1" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Tiền thừa trả khách</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(tienThua) }}</span>
+        </div>
+
+        <div v-if="paymentMethod === 2" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="mb-3 text-sm font-semibold text-slate-800">Quét mã QR để thanh toán</p>
+          <div v-if="timeLeft > 0">
+            <img :src="sepayQrUrl" alt="VietQR" class="h-48 w-48 rounded-xl border border-slate-100 object-contain" />
+            <p class="mt-3 text-center text-xs text-slate-500">
+              QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
+            </p>
+          </div>
+          <div v-else class="flex h-48 w-48 flex-col items-center justify-center rounded-xl border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm font-bold">Mã QR đã hết hạn</span>
+            <button type="button" @click="timeLeft = 300; startTimer()" class="mt-2 rounded bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-200">Tạo lại</button>
+          </div>
         </div>
         <div>
           <label class="mb-2 block text-sm text-slate-500">Ghi chú thanh toán</label>
@@ -473,16 +547,7 @@ const emit = defineEmits([
             {{ payingInvoice ? "Đang thanh toán..." : "Thanh toán" }}
           </button>
         </div>
-        <button
-          v-if="!hasPrintedInvoice"
-          type="button"
-          class="flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(14,165,233,0.2)] transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-          :disabled="!activePendingInvoice"
-          @click="emit('print-invoice')"
-        >
-          <Printer class="h-5 w-5" />
-          In hóa đơn
-        </button>
+
       </div>
       <p v-if="sanPhamValidationMessage" class="mt-3 text-xs font-medium text-rose-500">
         {{ sanPhamValidationMessage }}

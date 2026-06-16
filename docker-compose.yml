@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "TungAnh@123456"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./BE/server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://db:1433;databaseName=giay;encrypt=true;trustServerCertificate=true
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=TungAnh@123456
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=dummy@example.com
+      - SPRING_MAIL_PASSWORD=dummy
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    image: caddy:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./FE/sport-shoe/build:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+volumes:
+  caddy_data:
+  caddy_config:

@@ -46,6 +46,13 @@ export function xacNhanNhanHangTra(id, payload) {
   });
 }
 
+export function danhDauHoanHangThatBai(id, payload = {}) {
+  return request(`/admin/tra-hang/${id}/hoan-hang-that-bai`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function batDauKiemTraHang(id, payload = {}) {
   return request(`/admin/tra-hang/${id}/bat-dau-kiem-tra`, {
     method: "PATCH",

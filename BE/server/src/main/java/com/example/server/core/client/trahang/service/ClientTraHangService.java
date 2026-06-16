@@ -1,5 +1,6 @@
 package com.example.server.core.client.trahang.service;
 
+import com.example.server.core.admin.quanlytrahang.domain.TraHangPolicy;
 import com.example.server.core.client.trahang.dto.ClientYeuCauTraHangRequest;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.*;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -27,6 +29,7 @@ public class ClientTraHangService {
     private final LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository;
     private final HinhAnhTraHangRepository hinhAnhTraHangRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    private final TraHangPolicy traHangPolicy;
 
     public ClientTraHangService(
             HoaDonRepository hoaDonRepository,
@@ -35,7 +38,8 @@ public class ClientTraHangService {
             PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository,
             HinhAnhTraHangRepository hinhAnhTraHangRepository,
-            HoaDonRealtimePublisher hoaDonRealtimePublisher
+            HoaDonRealtimePublisher hoaDonRealtimePublisher,
+            TraHangPolicy traHangPolicy
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -44,6 +48,7 @@ public class ClientTraHangService {
         this.lichSuPhieuTraHangRepository = lichSuPhieuTraHangRepository;
         this.hinhAnhTraHangRepository = hinhAnhTraHangRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
+        this.traHangPolicy = traHangPolicy;
     }
 
     @Transactional
@@ -55,18 +60,21 @@ public class ClientTraHangService {
             throw new BusinessException("Hóa đơn này không thuộc về bạn");
         }
 
-        // Đơn hàng phải ở trạng thái HOÀN THÀNH (5)
-        if (hoaDon.getTrangThai() == null || hoaDon.getTrangThai() != 5) {
-            throw new BusinessException("Đơn hàng chưa hoàn thành, không thể yêu cầu trả hàng/hoàn tiền");
-        }
+        traHangPolicy.kiemTraHoaDonChoKhachHang(hoaDon);
 
         // Kiểm tra xem đã có phiếu trả hàng đang chờ xử lý hoặc đã duyệt chưa
         Optional<PhieuTraHang> phieuCu = phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
         if (phieuCu.isPresent()) {
             int status = phieuCu.get().getTrangThai();
-            if (status != 9 && status != 8) { // 9: đã hủy, 8: từ chối.
+            if (status != 7 && status != 9 && status != 8) {
                 throw new BusinessException("Đơn hàng này đã có yêu cầu trả hàng/hoàn tiền đang được xử lý");
             }
+        }
+        List<Integer> hoaDonChiTietIds = request.sanPhams().stream()
+                .map(ClientYeuCauTraHangRequest.SanPhamTraItem::hoaDonChiTietId)
+                .toList();
+        if (new HashSet<>(hoaDonChiTietIds).size() != hoaDonChiTietIds.size()) {
+            throw new BusinessException("Danh sách trả hàng không được chứa sản phẩm trùng lặp");
         }
 
         Instant now = Instant.now();
@@ -138,14 +146,15 @@ public class ClientTraHangService {
         }
 
         phieu.setTongTienDuKien(tongTienDuKien);
-        phieuTraHangRepository.save(phieu);
+        PhieuTraHang savedPhieu = phieuTraHangRepository.save(phieu);
+        chiTietList.forEach(ct -> ct.setPhieuTraHang(savedPhieu));
         phieuTraHangChiTietRepository.saveAll(chiTietList);
 
         // Lưu hình ảnh nếu có
         if (request.hinhAnhs() != null) {
             for (String url : request.hinhAnhs()) {
                 HinhAnhTraHang ha = new HinhAnhTraHang();
-                ha.setPhieuTraHang(phieu);
+                ha.setPhieuTraHang(savedPhieu);
                 ha.setPhieuTraHangChiTiet(null);
                 ha.setUrl(url);
                 ha.setLoaiAnh(1); // 1: Khách hàng upload
@@ -156,7 +165,7 @@ public class ClientTraHangService {
 
         // Lưu lịch sử
         LichSuPhieuTraHang ls = new LichSuPhieuTraHang();
-        ls.setPhieuTraHang(phieu);
+        ls.setPhieuTraHang(savedPhieu);
         ls.setNhanVien(null);
         ls.setTrangThaiCu(null);
         ls.setTrangThaiMoi(1); // Chờ duyệt
