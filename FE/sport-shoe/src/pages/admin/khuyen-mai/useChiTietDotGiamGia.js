@@ -436,6 +436,39 @@ export function useChiTietDotGiamGia() {
     },
   );
 
+  watch(
+    () => form.ngayBatDau,
+    (newVal) => {
+      if (!newVal) {
+        formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
+        return;
+      }
+      delete formErrors.ngayBatDau;
+      if (laMoi && newVal < getToday()) {
+        formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
+      }
+      if (form.ngayKetThuc && newVal > form.ngayKetThuc) {
+        formErrors.ngayKetThuc = "Ngày kết thúc không được trước ngày bắt đầu";
+      } else {
+        delete formErrors.ngayKetThuc;
+      }
+    }
+  );
+
+  watch(
+    () => form.ngayKetThuc,
+    (newVal) => {
+      if (!newVal) {
+        formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
+        return;
+      }
+      delete formErrors.ngayKetThuc;
+      if (form.ngayBatDau && form.ngayBatDau > newVal) {
+        formErrors.ngayKetThuc = "Ngày kết thúc không được trước ngày bắt đầu";
+      }
+    }
+  );
+
   function isVariantSelected(variantId) {
     return selectedVariants.value.some((v) => Number(v.id) === Number(variantId));
   }
@@ -631,6 +664,9 @@ export function useChiTietDotGiamGia() {
     }
     if (!form.ngayBatDau) {
       formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
+      isValid = false;
+    } else if (laMoi && form.ngayBatDau < getToday()) {
+      formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
       isValid = false;
     }
 
