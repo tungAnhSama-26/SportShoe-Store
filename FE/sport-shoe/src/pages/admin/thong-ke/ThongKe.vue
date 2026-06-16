@@ -135,6 +135,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
             <select
               v-model="filters.brandId"
               class="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-primary focus:bg-white"
+              @change="scheduleDashboardFetch"
             >
               <option :value="null">Tất cả thương hiệu</option>
               <option v-for="brand in dashboard.thuongHieus" :key="brand.id" :value="brand.id">
@@ -162,16 +163,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         <div class="flex gap-3 md:col-span-2 xl:col-span-1 xl:self-end">
           <button
             type="button"
-            class="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
-            :disabled="isLoading"
-            @click="onApplyFilters"
-          >
-            <Filter class="h-4 w-4" />
-            Lọc
-          </button>
-          <button
-            type="button"
-            class="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
+            class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
             :disabled="isLoading"
             @click="onResetFilters"
           >
