@@ -4,7 +4,6 @@ skill/
 .codex-chrome-debug/
 docs/
 .codex-chrome-test/
-build/
-.agents/
+FE/sport-shoe/build/
 ### Node ###
 node_modules/
