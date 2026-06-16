@@ -9,6 +9,8 @@ public record ThongKeDashboardResponse(
         List<ThongKeGiaTriTheoKyResponse> bieuDoBanHang,
         List<ThongKeThuongHieuResponse> bieuDoThuongHieu,
         List<ThongKeSanPhamResponse> sanPhams,
-        List<ThongKeNhanVienResponse> nhanViens
+        List<ThongKeNhanVienResponse> nhanViens,
+        List<ThongKeTheoThoiGianResponse> thongKeTheoThoiGian,
+        List<ThongKeTrangThaiDonHangResponse> bieuDoTrangThaiDonHang
 ) {
 }

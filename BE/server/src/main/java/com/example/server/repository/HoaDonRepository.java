@@ -89,4 +89,25 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             order by hd.ngayTao desc
             """)
     List<HoaDon> findByKhachHangId(@Param("khachHangId") UUID khachHangId);
+
+    @Query("""
+            select hd.trangThai, count(distinct hd.id)
+            from HoaDon hd
+            join HoaDonChiTiet hdct on hdct.hoaDon.id = hd.id
+            join hdct.giayChiTiet gct
+            join gct.giay g
+            where (coalesce(hd.ngayThanhToan, hd.ngayLap) >= :tuNgay)
+              and (coalesce(hd.ngayThanhToan, hd.ngayLap) < :denNgay)
+              and (:brandId is null or g.thuongHieu.id = :brandId)
+              and (:keyword is null
+                   or lower(g.ma) like concat('%', :keyword, '%')
+                   or lower(g.ten) like concat('%', :keyword, '%'))
+            group by hd.trangThai
+            """)
+    List<Object[]> countByTrangThaiWithFilters(
+            @Param("tuNgay") Instant tuNgay,
+            @Param("denNgay") Instant denNgay,
+            @Param("brandId") Integer brandId,
+            @Param("keyword") String keyword
+    );
 }

@@ -8,6 +8,10 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
 
     List<ThanhToan> findByHoaDonIdOrderByNgayTaoDesc(Integer hoaDonId);
@@ -23,7 +27,6 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
             Integer trangThai
     );
 
-    boolean existsByPhieuTraHangIdAndLoaiGiaoDich(Integer phieuTraHangId, Integer loaiGiaoDich);
-
-    boolean existsByGiaoDichGocIdAndLoaiGiaoDich(Integer giaoDichGocId, Integer loaiGiaoDich);
+    @Query("select t from ThanhToan t where t.hoaDon.id in :hoaDonIds")
+    List<ThanhToan> findByHoaDonIdIn(@Param("hoaDonIds") Collection<Integer> hoaDonIds);
 }
