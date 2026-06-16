@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup >
 import { useQuanLyKhachHang } from "./useQuanLyKhachHang";
 const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, Eye, FileSpreadsheet, Filter, Home, MapPin, Package, Plus, RotateCcw, Search, ShoppingBag, Trash2, Users, X, doiTrangThaiKhachHang, layDanhSachKhachHang, layDanhSachDiaChi, themDiaChi, capNhatDiaChi, xoaDiaChi, datMacDinhDiaChi, layHoaDonTheoKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, Card, Button, Input, Badge, Table, router, CUSTOMER_CREATE_TOAST_KEY, danhSach, dangTai, loiTrang, boLoc, dsTrangThai, hienThiThongBao, taiThongBaoDieuHuong, mauTrangThai, dinhDangNgay, dinhDangTien, mauTrangThaiDon, badgeTrangThaiDon, soPhanTuMotTrang, trangHienTai, pageSizeOptions, tongSoTrang, danhSachPhanTrang, taiDanhSach, lamMoiBoLoc, xemChiTiet, dangDoiTrangThai, toggleTrangThai, themMoi, xuatExcel, timer, khModalDiaChi, dsDiaChiModal, dangTaiDiaChi, loiDiaChi, hienFormDiaChi, diaChiDangSua, dangLuuDiaChi, formDiaChi, dsTinh, dsHuyen, dsXa, maTinhChon, maHuyenChon, dangTaiDiaPhuong, taiDsTinh, onTinhChange, onHuyenChange, onXaChange, preFillCascadeForEdit, moModalDiaChi, taiDsModalDiaChi, dongModalDiaChi, moThemDiaChiModal, moSuaDiaChiModal, luuDiaChiModal, xoaDiaChiModal, datMacDinhModal, capNhatDiaChiMacDinhTrongBang, moModalDonHang } = useQuanLyKhachHang();
 </script>
@@ -268,7 +268,7 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
                 <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
                 <select
                   :value="maTinhChon"
-                  @change="onTinhChange(Number(($event.target as HTMLSelectElement).value) || null)"
+                  @change="onTinhChange(Number(($event.target).value) || null)"
                   class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10 focus:bg-white"
                 >
                   <option value="">-- Chọn tỉnh/thành --</option>
@@ -279,7 +279,7 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
                 <span class="text-[13px] font-semibold text-slate-500">Quận/Huyện <span class="text-rose-500">*</span></span>
                 <select
                   :value="maHuyenChon"
-                  @change="onHuyenChange(Number(($event.target as HTMLSelectElement).value) || null)"
+                  @change="onHuyenChange(Number(($event.target).value) || null)"
                   :disabled="!maTinhChon"
                   class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10 focus:bg-white disabled:opacity-50"
                 >
@@ -291,7 +291,7 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
                 <span class="text-[13px] font-semibold text-slate-500">Phường/Xã <span class="text-rose-500">*</span></span>
                 <select
                   :value="formDiaChi.phuongXa"
-                  @change="onXaChange(($event.target as HTMLSelectElement).value)"
+                  @change="onXaChange(($event.target).value)"
                   :disabled="!maHuyenChon"
                   class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10 focus:bg-white disabled:opacity-50"
                 >
@@ -333,3 +333,4 @@ const { computed, onActivated, onMounted, ref, watch, useRouter, CheckCircle2, E
 
   </div>
 </template>
+

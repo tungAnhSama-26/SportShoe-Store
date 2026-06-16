@@ -18,8 +18,8 @@ import {
   mauSacApi,
   thuongHieuApi,
   trongLuongApi
-} from '../../../services/danh-muc-api.ts'
-import * as api from '../../../services/san-pham-api.ts'
+} from '../../../services/danh-muc-api.js'
+import * as api from '../../../services/san-pham-api.js'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import { showConfirm } from '../../../utils/alert.js'
 import {
@@ -842,3 +842,4 @@ export function useChiTietSanPhamFormPage() {
   })
   return { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
 }
+

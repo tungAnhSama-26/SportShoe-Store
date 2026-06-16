@@ -439,6 +439,7 @@ CREATE TABLE hoa_don (
     ngay_lap              DATETIME2        NOT NULL CONSTRAINT df_hoa_don_ngay_lap DEFAULT SYSDATETIME(),
     ngay_thanh_toan       DATETIME2        NULL,
     trang_thai            INT              NOT NULL,
+    trang_thai_truoc_yeu_cau_huy INT       NULL,
     tong_tien_hang        DECIMAL(18,2)    NOT NULL,
     tien_giam             DECIMAL(18,2)    NOT NULL CONSTRAINT df_hoa_don_tien_giam DEFAULT 0,
     tong_tien_thanh_toan  DECIMAL(18,2)    NOT NULL,
@@ -446,6 +447,7 @@ CREATE TABLE hoa_don (
     ngay_tao              DATETIME2        NOT NULL CONSTRAINT df_hoa_don_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat         DATETIME2        NULL,
     han_giu_hang           DATETIME2        NULL,
+    da_tru_kho             BIT              NOT NULL CONSTRAINT df_hoa_don_da_tru_kho DEFAULT 0,
     da_nhan_hang           BIT              NOT NULL CONSTRAINT df_hoa_don_da_nhan_hang DEFAULT 0,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
@@ -512,6 +514,7 @@ GO
 
 CREATE TABLE phieu_tra_hang (
     id                     INT              NOT NULL CONSTRAINT pk_phieu_tra_hang PRIMARY KEY IDENTITY(1,1),
+    version                BIGINT           NOT NULL CONSTRAINT df_pth_version DEFAULT 0,
     ma                     NVARCHAR(150)    NOT NULL,
     hoa_don_id             INT              NOT NULL,
     khach_hang_id          UNIQUEIDENTIFIER NULL,
@@ -696,14 +699,26 @@ CREATE INDEX ix_hoa_don_khach_hang ON hoa_don(khach_hang_id);
 CREATE INDEX ix_hoa_don_nhan_vien ON hoa_don(nhan_vien_id);
 CREATE INDEX ix_hoa_don_kenh_ban ON hoa_don(kenh_ban);
 CREATE INDEX ix_hoa_don_trang_thai ON hoa_don(trang_thai);
-CREATE INDEX ix_ls_hd_hoa_don ON lich_su_hoa_don(hoa_don_id);
+CREATE INDEX ix_hoa_don_trang_thai_ngay_tao ON hoa_don(trang_thai, ngay_tao DESC);
+CREATE INDEX ix_hoa_don_kenh_ngay_tao ON hoa_don(kenh_ban, ngay_tao DESC);
+CREATE INDEX ix_ls_hd_hoa_don ON lich_su_hoa_don(hoa_don_id, ngay_tao DESC);
 CREATE INDEX ix_hdct_hoa_don ON hoa_don_chi_tiet(hoa_don_id);
 CREATE INDEX ix_hdct_gct ON hoa_don_chi_tiet(giay_chi_tiet_id);
 CREATE INDEX ix_vc_hoa_don ON van_chuyen(hoa_don_id);
-CREATE INDEX ix_tt_hoa_don ON thanh_toan(hoa_don_id);
+CREATE INDEX ix_tt_hoa_don ON thanh_toan(hoa_don_id, ngay_tao DESC);
 CREATE INDEX ix_tt_phieu_tra_hang ON thanh_toan(phieu_tra_hang_id);
 CREATE INDEX ix_tt_giao_dich_goc ON thanh_toan(giao_dich_goc_id);
-CREATE INDEX ix_pth_hoa_don ON phieu_tra_hang(hoa_don_id);
+CREATE UNIQUE INDEX uq_tt_hoan_tien_phieu
+    ON thanh_toan(phieu_tra_hang_id)
+    WHERE phieu_tra_hang_id IS NOT NULL AND loai_giao_dich = 2;
+CREATE UNIQUE INDEX uq_tt_hoan_tien_giao_dich_goc
+    ON thanh_toan(giao_dich_goc_id)
+    WHERE giao_dich_goc_id IS NOT NULL
+      AND phieu_tra_hang_id IS NULL
+      AND loai_giao_dich = 2;
+CREATE INDEX ix_pth_hoa_don ON phieu_tra_hang(hoa_don_id, ngay_tao DESC);
+CREATE INDEX ix_pth_trang_thai_ngay_tao ON phieu_tra_hang(trang_thai, ngay_tao DESC);
+CREATE INDEX ix_pth_trang_thai_ngay_duyet ON phieu_tra_hang(trang_thai, ngay_duyet);
 CREATE INDEX ix_pthct_phieu ON phieu_tra_hang_chi_tiet(phieu_tra_hang_id);
 CREATE INDEX ix_ls_pth_phieu ON lich_su_phieu_tra_hang(phieu_tra_hang_id, ngay_tao DESC);
 CREATE INDEX ix_hat_phieu ON hinh_anh_tra_hang(phieu_tra_hang_id);

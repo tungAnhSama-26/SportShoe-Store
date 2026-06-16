@@ -2,7 +2,6 @@
 node_modules/
 
 # Thư mục chứa code sau khi build xong (Để chạy production)
-dist/
 dist-ssr/
 *.local
 

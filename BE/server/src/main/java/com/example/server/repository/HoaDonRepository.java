@@ -4,7 +4,9 @@ import com.example.server.entity.HoaDon;
 import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -65,6 +67,17 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             where hd.id = :id
             """)
     java.util.Optional<HoaDon> findDetailById(@Param("id") Integer id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select hd
+            from HoaDon hd
+            left join fetch hd.khachHang
+            left join fetch hd.nhanVien
+            left join fetch hd.phieuGiamGia
+            where hd.id = :id
+            """)
+    java.util.Optional<HoaDon> findDetailByIdForUpdate(@Param("id") Integer id);
 
     @Query("""
             select distinct hd
