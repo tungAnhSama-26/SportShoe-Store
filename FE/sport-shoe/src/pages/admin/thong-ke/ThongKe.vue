@@ -1,13 +1,14 @@
 <script setup>
 import { useThongKeDashboard } from "./useThongKeDashboard";
-const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass } = useThongKeDashboard();
+import { TrendingDown } from "lucide-vue-next";
+const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions } = useThongKeDashboard();
 </script>
 
 <template>
   <div class="space-y-6 pb-6">
     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
       <div>
-        <h2 class="text-[24px] font-bold text-slate-800">Thống kê </h2>
+        <h2 class="text-[24px] font-bold text-slate-800 dark:text-slate-100">Thống kê </h2>
       </div>
     </div>
 
@@ -185,7 +186,12 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       {{ errorMessage }}
     </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div v-if="filters.fromDate && filters.toDate" class="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-700 flex items-center gap-2 shadow-sm">
+      <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+      <span>Đang hiển thị dữ liệu thống kê từ ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.fromDate) }}</strong> đến ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.toDate) }}</strong></span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       <div
         v-for="card in summaryCards"
         :key="card.label"
@@ -276,6 +282,112 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
           class="flex h-[360px] items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500"
         >
           Chưa có dữ liệu thương hiệu phù hợp.
+        </div>
+      </Card>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.65fr_1fr]">
+      <Card>
+        <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <Calendar class="h-4 w-4 text-emerald-500" />
+              Thống kê theo chu kỳ thời gian
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-[700px] w-full border-separate border-spacing-y-3 text-left">
+            <thead>
+              <tr class="text-xs font-bold uppercase tracking-[0.18em] text-slate-950">
+                <th class="px-4 py-2">Thời gian</th>
+                <th class="px-4 py-2 text-right">Doanh thu gốc</th>
+                <th class="px-4 py-2 text-right">Doanh thu thực tế</th>
+                <th class="px-4 py-2 text-right">Số đơn</th>
+                <th class="px-4 py-2 text-right">AOV (Trung bình/đơn)</th>
+                <th class="px-4 py-2 text-right">Tăng trưởng</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in (dashboard.thongKeTheoThoiGian || [])"
+                :key="row.kyThongKe"
+                class="rounded-[20px] bg-slate-50 text-sm text-slate-700 hover:bg-slate-100/70 transition-colors"
+              >
+                <td class="rounded-l-[20px] px-4 py-4 font-semibold text-slate-800">
+                  {{ row.kyThongKe }}
+                </td>
+                <td class="px-4 py-4 text-right font-semibold text-slate-700">
+                  {{ formatCurrency(row.doanhThu) }}
+                </td>
+                <td class="px-4 py-4 text-right font-semibold text-emerald-600">
+                  {{ formatCurrency(row.doanhThuThucTe) }}
+                </td>
+                <td class="px-4 py-4 text-right font-semibold text-slate-800">
+                  {{ formatNumber(row.soDon) }}
+                </td>
+                <td class="px-4 py-4 text-right font-semibold text-slate-700">
+                  {{ formatCurrency(row.giaTriTrungBinh) }}
+                </td>
+                <td class="rounded-r-[20px] px-4 py-4 text-right font-semibold">
+                  <span
+                    :class="[
+                      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold',
+                      row.tangTruong >= 0
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'bg-rose-50 text-rose-600'
+                    ]"
+                  >
+                    <TrendingUp v-if="row.tangTruong >= 0" class="h-3.5 w-3.5" />
+                    <TrendingDown v-else class="h-3.5 w-3.5" />
+                    {{ row.tangTruong >= 0 ? '+' : '' }}{{ row.tangTruong }}%
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card>
+        <div class="mb-6 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <PieChart class="h-4 w-4 text-sky-500" />
+            Cơ cấu trạng thái đơn hàng
+          </div>
+        </div>
+
+        <div v-if="hasOrderStatusData" class="space-y-5">
+          <div class="h-[250px]">
+            <Pie :data="orderStatusChartData" :options="orderStatusChartOptions" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto pr-1">
+            <div
+              v-for="(status, index) in dashboard.bieuDoTrangThaiDonHang"
+              :key="status.trangThai"
+              class="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs"
+            >
+              <div class="flex items-center gap-2 font-medium text-slate-700 min-w-0">
+                <span
+                  class="h-2 w-2 rounded-full shrink-0"
+                  :style="{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }"
+                />
+                <span class="truncate">{{ status.trangThai }}</span>
+              </div>
+              <span class="font-semibold text-slate-800 ml-1">
+                {{ formatNumber(status.soLuong) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="flex h-[360px] items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500"
+        >
+          Chưa có dữ liệu trạng thái đơn hàng phù hợp.
         </div>
       </Card>
     </div>
@@ -491,6 +603,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
               <th class="px-4 py-2">Tên sản phẩm</th>
               <th class="px-4 py-2">Thương hiệu</th>
               <th class="px-4 py-2 text-right">Đã bán</th>
+              <th class="px-4 py-2 text-right">Số lượng trả</th>
               <th class="px-4 py-2 text-right">Doanh thu</th>
               <th class="px-4 py-2 text-right">Tồn kho</th>
             </tr>
@@ -530,6 +643,9 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
               </td>
               <td class="px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatNumber(product.daBan) }}
+              </td>
+              <td class="px-4 py-4 text-right font-semibold text-rose-600">
+                {{ formatNumber(product.soLuongTra) }}
               </td>
               <td class="px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatCurrency(product.doanhThu) }}

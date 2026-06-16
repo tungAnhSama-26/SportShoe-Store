@@ -9,16 +9,22 @@ import com.example.server.core.admin.thongKe.dto.response.ThongKeSanPhamResponse
 import com.example.server.core.admin.thongKe.dto.response.ThongKeThuongHieuResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThongKeTongQuanResponse;
 import com.example.server.core.admin.thongKe.dto.response.ThuongHieuThongKeFilterResponse;
+import com.example.server.core.admin.thongKe.dto.response.ThongKeTheoThoiGianResponse;
+import com.example.server.core.admin.thongKe.dto.response.ThongKeTrangThaiDonHangResponse;
 import com.example.server.entity.Giay;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.ThuongHieu;
+import com.example.server.entity.ThanhToan;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
+import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.ThuongHieuRepository;
+import com.example.server.repository.ThanhToanRepository;
+import com.example.server.repository.PhieuTraHangChiTietRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,6 +39,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ThongKeService {
 
     private static final int TRANG_THAI_HOAT_DONG = 1;
-    private static final List<Integer> TRANG_THAI_HOA_DON_HOP_LE = List.of(2, 3, 4);
+    private static final List<Integer> TRANG_THAI_HOA_DON_HOP_LE = List.of(5);
     private static final String NHAN_VIEN_MAC_DINH = "Chưa gán nhân viên";
     private static final ZoneId MUI_GIO_HE_THONG = ZoneId.of("Asia/Bangkok");
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -51,17 +59,26 @@ public class ThongKeService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final KhachHangRepository khachHangRepository;
     private final ThuongHieuRepository thuongHieuRepository;
+    private final HoaDonRepository hoaDonRepository;
+    private final ThanhToanRepository thanhToanRepository;
+    private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
 
     public ThongKeService(
             HoaDonChiTietRepository hoaDonChiTietRepository,
             GiayChiTietRepository giayChiTietRepository,
             KhachHangRepository khachHangRepository,
-            ThuongHieuRepository thuongHieuRepository
+            ThuongHieuRepository thuongHieuRepository,
+            HoaDonRepository hoaDonRepository,
+            ThanhToanRepository thanhToanRepository,
+            PhieuTraHangChiTietRepository phieuTraHangChiTietRepository
     ) {
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.giayChiTietRepository = giayChiTietRepository;
         this.khachHangRepository = khachHangRepository;
         this.thuongHieuRepository = thuongHieuRepository;
+        this.hoaDonRepository = hoaDonRepository;
+        this.thanhToanRepository = thanhToanRepository;
+        this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
     }
 
     @Transactional(readOnly = true)
@@ -74,9 +91,37 @@ public class ThongKeService {
                 request.periodType()
         );
 
-        List<HoaDonChiTiet> tatCaDongBanHang = hoaDonChiTietRepository.findAllForThongKe(TRANG_THAI_HOA_DON_HOP_LE);
+        LocalDate homNay = LocalDate.now(MUI_GIO_HE_THONG);
+        LocalDate startOfLastYear = homNay.minusYears(1).withDayOfYear(1);
+        Instant limitDate = startOfLastYear.atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        if (boLoc.tuNgayInstant().isBefore(limitDate)) {
+            limitDate = boLoc.tuNgayInstant();
+        }
+
+        List<HoaDonChiTiet> tatCaDongBanHang = hoaDonChiTietRepository.findAllForThongKe(TRANG_THAI_HOA_DON_HOP_LE, limitDate);
         List<GiayChiTiet> tatCaSanPham = giayChiTietRepository.findAllForThongKe();
         List<KhachHang> tatCaKhachHang = khachHangRepository.findByTrangThai(TRANG_THAI_HOAT_DONG);
+
+        Set<Integer> tatCaHoaDonIds = tatCaDongBanHang.stream()
+                .map(line -> line.getHoaDon().getId())
+                .collect(Collectors.toSet());
+        Map<Integer, List<ThanhToan>> thanhToanMap = new HashMap<>();
+        if (!tatCaHoaDonIds.isEmpty()) {
+            List<ThanhToan> tatCaThanhToan = thanhToanRepository.findByHoaDonIdIn(tatCaHoaDonIds);
+            thanhToanMap = tatCaThanhToan.stream()
+                    .collect(Collectors.groupingBy(tt -> tt.getHoaDon().getId()));
+        }
+
+        List<Object[]> rowsTra = phieuTraHangChiTietRepository.sumReturnedQuantityGroupedByGiayIdWithDates(
+                boLoc.tuNgayInstant(),
+                boLoc.denNgayDocQuyenInstant()
+        );
+        Map<Integer, Long> mapSoLuongTra = new HashMap<>();
+        for (Object[] row : rowsTra) {
+            if (row[0] != null && row[1] != null) {
+                mapSoLuongTra.put((Integer) row[0], ((Number) row[1]).longValue());
+            }
+        }
 
         List<HoaDonChiTiet> dongBanHangTheoBoLoc = tatCaDongBanHang.stream()
                 .filter(dong -> khopBoLocDongBanHang(dong, boLoc))
@@ -98,19 +143,45 @@ public class ThongKeService {
                         boLoc.thuongHieuId(),
                         boLoc.keyword()
                 ),
-                taoTongQuan(dongBanHangTheoBoLoc, khachMoi),
+                taoTongQuan(dongBanHangTheoBoLoc, khachMoi, thanhToanMap),
                 layThuongHieuBoLoc(),
                 taoBieuDoBanHang(dongBanHangTheoBoLoc, boLoc),
                 taoBieuDoThuongHieu(sanPhamTheoBoLoc),
-                taoThongKeSanPham(dongBanHangTheoBoLoc, sanPhamTheoBoLoc),
-                taoThongKeNhanVien(dongBanHangTheoBoLoc)
+                taoThongKeSanPham(dongBanHangTheoBoLoc, sanPhamTheoBoLoc, mapSoLuongTra),
+                taoThongKeNhanVien(dongBanHangTheoBoLoc),
+                taoThongKeTheoThoiGian(tatCaDongBanHang, boLoc, thanhToanMap),
+                taoBieuDoTrangThaiDonHang(boLoc)
         );
     }
 
-    private ThongKeTongQuanResponse taoTongQuan(List<HoaDonChiTiet> dongBanHang, long khachMoi) {
+    private ThongKeTongQuanResponse taoTongQuan(
+            List<HoaDonChiTiet> dongBanHang,
+            long khachMoi,
+            Map<Integer, List<ThanhToan>> thanhToanMap
+    ) {
         BigDecimal tongDoanhThu = dongBanHang.stream()
-                .map(HoaDonChiTiet::getThanhTien)
+                .map(HoaDonChiTiet::getHoaDon)
+                .distinct()
+                .map(h -> h.getTongTienHang() != null ? h.getTongTienHang() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal doanhThuThucTe = dongBanHang.stream()
+                .map(HoaDonChiTiet::getHoaDon)
+                .distinct()
+                .map(h -> {
+                    BigDecimal gross = h.getTongTienHang() != null ? h.getTongTienHang() : BigDecimal.ZERO;
+                    BigDecimal voucher = h.getTienGiam() != null ? h.getTienGiam() : BigDecimal.ZERO;
+                    BigDecimal refund = BigDecimal.ZERO;
+                    List<ThanhToan> payments = thanhToanMap.getOrDefault(h.getId(), List.of());
+                    for (ThanhToan tt : payments) {
+                        if (tt.getTrangThai() != null && tt.getTrangThai() == 5) { // Đã hoàn tiền
+                            refund = refund.add(tt.getSoTien() != null ? tt.getSoTien() : BigDecimal.ZERO);
+                        }
+                    }
+                    return gross.subtract(voucher).subtract(refund);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .max(BigDecimal.ZERO);
 
         long tongDonHang = dongBanHang.stream()
                 .map(HoaDonChiTiet::getHoaDon)
@@ -123,7 +194,7 @@ public class ThongKeService {
                 .mapToLong(soLuong -> soLuong == null ? 0L : soLuong.longValue())
                 .sum();
 
-        return new ThongKeTongQuanResponse(tongDoanhThu, tongDonHang, sanPhamDaBan, khachMoi);
+        return new ThongKeTongQuanResponse(tongDoanhThu, doanhThuThucTe, tongDonHang, sanPhamDaBan, khachMoi);
     }
 
     private List<ThuongHieuThongKeFilterResponse> layThuongHieuBoLoc() {
@@ -200,7 +271,8 @@ public class ThongKeService {
 
     private List<ThongKeSanPhamResponse> taoThongKeSanPham(
             List<HoaDonChiTiet> dongBanHang,
-            List<GiayChiTiet> sanPhams
+            List<GiayChiTiet> sanPhams,
+            Map<Integer, Long> mapSoLuongTra
     ) {
         Map<Integer, SanPhamThongKe> thongKeSanPhamMap = new LinkedHashMap<>();
 
@@ -251,6 +323,7 @@ public class ThongKeService {
         List<ThongKeSanPhamResponse> ketQua = new ArrayList<>();
         for (int index = 0; index < danhSachSapXep.size(); index++) {
             SanPhamThongKe sanPham = danhSachSapXep.get(index);
+            Long soLuongTra = mapSoLuongTra.getOrDefault(sanPham.sanPhamId(), 0L);
             ketQua.add(new ThongKeSanPhamResponse(
                     index + 1,
                     sanPham.sanPhamId(),
@@ -259,7 +332,8 @@ public class ThongKeService {
                     sanPham.thuongHieu(),
                     sanPham.daBan(),
                     sanPham.doanhThu(),
-                    sanPham.tonKho()
+                    sanPham.tonKho(),
+                    soLuongTra
             ));
         }
 
@@ -615,5 +689,166 @@ public class ThongKeService {
         private BigDecimal doanhThu() {
             return doanhThu;
         }
+    }
+
+    private record PeriodStats(
+            BigDecimal revenue,
+            BigDecimal actualRevenue,
+            long orders,
+            double average
+    ) {}
+
+    private PeriodStats computePeriodStats(
+            List<HoaDonChiTiet> allLines,
+            Instant start,
+            Instant end,
+            BoLocThongKe boLoc,
+            Map<Integer, List<ThanhToan>> thanhToanMap
+    ) {
+        List<HoaDonChiTiet> lines = allLines.stream()
+                .filter(line -> {
+                    Instant tradeDate = layNgayGiaoDichInstant(line.getHoaDon());
+                    if (tradeDate == null || tradeDate.isBefore(start) || !tradeDate.isBefore(end)) {
+                        return false;
+                    }
+                    return khopBoLocSanPham(line.getGiayChiTiet().getGiay(), boLoc);
+                })
+                .toList();
+
+        List<HoaDon> distinctInvoices = lines.stream()
+                .map(HoaDonChiTiet::getHoaDon)
+                .distinct()
+                .toList();
+
+        BigDecimal revenue = BigDecimal.ZERO;
+        BigDecimal actualRevenue = BigDecimal.ZERO;
+
+        for (HoaDon h : distinctInvoices) {
+            BigDecimal gross = h.getTongTienHang() != null ? h.getTongTienHang() : BigDecimal.ZERO;
+            BigDecimal voucher = h.getTienGiam() != null ? h.getTienGiam() : BigDecimal.ZERO;
+            BigDecimal refund = BigDecimal.ZERO;
+            List<ThanhToan> payments = thanhToanMap.getOrDefault(h.getId(), List.of());
+            for (ThanhToan tt : payments) {
+                if (tt.getTrangThai() != null && tt.getTrangThai() == 5) { // Đã hoàn tiền
+                    refund = refund.add(tt.getSoTien() != null ? tt.getSoTien() : BigDecimal.ZERO);
+                }
+            }
+            BigDecimal net = gross.subtract(voucher).subtract(refund);
+            revenue = revenue.add(gross);
+            actualRevenue = actualRevenue.add(net);
+        }
+        actualRevenue = actualRevenue.max(BigDecimal.ZERO);
+
+        long orders = distinctInvoices.size();
+        double average = orders > 0 ? (revenue.doubleValue() / orders) : 0.0;
+
+        return new PeriodStats(revenue, actualRevenue, orders, average);
+    }
+
+    private List<ThongKeTheoThoiGianResponse> taoThongKeTheoThoiGian(
+            List<HoaDonChiTiet> allLines,
+            BoLocThongKe boLoc,
+            Map<Integer, List<ThanhToan>> thanhToanMap
+    ) {
+        LocalDate homNay = LocalDate.now(MUI_GIO_HE_THONG);
+
+        // Today and Yesterday
+        Instant startToday = homNay.atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endToday = homNay.plusDays(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant startYesterday = homNay.minusDays(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endYesterday = startToday;
+
+        // This Week and Last Week
+        LocalDate startOfWeek = homNay.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        Instant startThisWeek = startOfWeek.atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endThisWeek = startOfWeek.plusWeeks(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant startLastWeek = startOfWeek.minusWeeks(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endLastWeek = startThisWeek;
+
+        // This Month and Last Month
+        LocalDate startOfMonth = homNay.withDayOfMonth(1);
+        Instant startThisMonth = startOfMonth.atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endThisMonth = startOfMonth.plusMonths(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant startLastMonth = startOfMonth.minusMonths(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endLastMonth = startThisMonth;
+
+        // This Year and Last Year
+        LocalDate startOfYear = homNay.withDayOfYear(1);
+        Instant startThisYear = startOfYear.atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endThisYear = startOfYear.plusYears(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant startLastYear = startOfYear.minusYears(1).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
+        Instant endLastYear = startThisYear;
+
+        PeriodStats statsToday = computePeriodStats(allLines, startToday, endToday, boLoc, thanhToanMap);
+        PeriodStats statsYesterday = computePeriodStats(allLines, startYesterday, endYesterday, boLoc, thanhToanMap);
+
+        PeriodStats statsThisWeek = computePeriodStats(allLines, startThisWeek, endThisWeek, boLoc, thanhToanMap);
+        PeriodStats statsLastWeek = computePeriodStats(allLines, startLastWeek, endLastWeek, boLoc, thanhToanMap);
+
+        PeriodStats statsThisMonth = computePeriodStats(allLines, startThisMonth, endThisMonth, boLoc, thanhToanMap);
+        PeriodStats statsLastMonth = computePeriodStats(allLines, startLastMonth, endLastMonth, boLoc, thanhToanMap);
+
+        PeriodStats statsThisYear = computePeriodStats(allLines, startThisYear, endThisYear, boLoc, thanhToanMap);
+        PeriodStats statsLastYear = computePeriodStats(allLines, startLastYear, endLastYear, boLoc, thanhToanMap);
+
+        List<ThongKeTheoThoiGianResponse> result = new ArrayList<>();
+        result.add(createPeriodResponse("Hôm nay", statsToday, statsYesterday));
+        result.add(createPeriodResponse("Tuần này", statsThisWeek, statsLastWeek));
+        result.add(createPeriodResponse("Tháng này", statsThisMonth, statsLastMonth));
+        result.add(createPeriodResponse("Năm nay", statsThisYear, statsLastYear));
+
+        return result;
+    }
+
+    private ThongKeTheoThoiGianResponse createPeriodResponse(String periodName, PeriodStats current, PeriodStats previous) {
+        BigDecimal prevRevenue = previous.revenue();
+        double growth = 0.0;
+        if (prevRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            growth = (current.revenue().subtract(prevRevenue))
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(prevRevenue, 2, java.math.RoundingMode.HALF_UP)
+                    .doubleValue();
+        } else if (current.revenue().compareTo(BigDecimal.ZERO) > 0) {
+            growth = 100.0;
+        }
+
+        return new ThongKeTheoThoiGianResponse(
+                periodName,
+                current.revenue(),
+                current.actualRevenue(),
+                current.orders(),
+                BigDecimal.valueOf(current.average()),
+                growth
+        );
+    }
+
+    private List<ThongKeTrangThaiDonHangResponse> taoBieuDoTrangThaiDonHang(BoLocThongKe boLoc) {
+        List<Object[]> rows = hoaDonRepository.countByTrangThaiWithFilters(
+                boLoc.tuNgayInstant(),
+                boLoc.denNgayDocQuyenInstant(),
+                boLoc.thuongHieuId(),
+                boLoc.keyword()
+        );
+
+        return rows.stream()
+                .map(row -> {
+                    Integer trangThaiCode = (Integer) row[0];
+                    Long soLuong = (Long) row[1];
+                    String trangThaiLabel = switch (trangThaiCode) {
+                        case 1 -> "Chờ xác nhận";
+                        case 2 -> "Chờ lấy hàng";
+                        case 3 -> "Đang giao hàng";
+                        case 4 -> "Đã giao hàng";
+                        case 5 -> "Hoàn thành";
+                        case 6 -> "Hủy";
+                        case 7 -> "Yêu cầu hủy";
+                        case 8 -> "Cần hoàn tiền";
+                        case 9 -> "Đã xác nhận";
+                        case 10 -> "Giao hàng thất bại";
+                        default -> "Khác";
+                    };
+                    return new ThongKeTrangThaiDonHangResponse(trangThaiLabel, soLuong);
+                })
+                .toList();
     }
 }
