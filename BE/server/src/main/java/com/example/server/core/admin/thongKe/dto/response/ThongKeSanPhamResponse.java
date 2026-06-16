@@ -10,6 +10,7 @@ public record ThongKeSanPhamResponse(
         String thuongHieu,
         Long daBan,
         BigDecimal doanhThu,
-        Long tonKho
+        Long tonKho,
+        Long soLuongTra
 ) {
 }

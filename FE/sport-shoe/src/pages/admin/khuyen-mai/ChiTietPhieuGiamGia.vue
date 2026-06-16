@@ -1,11 +1,7 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft,
-  CheckCircle2,
   CheckSquare,
-  CircleX,
   Eye,
   RefreshCcw,
   Save,
@@ -15,772 +11,56 @@ import {
   Users,
   X,
 } from "lucide-vue-next";
-import {
-  createPhieuGiamGia,
-  createPhieuGiamGiaKhachHang,
-  deletePhieuGiamGiaKhachHang,
-  getPhieuGiamGiaDetail,
-  getPhieuGiamGiaKhachHangList,
-  updatePhieuGiamGia,
-} from "../../../services/khuyen-mai";
-import { layDanhSachKhachHang } from "../../../services/khach-hang";
-import { layDanhSachHoaDon } from "../../../services/hoa-don";
-import { getDisplayErrorMessage } from "../../../utils/error-message";
-import { showConfirm, showSuccess, showError } from "../../../utils/alert";
+import { useChiTietPhieuGiamGia } from "./useChiTietPhieuGiamGia";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 
-const route = useRoute();
-const router = useRouter();
-
-const id = route.params.id;
-const laMoi = !id;
-
-const dangTai = ref(false);
-const saving = ref(false);
-const loiTrang = ref("");
-const toast = ref({
-  hienThi: false,
-  loai: "success",
-  tieuDe: "",
-  noiDung: "",
-});
-let toastTimer = null;
-
-const toastClass = computed(() => {
-  if (toast.value.loai === "success")
-    return "border-rose-100 bg-white text-rose-700";
-  if (toast.value.loai === "warning")
-    return "border-amber-100 bg-amber-50 text-amber-700";
-  return "border-rose-100 bg-rose-50 text-rose-700";
-});
-
-const toastIconClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-rose-50 text-rose-600";
-  if (toast.value.loai === "warning") return "bg-amber-100 text-amber-600";
-  return "bg-rose-100 text-rose-600";
-});
-
-const toastAccentClass = computed(() => {
-  if (toast.value.loai === "success") return "bg-[#cf1018]";
-  if (toast.value.loai === "warning") return "bg-amber-500";
-  return "bg-rose-500";
-});
-
-const ToastIcon = computed(() => {
-  if (toast.value.loai === "success") return CheckCircle2;
-  return CircleX;
-});
-
-function hienThiThongBao(loai, tieuDe, noiDung = "") {
-  if (loai === "success") {
-    showSuccess(noiDung || tieuDe, tieuDe);
-    return;
-  }
-
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value = { hienThi: true, loai, tieuDe, noiDung };
-  toastTimer = setTimeout(() => {
-    toast.value.hienThi = false;
-  }, 3200);
-}
-
-const formErrors = reactive({});
-
-const form = reactive({
-  id: null,
-  ma: "",
-  ten: "",
-  loai: "1",
-  loaiPhieu: "1",
-  giaTri: "",
-  giaTriToiThieu: "0",
-  giamToiDa: "0",
-  ngayBatDau: "",
-  ngayKetThuc: "",
-  soLuong: "",
-  trangThai: "1",
-});
-
-const soLuongVoHan = ref(false);
-
-const soLuongDisplay = computed({
-  get() {
-    if (soLuongVoHan.value) {
-      return "Vô hạn";
-    }
-    return form.soLuong;
-  },
-  set(val) {
-    if (!soLuongVoHan.value) {
-      form.soLuong = val;
-    }
-  }
-});
-
-const isReadOnly = computed(() => {
-  return false;
-});
-
-// Computed cho giá trị giảm (% hoặc VNĐ)
-const giaTriDisplay = computed({
-  get() {
-    if (form.loai === "1") {
-      // Phần trăm - trả về giá trị số
-      return form.giaTri;
-    } else {
-      // Tiền mặt - trả về giá trị đã format
-      return form.giaTri;
-    }
-  },
-  set(value) {
-    if (form.loai === "1") {
-      // Phần trăm - lưu trực tiếp
-      form.giaTri = value;
-    } else {
-      // Tiền mặt - format trước khi lưu
-      form.giaTri = formatVndNumber(value);
-    }
-  }
-});
-
-// Computed cho giá trị đơn tối thiểu
-const giaTriToiThieuVnd = computed({
-  get() {
-    return form.giaTriToiThieu;
-  },
-  set(value) {
-    form.giaTriToiThieu = formatVndNumber(value);
-  }
-});
-
-// Computed cho giảm tối đa
-const giamToiDaVnd = computed({
-  get() {
-    return form.giamToiDa;
-  },
-  set(value) {
-    form.giamToiDa = formatVndNumber(value);
-  }
-});
-
-const searchKh = ref("");
-const danhSachKh = ref([]);
-const dsEmailChon = ref([]);
-const dangTaiKh = ref(false);
-const lienKetKhachHangHienTai = ref([]);
-const soLuongPhieuCongKhai = ref("");
-
-// Phân trang khách hàng
-const trangKh = ref(1);
-const soPhanTuMotTrangKh = ref(5);
-const boLocKh = ref("tat-ca"); // "tat-ca" | "da-chon"
-
-// Computed: Danh sách khách hàng sau khi lọc
-const danhSachKhFiltered = computed(() => {
-  if (boLocKh.value === "da-chon") {
-    return danhSachKh.value.filter((kh) => dsEmailChon.value.includes(kh.email));
-  }
-  return danhSachKh.value;
-});
-
-// Computed: Tổng số trang
-const tongSoTrangKh = computed(() => {
-  return Math.max(1, Math.ceil(danhSachKhFiltered.value.length / soPhanTuMotTrangKh.value));
-});
-
-// Computed: Khách hàng hiển thị trong trang hiện tại
-const danhSachKhTrang = computed(() => {
-  const start = (trangKh.value - 1) * soPhanTuMotTrangKh.value;
-  return danhSachKhFiltered.value.slice(start, start + soPhanTuMotTrangKh.value);
-});
-
-function getToday() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function parseVndNumber(value) {
-  const rawValue = String(value ?? "").replace(/[^\d]/g, "");
-  return rawValue ? Number(rawValue) : 0;
-}
-
-function formatVndNumber(value) {
-  const numberValue = parseVndNumber(value);
-  return numberValue ? numberValue.toLocaleString("vi-VN") : "0";
-}
-
-function handleVndInput(field, event) {
-  form[field] = formatVndNumber(event.target.value);
-}
-
-function resetErrors() {
-  Object.keys(formErrors).forEach((key) => delete formErrors[key]);
-}
-
-function taoMaNgauNhien() {
-  form.ma = `VCH${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-}
-
-function dongBoSoLuongPhieuCaNhan() {
-  if (form.loaiPhieu === "2") {
-    form.soLuong = String(dsEmailChon.value.length);
-  }
-}
-
-async function taiDanhSachKh() {
-  dangTaiKh.value = true;
-  try {
-    const res = await layDanhSachKhachHang({
-      keyword: searchKh.value,
-      page: 0,
-      size: 50,
-    });
-    danhSachKh.value = Array.isArray(res) ? res : res?.content || [];
-  } catch (error) {
-    console.error("Lỗi tải khách hàng:", error);
-  } finally {
-    dangTaiKh.value = false;
-  }
-}
-
-async function taiLienKetKhachHangTheoPhieu(maPhieu) {
-  if (!maPhieu) {
-    lienKetKhachHangHienTai.value = [];
-    dsEmailChon.value = [];
-    return;
-  }
-
-  const data = await getPhieuGiamGiaKhachHangList({
-    keyword: maPhieu,
-    pageNo: 0,
-    pageSize: 1000,
-  });
-
-  lienKetKhachHangHienTai.value = (data?.content || []).filter(
-    (item) => item?.maPhieuGiamGia === maPhieu && item?.email,
-  );
-  dsEmailChon.value = lienKetKhachHangHienTai.value.map((item) => item.email);
-  dongBoSoLuongPhieuCaNhan();
-}
-
-function toggleEmail(email) {
-  if (!email) return;
-
-  const index = dsEmailChon.value.indexOf(email);
-  if (index === -1) {
-    dsEmailChon.value.unshift(email);
-    return;
-  }
-
-  dsEmailChon.value.splice(index, 1);
-}
-
-function xoaKhachHang(email) {
-  const index = dsEmailChon.value.indexOf(email);
-  if (index !== -1) {
-    dsEmailChon.value.splice(index, 1);
-  }
-}
-
-function chonTatCa() {
-  const emailsTrang = danhSachKh.value.map((kh) => kh.email).filter(Boolean);
-  const daChonHet =
-    emailsTrang.length > 0 &&
-    emailsTrang.every((email) => dsEmailChon.value.includes(email));
-
-  if (daChonHet) {
-    dsEmailChon.value = dsEmailChon.value.filter(
-      (email) => !emailsTrang.includes(email),
-    );
-    return;
-  }
-
-  dsEmailChon.value = Array.from(
-    new Set([...dsEmailChon.value, ...emailsTrang]),
-  );
-}
-
-let searchTimer;
-function handleSearch() {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(taiDanhSachKh, 400);
-}
-
-watch(
-  () => form.loaiPhieu,
-  (loaiPhieuMoi, loaiPhieuCu) => {
-    if (loaiPhieuMoi === "2") {
-      soLuongPhieuCongKhai.value = form.soLuong;
-      dongBoSoLuongPhieuCaNhan();
-      soLuongVoHan.value = false; // Reset vô hạn khi chuyển sang cá nhân
-      return;
-    }
-
-    delete formErrors.email;
-    if (loaiPhieuCu === "2") {
-      form.soLuong = soLuongPhieuCongKhai.value;
-    }
-  },
-);
-
-watch(soLuongVoHan, (isVoHan) => {
-  if (isVoHan) {
-    form.soLuong = "999999";
-    delete formErrors.soLuong;
-  } else if (form.soLuong === "999999") {
-    form.soLuong = "";
-  }
-});
-
-
-watch(
+const {
+  route,
+  router,
+  id,
+  laMoi,
+  dangTai,
+  saving,
+  loiTrang,
+  formErrors,
+  form,
+  soLuongVoHan,
+  soLuongDisplay,
+  isReadOnly,
+  giaTriDisplay,
+  giaTriToiThieuVnd,
+  giamToiDaVnd,
+  searchKh,
   dsEmailChon,
-  () => {
-    if (form.loaiPhieu === "2") {
-      dongBoSoLuongPhieuCaNhan();
-    }
-  },
-  { deep: true },
-);
-
-watch(
-  () => form.giaTri,
-  (newVal) => {
-    if (newVal === "" || newVal === null || newVal === undefined) {
-      delete formErrors.giaTri;
-      return;
-    }
-    if (Number(form.loai) === 1) {
-      const val = Number(newVal);
-      if (val <= 0) {
-        formErrors.giaTri = "Giá trị giảm phải lớn hơn 0%";
-      } else if (val > 100) {
-        formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
-      } else {
-        delete formErrors.giaTri;
-      }
-      // Khi chọn 100%, tự động reset giảm tối đa về 0 và xóa error
-      if (val === 100) {
-        form.giamToiDa = "0";
-        delete formErrors.giamToiDa;
-      }
-    } else {
-      const val = parseVndNumber(newVal);
-      if (val <= 0) {
-        formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
-      } else {
-        delete formErrors.giaTri;
-      }
-    }
-  },
-);
-
-const isLoadingData = ref(false);
-
-watch(
-  () => form.loai,
-  (newLoai, oldLoai) => {
-    // Không xóa giá trị khi đang load dữ liệu
-    if (isLoadingData.value) return;
-    
-    delete formErrors.giaTri;
-    
-    // Chỉ xóa giá trị khi user chủ động đổi loại
-    if (oldLoai && oldLoai !== newLoai) {
-      form.giaTri = "";
-    }
-  },
-);
-
-async function taiChiTiet() {
-  await taiDanhSachKh();
-
-  if (laMoi) {
-    if (!form.ma) {
-      taoMaNgauNhien();
-    }
-    form.ngayBatDau = getToday();
-    // Tải danh sách hóa đơn để lấy lịch sử mua hàng của khách hàng (Tổng đơn, đơn gần nhất)
-    await taiHoaDonLienQuan();
-    return;
-  }
-
-  dangTai.value = true;
-  isLoadingData.value = true;
-  try {
-    const detail = await getPhieuGiamGiaDetail(id);
-    const loai = String(detail.loai ?? 1);
-    const loaiPhieu = String(detail.loaiPhieu ?? 1);
-    const soLuong = String(detail.soLuong ?? "");
-
-    // Kiểm tra số lượng vô hạn
-    if (Number(soLuong) === 999999) {
-      soLuongVoHan.value = true;
-    }
-
-    Object.assign(form, {
-      id: detail.id,
-      ma: detail.ma ?? "",
-      ten: detail.ten ?? "",
-      loai,
-      loaiPhieu,
-      giaTri:
-        loai === "2"
-          ? formatVndNumber(detail.giaTri ?? 0)
-          : String(detail.giaTri ?? ""),
-      giaTriToiThieu: formatVndNumber(detail.giaTriToiThieu ?? 0),
-      giamToiDa: formatVndNumber(detail.giamToiDa ?? 0),
-      ngayBatDau: detail.ngayBatDau ?? "",
-      ngayKetThuc: detail.ngayKetThuc ?? "",
-      soLuong,
-      trangThai: String(detail.trangThai ?? 1),
-    });
-
-    if (loaiPhieu === "2") {
-      await taiLienKetKhachHangTheoPhieu(detail.ma);
-    } else {
-      soLuongPhieuCongKhai.value = soLuong;
-      lienKetKhachHangHienTai.value = [];
-      dsEmailChon.value = [];
-    }
-    await taiHoaDonLienQuan();
-  } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(
-      error,
-      "Không thể tải chi tiết phiếu giảm giá",
-    );
-  } finally {
-    dangTai.value = false;
-    // Đợi một tick để các computed update xong
-    setTimeout(() => {
-      isLoadingData.value = false;
-    }, 100);
-  }
-}
-
-async function dongBoKhachHangPhieuCaNhan(phieuId, maPhieu) {
-  const emailsDaChon = new Set(dsEmailChon.value.filter(Boolean));
-  const lienKetHienTai = lienKetKhachHangHienTai.value.filter(
-    (item) => item?.id && item?.email,
-  );
-  const emailHienTai = new Set(lienKetHienTai.map((item) => item.email));
-
-  const emailsCanThem = [...emailsDaChon].filter(
-    (email) => !emailHienTai.has(email),
-  );
-  const lienKetCanXoa = lienKetHienTai.filter(
-    (item) => !emailsDaChon.has(item.email),
-  );
-
-  await Promise.all(
-    emailsCanThem.map((email) =>
-      createPhieuGiamGiaKhachHang({
-        phieuGiamGiaId: phieuId,
-        email,
-        trangThai: 1,
-      }),
-    ),
-  );
-
-  await Promise.all(
-    lienKetCanXoa.map((item) => deletePhieuGiamGiaKhachHang(item.id)),
-  );
-
-  await taiLienKetKhachHangTheoPhieu(maPhieu);
-}
-
-async function submitForm() {
-  resetErrors();
-  let isValid = true;
-
-  if (!form.ma.trim()) {
-    formErrors.ma = "Vui lòng nhập mã phiếu giảm giá";
-    isValid = false;
-  }
-  if (!form.ten.trim()) {
-    formErrors.ten = "Vui lòng nhập tên phiếu giảm giá";
-    isValid = false;
-  }
-  if (Number(form.loai) === 1) {
-    const val = Number(form.giaTri);
-    if (!form.giaTri || val <= 0) {
-      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
-      isValid = false;
-    } else if (val > 100) {
-      formErrors.giaTri = "Phần trăm giảm không được vượt quá 100%";
-      isValid = false;
-    }
-  } else {
-    const val = parseVndNumber(form.giaTri);
-    if (!form.giaTri || val <= 0) {
-      formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
-      isValid = false;
-    }
-  }
-  if (form.giaTriToiThieu && parseVndNumber(form.giaTriToiThieu) < 1) {
-    formErrors.giaTriToiThieu = "Giá trị đơn tối thiểu phải lớn hơn 0";
-    isValid = false;
-  }
-  if (!soLuongVoHan.value) {
-    if (!form.soLuong || Number(form.soLuong) <= 0) {
-      formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0";
-      isValid = false;
-    }
-  } else {
-    // Vô hạn: gán giá trị lớn
-    form.soLuong = "999999";
-    delete formErrors.soLuong;
-  }
-  if (!form.ngayBatDau) {
-    formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
-    isValid = false;
-  }
-
-  if (!form.ngayKetThuc) {
-    formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
-    isValid = false;
-  }
-  if (
-    form.ngayBatDau &&
-    form.ngayKetThuc &&
-    form.ngayBatDau > form.ngayKetThuc
-  ) {
-    formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
-    isValid = false;
-  }
-  if (form.loaiPhieu === "2" && dsEmailChon.value.length === 0) {
-    formErrors.email = "Phải chọn ít nhất 1 khách hàng cho phiếu cá nhân";
-    hienThiThongBao(
-      "warning",
-      "Chưa chọn khách hàng",
-      "Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân",
-    );
-    isValid = false;
-  }
-
-  if (!isValid) return;
-
-  const confirmMsg = laMoi
-    ? "Bạn có chắc chắn muốn thêm mới phiếu giảm giá này không?"
-    : "Bạn có chắc chắn muốn cập nhật thông tin phiếu giảm giá này không?";
-  const isConfirmed = await showConfirm(confirmMsg);
-  if (!isConfirmed) return;
-
-  saving.value = true;
-  loiTrang.value = "";
-
-  try {
-    const payload = {
-      ma: form.ma.trim(),
-      ten: form.ten.trim(),
-      loai: Number(form.loai),
-      loaiPhieu: Number(form.loaiPhieu),
-      giaTri: parseVndNumber(form.giaTri),
-      giaTriToiThieu: parseVndNumber(form.giaTriToiThieu),
-      giamToiDa: parseVndNumber(form.giamToiDa),
-      ngayBatDau: form.ngayBatDau,
-      ngayKetThuc: form.ngayKetThuc,
-      soLuong: Number(form.soLuong),
-      trangThai: laMoi ? undefined : form.trangThai,
-      ngayTao: laMoi ? getToday() : undefined,
-      ngayCapNhat: !laMoi ? getToday() : undefined,
-    };
-
-    let phieuId = id;
-
-    if (laMoi) {
-      const res = await createPhieuGiamGia(payload);
-      phieuId = res?.id;
-      showSuccess("Tạo phiếu giảm giá thành công");
-    } else {
-      await updatePhieuGiamGia(id, payload);
-      showSuccess("Cập nhật phiếu giảm giá thành công");
-    }
-
-    if (Number(form.loaiPhieu) === 2) {
-      await dongBoKhachHangPhieuCaNhan(phieuId, payload.ma);
-    } else if (lienKetKhachHangHienTai.value.length) {
-      await Promise.all(
-        lienKetKhachHangHienTai.value.map((item) =>
-          deletePhieuGiamGiaKhachHang(item.id),
-        ),
-      );
-      lienKetKhachHangHienTai.value = [];
-      dsEmailChon.value = [];
-    }
-
-    setTimeout(() => {
-      router.push({ name: "admin-phieu-giam-gia" });
-    }, 900);
-  } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(
-      error,
-      "Không thể lưu phiếu giảm giá",
-    );
-  } finally {
-    saving.value = false;
-  }
-}
-
-const danhSachTatCaHoaDon = ref([]);
-const listHoaDonApplied = ref([]);
-const dangTaiHoaDon = ref(false);
-const loiTaiHoaDon = ref("");
-
-const getHoaDonsCuaKhachHang = (email) => {
-  if (!email) return [];
-  return listHoaDonApplied.value.filter(
-    (hd) =>
-      hd.emailKhachHang &&
-      hd.emailKhachHang.toLowerCase() === email.toLowerCase(),
-  );
-};
-
-const getTongDonHangCuaKhachHang = (email) => {
-  if (!email) return 0;
-  return danhSachTatCaHoaDon.value.filter(
-    (hd) =>
-      hd.emailKhachHang &&
-      hd.emailKhachHang.toLowerCase() === email.toLowerCase(),
-  ).length;
-};
-
-const getDonHangGanNhat = (email) => {
-  if (!email) return null;
-  const khHoaDons = danhSachTatCaHoaDon.value.filter(
-    (hd) =>
-      hd.emailKhachHang &&
-      hd.emailKhachHang.toLowerCase() === email.toLowerCase(),
-  );
-  if (khHoaDons.length === 0) return null;
-  return [...khHoaDons].sort(
-    (a, b) => new Date(b.ngayTao) - new Date(a.ngayTao),
-  )[0];
-};
-
-function dinhDangNgaySinh(ngay) {
-  if (!ngay) return "—";
-  try {
-    const parts = ngay.split("-");
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    const d = new Date(ngay);
-    if (isNaN(d.getTime())) return ngay;
-    return new Intl.DateTimeFormat("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(d);
-  } catch (e) {
-    return ngay;
-  }
-}
-
-function dinhDangTien(value) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
-function dinhDangNgay(ngay) {
-  if (!ngay) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(ngay));
-}
-
-const mauTrangThai = {
-  "Chờ xác nhận": "bg-amber-50 text-amber-600 border border-amber-100",
-  "Đã xác nhận": "bg-orange-50 text-orange-600 border border-orange-100",
-  "Chờ lấy hàng": "bg-blue-50 text-blue-600 border border-blue-100",
-  "Đang giao hàng": "bg-violet-50 text-violet-600 border border-violet-100",
-  "Đã giao hàng": "bg-cyan-50 text-cyan-600 border border-cyan-100",
-  "Giao hàng thất bại": "bg-rose-50 text-rose-600 border border-rose-100",
-  "Hoàn thành": "bg-emerald-50 text-emerald-600 border border-emerald-100",
-  Hủy: "bg-stone-100 text-stone-600 border border-stone-200",
-  "Yêu cầu hủy": "bg-slate-100 text-slate-600 border border-slate-200",
-};
-
-async function taiHoaDonLienQuan() {
-  // Cho phép chạy khi thêm mới để lấy dữ liệu danhSachTatCaHoaDon dùng cho thống kê khách hàng
-  dangTaiHoaDon.value = true;
-  loiTaiHoaDon.value = "";
-  try {
-    const allInvoices = await layDanhSachHoaDon();
-    danhSachTatCaHoaDon.value = allInvoices || [];
-
-    if (form.ma && !laMoi) {
-      listHoaDonApplied.value = (allInvoices || []).filter(
-        (hd) =>
-          hd.maPhieuGiamGia &&
-          hd.maPhieuGiamGia.toLowerCase() === form.ma.toLowerCase(),
-      );
-    } else {
-      listHoaDonApplied.value = [];
-    }
-  } catch (err) {
-    console.error("Lỗi tải hóa đơn liên quan:", err);
-    loiTaiHoaDon.value = "Không thể tải danh sách hóa đơn liên quan";
-  } finally {
-    dangTaiHoaDon.value = false;
-  }
-}
-
-function xemChiTietHoaDon(id) {
-  router.push({ name: "admin-hoa-don-chi-tiet", params: { id } });
-}
-
-onMounted(taiChiTiet);
+  dangTaiKh,
+  trangKh,
+  soPhanTuMotTrangKh,
+  boLocKh,
+  danhSachKhFiltered,
+  tongSoTrangKh,
+  danhSachKhTrang,
+  taoMaNgauNhien,
+  laKhachHangDaDung,
+  toggleEmail,
+  chonTatCa,
+  handleSearch,
+  submitForm,
+  listHoaDonApplied,
+  dangTaiHoaDon,
+  loiTaiHoaDon,
+  getTongDonHangCuaKhachHang,
+  getDonHangGanNhat,
+  dinhDangNgaySinh,
+  dinhDangTien,
+  dinhDangNgay,
+  xemChiTietHoaDon,
+  mauTrangThai,
+  parseVndNumber,
+} = useChiTietPhieuGiamGia();
 </script>
 
 <template>
   <div class="space-y-5 pb-10">
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-y-3 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-3 opacity-0"
-    >
-      <div
-        v-if="toast.hienThi && toast.loai !== 'success'"
-        class="fixed right-5 top-5 z-[70] w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_60px_rgba(15,23,42,0.18)]"
-        :class="toastClass"
-      >
-        <div class="flex gap-3 p-4">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            :class="toastIconClass"
-          >
-            <component :is="ToastIcon" class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-slate-800">{{ toast.tieuDe }}</p>
-            <p
-              v-if="toast.noiDung"
-              class="mt-1 text-sm leading-5 text-slate-600"
-            >
-              {{ toast.noiDung }}
-            </p>
-          </div>
-          <button
-            type="button"
-            class="rounded-full p-1 text-slate-400 transition hover:bg-white/70 hover:text-slate-600"
-            @click="toast.hienThi = false"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
-        <div class="h-1.5 w-full" :class="toastAccentClass"></div>
-      </div>
-    </Transition>
 
     <section class="flex items-center gap-4">
       <button
@@ -971,7 +251,7 @@ onMounted(taiChiTiet);
             </p>
           </div>
 
-          <div class="min-w-0 space-y-2">
+          <div v-if="form.loai === '1'" class="min-w-0 space-y-2">
             <label
               class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
               >Giảm tối đa (VNĐ)</label
@@ -985,6 +265,12 @@ onMounted(taiChiTiet);
             />
             <p v-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-slate-400">
               Không cần giảm tối đa khi giảm 100%
+            </p>
+            <p v-else-if="parseVndNumber(giamToiDaVnd) === 0" class="text-xs text-amber-600 font-medium">
+              ⚠ Lưu ý: Voucher này sẽ không giới hạn số tiền giảm tối đa.
+            </p>
+            <p v-if="formErrors.giamToiDa" class="text-xs text-rose-500">
+              {{ formErrors.giamToiDa }}
             </p>
           </div>
 
@@ -1155,14 +441,18 @@ onMounted(taiChiTiet);
                   v-for="(kh, index) in danhSachKhTrang"
                   v-else
                   :key="kh.id"
-                  @click="toggleEmail(kh.email)"
-                  class="cursor-pointer transition-colors hover:bg-rose-50/50"
-                  :class="dsEmailChon.includes(kh.email) ? 'bg-rose-50/30' : ''"
+                  @click="!laKhachHangDaDung(kh.email) && toggleEmail(kh.email)"
+                  class="transition-colors"
+                  :class="[
+                    laKhachHangDaDung(kh.email) ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer hover:bg-rose-50/50',
+                    dsEmailChon.includes(kh.email) && !laKhachHangDaDung(kh.email) ? 'bg-rose-50/30' : ''
+                  ]"
                 >
                   <td class="px-4 py-3 text-center">
                     <CheckSquare
                       v-if="dsEmailChon.includes(kh.email)"
-                      class="mx-auto h-5 w-5 text-rose-500"
+                      class="mx-auto h-5 w-5"
+                      :class="laKhachHangDaDung(kh.email) ? 'text-slate-400' : 'text-rose-500'"
                     />
                     <div
                       v-else
@@ -1170,7 +460,10 @@ onMounted(taiChiTiet);
                     ></div>
                   </td>
                   <td class="px-4 py-3 font-semibold text-slate-800">
-                    {{ kh.hoTen }}
+                    <div class="flex items-center gap-2">
+                      <span>{{ kh.hoTen }}</span>
+                      <span v-if="laKhachHangDaDung(kh.email)" class="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 rounded px-1.5 py-0.5 whitespace-nowrap">Đã dùng</span>
+                    </div>
                   </td>
                   <td class="px-4 py-3 text-slate-600 font-medium">
                     {{ kh.tenDangNhap }}

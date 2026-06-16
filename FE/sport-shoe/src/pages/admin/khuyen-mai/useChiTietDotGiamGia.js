@@ -20,7 +20,6 @@ import {
   updateDotGiamGia,
   getDotGiamGiaSanPhamList,
   syncDotGiamGiaSanPham,
-  checkTenDotGiamGia,
 } from "../../../services/khuyen-mai";
 import {
   chiTietGiay,
@@ -28,7 +27,10 @@ import {
   layBienThe,
   layDanhMuc,
 } from "../../../services/san-pham-api";
-import { getDisplayErrorMessage } from "../../../utils/error-message";
+import {
+  getDisplayErrorMessage,
+  getFieldErrors,
+} from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
 export function useChiTietDotGiamGia() {
@@ -434,6 +436,39 @@ export function useChiTietDotGiamGia() {
     },
   );
 
+  watch(
+    () => form.ngayBatDau,
+    (newVal) => {
+      if (!newVal) {
+        formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
+        return;
+      }
+      delete formErrors.ngayBatDau;
+      if (laMoi && newVal < getToday()) {
+        formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
+      }
+      if (form.ngayKetThuc && newVal > form.ngayKetThuc) {
+        formErrors.ngayKetThuc = "Ngày kết thúc không được trước ngày bắt đầu";
+      } else {
+        delete formErrors.ngayKetThuc;
+      }
+    }
+  );
+
+  watch(
+    () => form.ngayKetThuc,
+    (newVal) => {
+      if (!newVal) {
+        formErrors.ngayKetThuc = "Vui lòng chọn ngày kết thúc áp dụng";
+        return;
+      }
+      delete formErrors.ngayKetThuc;
+      if (form.ngayBatDau && form.ngayBatDau > newVal) {
+        formErrors.ngayKetThuc = "Ngày kết thúc không được trước ngày bắt đầu";
+      }
+    }
+  );
+
   function isVariantSelected(variantId) {
     return selectedVariants.value.some((v) => Number(v.id) === Number(variantId));
   }
@@ -597,14 +632,27 @@ export function useChiTietDotGiamGia() {
   async function submitForm() {
     resetErrors();
     let isValid = true;
-    const dangTaoMoi = laMoi;
 
     if (!form.ma.trim()) {
       formErrors.ma = "Vui lòng nhập mã đợt giảm giá";
       isValid = false;
+    } else if (form.ma.trim().length > 100) {
+      formErrors.ma = "Mã đợt giảm giá không được vượt quá 100 ký tự";
+      isValid = false;
+    } else if (!/^[A-Za-z0-9_-]+$/.test(form.ma.trim())) {
+      formErrors.ma =
+        "Mã đợt chỉ được chứa chữ, số, dấu gạch ngang và gạch dưới";
+      isValid = false;
     }
     if (!form.ten.trim()) {
       formErrors.ten = "Vui lòng nhập tên đợt giảm giá";
+      isValid = false;
+    } else if (form.ten.trim().length > 200) {
+      formErrors.ten = "Tên đợt giảm giá không được vượt quá 200 ký tự";
+      isValid = false;
+    }
+    if ((form.moTa || "").trim().length > 500) {
+      formErrors.moTa = "Mô tả không được vượt quá 500 ký tự";
       isValid = false;
     }
     if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) {
@@ -616,6 +664,9 @@ export function useChiTietDotGiamGia() {
     }
     if (!form.ngayBatDau) {
       formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
+      isValid = false;
+    } else if (laMoi && form.ngayBatDau < getToday()) {
+      formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
       isValid = false;
     }
 
@@ -629,7 +680,13 @@ export function useChiTietDotGiamGia() {
       form.ngayKetThuc &&
       form.ngayBatDau > form.ngayKetThuc
     ) {
-      formErrors.ngayKetThuc = "Ngày kết thúc phải sau ngày bắt đầu";
+      formErrors.ngayKetThuc =
+        "Ngày kết thúc không được trước ngày bắt đầu";
+      isValid = false;
+    }
+    if (selectedVariants.value.length === 0) {
+      formErrors.giayChiTietIds =
+        "Phải chọn ít nhất một biến thể sản phẩm";
       isValid = false;
     }
 
@@ -653,8 +710,6 @@ export function useChiTietDotGiamGia() {
         ngayBatDau: form.ngayBatDau,
         ngayKetThuc: form.ngayKetThuc,
         kichHoat: laMoi ? undefined : form.kichHoat,
-        ngayTao: dangTaoMoi ? getToday() : undefined,
-        ngayCapNhat: !dangTaoMoi ? getToday() : undefined,
       };
 
       let campaignId = id;
@@ -700,6 +755,7 @@ export function useChiTietDotGiamGia() {
         router.push({ name: "admin-dot-giam-gia" });
       }, 500);
     } catch (error) {
+      Object.assign(formErrors, getFieldErrors(error));
       const msg = getDisplayErrorMessage(error, "Không thể lưu đợt giảm giá");
       loiTrang.value = msg;
 

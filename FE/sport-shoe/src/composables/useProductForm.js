@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import * as api from '../services/san-pham-api.ts'
+import * as api from '../services/san-pham-api.js'
+import { hasSpecialCharacters } from '../utils/thuoc-tinh-san-pham.js'
 
 export function useProductForm() {
   const route = useRoute()
@@ -41,30 +42,7 @@ export function useProductForm() {
 
   const productErrors = reactive({})
 
-  let tenCheckTimeout = null
-  function validateTenGiayRealtime(newTen) {
-    if (tenCheckTimeout) clearTimeout(tenCheckTimeout)
-    if (!newTen || newTen.trim() === '') {
-      delete productErrors.ten
-      return
-    }
-    tenCheckTimeout = setTimeout(async () => {
-      try {
-        const res = await api.checkTenGiay(newTen.trim(), currentProductId.value)
-        if (res.exists) {
-          productErrors.ten = 'Tên sản phẩm đã tồn tại'
-        } else if (productErrors.ten === 'Tên sản phẩm đã tồn tại') {
-          delete productErrors.ten
-        }
-      } catch (e) {
-        // Ignore error
-      }
-    }, 500)
-  }
-
-  watch(() => productForm.ten, (newVal) => {
-    validateTenGiayRealtime(newVal)
-  })
+  // Removed validateTenGiayRealtime as per request
 
   const pageTitle = computed(() =>
     currentProductId.value ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM SẢN PHẨM'
@@ -237,6 +215,8 @@ export function useProductForm() {
 
     if (!productName) {
       productErrors.ten = 'Vui lòng nhập tên sản phẩm'
+    } else if (hasSpecialCharacters(productName)) {
+      productErrors.ten = 'Tên sản phẩm không được chứa ký tự đặc biệt'
     } else if (productName.length < 3) {
       productErrors.ten = 'Tên sản phẩm phải có ít nhất 3 ký tự'
     } else if (productName.length > 300) {
@@ -279,7 +259,9 @@ export function useProductForm() {
       productErrors.trongLuongId = 'Trọng lượng đã chọn không hợp lệ'
     }
 
-    if (productDescription.length > 2000) {
+    if (hasSpecialCharacters(productDescription)) {
+      productErrors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
+    } else if (productDescription.length > 2000) {
       productErrors.moTa = 'Mô tả không được vượt quá 2000 ký tự'
     }
 
@@ -394,6 +376,11 @@ export function useProductForm() {
 
   function goBack() {
     const routeName = String(route.name || '')
+    if (routeName === 'admin-san-pham-them') {
+      router.push({ name: 'admin-san-pham' })
+      return
+    }
+
     const shouldReturnToVariantList =
       Boolean(currentProductId.value) || routeName === 'admin-bien-the-san-pham-them'
 
@@ -466,5 +453,7 @@ export function useProductForm() {
     validateProductForm,
     buildCreateProductPayload,
     regenerateDraftProductCode,
+    router,
   }
 }
+

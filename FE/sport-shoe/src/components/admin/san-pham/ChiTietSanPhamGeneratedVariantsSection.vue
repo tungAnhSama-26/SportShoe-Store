@@ -523,9 +523,10 @@ async function handleSaveClick() {
           <table class="min-w-full border-separate border-spacing-y-2 text-sm">
             <thead>
               <tr class="text-left text-sm font-bold text-slate-500">
-                <th class="rounded-l-2xl bg-slate-100 px-4 py-3 w-[50px]">
+                <th class="rounded-l-2xl bg-slate-100 px-4 py-3 w-[50px] text-center">
                   <input type="checkbox" :checked="isGroupAllSelected(group)" @change="toggleGroupAll(group, $event.target.checked)" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
                 </th>
+                <th class="bg-slate-100 px-4 py-3 w-[60px] text-center">STT</th>
                 <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
                 <th class="bg-slate-100 px-4 py-3">Số lượng</th>
                 <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
@@ -538,12 +539,15 @@ async function handleSaveClick() {
 
             <tbody>
               <tr
-                v-for="item in group.variants"
+                v-for="(item, index) in group.variants"
                 :key="item.key"
                 class="bg-white shadow-sm"
               >
-                <td class="rounded-l-2xl px-4 py-4">
+                <td class="rounded-l-2xl px-4 py-4 text-center">
                   <input type="checkbox" v-model="item.selected" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
+                </td>
+                <td class="px-4 py-4 text-center font-semibold text-slate-500">
+                  {{ index + 1 }}
                 </td>
                 <td class="px-4 py-4 font-semibold text-slate-700">
                   Size {{ item.kichCo }}

@@ -21,6 +21,11 @@ public class PhieuTraHang {
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    @Version
+    @ColumnDefault("0")
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Size(max = 150)
     @NotNull
     @Nationalized

@@ -126,6 +126,9 @@ function validate() {
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã màu sắc'
   if (!ten) errors.ten = 'Vui lòng nhập tên màu sắc'
+  else if (hasSpecialCharacters(ten)) {
+    errors.ten = 'Tên không được chứa ký tự đặc biệt'
+  }
   else if (exceedsMaxLength(ten, TEN_MAX_LENGTH)) {
     errors.ten = `Tên màu sắc không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }

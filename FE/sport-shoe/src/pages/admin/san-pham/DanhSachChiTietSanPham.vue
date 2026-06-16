@@ -14,6 +14,7 @@ import QuanLySanPhamHinhAnhModal from '../../../components/admin/san-pham/QuanLy
 import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import { showSuccess, showError } from '../../../utils/alert'
+import { createQrCodeSvg } from '../../../utils/qr-code'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +32,8 @@ const showQrModal = ref(false)
 const selectedQrItem = ref(null)
 
 const showScannerModal = ref(false)
+const tableRef = ref(null)
+const hasSelectedVariants = ref(false)
 
 const filters = reactive({
   keyword: '',
@@ -202,12 +205,15 @@ function openDiscountDetail(item) {
 }
 
 function bienTheTrangThaiLabel(item) {
-  return Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0 ? 'Đang bán' : 'Ngừng bán'
+  if (Number(item.kichHoat) === 0) return 'Ngừng bán'
+  if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
+  return 'Đang bán'
 }
 
 function bienTheTrangThaiClass(item) {
-  if (Number(item.kichHoat) === 1 && Number(item.soLuong || 0) > 0) return 'bg-emerald-50 text-emerald-600'
-  return 'bg-slate-100 text-slate-600'
+  if (Number(item.kichHoat) === 0) return 'bg-slate-100 text-slate-600'
+  if (Number(item.soLuong || 0) <= 0) return 'bg-amber-50 text-amber-600'
+  return 'bg-emerald-50 text-emerald-600'
 }
 
 function nextBienTheStatus(item) {
@@ -499,6 +505,105 @@ function handleScannerResult(result) {
   }
 }
 
+function triggerDownloadQr() {
+  const selectedIds = tableRef.value?.selectedVariantIds
+  if (!selectedIds || selectedIds.size === 0) {
+    showToast('Vui lòng chọn ít nhất 1 biến thể để tải mã QR', 'error')
+    return
+  }
+  const selectedItems = items.value.filter(i => selectedIds.has(i.id))
+  handleBulkQr(selectedItems)
+  selectedIds.clear()
+}
+
+async function handleBulkQr(selectedItems) {
+  if (!selectedItems?.length) return
+  
+  const qrDataList = [];
+  for (const item of selectedItems) {
+    const qrValue = String(item.sku || item.maChiTietSanPham || '').trim();
+    if (!qrValue) continue;
+    try {
+      const svg = createQrCodeSvg(qrValue);
+      qrDataList.push({ item, qrValue, svg });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  if (qrDataList.length === 0) {
+    showToast('Không có dữ liệu hợp lệ để tạo QR', 'error');
+    return;
+  }
+
+  showToast('Đang tạo ảnh QR, vui lòng đợi...', 'info');
+
+  const CARD_WIDTH = 300;
+  const CARD_HEIGHT = 380;
+  const COLS = Math.min(qrDataList.length, 4);
+  const ROWS = Math.ceil(qrDataList.length / COLS);
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = COLS * CARD_WIDTH;
+  canvas.height = ROWS * CARD_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  await Promise.all(qrDataList.map((data, index) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const blob = new Blob([data.svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      
+      img.onload = () => {
+        const col = index % COLS;
+        const row = Math.floor(index / COLS);
+        const x = col * CARD_WIDTH;
+        const y = row * CARD_HEIGHT;
+        
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 10, y + 10, CARD_WIDTH - 20, CARD_HEIGHT - 20);
+        
+        const qrSize = 200;
+        const qrX = x + (CARD_WIDTH - qrSize) / 2;
+        const qrY = y + 30;
+        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+        
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px sans-serif';
+        // handle long text
+        let title = data.item.tenSanPham || 'Chi tiết sản phẩm';
+        if (title.length > 25) title = title.substring(0, 22) + '...';
+        ctx.fillText(title, x + CARD_WIDTH / 2, qrY + qrSize + 40);
+        
+        ctx.fillStyle = '#64748b';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`${data.item.mauSac} / ${data.item.kichCo}`, x + CARD_WIDTH / 2, qrY + qrSize + 65);
+        
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillText(data.qrValue, x + CARD_WIDTH / 2, qrY + qrSize + 95);
+        
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      img.src = url;
+    });
+  }));
+
+  const pngUrl = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = pngUrl;
+  link.download = `DanhSach_QRCode_${new Date().getTime()}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 async function toggleBienTheStatus(item) {
   if (updatingStatusIds.has(item.id)) return
 
@@ -592,14 +697,17 @@ onUnmounted(() => {
       :filters="filters"
       :danh-muc="danhMuc"
       :selected-product="selectedProduct"
+      :has-selected-variants="hasSelectedVariants"
       @reset-filters="resetFilters"
       @export-excel="xuatExcel"
+      @download-qr="triggerDownloadQr"
       @go-to-form="goToForm"
       @load-data="loadData"
       @open-scanner="showScannerModal = true"
     />
 
     <ProductVariantTable
+      ref="tableRef"
       :items="items"
       :loading="loading"
       :current-page="currentPage"
@@ -613,7 +721,9 @@ onUnmounted(() => {
       @toggle-status="toggleBienTheStatus"
       @edit-variant="openEditVariantModal"
       @open-qr="openVariantQr"
+      @bulk-qr="handleBulkQr"
       @refresh="loadData"
+      @selection-changed="hasSelectedVariants = $event"
       @update:current-page="loadData"
       @update:page-size="handlePageSizeChange"
       @open-discount-detail="openDiscountDetail"

@@ -13,10 +13,14 @@ const props = defineProps({
   selectedProduct: {
     type: Object,
     default: null
+  },
+  hasSelectedVariants: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'open-scanner'])
+const emit = defineEmits(['reset-filters', 'export-excel', 'go-to-form', 'load-data', 'open-scanner', 'download-qr'])
 
 function handleKeywordEnter() {
   emit('load-data', 0)
@@ -31,6 +35,14 @@ function handleFilterChange() {
   <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
 
     <div class="flex flex-col gap-4">
+      <!-- Màn hình quản lý sản phẩm -> Xem chi tiết biến thể -> Tiêu đề (Yêu cầu 1) -->
+      <div v-if="selectedProduct" class="mb-2 flex items-center justify-between border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Biến thể của: <span class="text-rose-600">{{ selectedProduct.ten }}</span></h2>
+          <p class="mt-1 text-sm text-slate-500">Mã sản phẩm: <span class="font-semibold text-slate-700">{{ selectedProduct.ma }}</span></p>
+        </div>
+      </div>
+
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <label class="min-w-0 flex-1 space-y-2">
           <span class="admin-filter-label mb-1">Tìm kiếm</span>
@@ -62,6 +74,15 @@ function handleFilterChange() {
           <button type="button" class="admin-btn-soft" @click="$emit('export-excel')">
             <FileSpreadsheet class="h-4 w-4" />
             Xuất Excel
+          </button>
+          <button 
+            type="button" 
+            class="admin-btn-primary disabled:opacity-50 disabled:cursor-not-allowed" 
+            :disabled="!hasSelectedVariants"
+            @click="$emit('download-qr')"
+          >
+            <QrCode class="h-4 w-4" />
+            Tải mã QR
           </button>
         </div>
       </div>

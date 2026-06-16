@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface CongNgheDemRepository extends JpaRepository<CongNgheDem, Integer> {
 
     @Query("select c from CongNgheDem c where (:kw is null or lower(c.ma) like lower(concat('%',:kw,'%')) or lower(c.ten) like lower(concat('%',:kw,'%')))")
@@ -15,4 +17,9 @@ public interface CongNgheDemRepository extends JpaRepository<CongNgheDem, Intege
     boolean existsByMaIgnoreCase(String ma);
 
     boolean existsByMaIgnoreCaseAndIdNot(String ma, Integer id);
+
+    boolean existsByTenIgnoreCase(String ten);
+
+    boolean existsByTenIgnoreCaseAndIdNot(String ten, Integer id);
+    Optional<CongNgheDem> findByTenIgnoreCase(String ten);
 }

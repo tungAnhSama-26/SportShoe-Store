@@ -13,17 +13,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class PhieuGiamGiaService {
+
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Bangkok");
+    private static final int UNLIMITED_QUANTITY = 999999;
 
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
@@ -50,8 +55,8 @@ public class PhieuGiamGiaService {
     public Page<QuanLyPhieuGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loai, LocalDate tuNgay,
             LocalDate denNgay, Integer pageNo, Integer pageSize) {
         Pageable pageable = PageRequest.of(pageNo, pageSize);
-        Instant start = tuNgay == null ? null : tuNgay.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant end = denNgay == null ? null : denNgay.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+        Instant start = tuNgay == null ? null : tuNgay.atStartOfDay(BUSINESS_ZONE).toInstant();
+        Instant end = denNgay == null ? null : denNgay.atTime(LocalTime.MAX).atZone(BUSINESS_ZONE).toInstant();
         return phieuGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loai, start, end, pageable);
     }
 
@@ -60,14 +65,20 @@ public class PhieuGiamGiaService {
     }
 
     public PhieuGiamGia add(PhieuGiamGiaRequest request) {
+        normalize(request);
+        validateBusinessRules(request, null, 0);
         PhieuGiamGia phieuGiamGia = new PhieuGiamGia();
         mapRequestToEntity(request, phieuGiamGia);
+        phieuGiamGia.setSoLuongDaDung(0);
+        phieuGiamGia.setNgayTao(Instant.now());
         return phieuGiamGiaRepository.save(phieuGiamGia);
     }
 
     public PhieuGiamGia update(Integer id, PhieuGiamGiaRequest request) {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá"));
+        normalize(request);
+        validateBusinessRules(request, id, phieuGiamGia.getSoLuongDaDung());
 
         // Lưu giữ trạng thái cũ của dữ liệu trước khi mapRequest
         String oldMa = phieuGiamGia.getMa();
@@ -175,19 +186,16 @@ public class PhieuGiamGiaService {
         phieuGiamGia.setGiaTri(request.getGiaTri());
         phieuGiamGia.setGiaTriToiThieu(request.getGiaTriToiThieu());
         phieuGiamGia.setGiamToiDa(request.getGiamToiDa());
-        phieuGiamGia.setNgayBatDau(toInstant(request.getNgayBatDau()));
-        phieuGiamGia.setNgayKetThuc(toInstant(request.getNgayKetThuc()));
+        phieuGiamGia.setNgayBatDau(toStartOfDay(request.getNgayBatDau()));
+        phieuGiamGia.setNgayKetThuc(toEndOfDay(request.getNgayKetThuc()));
         phieuGiamGia.setSoLuong(request.getSoLuong());
-
-        // Handle defaults for NotNull fields to prevent validation errors
-        phieuGiamGia.setSoLuongDaDung(request.getSoLuongDaDung() == null ? 0 : request.getSoLuongDaDung());
 
         // Tự động tính toán trạng thái
         Instant now = Instant.now();
         Instant end = phieuGiamGia.getNgayKetThuc();
 
-        if (end != null && !end.isAfter(now)) {
-            phieuGiamGia.setTrangThai(2); // Hết hạn (bao gồm cả thời điểm hiện tại)
+        if (end != null && end.isBefore(now)) {
+            phieuGiamGia.setTrangThai(2);
         } else {
             Integer requestedStatus = request.getTrangThai();
             if (requestedStatus != null && requestedStatus == 0) {
@@ -198,8 +206,8 @@ public class PhieuGiamGiaService {
                 int soLuongDaDung = phieuGiamGia.getSoLuongDaDung();
                 int soLuong = phieuGiamGia.getSoLuong();
 
-                if (soLuong > 0 && soLuong != 999999 && soLuongDaDung >= soLuong) {
-                    phieuGiamGia.setTrangThai(3); // Hết số lượng
+                if (soLuong != UNLIMITED_QUANTITY && soLuongDaDung >= soLuong) {
+                    phieuGiamGia.setTrangThai(3);
                 } else if (start != null && start.isAfter(now)) {
                     phieuGiamGia.setTrangThai(4); // Sắp diễn ra
                 } else {
@@ -209,14 +217,79 @@ public class PhieuGiamGiaService {
         }
 
         if (phieuGiamGia.getNgayTao() == null) {
-            phieuGiamGia.setNgayTao(request.getNgayTao() == null ? Instant.now() : toInstant(request.getNgayTao()));
+            phieuGiamGia.setNgayTao(Instant.now());
         }
 
-        phieuGiamGia.setNgayCapNhat(toInstant(request.getNgayCapNhat()));
+        phieuGiamGia.setNgayCapNhat(phieuGiamGia.getId() == null ? null : Instant.now());
     }
 
-    private Instant toInstant(LocalDate value) {
-        return value == null ? null : value.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    private void normalize(PhieuGiamGiaRequest request) {
+        request.setMa(request.getMa() == null ? null : request.getMa().trim().toUpperCase());
+        request.setTen(request.getTen() == null ? null : request.getTen().trim());
+        if (request.getGiaTriToiThieu() == null) {
+            request.setGiaTriToiThieu(java.math.BigDecimal.ZERO);
+        }
+        if (request.getGiamToiDa() == null) {
+            request.setGiamToiDa(java.math.BigDecimal.ZERO);
+        }
+    }
+
+    private void validateBusinessRules(
+            PhieuGiamGiaRequest request,
+            Integer currentId,
+            Integer usedQuantity
+    ) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        boolean duplicateCode = currentId == null
+                ? phieuGiamGiaRepository.existsByMaIgnoreCase(request.getMa())
+                : phieuGiamGiaRepository.existsByMaIgnoreCaseAndIdNot(request.getMa(), currentId);
+        boolean duplicateName = currentId == null
+                ? phieuGiamGiaRepository.existsByTenIgnoreCase(request.getTen())
+                : phieuGiamGiaRepository.existsByTenIgnoreCaseAndIdNot(request.getTen(), currentId);
+
+        if (duplicateCode) {
+            errors.put("ma", "Mã phiếu giảm giá đã tồn tại");
+        }
+        if (duplicateName) {
+            errors.put("ten", "Tên phiếu giảm giá đã tồn tại");
+        }
+        if (request.getNgayBatDau() != null
+                && request.getNgayKetThuc() != null
+                && request.getNgayKetThuc().isBefore(request.getNgayBatDau())) {
+            errors.put("ngayKetThuc", "Ngày kết thúc không được trước ngày bắt đầu");
+        }
+        if (Integer.valueOf(1).equals(request.getLoai())
+                && request.getGiaTri() != null
+                && request.getGiaTri().compareTo(java.math.BigDecimal.valueOf(100)) > 0) {
+            errors.put("giaTri", "Phần trăm giảm không được vượt quá 100%");
+        }
+        if (Integer.valueOf(2).equals(request.getLoai())
+                && request.getGiaTriToiThieu() != null
+                && request.getGiaTriToiThieu().signum() > 0
+                && request.getGiaTri() != null
+                && request.getGiaTri().compareTo(request.getGiaTriToiThieu()) > 0) {
+            errors.put("giaTri", "Số tiền giảm không được lớn hơn giá trị đơn tối thiểu");
+        }
+        if (request.getSoLuong() != null
+                && request.getSoLuong() != UNLIMITED_QUANTITY
+                && request.getSoLuong() < (usedQuantity == null ? 0 : usedQuantity)) {
+            errors.put("soLuong", "Số lượng phiếu không được nhỏ hơn số lượng đã sử dụng");
+        }
+        if (!errors.isEmpty()) {
+            throw new BusinessException(
+                    com.example.server.infrastructure.exception.ErrorCode.VALIDATION_ERROR,
+                    "Vui lòng kiểm tra lại thông tin phiếu giảm giá",
+                    errors
+            );
+        }
+    }
+
+    private Instant toStartOfDay(LocalDate value) {
+        return value == null ? null : value.atStartOfDay(BUSINESS_ZONE).toInstant();
+    }
+
+    private Instant toEndOfDay(LocalDate value) {
+        return value == null ? null : value.atTime(LocalTime.MAX).atZone(BUSINESS_ZONE).toInstant();
     }
 
     private boolean safeEquals(Object o1, Object o2) {

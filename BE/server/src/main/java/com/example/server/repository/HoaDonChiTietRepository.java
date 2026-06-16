@@ -2,6 +2,7 @@ package com.example.server.repository;
 
 import com.example.server.entity.HoaDonChiTiet;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -45,9 +46,13 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
             join fetch g.thuongHieu th
             where hdct.trangThai = 1
               and hd.trangThai in :trangThais
+              and (coalesce(hd.ngayThanhToan, hd.ngayLap) >= :limitDate)
             order by hd.ngayTao asc, hd.id asc, hdct.id asc
             """)
-    List<HoaDonChiTiet> findAllForThongKe(@Param("trangThais") Collection<Integer> trangThais);
+    List<HoaDonChiTiet> findAllForThongKe(
+            @Param("trangThais") Collection<Integer> trangThais,
+            @Param("limitDate") Instant limitDate
+    );
 
     /** Tổng số lượng đã bán theo từng sản phẩm (bỏ giỏ hàng = 0 và đơn đã hủy = 6). */
     @Query("""

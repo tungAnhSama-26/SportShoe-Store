@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -8,7 +8,6 @@ import {
   FileSpreadsheet,
   FileText,
   Filter,
-
   RotateCcw,
   Search,
 } from "lucide-vue-next";
@@ -17,47 +16,19 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import Card from "../../../components/ui/Card.vue";
 import Table from "../../../components/ui/Table.vue";
 import Button from "../../../components/ui/Button.vue";
-import Badge from "../../../components/ui/Badge.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showError } from "../../../utils/alert";
 import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 
-type TrangThaiLoc =
-  | "Tất cả"
-  | "Chờ xác nhận"
-  | "Đã xác nhận"
-  | "Chờ lấy hàng"
-  | "Đang giao hàng"
-  | "Đã giao hàng"
-  | "Giao hàng thất bại"
-  | "Hoàn thành"
-  | "Hủy"
-  | "Yêu cầu hủy";
-
-type HoaDonItem = {
-  id: number;
-  maHoaDon: string;
-  maNhanVien: string;
-  tenKhachHang: string;
-  soDienThoai?: string;
-  tongTien: number;
-  ngayTao: string;
-  loaiDon: string;
-  trangThai: string;
-  phieuTraHangId?: number | null;
-  trangThaiPhieuTraHang?: number | null;
-  trangThaiPhieuTraHangText?: string | null;
-};
-
 const router = useRouter();
-const danhSach = ref<HoaDonItem[]>([]);
+const danhSach = ref([]);
 const dangTai = ref(false);
-const dangXuatPdfId = ref<number | null>(null);
+const dangXuatPdfId = ref(null);
 const loiTrang = ref("");
-const trangThaiDangChon = ref<TrangThaiLoc>("Tất cả");
-const dsTrangThai: TrangThaiLoc[] = [
+const trangThaiDangChon = ref("Tất cả");
+const dsTrangThai = [
   "Tất cả",
   "Chờ xác nhận",
   "Đã xác nhận",
@@ -70,10 +41,10 @@ const dsTrangThai: TrangThaiLoc[] = [
   "Yêu cầu hủy",
 ];
 const boLoc = ref(taoBoLocMacDinh());
-const tuNgayPicker = ref<HTMLInputElement | null>(null);
-const denNgayPicker = ref<HTMLInputElement | null>(null);
+const tuNgayPicker = ref(null);
+const denNgayPicker = ref(null);
 
-const mauTrangThai: Record<string, string> = {
+const mauTrangThai = {
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
   "Đã xác nhận": "bg-orange-50 text-orange-600",
   "Chờ lấy hàng": "bg-blue-50 text-blue-600",
@@ -85,23 +56,34 @@ const mauTrangThai: Record<string, string> = {
   "Yêu cầu hủy": "bg-primary/5 text-primary",
 };
 
-function mauTrangThaiTraHang(trangThai?: number | null) {
+function mauTrangThaiTraHang(trangThai) {
   switch (trangThai) {
-    case 1: return "bg-amber-50 text-amber-700";
-    case 2: return "bg-blue-50 text-blue-700";
-    case 3: return "bg-violet-50 text-violet-700";
-    case 4: return "bg-cyan-50 text-cyan-700";
-    case 5: return "bg-purple-50 text-purple-700";
-    case 6: return "bg-orange-50 text-orange-700";
-    case 7: return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100";
-    case 8: return "bg-rose-50 text-rose-700";
-    case 9: return "bg-slate-100 text-slate-600";
-    case 10: return "bg-red-50 text-red-700";
-    default: return "bg-slate-100 text-slate-600";
+    case 1:
+      return "bg-amber-50 text-amber-700";
+    case 2:
+      return "bg-blue-50 text-blue-700";
+    case 3:
+      return "bg-violet-50 text-violet-700";
+    case 4:
+      return "bg-cyan-50 text-cyan-700";
+    case 5:
+      return "bg-purple-50 text-purple-700";
+    case 6:
+      return "bg-orange-50 text-orange-700";
+    case 7:
+      return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100";
+    case 8:
+      return "bg-rose-50 text-rose-700";
+    case 9:
+      return "bg-slate-100 text-slate-600";
+    case 10:
+      return "bg-red-50 text-red-700";
+    default:
+      return "bg-slate-100 text-slate-600";
   }
 }
 
-function dinhDangTien(value: number) {
+function dinhDangTien(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -109,7 +91,7 @@ function dinhDangTien(value: number) {
   }).format(value || 0);
 }
 
-function dinhDangNgay(ngay: string) {
+function dinhDangNgay(ngay) {
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
@@ -127,14 +109,14 @@ function layNgayHienTaiInput() {
   return `${year}-${month}-${day}`;
 }
 
-function dinhDangNgayLoc(value: string) {
+function dinhDangNgayLoc(value) {
   if (!value) return "";
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) return value;
   return `${day}/${month}/${year}`;
 }
 
-function chuyenNgayLocSangInput(value: string) {
+function chuyenNgayLocSangInput(value) {
   const normalized = value.trim();
   if (!normalized) return "";
   const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
@@ -144,9 +126,9 @@ function chuyenNgayLocSangInput(value: string) {
   return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
-function moLich(input: HTMLInputElement | null) {
+function moLich(input) {
   if (!input) return;
-  const picker = input as HTMLInputElement & { showPicker?: () => void };
+  const picker = input;
   if (picker.showPicker) {
     picker.showPicker();
     return;
@@ -167,14 +149,14 @@ function taoBoLocMacDinh() {
 
 const tuNgayHienThi = computed({
   get: () => dinhDangNgayLoc(boLoc.value.tuNgay),
-  set: (value: string) => {
+  set: (value) => {
     boLoc.value.tuNgay = chuyenNgayLocSangInput(value);
   },
 });
 
 const denNgayHienThi = computed({
   get: () => dinhDangNgayLoc(boLoc.value.denNgay),
-  set: (value: string) => {
+  set: (value) => {
     boLoc.value.denNgay = chuyenNgayLocSangInput(value);
   },
 });
@@ -185,13 +167,16 @@ const tongTheoTrangThai = computed(() =>
     tong:
       trangThai === "Tất cả"
         ? danhSach.value.length
-        : danhSach.value.filter((hoaDon) => hoaDon.trangThai === trangThai).length,
+        : danhSach.value.filter((hoaDon) => hoaDon.trangThai === trangThai)
+            .length,
   })),
 );
 
 const danhSachHienThi = computed(() => {
   if (trangThaiDangChon.value === "Tất cả") return danhSach.value;
-  return danhSach.value.filter((hoaDon) => hoaDon.trangThai === trangThaiDangChon.value);
+  return danhSach.value.filter(
+    (hoaDon) => hoaDon.trangThai === trangThaiDangChon.value,
+  );
 });
 
 const soPhanTuMotTrang = ref(5);
@@ -227,8 +212,11 @@ async function taiDanhSach() {
       // Không gửi trạng thái lên backend để số lượng trạng thái hiển thị đúng.
       trangThai: undefined,
     });
-    } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải danh sách hóa đơn");
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải danh sách hóa đơn",
+    );
   } finally {
     dangTai.value = false;
   }
@@ -239,7 +227,7 @@ function lamMoiBoLoc() {
   trangThaiDangChon.value = "Tất cả";
 }
 
-function xemChiTiet(id: number) {
+function xemChiTiet(id) {
   router.push({ name: "admin-hoa-don-chi-tiet", params: { id } });
 }
 
@@ -267,13 +255,15 @@ function xuatExcel() {
   });
 }
 
-async function xuatHoaDonPdf(id: number) {
+async function xuatHoaDonPdf(id) {
   if (dangXuatPdfId.value) return;
 
   // Mở cửa sổ trống ngay lập tức để tránh bị trình duyệt chặn (Browser Popup Blocker)
   const popup = window.open("", "_blank", "width=1100,height=800");
   if (popup) {
-    popup.document.write("<html><body style='font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><h3>Đang chuẩn bị hóa đơn...</h3></body></html>");
+    popup.document.write(
+      "<html><body style='font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><h3>Đang chuẩn bị hóa đơn...</h3></body></html>",
+    );
   }
 
   dangXuatPdfId.value = id;
@@ -286,15 +276,18 @@ async function xuatHoaDonPdf(id: number) {
       formatDate: dinhDangNgay,
       targetWindow: popup,
     });
-    } catch (error) {
-      if (popup) popup.close();
-      showError(getDisplayErrorMessage(error, "Không thể xuất PDF hóa đơn"), "Lỗi");
-    } finally {
+  } catch (error) {
+    if (popup) popup.close();
+    showError(
+      getDisplayErrorMessage(error, "Không thể xuất PDF hóa đơn"),
+      "Lỗi",
+    );
+  } finally {
     dangXuatPdfId.value = null;
   }
 }
 
-let boLocTimeout: ReturnType<typeof setTimeout>;
+let boLocTimeout;
 watch(
   () => boLoc.value,
   () => {
@@ -306,8 +299,8 @@ watch(
   { deep: true },
 );
 
-let ngatKetNoiRealtime: (() => void) | null = null;
-let realtimeRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
+let ngatKetNoiRealtime = null;
+let realtimeRefreshTimeout = null;
 
 onMounted(() => {
   taiDanhSach();
@@ -333,7 +326,9 @@ onBeforeUnmount(() => {
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-[6px] bg-slate-100 text-slate-600"
+          >
             <Filter class="h-5 w-5" />
           </div>
           <div>
@@ -346,12 +341,14 @@ onBeforeUnmount(() => {
         <label class="min-w-[160px] flex-1 space-y-2">
           <span class="admin-filter-label mb-1">Tìm kiếm</span>
           <div class="relative">
-            <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search
+              class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            />
             <input
               v-model="boLoc.keyword"
               type="text"
               placeholder="Mã hóa đơn / mã nhân viên..."
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
             />
           </div>
         </label>
@@ -364,11 +361,11 @@ onBeforeUnmount(() => {
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(tuNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -392,11 +389,11 @@ onBeforeUnmount(() => {
               type="text"
               inputmode="numeric"
               placeholder="dd/mm/yyyy"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 pr-11 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-primary"
+              class="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[6px] text-slate-400 transition hover:bg-slate-100 hover:text-primary"
               @click="moLich(denNgayPicker)"
             >
               <CalendarDays class="h-4 w-4" />
@@ -416,7 +413,7 @@ onBeforeUnmount(() => {
           <span class="admin-filter-label mb-1">Loại đơn</span>
           <select
             v-model="boLoc.loaiDon"
-            class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
           >
             <option value="">Tất cả loại đơn</option>
             <option value="Cửa hàng">Cửa hàng</option>
@@ -440,7 +437,9 @@ onBeforeUnmount(() => {
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-[6px] bg-primary/5 text-primary"
+          >
             <FileText class="h-5 w-5" />
           </div>
           <div>
@@ -455,88 +454,131 @@ onBeforeUnmount(() => {
           :key="item.ten"
           type="button"
           @click="trangThaiDangChon = item.ten"
-          class="inline-flex items-center whitespace-nowrap rounded-2xl px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
-          :class="trangThaiDangChon === item.ten ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:scale-[1.02]'"
+          class="inline-flex items-center whitespace-nowrap rounded-[6px] px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-95"
+          :class="
+            trangThaiDangChon === item.ten
+              ? 'bg-rose-100 text-rose-600 shadow-sm scale-[1.03]'
+              : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:scale-[1.02]'
+          "
         >
           {{ item.ten }}
-          <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500 transition-all duration-200">{{ item.tong }}</span>
+          <span
+            class="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500 transition-all duration-200"
+            >{{ item.tong }}</span
+          >
         </button>
       </div>
 
-      <div v-if="loiTrang" class="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
+      <div
+        v-if="loiTrang"
+        class="mb-4 rounded-[6px] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600"
+      >
         {{ loiTrang }}
       </div>
 
       <Transition name="tab-fade" mode="out-in">
         <div :key="trangThaiDangChon" class="admin-table-scroll">
-        <Table>
-          <template #header>
+          <Table>
+            <template #header>
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">STT</th>
-              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Mã hóa đơn</th>
-              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Mã nhân viên</th>
-              <th class="px-3 py-3 whitespace-nowrap text-[13px]">Khách hàng</th>
-              <th class="px-3 py-3 whitespace-nowrap text-[13px]">SĐT khách hàng</th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">
+                Mã hóa đơn
+              </th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">
+                Mã nhân viên
+              </th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">
+                Khách hàng
+              </th>
+              <th class="px-3 py-3 whitespace-nowrap text-[13px]">
+                SĐT khách hàng
+              </th>
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">Tổng tiền</th>
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">Ngày tạo</th>
               <th class="px-3 py-3 whitespace-nowrap text-[13px]">Loại đơn</th>
-              <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">Trạng thái</th>
-              <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">Hành động</th>
-          </template>
-          <template #body>
-            <tr v-if="dangTai">
-              <td colspan="10" class="py-10 text-center text-sm text-slate-400">Đang tải dữ liệu hóa đơn...</td>
-            </tr>
-            <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="10" class="py-10 text-center text-sm text-slate-400">Không có hóa đơn phù hợp.</td>
-            </tr>
-            <tr
-              v-for="(hoaDon, index) in danhSachPhanTrang"
-              :key="hoaDon.id"
-              class="bg-white text-[13px] text-slate-700 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50 transition-colors [&>td]:whitespace-nowrap"
-            >
-              <td class="rounded-l-2xl px-3 py-3.5 font-semibold">
-                {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
-              </td>
-              <td class="px-3 py-3.5 font-semibold text-slate-800">{{ hoaDon.maHoaDon }}</td>
-              <td class="px-3 py-3.5">{{ hoaDon.maNhanVien || "—" }}</td>
-              <td class="px-3 py-3.5">{{ hoaDon.tenKhachHang || "—" }}</td>
-              <td class="px-3 py-3.5">{{ hoaDon.soDienThoai || "—" }}</td>
-              <td class="px-3 py-3.5 font-semibold text-slate-800">{{ dinhDangTien(hoaDon.tongTien) }}</td>
-              <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
-              <td class="px-3 py-3.5">{{ hoaDon.loaiDon }}</td>
-              <td class="px-3 py-3.5 text-center">
-                <span
-                  class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
-                  :class="mauTrangThai[hoaDon.trangThai] || 'bg-slate-100 text-slate-600'"
+              <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">
+                Trạng thái
+              </th>
+              <th class="px-3 py-3 text-center whitespace-nowrap text-[13px]">
+                Hành động
+              </th>
+            </template>
+            <template #body>
+              <tr v-if="dangTai">
+                <td
+                  colspan="10"
+                  class="py-10 text-center text-sm text-slate-400"
                 >
-                  {{ hoaDon.trangThai }}
-                </span>
-              </td>
-              <td class="rounded-r-2xl px-3 py-3.5 text-center">
-                <div class="flex items-center justify-center gap-1.5">
-                  <button
-                    type="button"
-                    @click="xuatHoaDonPdf(hoaDon.id)"
-                    class="hidden"
-                    :title="dangXuatPdfId === hoaDon.id ? 'Đang xuất PDF' : 'Xuất PDF'"
-                    :disabled="dangXuatPdfId === hoaDon.id"
+                  Đang tải dữ liệu hóa đơn...
+                </td>
+              </tr>
+              <tr v-else-if="!danhSachPhanTrang.length">
+                <td
+                  colspan="10"
+                  class="py-10 text-center text-sm text-slate-400"
+                >
+                  Không có hóa đơn phù hợp.
+                </td>
+              </tr>
+              <tr
+                v-for="(hoaDon, index) in danhSachPhanTrang"
+                :key="hoaDon.id"
+                class="bg-white text-[13px] text-slate-700 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50 transition-colors [&>td]:whitespace-nowrap"
+              >
+                <td class="rounded-l-2xl px-3 py-3.5 font-semibold">
+                  {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
+                </td>
+                <td class="px-3 py-3.5 font-semibold text-slate-800">
+                  {{ hoaDon.maHoaDon }}
+                </td>
+                <td class="px-3 py-3.5">{{ hoaDon.maNhanVien || "—" }}</td>
+                <td class="px-3 py-3.5">{{ hoaDon.tenKhachHang || "—" }}</td>
+                <td class="px-3 py-3.5">{{ hoaDon.soDienThoai || "—" }}</td>
+                <td class="px-3 py-3.5 font-semibold text-slate-800">
+                  {{ dinhDangTien(hoaDon.tongTien) }}
+                </td>
+                <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
+                <td class="px-3 py-3.5">{{ hoaDon.loaiDon }}</td>
+                <td class="px-3 py-3.5 text-center">
+                  <span
+                    class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"
+                    :class="
+                      mauTrangThai[hoaDon.trangThai] ||
+                      'bg-slate-100 text-slate-600'
+                    "
                   >
-                    <Download class="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    @click="xemChiTiet(hoaDon.id)"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary"
-                    title="Xem chi tiết"
-                  >
-                    <Eye class="h-4 w-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </Table>
-      </div>
+                    {{ hoaDon.trangThai }}
+                  </span>
+                </td>
+                <td class="rounded-r-2xl px-3 py-3.5 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button
+                      type="button"
+                      @click="xuatHoaDonPdf(hoaDon.id)"
+                      class="hidden"
+                      :title="
+                        dangXuatPdfId === hoaDon.id
+                          ? 'Đang xuất PDF'
+                          : 'Xuất PDF'
+                      "
+                      :disabled="dangXuatPdfId === hoaDon.id"
+                    >
+                      <Download class="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      @click="xemChiTiet(hoaDon.id)"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary"
+                      title="Xem chi tiết"
+                    >
+                      <Eye class="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </Table>
+        </div>
       </Transition>
 
       <template #footer>
@@ -562,7 +604,9 @@ onBeforeUnmount(() => {
   border-radius: 6px !important;
 }
 .tab-fade-enter-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .tab-fade-leave-active {
   transition: opacity 0.15s ease;
