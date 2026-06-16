@@ -1,5 +1,7 @@
 package com.example.server.core.client.donhang.controller;
 
+import com.example.server.core.client.donhang.dto.CapNhatSoLuongRequest;
+import com.example.server.core.client.donhang.dto.CapNhatSoLuongResponse;
 import com.example.server.core.client.donhang.dto.CapNhatThongTinGiaoHangRequest;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
@@ -60,12 +62,12 @@ public class ClientXemDonHangController {
     }
 
     @PostMapping("/{id}/yeu-cau-huy")
-    public ResponseEntity<ApiResponse<Void>> yeuCauHuy(
+    public ResponseEntity<ApiResponse<Void>> huyDon(
             @PathVariable Integer id,
             Authentication authentication
     ) {
-        service.yeuCauHuy(currentCustomer(authentication).id(), id);
-        return ResponseEntity.ok(ApiResponse.success("Đã gửi yêu cầu hủy đơn hàng", null));
+        service.huyDon(currentCustomer(authentication).id(), id);
+        return ResponseEntity.ok(ApiResponse.success("Đã hủy đơn hàng", null));
     }
 
     @PutMapping("/{id}/thong-tin-giao-hang")
@@ -77,6 +79,18 @@ public class ClientXemDonHangController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Cập nhật thông tin giao hàng thành công",
                 service.capNhatThongTinGiaoHang(currentCustomer(authentication).id(), id, request)
+        ));
+    }
+
+    @PutMapping("/{id}/so-luong")
+    public ResponseEntity<ApiResponse<CapNhatSoLuongResponse>> capNhatSoLuong(
+            @PathVariable Integer id,
+            @Valid @RequestBody CapNhatSoLuongRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Cập nhật số lượng sản phẩm thành công",
+                service.capNhatSoLuong(currentCustomer(authentication).id(), id, request)
         ));
     }
 

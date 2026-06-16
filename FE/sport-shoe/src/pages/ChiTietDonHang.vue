@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   capNhatThongTinGiaoHang,
+  capNhatSoLuongDonHang,
   layChiTietDonHang,
   xacNhanDaNhanHang,
   yeuCauHuyDonHang,
@@ -345,8 +346,63 @@ function lopBadge(tt) {
 
 const dangXuLy = ref(false);
 const daHoanThanh = computed(() => don.value?.trangThai === 5);
-const coTheYeuCauHuy = computed(() => [1, 9, 2].includes(Number(don.value?.trangThai)));
-const coTheSuaThongTinGiaoHang = computed(() => [1, 9, 2].includes(Number(don.value?.trangThai)));
+// Quyền hủy/sửa do backend quyết định theo hình thức thanh toán + trạng thái.
+const coTheYeuCauHuy = computed(() => don.value?.coTheHuy === true);
+const coTheSuaThongTinGiaoHang = computed(() => don.value?.coTheCapNhatGiaoHang === true);
+const coTheSuaSoLuong = computed(() => don.value?.coTheCapNhatSoLuong === true);
+
+const dangSuaSoLuong = ref(false);
+const dangLuuSoLuong = ref(false);
+const soLuongSua = ref({});
+
+function batDauSuaSoLuong() {
+  const map = {};
+  (don.value?.sanPhams || []).forEach((sp) => {
+    map[sp.hoaDonChiTietId] = Number(sp.soLuong) || 1;
+  });
+  soLuongSua.value = map;
+  dangSuaSoLuong.value = true;
+}
+
+function huySuaSoLuong() {
+  dangSuaSoLuong.value = false;
+  soLuongSua.value = {};
+}
+
+function doiSoLuong(id, delta) {
+  const hienTai = Number(soLuongSua.value[id]) || 0;
+  soLuongSua.value = { ...soLuongSua.value, [id]: Math.max(0, hienTai + delta) };
+}
+
+async function luuSoLuong() {
+  if (dangLuuSoLuong.value) return;
+  const items = Object.entries(soLuongSua.value)
+    .map(([hoaDonChiTietId, soLuong]) => ({
+      hoaDonChiTietId: Number(hoaDonChiTietId),
+      soLuong: Number(soLuong),
+    }))
+    .filter((it) => it.soLuong >= 1);
+  if (items.length === 0) {
+    showError('Đơn hàng phải còn ít nhất 1 sản phẩm.');
+    return;
+  }
+  dangLuuSoLuong.value = true;
+  try {
+    const res = await capNhatSoLuongDonHang(route.params.id, items);
+    don.value = res?.donHang || don.value;
+    dangSuaSoLuong.value = false;
+    const canhBao = Array.isArray(res?.canhBaoDoiGia) ? res.canhBaoDoiGia : [];
+    if (canhBao.length) {
+      showSuccess('Đã cập nhật số lượng. Lưu ý giá đã thay đổi:\n' + canhBao.join('\n'));
+    } else {
+      showSuccess('Đã cập nhật số lượng sản phẩm.');
+    }
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, 'Không thể cập nhật số lượng sản phẩm'));
+  } finally {
+    dangLuuSoLuong.value = false;
+  }
+}
 
 async function moModalSuaThongTinGiaoHang() {
   const khachHangId = layKhachId();
@@ -377,10 +433,13 @@ async function luuThongTinGiaoHang(payload) {
 }
 
 async function guiYeuCauHuy() {
+  const daThanhToanCK = don.value?.hinhThucThanhToan === 'CHUYEN_KHOAN';
   const daXacNhan = await showConfirm(
-    'Sau khi gửi yêu cầu, cửa hàng sẽ xem xét và xác nhận hủy đơn.',
-    'Yêu cầu hủy đơn hàng',
-    'Gửi yêu cầu',
+    daThanhToanCK
+      ? 'Bạn chắc chắn muốn hủy đơn? Đơn đã thanh toán sẽ được cửa hàng hoàn tiền lại cho bạn.'
+      : 'Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác.',
+    'Hủy đơn hàng',
+    'Hủy đơn',
     'Quay lại',
   );
   if (!daXacNhan) return;
@@ -389,9 +448,11 @@ async function guiYeuCauHuy() {
   try {
     await yeuCauHuyDonHang(route.params.id);
     await taiChiTiet();
-    showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
+    showSuccess(daThanhToanCK
+      ? 'Đơn hàng đã được hủy. Cửa hàng sẽ hoàn tiền cho bạn.'
+      : 'Đơn hàng đã được hủy.');
   } catch (e) {
-    showError(getDisplayErrorMessage(e, 'Không thể gửi yêu cầu hủy đơn hàng'));
+    showError(getDisplayErrorMessage(e, 'Không thể hủy đơn hàng'));
   } finally {
     dangXuLy.value = false;
   }
@@ -518,7 +579,7 @@ function xuLyAnhLoi(event) {
             :disabled="dangXuLy"
             class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3 text-sm font-bold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ dangXuLy ? 'Đang gửi...' : 'Yêu cầu hủy' }}
+            {{ dangXuLy ? 'Đang xử lý...' : 'Hủy đơn' }}
           </button>
         </section>
 
@@ -571,21 +632,47 @@ function xuLyAnhLoi(event) {
 
         <!-- Sản phẩm -->
         <section class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
-          <h2 class="text-base font-bold text-slate-800 mb-4">Sản phẩm</h2>
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-base font-bold text-slate-800">Sản phẩm</h2>
+            <button
+              v-if="coTheSuaSoLuong && !dangSuaSoLuong"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
+              @click="batDauSuaSoLuong"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+              </svg>
+              Sửa số lượng
+            </button>
+            <div v-else-if="dangSuaSoLuong" class="flex gap-2">
+              <button type="button" :disabled="dangLuuSoLuong" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60" @click="huySuaSoLuong">Hủy</button>
+              <button type="button" :disabled="dangLuuSoLuong" class="rounded-xl bg-rose-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-600 disabled:opacity-60" @click="luuSoLuong">{{ dangLuuSoLuong ? 'Đang lưu...' : 'Lưu' }}</button>
+            </div>
+          </div>
           <div class="space-y-4">
             <div v-for="(sp, i) in don.sanPhams" :key="i" class="flex gap-4">
               <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800">{{ sp.tenSanPham }}</p>
-                <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }} · x{{ sp.soLuong }}</p>
+                <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }}<span v-if="!dangSuaSoLuong"> · x{{ sp.soLuong }}</span></p>
                 <div class="mt-1 flex items-center gap-2">
                   <span class="font-semibold text-primary">{{ dinhDangTienViet(sp.giaDonVi) }}</span>
                   <span v-if="Number(sp.giaNiemYet) > Number(sp.giaDonVi)" class="text-xs text-slate-400 line-through">{{ dinhDangTienViet(sp.giaNiemYet) }}</span>
+                </div>
+                <div v-if="dangSuaSoLuong" class="mt-2 inline-flex items-center rounded-lg border border-slate-200">
+                  <button type="button" class="px-3 py-1 text-base font-bold text-slate-600 hover:bg-slate-50" @click="doiSoLuong(sp.hoaDonChiTietId, -1)">−</button>
+                  <span class="min-w-[2.5rem] text-center text-sm font-semibold text-slate-800">{{ soLuongSua[sp.hoaDonChiTietId] ?? 0 }}</span>
+                  <button type="button" class="px-3 py-1 text-base font-bold text-slate-600 hover:bg-slate-50" @click="doiSoLuong(sp.hoaDonChiTietId, 1)">+</button>
                 </div>
               </div>
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(sp.thanhTien) }}</p>
             </div>
           </div>
+          <p v-if="dangSuaSoLuong" class="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 border border-amber-100">
+            Giảm số lượng về 0 để bỏ sản phẩm khỏi đơn. Đơn phải còn ít nhất 1 sản phẩm. Nếu giá sản phẩm đã thay đổi, hệ thống sẽ cập nhật theo giá hiện tại và thông báo cho bạn.
+          </p>
         </section>
 
         <!-- Chi tiết trả hàng / hoàn tiền -->

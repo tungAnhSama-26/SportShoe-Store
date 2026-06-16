@@ -33,7 +33,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/uploads/**").permitAll()
                         .requestMatchers("/api/v1/upload", "/api/v1/upload/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
-                        .requestMatchers("/api/v1/realtime/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
+                        // SSE: để permitAll ở tầng filter (tránh AccessDenied khi async re-dispatch
+                        // lúc đóng stream); quyền được kiểm tra trong HoaDonRealtimeBroker.subscribe().
+                        .requestMatchers("/api/v1/realtime/**").permitAll()
                         .requestMatchers("/api/v1/client/khach-hang/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER")
                         .requestMatchers("/api/v1/client/don-hang/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/v1/client/tra-hang/**").hasRole("CUSTOMER")
