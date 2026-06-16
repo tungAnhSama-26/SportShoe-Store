@@ -29,4 +29,8 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
 
     @Query("select t from ThanhToan t where t.hoaDon.id in :hoaDonIds")
     List<ThanhToan> findByHoaDonIdIn(@Param("hoaDonIds") Collection<Integer> hoaDonIds);
+
+    boolean existsByGiaoDichGocIdAndLoaiGiaoDich(Integer giaoDichGocId, Integer loaiGiaoDich);
+
+    boolean existsByPhieuTraHangIdAndLoaiGiaoDich(Integer phieuTraHangId, Integer loaiGiaoDich);
 }
