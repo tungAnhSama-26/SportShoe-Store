@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
 
     List<ThanhToan> findByHoaDonIdOrderByNgayTaoDesc(Integer hoaDonId);
@@ -16,4 +20,7 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
             Integer loaiGiaoDich,
             Integer trangThai
     );
+
+    @Query("select t from ThanhToan t where t.hoaDon.id in :hoaDonIds")
+    List<ThanhToan> findByHoaDonIdIn(@Param("hoaDonIds") Collection<Integer> hoaDonIds);
 }

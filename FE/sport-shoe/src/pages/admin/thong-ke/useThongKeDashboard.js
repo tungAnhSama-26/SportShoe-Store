@@ -62,6 +62,7 @@ export function useThongKeDashboard() {
     { value: "BEST_SELLER", label: "Bán chạy nhất" },
     { value: "REVENUE_DESC", label: "Doanh thu cao nhất" },
     { value: "STOCK_ASC", label: "Tồn kho thấp nhất" },
+    { value: "RETURNED_DESC", label: "Trả lại nhiều nhất" },
     { value: "NAME_ASC", label: "Tên A - Z" }
   ];
 
@@ -84,6 +85,7 @@ export function useThongKeDashboard() {
     },
     tongQuan: {
       tongDoanhThu: 0,
+      doanhThuThucTe: 0,
       tongDonHang: 0,
       sanPhamDaBan: 0,
       khachMoi: 0
@@ -92,7 +94,9 @@ export function useThongKeDashboard() {
     bieuDoBanHang: [],
     bieuDoThuongHieu: [],
     sanPhams: [],
-    nhanViens: []
+    nhanViens: [],
+    thongKeTheoThoiGian: [],
+    bieuDoTrangThaiDonHang: []
   });
 
   const dashboard = ref(EMPTY_DASHBOARD());
@@ -136,6 +140,13 @@ export function useThongKeDashboard() {
       badgeClass: "bg-emerald-50"
     },
     {
+      label: "Doanh thu thực tế",
+      value: formatCurrency(dashboard.value.tongQuan.doanhThuThucTe),
+      icon: TrendingUp,
+      iconClass: "text-teal-600",
+      badgeClass: "bg-teal-50"
+    },
+    {
       label: "Tổng đơn hàng",
       value: formatNumber(dashboard.value.tongQuan.tongDonHang),
       icon: ShoppingCart,
@@ -164,6 +175,47 @@ export function useThongKeDashboard() {
       badgeClass: "bg-primary-light"
     }
   ]);
+
+  const hasOrderStatusData = computed(() => dashboard.value.bieuDoTrangThaiDonHang && dashboard.value.bieuDoTrangThaiDonHang.some((item) => (item.soLuong ?? 0) > 0));
+
+  const orderStatusChartData = computed(() => ({
+    labels: (dashboard.value.bieuDoTrangThaiDonHang || []).map((item) => item.trangThai),
+    datasets: [
+      {
+        data: (dashboard.value.bieuDoTrangThaiDonHang || []).map((item) => item.soLuong ?? 0),
+        backgroundColor: (dashboard.value.bieuDoTrangThaiDonHang || []).map((_, index) => PIE_COLORS[index % PIE_COLORS.length]),
+        borderWidth: 0
+      }
+    ]
+  }));
+
+  const orderStatusChartOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          boxWidth: 8,
+          padding: 12,
+          color: "#475569",
+          font: {
+            size: 11
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: "#111827",
+        padding: 12,
+        callbacks: {
+          label(context) {
+            return `${context.label}: ${formatNumber(context.raw)} đơn hàng`;
+          }
+        }
+      }
+    }
+  }));
 
   const salesLabels = computed(() => dashboard.value.bieuDoBanHang.map((item) => item.nhan));
 
@@ -489,6 +541,7 @@ export function useThongKeDashboard() {
       boLoc: data?.boLoc ?? EMPTY_DASHBOARD().boLoc,
       tongQuan: {
         tongDoanhThu: Number(data?.tongQuan?.tongDoanhThu ?? 0),
+        doanhThuThucTe: Number(data?.tongQuan?.doanhThuThucTe ?? 0),
         tongDonHang: Number(data?.tongQuan?.tongDonHang ?? 0),
         sanPhamDaBan: Number(data?.tongQuan?.sanPhamDaBan ?? 0),
         khachMoi: Number(data?.tongQuan?.khachMoi ?? 0)
@@ -497,7 +550,9 @@ export function useThongKeDashboard() {
       bieuDoBanHang: Array.isArray(data?.bieuDoBanHang) ? data.bieuDoBanHang : [],
       bieuDoThuongHieu: Array.isArray(data?.bieuDoThuongHieu) ? data.bieuDoThuongHieu : [],
       sanPhams: Array.isArray(data?.sanPhams) ? data.sanPhams : [],
-      nhanViens: Array.isArray(data?.nhanViens) ? data.nhanViens : []
+      nhanViens: Array.isArray(data?.nhanViens) ? data.nhanViens : [],
+      thongKeTheoThoiGian: Array.isArray(data?.thongKeTheoThoiGian) ? data.thongKeTheoThoiGian : [],
+      bieuDoTrangThaiDonHang: Array.isArray(data?.bieuDoTrangThaiDonHang) ? data.bieuDoTrangThaiDonHang : []
     };
   }
 
@@ -626,6 +681,10 @@ export function useThongKeDashboard() {
           || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
       case "STOCK_ASC":
         return Number(left.tonKho ?? 0) - Number(right.tonKho ?? 0)
+          || Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
+          || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
+      case "RETURNED_DESC":
+        return Number(right.soLuongTra ?? 0) - Number(left.soLuongTra ?? 0)
           || Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
           || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
       case "NAME_ASC":
@@ -767,6 +826,6 @@ export function useThongKeDashboard() {
     dashboardRequestController?.abort();
   });
 
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions };
 }
 
