@@ -1,11 +1,14 @@
 package com.example.server.repository;
 
 import com.example.server.entity.GiayChiTiet;
+import jakarta.persistence.LockModeType;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,6 +16,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Integer> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select gct from GiayChiTiet gct join fetch gct.giay where gct.id = :id")
+    Optional<GiayChiTiet> findByIdForUpdate(@Param("id") Integer id);
 
     boolean existsByGiayIdAndMauSacIdAndKichCoId(Integer giayId, Integer mauSacId, Integer kichCoId);
 
@@ -153,7 +160,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             JOIN link.dotGiamGia d
             WHERE d.kichHoat != 0
               AND d.kichHoat != CASE
-                  WHEN d.ngayKetThuc <= :today THEN 2
+                  WHEN d.ngayKetThuc < :today THEN 2
                   WHEN d.ngayBatDau > :today THEN 4
                   ELSE 1
               END

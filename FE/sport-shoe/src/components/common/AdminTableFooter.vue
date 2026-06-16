@@ -97,7 +97,7 @@ function itemKey(item, index) {
   >
     <label
       class="inline-flex w-fit items-center border border-slate-200 bg-white text-sm font-medium text-slate-600 shadow-sm"
-      :class="props.compact ? 'h-9 rounded-2xl px-3' : 'h-11 gap-3 rounded-2xl px-4'"
+      :class="props.compact ? 'h-9 rounded-[6px] px-3' : 'h-11 gap-3 rounded-[6px] px-4'"
     >
       <span v-if="!props.compact">Hiển thị:</span>
       <select
@@ -124,7 +124,7 @@ function itemKey(item, index) {
         v-if="showRefresh"
         type="button"
         class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-        :class="props.compact ? 'h-9 w-9 rounded-2xl' : 'h-9 w-9 rounded-xl'"
+        :class="props.compact ? 'h-9 w-9 rounded-[6px]' : 'h-9 w-9 rounded-[6px]'"
         title="Làm mới"
         @click="emit('refresh')"
       >
@@ -139,7 +139,7 @@ function itemKey(item, index) {
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          :class="props.compact ? 'rounded-2xl' : 'rounded-xl'"
+          :class="props.compact ? 'rounded-[6px]' : 'rounded-[6px]'"
           :disabled="displayPage <= 1"
           title="Trang đầu"
           @click="changePage(1)"
@@ -151,7 +151,7 @@ function itemKey(item, index) {
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          :class="props.compact ? 'rounded-2xl' : 'rounded-xl'"
+          :class="props.compact ? 'rounded-[6px]' : 'rounded-[6px]'"
           :disabled="displayPage <= 1"
           @click="changePage(displayPage - 1)"
         >
@@ -163,13 +163,13 @@ function itemKey(item, index) {
             <button
               v-if="String(item).startsWith('ellipsis')"
               type="button"
-              class="flex h-9 min-w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+              class="flex h-9 min-w-9 items-center justify-center rounded-[6px] border border-slate-200 bg-white px-3 text-sm text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
               @click="changePage(item === 'ellipsis-left' ? displayPage - 5 : displayPage + 5)"
             >...</button>
             <button
               v-else
               type="button"
-              class="flex h-9 min-w-9 items-center justify-center rounded-2xl px-3 text-sm font-semibold transition"
+              class="flex h-9 min-w-9 items-center justify-center rounded-[6px] px-3 text-sm font-semibold transition"
               :class="Number(item) === displayPage ? 'border border-violet-200 bg-violet-50 text-violet-600' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
               @click="changePage(Number(item))"
             >{{ item }}</button>
@@ -180,13 +180,13 @@ function itemKey(item, index) {
             <button
               v-if="String(item).startsWith('ellipsis')"
               type="button"
-              class="flex h-9 min-w-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+              class="flex h-9 min-w-9 items-center justify-center rounded-[6px] border border-slate-200 bg-white px-3 text-sm text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
               @click="changePage(item === 'ellipsis-left' ? displayPage - 5 : displayPage + 5)"
             >...</button>
             <button
               v-else
               type="button"
-              class="flex h-9 min-w-9 items-center justify-center rounded-xl px-3 text-sm font-semibold transition"
+              class="flex h-9 min-w-9 items-center justify-center rounded-[6px] px-3 text-sm font-semibold transition"
               :class="Number(item) === displayPage ? 'bg-rose-500 text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
               @click="changePage(Number(item))"
             >{{ item }}</button>
@@ -197,7 +197,7 @@ function itemKey(item, index) {
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          :class="props.compact ? 'rounded-2xl' : 'rounded-xl'"
+          :class="props.compact ? 'rounded-[6px]' : 'rounded-[6px]'"
           :disabled="displayPage >= normalizedTotalPages"
           @click="changePage(displayPage + 1)"
         >
@@ -208,7 +208,7 @@ function itemKey(item, index) {
         <button
           type="button"
           class="flex h-9 w-9 items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          :class="props.compact ? 'rounded-2xl' : 'rounded-xl'"
+          :class="props.compact ? 'rounded-[6px]' : 'rounded-[6px]'"
           :disabled="displayPage >= normalizedTotalPages"
           title="Trang cuối"
           @click="changePage(normalizedTotalPages)"

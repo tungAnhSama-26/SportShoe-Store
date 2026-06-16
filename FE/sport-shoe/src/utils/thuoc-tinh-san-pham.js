@@ -57,6 +57,12 @@ export function isValidWebsiteUrl(value) {
   }
 }
 
+export function hasSpecialCharacters(value) {
+  if (!value) return false
+  const specialCharsRegex = /[@#$%^*+=\\{}\[\]<>;|~`]/
+  return specialCharsRegex.test(String(value))
+}
+
 export function createAttributeCodeSeed() {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
     .toUpperCase()

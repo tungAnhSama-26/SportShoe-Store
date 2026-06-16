@@ -12,6 +12,7 @@ import {
   exceedsMaxLength,
   generateWeightAttributeCode,
   normalizeOptionalText
+, hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham'
 import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
@@ -127,7 +128,10 @@ function validate() {
     errors.giaTri = 'Trọng lượng phải là số nguyên từ 1 gram trở lên'
   }
 
-  if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {
+  if (moTa && hasSpecialCharacters(moTa)) {
+    errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
+  }
+  else if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {
     errors.moTa = `Mô tả không được vượt quá ${MO_TA_MAX_LENGTH} ký tự`
   }
 

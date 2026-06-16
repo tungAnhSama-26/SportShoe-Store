@@ -30,8 +30,22 @@ public record DonHangChiTietResponse(
         Integer phieuTraHangId,
         Integer trangThaiTraHang,
         String trangThaiTraHangText,
-        List<LichSuTraHang> lichSuTraHang
+        List<LichSuTraHang> lichSuTraHang,
+        String lyDoTraHangMa,
+        String lyDoTraHangMoTa,
+        BigDecimal tongTienDuKienTra,
+        BigDecimal tongTienThucTeTra,
+        List<String> hinhAnhTraHang,
+        List<ChiTietTraHangItem> chiTietTraHang
 ) {
+    public record ChiTietTraHangItem(
+            Integer hoaDonChiTietId,
+            Integer soLuongTra,
+            Integer soLuongChapNhan,
+            BigDecimal giaBan,
+            BigDecimal soTienHoan
+    ) {}
+
     public record LichSuTrangThai(
             String trangThai,
             Instant ngayTao,

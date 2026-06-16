@@ -7,6 +7,7 @@ import com.example.server.infrastructure.api.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
 import java.util.List;
@@ -44,12 +45,12 @@ public class QuanLyPhieuGiamGiaKhachHangController {
     }
 
     @PostMapping("add")
-    public void add(@RequestBody PhieuGiamGiaKhachHangRequest request) {
+    public void add(@Valid @RequestBody PhieuGiamGiaKhachHangRequest request) {
         phieuGiamGiaKhachHangService.add(request);
     }
 
     @PutMapping("update")
-    public void update(@RequestParam("id") Integer id, @RequestBody PhieuGiamGiaKhachHangRequest request) {
+    public void update(@RequestParam("id") Integer id, @Valid @RequestBody PhieuGiamGiaKhachHangRequest request) {
         phieuGiamGiaKhachHangService.update(id, request);
     }
 

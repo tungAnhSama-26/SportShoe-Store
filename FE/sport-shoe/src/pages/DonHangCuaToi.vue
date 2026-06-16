@@ -154,12 +154,14 @@ async function muaLai(don) {
   }
 }
 
+const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
+
 function laQuaHanTraHang(don) {
   if (!don || !don.ngayCapNhat) return true;
   const thoiGianHoanThanh = new Date(don.ngayCapNhat).getTime();
   const bayGio = new Date().getTime();
-  const baNgayMs = 3 * 24 * 60 * 60 * 1000;
-  return (bayGio - thoiGianHoanThanh) > baNgayMs;
+  const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
+  return (bayGio - thoiGianHoanThanh) > thoiHanTraHangMs;
 }
 
 function moYeuCauTraHang(don) {
@@ -314,7 +316,7 @@ async function guiYeuCauHuy(don) {
                 >
                   {{ donDangGuiYeuCauHuy === don.id ? 'Đang gửi...' : 'Yêu cầu hủy' }}
                 </button>
-                <!-- Yêu cầu trả hàng button: Shown if order is Hoàn thành (5) AND (phieuTraHangId is null OR return status is Rejected(8) or Cancelled(9)) AND not expired (under 3 days) -->
+                <!-- Cho phép gửi lại sau khi phiếu trước bị từ chối/hủy và vẫn còn trong thời hạn trả hàng. -->
                 <button
                   v-if="don.trangThai === 5 && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
                   @click="moYeuCauTraHang(don)"

@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import * as api from '../services/san-pham-api.ts'
+import * as api from '../services/san-pham-api.js'
 import {
   chatLieuGiayApi,
   coGiayApi,
@@ -9,7 +9,8 @@ import {
   mauSacApi,
   thuongHieuApi,
   trongLuongApi,
-} from '../services/danh-muc-api.ts'
+} from '../services/danh-muc-api.js'
+import { hasSpecialCharacters } from '../utils/thuoc-tinh-san-pham.js'
 
 export function useQuickCreate() {
   const quickCreateOpen = ref(false)
@@ -160,10 +161,21 @@ export function useQuickCreate() {
     if (!quickCreateForm.ma.trim()) {
       quickCreateErrors.value.ma = 'Mã không được để trống'
       return
+    } else if (hasSpecialCharacters(quickCreateForm.ma)) {
+      quickCreateErrors.value.ma = 'Mã không được chứa ký tự đặc biệt'
+      return
     }
 
     if (!quickCreateForm.ten.trim()) {
       quickCreateErrors.value.ten = 'Tên không được để trống'
+      return
+    } else if (hasSpecialCharacters(quickCreateForm.ten)) {
+      quickCreateErrors.value.ten = 'Tên không được chứa ký tự đặc biệt'
+      return
+    }
+
+    if (quickCreateForm.xuatXu && hasSpecialCharacters(quickCreateForm.xuatXu)) {
+      quickCreateErrors.value.xuatXu = 'Xuất xứ không được chứa ký tự đặc biệt'
       return
     }
 

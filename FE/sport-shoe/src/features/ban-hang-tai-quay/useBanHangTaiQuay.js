@@ -264,6 +264,12 @@ function useBanHangTaiQuay() {
     markShippingFeeDirty();
   }
 
+  watch(isGuestCustomer, (newVal) => {
+    if (newVal) {
+      updateShippingInfo({ giaoHang: false });
+    }
+  });
+
   function markCouponDirty() {
     danhDauCanApDungLaiPhieu();
   }
@@ -363,7 +369,11 @@ function useBanHangTaiQuay() {
       pageError.value = "Vui lòng chọn màu sắc và kích cỡ phù hợp";
       return;
     }
-    themSanPham(selectedVariant.value, selectedQuantity.value);
+    const success = themSanPham(selectedVariant.value, selectedQuantity.value);
+    if (success) {
+      dongChiTietSanPham();
+      showSuccess(`Đã thêm ${selectedQuantity.value} sản phẩm vào hóa đơn`);
+    }
   }
 
   function mapInvoiceToDraft(invoice) {
@@ -635,7 +645,6 @@ function useBanHangTaiQuay() {
         <td style="text-align: right; padding: 8px 0;">${(item.soLuong * item.giaBan).toLocaleString('vi-VN')} đ</td>
       </tr>
     `).join('');
-
     const invoiceHtml = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: auto; line-height: 1.5;">
         <div style="text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 20px;">

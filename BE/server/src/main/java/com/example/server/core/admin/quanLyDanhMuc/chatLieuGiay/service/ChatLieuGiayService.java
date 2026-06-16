@@ -41,9 +41,23 @@ public class ChatLieuGiayService {
             throw new BusinessException("Mã chất liệu giày '" + ma + "' đã tồn tại");
         }
 
+        String ten = req.ten().trim();
+        var existingOpt = chatLieuGiayRepository.findByTenIgnoreCase(req.ten().trim());
+        if (existingOpt.isPresent()) {
+            var existing = existingOpt.get();
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
+                existing.setMoTa(req.moTa());
+                existing.setMa(ma);
+                return toChatLieuGiay(chatLieuGiayRepository.save(existing));
+            } else {
+                throw new BusinessException("T�n ch?t li?u gi�y '" + req.ten() + "' d� t?n t?i");
+            }
+        }
+
         var entity = new ChatLieuGiay();
         entity.setMa(ma);
-        entity.setTen(req.ten().trim());
+        entity.setTen(ten);
         entity.setMoTa(req.moTa());
         entity.setTrangThai(1);
         entity.setNgayTao(Instant.now());
@@ -57,6 +71,11 @@ public class ChatLieuGiayService {
         String ma = req.ma().trim().toUpperCase();
         if (chatLieuGiayRepository.existsByMaIgnoreCaseAndIdNot(ma, id)) {
             throw new BusinessException("Mã chất liệu giày '" + ma + "' đã tồn tại");
+        }
+
+        String ten = req.ten().trim();
+        if (chatLieuGiayRepository.existsByTenIgnoreCaseAndIdNot(ten, id)) {
+            throw new BusinessException("Chất liệu giày '" + ten + "' đã tồn tại");
         }
 
         entity.setMa(ma);

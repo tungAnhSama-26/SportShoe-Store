@@ -41,16 +41,14 @@ public class MauSacService {
         
         if (existingOpt.isPresent()) {
             var existing = existingOpt.get();
-            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
-                throw new BusinessException("Tên màu sắc '" + ten + "' đã tồn tại");
-            }
-            // Khôi phục nếu đang bị ngừng bán
-            existing.setTrangThai(1);
-            if (req.maMauHex() != null && !req.maMauHex().isBlank()) {
+            if (existing.getTrangThai() == 0) {
+                existing.setTrangThai(1);
                 existing.setMaMauHex(req.maMauHex());
+                existing.setMa(req.ma().trim().toUpperCase());
+                return toMauSac(mauSacRepository.save(existing));
+            } else {
+                throw new BusinessException("T�n m�u s?c '" + ten + "' d� t?n t?i");
             }
-            existing.setNgayCapNhat(Instant.now());
-            return toMauSac(mauSacRepository.save(existing));
         }
 
         String ma = req.ma().trim().toUpperCase();

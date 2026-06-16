@@ -362,7 +362,7 @@ INSERT INTO phieu_giam_gia
 VALUES
 (N'PGG001', N'Giảm 10% đơn đầu', 1, 1, 10, 500000, 300000, '2026-05-01', '2026-06-30', 100, 7, 1),
 (N'PGG002', N'Giảm 200K đơn từ 2 triệu', 2, 1, 200000, 2000000, 200000, '2026-05-01', '2026-06-15', 80, 12, 1),
-(N'PGG003', N'Miễn phí ship nội thành', 3, 1, 0, 300000, 50000, '2026-05-01', '2026-12-31', 200, 30, 1),
+(N'PGG003', N'Giảm 50K đơn từ 300K', 2, 1, 50000, 300000, 50000, '2026-05-01', '2026-12-31', 200, 30, 1),
 (N'PGG004', N'Giảm 15% thành viên', 1, 2, 15, 1000000, 500000, '2026-05-10', '2026-07-10', 50, 8, 1),
 (N'PGG005', N'Giảm 150K sneaker Việt', 2, 1, 150000, 1000000, 150000, '2026-05-05', '2026-06-05', 60, 9, 1),
 (N'PGG006', N'Voucher đã hết hạn', 1, 1, 20, 1000000, 400000, '2026-03-01', '2026-03-31', 40, 18, 2),
@@ -518,25 +518,26 @@ SET
     END,
     mo_ta = ly_do,
     tong_tien_du_kien = tong_tien_hoan,
-    tong_tien_thuc_te = CASE WHEN ma IN (N'TH005', N'TH009') THEN tong_tien_hoan ELSE 0 END,
+    tong_tien_thuc_te = CASE WHEN ma IN (N'TH008', N'TH009') THEN tong_tien_hoan ELSE 0 END,
     trang_thai = CASE
         WHEN ma = N'TH001' THEN 1
         WHEN ma = N'TH002' THEN 2
         WHEN ma = N'TH003' THEN 3
         WHEN ma = N'TH004' THEN 4
-        WHEN ma = N'TH005' THEN 10
-        WHEN ma = N'TH006' THEN 7
+        WHEN ma = N'TH005' THEN 8
+        WHEN ma = N'TH006' THEN 9
         WHEN ma = N'TH007' THEN 1
         WHEN ma = N'TH008' THEN 6
-        WHEN ma = N'TH009' THEN 8
-        ELSE 2
+        WHEN ma = N'TH009' THEN 7
+        WHEN ma = N'TH010' THEN 5
+        ELSE 1
     END,
     ngay_duyet = CASE
         WHEN ma IN (N'TH002', N'TH003', N'TH004', N'TH005', N'TH006', N'TH008', N'TH009', N'TH010')
         THEN TODATETIMEOFFSET(DATEADD(MINUTE, 30, ngay_tao), '+07:00')
     END,
     ngay_hoan_tat = CASE
-        WHEN ma IN (N'TH005', N'TH009')
+        WHEN ma = N'TH009'
         THEN TODATETIMEOFFSET(ngay_cap_nhat, '+07:00')
     END;
 GO
@@ -544,23 +545,23 @@ GO
 UPDATE phieu_tra_hang_chi_tiet
 SET
     so_luong_nhan = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (5, 6, 7, 8, 9, 10)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (4, 5, 6, 7)
     ) THEN so_luong_tra ELSE 0 END,
     so_luong_chap_nhan = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7, 8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7)
     ) THEN so_luong_tra ELSE 0 END,
     so_luong_tu_choi = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai = 10
+        SELECT id FROM phieu_tra_hang WHERE ma = N'TH005'
     ) THEN so_luong_tra ELSE 0 END,
     tinh_trang_san_pham = N'Dữ liệu kiểm thử quy trình trả hàng',
     so_tien_hoan = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (7, 8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (6, 7)
     ) THEN thanh_tien ELSE 0 END,
     nhap_lai_ton_kho = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (7, 8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai = 7
     ) THEN 1 ELSE 0 END,
     da_cap_nhat_ton = CASE WHEN phieu_tra_hang_id IN (
-        SELECT id FROM phieu_tra_hang WHERE trang_thai IN (8, 9)
+        SELECT id FROM phieu_tra_hang WHERE trang_thai = 7
     ) THEN 1 ELSE 0 END;
 GO
 

@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Pageable;
@@ -126,14 +127,64 @@ public class QuanLySanPhamService {
     // ─── Danh mục ────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public Map<String, Boolean> checkTenTrung(String ten, Integer id) {
+    public Map<String, Object> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
+        Integer conflictingId = null;
         if (id != null && id > 0) {
             exists = giayRepository.existsByTenIgnoreCaseAndIdNot(ten, id);
         } else {
-            exists = giayRepository.existsByTenIgnoreCase(ten);
+            Optional<Giay> conflicting = giayRepository.findFirstByTenIgnoreCase(ten);
+            if (conflicting.isPresent()) {
+                exists = true;
+                conflictingId = conflicting.get().getId();
+            }
         }
-        return Map.of("exists", exists);
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("exists", exists);
+        if (conflictingId != null) {
+            result.put("id", conflictingId);
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkMaTrung(String ma, Integer id) {
+        boolean exists = false;
+        Integer conflictingId = null;
+        if (id != null && id > 0) {
+            exists = giayRepository.existsByMaIgnoreCaseAndIdNot(ma, id);
+        } else {
+            Optional<Giay> conflicting = giayRepository.findFirstByMaIgnoreCase(ma);
+            if (conflicting.isPresent()) {
+                exists = true;
+                conflictingId = conflicting.get().getId();
+            }
+        }
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("exists", exists);
+        if (conflictingId != null) {
+            result.put("id", conflictingId);
+        }
+        return result;
+    }
+
+    public GiayDetailResponse checkTrungThuocTinh(TaoGiayRequest req) {
+        List<Giay> existing = giayRepository.findByThuocTinh(
+                req.thuongHieuId(),
+                req.loaiGiayId(),
+                req.gioiTinh(),
+                req.chatLieuGiayId(),
+                req.deGiayId(),
+                req.coGiayId(),
+                req.congNgheDemId(),
+                req.trongLuongId()
+        );
+        if (!existing.isEmpty()) {
+            return chiTietGiay(existing.get(0).getId());
+        }
+        return null;
     }
 
     @Transactional(readOnly = true)
@@ -919,14 +970,24 @@ public class QuanLySanPhamService {
 
             if (thuongHieuId == null) {
                 putError(errors, "thuongHieuId", "Vui lòng chọn thương hiệu cho sản phẩm");
-            } else if (!thuongHieuRepository.existsById(thuongHieuId)) {
-                putError(errors, "thuongHieuId", "Thương hiệu đã chọn không tồn tại");
+            } else {
+                var th = thuongHieuRepository.findById(thuongHieuId).orElse(null);
+                if (th == null) {
+                    putError(errors, "thuongHieuId", "Thương hiệu đã chọn không tồn tại");
+                } else if (th.getTrangThai() != null && th.getTrangThai() == 0) {
+                    putError(errors, "thuongHieuId", "Thương hiệu đã chọn đang ngừng hoạt động");
+                }
             }
 
             if (loaiGiayId == null) {
                 putError(errors, "loaiGiayId", "Vui lòng chọn loại giày cho sản phẩm");
-            } else if (!loaiGiayRepository.existsById(loaiGiayId)) {
-                putError(errors, "loaiGiayId", "Loại giày đã chọn không tồn tại");
+            } else {
+                var lg = loaiGiayRepository.findById(loaiGiayId).orElse(null);
+                if (lg == null) {
+                    putError(errors, "loaiGiayId", "Loại giày đã chọn không tồn tại");
+                } else if (lg.getTrangThai() != null && lg.getTrangThai() == 0) {
+                    putError(errors, "loaiGiayId", "Loại giày đã chọn đang ngừng hoạt động");
+                }
             }
         }
 
@@ -939,41 +1000,50 @@ public class QuanLySanPhamService {
             putError(errors, "moTa", "Mô tả không được vượt quá 2000 ký tự");
         }
 
-        validateOptionalReference(
-                errors,
-                "chatLieuGiayId",
-                chatLieuGiayId,
-                chatLieuGiayId == null || chatLieuGiayRepository.existsById(chatLieuGiayId),
-                "Chất liệu giày"
-        );
-        validateOptionalReference(
-                errors,
-                "deGiayId",
-                deGiayId,
-                deGiayId == null || deGiayRepository.existsById(deGiayId),
-                "Đế giày"
-        );
-        validateOptionalReference(
-                errors,
-                "coGiayId",
-                coGiayId,
-                coGiayId == null || coGiayRepository.existsById(coGiayId),
-                "Cổ giày"
-        );
-        validateOptionalReference(
-                errors,
-                "congNgheDemId",
-                congNgheDemId,
-                congNgheDemId == null || congNgheDemRepository.existsById(congNgheDemId),
-                "Công nghệ đệm"
-        );
-        validateOptionalReference(
-                errors,
-                "trongLuongId",
-                trongLuongId,
-                trongLuongId == null || trongLuongRepository.existsById(trongLuongId),
-                "Trọng lượng"
-        );
+        if (chatLieuGiayId != null) {
+            var cl = chatLieuGiayRepository.findById(chatLieuGiayId).orElse(null);
+            if (cl == null) {
+                putError(errors, "chatLieuGiayId", "Chất liệu giày đã chọn không tồn tại");
+            } else if (cl.getTrangThai() != null && cl.getTrangThai() == 0) {
+                putError(errors, "chatLieuGiayId", "Chất liệu giày đã chọn đang ngừng hoạt động");
+            }
+        }
+        
+        if (deGiayId != null) {
+            var dg = deGiayRepository.findById(deGiayId).orElse(null);
+            if (dg == null) {
+                putError(errors, "deGiayId", "Đế giày đã chọn không tồn tại");
+            } else if (dg.getTrangThai() != null && dg.getTrangThai() == 0) {
+                putError(errors, "deGiayId", "Đế giày đã chọn đang ngừng hoạt động");
+            }
+        }
+        
+        if (coGiayId != null) {
+            var cg = coGiayRepository.findById(coGiayId).orElse(null);
+            if (cg == null) {
+                putError(errors, "coGiayId", "Cổ giày đã chọn không tồn tại");
+            } else if (cg.getTrangThai() != null && cg.getTrangThai() == 0) {
+                putError(errors, "coGiayId", "Cổ giày đã chọn đang ngừng hoạt động");
+            }
+        }
+        
+        if (congNgheDemId != null) {
+            var cn = congNgheDemRepository.findById(congNgheDemId).orElse(null);
+            if (cn == null) {
+                putError(errors, "congNgheDemId", "Công nghệ đệm đã chọn không tồn tại");
+            } else if (cn.getTrangThai() != null && cn.getTrangThai() == 0) {
+                putError(errors, "congNgheDemId", "Công nghệ đệm đã chọn đang ngừng hoạt động");
+            }
+        }
+        
+        if (trongLuongId != null) {
+            var tl = trongLuongRepository.findById(trongLuongId).orElse(null);
+            if (tl == null) {
+                putError(errors, "trongLuongId", "Trọng lượng đã chọn không tồn tại");
+            } else if (tl.getTrangThai() != null && tl.getTrangThai() == 0) {
+                putError(errors, "trongLuongId", "Trọng lượng đã chọn đang ngừng hoạt động");
+            }
+        }
 
         throwValidationErrors(errors);
     }
@@ -1045,14 +1115,24 @@ public class QuanLySanPhamService {
 
         if (mauSacId == null) {
             putError(errors, mauSacKey, "Vui lòng chọn màu sắc");
-        } else if (!mauSacRepository.existsById(mauSacId)) {
-            putError(errors, mauSacKey, "Màu sắc đã chọn không tồn tại");
+        } else {
+            var ms = mauSacRepository.findById(mauSacId).orElse(null);
+            if (ms == null) {
+                putError(errors, mauSacKey, "Màu sắc đã chọn không tồn tại");
+            } else if (ms.getTrangThai() != null && ms.getTrangThai() == 0) {
+                putError(errors, mauSacKey, "Màu sắc đã chọn đang ngừng hoạt động");
+            }
         }
 
         if (kichCoId == null) {
             putError(errors, kichCoKey, "Vui lòng chọn kích cỡ");
-        } else if (!kichCoRepository.existsById(kichCoId)) {
-            putError(errors, kichCoKey, "Kích cỡ đã chọn không tồn tại");
+        } else {
+            var kc = kichCoRepository.findById(kichCoId).orElse(null);
+            if (kc == null) {
+                putError(errors, kichCoKey, "Kích cỡ đã chọn không tồn tại");
+            } else if (kc.getTrangThai() != null && kc.getTrangThai() == 0) {
+                putError(errors, kichCoKey, "Kích cỡ đã chọn đang ngừng hoạt động");
+            }
         }
 
         if (soLuong == null) {

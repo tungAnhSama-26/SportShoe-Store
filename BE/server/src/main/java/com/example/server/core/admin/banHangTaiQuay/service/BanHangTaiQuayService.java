@@ -371,6 +371,7 @@ public class BanHangTaiQuayService {
             giayChiTietRepository.save(giayChiTiet);
             hoaDonChiTietRepository.delete(item);
         }
+        hoaDonChiTietRepository.flush();
 
         // Add new items
         validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new java.util.ArrayList<>());
@@ -686,11 +687,14 @@ public class BanHangTaiQuayService {
                 hoaDon
         );
 
-        PhieuGiamGia pgg = phieuApDung.phieuGiamGia();
-        if (pgg.getSoLuong() != null && pgg.getSoLuong() != 999999) {
-            pgg.setSoLuong(pgg.getSoLuong() - 1);
+        PhieuGiamGia pgg = phieuGiamGiaRepository.findByIdForUpdate(phieuApDung.phieuGiamGia().getId())
+                .orElseThrow(() -> new BusinessException("Phiếu giảm giá không tồn tại"));
+        int tongSoLuong = pgg.getSoLuong() == null ? 0 : pgg.getSoLuong();
+        int daDung = pgg.getSoLuongDaDung() == null ? 0 : pgg.getSoLuongDaDung();
+        if (tongSoLuong != 999999 && daDung >= tongSoLuong) {
+            throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng");
         }
-        pgg.setSoLuongDaDung(pgg.getSoLuongDaDung() + 1);
+        pgg.setSoLuongDaDung(daDung + 1);
         phieuGiamGiaRepository.save(pgg);
 
         if (khachHang != null) {
@@ -713,10 +717,10 @@ public class BanHangTaiQuayService {
         if (phieuGiamGia == null) {
             return;
         }
-        if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() != 999999) {
-            phieuGiamGia.setSoLuong(phieuGiamGia.getSoLuong() + 1);
-        }
-        phieuGiamGia.setSoLuongDaDung(phieuGiamGia.getSoLuongDaDung() - 1);
+        phieuGiamGia.setSoLuongDaDung(Math.max(
+                0,
+                (phieuGiamGia.getSoLuongDaDung() == null ? 0 : phieuGiamGia.getSoLuongDaDung()) - 1
+        ));
         phieuGiamGiaRepository.save(phieuGiamGia);
 
         if (khachHang != null) {
@@ -749,7 +753,9 @@ public class BanHangTaiQuayService {
 
         boolean isAlreadyApplied = hoaDon != null && hoaDon.getPhieuGiamGia() != null && hoaDon.getPhieuGiamGia().getId().equals(phieuGiamGia.getId());
 
-        if (validateSoLuong && !isAlreadyApplied && (phieuGiamGia.getSoLuong() == null || phieuGiamGia.getSoLuong() <= 0)) {
+        int tongSoLuong = phieuGiamGia.getSoLuong() == null ? 0 : phieuGiamGia.getSoLuong();
+        int daDung = phieuGiamGia.getSoLuongDaDung() == null ? 0 : phieuGiamGia.getSoLuongDaDung();
+        if (validateSoLuong && !isAlreadyApplied && tongSoLuong != 999999 && daDung >= tongSoLuong) {
             throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng");
         }
 

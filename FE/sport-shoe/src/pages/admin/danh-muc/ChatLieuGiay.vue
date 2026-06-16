@@ -12,7 +12,8 @@ import {
   exceedsMaxLength,
   generateAttributeCode,
   normalizeOptionalText,
-  normalizeRequiredText
+  normalizeRequiredText,
+  hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham'
 import { showConfirm, showSuccess, showError } from '../../../utils/alert'
 
@@ -130,12 +131,15 @@ function validate() {
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã chất liệu giày'
   if (!ten) errors.ten = 'Vui lòng nhập tên chất liệu giày'
+  else if (hasSpecialCharacters(ten)) {
+    errors.ten = 'Tên chất liệu giày không được chứa ký tự đặc biệt'
+  }
   else if (exceedsMaxLength(ten, TEN_MAX_LENGTH)) {
     errors.ten = `Tên chất liệu giày không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }
 
-  if (moTa && exceedsMaxLength(moTa, MO_TA_MAX_LENGTH)) {
-    errors.moTa = `Mô tả không được vượt quá ${MO_TA_MAX_LENGTH} ký tự`
+  if (moTa && hasSpecialCharacters(moTa)) {
+    errors.moTa = 'Mô tả không được chứa ký tự đặc biệt'
   }
 
   return Object.keys(errors).length === 0

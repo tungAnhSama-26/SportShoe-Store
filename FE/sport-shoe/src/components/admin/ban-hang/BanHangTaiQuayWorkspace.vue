@@ -303,7 +303,7 @@ const emit = defineEmits([
 
     <div class="grid min-h-0 flex-1 gap-2 xl:grid-cols-[1.6fr_0.8fr]">
       <div class="flex min-h-0 flex-col gap-2">
-        <section class="flex min-h-0 flex-[3.5] flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+        <section class="shrink-0">
           <BanHangProductSection
             :active-pending-invoice="activePendingInvoice"
             :product-keyword="productKeyword"
@@ -322,7 +322,7 @@ const emit = defineEmits([
           />
         </section>
 
-        <section class="flex min-h-0 flex-[1.5] flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+        <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <div class="mb-2 flex shrink-0 items-center justify-between">
             <h2 class="text-lg font-bold text-slate-900">Giỏ hàng</h2>
             <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">

@@ -19,13 +19,15 @@ public class BanHangTaiQuayPricingUseCase {
             soTienGiam = tongTienHang
                     .multiply(phieuGiamGia.getGiaTri())
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            if (phieuGiamGia.getGiamToiDa() != null && soTienGiam.compareTo(phieuGiamGia.getGiamToiDa()) > 0) {
+            if (phieuGiamGia.getGiamToiDa() != null
+                    && phieuGiamGia.getGiamToiDa().signum() > 0
+                    && soTienGiam.compareTo(phieuGiamGia.getGiamToiDa()) > 0) {
                 soTienGiam = phieuGiamGia.getGiamToiDa();
             }
         } else if (phieuGiamGia.getLoai() != null && phieuGiamGia.getLoai() == LOAI_PHIEU_TIEN_MAT) {
             soTienGiam = phieuGiamGia.getGiaTri();
         } else {
-            throw new BusinessException("Loai phieu giam gia khong duoc ho tro");
+            throw new BusinessException("Loại phiếu giảm giá không được hỗ trợ");
         }
 
         if (soTienGiam.compareTo(BigDecimal.ZERO) < 0) {

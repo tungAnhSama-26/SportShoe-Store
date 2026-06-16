@@ -7,6 +7,7 @@ import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import anhMacDinh from '../assets/login-shoe.png';
+import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 
 const router = useRouter();
 
@@ -455,12 +456,13 @@ function xuLyAnhLoi(event) {
               <span>-{{ dinhDangTienViet(voucher.tienGiam) }}</span>
             </div>
             <div class="flex items-center justify-between text-sm text-slate-500">
-              <span>
+              <span class="flex items-center gap-1.5">
                 Phí vận chuyển
-                <span v-if="phiShip?.uocTinh" class="ml-1 text-xs text-slate-400">(ước tính)</span>
+                <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
+                <span v-if="phiShip?.uocTinh" class="text-xs text-slate-400">(ước tính)</span>
               </span>
               <span v-if="dangTinhPhi" class="text-slate-400">Đang tính...</span>
-              <span v-else-if="phiShip">{{ dinhDangTienViet(phiShipSo) }}</span>
+              <span v-else-if="phiShip" class="font-semibold text-slate-700">{{ dinhDangTienViet(phiShipSo) }}</span>
               <span v-else class="text-xs text-slate-400">Nhập địa chỉ để tính</span>
             </div>
             <div class="flex items-center justify-between pt-1">

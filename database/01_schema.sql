@@ -264,8 +264,8 @@ CREATE TABLE dot_giam_gia (
     mo_ta          NVARCHAR(500) NULL,
     loai_giam      INT           NOT NULL,
     gia_tri_giam   DECIMAL(18,2) NOT NULL,
-    ngay_bat_dau   DATETIME2     NULL,
-    ngay_ket_thuc  DATETIME2     NULL,
+    ngay_bat_dau   DATETIME2     NOT NULL,
+    ngay_ket_thuc  DATETIME2     NOT NULL,
     kich_hoat      INT           NOT NULL CONSTRAINT df_dgg_kich_hoat DEFAULT 1,
     ngay_tao       DATETIME2     NOT NULL CONSTRAINT df_dgg_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat  DATETIME2     NULL,
@@ -386,19 +386,24 @@ CREATE TABLE phieu_giam_gia (
     gia_tri            DECIMAL(18,2) NOT NULL,
     gia_tri_toi_thieu  DECIMAL(18,2) NULL,
     giam_toi_da        DECIMAL(18,2) NULL,
-    ngay_bat_dau       DATETIME2     NULL,
-    ngay_ket_thuc      DATETIME2     NULL,
+    ngay_bat_dau       DATETIME2     NOT NULL,
+    ngay_ket_thuc      DATETIME2     NOT NULL,
     so_luong           INT           NOT NULL,
     so_luong_da_dung   INT           NOT NULL CONSTRAINT df_pgg_da_dung DEFAULT 0,
     trang_thai         INT           NOT NULL CONSTRAINT df_pgg_trang_thai DEFAULT 1,
     ngay_tao           DATETIME2     NOT NULL CONSTRAINT df_pgg_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat      DATETIME2     NULL,
     CONSTRAINT uq_pgg_ma UNIQUE (ma),
-    CONSTRAINT ck_pgg_loai CHECK (loai IN (1, 2, 3)),
+    CONSTRAINT ck_pgg_loai CHECK (loai IN (1, 2)),
     CONSTRAINT ck_pgg_loai_phieu CHECK (loai_phieu IN (1, 2)),
-    CONSTRAINT ck_pgg_gia_tri CHECK (gia_tri >= 0),
+    CONSTRAINT ck_pgg_gia_tri CHECK (gia_tri > 0),
     CONSTRAINT ck_pgg_phan_tram CHECK (loai <> 1 OR (gia_tri > 0 AND gia_tri <= 100)),
-    CONSTRAINT ck_pgg_so_luong CHECK (so_luong >= 0),
+    CONSTRAINT ck_pgg_tien_giam CHECK (
+        loai <> 2 OR gia_tri_toi_thieu IS NULL OR gia_tri_toi_thieu = 0 OR gia_tri <= gia_tri_toi_thieu
+    ),
+    CONSTRAINT ck_pgg_gia_tri_toi_thieu CHECK (gia_tri_toi_thieu IS NULL OR gia_tri_toi_thieu >= 0),
+    CONSTRAINT ck_pgg_giam_toi_da CHECK (giam_toi_da IS NULL OR giam_toi_da >= 0),
+    CONSTRAINT ck_pgg_so_luong CHECK (so_luong > 0),
     CONSTRAINT ck_pgg_da_dung CHECK (so_luong_da_dung >= 0 AND so_luong_da_dung <= so_luong),
     CONSTRAINT ck_pgg_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4)),
     CONSTRAINT ck_pgg_thoi_gian CHECK (
@@ -434,6 +439,7 @@ CREATE TABLE hoa_don (
     ngay_lap              DATETIME2        NOT NULL CONSTRAINT df_hoa_don_ngay_lap DEFAULT SYSDATETIME(),
     ngay_thanh_toan       DATETIME2        NULL,
     trang_thai            INT              NOT NULL,
+    trang_thai_truoc_yeu_cau_huy INT       NULL,
     tong_tien_hang        DECIMAL(18,2)    NOT NULL,
     tien_giam             DECIMAL(18,2)    NOT NULL CONSTRAINT df_hoa_don_tien_giam DEFAULT 0,
     tong_tien_thanh_toan  DECIMAL(18,2)    NOT NULL,
@@ -441,6 +447,7 @@ CREATE TABLE hoa_don (
     ngay_tao              DATETIME2        NOT NULL CONSTRAINT df_hoa_don_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat         DATETIME2        NULL,
     han_giu_hang           DATETIME2        NULL,
+    da_tru_kho             BIT              NOT NULL CONSTRAINT df_hoa_don_da_tru_kho DEFAULT 0,
     da_nhan_hang           BIT              NOT NULL CONSTRAINT df_hoa_don_da_nhan_hang DEFAULT 0,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
@@ -507,6 +514,7 @@ GO
 
 CREATE TABLE phieu_tra_hang (
     id                     INT              NOT NULL CONSTRAINT pk_phieu_tra_hang PRIMARY KEY IDENTITY(1,1),
+    version                BIGINT           NOT NULL CONSTRAINT df_pth_version DEFAULT 0,
     ma                     NVARCHAR(150)    NOT NULL,
     hoa_don_id             INT              NOT NULL,
     khach_hang_id          UNIQUEIDENTIFIER NULL,
@@ -691,14 +699,26 @@ CREATE INDEX ix_hoa_don_khach_hang ON hoa_don(khach_hang_id);
 CREATE INDEX ix_hoa_don_nhan_vien ON hoa_don(nhan_vien_id);
 CREATE INDEX ix_hoa_don_kenh_ban ON hoa_don(kenh_ban);
 CREATE INDEX ix_hoa_don_trang_thai ON hoa_don(trang_thai);
-CREATE INDEX ix_ls_hd_hoa_don ON lich_su_hoa_don(hoa_don_id);
+CREATE INDEX ix_hoa_don_trang_thai_ngay_tao ON hoa_don(trang_thai, ngay_tao DESC);
+CREATE INDEX ix_hoa_don_kenh_ngay_tao ON hoa_don(kenh_ban, ngay_tao DESC);
+CREATE INDEX ix_ls_hd_hoa_don ON lich_su_hoa_don(hoa_don_id, ngay_tao DESC);
 CREATE INDEX ix_hdct_hoa_don ON hoa_don_chi_tiet(hoa_don_id);
 CREATE INDEX ix_hdct_gct ON hoa_don_chi_tiet(giay_chi_tiet_id);
 CREATE INDEX ix_vc_hoa_don ON van_chuyen(hoa_don_id);
-CREATE INDEX ix_tt_hoa_don ON thanh_toan(hoa_don_id);
+CREATE INDEX ix_tt_hoa_don ON thanh_toan(hoa_don_id, ngay_tao DESC);
 CREATE INDEX ix_tt_phieu_tra_hang ON thanh_toan(phieu_tra_hang_id);
 CREATE INDEX ix_tt_giao_dich_goc ON thanh_toan(giao_dich_goc_id);
-CREATE INDEX ix_pth_hoa_don ON phieu_tra_hang(hoa_don_id);
+CREATE UNIQUE INDEX uq_tt_hoan_tien_phieu
+    ON thanh_toan(phieu_tra_hang_id)
+    WHERE phieu_tra_hang_id IS NOT NULL AND loai_giao_dich = 2;
+CREATE UNIQUE INDEX uq_tt_hoan_tien_giao_dich_goc
+    ON thanh_toan(giao_dich_goc_id)
+    WHERE giao_dich_goc_id IS NOT NULL
+      AND phieu_tra_hang_id IS NULL
+      AND loai_giao_dich = 2;
+CREATE INDEX ix_pth_hoa_don ON phieu_tra_hang(hoa_don_id, ngay_tao DESC);
+CREATE INDEX ix_pth_trang_thai_ngay_tao ON phieu_tra_hang(trang_thai, ngay_tao DESC);
+CREATE INDEX ix_pth_trang_thai_ngay_duyet ON phieu_tra_hang(trang_thai, ngay_duyet);
 CREATE INDEX ix_pthct_phieu ON phieu_tra_hang_chi_tiet(phieu_tra_hang_id);
 CREATE INDEX ix_ls_pth_phieu ON lich_su_phieu_tra_hang(phieu_tra_hang_id, ngay_tao DESC);
 CREATE INDEX ix_hat_phieu ON hinh_anh_tra_hang(phieu_tra_hang_id);

@@ -18,9 +18,10 @@ import {
   mauSacApi,
   thuongHieuApi,
   trongLuongApi
-} from '../../../services/danh-muc-api.ts'
-import * as api from '../../../services/san-pham-api.ts'
+} from '../../../services/danh-muc-api.js'
+import * as api from '../../../services/san-pham-api.js'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
+import { showConfirm } from '../../../utils/alert.js'
 import {
   createAttributeCodeSeed,
   generateAttributeCode,
@@ -30,7 +31,8 @@ import {
   isValidHexColor,
   normalizeAttributeText,
   normalizeRequiredText,
-  normalizeSizeValue
+  normalizeSizeValue,
+  hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham.js'
 export function useChiTietSanPhamFormPage() {
   const {
@@ -53,7 +55,8 @@ export function useChiTietSanPhamFormPage() {
     setCreatedImageManagerRef,
     validateProductForm,
     buildCreateProductPayload,
-    regenerateDraftProductCode
+    regenerateDraftProductCode,
+    router
   } = useProductForm()
   const {
     variantBuilder,
@@ -414,6 +417,9 @@ export function useChiTietSanPhamFormPage() {
     if (!ten) {
       throw new Error(`Vui lòng nhập ${config.label} để thêm nhanh`)
     }
+    if (hasSpecialCharacters(ten)) {
+      throw new Error(`${config.label} không được chứa ký tự đặc biệt`)
+    }
     return {
       create: config.create,
       body: config.buildBody(ten, seed)
@@ -452,6 +458,8 @@ export function useChiTietSanPhamFormPage() {
         }
         if (!ten) {
           quickCreateErrors.ten = 'Vui lòng nhập tên màu sắc'
+        } else if (hasSpecialCharacters(ten)) {
+          quickCreateErrors.ten = 'Tên màu sắc không được chứa ký tự đặc biệt'
         }
         if (!isValidHexColor(quickCreateForm.maMauHex)) {
           quickCreateErrors.maMauHex = 'Mã màu HEX chưa đúng định dạng'
@@ -479,6 +487,11 @@ export function useChiTietSanPhamFormPage() {
         }
         if (!giaTri) {
           quickCreateErrors.giaTri = 'Kích cỡ không hợp lệ, vui lòng nhập lại'
+        } else if (hasSpecialCharacters(giaTri)) {
+          quickCreateErrors.giaTri = 'Kích cỡ không được chứa ký tự đặc biệt'
+        }
+        if (quickCreateForm.ghiChu && hasSpecialCharacters(quickCreateForm.ghiChu)) {
+          quickCreateErrors.ghiChu = 'Ghi chú không được chứa ký tự đặc biệt'
         }
         if (Object.keys(quickCreateErrors).length) {
           return
@@ -672,6 +685,63 @@ export function useChiTietSanPhamFormPage() {
         giaBan: variant.giaBan
       }))
       let variantsResult
+
+      if (!isExistingProduct.value) {
+        if (productForm.ma && productForm.ma.trim() !== '') {
+          const checkMa = await api.checkMaGiay(productForm.ma.trim());
+          if (checkMa.exists && checkMa.id) {
+            saving.value = false;
+            const confirmed = await showConfirm(
+              `Mã sản phẩm <b>${productForm.ma}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
+              'Trùng mã sản phẩm'
+            );
+            if (confirmed) {
+              currentProductId.value = checkMa.id;
+              isExistingProduct.value = true;
+              saving.value = true;
+            } else {
+              return;
+            }
+          }
+        }
+        
+        if (!isExistingProduct.value && productForm.ten && productForm.ten.trim() !== '') {
+          const checkTen = await api.checkTenGiay(productForm.ten.trim());
+          if (checkTen.exists && checkTen.id) {
+            saving.value = false;
+            const confirmed = await showConfirm(
+              `Sản phẩm với tên <b>${productForm.ten}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
+              'Trùng tên sản phẩm'
+            );
+            if (confirmed) {
+              currentProductId.value = checkTen.id;
+              isExistingProduct.value = true;
+              saving.value = true;
+            } else {
+              return;
+            }
+          }
+        }
+
+        if (!isExistingProduct.value) {
+          const checkTrung = await api.checkTrungThuocTinh(buildCreateProductPayload());
+          if (checkTrung && checkTrung.id) {
+            saving.value = false;
+            const confirmed = await showConfirm(
+              `Sản phẩm <b>${checkTrung.ten}</b> đang có các thuộc tính giống hệt với các thuộc tính bạn vừa chọn. Bạn có muốn gộp các biến thể này vào sản phẩm <b>${checkTrung.ten}</b> không?`,
+              'Trùng thuộc tính sản phẩm'
+            );
+            if (confirmed) {
+              currentProductId.value = checkTrung.id;
+              isExistingProduct.value = true;
+              saving.value = true;
+            } else {
+              return;
+            }
+          }
+        }
+      }
+
       if (isExistingProduct.value) {
         await api.capNhatGiay(currentProductId.value, buildCreateProductPayload())
         variantsResult = await api.taoChiTietSanPhamHangLoat({
@@ -695,28 +765,65 @@ export function useChiTietSanPhamFormPage() {
           }
         }
       }
+      
       createdVariants.value = variantsResult?.bienThes || []
       existingProductVariants.value = [
         ...(existingProductVariants.value || []),
         ...createdVariants.value
       ]
+      
+      if (!isExistingProduct.value && variantsResult?.giay?.id) {
+        currentProductId.value = variantsResult.giay.id
+        isExistingProduct.value = true
+      }
+      
       const syncedDraftImages = await syncDraftImagesToVariants(createdVariants.value)
       clearSavedDraftImages(createdVariants.value)
+      
       const skippedNames = skippedVariants.slice(0, 3).map(getVariantDisplayName).join('; ')
       const skippedMessage = skippedVariants.length
         ? ` Đã bỏ qua ${skippedVariants.length} biến thể đã tồn tại${skippedNames ? `: ${skippedNames}` : ''}.`
         : ''
+        
       if (syncedDraftImages) {
         showToast(`Lưu sản phẩm và đồng bộ ảnh thành công!${skippedMessage}`, 'success')
       } else {
         showToast(`Lưu sản phẩm thành công!${skippedMessage}`, 'success')
       }
       setTimeout(() => {
-        goBack()
+        router.push({ name: 'admin-san-pham' })
       }, 1000)
     } catch (error) {
       console.error('Error saving product:', error)
-      const fieldErrorSummary = collectValidationMessages(getFieldErrors(error))
+      const fieldErrors = getFieldErrors(error)
+      const duplicateIndices = []
+      
+      Object.keys(fieldErrors).forEach(key => {
+        const match = key.match(/^bienThes\[(\d+)\]/)
+        const msg = String(fieldErrors[key] || '').toLowerCase()
+        if (match && (msg.includes('đã tồn tại') || msg.includes('da ton tai'))) {
+          duplicateIndices.push(Number(match[1]))
+        }
+      })
+
+      if (duplicateIndices.length > 0) {
+        const duplicateNames = duplicateIndices.map(i => {
+           const v = newVariants[i]
+           return v ? getVariantDisplayName(v) : ''
+        }).filter(Boolean).join('; ')
+        
+        variantErrors.general = `Các biến thể sau đã tồn tại trong hệ thống: ${duplicateNames}. Vui lòng bỏ chọn chúng.`
+        showToast(variantErrors.general, 'error')
+        
+        duplicateIndices.forEach(i => {
+          if (newVariants[i]) {
+            newVariants[i].selected = false
+          }
+        })
+        return
+      }
+
+      const fieldErrorSummary = collectValidationMessages(fieldErrors)
       showToast(fieldErrorSummary || getDisplayErrorMessage(error), 'error')
     } finally {
       saving.value = false
@@ -735,3 +842,4 @@ export function useChiTietSanPhamFormPage() {
   })
   return { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
 }
+
