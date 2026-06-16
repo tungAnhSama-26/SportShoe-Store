@@ -45,6 +45,17 @@ export async function capNhatThongTinGiaoHang(donId, payload) {
   });
 }
 
+// Khách cập nhật số lượng sản phẩm (chỉ COD + đang chờ xác nhận).
+// items: [{ hoaDonChiTietId, soLuong }] - các dòng giữ lại (số lượng >= 1).
+export async function capNhatSoLuongDonHang(donId, items) {
+  return apiRequest(`/client/don-hang/${donId}/so-luong`, {
+    method: "PUT",
+    authScope: "customer",
+    body: JSON.stringify({ items }),
+    fallbackMessage: "Không thể cập nhật số lượng sản phẩm",
+  });
+}
+
 // Gửi đánh giá cho một sản phẩm trong đơn (theo dòng hóa đơn chi tiết).
 export async function guiDanhGiaSanPham(hoaDonChiTietId, soSao, noiDung) {
   const id = layKhachId();
