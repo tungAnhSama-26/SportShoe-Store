@@ -465,7 +465,7 @@ public class ThongKeService {
         Instant tuNgayInstant = tuNgayDaDung.atStartOfDay(MUI_GIO_HE_THONG).toInstant();
         Instant denNgayDocQuyenInstant = denNgayDaDung.plusDays(1L).atStartOfDay(MUI_GIO_HE_THONG).toInstant();
 
-        Integer thuongHieuHopLe = thuongHieuId != null && thuongHieuId > 0 ? thuongHieuId : null;
+        Integer thuongHieuHopLe = thuongHieuId != null && thuongHieuId >= 0 ? thuongHieuId : null;
         String keywordDaChuanHoa = chuanHoaKeyword(keyword);
 
         return new BoLocThongKe(
