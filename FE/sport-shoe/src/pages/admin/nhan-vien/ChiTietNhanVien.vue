@@ -17,21 +17,16 @@ function taoChuCaiDaiDien(value) {
 
 <template>
   <div class="space-y-6">
-    <section class="flex items-start gap-4">
+    <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <button
         type="button"
         @click="router.push({ name: 'admin-nhan-vien' })"
-        class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-5 w-5" />
       </button>
-      <div>
-        <h1 class="text-[28px] font-bold tracking-tight text-slate-900">
-          {{ laMoi ? "Thêm nhân viên mới" : "Chi tiết nhân viên" }}
-        </h1>
-        <p v-if="!laMoi" class="mt-1 text-sm text-slate-400">
-          Mã nhân viên: {{ nhanVien?.ma || "Chưa cập nhật" }}
-        </p>
+      <div v-if="!laMoi" class="text-sm text-slate-500">
+        Mã nhân viên: <span class="font-semibold text-slate-700">{{ nhanVien?.ma || "Chưa cập nhật" }}</span>
       </div>
     </section>
 

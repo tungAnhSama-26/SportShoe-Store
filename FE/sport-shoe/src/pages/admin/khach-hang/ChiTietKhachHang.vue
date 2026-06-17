@@ -621,7 +621,7 @@ onMounted(taiChiTiet);
 <template>
   <div class="space-y-5">
     <!-- Header -->
-    <section class="flex items-center gap-4">
+    <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <Button
         variant="ghost"
         size="icon"
@@ -631,10 +631,7 @@ onMounted(taiChiTiet);
         <ArrowLeft class="h-5 w-5" />
       </Button>
       <div>
-        <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
-          {{ laMoi ? "Thêm khách hàng mới" : "Chi tiết khách hàng" }}
-        </h1>
-        <p class="text-sm text-slate-400">
+        <p class="text-sm text-slate-500">
           {{
             laMoi
               ? "Điền thông tin khách hàng mới vào form bên dưới."

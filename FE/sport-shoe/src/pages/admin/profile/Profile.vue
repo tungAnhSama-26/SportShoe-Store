@@ -394,7 +394,7 @@ onUnmounted(dungQuet);
 <template>
   <div class="invoice-flat mx-auto max-w-5xl space-y-6 pb-12">
     <!-- Header -->
-    <section class="flex items-center justify-between">
+    <section class="flex items-center justify-between border-b border-slate-100 pb-4">
       <div class="flex items-center gap-4">
         <button
           type="button"
@@ -403,9 +403,6 @@ onUnmounted(dungQuet);
         >
           <ArrowLeft class="h-5 w-5" />
         </button>
-        <h1 class="text-[28px] font-bold tracking-tight text-slate-900">
-          Cập nhật thông tin cá nhân
-        </h1>
       </div>
       <button
         @click="luu"

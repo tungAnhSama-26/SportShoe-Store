@@ -96,7 +96,7 @@ onMounted(taiDuLieu);
 <template>
   <div class="space-y-5">
     <!-- Header -->
-    <section class="flex items-center gap-4">
+    <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <Button
         variant="ghost"
         size="icon"
@@ -106,11 +106,8 @@ onMounted(taiDuLieu);
         <ArrowLeft class="h-5 w-5" />
       </Button>
       <div>
-        <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
-          Đơn hàng của khách hàng
-        </h1>
-        <p class="text-sm text-slate-400">
-          {{ khachHang ? khachHang.hoTen : "..." }}
+        <p class="text-sm text-slate-500">
+          Khách hàng: <span class="font-semibold text-slate-700">{{ khachHang ? khachHang.hoTen : "..." }}</span>
         </p>
       </div>
     </section>
