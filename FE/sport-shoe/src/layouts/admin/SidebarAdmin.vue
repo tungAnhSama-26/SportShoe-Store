@@ -13,8 +13,10 @@ import {
   Award,
   BadgePercent,
   Box,
+  CalendarDays,
   ChevronDown,
   ChevronsLeft,
+  ClipboardList,
   Feather,
   Footprints,
   Home,
@@ -59,13 +61,19 @@ const checkKhuyenMaiActive = (newPath) => {
   const routes = ["/admin/phieu-giam-gia", "/admin/dot-giam-gia"];
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
 };
+const checkLichLamActive = (newPath) => {
+  const routes = ["/admin/lich-lam-viec", "/admin/cham-cong"];
+  return routes.some((currentRoute) => newPath.startsWith(currentRoute));
+};
 const compactMode = computed(() => isDesktopSidebar.value && isSidebarCollapsed.value);
 const isSanPhamActive = computed(() => checkSanPhamActive(route.path));
 const isThuocTinhActive = computed(() => checkThuocTinhActive(route.path));
 const isKhuyenMaiActive = computed(() => checkKhuyenMaiActive(route.path));
+const isLichLamActive = computed(() => checkLichLamActive(route.path));
 const openSanPham = ref(checkSanPhamActive(route.path));
 const openThuocTinh = ref(checkThuocTinhActive(route.path));
 const openKhuyenMai = ref(checkKhuyenMaiActive(route.path));
+const openLichLam = ref(checkLichLamActive(route.path));
 watch(
   () => route.path,
   (newPath) => {
@@ -78,6 +86,9 @@ watch(
     if (newPath.startsWith("/admin/phieu-giam-gia") || newPath.startsWith("/admin/dot-giam-gia")) {
       openKhuyenMai.value = true;
     }
+    if (checkLichLamActive(newPath)) {
+      openLichLam.value = true;
+    }
   }
 );
 function toggleSanPham() {
@@ -88,6 +99,9 @@ function toggleThuocTinh() {
 }
 function toggleKhuyenMai() {
   openKhuyenMai.value = !openKhuyenMai.value;
+}
+function toggleLichLam() {
+  openLichLam.value = !openLichLam.value;
 }
 function navItemClass(active) {
   return [
@@ -306,10 +320,47 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; kh&#225;ch h&#224;ng</span>
       </router-link>
 
-      <router-link v-if="laAdmin" to="/admin/nhan-vien" :title="compactMode ? 'Qu\u1ea3n l\u00fd nh\u00e2n vi\u00ean' : undefined" :class="navItemClass(isActive('/admin/nhan-vien'))">
-        <UserRoundCog :class="navIconClass(isActive('/admin/nhan-vien'))" />
+      <router-link v-if="laAdmin" to="/admin/nhan-vien" :title="compactMode ? 'Qu\u1ea3n l\u00fd nh\u00e2n vi\u00ean' : undefined" :class="navItemClass(isActive('/admin/nhan-vien') && !isLichLamActive)"
+        >
+        <UserRoundCog :class="navIconClass(isActive('/admin/nhan-vien') && !isLichLamActive)" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; nh&#226;n vi&#234;n</span>
       </router-link>
+
+      <!-- Quản lý lịch làm -->
+      <div v-if="laAdmin" class="space-y-1">
+        <button
+          type="button"
+          :title="compactMode ? 'Qu\u1ea3n l\u00fd l\u1ecbch l\u00e0m' : undefined"
+          class="group flex w-full min-w-0 items-center rounded-xl px-4 py-3 transition-colors focus:outline-none"
+          :class="[
+            compactMode ? 'justify-center px-3' : 'justify-between',
+            isLichLamActive
+              ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary font-medium'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50',
+          ]"
+          @click="toggleLichLam"
+        >
+          <div class="flex items-center" :class="compactMode ? 'justify-center' : 'min-w-0 flex-1'">
+            <CalendarDays :class="navIconClass(isLichLamActive)" />
+            <span v-if="!compactMode" class="truncate text-sm leading-tight">Qu&#7843;n l&#253; l&#7883;ch l&#224;m</span>
+          </div>
+          <ChevronDown
+            v-if="!compactMode"
+            class="h-4 w-4 transition-transform duration-200"
+            :class="[openLichLam ? 'rotate-180 text-primary' : 'text-gray-400']"
+          />
+        </button>
+        <div v-show="openLichLam" class="space-y-1 overflow-hidden transition-all duration-300" :class="compactMode ? 'px-0 py-1' : 'pr-4 pl-[36px]'">
+          <router-link to="/admin/lich-lam-viec" :title="compactMode ? 'L\u1ecbch l\u00e0m vi\u1ec7c' : undefined" :class="subItemClass(isActive('/admin/lich-lam-viec'))">
+            <CalendarDays class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-lam-viec') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="leading-tight">L&#7883;ch l&#224;m vi&#7879;c</span>
+          </router-link>
+          <router-link to="/admin/cham-cong" :title="compactMode ? 'Ch\u1ea5m c\u00f4ng' : undefined" :class="subItemClass(isActive('/admin/cham-cong'))">
+            <ClipboardList class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/cham-cong') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="leading-tight">Ch&#7845;m c&#244;ng</span>
+          </router-link>
+        </div>
+      </div>
     </nav>
   </aside>
 </template>
