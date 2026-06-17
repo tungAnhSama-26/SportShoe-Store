@@ -5,6 +5,7 @@ skill/
 docs/
 .codex-chrome-test/
 FE/sport-shoe/build/
+FE/sport-shoe/build/index.html
 ### Node ###
 node_modules/
 /fe_mobile
