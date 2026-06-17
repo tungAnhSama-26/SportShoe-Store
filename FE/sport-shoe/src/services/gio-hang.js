@@ -187,7 +187,7 @@ export async function trangThaiVnPay(token) {
 
 // Tính phí vận chuyển (GHN) cho giỏ hiện tại tới địa chỉ nhận.
 // Trả về { phiVanChuyen, uocTinh, moTa } hoặc null nếu chưa đăng nhập.
-export async function tinhPhiVanChuyen({ tinhThanh, quanHuyen, phuongXa, diaChiCuThe }) {
+export async function tinhPhiVanChuyen({ tinhThanh, quanHuyen, phuongXa, diaChiCuThe, toDistrictId, toWardCode }) {
   const id = layKhachId();
   if (!id) return null;
   return apiRequest(`/client/phi-van-chuyen`, {
@@ -200,9 +200,38 @@ export async function tinhPhiVanChuyen({ tinhThanh, quanHuyen, phuongXa, diaChiC
       quanHuyen,
       phuongXa,
       diaChiCuThe,
+      toDistrictId: toDistrictId ?? null,
+      toWardCode: toWardCode ?? null,
     }),
     fallbackMessage: "Không thể tính phí vận chuyển",
   });
+}
+
+// ===== Địa giới GHN cho dropdown chọn địa chỉ (tỉnh -> huyện -> xã) =====
+export async function layTinhGhn() {
+  const data = await apiRequest(`/client/ghn/tinh`, {
+    authenticated: false,
+    fallbackMessage: "Không thể tải danh sách tỉnh/thành",
+  });
+  return Array.isArray(data) ? data : [];
+}
+
+export async function layHuyenGhn(tinhId) {
+  if (!tinhId) return [];
+  const data = await apiRequest(`/client/ghn/huyen?tinhId=${encodeURIComponent(tinhId)}`, {
+    authenticated: false,
+    fallbackMessage: "Không thể tải danh sách quận/huyện",
+  });
+  return Array.isArray(data) ? data : [];
+}
+
+export async function layXaGhn(huyenId) {
+  if (!huyenId) return [];
+  const data = await apiRequest(`/client/ghn/xa?huyenId=${encodeURIComponent(huyenId)}`, {
+    authenticated: false,
+    fallbackMessage: "Không thể tải danh sách phường/xã",
+  });
+  return Array.isArray(data) ? data : [];
 }
 
 // Danh sách voucher khách có thể dùng cho giỏ hiện tại (toàn sàn + voucher riêng được gửi).

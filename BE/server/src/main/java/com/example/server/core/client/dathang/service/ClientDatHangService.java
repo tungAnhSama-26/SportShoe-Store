@@ -165,7 +165,9 @@ public class ClientDatHangService {
                 request.tinhThanh(),
                 request.quanHuyen(),
                 request.phuongXa(),
-                request.diaChiCuThe()
+                request.diaChiCuThe(),
+                request.toDistrictId(),
+                request.toWardCode()
         )).phiVanChuyen();
         return phi == null ? BigDecimal.ZERO : phi.max(BigDecimal.ZERO);
     }
