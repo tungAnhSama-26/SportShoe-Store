@@ -93,7 +93,7 @@ let realtimeRefreshTimeout = null;
 
 function lenLichTaiLaiChiTiet() {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
-  realtimeRefreshTimeout = setTimeout(taiChiTiet, 150);
+  realtimeRefreshTimeout = setTimeout(() => taiChiTiet(true), 150);
 }
 
 function dongBoKhiQuayLaiTrang() {
@@ -127,18 +127,20 @@ onBeforeUnmount(() => {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
 });
 
-watch(() => route.params.id, taiChiTiet);
+watch(() => route.params.id, () => taiChiTiet());
 
-async function taiChiTiet() {
-  dangTai.value = true;
+async function taiChiTiet(amThang = false) {
+  if (!amThang) dangTai.value = true;
   loi.value = '';
   try {
     don.value = await layChiTietDonHang(route.params.id);
   } catch {
-    don.value = null;
-    loi.value = 'Không tải được đơn hàng này.';
+    if (!amThang) {
+      don.value = null;
+      loi.value = 'Không tải được đơn hàng này.';
+    }
   } finally {
-    dangTai.value = false;
+    if (!amThang) dangTai.value = false;
   }
 }
 
@@ -447,7 +449,7 @@ async function guiYeuCauHuy() {
   dangXuLy.value = true;
   try {
     await yeuCauHuyDonHang(route.params.id);
-    await taiChiTiet();
+    await taiChiTiet(true);
     showSuccess(daThanhToanCK
       ? 'Đơn hàng đã được hủy. Cửa hàng sẽ hoàn tiền cho bạn.'
       : 'Đơn hàng đã được hủy.');
@@ -462,7 +464,7 @@ async function xacNhanNhan() {
   dangXuLy.value = true;
   try {
     await xacNhanDaNhanHang(route.params.id);
-    await taiChiTiet();
+    await taiChiTiet(true);
     showSuccess('Đã xác nhận nhận hàng. Bạn có thể đánh giá sản phẩm.');
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể xác nhận nhận hàng'));
