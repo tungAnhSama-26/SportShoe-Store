@@ -7,3 +7,4 @@ docs/
 FE/sport-shoe/build/
 ### Node ###
 node_modules/
+/fe_mobile
