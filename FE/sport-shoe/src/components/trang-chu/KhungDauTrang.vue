@@ -1,10 +1,12 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import logoChinh from "../../assets/logo/delete-background-logo.png";
 import { gioHangStore } from "../../stores/gio-hang";
 import { layKhachId, layThongTinKhach } from "../../services/gio-hang";
 import { logoutCustomer } from "../../services/auth";
+import { layTatCaSanPham } from "../../services/san-pham";
+import { dinhDangTienViet } from "../../utils/dinhDangTien";
 import { API_BASE_URL } from "../../services/api-client";
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
@@ -43,6 +45,62 @@ const avatarUrl = computed(() => {
 function loiAvatar(e) {
   const duPhong = avatarTuTen(thongTinKhach.value?.hoTen);
   if (e.target.src !== duPhong) e.target.src = duPhong;
+}
+
+// ===== Tìm kiếm sản phẩm =====
+const hienTimKiem = ref(false);
+const tuKhoa = ref("");
+const dsSanPham = ref([]);
+const dangTaiSP = ref(false);
+const oTim = ref(null);
+
+function boDauTim(s) {
+  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+// Gợi ý: sản phẩm có tên khớp/giống từ khóa (tối đa 6).
+const ketQuaTim = computed(() => {
+  const tk = boDauTim(tuKhoa.value);
+  if (!tk) return [];
+  return dsSanPham.value.filter((sp) => boDauTim(sp.ten).includes(tk)).slice(0, 6);
+});
+
+async function taiSanPhamNeuCan() {
+  if (dsSanPham.value.length || dangTaiSP.value) return;
+  dangTaiSP.value = true;
+  try {
+    dsSanPham.value = await layTatCaSanPham();
+  } catch {
+    dsSanPham.value = [];
+  } finally {
+    dangTaiSP.value = false;
+  }
+}
+
+function moTimKiem() {
+  hienTimKiem.value = !hienTimKiem.value;
+  if (hienTimKiem.value) {
+    taiSanPhamNeuCan();
+    nextTick(() => oTim.value?.focus());
+  }
+}
+
+function dongTimKiem() {
+  hienTimKiem.value = false;
+}
+
+// Click 1 gợi ý -> mở chi tiết sản phẩm.
+function chonSanPham(id) {
+  dongTimKiem();
+  tuKhoa.value = "";
+  router.push(`/khachhang/san-pham/${id}`);
+}
+
+// Enter / "Xem tất cả" -> trang sản phẩm lọc theo tên.
+function timKiem() {
+  const tk = tuKhoa.value.trim();
+  dongTimKiem();
+  router.push(tk ? `/khachhang/san-pham?q=${encodeURIComponent(tk)}` : "/khachhang/san-pham");
 }
 
 function toggleTaiKhoan() {
@@ -137,12 +195,42 @@ onUnmounted(() => {
 
       <!-- Desktop Actions -->
       <div class="ml-auto hidden shrink-0 items-center gap-4 md:flex">
-        <button class="inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-primary" aria-label="Tìm kiếm">
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-        </button>
+        <div class="relative">
+          <button @click="moTimKiem" class="inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-primary" aria-label="Tìm kiếm">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+          </button>
+          <div v-if="hienTimKiem" @click="dongTimKiem" class="fixed inset-0 z-40"></div>
+          <div v-if="hienTimKiem" class="absolute right-0 z-50 mt-3 w-80 rounded-2xl border border-slate-100 bg-white p-3 shadow-xl">
+            <div class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:border-primary">
+              <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <input ref="oTim" v-model="tuKhoa" @keyup.enter="timKiem" type="text" placeholder="Tìm sản phẩm theo tên..." class="h-10 flex-1 bg-transparent text-sm text-slate-800 outline-none" />
+            </div>
+            <div v-if="tuKhoa.trim()" class="mt-2 max-h-80 overflow-y-auto">
+              <p v-if="dangTaiSP" class="px-2 py-3 text-center text-sm text-slate-400">Đang tải...</p>
+              <p v-else-if="!ketQuaTim.length" class="px-2 py-3 text-center text-sm text-slate-400">Không tìm thấy sản phẩm.</p>
+              <template v-else>
+                <button
+                  v-for="sp in ketQuaTim"
+                  :key="sp.id"
+                  @click="chonSanPham(sp.id)"
+                  class="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-slate-50"
+                >
+                  <img :src="sp.hinhAnh" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover bg-slate-100" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-medium text-slate-800">{{ sp.ten }}</span>
+                    <span class="text-xs font-bold text-primary">{{ dinhDangTienViet(sp.gia) }}</span>
+                  </span>
+                </button>
+                <button @click="timKiem" class="mt-1 block w-full rounded-xl bg-slate-50 px-2 py-2 text-center text-xs font-bold text-primary transition hover:bg-slate-100">
+                  Xem tất cả kết quả &rarr;
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
         <div class="relative">
           <button @click="toggleTaiKhoan" class="inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-primary" aria-label="Tài khoản">
             <img
