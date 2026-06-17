@@ -464,123 +464,126 @@ onMounted(() => {
         {{ loiTrang }}
       </div>
 
-      <div class="overflow-x-auto admin-table-scroll w-full">
-        <table
-          class="w-full min-w-[900px] table-fixed border-separate border-spacing-y-2 text-sm"
-        >
-          <colgroup>
-            <col class="w-[5%]" />
-            <col class="w-[15%]" />
-            <col class="w-[25%]" />
-            <col class="w-[10%]" />
-            <col class="w-[13%]" />
-            <col class="w-[13%]" />
-            <col class="w-[140px]" />
-            <col class="w-[14%]" />
-          </colgroup>
-          <thead>
-            <tr
-              class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
-            >
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã</th>
-              <th class="bg-slate-100 px-4 py-3">Tên</th>
-              <th class="bg-slate-100 px-4 py-3">Giá trị</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="dangTai">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
-                Đang tải dữ liệu...
-              </td>
-            </tr>
-            <tr v-else-if="!danhSach.length">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
-                Không có dữ liệu.
-              </td>
-            </tr>
-            <tr
-              v-for="(item, index) in danhSach"
-              :key="item.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200"
-            >
-              <td class="rounded-l-2xl px-4 py-3 font-semibold">
-                {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
-              </td>
-              <td class="px-4 py-3 font-bold tracking-tight text-slate-900">
-                {{ item.ma }}
-              </td>
-              <td class="px-4 py-3 align-top">
-                <div
-                  class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900"
-                >
-                  {{ item.ten }}
-                </div>
-              </td>
-              <td class="px-4 py-3 font-bold text-slate-800">
-                {{ item.giaTriGiam }}%
-              </td>
-              <td class="px-4 py-3 font-medium text-slate-600">
-                {{ toDisplayDate(item.ngayBatDau) }}
-              </td>
-              <td class="px-4 py-3 font-medium text-slate-600">
-                {{ toDisplayDate(item.ngayKetThuc) }}
-              </td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="mauTrangThai(item.kichHoat, item.ngayKetThuc)"
-                >
-                  {{ statusText(item.kichHoat, item.ngayKetThuc) }}
-                </span>
-              </td>
-              <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-3">
-                  <AdminQuickStatusAction
-                    :loading="false"
-                    :disabled="
-                      isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2
-                    "
-                    :disabled-title="
-                      isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2
-                        ? 'Đợt giảm giá đã hết hạn, vui lòng vào chi tiết để gia hạn'
-                        : undefined
-                    "
-                    :action-label="
-                      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
-                        ? 'Ngừng hoạt động'
-                        : 'Đang hoạt động'
-                    "
-                    :confirm-message="
-                      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
-                        ? 'Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?'
-                        : 'Bạn có chắc chắn muốn chuyển đợt giảm giá này sang trạng thái đang hoạt động không?'
-                    "
-                    :intent="
-                      Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
-                        ? 'deactivate'
-                        : 'activate'
-                    "
-                    @toggle="nhanhDoiTrangThai(item)"
-                  />
-                  <button
-                    @click="openEditModal(item)"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                    title="Xem chi tiết"
+      <div class="w-full overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-x-auto admin-table-scroll">
+          <table
+            class="w-full min-w-[900px] table-fixed border-collapse text-left text-sm text-slate-600"
+          >
+            <colgroup>
+              <col class="w-[5%]" />
+              <col class="w-[15%]" />
+              <col class="w-[25%]" />
+              <col class="w-[10%]" />
+              <col class="w-[13%]" />
+              <col class="w-[13%]" />
+              <col class="w-[140px]" />
+              <col class="w-[14%]" />
+            </colgroup>
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+              <tr
+                class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
+              >
+                <th class="px-4 py-3">STT</th>
+                <th class="px-4 py-3">Mã</th>
+                <th class="px-4 py-3">Tên</th>
+                <th class="px-4 py-3">Giá trị</th>
+                <th class="px-4 py-3">Ngày bắt đầu</th>
+                <th class="px-4 py-3">Ngày kết thúc</th>
+                <th class="px-4 py-3">Trạng thái</th>
+                <th class="px-4 py-3 text-center">
+                  Hành động
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-if="dangTai">
+                <td colspan="8" class="py-10 text-center text-sm text-slate-400">
+                  Đang tải dữ liệu...
+                </td>
+              </tr>
+              <tr v-else-if="!danhSach.length">
+                <td colspan="8" class="py-10 text-center text-sm text-slate-400">
+                  Không có dữ liệu.
+                </td>
+              </tr>
+              <tr
+                v-else
+                v-for="(item, index) in danhSach"
+                :key="item.id"
+                class="transition hover:bg-slate-50/50"
+              >
+                <td class="px-4 py-3 font-semibold">
+                  {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
+                </td>
+                <td class="px-4 py-3 font-bold tracking-tight text-slate-900">
+                  {{ item.ma }}
+                </td>
+                <td class="px-4 py-3 align-top">
+                  <div
+                    class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900"
                   >
-                    <Eye class="h-5 w-5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    {{ item.ten }}
+                  </div>
+                </td>
+                <td class="px-4 py-3 font-bold text-slate-800">
+                  {{ item.giaTriGiam }}%
+                </td>
+                <td class="px-4 py-3 font-medium text-slate-600">
+                  {{ toDisplayDate(item.ngayBatDau) }}
+                </td>
+                <td class="px-4 py-3 font-medium text-slate-600">
+                  {{ toDisplayDate(item.ngayKetThuc) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="mauTrangThai(item.kichHoat, item.ngayKetThuc)"
+                  >
+                    {{ statusText(item.kichHoat, item.ngayKetThuc) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-3">
+                    <AdminQuickStatusAction
+                      :loading="false"
+                      :disabled="
+                        isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2
+                      "
+                      :disabled-title="
+                        isHetHan(item.ngayKetThuc) || Number(item.kichHoat) === 2
+                          ? 'Đợt giảm giá đã hết hạn, vui lòng vào chi tiết để gia hạn'
+                          : undefined
+                      "
+                      :action-label="
+                        Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
+                          ? 'Ngừng hoạt động'
+                          : 'Đang hoạt động'
+                      "
+                      :confirm-message="
+                        Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
+                          ? 'Bạn có chắc chắn muốn ngừng hoạt động đợt giảm giá này không?'
+                          : 'Bạn có chắc chắn muốn chuyển đợt giảm giá này sang trạng thái đang hoạt động không?'
+                      "
+                      :intent="
+                        Number(item.kichHoat) === 1 || Number(item.kichHoat) === 4
+                          ? 'deactivate'
+                          : 'activate'
+                      "
+                      @toggle="nhanhDoiTrangThai(item)"
+                    />
+                    <button
+                      @click="openEditModal(item)"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      title="Xem chi tiết"
+                    >
+                      <Eye class="h-5 w-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AdminTableFooter
