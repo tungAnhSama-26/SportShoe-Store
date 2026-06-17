@@ -89,6 +89,12 @@ const danhSachLoc = computed(() => {
   if (boLoc.value.trangThai) {
     result = result.filter((r) => r.trangThai === boLoc.value.trangThai);
   }
+  if (boLoc.value.tuNgay) {
+    result = result.filter((r) => r.ngay >= boLoc.value.tuNgay);
+  }
+  if (boLoc.value.denNgay) {
+    result = result.filter((r) => r.ngay <= boLoc.value.denNgay);
+  }
   return result;
 });
 
@@ -102,10 +108,10 @@ const danhSachPhanTrang = computed(() => {
 });
 
 const thongKe = computed(() => {
-  const total = danhSach.value.length;
-  const dungGio = danhSach.value.filter((r) => r.trangThai === "dung_gio").length;
-  const tre = danhSach.value.filter((r) => r.trangThai === "tre").length;
-  const vangMat = danhSach.value.filter((r) => r.trangThai === "vang_mat").length;
+  const total = danhSachLoc.value.length;
+  const dungGio = danhSachLoc.value.filter((r) => r.trangThai === "dung_gio").length;
+  const tre = danhSachLoc.value.filter((r) => r.trangThai === "tre").length;
+  const vangMat = danhSachLoc.value.filter((r) => r.trangThai === "vang_mat").length;
   return { total, dungGio, tre, vangMat };
 });
 
@@ -113,6 +119,12 @@ watch(danhSachLoc, () => { trangHienTai.value = 1; });
 watch(soPhanTuMotTrang, () => { trangHienTai.value = 1; });
 
 // ─── Mock / API ───────────────────────────────────────────────────────────────
+
+function formatGio(gio: number, phut: number = 0): string {
+  const h = Math.floor(gio) % 24;
+  const p = phut;
+  return `${String(h).padStart(2, "0")}:${String(p).padStart(2, "0")}`;
+}
 
 function taoMock(dsnv: { id: string; ma: string; hoTen: string }[]): ChamCongRecord[] {
   if (!dsnv.length) return [];
@@ -126,6 +138,15 @@ function taoMock(dsnv: { id: string; ma: string; hoTen: string }[]): ChamCongRec
     dsnv.slice(0, Math.min(dsnv.length, 8)).forEach((nv, i) => {
       const ca = (i % 3) + 1;
       const tt = trangThaiList[i % trangThaiList.length];
+      // Thời gian vào/ra chuẩn cho từng ca
+      const gioVaoChuanList = [8, 13, 18]; // Ca 1: 8:00, Ca 2: 13:00, Ca 3: 18:00
+      const gioRaChuanList = [12, 17, 22]; // Ca 1: 12:00, Ca 2: 17:00, Ca 3: 22:00
+      const gioVaoChuanVal = gioVaoChuanList[ca - 1];
+      const gioRaChuanVal = gioRaChuanList[ca - 1];
+      
+      let gioVaoPhut = tt === "tre" ? 15 : 0;
+      let gioRaPhut = tt === "ve_som" ? 30 : 0;
+      
       records.push({
         id: `${nv.id}-${ngayStr}-${ca}`,
         nhanVienId: nv.id,
@@ -133,8 +154,8 @@ function taoMock(dsnv: { id: string; ma: string; hoTen: string }[]): ChamCongRec
         ma: nv.ma,
         ngay: ngayStr,
         ca,
-        gioVao: tt !== "vang_mat" ? `${6 + (ca - 1) * 8}:${tt === "tre" ? "15" : "00"}` : undefined,
-        gioRa: tt !== "vang_mat" ? `${14 + (ca - 1) * 8}:${tt === "ve_som" ? "30" : "00"}` : undefined,
+        gioVao: tt !== "vang_mat" ? formatGio(gioVaoChuanVal, gioVaoPhut) : undefined,
+        gioRa: tt !== "vang_mat" ? formatGio(gioRaChuanVal, gioRaPhut) : undefined,
         trangThai: tt,
       });
     });
@@ -302,7 +323,7 @@ onMounted(taiDanhSach);
           </div>
 
           <!-- Trạng thái -->
-          <div class="lg:col-span-3">
+          <div class="lg:col-span-2">
             <select
               v-model="boLoc.trangThai"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
@@ -313,6 +334,26 @@ onMounted(taiDanhSach);
               <option value="ve_som">Về sớm</option>
               <option value="vang_mat">Vắng mặt</option>
             </select>
+          </div>
+
+          <!-- Từ ngày -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-slate-600 mb-1">Từ ngày</label>
+            <input
+              v-model="boLoc.tuNgay"
+              type="date"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+            />
+          </div>
+
+          <!-- Đến ngày -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-slate-600 mb-1">Đến ngày</label>
+            <input
+              v-model="boLoc.denNgay"
+              type="date"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+            />
           </div>
         </div>
 
