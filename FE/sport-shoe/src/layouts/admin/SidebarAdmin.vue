@@ -177,7 +177,8 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; h&#243;a &#273;&#417;n</span>
       </router-link>
 
-      <router-link to="/admin/tra-hang" :title="compactMode ? 'Qu\u1ea3n l\u00fd tr\u1ea3 h\u00e0ng' : undefined" :class="navItemClass(isActive('/admin/tra-hang'))">
+      <!-- T\u1ea1m \u1ea9n "Qu\u1ea3n l\u00fd tr\u1ea3 h\u00e0ng". C\u1ea7n hi\u1ec7n l\u1ea1i: b\u1ecf v-if="false" (ho\u1eb7c \u0111\u1ed5i th\u00e0nh true). -->
+      <router-link v-if="false" to="/admin/tra-hang" :title="compactMode ? 'Qu\u1ea3n l\u00fd tr\u1ea3 h\u00e0ng' : undefined" :class="navItemClass(isActive('/admin/tra-hang'))">
         <PackageCheck :class="navIconClass(isActive('/admin/tra-hang'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Quản lý trả hàng</span>
       </router-link>

@@ -1,4 +1,4 @@
-import { apiRequest } from "./api-client";
+import { apiRequest, API_BASE_URL, getAuthHeaders } from "./api-client";
 
 async function request(path, init) {
   return apiRequest(path, {
@@ -6,6 +6,23 @@ async function request(path, init) {
       "Không thể hoàn tất thao tác hồ sơ khách hàng lúc này. Vui lòng thử lại.",
     ...init,
   });
+}
+
+// Upload 1 ảnh (multipart) -> trả về URL đầy đủ của ảnh.
+export async function uploadAnh(file, authScope = "customer") {
+  const formData = new FormData();
+  formData.append("file", file);
+  // KHÔNG set Content-Type để trình duyệt tự thêm boundary multipart.
+  const res = await fetch(`${API_BASE_URL}/upload`, {
+    method: "POST",
+    headers: { ...getAuthHeaders(authScope, "/upload") },
+    body: formData,
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || json?.success === false) {
+    throw new Error(json?.message || "Tải ảnh lên thất bại");
+  }
+  return json?.data?.url || json?.url || "";
 }
 
 // --- Client Profile Info ---
