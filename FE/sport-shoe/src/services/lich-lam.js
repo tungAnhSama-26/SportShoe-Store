@@ -8,10 +8,20 @@ async function request(path, init) {
   });
 }
 
+/**
+ * Lấy lịch làm việc theo tuần.
+ * @param {string} tuNgay  - YYYY-MM-DD
+ * @param {string} denNgay - YYYY-MM-DD
+ */
 export function layLichLamViec(tuNgay, denNgay) {
   return request(`/admin/lich-lam-viec?tuNgay=${tuNgay}&denNgay=${denNgay}`);
 }
 
+/**
+ * Phân ca thủ công.
+ * @param {{ nhanVienId: string, ngay: string, ca: string }} payload
+ *   ca: "sang" | "chieu" | "toi" | null (null = xoá ca)
+ */
 export function phanCa(payload) {
   return request("/admin/lich-lam-viec", {
     method: "POST",
@@ -19,8 +29,15 @@ export function phanCa(payload) {
   });
 }
 
+/**
+ * Xếp ca tự động cho khoảng tuần.
+ * @param {string} tuNgay  - YYYY-MM-DD
+ * @param {string} denNgay - YYYY-MM-DD
+ */
 export function xepCaTuDong(tuNgay, denNgay) {
-  return request(`/admin/lich-lam-viec/auto-assign?tuNgay=${tuNgay}&denNgay=${denNgay}`, {
-    method: "POST",
-  });
+  return request(
+    `/admin/lich-lam-viec/auto-assign?tuNgay=${tuNgay}&denNgay=${denNgay}`,
+    { method: "POST" }
+  );
 }
+
