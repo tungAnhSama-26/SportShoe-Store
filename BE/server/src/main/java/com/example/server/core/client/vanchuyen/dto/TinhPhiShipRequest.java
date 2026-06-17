@@ -14,6 +14,9 @@ public record TinhPhiShipRequest(
         String tinhThanh,
         String quanHuyen,
         String phuongXa,
-        String diaChiCuThe
+        String diaChiCuThe,
+        // GHN: mã quận/huyện + phường/xã (nếu có thì tính phí chính xác, khỏi dò tên).
+        Integer toDistrictId,
+        String toWardCode
 ) {
 }
