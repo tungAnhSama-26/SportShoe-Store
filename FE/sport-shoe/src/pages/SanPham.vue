@@ -26,7 +26,6 @@ const NHOM_LOC = [
   { khoa: 'deGiay', nhan: 'Đế giày' },
   { khoa: 'coGiay', nhan: 'Cổ giày' },
   { khoa: 'congNgheDem', nhan: 'Công nghệ đệm' },
-  { khoa: 'trongLuong', nhan: 'Trọng lượng' },
 ];
 
 // Giá trị đã chọn cho mỗi nhóm (mảng).
