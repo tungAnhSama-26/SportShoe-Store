@@ -33,7 +33,7 @@ function xuLyAnhLoi(event) {
         <router-link
           v-for="(muc, index) in danhMuc"
           :key="muc.id ?? muc.ten"
-          :to="{ path: '/san-pham', query: { hang: muc.ten } }"
+          :to="{ path: '/khachhang/san-pham', query: { hang: muc.ten } }"
           class="group block overflow-hidden rounded-2xl border border-primary/20 bg-white transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
         >
           <div class="relative h-72 overflow-hidden">

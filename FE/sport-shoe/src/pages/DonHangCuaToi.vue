@@ -23,7 +23,7 @@ let realtimeRefreshTimeout = null;
 
 function lenLichTaiLaiDanhSach() {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
-  realtimeRefreshTimeout = setTimeout(taiDanhSach, 150);
+  realtimeRefreshTimeout = setTimeout(() => taiDanhSach(true), 150);
 }
 
 function dongBoKhiQuayLaiTrang() {
@@ -56,14 +56,16 @@ onBeforeUnmount(() => {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
 });
 
-async function taiDanhSach() {
-  dangTai.value = true;
+async function taiDanhSach(amThang = false) {
+  if (!amThang) dangTai.value = true;
   try {
     danhSach.value = await layDonHangCuaToi();
   } catch {
-    danhSach.value = [];
+    if (!amThang) {
+      danhSach.value = [];
+    }
   } finally {
-    dangTai.value = false;
+    if (!amThang) dangTai.value = false;
   }
 }
 
@@ -148,7 +150,7 @@ async function muaLai(don) {
       tonKho: Math.max(Number(item.soLuong), 10),
     })));
     showSuccess("Đã thêm các sản phẩm vào giỏ hàng!");
-    router.push('/gio-hang');
+    router.push('/khachhang/gio-hang');
   } catch (error) {
     showError(error.message || "Không thể mua lại sản phẩm");
   }
@@ -172,7 +174,7 @@ function moYeuCauTraHang(don) {
 async function xuLyTaoPhieuTraHangThanhCong() {
   laMoTraHangModal.value = false;
   trangThaiDangChon.value = "TRA_HANG";
-  await taiDanhSach();
+  await taiDanhSach(true);
 }
 
 async function guiYeuCauHuy(don) {
@@ -187,7 +189,7 @@ async function guiYeuCauHuy(don) {
   donDangGuiYeuCauHuy.value = don.id;
   try {
     await yeuCauHuyDonHang(don.id);
-    await taiDanhSach();
+    await taiDanhSach(true);
     showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
   } catch (error) {
     showError(getDisplayErrorMessage(error, 'Không thể gửi yêu cầu hủy đơn hàng'));
@@ -231,7 +233,7 @@ async function guiYeuCauHuy(don) {
 
         <div v-if="!danhSachHienThi.length" class="py-24 text-center">
           <p class="text-sm text-slate-500 mb-4">Không có đơn hàng nào.</p>
-          <router-link to="/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Mua sắm ngay</router-link>
+          <router-link to="/khachhang/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Mua sắm ngay</router-link>
         </div>
 
         <!-- Orders List -->
@@ -333,7 +335,7 @@ async function guiYeuCauHuy(don) {
                   Mua Lại
                 </button>
                 <button
-                  @click="router.push(`/don-hang/${don.id}`)"
+                  @click="router.push(`/khachhang/don-hang/${don.id}`)"
                   class="px-5 py-2 text-xs md:text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition"
                 >
                   Xem chi tiết

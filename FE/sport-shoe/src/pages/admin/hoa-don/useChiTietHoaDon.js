@@ -38,7 +38,7 @@ import { timSanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 import { printInvoiceToPdf } from "../../../utils/invoice-pdf";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
-import { showSuccess, showError } from "../../../utils/alert";
+import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import logoGhn from "../../../constants/logoGhn";
 import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
 
@@ -672,18 +672,20 @@ export function useChiTietHoaDon() {
     return "text-[#B82220]";
   }
 
-  async function taiChiTiet() {
-    dangTai.value = true;
+  async function taiChiTiet(amThang = false) {
+    if (!amThang) dangTai.value = true;
     loiTrang.value = "";
     try {
       hoaDon.value = await layChiTietHoaDon(Number(route.params.id));
     } catch (error) {
-      loiTrang.value = getDisplayErrorMessage(
-        error,
-        "Không thể tải chi tiết hóa đơn",
-      );
+      if (!amThang) {
+        loiTrang.value = getDisplayErrorMessage(
+          error,
+          "Không thể tải chi tiết đơn hàng",
+        );
+      }
     } finally {
-      dangTai.value = false;
+      if (!amThang) dangTai.value = false;
     }
   }
 
@@ -1308,6 +1310,39 @@ export function useChiTietHoaDon() {
     }
   }
 
+  async function handleHuyDonTuModal() {
+    if (!hoaDon.value || dangCapNhat.value) return;
+    const daXacNhan = await showConfirm(
+      "Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác.",
+      "Hủy đơn hàng",
+      "Đồng ý",
+      "Quay lại"
+    );
+    if (!daXacNhan) return;
+
+    dangCapNhat.value = true;
+    try {
+      hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+        trangThai: "Hủy",
+        ghiChu: "Hủy đơn hàng từ màn hình chỉnh sửa bởi Admin",
+      });
+      hienThiThongBao(
+        "success",
+        "Hủy đơn hàng thành công",
+        "Đơn hàng đã được chuyển sang trạng thái Hủy."
+      );
+      hienModalThongTin.value = false;
+    } catch (error) {
+      hienThiThongBao(
+        "error",
+        "Lỗi hủy đơn hàng",
+        getDisplayErrorMessage(error, "Không thể hủy đơn hàng.")
+      );
+    } finally {
+      dangCapNhat.value = false;
+    }
+  }
+
   let ngatKetNoiRealtime = null;
   let realtimeRefreshTimeout = null;
 
@@ -1318,7 +1353,7 @@ export function useChiTietHoaDon() {
       onHoaDonThayDoi: (event) => {
         if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
         if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
-        realtimeRefreshTimeout = setTimeout(taiChiTiet, 150);
+        realtimeRefreshTimeout = setTimeout(() => taiChiTiet(true), 150);
       },
     });
   });
@@ -1477,6 +1512,7 @@ export function useChiTietHoaDon() {
     handleXacNhanThanhToanCod,
     moModalHoanTien,
     handleXacNhanHoanTien,
+    handleHuyDonTuModal,
     dsTaiKhoanNganHangKhach,
     dangTaiNganHangKhach,
     taiKhoanNganHangChon,

@@ -130,6 +130,40 @@ public class GhnShippingService {
         );
     }
 
+    // ===== API địa giới GHN cho dropdown (tỉnh -> huyện -> xã) =====
+
+    /** Một đơn vị địa giới GHN có mã số (tỉnh, huyện). */
+    public record GhnDiaGioi(Integer id, String ten) {
+    }
+
+    /** Phường/xã GHN dùng mã chuỗi (WardCode). */
+    public record GhnXa(String code, String ten) {
+    }
+
+    public List<GhnDiaGioi> layDanhSachTinh() {
+        return getProvinces().stream()
+                .map(province -> new GhnDiaGioi(province.id(), province.name()))
+                .toList();
+    }
+
+    public List<GhnDiaGioi> layDanhSachHuyen(Integer tinhId) {
+        if (tinhId == null) {
+            throw new BusinessException("Thiếu mã tỉnh/thành GHN");
+        }
+        return getDistricts(tinhId).stream()
+                .map(district -> new GhnDiaGioi(district.id(), district.name()))
+                .toList();
+    }
+
+    public List<GhnXa> layDanhSachXa(Integer huyenId) {
+        if (huyenId == null) {
+            throw new BusinessException("Thiếu mã quận/huyện GHN");
+        }
+        return getWards(huyenId).stream()
+                .map(ward -> new GhnXa(ward.code(), ward.name()))
+                .toList();
+    }
+
     private JsonNode callShippingFeeApi(
             HoaDon hoaDon,
             List<HoaDonChiTiet> items,

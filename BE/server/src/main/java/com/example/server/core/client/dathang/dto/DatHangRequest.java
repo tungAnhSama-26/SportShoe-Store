@@ -40,5 +40,9 @@ public record DatHangRequest(
         // Mã giảm giá (tùy chọn).
         String maPhieuGiamGia,
 
-        String ghiChu
+        String ghiChu,
+
+        // GHN: mã quận/huyện + phường/xã (để tính phí chính xác, tùy chọn).
+        Integer toDistrictId,
+        String toWardCode
 ) {}

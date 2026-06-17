@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
+import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen, layTinhGhn, layHuyenGhn, layXaGhn } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -25,6 +25,85 @@ const form = ref({
   phuongXa: '',
   diaChiCuThe: '',
 });
+
+// ===== Địa giới GHN (dropdown đổ tầng: tỉnh -> huyện -> xã) =====
+const dsTinh = ref([]);
+const dsHuyen = ref([]);
+const dsXa = ref([]);
+const ghn = ref({ tinhId: null, huyenId: null, wardCode: null });
+
+function chuanHoaTen(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/\b(tinh|thanh pho|tp|quan|huyen|thi xa|phuong|xa|thi tran)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function timTheoTen(list, ten, layTen) {
+  const muc = chuanHoaTen(ten);
+  if (!muc) return null;
+  return list.find((o) => chuanHoaTen(layTen(o)) === muc)
+    || list.find((o) => {
+      const t = chuanHoaTen(layTen(o));
+      return t && (t.includes(muc) || muc.includes(t));
+    })
+    || null;
+}
+
+async function onChonTinh(tinhId) {
+  const opt = dsTinh.value.find((t) => String(t.id) === String(tinhId));
+  ghn.value = { tinhId: opt?.id ?? null, huyenId: null, wardCode: null };
+  form.value.tinhThanh = opt?.ten || '';
+  form.value.quanHuyen = '';
+  form.value.phuongXa = '';
+  dsHuyen.value = [];
+  dsXa.value = [];
+  if (opt?.id) {
+    try { dsHuyen.value = await layHuyenGhn(opt.id); } catch { dsHuyen.value = []; }
+  }
+}
+
+async function onChonHuyen(huyenId) {
+  const opt = dsHuyen.value.find((h) => String(h.id) === String(huyenId));
+  ghn.value = { ...ghn.value, huyenId: opt?.id ?? null, wardCode: null };
+  form.value.quanHuyen = opt?.ten || '';
+  form.value.phuongXa = '';
+  dsXa.value = [];
+  if (opt?.id) {
+    try { dsXa.value = await layXaGhn(opt.id); } catch { dsXa.value = []; }
+  }
+}
+
+function onChonXa(wardCode) {
+  const opt = dsXa.value.find((x) => String(x.code) === String(wardCode));
+  ghn.value = { ...ghn.value, wardCode: opt?.code ?? null };
+  form.value.phuongXa = opt?.ten || '';
+}
+
+// Map địa chỉ đã lưu (dạng text) -> ID GHN để chọn sẵn dropdown (best-effort).
+async function dongBoDiaChiGhn(dc) {
+  ghn.value = { tinhId: null, huyenId: null, wardCode: null };
+  dsHuyen.value = [];
+  dsXa.value = [];
+  try {
+    if (!dsTinh.value.length) dsTinh.value = await layTinhGhn();
+    const tinh = timTheoTen(dsTinh.value, dc.tinhThanh, (o) => o.ten);
+    if (!tinh) return;
+    ghn.value.tinhId = tinh.id;
+    dsHuyen.value = await layHuyenGhn(tinh.id);
+    const huyen = timTheoTen(dsHuyen.value, dc.quanHuyen, (o) => o.ten);
+    if (!huyen) return;
+    ghn.value.huyenId = huyen.id;
+    dsXa.value = await layXaGhn(huyen.id);
+    const xa = timTheoTen(dsXa.value, dc.phuongXa, (o) => o.ten);
+    if (xa) ghn.value.wardCode = xa.code;
+  } catch {
+    // Không map được -> giữ ID null, GHN dò theo tên (có thể ra phí ước tính).
+  }
+}
 
 const hinhThucThanhToan = ref('COD');
 const dangDat = ref(false);
@@ -95,6 +174,8 @@ async function capNhatPhiShip() {
       quanHuyen: f.quanHuyen.trim(),
       phuongXa: f.phuongXa.trim(),
       diaChiCuThe: f.diaChiCuThe.trim(),
+      toDistrictId: ghn.value.huyenId,
+      toWardCode: ghn.value.wardCode,
     });
   } catch {
     phiShip.value = null;
@@ -125,13 +206,18 @@ onBeforeRouteLeave(() => {
 async function tai() {
   dangTai.value = true;
   try {
-    const [g, dc] = await Promise.all([layGioHang(), layDiaChiKhachHang()]);
+    const [g, dc, tinh] = await Promise.all([
+      layGioHang(),
+      layDiaChiKhachHang(),
+      layTinhGhn().catch(() => []),
+    ]);
     gio.value = g;
     diaChiList.value = dc;
+    dsTinh.value = tinh;
 
     const macDinh = dc.find((d) => d.laMacDinh) || dc[0];
     if (macDinh) {
-      chonDiaChi(macDinh);
+      await chonDiaChi(macDinh);
     } else {
       // Chưa có địa chỉ lưu sẵn: lấy tên + SĐT từ thông tin khách.
       const kh = layThongTinKhach();
@@ -145,7 +231,7 @@ async function tai() {
   }
 }
 
-function chonDiaChi(dc) {
+async function chonDiaChi(dc) {
   diaChiChonId.value = dc.id;
   form.value = {
     hoTen: dc.hoTen || '',
@@ -155,6 +241,7 @@ function chonDiaChi(dc) {
     phuongXa: dc.phuongXa || '',
     diaChiCuThe: dc.diaChiCuThe || '',
   };
+  await dongBoDiaChiGhn(dc);
 }
 
 const diaChiDayDu = computed(() => {
@@ -192,6 +279,8 @@ function taoPayload() {
     diaChiCuThe: f.diaChiCuThe.trim(),
     hinhThucThanhToan: hinhThucThanhToan.value,
     maPhieuGiamGia: voucher.value?.ma || null,
+    toDistrictId: ghn.value.huyenId,
+    toWardCode: ghn.value.wardCode,
   };
 }
 
@@ -211,7 +300,7 @@ async function hoanTatDatHang(maHoaDon) {
   xoaGioHang();
   gioHangStore.datSoLuong(0);
   await showSuccess(`Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`, 'Thành công');
-  router.push('/san-pham');
+  router.push('/khachhang/san-pham');
 }
 
 async function datHangMoi() {
@@ -296,7 +385,7 @@ function xuLyAnhLoi(event) {
 
       <div v-else-if="!gio.items.length" class="py-24 text-center">
         <p class="text-sm text-slate-500 mb-4">Giỏ hàng trống, không có gì để thanh toán.</p>
-        <router-link to="/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Mua sắm ngay</router-link>
+        <router-link to="/khachhang/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Mua sắm ngay</router-link>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
@@ -338,15 +427,24 @@ function xuLyAnhLoi(event) {
               </label>
               <label class="space-y-1.5">
                 <span class="text-sm font-medium text-slate-600">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
-                <input v-model="form.tinhThanh" type="text" placeholder="Tỉnh/Thành" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <select :value="ghn.tinhId ?? ''" @change="onChonTinh($event.target.value)" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white">
+                  <option value="" disabled>{{ dsTinh.length ? 'Chọn tỉnh/thành' : 'Đang tải...' }}</option>
+                  <option v-for="t in dsTinh" :key="t.id" :value="t.id">{{ t.ten }}</option>
+                </select>
               </label>
               <label class="space-y-1.5">
                 <span class="text-sm font-medium text-slate-600">Quận/Huyện <span class="text-rose-500">*</span></span>
-                <input v-model="form.quanHuyen" type="text" placeholder="Quận/Huyện" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <select :value="ghn.huyenId ?? ''" @change="onChonHuyen($event.target.value)" :disabled="!dsHuyen.length" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white disabled:bg-slate-50 disabled:text-slate-400">
+                  <option value="" disabled>{{ ghn.tinhId ? 'Chọn quận/huyện' : 'Chọn tỉnh/thành trước' }}</option>
+                  <option v-for="h in dsHuyen" :key="h.id" :value="h.id">{{ h.ten }}</option>
+                </select>
               </label>
               <label class="space-y-1.5">
                 <span class="text-sm font-medium text-slate-600">Phường/Xã <span class="text-rose-500">*</span></span>
-                <input v-model="form.phuongXa" type="text" placeholder="Phường/Xã" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <select :value="ghn.wardCode ?? ''" @change="onChonXa($event.target.value)" :disabled="!dsXa.length" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white disabled:bg-slate-50 disabled:text-slate-400">
+                  <option value="" disabled>{{ ghn.huyenId ? 'Chọn phường/xã' : 'Chọn quận/huyện trước' }}</option>
+                  <option v-for="x in dsXa" :key="x.code" :value="x.code">{{ x.ten }}</option>
+                </select>
               </label>
               <label class="space-y-1.5 sm:col-span-2">
                 <span class="text-sm font-medium text-slate-600">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
@@ -473,7 +571,7 @@ function xuLyAnhLoi(event) {
           <button @click="datHangMoi" :disabled="dangDat" class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0">
             {{ dangDat ? 'Đang xử lý...' : (hinhThucThanhToan === 'VNPAY' ? 'Thanh toán VNPay' : 'Đặt hàng') }}
           </button>
-          <router-link to="/gio-hang" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Quay lại giỏ hàng</router-link>
+          <router-link to="/khachhang/gio-hang" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Quay lại giỏ hàng</router-link>
         </aside>
       </div>
     </div>

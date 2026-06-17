@@ -46,6 +46,12 @@ public class ClientPhiVanChuyenService {
         HoaDon hoaDonTam = new HoaDon();
         hoaDonTam.setTongTienHang(checkout.tongTienHang());
 
+        // Ưu tiên mã quận/huyện + phường/xã GHN (chọn từ dropdown) -> phí chính xác, khỏi dò tên.
+        Integer districtId = request.toDistrictId();
+        String wardCode = request.toWardCode();
+        boolean coIdGhn = districtId != null && districtId > 0
+                && wardCode != null && !wardCode.isBlank();
+
         String toAddress = Stream.of(
                         request.diaChiCuThe(),
                         request.phuongXa(),
@@ -55,12 +61,14 @@ public class ClientPhiVanChuyenService {
                 .filter(s -> s != null && !s.isBlank())
                 .map(String::trim)
                 .collect(Collectors.joining(", "));
-        if (toAddress.isBlank()) {
+        if (!coIdGhn && toAddress.isBlank()) {
             return new PhiVanChuyenResponse(PHI_MAC_DINH, true, "Phí ước tính");
         }
 
         TinhPhiVanChuyenGhnRequest ghnRequest = new TinhPhiVanChuyenGhnRequest(
-                null, null, toAddress,
+                coIdGhn ? districtId : null,
+                coIdGhn ? wardCode.trim() : null,
+                toAddress,
                 null, null, null, null, null, null, null, null
         );
         try {

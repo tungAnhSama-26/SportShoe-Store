@@ -21,6 +21,7 @@ import { layKhachId } from "../services/gio-hang";
 import {
   layProfileKhachHang,
   capNhatProfileKhachHang,
+  uploadAnh,
   doiMatKhauProfileKhachHang,
   layDanhSachDiaChiProfile,
   themDiaChiProfile,
@@ -33,8 +34,11 @@ import {
   xoaTaiKhoanNganHang,
   datMacDinhTaiKhoanNganHang,
 } from "../services/client-profile";
+import { API_BASE_URL } from "../services/api-client";
 import { getDisplayErrorMessage, getFieldErrors } from "../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../utils/alert";
+
+const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
 const router = useRouter();
 const khachHangId = layKhachId();
@@ -58,6 +62,7 @@ const form = ref({
   sdt: "",
   gioiTinh: 1, // 0 = Nữ, 1 = Nam, 2 = Khác
   ngaySinh: "",
+  hinhAnh: "",
 });
 
 const loiForm = ref({
@@ -65,6 +70,73 @@ const loiForm = ref({
   email: "",
   sdt: "",
 });
+
+// ===== Ảnh đại diện =====
+const fileAnh = ref(null);
+const dangTaiAnh = ref(false);
+
+function resolveAnh(url) {
+  const v = String(url || "").trim();
+  if (!v) return "";
+  if (/^(https?:|data:|blob:)/i.test(v)) return v;
+  return v.startsWith("/") ? apiOrigin + v : apiOrigin + "/" + v;
+}
+
+const avatarSrc = computed(() => {
+  const v = resolveAnh(form.value.hinhAnh);
+  return v || ("https://ui-avatars.com/api/?name="
+    + encodeURIComponent(form.value.hoTen || "KH")
+    + "&background=B82220&color=ffffff&size=256");
+});
+
+function loiAnhAvatar(e) {
+  const fb = "https://ui-avatars.com/api/?name="
+    + encodeURIComponent(form.value.hoTen || "KH")
+    + "&background=B82220&color=ffffff&size=256";
+  if (e.target.src !== fb) e.target.src = fb;
+}
+
+function moChonAnh() {
+  if (!dangTaiAnh.value) fileAnh.value?.click();
+}
+
+async function chonAnhAvatar(e) {
+  const file = e.target.files?.[0];
+  e.target.value = ""; // cho phép chọn lại cùng 1 file
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    showError("Vui lòng chọn tệp ảnh.");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showError("Ảnh tối đa 5MB.");
+    return;
+  }
+  dangTaiAnh.value = true;
+  try {
+    const url = await uploadAnh(file, "customer");
+    if (!url) throw new Error("Không nhận được đường dẫn ảnh");
+    const updated = await capNhatProfileKhachHang(khachHangId, {
+      hoTen: form.value.hoTen.trim(),
+      email: form.value.email.trim(),
+      sdt: form.value.sdt.trim() || undefined,
+      gioiTinh: Number(form.value.gioiTinh),
+      ngaySinh: form.value.ngaySinh || undefined,
+      hinhAnh: url,
+    });
+    form.value.hinhAnh = url;
+    const userRaw = localStorage.getItem("user");
+    if (userRaw) {
+      const user = JSON.parse(userRaw);
+      localStorage.setItem("user", JSON.stringify({ ...user, ...updated }));
+    }
+    showSuccess("Cập nhật ảnh đại diện thành công.", "Thành công");
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Không thể cập nhật ảnh đại diện"));
+  } finally {
+    dangTaiAnh.value = false;
+  }
+}
 
 // Address book state
 const dsDiaChi = ref([]);
@@ -149,6 +221,7 @@ async function taiProfile() {
       sdt: data.sdt ?? "",
       gioiTinh: data.gioiTinh ?? 1,
       ngaySinh: data.ngaySinh ?? "",
+      hinhAnh: data.hinhAnh ?? "",
     };
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(
@@ -452,6 +525,7 @@ async function luuProfile() {
       sdt: form.value.sdt.trim() || undefined,
       gioiTinh: Number(form.value.gioiTinh),
       ngaySinh: form.value.ngaySinh || undefined,
+      hinhAnh: form.value.hinhAnh || undefined,
     });
 
     // Cập nhật lại session storage cho khách hàng
@@ -695,19 +769,24 @@ onMounted(() => {
         <div
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center"
         >
-          <div
-            class="h-28 w-28 overflow-hidden rounded-full border-4 border-slate-50 ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center"
+          <button
+            type="button"
+            @click="moChonAnh"
+            :disabled="dangTaiAnh"
+            title="Bấm để đổi ảnh đại diện"
+            class="group relative h-28 w-28 overflow-hidden rounded-full border-4 border-slate-50 ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center cursor-pointer"
           >
-            <img
-              :src="
-                'https://ui-avatars.com/api/?name=' +
-                encodeURIComponent(form.hoTen) +
-                '&background=B82220&color=ffffff&size=256'
-              "
-              alt="Avatar"
-              class="h-full w-full object-cover"
-            />
-          </div>
+            <img :src="avatarSrc" @error="loiAnhAvatar" alt="Avatar" class="h-full w-full object-cover" />
+            <span class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/45 text-white text-[11px] font-semibold opacity-0 transition group-hover:opacity-100">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              Đổi ảnh
+            </span>
+            <span v-if="dangTaiAnh" class="absolute inset-0 flex items-center justify-center bg-black/55 text-white text-[11px] font-semibold">Đang tải...</span>
+          </button>
+          <input ref="fileAnh" type="file" accept="image/*" class="hidden" @change="chonAnhAvatar" />
           <h2 class="mt-4 text-lg font-bold text-slate-800 text-center">
             {{ form.hoTen }}
           </h2>

@@ -152,6 +152,7 @@ const {
   handleXacNhanThanhToanCod,
   moModalHoanTien,
   handleXacNhanHoanTien,
+  handleHuyDonTuModal,
 } = useChiTietHoaDon();
 
 const productImageFallback =
@@ -176,63 +177,59 @@ function handleProductImageError(event) {
 </script>
 
 <template>
-  <div class="invoice-flat space-y-4 pb-10">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1
-          class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]"
-        >
-          Chi Tiết Đơn Hàng
-        </h1>
-        <div v-if="hoaDon" class="mt-2 space-y-1 text-[13px] text-slate-500">
-          <p>
-            Mã Đơn Hàng:
-            <span class="font-semibold text-slate-700">{{
-              hoaDon.maHoaDon
-            }}</span>
-            <span class="mx-2 text-slate-300">|</span>
-            Ngày Tạo: {{ dinhDangGio(hoaDon.ngayTao) }}
-            {{ dinhDangNgay(hoaDon.ngayTao) }}
-          </p>
-          <p>
-            Tạo Bởi:
-            <span class="font-medium text-slate-700">{{
-              hoaDon.nguoiTao || "Hệ Thống"
-            }}</span>
-            <span class="mx-2 text-slate-300">|</span>
-            Cập Nhật Gần Nhất:
-            <span class="font-medium text-slate-700">
-              {{
-                hoaDon.lichSuHoaDon?.[0]
-                  ? `${dinhDangGio(hoaDon.lichSuHoaDon[0].ngayTao)} ${dinhDangNgay(hoaDon.lichSuHoaDon[0].ngayTao)} -
-              ${hoaDon.lichSuHoaDon[0].maNhanVien}`
-                  : "Chưa Có"
-              }}
-            </span>
-          </p>
-        </div>
+  <div class="invoice-flat space-y-6 pb-10">
+    <!-- Layout: Header -->
+    <section
+      class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-slate-100 pb-6"
+    >
+      <div v-if="hoaDon" class="space-y-1 text-sm text-slate-500">
+        <p>
+          Mã Đơn Hàng:
+          <span class="font-semibold text-slate-700">{{
+            hoaDon.maHoaDon
+          }}</span>
+          <span class="mx-2 text-slate-300">|</span>
+          Ngày Tạo: {{ dinhDangGio(hoaDon.ngayTao) }}
+          {{ dinhDangNgay(hoaDon.ngayTao) }}
+        </p>
+        <p>
+          Tạo Bởi:
+          <span class="font-medium text-slate-700">{{
+            hoaDon.nguoiTao || "Hệ Thống"
+          }}</span>
+          <span class="mx-2 text-slate-300">|</span>
+          Cập Nhật Gần Nhất:
+          <span class="font-medium text-slate-700">
+            {{
+              hoaDon.lichSuHoaDon?.[0]
+                ? `${dinhDangGio(hoaDon.lichSuHoaDon[0].ngayTao)} ${dinhDangNgay(hoaDon.lichSuHoaDon[0].ngayTao)} -
+            ${hoaDon.lichSuHoaDon[0].maNhanVien}`
+                : "Chưa Có"
+            }}
+          </span>
+        </p>
       </div>
 
       <Button
         variant="soft"
         @click="router.push({ name: 'admin-hoa-don' })"
-        class="h-10"
+        class="h-10 shrink-0"
       >
         <template #prefix>
           <ArrowLeft class="h-4 w-4" />
         </template>
         Quay Lại Danh Sách
       </Button>
-    </div>
+    </section>
 
     <Card v-if="dangTai" class="p-10 text-center text-sm text-slate-400">
-      Đang Tải Chi Tiết Hóa Đơn...
+      Đang tải chi tiết đơn hàng...
     </Card>
 
     <Card v-else-if="loiTrang || !hoaDon" class="p-10 text-center">
-      <h2 class="text-2xl font-bold text-slate-800">Không Tìm Thấy Hóa Đơn</h2>
+      <h2 class="text-2xl font-bold text-slate-800">Không tìm thấy đơn hàng</h2>
       <p class="mt-3 text-sm text-slate-400">
-        {{ loiTrang || "Hóa Đơn Không Tồn Tại." }}
+        {{ loiTrang || "Đơn hàng không tồn tại." }}
       </p>
     </Card>
 
@@ -1552,6 +1549,7 @@ function handleProductImageError(event) {
 
     <div
       v-if="hienModalThongTin"
+      v-show="!hienModalGiaoHang"
       class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
     >
       <div
@@ -1733,19 +1731,30 @@ function handleProductImageError(event) {
         </div>
 
         <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-          <Button
+          <button
+            v-if="hoaDon && (hoaDon.trangThai || '').toLowerCase().trim() === 'chờ xác nhận'"
+            @click="handleHuyDonTuModal"
+            :disabled="dangCapNhat"
+            type="button"
+            class="inline-flex items-center justify-center h-11 px-5 text-sm font-semibold text-white bg-red-600 rounded-[6px] mr-auto disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Hủy đơn hàng
+          </button>
+          <button
             @click="hienModalThongTin = false"
-            class="bg-slate-500 hover:bg-slate-600 text-white border-transparent rounded-full"
+            type="button"
+            class="inline-flex items-center justify-center h-11 px-5 text-sm font-semibold text-white bg-slate-500 rounded-[6px] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Hủy
-          </Button>
-          <Button
+          </button>
+          <button
             @click="handleLuuThongTin"
             :disabled="dangCapNhat || donDaHoanThanh"
-            class="bg-[#B82220] hover:bg-[#9f1d1b] text-white border-transparent rounded-full"
+            type="button"
+            class="inline-flex items-center justify-center h-11 px-5 text-sm font-semibold text-white bg-[#B82220] rounded-[6px] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ dangCapNhat ? "Đang Lưu..." : "Lưu" }}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
