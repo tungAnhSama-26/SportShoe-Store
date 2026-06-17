@@ -187,7 +187,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       <div
         v-for="card in summaryCards"
         :key="card.label"
-        class="rounded-[24px] border border-slate-100 bg-white p-5 shadow-sm"
+        class="rounded-[6px] border border-slate-100 bg-white p-5 shadow-sm"
       >
         <div class="mb-4">
           <div :class="['flex h-12 w-12 items-center justify-center rounded-2xl', card.badgeClass]">
@@ -197,13 +197,13 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         <div class="text-[24px] font-bold tracking-tight text-slate-800 break-words">
           {{ card.value }}
         </div>
-        <div class="mt-1 text-sm font-medium text-slate-500">
+        <div class="mt-1 text-xs font-medium text-slate-500 truncate" :title="card.label">
           {{ card.label }}
         </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.65fr_1fr]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2.5fr_1fr]">
       <Card>
         <div class="mb-6 flex items-start justify-between gap-3">
           <div>
@@ -278,7 +278,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       </Card>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.65fr_1fr]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2.5fr_1fr]">
       <Card>
         <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -290,15 +290,15 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
         </div>
 
         <div class="overflow-x-auto">
-          <table class="min-w-[700px] w-full border-separate border-spacing-y-3 text-left">
+          <table class="min-w-[600px] w-full border-separate border-spacing-y-3 text-center">
             <thead>
-              <tr class="text-xs font-bold uppercase tracking-[0.18em] text-slate-950">
-                <th class="px-4 py-2">Thời gian</th>
-                <th class="px-4 py-2 text-right">Doanh thu gốc</th>
-                <th class="px-4 py-2 text-right">Doanh thu thực tế</th>
-                <th class="px-4 py-2 text-right">Số đơn</th>
-                <th class="px-4 py-2 text-right">AOV (Trung bình/đơn)</th>
-                <th class="px-4 py-2 text-right">Tăng trưởng</th>
+              <tr class="text-xs font-bold tracking-[0.05em] text-slate-950">
+                <th class="px-4 py-2 text-center whitespace-nowrap">Thời gian</th>
+                <th class="px-4 py-2 text-center whitespace-nowrap">Doanh thu gốc</th>
+                <th class="px-4 py-2 text-center whitespace-nowrap">Doanh thu thực tế</th>
+                <th class="px-4 py-2 text-center whitespace-nowrap">Số đơn</th>
+                <th class="px-4 py-2 text-center whitespace-nowrap">AOV (Trung bình/đơn)</th>
+                <th class="px-4 py-2 text-center whitespace-nowrap">Tăng trưởng</th>
               </tr>
             </thead>
             <tbody>
@@ -307,22 +307,22 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
                 :key="row.kyThongKe"
                 class="rounded-[20px] bg-slate-50 text-sm text-slate-700 hover:bg-slate-100/70 transition-colors"
               >
-                <td class="rounded-l-[20px] px-4 py-4 font-semibold text-slate-800">
+                <td class="rounded-l-[20px] px-4 py-4 font-semibold text-slate-800 text-center">
                   {{ row.kyThongKe }}
                 </td>
-                <td class="px-4 py-4 text-right font-semibold text-slate-700">
+                <td class="px-4 py-4 text-center font-semibold text-slate-700">
                   {{ formatCurrency(row.doanhThu) }}
                 </td>
-                <td class="px-4 py-4 text-right font-semibold text-emerald-600">
+                <td class="px-4 py-4 text-center font-semibold text-emerald-600">
                   {{ formatCurrency(row.doanhThuThucTe) }}
                 </td>
-                <td class="px-4 py-4 text-right font-semibold text-slate-800">
+                <td class="px-4 py-4 text-center font-semibold text-slate-800">
                   {{ formatNumber(row.soDon) }}
                 </td>
-                <td class="px-4 py-4 text-right font-semibold text-slate-700">
+                <td class="px-4 py-4 text-center font-semibold text-slate-700">
                   {{ formatCurrency(row.giaTriTrungBinh) }}
                 </td>
-                <td class="rounded-r-[20px] px-4 py-4 text-right font-semibold">
+                <td class="rounded-r-[20px] px-4 py-4 text-center font-semibold">
                   <span
                     :class="[
                       'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold',
