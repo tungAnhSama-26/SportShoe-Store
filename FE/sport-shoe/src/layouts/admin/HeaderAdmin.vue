@@ -16,45 +16,144 @@ const hienMenuTaiKhoan = ref(false);
 
 const pageTitle = computed(() => {
   const titles = {
-    'admin-tra-hang': 'Quản lý trả hàng',
+    'admin-tra-hang': 'Trả hàng',
     'admin-tra-hang-chi-tiet': 'Chi tiết trả hàng',
     'admin-thong-ke': 'Thống kê',
-    'admin-phieu-giam-gia': 'Quản lý phiếu giảm giá',
+    'admin-phieu-giam-gia': 'Phiếu giảm giá',
     'admin-phieu-giam-gia-khach-hang': 'Phiếu giảm giá khách hàng',
     'admin-phieu-giam-gia-them': 'Thêm phiếu giảm giá',
-    'admin-phieu-giam-gia-chi-tiet': 'Cập nhật phiếu giảm giá',
-    'admin-hoa-don': 'Quản lý hóa đơn',
-    'admin-hoa-don-chi-tiet': 'Chi tiết hóa đơn',
+    'admin-phieu-giam-gia-chi-tiet': 'Chi tiết phiếu giảm giá',
+    'admin-hoa-don': 'Hóa đơn',
+    'admin-hoa-don-chi-tiet': 'Chi tiết đơn hàng',
     'admin-ban-hang': 'Bán hàng tại quầy',
-    'admin-san-pham': 'Quản lý sản phẩm',
+    'admin-san-pham': 'Sản phẩm',
     'admin-san-pham-them': 'Thêm sản phẩm',
-    'admin-chi-tiet-san-pham': 'Cập nhật sản phẩm',
+    'admin-chi-tiet-san-pham': 'Chi tiết sản phẩm',
     'admin-chi-tiet-san-pham-new': 'Chi tiết sản phẩm',
-    'admin-bien-the-san-pham': 'Quản lý biến thể sản phẩm',
+    'admin-bien-the-san-pham': 'Biến thể sản phẩm',
     'admin-bien-the-san-pham-them': 'Thêm biến thể sản phẩm',
-    'admin-loai-giay': 'Quản lý loại giày',
-    'admin-co-giay': 'Quản lý cổ giày',
-    'admin-de-giay': 'Quản lý đế giày',
-    'admin-chat-lieu-giay': 'Quản lý chất liệu giày',
-    'admin-thuong-hieu': 'Quản lý thương hiệu',
-    'admin-cong-nghe-dem': 'Quản lý công nghệ đệm',
-    'admin-mau-sac': 'Quản lý màu sắc',
-    'admin-kich-co': 'Quản lý kích cỡ',
-    'admin-trong-luong': 'Quản lý trọng lượng',
-    'admin-dot-giam-gia': 'Quản lý đợt giảm giá',
+    'admin-loai-giay': 'Loại giày',
+    'admin-co-giay': 'Cổ giày',
+    'admin-de-giay': 'Đế giày',
+    'admin-chat-lieu-giay': 'Chất liệu giày',
+    'admin-thuong-hieu': 'Thương hiệu',
+    'admin-cong-nghe-dem': 'Công nghệ đệm',
+    'admin-mau-sac': 'Màu sắc',
+    'admin-kich-co': 'Kích cỡ',
+    'admin-trong-luong': 'Trọng lượng',
+    'admin-dot-giam-gia': 'Đợt giảm giá',
     'admin-dot-giam-gia-them': 'Thêm đợt giảm giá',
     'admin-dot-giam-gia-chi-tiet': 'Chi tiết đợt giảm giá',
-    'admin-nhan-vien': 'Quản lý nhân viên',
+    'admin-nhan-vien': 'Nhân viên',
     'admin-nhan-vien-them': 'Thêm nhân viên',
     'admin-nhan-vien-lich-lam': 'Lịch làm việc',
-    'admin-nhan-vien-chi-tiet': 'Cập nhật nhân viên',
+    'admin-nhan-vien-chi-tiet': 'Chi tiết nhân viên',
+    'admin-lich-lam-viec': 'Lịch làm việc',
+    'admin-cham-cong': 'Chấm công',
     'admin-profile': 'Hồ sơ cá nhân',
     'nhanvien-profile': 'Hồ sơ cá nhân',
-    'admin-khach-hang': 'Quản lý khách hàng',
+    'admin-khach-hang': 'Khách hàng',
     'admin-khach-hang-them': 'Thêm khách hàng',
-    'admin-khach-hang-chi-tiet': 'Cập nhật khách hàng'
+    'admin-khach-hang-chi-tiet': 'Chi tiết khách hàng'
   };
   return titles[route.name] || 'Hệ thống Quản trị';
+});
+
+const subRouteBreadcrumbs = {
+  'admin-tra-hang-chi-tiet': {
+    parentPath: '/admin/tra-hang',
+    parentTitle: 'Trả hàng',
+    childTitle: 'Chi tiết trả hàng'
+  },
+  'admin-phieu-giam-gia-them': {
+    parentPath: '/admin/phieu-giam-gia',
+    parentTitle: 'Phiếu giảm giá',
+    childTitle: 'Thêm phiếu giảm giá'
+  },
+  'admin-phieu-giam-gia-chi-tiet': {
+    parentPath: '/admin/phieu-giam-gia',
+    parentTitle: 'Phiếu giảm giá',
+    childTitle: 'Chi tiết phiếu giảm giá'
+  },
+  'admin-phieu-giam-gia-khach-hang-them': {
+    parentPath: '/admin/phieu-giam-gia-khach-hang',
+    parentTitle: 'Phiếu giảm giá khách hàng',
+    childTitle: 'Thêm phiếu giảm giá'
+  },
+  'admin-phieu-giam-gia-khach-hang-chi-tiet': {
+    parentPath: '/admin/phieu-giam-gia-khach-hang',
+    parentTitle: 'Phiếu giảm giá khách hàng',
+    childTitle: 'Chi tiết phiếu giảm giá'
+  },
+  'admin-hoa-don-chi-tiet': {
+    parentPath: '/admin/hoa-don',
+    parentTitle: 'Hóa đơn',
+    childTitle: 'Chi tiết đơn hàng'
+  },
+  'admin-san-pham-them': {
+    parentPath: '/admin/san-pham',
+    parentTitle: 'Sản phẩm',
+    childTitle: 'Thêm sản phẩm'
+  },
+  'admin-chi-tiet-san-pham': {
+    parentPath: '/admin/san-pham',
+    parentTitle: 'Sản phẩm',
+    childTitle: 'Chi tiết sản phẩm'
+  },
+  'admin-chi-tiet-san-pham-new': {
+    parentPath: '/admin/san-pham',
+    parentTitle: 'Sản phẩm',
+    childTitle: 'Chi tiết sản phẩm'
+  },
+  'admin-bien-the-san-pham-them': {
+    parentPath: '/admin/bien-the-san-pham',
+    parentTitle: 'Biến thể sản phẩm',
+    childTitle: 'Thêm biến thể sản phẩm'
+  },
+  'admin-dot-giam-gia-them': {
+    parentPath: '/admin/dot-giam-gia',
+    parentTitle: 'Đợt giảm giá',
+    childTitle: 'Thêm đợt giảm giá'
+  },
+  'admin-dot-giam-gia-chi-tiet': {
+    parentPath: '/admin/dot-giam-gia',
+    parentTitle: 'Đợt giảm giá',
+    childTitle: 'Chi tiết đợt giảm giá'
+  },
+  'admin-nhan-vien-them': {
+    parentPath: '/admin/nhan-vien',
+    parentTitle: 'Nhân viên',
+    childTitle: 'Thêm nhân viên'
+  },
+  'admin-nhan-vien-chi-tiet': {
+    parentPath: '/admin/nhan-vien',
+    parentTitle: 'Nhân viên',
+    childTitle: 'Chi tiết nhân viên'
+  },
+  'admin-nhan-vien-lich-lam-chi-tiet': {
+    parentPath: '/admin/nhan-vien',
+    parentTitle: 'Nhân viên',
+    childTitle: 'Lịch làm việc'
+  },
+  'admin-khach-hang-them': {
+    parentPath: '/admin/khach-hang',
+    parentTitle: 'Khách hàng',
+    childTitle: 'Thêm khách hàng'
+  },
+  'admin-khach-hang-chi-tiet': {
+    parentPath: '/admin/khach-hang',
+    parentTitle: 'Khách hàng',
+    childTitle: 'Chi tiết khách hàng'
+  },
+  'admin-khach-hang-don-hang': {
+    parentPath: '/admin/khach-hang',
+    parentTitle: 'Khách hàng',
+    childTitle: 'Lịch sử mua hàng'
+  }
+};
+
+const currentSubRoute = computed(() => {
+  return subRouteBreadcrumbs[route.name] || null;
 });
 
 const profileName = computed(() => {
@@ -98,8 +197,22 @@ function dangXuat() {
         >
           <Menu class="h-5 w-5" />
         </button>
-        <h1 class="hidden md:block text-[28px] whitespace-nowrap font-bold text-slate-800 dark:text-slate-100">
-          {{ pageTitle }}
+        <h1
+          class="hidden md:block whitespace-nowrap font-bold text-slate-800 dark:text-slate-100"
+          :class="currentSubRoute ? 'text-[20px]' : 'text-[28px]'"
+        >
+          <template v-if="currentSubRoute">
+            <router-link
+              :to="currentSubRoute.parentPath"
+              class="text-slate-400 hover:text-[#B82220] transition dark:text-slate-500 dark:hover:text-red-400"
+              >{{ currentSubRoute.parentTitle }}</router-link
+            >
+            <span class="mx-2 text-slate-300 dark:text-slate-600">/</span>
+            <span>{{ currentSubRoute.childTitle }}</span>
+          </template>
+          <template v-else>
+            {{ pageTitle }}
+          </template>
         </h1>
       </div>
 

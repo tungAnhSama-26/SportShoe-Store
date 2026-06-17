@@ -157,8 +157,9 @@ const coPhieuGiamGia = computed(() => {
   return hoaDonGoc.value && hoaDonGoc.value.voucher && Number(hoaDonGoc.value.giamGia || 0) > 0;
 });
 
-async function taiChiTiet() {
-  dangTai.value = true;
+async function taiChiTiet(amThang = false) {
+  const silent = amThang === true;
+  if (!silent) dangTai.value = true;
   loiTrang.value = "";
   try {
     phieu.value = await layChiTietTraHang(route.params.id);
@@ -170,9 +171,11 @@ async function taiChiTiet() {
       }
     }
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải phiếu trả hàng");
+    if (!silent) {
+      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải phiếu trả hàng");
+    }
   } finally {
-    dangTai.value = false;
+    if (!silent) dangTai.value = false;
   }
 }
 
@@ -399,7 +402,7 @@ onMounted(() => {
       if (event?.loaiSuKien !== "TRA_HANG") return;
       if (Number(event?.hoaDonId) !== Number(phieu.value?.hoaDonId)) return;
       if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
-      realtimeRefreshTimeout = window.setTimeout(taiChiTiet, 150);
+      realtimeRefreshTimeout = window.setTimeout(() => taiChiTiet(true), 150);
     },
   });
 });
@@ -412,10 +415,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="invoice-flat space-y-4 pb-10">
-    <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+    <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start border-b border-slate-100 pb-4">
       <div>
-        <h1 class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]">Chi Tiết Phiếu Trả Hàng</h1>
-        <div v-if="phieu" class="mt-2 space-y-1 text-[13px] text-slate-500">
+        <div v-if="phieu" class="space-y-1 text-[13px] text-slate-500">
           <p>
             Mã Phiếu: <span class="font-semibold text-slate-700">{{ phieu.ma }}</span>
             <span class="mx-2 text-slate-300">|</span>

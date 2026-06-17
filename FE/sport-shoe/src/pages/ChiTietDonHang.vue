@@ -93,7 +93,7 @@ let realtimeRefreshTimeout = null;
 
 function lenLichTaiLaiChiTiet() {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
-  realtimeRefreshTimeout = setTimeout(taiChiTiet, 150);
+  realtimeRefreshTimeout = setTimeout(() => taiChiTiet(true), 150);
 }
 
 function dongBoKhiQuayLaiTrang() {
@@ -127,18 +127,20 @@ onBeforeUnmount(() => {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
 });
 
-watch(() => route.params.id, taiChiTiet);
+watch(() => route.params.id, () => taiChiTiet());
 
-async function taiChiTiet() {
-  dangTai.value = true;
+async function taiChiTiet(amThang = false) {
+  if (!amThang) dangTai.value = true;
   loi.value = '';
   try {
     don.value = await layChiTietDonHang(route.params.id);
   } catch {
-    don.value = null;
-    loi.value = 'Không tải được đơn hàng này.';
+    if (!amThang) {
+      don.value = null;
+      loi.value = 'Không tải được đơn hàng này.';
+    }
   } finally {
-    dangTai.value = false;
+    if (!amThang) dangTai.value = false;
   }
 }
 
@@ -447,7 +449,7 @@ async function guiYeuCauHuy() {
   dangXuLy.value = true;
   try {
     await yeuCauHuyDonHang(route.params.id);
-    await taiChiTiet();
+    await taiChiTiet(true);
     showSuccess(daThanhToanCK
       ? 'Đơn hàng đã được hủy. Cửa hàng sẽ hoàn tiền cho bạn.'
       : 'Đơn hàng đã được hủy.');
@@ -462,7 +464,7 @@ async function xacNhanNhan() {
   dangXuLy.value = true;
   try {
     await xacNhanDaNhanHang(route.params.id);
-    await taiChiTiet();
+    await taiChiTiet(true);
     showSuccess('Đã xác nhận nhận hàng. Bạn có thể đánh giá sản phẩm.');
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể xác nhận nhận hàng'));
@@ -472,7 +474,7 @@ async function xacNhanNhan() {
 }
 
 function diDanhGia() {
-  router.push(`/don-hang/${route.params.id}/danh-gia`);
+  router.push(`/khachhang/don-hang/${route.params.id}/danh-gia`);
 }
 
 function xuLyAnhLoi(event) {
@@ -483,7 +485,7 @@ function xuLyAnhLoi(event) {
 <template>
   <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-4xl px-6 lg:px-10 pt-8">
-      <button @click="router.push('/don-hang')" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
+      <button @click="router.push('/khachhang/don-hang')" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
         Đơn hàng của bạn
       </button>

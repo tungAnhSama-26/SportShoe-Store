@@ -113,7 +113,9 @@ public class ClientVnPayService {
                 request.tinhThanh(),
                 request.quanHuyen(),
                 request.phuongXa(),
-                request.diaChiCuThe()
+                request.diaChiCuThe(),
+                request.toDistrictId(),
+                request.toWardCode()
         )).phiVanChuyen();
         if (phiShip != null && phiShip.signum() > 0) {
             tong = tong.add(phiShip);

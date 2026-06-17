@@ -81,7 +81,7 @@ function thanhTien(item) {
 
       <div v-else-if="!gio.items.length" class="py-24 text-center">
         <p class="text-sm text-slate-500 mb-4">Giỏ hàng của bạn đang trống.</p>
-        <router-link to="/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Tiếp tục mua sắm</router-link>
+        <router-link to="/khachhang/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Tiếp tục mua sắm</router-link>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
@@ -92,14 +92,14 @@ function thanhTien(item) {
             :key="item.id"
             class="flex gap-4 rounded-2xl bg-white border border-slate-100 p-4 shadow-sm"
           >
-            <router-link :to="`/san-pham/${item.giayId}`" class="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-50">
+            <router-link :to="`/khachhang/san-pham/${item.giayId}`" class="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-50">
               <img :src="item.hinhAnh || anhMacDinh" :alt="item.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
             </router-link>
 
             <div class="flex flex-1 flex-col">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <router-link :to="`/san-pham/${item.giayId}`" class="text-sm font-bold text-slate-900 hover:text-primary line-clamp-2">{{ item.tenSanPham }}</router-link>
+                  <router-link :to="`/khachhang/san-pham/${item.giayId}`" class="text-sm font-bold text-slate-900 hover:text-primary line-clamp-2">{{ item.tenSanPham }}</router-link>
                   <p class="mt-1 text-xs text-slate-400">Màu: {{ item.mauSac }} · Size: {{ item.kichCo }}</p>
                   <p v-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm đã hết hàng</p>
                   <p v-else-if="item.soLuong > item.tonKho" class="mt-1 text-xs font-semibold text-amber-600">⚠ Chỉ còn {{ item.tonKho }} sản phẩm</p>
@@ -133,12 +133,12 @@ function thanhTien(item) {
             <span class="text-xl font-bold text-primary">{{ dinhDangTienViet(gio.tongTien) }}</span>
           </div>
           <button
-            @click="router.push('/thanh-toan')"
+            @click="router.push('/khachhang/thanh-toan')"
             class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5"
           >
             Tiến hành thanh toán
           </button>
-          <router-link to="/san-pham" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Tiếp tục mua sắm</router-link>
+          <router-link to="/khachhang/san-pham" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Tiếp tục mua sắm</router-link>
         </aside>
       </div>
     </div>

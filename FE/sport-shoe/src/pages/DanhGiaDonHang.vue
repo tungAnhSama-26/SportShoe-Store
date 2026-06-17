@@ -60,7 +60,7 @@ function xuLyAnhLoi(event) {
 <template>
   <main class="bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-3xl px-6 lg:px-10 pt-8">
-      <button @click="router.push(`/don-hang/${route.params.id}`)" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
+      <button @click="router.push(`/khachhang/don-hang/${route.params.id}`)" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
         Quay lại đơn hàng
       </button>
@@ -76,11 +76,11 @@ function xuLyAnhLoi(event) {
           <div v-for="sp in don.sanPhams" :key="sp.hoaDonChiTietId" class="rounded-3xl bg-white border border-slate-100 p-6 shadow-sm">
             <!-- Thông tin sản phẩm -->
             <div class="flex gap-4">
-              <router-link :to="`/san-pham/${sp.giayId}`" class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-50">
+              <router-link :to="`/khachhang/san-pham/${sp.giayId}`" class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-50">
                 <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
               </router-link>
               <div class="flex-1">
-                <router-link :to="`/san-pham/${sp.giayId}`" class="font-semibold text-slate-800 hover:text-primary">{{ sp.tenSanPham }}</router-link>
+                <router-link :to="`/khachhang/san-pham/${sp.giayId}`" class="font-semibold text-slate-800 hover:text-primary">{{ sp.tenSanPham }}</router-link>
                 <p class="mt-1 text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }} · x{{ sp.soLuong }}</p>
                 <p class="mt-1 text-sm font-semibold text-primary">{{ dinhDangTienViet(sp.giaDonVi) }}</p>
               </div>

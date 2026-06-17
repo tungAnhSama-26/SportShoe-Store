@@ -33,6 +33,7 @@ build/
 .vscode/
 
 ### Local Config ###
+.env
 src/main/resources/application-local.properties
 
 ### Skills ###
