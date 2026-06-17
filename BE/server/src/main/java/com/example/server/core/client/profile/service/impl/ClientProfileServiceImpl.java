@@ -79,6 +79,9 @@ public class ClientProfileServiceImpl implements ClientProfileService {
         khachHang.setSdt(request.sdt() != null ? request.sdt().trim() : null);
         khachHang.setGioiTinh(request.gioiTinh());
         khachHang.setNgaySinh(request.ngaySinh());
+        if (request.hinhAnh() != null) {
+            khachHang.setHinhAnh(request.hinhAnh().trim());
+        }
         khachHang.setNgayCapNhat(Instant.now());
 
         return toResponse(khachHangRepository.save(khachHang));
