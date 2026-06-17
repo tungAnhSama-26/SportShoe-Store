@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { layDanhSachNhanVien } from "../../../services/nhan-vien";
+import { layDanhSachNhanVien } from "../../../services/nhan-vien.js";
 import {
   layLichLamViec,
   phanCa,
   xepCaTuDong,
-} from "../../../services/lich-lam";
-import { getDisplayErrorMessage } from "../../../utils/error-message";
-import { showSuccess, showError, showConfirm } from "../../../utils/alert";
+} from "../../../services/lich-lam.js";
+import { getDisplayErrorMessage } from "../../../utils/error-message.js";
+import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 import {
@@ -57,21 +57,21 @@ const CA_LIST: {
     {
       key: "sang",
       label: "Ca Sáng",
-      time: "06:00 – 14:00",
+      time: "08:00 – 12:00",
       color: "bg-amber-50 border-amber-200 text-amber-700",
       ring: "ring-amber-300",
     },
     {
       key: "chieu",
       label: "Ca Chiều",
-      time: "14:00 – 22:00",
+      time: "13:00 – 17:00",
       color: "bg-sky-50 border-sky-200 text-sky-700",
       ring: "ring-sky-300",
     },
     {
       key: "toi",
       label: "Ca Tối",
-      time: "22:00 – 06:00",
+      time: "18:00 – 22:00",
       color: "bg-violet-50 border-violet-200 text-violet-700",
       ring: "ring-violet-300",
     },
@@ -363,66 +363,35 @@ onMounted(async () => {
       <div
         class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm">
         <CalendarDays class="h-4 w-4 text-slate-400" />
-        {{ formatTuanHienThi() }}
+        {{ tieuDeNgay }}
       </div>
 
-      <button @click="xepCaDong" class="admin-btn-soft gap-2">
-        <Shuffle class="h-4 w-4" /> Xếp ca tự động
+      <button @click="xepTuDong" class="admin-btn-soft gap-2">
+        <Sparkles class="h-4 w-4" /> Xếp ca tự động
       </button>
-      <button @click="xuatExcel" class="admin-btn-soft gap-2">
-        <Download class="h-4 w-4" /> Xuất Excel
-      </button>
-      <button @click="moModalThemCa(null, -1)" class="admin-btn-primary gap-2">
-        <Plus class="h-4 w-4" /> Thêm ca mới
+      <button @click="moModal(toanBoNgay[0], 'sang')" class="admin-btn-primary gap-2">
+        <UserPlus class="h-4 w-4" /> Thêm ca mới
       </button>
     </section>
 
-    <!-- Alert when viewing a specific employee's schedule -->
-    <div v-if="employeeIdFilter"
-      class="flex items-center justify-between rounded-2xl bg-violet-50 p-4 text-sm font-semibold text-violet-700">
-      <div class="flex items-center gap-2">
-        <CalendarDays class="h-5 w-5 text-violet-500" />
-        <span>Đang hiển thị lịch làm việc của nhân viên:
-          <span class="font-bold text-violet-900">{{
-            danhSachLocVaiTro[0]?.ten || "Đang tải..."
-          }}</span></span>
-      </div>
-      <button @click="router.push({ name: 'admin-nhan-vien-lich-lam' })"
-        class="text-xs bg-white hover:bg-violet-100 text-violet-700 px-3 py-1.5 rounded-xl border border-violet-200 transition shadow-sm">
-        Xem tất cả nhân viên
-      </button>
-    </div>
-
-    <!-- ───── CONTENT ───── -->
-    <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_320px]">
-      <!-- ── Bảng lịch ── -->
+    <!-- <div class="grid gap-5">
+     
       <section class="schedule-board rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-        <!-- Thanh điều hướng tuần -->
+  
         <div class="mb-5 flex flex-wrap items-center gap-3">
           <h2 class="flex-1 text-base font-bold text-slate-800">
             Bảng lịch làm việc theo tuần
           </h2>
 
-          <!-- Lọc vai trò -->
-          <div class="flex items-center gap-2 text-sm text-slate-500">
-            <span class="font-medium">Vai trò:</span>
-            <select v-model="boLocVaiTro"
-              class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition">
-              <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">
-                {{ vt.label }}
-              </option>
-            </select>
-          </div>
-
-          <button @click="tuanTruoc"
+          <button @click="() => tuanOffset--"
             class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
             <ChevronLeft class="h-4 w-4" />
           </button>
-          <button @click="homNay"
+          <button @click="() => tuanOffset = 0"
             class="rounded-xl bg-primary px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm">
             Hôm nay
           </button>
-          <button @click="tuanSau"
+          <button @click="() => tuanOffset++"
             class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
             <ChevronRight class="h-4 w-4" />
           </button>
@@ -432,215 +401,11 @@ onMounted(async () => {
           {{ loiTrang }}
         </div>
 
-        <!-- Bảng lịch -->
-        <div class="schedule-table-scroll overflow-x-auto">
-          <table class="schedule-table w-full table-fixed border-separate border-spacing-0 text-sm">
-            <colgroup>
-              <col style="width: 210px" />
-              <col v-for="_ in 7" :key="_" style="width: 124px" />
-              <col style="width: 86px" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th class="rounded-tl-2xl bg-slate-100 px-3 py-3 text-left text-xs font-bold text-slate-500">
-                  Nhân viên
-                </th>
-                <th v-for="(ngay, i) in cacNgayTrongTuan" :key="i"
-                  class="bg-slate-100 px-2 py-3 text-center text-xs font-bold text-slate-700 transition" :class="{
-                    'bg-primary-light text-primary':
-                      ngay.toDateString() === new Date().toDateString(),
-                  }">
-                  <div>{{ NHAN_TUAN[i] }}</div>
-                  <div class="font-normal text-slate-400">
-                    {{ formatNgay(ngay) }}
-                  </div>
-                </th>
-                <th class="rounded-tr-2xl bg-slate-100 px-2 py-3 text-center text-xs font-bold text-slate-500">
-                  Tổng<br />giờ
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="dangTai">
-                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
-                  Đang tải dữ liệu nhân viên...
-                </td>
-              </tr>
-              <tr v-else-if="!danhSachPhanTrang.length">
-                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
-                  Không có nhân viên.
-                </td>
-              </tr>
-              <tr v-for="nv in danhSachPhanTrang" :key="nv.id" class="group">
-                <!-- Nhân viên -->
-                <td class="border-b border-slate-100 px-3 py-3">
-                  <div class="flex items-center gap-2.5">
-                    <div :class="[
-                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white',
-                      nv.mauNen,
-                    ]">
-                      {{ nv.vieTat }}
-                    </div>
-                    <div class="min-w-0">
-                      <div class="truncate text-sm font-semibold text-slate-800">
-                        {{ nv.ten }}
-                      </div>
-                      <div class="truncate text-xs text-slate-400">
-                        {{ nv.chucVu }}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                <!-- Ô từng ngày -->
-                <td v-for="(ngayIdx, i) in 7" :key="i" class="border-b border-slate-100 px-1.5 py-2 text-center">
-                  <!-- Có ca -->
-                  <button v-if="nv.lich[i]" @click="moModalThemCa(nv, i)" :class="[
-                    'w-full min-w-[56px] rounded-xl border px-1.5 py-1.5 text-left text-xs font-semibold transition hover:opacity-80',
-                    layThongTinCa(nv.lich[i])?.muaNhat,
-                  ]">
-                    <div class="font-bold">
-                      {{ layThongTinCa(nv.lich[i])?.nhan }}
-                    </div>
-                    <div class="mt-0.5 whitespace-nowrap font-normal opacity-80">
-                      {{ layThongTinCa(nv.lich[i])?.gio }}
-                    </div>
-                  </button>
-
-                  <!-- Chưa có ca -->
-                  <button v-else @click="moModalThemCa(nv, i)"
-                    class="h-14 w-full rounded-xl border-2 border-dashed border-slate-200 text-slate-300 opacity-0 transition hover:border-slate-300 hover:opacity-100 group-hover:opacity-60"
-                    title="Thêm ca">
-                    <Plus class="mx-auto h-4 w-4" />
-                  </button>
-                </td>
-
-                <!-- Tổng giờ -->
-                <td class="border-b border-slate-100 px-2 py-3 text-center">
-                  <span class="text-sm font-bold text-slate-700">{{ nv.tongGio }}h</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Phân trang -->
-        <AdminTableFooter :current-page="trangHienTai" :page-size="soTrang" :page-size-options="[5, 10, 20, 50]"
-          :total-items="tongNV" :total-pages="tongSoTrang" compact show-refresh @refresh="taiNhanVien"
-          @update:current-page="trangHienTai = $event" @update:page-size="soTrang = $event" />
+        
       </section>
-
-      <!-- ── Sidebar ── -->
-      <aside class="space-y-4">
-        <!-- Overtime tracker -->
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-slate-800">Theo dõi tăng ca</h3>
-            <button class="text-slate-400 hover:text-slate-600">
-              <MoreHorizontal class="h-4 w-4" />
-            </button>
-          </div>
-
-          <div class="space-y-4">
-            <div v-for="nv in danhSachNV" :key="nv.id" class="space-y-1.5">
-              <div class="flex items-center justify-between text-sm">
-                <span class="font-semibold text-slate-700">{{ nv.ten }}</span>
-                <span :class="[
-                  'text-xs font-bold',
-                  nv.overtime >= nv.gioiHanOT * 0.9
-                    ? 'text-rose-500'
-                    : nv.overtime === 0
-                      ? 'text-slate-400'
-                      : 'text-emerald-600',
-                ]">
-                  {{ nv.overtime }}h / {{ nv.gioiHanOT }}h
-                </span>
-              </div>
-              <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                <div :class="[
-                  'h-full rounded-full transition-all duration-500',
-                  mauOvertimeBar(nv),
-                ]" :style="{ width: phanTramOT(nv) + '%' }" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Cảnh báo -->
-          <div v-if="danhSachNV.some((nv) => nv.overtime >= nv.gioiHanOT * 0.9)"
-            class="mt-4 rounded-xl bg-rose-50 px-3 py-2.5 text-xs text-rose-700">
-            <span class="font-bold">Lưu ý:</span>
-            {{
-              danhSachNV
-                .filter((nv) => nv.overtime >= nv.gioiHanOT * 0.9)
-                .map((nv) => nv.ten)
-                .join(", ")
-            }}
-            sắp vượt giới hạn tăng ca hàng tuần. Vui lòng xem xét lại lịch trực
-            chủ nhật.
-          </div>
-        </div>
-
-        <!-- Thống kê nhanh -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-[20px] bg-emerald-50 p-4 text-center">
-            <div
-              class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-              <Users class="h-5 w-5" />
-            </div>
-            <p class="text-xs font-semibold text-emerald-600">Nhân viên trực</p>
-            <p class="mt-1 text-2xl font-bold text-emerald-700">
-              {{ nvTruc }} / {{ tongNV }}
-            </p>
-          </div>
-          <div class="rounded-[20px] bg-primary-light p-4 text-center">
-            <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <CalendarDays class="h-5 w-5" />
-            </div>
-            <p class="text-xs font-semibold text-primary">
-              Nhân viên chưa phân công
-            </p>
-            <p class="mt-1 text-2xl font-bold text-primary">
-              {{ String(caUnassigned).padStart(2, "0") }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Phân loại ca -->
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 class="mb-3 text-sm font-bold text-slate-800">Phân loại ca</h3>
-          <div class="space-y-2.5">
-            <div v-for="ca in DS_CA" :key="ca.id" class="flex items-center gap-3 text-sm">
-              <div :class="['h-3.5 w-3.5 rounded-sm', ca.mau]" />
-              <span class="font-semibold text-slate-700">{{ ca.nhan }}</span>
-              <span class="text-slate-400">({{ ca.gio }})</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </div>
+    </div> -->
 
     <!-- ───── MODAL THÊM / SỬA CA ───── -->
-    <Teleport to="body">
-      <div v-if="showModalThemCa"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-        @click.self="showModalThemCa = false">
-        <div class="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl mx-4">
-          <h3 class="mb-1 text-base font-bold text-slate-800">
-            {{
-              modalNV
-                ? modalNV.lich[modalNgayIndex]
-                  ? "Sửa ca làm việc"
-                  : "Thêm ca làm việc"
-                : "Thêm ca mới"
-            }}
-          </h3>
-          <p v-if="modalNV" class="mb-5 text-sm text-slate-400">
-            {{ modalNV.ten }} – {{ NHAN_TUAN[modalNgayIndex] }}
-            {{ formatNgay(cacNgayTrongTuan[modalNgayIndex]) }}
-          </p>
-        </div>
-      </div>
-    </Teleport>
     <!-- ── Header ── -->
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -713,7 +478,7 @@ onMounted(async () => {
     <!-- ── Lưới lịch 7 cột (T2–CN) ── -->
     <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
       <div v-for="(ngay, dayIdx) in toanBoNgay" :key="dayIdx"
-        class="rounded-3xl border bg-white p-3 shadow-sm transition" :class="isToday(ngay)
+        class="rounded-2xl border bg-white p-2 shadow-sm transition" :class="isToday(ngay)
             ? 'border-violet-300 ring-2 ring-violet-100'
             : 'border-slate-100'
           ">
