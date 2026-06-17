@@ -222,7 +222,7 @@ async function muaNgay() {
       tonKho: b.soLuong,
     });
     gioHangStore.datSoLuong(gio.tongSoLuong);
-    router.push('/gio-hang');
+    router.push('/khachhang/gio-hang');
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể mua hàng'));
   }
