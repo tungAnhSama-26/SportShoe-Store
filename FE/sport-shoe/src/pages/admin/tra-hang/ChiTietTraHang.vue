@@ -157,8 +157,9 @@ const coPhieuGiamGia = computed(() => {
   return hoaDonGoc.value && hoaDonGoc.value.voucher && Number(hoaDonGoc.value.giamGia || 0) > 0;
 });
 
-async function taiChiTiet() {
-  dangTai.value = true;
+async function taiChiTiet(amThang = false) {
+  const silent = amThang === true;
+  if (!silent) dangTai.value = true;
   loiTrang.value = "";
   try {
     phieu.value = await layChiTietTraHang(route.params.id);
@@ -170,9 +171,11 @@ async function taiChiTiet() {
       }
     }
   } catch (error) {
-    loiTrang.value = getDisplayErrorMessage(error, "Không thể tải phiếu trả hàng");
+    if (!silent) {
+      loiTrang.value = getDisplayErrorMessage(error, "Không thể tải phiếu trả hàng");
+    }
   } finally {
-    dangTai.value = false;
+    if (!silent) dangTai.value = false;
   }
 }
 
@@ -399,7 +402,7 @@ onMounted(() => {
       if (event?.loaiSuKien !== "TRA_HANG") return;
       if (Number(event?.hoaDonId) !== Number(phieu.value?.hoaDonId)) return;
       if (realtimeRefreshTimeout) window.clearTimeout(realtimeRefreshTimeout);
-      realtimeRefreshTimeout = window.setTimeout(taiChiTiet, 150);
+      realtimeRefreshTimeout = window.setTimeout(() => taiChiTiet(true), 150);
     },
   });
 });
