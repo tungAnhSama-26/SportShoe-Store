@@ -152,6 +152,7 @@ const {
   handleXacNhanThanhToanCod,
   moModalHoanTien,
   handleXacNhanHoanTien,
+  handleHuyDonTuModal,
 } = useChiTietHoaDon();
 
 const productImageFallback =
@@ -1552,6 +1553,7 @@ function handleProductImageError(event) {
 
     <div
       v-if="hienModalThongTin"
+      v-show="!hienModalGiaoHang"
       class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
     >
       <div
@@ -1733,19 +1735,30 @@ function handleProductImageError(event) {
         </div>
 
         <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-          <Button
+          <button
+            v-if="hoaDon && (hoaDon.trangThai || '').toLowerCase().trim() === 'chờ xác nhận'"
+            @click="handleHuyDonTuModal"
+            :disabled="dangCapNhat"
+            type="button"
+            class="inline-flex items-center justify-center h-11 px-5 text-sm font-semibold text-white bg-red-600 rounded-[6px] mr-auto disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Hủy đơn hàng
+          </button>
+          <button
             @click="hienModalThongTin = false"
-            class="bg-slate-500 hover:bg-slate-600 text-white border-transparent rounded-full"
+            type="button"
+            class="inline-flex items-center justify-center h-11 px-5 text-sm font-semibold text-white bg-slate-500 rounded-[6px] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Hủy
-          </Button>
-          <Button
+          </button>
+          <button
             @click="handleLuuThongTin"
             :disabled="dangCapNhat || donDaHoanThanh"
-            class="bg-[#B82220] hover:bg-[#9f1d1b] text-white border-transparent rounded-full"
+            type="button"
+            class="inline-flex items-center justify-center h-11 px-5 text-sm font-semibold text-white bg-[#B82220] rounded-[6px] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ dangCapNhat ? "Đang Lưu..." : "Lưu" }}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
