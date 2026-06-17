@@ -374,13 +374,13 @@ onUnmounted(() => {
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
             Đặt lại bộ lọc
           </Button>
-          <Button
+          <!-- <Button
             variant="soft"
             @click="router.push({ name: 'admin-nhan-vien-lich-lam' })"
           >
             <template #prefix><CalendarDays class="h-4 w-4" /></template>
             Lịch làm việc
-          </Button>
+          </Button> -->
           <Button variant="soft" @click="xuatExcel">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
             Xuất Excel
@@ -415,26 +415,26 @@ onUnmounted(() => {
       <div class="admin-table-scroll">
         <Table>
           <template #header>
-            <th class="px-3 py-3 whitespace-nowrap">STT</th>
-            <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
-            <th class="px-3 py-3 whitespace-nowrap">Mã NV</th>
-            <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
-            <th class="px-3 py-3 whitespace-nowrap">Email</th>
-            <th class="px-3 py-3 whitespace-nowrap">Giới tính</th>
-            <th class="px-3 py-3 whitespace-nowrap">Số điện thoại</th>
-            <th class="px-3 py-3 whitespace-nowrap">Địa chỉ</th>
-            <th class="px-3 py-3 whitespace-nowrap">Vai trò</th>
-            <th class="px-3 py-3 whitespace-nowrap">Trạng thái</th>
-            <th class="px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">STT</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Ảnh</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Mã NV</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Họ tên</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Email</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Giới tính</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">SĐT</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Địa chỉ</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Vai trò</th>
+            <th class="px-2 py-2 whitespace-nowrap text-xs">Trạng thái</th>
+            <th class="px-2 py-2 text-center whitespace-nowrap text-xs">Hành động</th>
           </template>
           <template #body>
             <tr v-if="dangTai">
-              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="11" class="py-8 text-center text-xs text-slate-400">
                 Đang tải dữ liệu nhân viên...
               </td>
             </tr>
             <tr v-else-if="!danhSachPhanTrang.length">
-              <td colspan="11" class="py-10 text-center text-sm text-slate-400">
+              <td colspan="11" class="py-8 text-center text-xs text-slate-400">
                 Không có nhân viên phù hợp.
               </td>
             </tr>
@@ -443,10 +443,10 @@ onUnmounted(() => {
               :key="nv.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-3 py-3 font-semibold">
+              <td class="rounded-l-2xl px-2 py-2 font-semibold text-xs">
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
-              <td class="px-3 py-3">
+              <td class="px-2 py-2">
                 <img
                   :src="
                     nv.hinhAnh ||
@@ -455,53 +455,50 @@ onUnmounted(() => {
                       '&background=f1f5f9&color=475569&size=64'
                   "
                   :alt="nv.hoTen"
-                  class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
+                  class="h-8 w-8 rounded-full object-cover ring-1 ring-slate-100"
                 />
               </td>
-              <td class="px-3 py-3 font-semibold text-slate-800">
+              <td class="px-2 py-2 font-semibold text-slate-800 text-xs">
                 <div class="truncate" :title="nv.ma">
                   {{ nv.ma }}
                 </div>
               </td>
-              <td class="px-3 py-3 font-semibold text-slate-800">
+              <td class="px-2 py-2 font-semibold text-slate-800 text-xs">
                 <div class="truncate" :title="nv.hoTen">
                   {{ nv.hoTen }}
                 </div>
               </td>
-              <td class="px-3 py-3 text-slate-600">
-                <div class="text-sm font-semibold text-slate-800 select-all" :title="nv.email">
+              <td class="px-2 py-2 text-slate-600 text-xs">
+                <div class="truncate font-semibold text-slate-800 select-all" :title="nv.email">
                   {{ nv.email }}
                 </div>
               </td>
-              <td class="px-3 py-3 text-slate-600">
+              <td class="px-2 py-2 text-slate-600 text-xs">
                 <div class="truncate" :title="nv.gioiTinh">
                   {{ nv.gioiTinh || "—" }}
                 </div>
               </td>
-              <td class="px-3 py-3 text-slate-600">
+              <td class="px-2 py-2 text-slate-600 text-xs">
                 <div class="truncate" :title="nv.sdt || '—'">
                   {{ nv.sdt || "—" }}
                 </div>
               </td>
-              <td class="px-3 py-3 text-slate-600">
-                <div
-                  class="min-w-[180px] max-w-[320px] break-words whitespace-normal leading-normal text-sm"
-                  :title="nv.diaChi || '—'"
-                >
+              <td class="px-2 py-2 text-slate-600 text-xs">
+                <div class="truncate" :title="nv.diaChi || '—'">
                   {{ nv.diaChi || "—" }}
                 </div>
               </td>
-              <td class="px-3 py-3 text-slate-600">
+              <td class="px-2 py-2 text-slate-600 text-xs">
                 <div class="truncate" :title="hienThiVaiTro(nv)">
                   {{ hienThiVaiTro(nv) }}
                 </div>
               </td>
-              <td class="px-3 py-3">
-                <Badge :variant="nv.trangThai === 1 ? 'success' : 'danger'">
+              <td class="px-2 py-2 text-xs">
+                <Badge :variant="nv.trangThai === 1 ? 'success' : 'danger'" class="text-xs">
                   {{ hienThiTrangThai(nv) }}
                 </Badge>
               </td>
-              <td class="rounded-r-2xl px-3 py-3 align-top text-center">
+              <td class="rounded-r-2xl px-2 py-2 align-top text-center">
                 <div class="flex items-center justify-center gap-0.5">
                   <AdminQuickStatusAction
                     v-if="adminSession.vaiTro === 'Quản trị viên'"
@@ -516,14 +513,14 @@ onUnmounted(() => {
                     :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
                   />
-                  <button
+                  <!-- <button
                     type="button"
                     @click="quanLyLichLam(nv.id)"
                     class="admin-table-action text-violet-500 hover:text-violet-700"
                     title="Quản lý lịch làm"
                   >
                     <CalendarDays :size="14" />
-                  </button>
+                  </button> -->
                   <button
                     type="button"
                     @click="xemChiTiet(nv.id)"
