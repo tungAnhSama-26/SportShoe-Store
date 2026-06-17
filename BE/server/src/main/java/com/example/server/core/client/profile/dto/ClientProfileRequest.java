@@ -16,6 +16,9 @@ public record ClientProfileRequest(
         String sdt,
 
         Integer gioiTinh,
-        LocalDate ngaySinh
+        LocalDate ngaySinh,
+
+        @Size(max = 500, message = "Đường dẫn ảnh không được vượt quá 500 ký tự")
+        String hinhAnh
 ) {
 }

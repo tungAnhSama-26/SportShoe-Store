@@ -6,6 +6,7 @@ import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
@@ -18,9 +19,11 @@ import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -52,6 +55,7 @@ public class ClientDatHangService {
     private final ThanhToanRepository thanhToanRepository;
     private final VanChuyenRepository vanChuyenRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    private final EmailService emailService;
 
     public ClientDatHangService(
             ClientCheckoutItemService checkoutItemService,
@@ -62,8 +66,10 @@ public class ClientDatHangService {
             KhachHangRepository khachHangRepository,
             ThanhToanRepository thanhToanRepository,
             VanChuyenRepository vanChuyenRepository,
-            HoaDonRealtimePublisher hoaDonRealtimePublisher
+            HoaDonRealtimePublisher hoaDonRealtimePublisher,
+            EmailService emailService
     ) {
+        this.emailService = emailService;
         this.checkoutItemService = checkoutItemService;
         this.voucherService = voucherService;
         this.phiVanChuyenService = phiVanChuyenService;
@@ -147,6 +153,7 @@ public class ClientDatHangService {
         luuVanChuyen(hoaDon, phiShip, now);
         taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
+        guiEmailXacNhanDon(hoaDon, khachHang, dong, hinhThuc, phiShip);
 
         return new DatHangResponse(
                 hoaDon.getId(),
@@ -155,6 +162,48 @@ public class ClientDatHangService {
                 hoaDon.getTrangThai(),
                 hinhThuc
         );
+    }
+
+    /** Gửi email xác nhận đơn hàng cho khách (chạy ở luồng nền, lỗi không chặn đặt hàng). */
+    private void guiEmailXacNhanDon(
+            HoaDon hoaDon,
+            KhachHang khachHang,
+            List<HoaDonChiTiet> dong,
+            String hinhThuc,
+            BigDecimal phiShip
+    ) {
+        if (khachHang == null || khachHang.getEmail() == null || khachHang.getEmail().isBlank()) {
+            return;
+        }
+        List<EmailService.DongDonHangEmail> items = new ArrayList<>();
+        for (HoaDonChiTiet ct : dong) {
+            GiayChiTiet gct = ct.getGiayChiTiet();
+            String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+            items.add(new EmailService.DongDonHangEmail(
+                    gct.getGiay().getTen(),
+                    bienThe,
+                    gct.getGiay().getHinhAnh(),
+                    ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
+                    ct.getGiaDonVi(),
+                    ct.getThanhTien()
+            ));
+        }
+        emailService.sendOrderConfirmationEmailAsync(new EmailService.DonHangEmail(
+                khachHang.getEmail(),
+                khachHang.getHoTen(),
+                khachHang.getEmail(),
+                hoaDon.getMa(),
+                hoaDon.getNgayLap(),
+                hoaDon.getTenNguoiNhan(),
+                hoaDon.getSdtNguoiNhan(),
+                hoaDon.getDiaChiGiaoHang(),
+                hinhThuc,
+                phiShip,
+                hoaDon.getTienGiam(),
+                hoaDon.getTongTienHang(),
+                hoaDon.getTongTienThanhToan(),
+                items
+        ));
     }
 
     /** Phí ship theo địa chỉ nhận (GHN, có phí ước tính dự phòng khi GHN không khả dụng). */

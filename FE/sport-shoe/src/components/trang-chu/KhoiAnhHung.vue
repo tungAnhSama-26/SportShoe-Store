@@ -101,7 +101,7 @@ onUnmounted(() => {
             <div class="mt-6 flex flex-wrap gap-3">
               <router-link
                 id="mua-ngay"
-                to="/san-pham"
+                to="/khachhang/san-pham"
                 class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-semibold text-white shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-primary/50"
               >
                 Mua ngay

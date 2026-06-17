@@ -193,7 +193,7 @@ function xuLyAnhLoi(event) {
           <router-link
             v-for="sp in danhSachLoc"
             :key="sp.id"
-            :to="`/san-pham/${sp.id}`"
+            :to="`/khachhang/san-pham/${sp.id}`"
             class="block"
           >
             <Card

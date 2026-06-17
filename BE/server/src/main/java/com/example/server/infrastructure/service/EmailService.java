@@ -6,6 +6,7 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -18,6 +19,7 @@ import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -38,8 +40,15 @@ public class EmailService {
     private static final String SYSTEM_LOGIN_URL = "http://localhost:5173/login";
     private static final String CUSTOMER_LOGIN_URL = "http://localhost:3000/login";
     private static final String CUSTOMER_STORE_URL = "http://localhost:3000";
+    /** Base URL của backend để tải ảnh sản phẩm (/uploads/...) trong email. */
+    private static final String BACKEND_BASE_URL = "http://localhost:8080";
+    /** Logo shop nhúng trực tiếp vào email (CID) - luôn hiển thị, không bị mail chặn. */
+    private static final String LOGO_RESOURCE = "static/logo-shop.png";
+    private static final String LOGO_CID = "shopLogo";
     private static final DateTimeFormatter VOUCHER_DATE_FORMAT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter ORDER_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
@@ -273,6 +282,245 @@ public class EmailService {
             );
             throw new BusinessException(dispatchResult.warningMessage());
         }
+    }
+
+    // ===== Email xác nhận đơn hàng (gửi khi khách đặt hàng thành công) =====
+
+    public record DongDonHangEmail(
+            String tenSanPham,
+            String bienThe,
+            String hinhAnh,
+            int soLuong,
+            BigDecimal donGia,
+            BigDecimal thanhTien
+    ) {}
+
+    public record DonHangEmail(
+            String to,
+            String hoTen,
+            String email,
+            String maHoaDon,
+            Instant ngayLap,
+            String tenNguoiNhan,
+            String sdtNguoiNhan,
+            String diaChiGiaoHang,
+            String hinhThucThanhToan,
+            BigDecimal phiVanChuyen,
+            BigDecimal tienGiam,
+            BigDecimal tongTienHang,
+            BigDecimal tongThanhToan,
+            List<DongDonHangEmail> items
+    ) {}
+
+    /** Gửi email xác nhận đơn hàng ở luồng nền; lỗi chỉ ghi log, không chặn việc đặt hàng. */
+    @Async
+    public void sendOrderConfirmationEmailAsync(DonHangEmail data) {
+        if (data == null || data.to() == null || data.to().isBlank()) {
+            return;
+        }
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            applyFrom(helper);
+            helper.setTo(data.to());
+            helper.setSubject("SportShoe Store - Xác nhận đơn hàng #" + safeText(data.maHoaDon()));
+            helper.setText(buildOrderConfirmationEmailHtml(data), true);
+            ClassPathResource logo = new ClassPathResource(LOGO_RESOURCE);
+            if (logo.exists()) {
+                helper.addInline(LOGO_CID, logo);
+            }
+            mailSender.send(message);
+        } catch (MessagingException | MailException exception) {
+            log.error("Không thể gửi email xác nhận đơn hàng tới {}", data.to(), exception);
+        }
+    }
+
+    private String buildOrderConfirmationEmailHtml(DonHangEmail d) {
+        boolean chuyenKhoan = "VNPAY".equalsIgnoreCase(d.hinhThucThanhToan())
+                || "CHUYEN_KHOAN".equalsIgnoreCase(d.hinhThucThanhToan());
+        String thanhToanText = chuyenKhoan
+                ? "Chuyển khoản ngân hàng (đã thanh toán)"
+                : "Thanh toán khi nhận hàng (COD)";
+        String loiThanhToan = chuyenKhoan
+                ? "Quý khách đã thanh toán thành công qua chuyển khoản. Đơn hàng đang được xử lý."
+                : "Quý khách vui lòng thanh toán khi nhận hàng. Đơn hàng đang được xử lý.";
+        BigDecimal phi = d.phiVanChuyen() == null ? BigDecimal.ZERO : d.phiVanChuyen();
+        String vanChuyenText = phi.signum() <= 0
+                ? "Miễn phí (1-3 ngày)"
+                : ("GHN - " + formatCurrency(phi) + " (1-3 ngày)");
+        String ngayText = d.ngayLap() != null ? ORDER_DATE_FORMAT.format(d.ngayLap()) : "";
+
+        StringBuilder itemsHtml = new StringBuilder();
+        if (d.items() != null) {
+            for (DongDonHangEmail it : d.items()) {
+                String anhUrl = resolveAnhSanPham(it.hinhAnh());
+                String anhCell = anhUrl.isBlank()
+                        ? "<div style=\"width:56px;height:56px;border-radius:8px;background:#f3f4f6;\"></div>"
+                        : ("<img src=\"" + escapeHtml(anhUrl)
+                                + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />");
+                itemsHtml.append("""
+                        <tr>
+                          <td style="width:64px;padding:14px 12px 14px 0;border-bottom:1px solid #eee;vertical-align:top;">__ANH__</td>
+                          <td style="padding:14px 0;border-bottom:1px solid #eee;font-size:14px;color:#374151;vertical-align:top;">
+                            <div style="font-weight:700;color:#111827;">__TEN__</div>
+                            <div style="color:#6b7280;font-size:13px;margin-top:2px;">__BIEN_THE__</div>
+                            <div style="color:#6b7280;font-size:13px;margin-top:6px;">__DON_GIA__ &nbsp;&times; __SL__</div>
+                          </td>
+                          <td align="right" style="padding:14px 0;border-bottom:1px solid #eee;font-size:14px;font-weight:700;color:#111827;white-space:nowrap;vertical-align:top;">__THANH_TIEN__</td>
+                        </tr>
+                        """
+                        .replace("__ANH__", anhCell)
+                        .replace("__TEN__", escapeHtml(it.tenSanPham()))
+                        .replace("__BIEN_THE__", escapeHtml(it.bienThe()))
+                        .replace("__DON_GIA__", formatCurrency(it.donGia()))
+                        .replace("__SL__", Integer.toString(it.soLuong()))
+                        .replace("__THANH_TIEN__", formatCurrency(it.thanhTien())));
+            }
+        }
+
+        StringBuilder summaryHtml = new StringBuilder();
+        summaryHtml.append(orderSummaryRow("Tạm tính", formatCurrency(d.tongTienHang()), false));
+        if (d.tienGiam() != null && d.tienGiam().signum() > 0) {
+            summaryHtml.append(orderSummaryRow("Giảm giá", "-" + formatCurrency(d.tienGiam()), false));
+        }
+        summaryHtml.append(orderSummaryRow("Phí vận chuyển",
+                phi.signum() <= 0 ? "Miễn phí" : formatCurrency(phi), false));
+        summaryHtml.append(orderSummaryRow("Thành tiền", formatCurrency(d.tongThanhToan()), true));
+
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Xác nhận đơn hàng</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f4f7;padding:32px 12px;">
+                    <tr>
+                      <td align="center">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.08);">
+                          <tr>
+                            <td style="padding:30px 40px 6px 40px;text-align:center;">
+                              <img src="cid:shopLogo" alt="SportShoe Store" width="140" style="max-width:160px;height:auto;display:inline-block;margin-bottom:8px;" />
+                              <div style="font-size:22px;font-weight:800;color:#cf1018;letter-spacing:0.02em;">SportShoe <span style="color:#111827;">Store</span></div>
+                            </td>
+                          </tr>
+                          <tr><td style="padding:16px 40px 0 40px;font-size:16px;color:#111827;">Xin chào <b>__HO_TEN__</b></td></tr>
+                          <tr><td style="padding:10px 40px 0 40px;font-size:15px;line-height:1.6;color:#374151;">Cảm ơn quý khách đã đặt hàng tại <b>SportShoe Store</b>!</td></tr>
+                          <tr><td style="padding:8px 40px 0 40px;font-size:14px;line-height:1.6;color:#6b7280;">Đơn hàng của quý khách đã được tạo thành công. __LOI_THANH_TOAN__</td></tr>
+                          <tr><td style="padding:22px 40px 0 40px;"><div style="height:1px;background:#ececec;"></div></td></tr>
+                          <tr>
+                            <td style="padding:22px 40px 0 40px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+                                <td valign="top" style="width:50%;padding-right:14px;">
+                                  <div style="font-size:15px;font-weight:800;color:#111827;">Thông tin mua hàng</div>
+                                  <div style="margin-top:10px;font-size:14px;color:#374151;font-weight:700;">__HO_TEN__</div>
+                                  <div style="margin-top:4px;font-size:13px;color:#6b7280;">__EMAIL__</div>
+                                </td>
+                                <td valign="top" style="width:50%;padding-left:14px;">
+                                  <div style="font-size:15px;font-weight:800;color:#111827;">Địa chỉ nhận hàng</div>
+                                  <div style="margin-top:10px;font-size:14px;color:#374151;font-weight:700;">__TEN_NHAN__</div>
+                                  <div style="margin-top:4px;font-size:13px;color:#6b7280;line-height:1.5;">__DIA_CHI__</div>
+                                  <div style="margin-top:4px;font-size:13px;color:#6b7280;">__SDT_NHAN__</div>
+                                </td>
+                              </tr></table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:22px 40px 0 40px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+                                <td valign="top" style="width:50%;padding-right:14px;">
+                                  <div style="font-size:15px;font-weight:800;color:#111827;">Phương thức thanh toán</div>
+                                  <div style="margin-top:10px;font-size:14px;color:#374151;">__THANH_TOAN__</div>
+                                </td>
+                                <td valign="top" style="width:50%;padding-left:14px;">
+                                  <div style="font-size:15px;font-weight:800;color:#111827;">Phương thức vận chuyển</div>
+                                  <div style="margin-top:10px;font-size:14px;color:#374151;">__VAN_CHUYEN__</div>
+                                </td>
+                              </tr></table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:24px 40px 0 40px;">
+                              <div style="font-size:15px;font-weight:800;color:#111827;">Thông tin đơn hàng</div>
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:8px;"><tr>
+                                <td style="font-size:13px;color:#6b7280;">Mã đơn hàng: <b style="color:#cf1018;">#__MA__</b></td>
+                                <td align="right" style="font-size:13px;color:#6b7280;">Ngày đặt hàng: <b style="color:#111827;">__NGAY__</b></td>
+                              </tr></table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:6px 40px 0 40px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">__ITEMS__</table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:10px 40px 0 40px;">
+                              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">__SUMMARY__</table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:24px 40px 30px 40px;text-align:center;font-size:12px;color:#9ca3af;line-height:1.6;">
+                              Email được gửi tự động từ SportShoe Store. Vui lòng không trả lời email này.
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+                </html>
+                """;
+
+        return html
+                .replace("__HO_TEN__", escapeHtml(d.hoTen()))
+                .replace("__LOI_THANH_TOAN__", escapeHtml(loiThanhToan))
+                .replace("__EMAIL__", escapeHtml(d.email()))
+                .replace("__TEN_NHAN__", escapeHtml(d.tenNguoiNhan()))
+                .replace("__DIA_CHI__", escapeHtml(d.diaChiGiaoHang()))
+                .replace("__SDT_NHAN__", escapeHtml(d.sdtNguoiNhan()))
+                .replace("__THANH_TOAN__", escapeHtml(thanhToanText))
+                .replace("__VAN_CHUYEN__", escapeHtml(vanChuyenText))
+                .replace("__MA__", escapeHtml(d.maHoaDon()))
+                .replace("__NGAY__", escapeHtml(ngayText))
+                .replace("__ITEMS__", itemsHtml.toString())
+                .replace("__SUMMARY__", summaryHtml.toString());
+    }
+
+    private String orderSummaryRow(String label, String value, boolean emphasize) {
+        String labelStyle = emphasize
+                ? "font-size:16px;font-weight:800;color:#111827;border-top:2px solid #ececec;padding-top:12px;"
+                : "font-size:14px;color:#6b7280;";
+        String valueStyle = emphasize
+                ? "font-size:18px;font-weight:800;color:#cf1018;border-top:2px solid #ececec;padding-top:12px;"
+                : "font-size:14px;font-weight:700;color:#111827;";
+        return """
+                <tr>
+                  <td style="padding:6px 0;__LS__">__L__</td>
+                  <td align="right" style="padding:6px 0;__VS__">__V__</td>
+                </tr>
+                """
+                .replace("__LS__", labelStyle)
+                .replace("__VS__", valueStyle)
+                .replace("__L__", escapeHtml(label))
+                .replace("__V__", escapeHtml(value));
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
+    }
+
+    /** Ghép URL đầy đủ cho ảnh sản phẩm (ảnh upload nằm ở backend /uploads/...). */
+    private String resolveAnhSanPham(String anh) {
+        if (anh == null || anh.isBlank()) {
+            return "";
+        }
+        String a = anh.trim();
+        if (a.matches("(?i)^(https?:|data:).*")) {
+            return a;
+        }
+        return a.startsWith("/") ? BACKEND_BASE_URL + a : BACKEND_BASE_URL + "/" + a;
     }
 
     private void applyFrom(MimeMessageHelper helper) throws MessagingException {
