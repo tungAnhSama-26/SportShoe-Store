@@ -257,19 +257,16 @@ watch(
 const dangDoiTrangThai = ref(null);
 
 async function capNhatTrangThai(nv) {
-  // Kiểm tra quyền: Chỉ Admin mới được đổi trạng thái
   if (adminSession.value.vaiTro !== "Quản trị viên") {
     showError("Chỉ có Quản trị viên mới có quyền thực hiện hành động này.");
     return;
   }
 
-  // Không cho phép tự khóa tài khoản của chính mình
   if (nv.id === adminSession.value.id) {
     showError("Bạn không thể tự khóa tài khoản của chính mình.");
     return;
   }
 
-  // Không cho phép khóa tài khoản Admin khác
   if (nv.tenVaiTro === "Admin") {
     showError("Không thể thay đổi trạng thái của tài khoản Quản trị viên.");
     return;
@@ -323,15 +320,12 @@ onUnmounted(() => {
       </Transition>
     </Teleport>
 
-    <!-- Header -->
     <section></section>
 
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div
-            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
-          >
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
             <Filter class="h-5 w-5" />
           </div>
           <h2 class="admin-section-title">Bộ lọc</h2>
@@ -339,14 +333,10 @@ onUnmounted(() => {
       </template>
 
       <div class="flex flex-col gap-5">
-        <!-- HÀNG 1: CHỨA TẤT CẢ CÁC Ô NHẬP LIỆU (Search + Vai Trò + Trạng Thái) -->
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 items-end">
-          <!-- Ô Tìm kiếm (Chiếm 6 cột trên màn hình lớn) -->
           <div class="lg:col-span-6">
             <div class="relative">
-              <Search
-                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
+              <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 v-model="boLoc.keyword"
                 type="text"
@@ -356,7 +346,6 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Ô Vai trò (Chiếm 3 cột) -->
           <div class="lg:col-span-3">
             <select
               v-model="boLoc.vaiTro"
@@ -368,24 +357,18 @@ onUnmounted(() => {
             </select>
           </div>
 
-          <!-- Ô Trạng thái (Chiếm 3 cột) -->
           <div class="lg:col-span-3">
             <select
               v-model="boLoc.trangThai"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
             >
-              <option
-                v-for="tt in dsTrangThai"
-                :key="tt.value"
-                :value="tt.value"
-              >
+              <option v-for="tt in dsTrangThai" :key="tt.value" :value="tt.value">
                 {{ tt.label }}
               </option>
             </select>
           </div>
         </div>
 
-        <!-- HÀNG 2: CHỨA CÁC NÚT BẤM - CĂN PHẢI -->
         <div class="flex flex-wrap items-center justify-end gap-3">
           <Button variant="soft" @click="lamMoiBoLoc">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
@@ -410,13 +393,10 @@ onUnmounted(() => {
       </div>
     </Card>
 
-    <!-- Danh sách -->
     <Card>
       <template #header>
         <div class="flex items-center gap-3">
-          <div
-            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary"
-          >
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary">
             <Users class="h-5 w-5" />
           </div>
           <div>
@@ -489,10 +469,7 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-3 py-3 text-slate-600">
-                <div
-                  class="text-sm font-semibold text-slate-800 select-all"
-                  :title="nv.email"
-                >
+                <div class="text-sm font-semibold text-slate-800 select-all" :title="nv.email">
                   {{ nv.email }}
                 </div>
               </td>
@@ -529,19 +506,13 @@ onUnmounted(() => {
                   <AdminQuickStatusAction
                     v-if="adminSession.vaiTro === 'Quản trị viên'"
                     :loading="dangDoiTrangThai === nv.id"
-                    :disabled="
-                      nv.tenVaiTro === 'Admin' || nv.id === adminSession.id
-                    "
+                    :disabled="nv.tenVaiTro === 'Admin' || nv.id === adminSession.id"
                     :disabled-title="
                       nv.id === adminSession.id
                         ? 'Bạn không thể tự khóa tài khoản của chính mình'
                         : 'Không thể đổi trạng thái Admin'
                     "
-                    :action-label="
-                      nv.trangThai === 1
-                        ? 'Cho nghỉ làm'
-                        : 'Kích hoạt nhân viên'
-                    "
+                    :action-label="nv.trangThai === 1 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
                     :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
                   />
