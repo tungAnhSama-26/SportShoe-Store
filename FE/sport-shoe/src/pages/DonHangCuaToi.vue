@@ -23,7 +23,7 @@ let realtimeRefreshTimeout = null;
 
 function lenLichTaiLaiDanhSach() {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
-  realtimeRefreshTimeout = setTimeout(taiDanhSach, 150);
+  realtimeRefreshTimeout = setTimeout(() => taiDanhSach(true), 150);
 }
 
 function dongBoKhiQuayLaiTrang() {
@@ -56,14 +56,16 @@ onBeforeUnmount(() => {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
 });
 
-async function taiDanhSach() {
-  dangTai.value = true;
+async function taiDanhSach(amThang = false) {
+  if (!amThang) dangTai.value = true;
   try {
     danhSach.value = await layDonHangCuaToi();
   } catch {
-    danhSach.value = [];
+    if (!amThang) {
+      danhSach.value = [];
+    }
   } finally {
-    dangTai.value = false;
+    if (!amThang) dangTai.value = false;
   }
 }
 
@@ -172,7 +174,7 @@ function moYeuCauTraHang(don) {
 async function xuLyTaoPhieuTraHangThanhCong() {
   laMoTraHangModal.value = false;
   trangThaiDangChon.value = "TRA_HANG";
-  await taiDanhSach();
+  await taiDanhSach(true);
 }
 
 async function guiYeuCauHuy(don) {
@@ -187,7 +189,7 @@ async function guiYeuCauHuy(don) {
   donDangGuiYeuCauHuy.value = don.id;
   try {
     await yeuCauHuyDonHang(don.id);
-    await taiDanhSach();
+    await taiDanhSach(true);
     showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
   } catch (error) {
     showError(getDisplayErrorMessage(error, 'Không thể gửi yêu cầu hủy đơn hàng'));

@@ -36,7 +36,15 @@ public record DonHangChiTietResponse(
         BigDecimal tongTienDuKienTra,
         BigDecimal tongTienThucTeTra,
         List<String> hinhAnhTraHang,
-        List<ChiTietTraHangItem> chiTietTraHang
+        List<ChiTietTraHangItem> chiTietTraHang,
+        /** "CHUYEN_KHOAN" hoặc "COD" - để FE biết ràng buộc chỉnh sửa. */
+        String hinhThucThanhToan,
+        /** Khách được phép hủy đơn (chỉ khi đang chờ xác nhận). */
+        boolean coTheHuy,
+        /** Khách được sửa thông tin giao hàng (COD + chờ xác nhận). */
+        boolean coTheCapNhatGiaoHang,
+        /** Khách được sửa số lượng sản phẩm (COD + chờ xác nhận). */
+        boolean coTheCapNhatSoLuong
 ) {
     public record ChiTietTraHangItem(
             Integer hoaDonChiTietId,

@@ -13,6 +13,41 @@ function ensureAlertStyles() {
   const style = document.createElement('style');
   style.id = ALERT_STYLE_ID;
   style.textContent = `
+    @keyframes sportshoeFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    @keyframes sportshoeFadeOut {
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+    }
+
+    @keyframes sportshoeIconScale {
+      from { transform: scale(0.4); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .sportshoe-popup-show {
+      animation: sportshoeFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+    }
+
+    .sportshoe-popup-hide {
+      animation: sportshoeFadeOut 0.15s ease-out forwards !important;
+    }
+
     .sportshoe-success-popup {
       width: min(430px, calc(100vw - 32px)) !important;
       padding: 34px 34px 28px !important;
@@ -25,6 +60,7 @@ function ensureAlertStyles() {
       margin: 0 auto 18px !important;
       width: 82px !important;
       height: 82px !important;
+      animation: sportshoeIconScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
     }
 
     .sportshoe-success-popup .swal2-success-ring {
@@ -39,7 +75,7 @@ function ensureAlertStyles() {
     .sportshoe-success-popup .swal2-success-circular-line-left,
     .sportshoe-success-popup .swal2-success-circular-line-right,
     .sportshoe-success-popup .swal2-success-fix {
-      background-color: #ffffff !important;
+      display: none !important;
     }
 
     .sportshoe-success-title {
@@ -118,6 +154,14 @@ export function showSuccess(text = '', title = 'Thành công!') {
     background: '#ffffff',
     color: '#334155',
     iconColor: BRAND_RED,
+    showClass: {
+      popup: 'sportshoe-popup-show',
+      backdrop: 'swal2-noanimation',
+    },
+    hideClass: {
+      popup: 'sportshoe-popup-hide',
+      backdrop: 'swal2-noanimation',
+    },
     customClass: {
       popup: 'sportshoe-success-popup',
       title: 'sportshoe-success-title',

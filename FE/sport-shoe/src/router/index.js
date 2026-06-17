@@ -21,6 +21,7 @@ import DotGiamGia from "../pages/admin/khuyen-mai/DotGiamGia.vue";
 import QuanLyNhanVien from "../pages/admin/nhan-vien/QuanLyNhanVien.vue";
 import ChiTietNhanVien from "../pages/admin/nhan-vien/ChiTietNhanVien.vue";
 import QuanLyLichLam from "../pages/admin/nhan-vien/QuanLyLichLam.vue";
+import QuanLyChamCong from "../pages/admin/lich-lam/QuanLyChamCong.vue";
 import QuanLyKhachHang from "../pages/admin/khach-hang/QuanLyKhachHang.vue";
 import ChiTietKhachHang from "../pages/admin/khach-hang/ChiTietKhachHang.vue";
 import DonHangKhachHang from "../pages/admin/khach-hang/DonHangKhachHang.vue";
@@ -58,6 +59,7 @@ const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/tra-hang",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
+  "/admin/cham-cong",
   "/admin/chat",
   "/admin/profile"
 ];
@@ -385,6 +387,16 @@ const router = createRouter({
           path: "khach-hang/:id",
           name: "admin-khach-hang-chi-tiet",
           component: ChiTietKhachHang
+        },
+        {
+          path: "lich-lam-viec",
+          name: "admin-lich-lam-viec",
+          component: QuanLyLichLam
+        },
+        {
+          path: "cham-cong",
+          name: "admin-cham-cong",
+          component: QuanLyChamCong
         }
       ]
     },
