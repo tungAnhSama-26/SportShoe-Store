@@ -327,7 +327,7 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; nh&#226;n vi&#234;n</span>
       </router-link>
 
-      <!-- Quản lý lịch làm -->
+      <!-- Quản lý lịch làm (ADMIN) -->
       <div v-if="laAdmin" class="space-y-1">
         <button
           type="button"
@@ -362,6 +362,18 @@ function subItemClass(active) {
           </router-link>
         </div>
       </div>
+
+      <!-- Lịch làm và Chấm công (NHÂN VIÊN) -->
+      <template v-else>
+        <router-link to="/admin/lich-lam-viec" :title="compactMode ? 'L\u1ecbch l\u00e0m vi\u1ec7c' : undefined" :class="navItemClass(isActive('/admin/lich-lam-viec'))">
+          <CalendarDays :class="navIconClass(isActive('/admin/lich-lam-viec'))" />
+          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">L&#7883;ch l&#224;m vi&#7879;c</span>
+        </router-link>
+        <router-link to="/admin/cham-cong" :title="compactMode ? 'Ch\u1ea5m c\u00f4ng' : undefined" :class="navItemClass(isActive('/admin/cham-cong'))">
+          <ClipboardList :class="navIconClass(isActive('/admin/cham-cong'))" />
+          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Ch&#7845;m c&#244;ng</span>
+        </router-link>
+      </template>
     </nav>
   </aside>
 </template>
