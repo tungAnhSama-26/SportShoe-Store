@@ -391,7 +391,7 @@ public class BanHangTaiQuayService {
         // Add new items
         validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new java.util.ArrayList<>());
         List<HoaDonChiTiet> chiTietTam = request.items() != null && !request.items().isEmpty() ? request.items().stream()
-                .map(item -> taoDongHoaDon(item.chiTietId(), item.soLuong()))
+                .map(item -> taoDongHoaDon(item))
                 .toList() : new java.util.ArrayList<>();
 
         BigDecimal tongTienHang = chiTietTam.stream()
@@ -602,7 +602,7 @@ public class BanHangTaiQuayService {
         validationUseCase.validateDuplicateItems(items != null ? items : new ArrayList<>());
 
         List<HoaDonChiTiet> chiTietTam = items != null && !items.isEmpty() ? items.stream()
-                .map(item -> taoDongHoaDon(item.chiTietId(), item.soLuong()))
+                .map(item -> taoDongHoaDon(item))
                 .toList() : new ArrayList<>();
 
         BigDecimal tongTienHang = chiTietTam.stream()
@@ -849,18 +849,22 @@ public class BanHangTaiQuayService {
         return hoaDon;
     }
 
-    private HoaDonChiTiet taoDongHoaDon(Integer chiTietId, Integer soLuong) {
-        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(chiTietId, soLuong);
+    private HoaDonChiTiet taoDongHoaDon(TaoHoaDonChoItemRequest itemRequest) {
+        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(itemRequest.chiTietId(), itemRequest.soLuong());
 
-        inventoryUseCase.deductStock(giayChiTiet, soLuong);
+        inventoryUseCase.deductStock(giayChiTiet, itemRequest.soLuong());
         giayChiTietRepository.save(giayChiTiet);
 
         BigDecimal giaThucTe = layGiaBanThucTe(giayChiTiet);
+        if (itemRequest.giaBan() != null && giaThucTe.compareTo(itemRequest.giaBan()) != 0) {
+            throw new BusinessException("Sản phẩm " + giayChiTiet.getGiay().getTen() + " đã thay đổi đợt giảm giá. Vui lòng cập nhật lại giỏ hàng.");
+        }
+        
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
-        hoaDonChiTiet.setSoLuong(soLuong);
+        hoaDonChiTiet.setSoLuong(itemRequest.soLuong());
         hoaDonChiTiet.setGiaDonVi(giaThucTe);
-        hoaDonChiTiet.setThanhTien(giaThucTe.multiply(BigDecimal.valueOf(soLuong.longValue())));
+        hoaDonChiTiet.setThanhTien(giaThucTe.multiply(BigDecimal.valueOf(itemRequest.soLuong().longValue())));
         hoaDonChiTiet.setTrangThai(1);
         hoaDonChiTiet.setNgayTao(Instant.now());
         return hoaDonChiTiet;
@@ -914,6 +918,11 @@ public class BanHangTaiQuayService {
     private HoaDonChiTiet taoDongHoaDonTam(TaoHoaDonChoItemRequest item) {
         GiayChiTiet giayChiTiet = layGiayChiTietHopLe(item.chiTietId(), item.soLuong());
         BigDecimal giaThucTe = layGiaBanThucTe(giayChiTiet);
+        
+        if (item.giaBan() != null && giaThucTe.compareTo(item.giaBan()) != 0) {
+            throw new BusinessException("Sản phẩm " + giayChiTiet.getGiay().getTen() + " đã thay đổi đợt giảm giá. Vui lòng cập nhật lại giỏ hàng.");
+        }
+        
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
         hoaDonChiTiet.setSoLuong(item.soLuong());

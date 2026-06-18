@@ -41,12 +41,13 @@ export function usePosCart({
   function taoDanhSachSanPhamThanhToan() {
     return cartItems.value.map((item) => ({
       chiTietId: item.chiTietId,
-      soLuong: item.soLuong
+      soLuong: item.soLuong,
+      giaBan: item.giaBan
     }));
   }
 
   function soLuongDaChon(chiTietId) {
-    return cartItems.value.find((item) => item.chiTietId === chiTietId)?.soLuong ?? 0;
+    return cartItems.value.filter((item) => item.chiTietId === chiTietId).reduce((sum, item) => sum + item.soLuong, 0);
   }
 
   function soLuongConLai(chiTietId, soLuongTon) {
@@ -55,13 +56,15 @@ export function usePosCart({
 
   function themSanPham(product, quantity = 1, options = {}) {
     const soLuongCoTheThem = soLuongConLai(product.chiTietId, product.soLuongTon);
-    const existing = cartItems.value.find((item) => item.chiTietId === product.chiTietId);
-    if (existing) {
+    const existingSamePrice = cartItems.value.find((item) => item.chiTietId === product.chiTietId && item.giaBan === product.giaBan);
+    const existingDifferentPrice = cartItems.value.find((item) => item.chiTietId === product.chiTietId && item.giaBan !== product.giaBan);
+    
+    if (existingSamePrice) {
       if (quantity > soLuongCoTheThem) {
-        pageError.value = `Sản phẩm ${existing.tenSanPham} đã đạt giới hạn tồn kho`;
+        pageError.value = `Sản phẩm ${existingSamePrice.tenSanPham} đã đạt giới hạn tồn kho`;
         return false;
       }
-      existing.soLuong += quantity;
+      existingSamePrice.soLuong += quantity;
     } else {
       if (quantity > soLuongCoTheThem) {
         pageError.value = `Sản phẩm ${product.tenSanPham} đã vượt giới hạn tồn kho`;
@@ -70,6 +73,7 @@ export function usePosCart({
       cartItems.value = [
         ...cartItems.value,
         {
+          cartItemId: Date.now().toString() + Math.random().toString(),
           chiTietId: product.chiTietId,
           maSanPham: product.maSanPham,
           tenSanPham: product.tenSanPham,
@@ -79,7 +83,8 @@ export function usePosCart({
           hinhAnh: product.hinhAnh || "",
           soLuong: quantity,
           giaBan: product.giaBan,
-          soLuongTon: product.soLuongTon
+          soLuongTon: product.soLuongTon,
+          isPriceChanged: !!existingDifferentPrice // Flag indicating it has a different price than another item in cart
         }
       ];
     }
@@ -91,13 +96,14 @@ export function usePosCart({
     return true;
   }
 
-  function tangSoLuong(chiTietId) {
+  function tangSoLuong(cartItemId) {
     let reachedLimit = "";
     cartItems.value = cartItems.value.map((item) => {
-      if (item.chiTietId !== chiTietId) {
+      if (item.cartItemId !== cartItemId) {
         return item;
       }
-      if (item.soLuong >= item.soLuongTon) {
+      const conLai = soLuongConLai(item.chiTietId, item.soLuongTon);
+      if (conLai <= 0) {
         reachedLimit = item.tenSanPham;
         return item;
       }
@@ -112,9 +118,9 @@ export function usePosCart({
     capNhatTienKhachThanhToan();
   }
 
-  function giamSoLuong(chiTietId) {
+  function giamSoLuong(cartItemId) {
     cartItems.value = cartItems.value
-      .map((item) => item.chiTietId === chiTietId ? { ...item, soLuong: item.soLuong - 1 } : item)
+      .map((item) => item.cartItemId === cartItemId ? { ...item, soLuong: item.soLuong - 1 } : item)
       .filter((item) => item.soLuong > 0);
     danhDauCanApDungLaiPhieu();
     markShippingFeeDirty();

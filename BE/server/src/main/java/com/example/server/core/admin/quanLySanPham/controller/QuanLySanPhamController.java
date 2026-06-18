@@ -56,23 +56,20 @@ public class QuanLySanPhamController {
     @GetMapping("/check-ten")
     public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> checkTenTrung(
             @RequestParam String ten,
-            @RequestParam(required = false) Integer id
-    ) {
+            @RequestParam(required = false) Integer id) {
         return ResponseEntity.ok(ApiResponse.success("Kiểm tra thành công", service.checkTenTrung(ten, id)));
     }
 
     @GetMapping("/check-ma")
     public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> checkMaTrung(
             @RequestParam String ma,
-            @RequestParam(required = false) Integer id
-    ) {
+            @RequestParam(required = false) Integer id) {
         return ResponseEntity.ok(ApiResponse.success("Kiểm tra thành công", service.checkMaTrung(ma, id)));
     }
 
     @PostMapping("/check-trung-thuoc-tinh")
     public ResponseEntity<ApiResponse<GiayDetailResponse>> checkTrungThuocTinh(
-            @RequestBody TaoGiayRequest req
-    ) {
+            @RequestBody TaoGiayRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Kiểm tra thành công", service.checkTrungThuocTinh(req)));
     }
 
@@ -85,13 +82,12 @@ public class QuanLySanPhamController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
+            @RequestParam(defaultValue = "10") int size) {
+        var pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách giày thành công",
-                service.danhSachGiay(keyword, thuongHieuId, loaiGiayId, trangThai, minPrice, maxPrice, pageable)
-        ));
+                service.danhSachGiay(keyword, thuongHieuId, loaiGiayId, trangThai, minPrice, maxPrice, pageable)));
     }
 
     @GetMapping("/{id}")
@@ -107,13 +103,12 @@ public class QuanLySanPhamController {
             @RequestParam(required = false) Integer kichCoId,
             @RequestParam(required = false) Integer trangThai,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
+            @RequestParam(defaultValue = "10") int size) {
+        var pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id")));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách chi tiết sản phẩm thành công",
-                service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)
-        ));
+                service.danhSachChiTietSanPham(keyword, giayId, mauSacId, kichCoId, trangThai, pageable)));
     }
 
     @PostMapping
@@ -123,37 +118,31 @@ public class QuanLySanPhamController {
 
     @PostMapping("/chi-tiet")
     public ResponseEntity<ApiResponse<TaoChiTietSanPhamResponse>> taoChiTietSanPham(
-            @Valid @RequestBody TaoChiTietSanPhamRequest req
-    ) {
+            @Valid @RequestBody TaoChiTietSanPhamRequest req) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Tạo sản phẩm và chi tiết sản phẩm thành công",
-                service.taoChiTietSanPham(req)
-        ));
+                service.taoChiTietSanPham(req)));
     }
 
     @PostMapping("/chi-tiet-hang-loat")
     public ResponseEntity<ApiResponse<TaoChiTietSanPhamHangLoatResponse>> taoChiTietSanPhamHangLoat(
-            @Valid @RequestBody TaoChiTietSanPhamHangLoatRequest req
-    ) {
+            @Valid @RequestBody TaoChiTietSanPhamHangLoatRequest req) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Tạo sản phẩm và danh sách chi tiết sản phẩm thành công",
-                service.taoChiTietSanPhamHangLoat(req)
-        ));
+                service.taoChiTietSanPhamHangLoat(req)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<GiayDetailResponse>> capNhatGiay(
             @PathVariable Integer id,
-            @Valid @RequestBody CapNhatGiayRequest req
-    ) {
+            @Valid @RequestBody CapNhatGiayRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật giày thành công", service.capNhatGiay(id, req)));
     }
 
     @PatchMapping("/{id}/trang-thai")
     public ResponseEntity<ApiResponse<Void>> doiTrangThai(
             @PathVariable Integer id,
-            @Valid @RequestBody DoiTrangThaiRequest req
-    ) {
+            @Valid @RequestBody DoiTrangThaiRequest req) {
         service.doiTrangThai(id, req);
         return ResponseEntity.ok(ApiResponse.success("Đổi trạng thái thành công", null));
     }
@@ -172,28 +161,24 @@ public class QuanLySanPhamController {
     @PostMapping("/{giayId}/bien-the")
     public ResponseEntity<ApiResponse<BienTheResponse>> taoBienThe(
             @PathVariable Integer giayId,
-            @Valid @RequestBody TaoBienTheRequest req
-    ) {
+            @Valid @RequestBody TaoBienTheRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Tạo biến thể thành công", service.taoBienThe(giayId, req)));
     }
 
     @PutMapping("/bien-the/{id}")
     public ResponseEntity<ApiResponse<BienTheResponse>> capNhatBienThe(
             @PathVariable Integer id,
-            @Valid @RequestBody CapNhatBienTheRequest req
-    ) {
+            @Valid @RequestBody CapNhatBienTheRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật biến thể thành công", service.capNhatBienThe(id, req)));
     }
 
     @PatchMapping("/bien-the/{id}/trang-thai")
     public ResponseEntity<ApiResponse<BienTheResponse>> doiTrangThaiBienThe(
             @PathVariable Integer id,
-            @Valid @RequestBody DoiTrangThaiBienTheRequest req
-    ) {
+            @Valid @RequestBody DoiTrangThaiBienTheRequest req) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Đổi trạng thái biến thể thành công",
-                service.doiTrangThaiBienThe(id, req)
-        ));
+                service.doiTrangThaiBienThe(id, req)));
     }
 
     @DeleteMapping("/bien-the/{id}")
@@ -210,16 +195,14 @@ public class QuanLySanPhamController {
     @PostMapping("/bien-the/{id}/hinh-anh")
     public ResponseEntity<ApiResponse<HinhAnhGiayResponse>> themHinhAnh(
             @PathVariable Integer id,
-            @Valid @RequestBody ThemHinhAnhRequest req
-    ) {
+            @Valid @RequestBody ThemHinhAnhRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Thêm hình ảnh thành công", service.themHinhAnh(id, req)));
     }
 
     @PutMapping("/hinh-anh/{id}")
     public ResponseEntity<ApiResponse<HinhAnhGiayResponse>> capNhatHinhAnh(
             @PathVariable Integer id,
-            @Valid @RequestBody CapNhatHinhAnhRequest req
-    ) {
+            @Valid @RequestBody CapNhatHinhAnhRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật hình ảnh thành công", service.capNhatHinhAnh(id, req)));
     }
 

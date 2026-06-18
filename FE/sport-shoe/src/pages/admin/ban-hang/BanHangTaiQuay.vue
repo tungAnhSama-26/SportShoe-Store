@@ -95,6 +95,7 @@ const {
   handleApplyCoupon,
   chonPhieuGiamGia,
   handleRemoveCoupon,
+  suggestBestCoupon,
   updateShippingInfo,
   handleCalculateShippingFee,
   handleAmountPaidInput,
@@ -107,6 +108,19 @@ const {
 } = useBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
+import { useRealtime } from "../../../composables/useRealtime";
+
+const { subscribeTopic } = useRealtime();
+
+subscribeTopic('/topic/admin/san-pham', (message) => {
+  console.log("Realtime update: Product changed", message);
+  fetchProducts();
+});
+
+subscribeTopic('/topic/admin/thuoc-tinh', (message) => {
+  console.log("Realtime update: Attribute changed", message);
+  fetchProducts();
+});
 
 onBeforeRouteLeave(async (to, from, next) => {
   if (cartItems.value && cartItems.value.length > 0 && !activePendingInvoice.value) {
@@ -234,6 +248,7 @@ const setAmountPaid = (val) => { amountPaid.value = val; };
     @apply-coupon="handleApplyCoupon"
     @select-coupon="chonPhieuGiamGia"
     @remove-coupon="handleRemoveCoupon"
+    @suggest-best-coupon="suggestBestCoupon"
     @update-shipping="updateShippingInfo"
     @calculate-shipping="handleCalculateShippingFee"
     @update:payment-method="setPaymentMethod"

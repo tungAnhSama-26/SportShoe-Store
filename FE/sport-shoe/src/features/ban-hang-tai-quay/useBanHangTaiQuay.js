@@ -19,7 +19,7 @@ import { usePosCustomers } from "./usePosCustomers";
 import { usePosPayment } from "./usePosPayment";
 import { usePosProducts } from "./usePosProducts";
 import { usePosShipping } from "./usePosShipping";
-import { showConfirm, showSuccess, showError } from "../../utils/alert";
+import { showConfirm, showToastSuccess, showError } from "../../utils/alert";
 
 function useBanHangTaiQuay() {
   const pendingInvoices = ref([]);
@@ -170,7 +170,8 @@ function useBanHangTaiQuay() {
     chonPhieuGiamGia,
     handleApplyCoupon,
     handleRemoveCoupon,
-    clearCouponTimers
+    clearCouponTimers,
+    suggestBestCoupon
   } = usePosCoupons({
     cartItems,
     tongTien,
@@ -362,7 +363,7 @@ function useBanHangTaiQuay() {
     if (!message) {
       return;
     }
-    showSuccess(message);
+    showToastSuccess(message);
     successMessage.value = "";
   });
 
@@ -374,7 +375,7 @@ function useBanHangTaiQuay() {
     const success = themSanPham(selectedVariant.value, selectedQuantity.value);
     if (success) {
       dongChiTietSanPham();
-      showSuccess(`Đã thêm ${selectedQuantity.value} sản phẩm vào hóa đơn`);
+      showToastSuccess(`Đã thêm ${selectedQuantity.value} sản phẩm vào hóa đơn`);
     }
   }
 
@@ -1170,6 +1171,7 @@ function useBanHangTaiQuay() {
     handleApplyCoupon,
     chonPhieuGiamGia,
     handleRemoveCoupon,
+    suggestBestCoupon,
     updateShippingInfo,
     handleCalculateShippingFee,
     handleAmountPaidInput,

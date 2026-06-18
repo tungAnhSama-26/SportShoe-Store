@@ -40,14 +40,18 @@ public class MauSacService {
         var existingOpt = mauSacRepository.findByTenIgnoreCase(ten);
         
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() == 0) {
-                existing.setTrangThai(1);
-                existing.setMaMauHex(req.maMauHex());
-                existing.setMa(req.ma().trim().toUpperCase());
-                return toMauSac(mauSacRepository.save(existing));
+            MauSac existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Màu sắc '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                throw new BusinessException("T�n m�u s?c '" + ten + "' d� t?n t?i");
+                // If it is disabled, reactivate it
+                existing.setTrangThai(1);
+                // Also update MaMauHex if provided
+                if (req.maMauHex() != null && !req.maMauHex().isBlank()) {
+                    existing.setMaMauHex(req.maMauHex());
+                }
+                existing.setNgayCapNhat(Instant.now());
+                return toMauSac(mauSacRepository.save(existing));
             }
         }
 
