@@ -18,13 +18,60 @@ export function usePosProducts({
   const selectedQuantity = ref(1);
   const loadingProducts = ref(false);
   const showProductDropdown = ref(false);
+  
+  const currentPage = ref(1);
+  const pageSize = ref(5);
 
   let productTimer;
 
   const productSearchLabel = computed(
     () => productKeyword.value.trim() ? "Kết quả tìm kiếm sản phẩm" : "Sản phẩm tại quầy"
   );
-  const productResults = computed(() => groupProductVariants(productVariantResults.value));
+  const selectedBrandFilter = ref("");
+  const selectedCategoryFilter = ref("");
+
+  const availableBrands = computed(() => {
+    const brands = new Set();
+    productVariantResults.value.forEach(p => {
+      if (p.thuongHieu) brands.add(p.thuongHieu);
+    });
+    return Array.from(brands).sort();
+  });
+
+  const availableCategories = computed(() => {
+    const categories = new Set();
+    productVariantResults.value.forEach(p => {
+      if (p.loaiGiay) categories.add(p.loaiGiay);
+    });
+    return Array.from(categories).sort();
+  });
+
+  const productResults = computed(() => {
+    let filtered = productVariantResults.value;
+    
+    if (selectedBrandFilter.value) {
+      filtered = filtered.filter(p => p.thuongHieu === selectedBrandFilter.value);
+    }
+    
+    if (selectedCategoryFilter.value) {
+      filtered = filtered.filter(p => p.loaiGiay === selectedCategoryFilter.value);
+    }
+    
+    return groupProductVariants(filtered);
+  });
+
+  const totalItems = computed(() => productResults.value.length);
+  const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value) || 1);
+  
+  watch([selectedBrandFilter, selectedCategoryFilter, productKeyword], () => {
+    currentPage.value = 1;
+  });
+  
+  const paginatedProducts = computed(() => {
+    const start = (currentPage.value - 1) * pageSize.value;
+    return productResults.value.slice(start, start + pageSize.value);
+  });
+
   const relatedVariants = computed(() => {
     if (!selectedProductDetail.value) {
       return [];
@@ -251,6 +298,7 @@ export function usePosProducts({
 
   watch(productKeyword, (value) => {
     clearProductTimer();
+    currentPage.value = 1;
     showProductDropdown.value = value.trim().length > 0;
     productTimer = window.setTimeout(() => {
       void fetchProducts(value);
@@ -268,6 +316,15 @@ export function usePosProducts({
     showProductDropdown,
     productSearchLabel,
     productResults,
+    paginatedProducts,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    selectedBrandFilter,
+    selectedCategoryFilter,
+    availableBrands,
+    availableCategories,
     relatedVariants,
     colorOptions,
     sizeOptions,

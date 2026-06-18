@@ -35,6 +35,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  noMargin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["refresh", "update:currentPage", "update:pageSize"]);
@@ -92,8 +96,10 @@ function itemKey(item, index) {
 
 <template>
   <div
-    class="mt-5 border-t border-slate-100 pt-4"
-    :class="props.compact ? 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' : 'flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'"
+    :class="[
+      props.noMargin ? 'border-t border-slate-100 px-6 py-3' : 'mt-5 border-t border-slate-100 pt-4',
+      props.compact ? 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' : 'flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'
+    ]"
   >
     <label
       class="inline-flex w-fit items-center border border-slate-200 bg-white text-sm font-medium text-slate-600 shadow-sm"

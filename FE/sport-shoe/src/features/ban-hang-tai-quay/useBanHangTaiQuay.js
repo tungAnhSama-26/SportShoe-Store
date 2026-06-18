@@ -87,6 +87,7 @@ function useBanHangTaiQuay() {
     activePendingInvoice,
     deliveryRecipientName,
     deliveryRecipientPhone,
+    deliveryAddress,
     danhDauCanApDungLaiPhieu: markCouponDirty,
     clearFeedback,
     pageError
@@ -198,7 +199,8 @@ function useBanHangTaiQuay() {
   } = usePosPayment({
     cartItems,
     khachCanTra,
-    pageError
+    pageError,
+    activePendingInvoice
   });
 
   const {
@@ -217,6 +219,10 @@ function useBanHangTaiQuay() {
     pageSize,
     totalItems,
     totalPages,
+    selectedBrandFilter,
+    selectedCategoryFilter,
+    availableBrands,
+    availableCategories,
     colorOptions,
     sizeOptions,
     selectedVariant,
@@ -264,11 +270,7 @@ function useBanHangTaiQuay() {
     markShippingFeeDirty();
   }
 
-  watch(isGuestCustomer, (newVal) => {
-    if (newVal) {
-      updateShippingInfo({ giaoHang: false });
-    }
-  });
+
 
   function markCouponDirty() {
     danhDauCanApDungLaiPhieu();
@@ -572,6 +574,12 @@ function useBanHangTaiQuay() {
     if (!activePendingInvoice.value || cancelingPendingInvoice.value) {
       return;
     }
+
+    const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn hủy hóa đơn ${activePendingInvoice.value.ma} không?`);
+    if (!isConfirmed) {
+      return;
+    }
+
     cancelingPendingInvoice.value = true;
     pageError.value = "";
     successMessage.value = "";
@@ -752,6 +760,10 @@ function useBanHangTaiQuay() {
     pageSize,
     totalItems,
     totalPages,
+    selectedBrandFilter,
+    selectedCategoryFilter,
+    availableBrands,
+    availableCategories,
     productSearchLabel,
     cartItems,
     selectedProductDetail,

@@ -25,6 +25,10 @@ const {
   pageSize,
   totalItems,
   totalPages,
+  selectedBrandFilter,
+  selectedCategoryFilter,
+  availableBrands,
+  availableCategories,
   productSearchLabel,
   cartItems,
   selectedProductDetail,
@@ -75,10 +79,10 @@ const {
   chonKhachVangLai,
   boChonKhachHang,
   moDanhSachSanPham,
-   dongDanhSachSanPham,
-   moChiTietSanPham,
-   handleProductQrScan,
-   tangSoLuong,
+  dongDanhSachSanPham,
+  moChiTietSanPham,
+  handleProductQrScan,
+  tangSoLuong,
   giamSoLuong,
   dongChiTietSanPham,
   chonMauSac,
@@ -114,6 +118,18 @@ onBeforeRouteLeave(async (to, from, next) => {
   }
   next();
 });
+
+const setCustomerKeyword = (val) => { customerKeyword.value = val; };
+const setProductKeyword = (val) => { productKeyword.value = val; };
+const setCurrentPage = (val) => { currentPage.value = val; };
+const setPageSize = (val) => { pageSize.value = val; };
+const setSelectedBrandFilter = (val) => { selectedBrandFilter.value = val; };
+const setSelectedCategoryFilter = (val) => { selectedCategoryFilter.value = val; };
+const setCouponCode = (val) => { couponCode.value = val; };
+const setPaymentMethod = (val) => { paymentMethod.value = val; };
+const setPaymentNote = (val) => { paymentNote.value = val; };
+const setAmountPaid = (val) => { amountPaid.value = val; };
+
 </script>
 
 <template>
@@ -135,6 +151,15 @@ onBeforeRouteLeave(async (to, from, next) => {
     :loading-products="loadingProducts"
     :show-product-dropdown="showProductDropdown"
     :product-results="productResults"
+    :paginated-products="paginatedProducts"
+    :current-page="currentPage"
+    :page-size="pageSize"
+    :total-items="totalItems"
+    :total-pages="totalPages"
+    :selected-brand-filter="selectedBrandFilter"
+    :selected-category-filter="selectedCategoryFilter"
+    :available-brands="availableBrands"
+    :available-categories="availableCategories"
     :product-search-label="productSearchLabel"
     :cart-items="cartItems"
     :selected-product-detail="selectedProductDetail"
@@ -180,13 +205,17 @@ onBeforeRouteLeave(async (to, from, next) => {
     @reset-draft="resetDraft"
     @create-empty-invoice="handleCreateEmptyInvoice"
     @select-invoice="chonHoaDonCho"
-    @update:customer-keyword="customerKeyword = $event"
+    @update:customer-keyword="setCustomerKeyword"
     @focus-customer="moDanhSachKhachHang"
     @blur-customer="dongDanhSachKhachHang"
     @select-customer="chonKhachHang"
     @select-guest="chonKhachVangLai"
     @clear-customer="boChonKhachHang"
-    @update:product-keyword="productKeyword = $event"
+    @update:product-keyword="setProductKeyword"
+    @update:current-page="setCurrentPage"
+    @update:page-size="setPageSize"
+    @update:selected-brand-filter="setSelectedBrandFilter"
+    @update:selected-category-filter="setSelectedCategoryFilter"
     @focus-product="moDanhSachSanPham"
     @blur-product="dongDanhSachSanPham"
     @open-product="moChiTietSanPham"
@@ -199,7 +228,7 @@ onBeforeRouteLeave(async (to, from, next) => {
     @decrease-quantity="giamSoLuongChiTiet"
     @increase-quantity="tangSoLuongChiTiet"
     @add-selected-variant="themBienTheDangChon"
-    @update:coupon-code="couponCode = $event"
+    @update:coupon-code="setCouponCode"
     @focus-coupon="handleCouponFocus"
     @blur-coupon="handleCouponBlur"
     @apply-coupon="handleApplyCoupon"
@@ -207,9 +236,9 @@ onBeforeRouteLeave(async (to, from, next) => {
     @remove-coupon="handleRemoveCoupon"
     @update-shipping="updateShippingInfo"
     @calculate-shipping="handleCalculateShippingFee"
-    @update:payment-method="paymentMethod = $event"
-    @amount-input="handleAmountPaidInput"
-    @update:payment-note="paymentNote = $event"
+    @update:payment-method="setPaymentMethod"
+    @amount-input="setAmountPaid"
+    @update:payment-note="setPaymentNote"
     @print-invoice="handlePrintInvoice"
     @pay-now="handlePayNow"
     @cancel-pending-invoice="handleCancelPendingInvoice"

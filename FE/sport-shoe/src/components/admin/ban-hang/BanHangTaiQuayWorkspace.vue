@@ -5,6 +5,7 @@ import BanHangProductSection from "./BanHangProductSection.vue";
 import BanHangPendingInvoicesSection from "./BanHangPendingInvoicesSection.vue";
 import BanHangPaymentSection from "./BanHangPaymentSection.vue";
 import BanHangProductDetailModal from "./BanHangProductDetailModal.vue";
+import BanHangShippingSection from "./BanHangShippingSection.vue";
 
 defineProps({
   pendingInvoices: {
@@ -75,7 +76,42 @@ defineProps({
     type: Array,
     default: () => []
   },
-
+  paginatedProducts: {
+    type: Array,
+    default: () => []
+  },
+  currentPage: {
+    type: Number,
+    default: 1
+  },
+  pageSize: {
+    type: Number,
+    default: 5
+  },
+  totalItems: {
+    type: Number,
+    default: 0
+  },
+  totalPages: {
+    type: Number,
+    default: 1
+  },
+  selectedBrandFilter: {
+    type: String,
+    default: ""
+  },
+  selectedCategoryFilter: {
+    type: String,
+    default: ""
+  },
+  availableBrands: {
+    type: Array,
+    default: () => []
+  },
+  availableCategories: {
+    type: Array,
+    default: () => []
+  },
   productSearchLabel: {
     type: String,
     default: ""
@@ -284,12 +320,16 @@ const emit = defineEmits([
   "update:paymentNote",
   "print-invoice",
   "pay-now",
-  "cancel-pending-invoice"
+  "cancel-pending-invoice",
+  "update:currentPage",
+  "update:selectedBrandFilter",
+  "update:selectedCategoryFilter",
+  "update:pageSize"
 ]);
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-80px)] flex-col gap-2 overflow-hidden p-2">
+  <div class="flex flex-col gap-2 p-2 h-full overflow-hidden">
     <BanHangPendingInvoicesSection
       :pending-invoices="pendingInvoices"
       :loading-pending-invoices="loadingPendingInvoices"
@@ -301,27 +341,73 @@ const emit = defineEmits([
       @create-empty-invoice="emit('create-empty-invoice')"
     />
 
-    <div class="grid min-h-0 flex-1 gap-2 xl:grid-cols-[1.6fr_0.8fr]">
-      <div class="flex min-h-0 flex-col gap-2">
-        <section class="shrink-0">
-          <BanHangProductSection
-            :active-pending-invoice="activePendingInvoice"
-            :product-keyword="productKeyword"
-            :loading-products="loadingProducts"
-            :show-product-dropdown="showProductDropdown"
-            :product-results="productResults"
-            :product-search-label="productSearchLabel"
+    <div class="grid min-h-0 flex-1 gap-2 lg:grid-cols-[2fr_1fr] items-stretch">
+      <!-- Left Column: Customer, Product, Shipping -->
+      <div class="flex flex-col gap-2">
+        <section class="shrink-0 rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <!-- Hàng 1: Khách hàng (full width) + nút ProductSection -->
+          <div class="flex items-start gap-3 mb-3">
+            <!-- Customer Section chiếm toàn bộ chiều rộng -->
+            <div class="flex-1 min-w-0">
+              <BanHangCustomerSection
+                :customer-keyword="customerKeyword"
+                :loading-customers="loadingCustomers"
+                :show-customer-dropdown="showCustomerDropdown"
+                :customer-results="customerResults"
+                :ten-khach-hang-hien-thi="tenKhachHangHienThi"
+                :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
+                :selected-customer="selectedCustomer"
+                :is-guest-customer="isGuestCustomer"
+                @update:customer-keyword="emit('update:customerKeyword', $event)"
+                @focus-customer="emit('focus-customer')"
+                @blur-customer="emit('blur-customer')"
+                @select-customer="emit('select-customer', $event)"
+                @select-guest="emit('select-guest')"
+                @clear-customer="emit('clear-customer')"
+              />
+            </div>
+            <!-- Nút thêm/quét sản phẩm -->
+            <div class="shrink-0 mt-1.5">
+              <BanHangProductSection
+                :active-pending-invoice="activePendingInvoice"
+                :product-keyword="productKeyword"
+                :loading-products="loadingProducts"
+                :show-product-dropdown="showProductDropdown"
+                :product-results="productResults"
+                :paginated-products="paginatedProducts"
+                :current-page="currentPage"
+                :page-size="pageSize"
+                :total-items="totalItems"
+                :total-pages="totalPages"
+                :selected-brand-filter="selectedBrandFilter"
+                :selected-category-filter="selectedCategoryFilter"
+                :available-brands="availableBrands"
+                :available-categories="availableCategories"
+                :product-search-label="productSearchLabel"
+                :dinh-dang-tien="dinhDangTien"
+                :so-luong-con-lai="soLuongConLai"
+                @update:product-keyword="emit('update:productKeyword', $event)"
+                @update:current-page="emit('update:currentPage', $event)"
+                @update:page-size="emit('update:pageSize', $event)"
+                @update:selected-brand-filter="emit('update:selectedBrandFilter', $event)"
+                @update:selected-category-filter="emit('update:selectedCategoryFilter', $event)"
+                @refresh="emit('update:productKeyword', '')"
+                @focus-product="emit('focus-product')"
+                @blur-product="emit('blur-product')"
+                @open-product="emit('open-product', $event)"
+                @scan-product="emit('scan-product', $event)"
+              />
+            </div>
+          </div>
+          <BanHangShippingSection
+            :shipping-info="shippingInfo"
             :dinh-dang-tien="dinhDangTien"
-            :so-luong-con-lai="soLuongConLai"
-            @update:product-keyword="emit('update:productKeyword', $event)"
-            @refresh="emit('update:productKeyword', '')"
-            @focus-product="emit('focus-product')"
-            @blur-product="emit('blur-product')"
-            @open-product="emit('open-product', $event)"
-            @scan-product="emit('scan-product', $event)"
+            @update-shipping="emit('update-shipping', $event)"
+            @calculate-shipping="emit('calculate-shipping')"
           />
         </section>
 
+        <!-- Cart -->
         <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <div class="mb-2 flex shrink-0 items-center justify-between">
             <h2 class="text-lg font-bold text-slate-900">Giỏ hàng</h2>
@@ -330,7 +416,7 @@ const emit = defineEmits([
             </span>
           </div>
 
-          <div class="flex-1 overflow-y-auto pr-2">
+          <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             <BanHangCartTable
               :cart-items="cartItems"
               :dinh-dang-tien="dinhDangTien"
@@ -342,27 +428,10 @@ const emit = defineEmits([
         </section>
       </div>
 
-      <div class="flex min-h-0 flex-col gap-2">
-        <section class="shrink-0 rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-          <BanHangCustomerSection
-            :customer-keyword="customerKeyword"
-            :loading-customers="loadingCustomers"
-            :show-customer-dropdown="showCustomerDropdown"
-            :customer-results="customerResults"
-            :ten-khach-hang-hien-thi="tenKhachHangHienThi"
-            :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
-            :selected-customer="selectedCustomer"
-            :is-guest-customer="isGuestCustomer"
-            @update:customer-keyword="emit('update:customerKeyword', $event)"
-            @focus-customer="emit('focus-customer')"
-            @blur-customer="emit('blur-customer')"
-            @select-customer="emit('select-customer', $event)"
-            @select-guest="emit('select-guest')"
-            @clear-customer="emit('clear-customer')"
-          />
-        </section>
-
-        <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+      <!-- Right Column: Payment -->
+      <div class="flex flex-col gap-2 h-full overflow-y-auto">
+        <!-- Payment -->
+        <section class="shrink-0 flex flex-col rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <BanHangPaymentSection
             :active-pending-invoice="activePendingInvoice"
             :invoice-loading="invoiceLoading"
@@ -397,6 +466,7 @@ const emit = defineEmits([
             :paying-invoice="payingInvoice"
             :canceling-pending-invoice="cancelingPendingInvoice"
             :dinh-dang-tien="dinhDangTien"
+            :so-luong-con-lai="soLuongConLai"
             :has-printed-invoice="hasPrintedInvoice"
             @update:coupon-code="emit('update:couponCode', $event)"
             @focus-coupon="emit('focus-coupon')"
