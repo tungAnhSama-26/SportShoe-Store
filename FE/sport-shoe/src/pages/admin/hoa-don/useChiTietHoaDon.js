@@ -514,7 +514,7 @@ export function useChiTietHoaDon() {
   const qrThanhToanCodUrl = computed(() => {
     const amount = Math.max(Number(tongTienThanhToanCod.value) || 0, 0);
     const description = encodeURIComponent(noiDungChuyenKhoanCod.value);
-    return `https://img.vietqr.io/image/MB-0876524519-compact2.png?amount=${amount}&addInfo=${description}&accountName=SPORTSHOE%20STORE`;
+    return `https://img.vietqr.io/image/VCB-0965852782-compact2.png?amount=${amount}&addInfo=${description}&accountName=SPORTSHOE%20STORE`;
   });
   const tienThieuThanhToanCod = computed(() => {
     if (formThanhToanCod.value.hinhThucThanhToan !== 1) {
