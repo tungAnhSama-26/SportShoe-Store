@@ -45,6 +45,11 @@ const TRANG_THAI_DAC_BIET = Object.freeze({
     moTa: 'Cửa hàng đang xem xét yêu cầu hủy đơn của bạn.',
     lopMau: 'bg-amber-50 text-amber-700',
   },
+  8: {
+    tieuDe: 'Trả hàng / Hoàn tiền',
+    moTa: 'Đơn hàng đã hủy thành công. Cửa hàng đang tiến hành hoàn phí cho bạn.',
+    lopMau: 'bg-rose-50 text-rose-600 border border-rose-100',
+  },
   10: {
     tieuDe: 'Giao hàng thất bại',
     moTa: 'Đơn hàng chưa thể giao thành công. Cửa hàng sẽ liên hệ để hỗ trợ.',

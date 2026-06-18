@@ -18,6 +18,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.nio.charset.StandardCharsets;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Thanh toán bằng chuyển khoản thật qua VietQR + SePay.
@@ -43,6 +51,18 @@ public class ClientVnPayService {
     private final String sepayBank;
     private final String sepayAccount;
     private final String sepayPrefix;
+
+    @Value("${vnpay.tmn-code:}")
+    private String vnp_TmnCode;
+
+    @Value("${vnpay.hash-secret:}")
+    private String vnp_HashSecret;
+
+    @Value("${vnpay.pay-url:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}")
+    private String vnp_PayUrl;
+
+    @Value("${vnpay.return-url:}")
+    private String vnp_ReturnUrl;
 
     public ClientVnPayService(
             ClientDatHangService datHangService,
@@ -76,19 +96,27 @@ public class ClientVnPayService {
         }
     }
 
-    /** Tạo phiên thanh toán + ảnh QR VietQR (SePay). Chưa tạo đơn. */
+    /** Tạo phiên thanh toán + ảnh QR VietQR (SePay) hoặc link VNPAY Sandbox. Chưa tạo đơn. */
     public TaoMaVnPayResponse taoMa(DatHangRequest request) {
         String token = UUID.randomUUID().toString().replace("-", "");
         String maThanhToan = sepayPrefix + token.substring(0, 10).toUpperCase(Locale.ROOT);
         long soTien = tinhSoTienPhaiTra(request);
         phienMap.put(token, new Phien(request, maThanhToan, soTien));
 
-        // Ảnh QR VietQR do SePay sinh: ngân hàng + STK + số tiền + nội dung CK.
-        String qrData = "https://qr.sepay.vn/img?bank=" + sepayBank
-                + "&acc=" + sepayAccount
-                + "&amount=" + soTien
-                + "&des=" + maThanhToan
-                + "&template=compact";
+        String qrData;
+        if ("VNPAY".equalsIgnoreCase(request.hinhThucThanhToan())
+                && vnp_TmnCode != null && !vnp_TmnCode.isBlank() && !vnp_TmnCode.contains("${")
+                && vnp_HashSecret != null && !vnp_HashSecret.isBlank() && !vnp_HashSecret.contains("${")) {
+            // Sinh link thanh toán VNPAY Sandbox thật
+            qrData = generateVnPayUrl(token, soTien, "127.0.0.1");
+        } else {
+            // Ảnh QR VietQR do SePay sinh: ngân hàng + STK + số tiền + nội dung CK.
+            qrData = "https://qr.sepay.vn/img?bank=" + sepayBank
+                    + "&acc=" + sepayAccount
+                    + "&amount=" + soTien
+                    + "&des=" + maThanhToan
+                    + "&template=compact";
+        }
         return new TaoMaVnPayResponse(token, qrData, maThanhToan);
     }
 
@@ -171,5 +199,132 @@ public class ClientVnPayService {
             result.put("maHoaDon", phien.maHoaDon);
         }
         return result;
+    }
+
+    private String urlEncode(String value) {
+        try {
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString());
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
+    public static String hmactSHA512(final String key, final String data) {
+        try {
+            if (key == null || data == null) {
+                return "";
+            }
+            final javax.crypto.Mac hmac512 = javax.crypto.Mac.getInstance("HmacSHA512");
+            byte[] hmacKeyBytes = key.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            final javax.crypto.spec.SecretKeySpec secretKey = new javax.crypto.spec.SecretKeySpec(hmacKeyBytes, "HmacSHA512");
+            hmac512.init(secretKey);
+            byte[] result = hmac512.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(2 * result.length);
+            for (byte b : result) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+            return sb.toString();
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
+    public String generateVnPayUrl(String token, long amount, String clientIp) {
+        String vnp_Version = "2.1.0";
+        String vnp_Command = "pay";
+        String vnp_OrderInfo = "Thanh toan don hang " + token.substring(0, 8);
+        String vnp_OrderType = "other";
+        String vnp_TxnRef = token;
+        
+        java.time.ZonedDateTime nowGmt7 = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String vnp_CreateDate = nowGmt7.format(formatter);
+        
+        Map<String, String> vnp_Params = new HashMap<>();
+        vnp_Params.put("vnp_Version", vnp_Version);
+        vnp_Params.put("vnp_Command", vnp_Command);
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
+        vnp_Params.put("vnp_CurrCode", "VND");
+        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", vnp_OrderInfo);
+        vnp_Params.put("vnp_OrderType", vnp_OrderType);
+        vnp_Params.put("vnp_Locale", "vn");
+        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+        vnp_Params.put("vnp_IpAddr", clientIp != null ? clientIp : "127.0.0.1");
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+
+        List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
+        Collections.sort(fieldNames);
+        List<String> hashParts = new ArrayList<>();
+        List<String> queryParts = new ArrayList<>();
+        for (String fieldName : fieldNames) {
+            String fieldValue = vnp_Params.get(fieldName);
+            if (fieldValue != null && !fieldValue.isEmpty()) {
+                String encodedKey = urlEncode(fieldName);
+                String encodedValue = urlEncode(fieldValue);
+                hashParts.add(fieldName + "=" + encodedValue);
+                queryParts.add(encodedKey + "=" + encodedValue);
+            }
+        }
+        
+        String hashData = String.join("&", hashParts);
+        String queryUrl = String.join("&", queryParts);
+        String vnp_SecureHash = hmactSHA512(vnp_HashSecret, hashData);
+        
+        System.out.println("=== VNPAY DEBUG REQUEST ===");
+        System.out.println("vnp_TmnCode: " + vnp_TmnCode);
+        System.out.println("vnp_HashSecret: " + vnp_HashSecret);
+        System.out.println("hashData: " + hashData);
+        System.out.println("vnp_SecureHash: " + vnp_SecureHash);
+        System.out.println("==========================");
+        
+        queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+        return vnp_PayUrl + "?" + queryUrl;
+    }
+
+    public synchronized String xacNhanCallback(Map<String, String> params) {
+        String vnp_SecureHash = params.get("vnp_SecureHash");
+        if (vnp_SecureHash == null) {
+            throw new BusinessException("Thiếu chữ ký bảo mật");
+        }
+        
+        Map<String, String> signParams = new HashMap<>(params);
+        signParams.remove("vnp_SecureHash");
+        signParams.remove("vnp_SecureHashType");
+        
+        List<String> fieldNames = new ArrayList<>(signParams.keySet());
+        Collections.sort(fieldNames);
+        List<String> hashParts = new ArrayList<>();
+        for (String fieldName : fieldNames) {
+            if (fieldName != null && fieldName.startsWith("vnp_")) {
+                String fieldValue = signParams.get(fieldName);
+                if (fieldValue != null && !fieldValue.isEmpty()) {
+                    hashParts.add(fieldName + "=" + urlEncode(fieldValue));
+                }
+            }
+        }
+        
+        String hashData = String.join("&", hashParts);
+        String calculatedHash = hmactSHA512(vnp_HashSecret, hashData);
+        
+        System.out.println("=== VNPAY DEBUG CALLBACK ===");
+        System.out.println("vnp_SecureHash received: " + vnp_SecureHash);
+        System.out.println("hashData String generated: " + hashData);
+        System.out.println("vnp_SecureHash calculated: " + calculatedHash);
+        System.out.println("===========================");
+        
+        if (!calculatedHash.equalsIgnoreCase(vnp_SecureHash)) {
+            throw new BusinessException("Chữ ký bảo mật không hợp lệ");
+        }
+        
+        String responseCode = params.get("vnp_ResponseCode");
+        String txnRef = params.get("vnp_TxnRef");
+        
+        if ("00".equals(responseCode)) {
+            return xacNhan(txnRef);
+        } else {
+            throw new BusinessException("Thanh toán không thành công. Mã lỗi: " + responseCode);
+        }
     }
 }
