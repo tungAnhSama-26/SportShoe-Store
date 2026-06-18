@@ -17,5 +17,6 @@ public interface NhanVienService {
     NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request);
     NhanVienResponse doiTrangThai(UUID id, DoiTrangThaiRequest request);
     NhanVienResponse doiMatKhau(UUID id, DoiMatKhauRequest request);
+    NhanVienResponse capNhatFaceId(UUID id, com.example.server.core.admin.nhanVien.dto.request.CapNhatFaceIdRequest request);
     void xoaNhanVien(UUID id);
 }
