@@ -53,13 +53,14 @@
       <!-- Shift Cards (Left side) -->
       <div class="lg:col-span-2 space-y-4">
         <h2 class="text-lg font-bold text-slate-800 mb-4">Ca làm việc trong ngày</h2>
+        
       <!-- Ca Sáng -->
       <div 
         v-if="coCa('sang')"
-        class="flex items-center justify-between p-4 rounded-[20px] border border-emerald-100 bg-emerald-50/50 cursor-pointer hover:bg-emerald-50 transition"
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[20px] border border-emerald-100 bg-emerald-50/50 hover:bg-emerald-50 transition"
       >
         <div class="flex items-center gap-4">
-          <div class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100/80 text-emerald-500">
+          <div class="flex items-center justify-center shrink-0 w-12 h-12 rounded-full bg-emerald-100/80 text-emerald-500">
             <Sun class="h-6 w-6" />
           </div>
           <div>
@@ -69,26 +70,49 @@
               <MapPin class="h-3 w-3" />
               <span>Văn phòng Hà Nội</span>
             </div>
+            <div class="mt-2 text-xs font-medium" v-if="getChamCongData('sang')?.thoiGianVao || getChamCongData('sang')?.thoiGianRa">
+              <span v-if="getChamCongData('sang')?.thoiGianVao" class="text-emerald-600 mr-2">Vào: {{ formatTime(getChamCongData('sang').thoiGianVao) }}</span>
+              <span v-if="getChamCongData('sang')?.thoiGianRa" class="text-emerald-600">Ra: {{ formatTime(getChamCongData('sang').thoiGianRa) }}</span>
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <span 
-            class="px-2.5 py-1 text-[10px] font-bold rounded-full"
-            :class="trangThaiChamCong('sang') === 'Đã chấm công' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'"
-          >
-            {{ trangThaiChamCong('sang') }}
-          </span>
-          <ChevronRight class="h-5 w-5 text-slate-400" />
+          <template v-if="laNgayHomNay">
+            <button 
+              v-if="trangThaiChamCong('sang') === 'Chưa Check-in'"
+              @click="handleCheckInClick"
+              :disabled="dangXuLy"
+              class="px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
+            >
+              Check-in
+            </button>
+            <button 
+              v-else-if="trangThaiChamCong('sang') === 'Đang làm'"
+              @click="thucHienCheckOut"
+              :disabled="dangXuLy"
+              class="px-4 py-2 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
+            >
+              Check-out
+            </button>
+            <span v-else class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-600">
+              Hoàn thành
+            </span>
+          </template>
+          <template v-else>
+            <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600">
+              {{ trangThaiChamCong('sang') }}
+            </span>
+          </template>
         </div>
       </div>
 
       <!-- Ca Chiều -->
       <div 
         v-if="coCa('chieu')"
-        class="flex items-center justify-between p-4 rounded-[20px] border border-orange-100 bg-orange-50/50 cursor-pointer hover:bg-orange-50 transition"
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[20px] border border-orange-100 bg-orange-50/50 hover:bg-orange-50 transition"
       >
         <div class="flex items-center gap-4">
-          <div class="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-500">
+          <div class="flex items-center justify-center shrink-0 w-12 h-12 rounded-full bg-orange-100 text-orange-500">
             <Sunset class="h-6 w-6" />
           </div>
           <div>
@@ -98,26 +122,49 @@
               <MapPin class="h-3 w-3" />
               <span>Văn phòng Hà Nội</span>
             </div>
+            <div class="mt-2 text-xs font-medium" v-if="getChamCongData('chieu')?.thoiGianVao || getChamCongData('chieu')?.thoiGianRa">
+              <span v-if="getChamCongData('chieu')?.thoiGianVao" class="text-orange-600 mr-2">Vào: {{ formatTime(getChamCongData('chieu').thoiGianVao) }}</span>
+              <span v-if="getChamCongData('chieu')?.thoiGianRa" class="text-orange-600">Ra: {{ formatTime(getChamCongData('chieu').thoiGianRa) }}</span>
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <span 
-            class="px-2.5 py-1 text-[10px] font-bold rounded-full"
-            :class="trangThaiChamCong('chieu') === 'Đã chấm công' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'"
-          >
-            {{ trangThaiChamCong('chieu') }}
-          </span>
-          <ChevronRight class="h-5 w-5 text-slate-400" />
+          <template v-if="laNgayHomNay">
+            <button 
+              v-if="trangThaiChamCong('chieu') === 'Chưa Check-in'"
+              @click="handleCheckInClick"
+              :disabled="dangXuLy"
+              class="px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
+            >
+              Check-in
+            </button>
+            <button 
+              v-else-if="trangThaiChamCong('chieu') === 'Đang làm'"
+              @click="thucHienCheckOut"
+              :disabled="dangXuLy"
+              class="px-4 py-2 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
+            >
+              Check-out
+            </button>
+            <span v-else class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-600">
+              Hoàn thành
+            </span>
+          </template>
+          <template v-else>
+            <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600">
+              {{ trangThaiChamCong('chieu') }}
+            </span>
+          </template>
         </div>
       </div>
 
       <!-- Ca Tối -->
       <div 
         v-if="coCa('toi')"
-        class="flex items-center justify-between p-4 rounded-[20px] border border-purple-100 bg-purple-50/50 cursor-pointer hover:bg-purple-50 transition"
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[20px] border border-purple-100 bg-purple-50/50 hover:bg-purple-50 transition"
       >
         <div class="flex items-center gap-4">
-          <div class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 text-purple-600">
+          <div class="flex items-center justify-center shrink-0 w-12 h-12 rounded-full bg-purple-100 text-purple-600">
             <Moon class="h-6 w-6" />
           </div>
           <div>
@@ -127,16 +174,39 @@
               <MapPin class="h-3 w-3" />
               <span>Văn phòng Hà Nội</span>
             </div>
+            <div class="mt-2 text-xs font-medium" v-if="getChamCongData('toi')?.thoiGianVao || getChamCongData('toi')?.thoiGianRa">
+              <span v-if="getChamCongData('toi')?.thoiGianVao" class="text-purple-600 mr-2">Vào: {{ formatTime(getChamCongData('toi').thoiGianVao) }}</span>
+              <span v-if="getChamCongData('toi')?.thoiGianRa" class="text-purple-600">Ra: {{ formatTime(getChamCongData('toi').thoiGianRa) }}</span>
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <span 
-            class="px-2.5 py-1 text-[10px] font-bold rounded-full"
-            :class="trangThaiChamCong('toi') === 'Đã chấm công' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600'"
-          >
-            {{ trangThaiChamCong('toi') }}
-          </span>
-          <ChevronRight class="h-5 w-5 text-slate-400" />
+          <template v-if="laNgayHomNay">
+            <button 
+              v-if="trangThaiChamCong('toi') === 'Chưa Check-in'"
+              @click="handleCheckInClick"
+              :disabled="dangXuLy"
+              class="px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
+            >
+              Check-in
+            </button>
+            <button 
+              v-else-if="trangThaiChamCong('toi') === 'Đang làm'"
+              @click="thucHienCheckOut"
+              :disabled="dangXuLy"
+              class="px-4 py-2 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
+            >
+              Check-out
+            </button>
+            <span v-else class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-600">
+              Hoàn thành
+            </span>
+          </template>
+          <template v-else>
+            <span class="px-3 py-1.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600">
+              {{ trangThaiChamCong('toi') }}
+            </span>
+          </template>
         </div>
       </div>
 
@@ -191,6 +261,12 @@
         </div>
       </div>
     </div>
+    <FaceIdCheckInModal 
+      :show="showFaceIdModal" 
+      :saved-descriptor-string="adminUser?.faceDescriptor"
+      @close="showFaceIdModal = false"
+      @success="thucHienCheckIn"
+    />
   </div>
 </template>
 
@@ -325,6 +401,11 @@ const lichNgayDangChon = computed(() => {
   return lichLamViecTuan.value.filter(l => l.ngay === selectedDateStr);
 });
 
+const laNgayHomNay = computed(() => {
+  if (!cacNgayTrongTuan.value[chonNgayIdx.value]) return false;
+  return formatISODate(cacNgayTrongTuan.value[chonNgayIdx.value]) === formatISODate(new Date());
+});
+
 function coCa(caNhan) {
   return lichNgayDangChon.value.some(l => l.ca === caNhan);
 }
@@ -335,12 +416,70 @@ function coCaVaoNgay(ngayIdx) {
   return lichLamViecTuan.value.some(l => l.ngay === dateStr);
 }
 
+function getChamCongData(caNhan) {
+  if (!cacNgayTrongTuan.value[chonNgayIdx.value]) return null;
+  const ngayStr = formatISODate(cacNgayTrongTuan.value[chonNgayIdx.value]);
+  return chamCongTuan.value.find(c => c.ngay === ngayStr && c.ca === caNhan);
+}
+
 function trangThaiChamCong(caNhan) {
-  const current = cacNgayTrongTuan.value[chonNgayIdx.value];
-  const ngayStr = formatISODate(current);
-  const chamCong = chamCongTuan.value.find(c => c.ngay === ngayStr && c.ca === caNhan);
-  if (chamCong && chamCong.thoiGianVao) return 'Đã chấm công';
-  return 'Chưa chấm công';
+  const c = getChamCongData(caNhan);
+  if (!c || !c.thoiGianVao) return 'Chưa Check-in';
+  if (c.thoiGianVao && !c.thoiGianRa) return 'Đang làm';
+  return 'Hoàn thành';
+}
+
+function formatTime(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+const dangXuLy = ref(false);
+
+import { checkIn, checkOut } from '../../../services/cham-cong.js';
+import { showSuccess, showError } from '../../../utils/alert.js';
+import { getCurrentAdminUser } from '../../../services/auth';
+import FaceIdCheckInModal from './components/FaceIdCheckInModal.vue';
+
+const showFaceIdModal = ref(false);
+const adminUser = getCurrentAdminUser();
+
+async function handleCheckInClick() {
+  if (!adminUser || !adminUser.faceDescriptor) {
+    showError("Bạn chưa đăng ký khuôn mặt. Vui lòng liên hệ Admin để đăng ký Face ID trước khi Check-in.");
+    return;
+  }
+  showFaceIdModal.value = true;
+}
+
+async function thucHienCheckIn() {
+  showFaceIdModal.value = false;
+  if (!userId.value) return;
+  dangXuLy.value = true;
+  try {
+    await checkIn({ nhanVienId: userId.value });
+    showSuccess("Check-in thành công!");
+    await taiDuLieu(); // Tải lại để cập nhật trạng thái
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Check-in thất bại"));
+  } finally {
+    dangXuLy.value = false;
+  }
+}
+
+async function thucHienCheckOut() {
+  if (!userId.value) return;
+  dangXuLy.value = true;
+  try {
+    await checkOut({ nhanVienId: userId.value });
+    showSuccess("Check-out thành công!");
+    await taiDuLieu(); // Tải lại để cập nhật trạng thái
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Check-out thất bại"));
+  } finally {
+    dangXuLy.value = false;
+  }
 }
 
 const tongCaHomNay = computed(() => lichNgayDangChon.value.length);
