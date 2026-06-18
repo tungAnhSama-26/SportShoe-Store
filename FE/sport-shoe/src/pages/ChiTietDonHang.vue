@@ -341,6 +341,7 @@ function lopBadge(tt) {
     case 5: return 'bg-emerald-50 text-emerald-600';
     case 6: return 'bg-rose-50 text-rose-600';
     case 7: return 'bg-amber-50 text-amber-700';
+    case 8: return 'bg-rose-50 text-rose-600 border border-rose-100';
     case 10: return 'bg-rose-50 text-rose-600';
     default: return 'bg-slate-100 text-slate-600';
   }

@@ -61,6 +61,7 @@ public class ClientXemDonHangService {
     private static final int TRANG_THAI_CHO_LAY_HANG = 2;
     private static final int TRANG_THAI_YEU_CAU_HUY = 7;
     private static final int TRANG_THAI_HUY = 6;
+    private static final int TRANG_THAI_CAN_HOAN_TIEN = 8;
 
     /** Hình thức thanh toán: 3 = chuyển khoản (VietQR/SePay), 4 = COD (tiền mặt). */
     private static final int HINH_THUC_CHUYEN_KHOAN = 3;
@@ -152,9 +153,16 @@ public class ClientXemDonHangService {
                 trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
             }
 
+            int virtualStatus = hd.getTrangThai();
+            String virtualStatusText = nhanTrangThai(hd.getTrangThai());
+            if (hd.getTrangThai() == TRANG_THAI_HUY && laCanHoanTien(hd.getId())) {
+                virtualStatus = TRANG_THAI_CAN_HOAN_TIEN;
+                virtualStatusText = "Cần hoàn tiền";
+            }
+
             result.add(new DonHangTomTatResponse(
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
-                    hd.getTrangThai(), nhanTrangThai(hd.getTrangThai()),
+                    virtualStatus, virtualStatusText,
                     soLuong, hd.getTongTienThanhToan(), sanPhams,
                     phieuTraHangId, trangThaiTraHang, trangThaiTraHangText,
                     hd.getNgayCapNhat()));
@@ -275,9 +283,16 @@ public class ClientXemDonHangService {
                 && hd.getTrangThai() == TRANG_THAI_CHO_XAC_NHAN;
         boolean coTheSua = dangChoXacNhan && !laCK;
 
+        int virtualStatus = hd.getTrangThai();
+        String virtualStatusText = nhanTrangThai(hd.getTrangThai());
+        if (hd.getTrangThai() == TRANG_THAI_HUY && laCanHoanTien(hd.getId())) {
+            virtualStatus = TRANG_THAI_CAN_HOAN_TIEN;
+            virtualStatusText = "Cần hoàn tiền";
+        }
+
         return new DonHangChiTietResponse(
                 hd.getId(), hd.getMa(), hd.getNgayLap(),
-                hd.getTrangThai(), nhanTrangThai(hd.getTrangThai()),
+                virtualStatus, virtualStatusText,
                 Boolean.TRUE.equals(hd.getDaNhanHang()),
                 hd.getTenNguoiNhan(), hd.getSdtNguoiNhan(), hd.getDiaChiGiaoHang(),
                 maPhieu, sanPhams,
@@ -534,6 +549,9 @@ public class ClientXemDonHangService {
     private boolean capNhatThanhToanKhiHuyDon(HoaDon hd) {
         boolean canHoanTien = false;
         for (ThanhToan tt : thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hd.getId())) {
+            if (!Objects.equals(tt.getLoaiGiaoDich(), LOAI_GIAO_DICH_THANH_TOAN)) {
+                continue;
+            }
             if (Objects.equals(tt.getTrangThai(), TT_THANH_TOAN_CHO)) {
                 tt.setTrangThai(TT_THANH_TOAN_DA_HUY);
                 tt.setGhiChu(noiGhiChu(tt, "Đã hủy do khách hủy đơn"));
@@ -568,6 +586,7 @@ public class ClientXemDonHangService {
             case 5 -> "Hoàn thành";
             case 6 -> "Đã hủy";
             case 7 -> "Yêu cầu hủy";
+            case 8 -> "Cần hoàn tiền";
             case 10 -> "Giao hàng thất bại";
             default -> "Không xác định";
         };
@@ -588,5 +607,11 @@ public class ClientXemDonHangService {
             case 10 -> "Hoàn hàng thất bại";
             default -> "Không xác định";
         };
+    }
+
+    private boolean laCanHoanTien(Integer hoaDonId) {
+        return thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDonId)
+                .stream()
+                .anyMatch(tt -> Objects.equals(tt.getTrangThai(), TT_THANH_TOAN_CAN_HOAN_TIEN));
     }
 }

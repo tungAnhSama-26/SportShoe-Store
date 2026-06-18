@@ -317,6 +317,34 @@ export function useChiTietHoaDon() {
     return 0;
   });
 
+  const chuanHoaTrangThaiText = (value) =>
+    String(value ?? "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const laTrangThaiCanHoanTien = (value) => {
+    const stt = chuanHoaTrangThaiText(value);
+    return stt === "can hoan tien" || stt === "can_hoan_tien";
+  };
+
+  const laGiaTriHeThong = (value) => {
+    const text = chuanHoaTrangThaiText(value);
+    return !text || text === "he thong" || text === "chua cap nhat";
+  };
+
+  const laLogHoanTien = (log) => {
+    const trangThai = chuanHoaTrangThaiText(log?.trangThai);
+    const ghiChu = chuanHoaTrangThaiText(log?.ghiChu);
+    return trangThai.includes("xac nhan hoan tien") || ghiChu.includes("hoan tien");
+  };
+
+  const laLogKhachHuyDon = (log) => {
+    const ghiChu = chuanHoaTrangThaiText(log?.ghiChu);
+    return ghiChu.includes("khach hang huy don") || ghiChu.includes("khach huy don");
+  };
+
   const donDaHoanThanh = computed(() => {
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     return (
@@ -337,13 +365,10 @@ export function useChiTietHoaDon() {
   });
 
   const donDangChoHoanTien = computed(() => {
-    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     const coThanhToanCanHoan = (hoaDon.value?.lichSuThanhToan ?? []).some(
-      (item) => item.trangThaiThanhToan === "Cần hoàn tiền",
+      (item) => laTrangThaiCanHoanTien(item.trangThaiThanhToan),
     );
-    return (
-      stt === "cần hoàn tiền" || stt === "can_hoan_tien" || coThanhToanCanHoan
-    );
+    return laTrangThaiCanHoanTien(hoaDon.value?.trangThai) || coThanhToanCanHoan;
   });
 
   const donDaKetThuc = computed(
@@ -464,12 +489,18 @@ export function useChiTietHoaDon() {
   const thanhToanCanHoanTien = computed(
     () =>
       (hoaDon.value?.lichSuThanhToan ?? []).find(
-        (item) => item.trangThaiThanhToan === "Cần hoàn tiền",
+        (item) => laTrangThaiCanHoanTien(item.trangThaiThanhToan),
       ) ?? null,
   );
-  const coTheHoanTien = computed(() => Boolean(thanhToanCanHoanTien.value));
+  const coTheHoanTien = computed(
+    () => Boolean(thanhToanCanHoanTien.value) || donDangChoHoanTien.value,
+  );
   const tongTienHoan = computed(
-    () => thanhToanCanHoanTien.value?.tongTien ?? 0,
+    () =>
+      thanhToanCanHoanTien.value?.tongTien ??
+      hoaDon.value?.tongTien ??
+      hoaDon.value?.tongThanhToan ??
+      0,
   );
   const tongTienThanhToanCod = computed(
     () =>
@@ -608,7 +639,10 @@ export function useChiTietHoaDon() {
         ? cacBuocYeuCauHuy
         : cacBuoc.value;
     return nguonBuoc.map((buoc) => {
+      const logHoanTien =
+        buoc.id === 6 ? lichSu.find((item) => laLogHoanTien(item)) : null;
       const banGhi =
+        logHoanTien ??
         lichSu.find(
           (item) =>
             (item.trangThai || "").toLowerCase() === buoc.key.toLowerCase() ||
@@ -616,6 +650,9 @@ export function useChiTietHoaDon() {
         ) ?? null;
       let time = banGhi?.ngayTao;
       let staff = banGhi?.maNhanVien;
+      if (buoc.id === 6 && laGiaTriHeThong(staff) && laLogKhachHuyDon(banGhi)) {
+        staff = "Khách hàng";
+      }
       if (!banGhi && buoc.id === 1) {
         time = hoaDon.value?.ngayTao;
         staff = hoaDon.value?.maNhanVien ?? "Hệ thống";
@@ -1248,7 +1285,7 @@ export function useChiTietHoaDon() {
     if (
       !hoaDon.value ||
       dangXacNhanHoanTien.value ||
-      !thanhToanCanHoanTien.value
+      !coTheHoanTien.value
     )
       return;
     const soTienHoan = Number(formHoanTien.value.soTienHoan) || 0;
