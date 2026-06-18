@@ -53,6 +53,13 @@ export function doiMatKhauNhanVien(id, matKhauMoi) {
   });
 }
 
+export function capNhatFaceId(id, faceDescriptor) {
+  return request(`/admin/nhan-vien/${id}/face-id`, {
+    method: "PUT",
+    body: JSON.stringify({ faceDescriptor }),
+  });
+}
+
 export function layHoSoNhanVien() {
   return request("/nhanvien/profile");
 }

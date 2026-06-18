@@ -109,6 +109,17 @@ public class NhanVienController {
         ));
     }
 
+    @PutMapping("/{id}/face-id")
+    public ResponseEntity<ApiResponse<NhanVienResponse>> capNhatFaceId(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.example.server.core.admin.nhanVien.dto.request.CapNhatFaceIdRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Cập nhật dữ liệu khuôn mặt thành công",
+                nhanVienService.capNhatFaceId(id, request)
+        ));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> xoaNhanVien(@PathVariable UUID id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

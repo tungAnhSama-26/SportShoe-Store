@@ -13,4 +13,6 @@ import java.util.UUID;
 public interface ChamCongRepository extends JpaRepository<ChamCong, UUID> {
     Optional<ChamCong> findByNhanVienIdAndNgayAndCa(UUID nhanVienId, LocalDate ngay, String ca);
     List<ChamCong> findByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
+    boolean existsByLichLamViecId(UUID lichLamViecId);
+    boolean existsByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
 }
