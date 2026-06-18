@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
+import { useAdminSession } from "../../../composable/useAdminSession.js";
+import ChamCongNhanVien from "../../admin/nhan-vien/ChamCongNhanVien.vue";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError } from "../../../utils/alert";
@@ -53,6 +55,9 @@ const dangTai = ref(false);
 const loiTrang = ref("");
 const danhSach = ref<ChamCongRecord[]>([]);
 const danhSachNhanVien = ref<{ id: string; ma: string; hoTen: string }[]>([]);
+
+const { adminSession } = useAdminSession();
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
 
 const boLoc = ref({
   keyword: "",
@@ -164,6 +169,7 @@ function taoMock(dsnv: { id: string; ma: string; hoTen: string }[]): ChamCongRec
 }
 
 async function taiDanhSach() {
+  if (!laAdmin.value) return; // Chỉ admin mới tải dữ liệu chấm công tổng
   dangTai.value = true;
   loiTrang.value = "";
   try {
@@ -221,7 +227,9 @@ onMounted(taiDanhSach);
 </script>
 
 <template>
-  <div class="space-y-5">
+  <ChamCongNhanVien v-if="!laAdmin" />
+  
+  <div v-else class="space-y-5">
     <!-- Thống kê nhanh -->
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Card class="!p-0">
