@@ -377,6 +377,22 @@ function doiSoLuong(id, delta) {
   soLuongSua.value = { ...soLuongSua.value, [id]: Math.max(0, hienTai + delta) };
 }
 
+// Thành tiền 1 dòng theo số lượng đang chỉnh (hiển thị live khi +/-).
+function thanhTienSuaSP(sp) {
+  const sl = Number(soLuongSua.value[sp.hoaDonChiTietId]) || 0;
+  return sl * Number(sp.giaDonVi || 0);
+}
+
+// Số dòng còn giữ lại (số lượng >= 1) + tạm tính mới khi đang sửa.
+const soDongConLai = computed(() =>
+  (don.value?.sanPhams || []).filter(
+    (sp) => (Number(soLuongSua.value[sp.hoaDonChiTietId]) || 0) >= 1,
+  ).length,
+);
+const tamTinhSua = computed(() =>
+  (don.value?.sanPhams || []).reduce((s, sp) => s + thanhTienSuaSP(sp), 0),
+);
+
 async function luuSoLuong() {
   if (dangLuuSoLuong.value) return;
   const items = Object.entries(soLuongSua.value)
@@ -655,7 +671,12 @@ function xuLyAnhLoi(event) {
             </div>
           </div>
           <div class="space-y-4">
-            <div v-for="(sp, i) in don.sanPhams" :key="i" class="flex gap-4">
+            <div
+              v-for="(sp, i) in don.sanPhams"
+              :key="sp.hoaDonChiTietId ?? i"
+              class="flex gap-4"
+              :class="dangSuaSoLuong && (Number(soLuongSua[sp.hoaDonChiTietId]) || 0) < 1 ? 'opacity-50' : ''"
+            >
               <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800">{{ sp.tenSanPham }}</p>
@@ -670,8 +691,12 @@ function xuLyAnhLoi(event) {
                   <button type="button" class="px-3 py-1 text-base font-bold text-slate-600 hover:bg-slate-50" @click="doiSoLuong(sp.hoaDonChiTietId, 1)">+</button>
                 </div>
               </div>
-              <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(sp.thanhTien) }}</p>
+              <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(dangSuaSoLuong ? thanhTienSuaSP(sp) : sp.thanhTien) }}</p>
             </div>
+          </div>
+          <div v-if="dangSuaSoLuong" class="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+            <span class="text-sm text-slate-500">Tạm tính ({{ soDongConLai }} sản phẩm)</span>
+            <span class="text-lg font-bold text-primary">{{ dinhDangTienViet(tamTinhSua) }}</span>
           </div>
           <p v-if="dangSuaSoLuong" class="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 border border-amber-100">
             Giảm số lượng về 0 để bỏ sản phẩm khỏi đơn. Đơn phải còn ít nhất 1 sản phẩm. Nếu giá sản phẩm đã thay đổi, hệ thống sẽ cập nhật theo giá hiện tại và thông báo cho bạn.
