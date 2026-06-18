@@ -444,7 +444,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       <div class="overflow-x-auto">
         <table class="min-w-[860px] w-full border-separate border-spacing-y-3 text-left">
           <thead>
-            <tr class="text-xs font-bold uppercase tracking-[0.18em] text-slate-950">
+            <tr class="text-xs font-bold tracking-[0.05em] text-slate-950">
               <th class="px-4 py-2">STT</th>
               <th class="px-4 py-2">Mã nhân viên</th>
               <th class="px-4 py-2">Nhân viên</th>
@@ -589,7 +589,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       <div class="overflow-x-auto">
         <table class="min-w-[900px] w-full border-separate border-spacing-y-3 text-left">
           <thead>
-            <tr class="text-xs font-bold uppercase tracking-[0.18em] text-slate-950">
+            <tr class="text-xs font-bold tracking-[0.05em] text-slate-950">
               <th class="px-4 py-2">STT</th>
               <th class="px-4 py-2">Mã sản phẩm</th>
               <th class="px-4 py-2">Tên sản phẩm</th>
