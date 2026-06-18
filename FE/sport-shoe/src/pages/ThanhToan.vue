@@ -305,7 +305,7 @@ async function hoanTatDatHang(maHoaDon) {
 
 async function datHangMoi() {
   if (!hopLeThongTin()) return;
-  if (hinhThucThanhToan.value === 'VNPAY') {
+  if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
     return moThanhToanVnPay();
   }
   dangDat.value = true;
@@ -319,11 +319,14 @@ async function datHangMoi() {
   }
 }
 
-// --- VNPay (giả lập): hiện QR, quét xong tự tạo đơn ---
+// --- VNPay: hiện QR hoặc link redirect ---
 async function moThanhToanVnPay() {
   dangDat.value = true;
   try {
     qrVnPay.value = await taoMaVnPay(taoPayload());
+    if (qrVnPay.value && qrVnPay.value.qrData && qrVnPay.value.qrData.startsWith('http') && !qrVnPay.value.qrData.includes('qr.sepay.vn')) {
+      window.open(qrVnPay.value.qrData, '_blank');
+    }
     batDauPoll();
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể tạo mã thanh toán'));
@@ -464,14 +467,24 @@ function xuLyAnhLoi(event) {
               :class="hinhThucThanhToan === 'COD' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'"
             >
               <input type="radio" value="COD" v-model="hinhThucThanhToan" class="text-primary focus:ring-primary/30" />
-              <span class="text-sm font-medium text-slate-700">Thanh toán khi nhận hàng (COD)</span>
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200 uppercase tracking-wider shrink-0">COD</span>
+              <span class="text-sm font-medium text-slate-700">Thanh toán khi nhận hàng</span>
             </label>
+            
+            <label
+              class="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition"
+              :class="hinhThucThanhToan === 'VIETQR' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'"
+            >
+              <input type="radio" value="VIETQR" v-model="hinhThucThanhToan" class="text-primary focus:ring-primary/30" />
+              <img src="https://img.vietqr.io/assets/images/vietqr.png" alt="VietQR" class="h-5 object-contain shrink-0" />
+            </label>
+
             <label
               class="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition"
               :class="hinhThucThanhToan === 'VNPAY' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'"
             >
               <input type="radio" value="VNPAY" v-model="hinhThucThanhToan" class="text-primary focus:ring-primary/30" />
-              <span class="text-sm font-medium text-slate-700">Chuyển khoản VietQR (MB Bank)</span>
+              <img src="https://static.cdnlogo.com/logos/v/99/vnpay.svg" alt="VNPAY" class="h-4 object-contain shrink-0" />
             </label>
           </section>
         </div>
@@ -569,7 +582,7 @@ function xuLyAnhLoi(event) {
             </div>
           </div>
           <button @click="datHangMoi" :disabled="dangDat" class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0">
-            {{ dangDat ? 'Đang xử lý...' : (hinhThucThanhToan === 'VNPAY' ? 'Thanh toán VNPay' : 'Đặt hàng') }}
+            {{ dangDat ? 'Đang xử lý...' : (hinhThucThanhToan !== 'COD' ? 'Thanh toán' : 'Đặt hàng') }}
           </button>
           <router-link to="/khachhang/gio-hang" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Quay lại giỏ hàng</router-link>
         </aside>
@@ -580,12 +593,26 @@ function xuLyAnhLoi(event) {
     <Teleport to="body">
       <div v-if="qrVnPay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
         <div class="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl">
-          <h3 class="text-lg font-bold text-slate-900">Quét VietQR để chuyển khoản</h3>
-          <p class="mt-1 text-sm text-slate-400">Nội dung CK: <b>{{ qrVnPay.maGiaoDich }}</b></p>
-          <div class="mt-5 flex justify-center">
-            <img :src="anhQrVnPay" alt="VietQR" class="h-64 w-64 rounded-xl border border-slate-100" />
-          </div>
-          <p class="mt-3 text-xs text-slate-400">Mở app ngân hàng, quét mã — số tiền & nội dung tự điền. Đơn sẽ tự tạo sau khi nhận được tiền.</p>
+          <template v-if="anhQrVnPay.startsWith('http') && !anhQrVnPay.includes('qr.sepay.vn') && !anhQrVnPay.includes('vietqr.io')">
+            <h3 class="text-lg font-bold text-slate-900">Thanh toán trực tuyến VNPAY</h3>
+            <p class="mt-2 text-sm text-slate-400">Đơn hàng: <b>{{ qrVnPay.maGiaoDich }}</b></p>
+            <div class="mt-6 mb-6 flex flex-col items-center justify-center min-h-[140px]">
+              <a :href="anhQrVnPay" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 text-sm font-bold shadow-md transition duration-200">
+                Thanh toán trên VNPAY
+              </a>
+              <p class="mt-3 text-xs text-slate-400 text-center max-w-[280px]">
+                Nếu trình duyệt không tự mở cổng thanh toán, vui lòng nhấp vào nút xanh phía trên để thực hiện.
+              </p>
+            </div>
+          </template>
+          <template v-else>
+            <h3 class="text-lg font-bold text-slate-900">Quét VietQR để chuyển khoản</h3>
+            <p class="mt-1 text-sm text-slate-400">Nội dung CK: <b>{{ qrVnPay.maGiaoDich }}</b></p>
+            <div class="mt-5 flex justify-center">
+              <img :src="anhQrVnPay" alt="VietQR" class="h-64 w-64 rounded-xl border border-slate-100" />
+            </div>
+            <p class="mt-3 text-xs text-slate-400">Mở app ngân hàng, quét mã — số tiền & nội dung tự điền. Đơn sẽ tự tạo sau khi nhận được tiền.</p>
+          </template>
           <div class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
