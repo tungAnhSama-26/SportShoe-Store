@@ -191,17 +191,18 @@ async function guiYeuCauHuy(don) {
   try {
     await yeuCauHuyDonHang(don.id);
     await taiDanhSach(true);
-<<<<<<< Updated upstream
+    // Sau khi hủy, nhảy sang đúng tab chứa đơn để khách thấy kết quả.
     const donSauKhiHuy = danhSach.value.find((item) => item.id === don.id);
     if (Number(donSauKhiHuy?.trangThai) === 8 || donSauKhiHuy?.phieuTraHangId != null) {
+      // Đơn chuyển khoản đã thanh toán -> cần hoàn tiền.
       trangThaiDangChon.value = "TRA_HANG";
-    } else if (Number(donSauKhiHuy?.trangThai) === 6) {
-      trangThaiDangChon.value = 6;
+      showSuccess('Đơn hàng đã được hủy. Cửa hàng sẽ hoàn tiền cho bạn.');
+    } else {
+      if (Number(donSauKhiHuy?.trangThai) === 6) {
+        trangThaiDangChon.value = 6;
+      }
+      showSuccess('Đơn hàng đã được hủy.');
     }
-    showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
-=======
-    showSuccess('Đơn hàng đã được hủy.');
->>>>>>> Stashed changes
   } catch (error) {
     showError(getDisplayErrorMessage(error, 'Không thể hủy đơn hàng'));
   } finally {
