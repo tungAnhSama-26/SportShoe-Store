@@ -474,7 +474,7 @@ async function xacNhanNhan() {
 }
 
 function diDanhGia() {
-  router.push(`/don-hang/${route.params.id}/danh-gia`);
+  router.push(`/khachhang/don-hang/${route.params.id}/danh-gia`);
 }
 
 function xuLyAnhLoi(event) {
@@ -485,7 +485,7 @@ function xuLyAnhLoi(event) {
 <template>
   <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-4xl px-6 lg:px-10 pt-8">
-      <button @click="router.push('/don-hang')" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
+      <button @click="router.push('/khachhang/don-hang')" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
         Đơn hàng của bạn
       </button>

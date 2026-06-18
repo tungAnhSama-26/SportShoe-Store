@@ -234,18 +234,13 @@ onMounted(taiDuLieu);
 
 <template>
   <div class="space-y-5 pb-10">
-    <section class="flex items-center gap-4">
+    <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <button
         @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang' })"
         class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-5 w-5" />
       </button>
-      <div>
-        <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
-          {{ laMoi ? "Tặng phiếu khách hàng" : "Chi tiết phiếu tặng" }}
-        </h1>
-      </div>
     </section>
 
     <div v-if="loiTrang" class="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-3 text-sm font-medium text-rose-600">{{ loiTrang }}</div>

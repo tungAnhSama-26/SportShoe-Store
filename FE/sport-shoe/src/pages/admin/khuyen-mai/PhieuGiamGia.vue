@@ -213,206 +213,208 @@ const {
         {{ loiTrang }}
       </div>
 
-      <div class="overflow-x-auto admin-table-scroll w-full">
-        <table
-          v-if="activeTab === 'phieu'"
-          class="w-full border-separate border-spacing-y-2 text-sm"
-        >
-          <thead>
-            <tr
-              class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
-            >
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã</th>
-              <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
-              <th class="bg-slate-100 px-4 py-3">Hình thức</th>
-              <th class="bg-slate-100 px-4 py-3">Giá trị giảm</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày bắt đầu</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày kết thúc</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th
-                class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center whitespace-nowrap"
+      <div class="w-full overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-x-auto admin-table-scroll">
+          <table
+            v-if="activeTab === 'phieu'"
+            class="w-full border-collapse text-left text-sm text-slate-600"
+          >
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+              <tr
+                class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
               >
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="dangTai">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
-                Đang tải...
-              </td>
-            </tr>
-            <tr v-else-if="!danhSach.length">
-              <td colspan="9" class="py-10 text-center text-sm text-slate-400">
-                Không có dữ liệu.
-              </td>
-            </tr>
-            <tr
-              v-for="(item, index) in danhSach"
-              :key="item.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200"
-            >
-              <td class="rounded-l-2xl px-4 py-3 font-semibold">
-                {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
-              </td>
-              <td class="px-4 py-3 font-semibold text-slate-900">
-                {{ item.ma }}
-              </td>
-              <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                  :class="mauLoaiPhieu(item.loaiPhieu)"
-                >
-                  <component :is="Number(item.loaiPhieu) === 2 ? User : Globe" class="h-3 w-3" />
-                  {{ loaiPhieuText(item.loaiPhieu) }}
-                </span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                {{ formatGiaTri(item.giaTri, item.loai) }}
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                {{ toDisplayDate(item.ngayBatDau) }}
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                {{ toDisplayDate(item.ngayKetThuc) }}
-              </td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="mauTrangThai(item.trangThai, item.ngayKetThuc)"
-                >
-                  {{ statusText(item.trangThai, item.ngayKetThuc) }}
-                </span>
-              </td>
-              <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-3">
-                  <AdminQuickStatusAction
-                    :loading="false"
-                    :disabled="isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2"
-                    :disabled-title="
-                      isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
-                        ? 'Phiếu đã hết hạn, vui lòng vào chi tiết để gia hạn'
-                        : undefined
-                    "
-                    :action-label="
-                      Number(item.trangThai) === 1 || Number(item.trangThai) === 4
-                        ? 'Ngừng hoạt động'
-                        : 'Đang hoạt động'
-                    "
-                    :confirm-message="
-                      Number(item.trangThai) === 1 || Number(item.trangThai) === 4
-                        ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?'
-                        : 'Bạn có chắc chắn muốn chuyển phiếu này sang trạng thái đang hoạt động không?'
-                    "
-                    :intent="
-                      Number(item.trangThai) === 1 || Number(item.trangThai) === 4 ? 'deactivate' : 'activate'
-                    "
-                    @toggle="nhanhDoiTrangThai(item)"
-                  />
-                  <button
-                    @click="openEditModal('phieu', item)"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
+                <th class="px-4 py-3">STT</th>
+                <th class="px-4 py-3">Mã</th>
+                <th class="px-4 py-3">Tên phiếu</th>
+                <th class="px-4 py-3">Hình thức</th>
+                <th class="px-4 py-3">Giá trị giảm</th>
+                <th class="px-4 py-3">Ngày bắt đầu</th>
+                <th class="px-4 py-3">Ngày kết thúc</th>
+                <th class="px-4 py-3">Trạng thái</th>
+                <th class="px-4 py-3 text-center whitespace-nowrap">
+                  Hành động
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-if="dangTai">
+                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
+                  Đang tải...
+                </td>
+              </tr>
+              <tr v-else-if="!danhSach.length">
+                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
+                  Không có dữ liệu.
+                </td>
+              </tr>
+              <tr
+                v-else
+                v-for="(item, index) in danhSach"
+                :key="item.id"
+                class="transition hover:bg-slate-50/50"
+              >
+                <td class="px-4 py-3 font-semibold">
+                  {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
+                </td>
+                <td class="px-4 py-3 font-semibold text-slate-900">
+                  {{ item.ma }}
+                </td>
+                <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    :class="mauLoaiPhieu(item.loaiPhieu)"
                   >
-                    <Eye class="h-5 w-5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    <component :is="Number(item.loaiPhieu) === 2 ? User : Globe" class="h-3 w-3" />
+                    {{ loaiPhieuText(item.loaiPhieu) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  {{ formatGiaTri(item.giaTri, item.loai) }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  {{ toDisplayDate(item.ngayBatDau) }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  {{ toDisplayDate(item.ngayKetThuc) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="mauTrangThai(item.trangThai, item.ngayKetThuc)"
+                  >
+                    {{ statusText(item.trangThai, item.ngayKetThuc) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-3">
+                    <AdminQuickStatusAction
+                      :loading="false"
+                      :disabled="isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2"
+                      :disabled-title="
+                        isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
+                          ? 'Phiếu đã hết hạn, vui lòng vào chi tiết để gia hạn'
+                          : undefined
+                      "
+                      :action-label="
+                        Number(item.trangThai) === 1 || Number(item.trangThai) === 4
+                          ? 'Ngừng hoạt động'
+                          : 'Đang hoạt động'
+                      "
+                      :confirm-message="
+                        Number(item.trangThai) === 1 || Number(item.trangThai) === 4
+                          ? 'Bạn có chắc chắn muốn ngừng hoạt động phiếu này không?'
+                          : 'Bạn có chắc chắn muốn chuyển phiếu này sang trạng thái đang hoạt động không?'
+                      "
+                      :intent="
+                        Number(item.trangThai) === 1 || Number(item.trangThai) === 4 ? 'deactivate' : 'activate'
+                      "
+                      @toggle="nhanhDoiTrangThai(item)"
+                    />
+                    <button
+                      @click="openEditModal('phieu', item)"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
+                    >
+                      <Eye class="h-5 w-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-        <table
-          v-else
-          class="min-w-[1100px] w-full border-separate border-spacing-y-2 text-sm"
-        >
-          <thead>
-            <tr class="text-left text-sm font-bold text-slate-950">
-              <th class="rounded-l-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã phiếu</th>
-              <th class="bg-slate-100 px-4 py-3">Tên phiếu</th>
-              <th class="bg-slate-100 px-4 py-3">Khách hàng</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày tặng</th>
-              <th class="bg-slate-100 px-4 py-3">Ngày dùng</th>
-              <th class="bg-slate-100 px-4 py-3">Trạng thái</th>
-              <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-center">
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="dangTai">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
-                Đang tải...
-              </td>
-            </tr>
-            <tr v-else-if="!danhSachKh.length">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
-                Không có dữ liệu.
-              </td>
-            </tr>
-            <tr
-              v-for="(item, index) in danhSachKh"
-              :key="item.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200"
-            >
-              <td class="rounded-l-2xl px-4 py-3 font-semibold">
-                {{ (trangHienTaiKh - 1) * soPhanTuMotTrangKh + index + 1 }}
-              </td>
-              <td class="px-4 py-3 font-semibold text-slate-900">
-                {{ item.maPhieuGiamGia }}
-              </td>
-              <td class="px-4 py-3 text-slate-900">
-                {{ item.tenPhieuGiamGia }}
-              </td>
-              <td class="px-4 py-3">
-                {{ item.tenKhachHang }}
-              </td>
-              <td class="px-4 py-3">
-                {{ toDisplayDate(item.ngayTao) }}
-              </td>
-              <td class="px-4 py-3">
-                {{
-                  item.ngaySuDung
-                    ? toDisplayDate(item.ngaySuDung)
-                    : "Chưa sử dụng"
-                }}
-              </td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="mauTrangThai(item.trangThai)"
-                >
-                  {{ statusText(item.trangThai) }}
-                </span>
-              </td>
-              <td class="rounded-r-2xl px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-3">
-                  <AdminQuickStatusAction
-                    :loading="false"
-                    :disabled="isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2"
-                    :disabled-title="
-                      isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
-                        ? 'Phiếu đã hết hạn, không thể thao tác'
-                        : undefined
-                    "
-                    action-label="Tắt liên kết"
-                    confirm-message="Bạn có chắc chắn muốn tắt liên kết này không?"
-                    intent="deactivate"
-                    @toggle="nhanhDoiTrangThaiKh(item)"
-                  />
-                  <button
-                    @click="openEditModal('khach-hang', item)"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
+          <table
+            v-else
+            class="min-w-[1100px] w-full border-collapse text-left text-sm text-slate-600"
+          >
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+              <tr class="text-left text-sm font-bold text-slate-950">
+                <th class="px-4 py-3">STT</th>
+                <th class="px-4 py-3">Mã phiếu</th>
+                <th class="px-4 py-3">Tên phiếu</th>
+                <th class="px-4 py-3">Khách hàng</th>
+                <th class="px-4 py-3">Ngày tặng</th>
+                <th class="px-4 py-3">Ngày dùng</th>
+                <th class="px-4 py-3">Trạng thái</th>
+                <th class="px-4 py-3 text-center">
+                  Hành động
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-if="dangTai">
+                <td colspan="8" class="py-10 text-center text-sm text-slate-400">
+                  Đang tải...
+                </td>
+              </tr>
+              <tr v-else-if="!danhSachKh.length">
+                <td colspan="8" class="py-10 text-center text-sm text-slate-400">
+                  Không có dữ liệu.
+                </td>
+              </tr>
+              <tr
+                v-else
+                v-for="(item, index) in danhSachKh"
+                :key="item.id"
+                class="transition hover:bg-slate-50/50"
+              >
+                <td class="px-4 py-3 font-semibold">
+                  {{ (trangHienTaiKh - 1) * soPhanTuMotTrangKh + index + 1 }}
+                </td>
+                <td class="px-4 py-3 font-semibold text-slate-900">
+                  {{ item.maPhieuGiamGia }}
+                </td>
+                <td class="px-4 py-3 text-slate-900">
+                  {{ item.tenPhieuGiamGia }}
+                </td>
+                <td class="px-4 py-3">
+                  {{ item.tenKhachHang }}
+                </td>
+                <td class="px-4 py-3">
+                  {{ toDisplayDate(item.ngayTao) }}
+                </td>
+                <td class="px-4 py-3">
+                  {{
+                    item.ngaySuDung
+                      ? toDisplayDate(item.ngaySuDung)
+                      : "Chưa sử dụng"
+                  }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="mauTrangThai(item.trangThai)"
                   >
-                    <Eye class="h-5 w-5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    {{ statusText(item.trangThai) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-3">
+                    <AdminQuickStatusAction
+                      :loading="false"
+                      :disabled="isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2"
+                      :disabled-title="
+                        isHetHan(item.ngayKetThuc) || Number(item.trangThai) === 2
+                          ? 'Phiếu đã hết hạn, không thể thao tác'
+                          : undefined
+                      "
+                      action-label="Tắt liên kết"
+                      confirm-message="Bạn có chắc chắn muốn tắt liên kết này không?"
+                      intent="deactivate"
+                      @toggle="nhanhDoiTrangThaiKh(item)"
+                    />
+                    <button
+                      @click="openEditModal('khach-hang', item)"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
+                    >
+                      <Eye class="h-5 w-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AdminTableFooter

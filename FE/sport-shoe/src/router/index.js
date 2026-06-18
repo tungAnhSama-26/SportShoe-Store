@@ -122,6 +122,10 @@ const router = createRouter({
     },
     {
       path: "/",
+      redirect: "/khachhang"
+    },
+    {
+      path: "/khachhang",
       component: TrangMacDinh,
       children: [
         {
