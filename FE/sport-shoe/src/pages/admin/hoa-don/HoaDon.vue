@@ -38,7 +38,7 @@ const dsTrangThai = [
   "Giao hàng thất bại",
   "Hoàn thành",
   "Hủy",
-  "Yêu cầu hủy",
+  "Cần hoàn tiền",
 ];
 const boLoc = ref(taoBoLocMacDinh());
 const tuNgayPicker = ref(null);
@@ -53,7 +53,7 @@ const mauTrangThai = {
   "Giao hàng thất bại": "bg-rose-50 text-rose-600",
   "Hoàn thành": "bg-emerald-50 text-emerald-600",
   Hủy: "bg-stone-100 text-stone-600",
-  "Yêu cầu hủy": "bg-primary/5 text-primary",
+  "Cần hoàn tiền": "bg-rose-100 text-rose-700 border border-rose-200",
 };
 
 function mauTrangThaiTraHang(trangThai) {

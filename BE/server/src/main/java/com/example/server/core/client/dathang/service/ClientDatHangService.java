@@ -245,6 +245,9 @@ public class ClientDatHangService {
         String normalized = hinhThuc == null || hinhThuc.isBlank()
                 ? "COD"
                 : hinhThuc.trim().toUpperCase(Locale.ROOT);
+        if ("VIETQR".equals(normalized)) {
+            return "VNPAY";
+        }
         if (!"COD".equals(normalized) && !"VNPAY".equals(normalized)) {
             throw new BusinessException("Hình thức thanh toán không hợp lệ");
         }
