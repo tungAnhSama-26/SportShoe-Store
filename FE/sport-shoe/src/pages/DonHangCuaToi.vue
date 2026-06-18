@@ -180,9 +180,9 @@ async function xuLyTaoPhieuTraHangThanhCong() {
 
 async function guiYeuCauHuy(don) {
   const daXacNhan = await showConfirm(
-    'Sau khi gửi yêu cầu, cửa hàng sẽ xem xét và xác nhận hủy đơn.',
-    'Yêu cầu hủy đơn hàng',
-    'Gửi yêu cầu',
+    'Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác. Nếu đơn đã thanh toán, cửa hàng sẽ hoàn tiền cho bạn.',
+    'Hủy đơn hàng',
+    'Hủy đơn',
     'Quay lại',
   );
   if (!daXacNhan) return;
@@ -191,6 +191,7 @@ async function guiYeuCauHuy(don) {
   try {
     await yeuCauHuyDonHang(don.id);
     await taiDanhSach(true);
+<<<<<<< Updated upstream
     const donSauKhiHuy = danhSach.value.find((item) => item.id === don.id);
     if (Number(donSauKhiHuy?.trangThai) === 8 || donSauKhiHuy?.phieuTraHangId != null) {
       trangThaiDangChon.value = "TRA_HANG";
@@ -198,8 +199,11 @@ async function guiYeuCauHuy(don) {
       trangThaiDangChon.value = 6;
     }
     showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
+=======
+    showSuccess('Đơn hàng đã được hủy.');
+>>>>>>> Stashed changes
   } catch (error) {
-    showError(getDisplayErrorMessage(error, 'Không thể gửi yêu cầu hủy đơn hàng'));
+    showError(getDisplayErrorMessage(error, 'Không thể hủy đơn hàng'));
   } finally {
     donDangGuiYeuCauHuy.value = null;
   }
@@ -323,7 +327,7 @@ async function guiYeuCauHuy(don) {
                   :disabled="donDangGuiYeuCauHuy === don.id"
                   class="px-5 py-2 text-xs md:text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {{ donDangGuiYeuCauHuy === don.id ? 'Đang gửi...' : 'Yêu cầu hủy' }}
+                  {{ donDangGuiYeuCauHuy === don.id ? 'Đang xử lý...' : 'Hủy đơn' }}
                 </button>
                 <!-- Cho phép gửi lại sau khi phiếu trước bị từ chối/hủy và vẫn còn trong thời hạn trả hàng. -->
                 <button
