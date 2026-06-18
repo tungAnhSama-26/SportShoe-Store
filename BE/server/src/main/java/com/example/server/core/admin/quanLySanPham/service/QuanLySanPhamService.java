@@ -697,15 +697,17 @@ public class QuanLySanPhamService {
         }
         giay.setTrangThai(req.trangThai());
         giay.setNgayCapNhat(Instant.now());
+        
+        List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
+        int kichHoatValue = (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) ? 1 : 0;
+        for (GiayChiTiet ct : chiTiets) {
+            ct.setKichHoat(kichHoatValue);
+            ct.setNgayCapNhat(Instant.now());
+            giayChiTietRepository.save(ct);
+        }
+
         if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
             updateTrangThaiTuSoLuong(giay);
-        } else {
-            List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
-            for (GiayChiTiet ct : chiTiets) {
-                ct.setKichHoat(0);
-                ct.setNgayCapNhat(Instant.now());
-                giayChiTietRepository.save(ct);
-            }
         }
     }
 
@@ -718,6 +720,12 @@ public class QuanLySanPhamService {
 
             if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
                 giay.setTrangThai(TRANG_THAI_KINH_DOANH);
+                List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
+                for (GiayChiTiet ct : chiTiets) {
+                    ct.setKichHoat(1);
+                    ct.setNgayCapNhat(Instant.now());
+                    giayChiTietRepository.save(ct);
+                }
                 updateTrangThaiTuSoLuong(giay);
             } else {
                 giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);

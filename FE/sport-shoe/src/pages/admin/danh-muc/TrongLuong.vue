@@ -15,6 +15,9 @@ import {
 , hasSpecialCharacters
 } from '../../../utils/thuoc-tinh-san-pham'
 import { showConfirm, showSuccess, showError } from '../../../utils/alert'
+import { useRealtime } from '../../../composables/useRealtime'
+
+const { subscribeTopic } = useRealtime()
 
 const items = ref([])
 const totalItems = ref(0)
@@ -45,7 +48,13 @@ function doSearch() {
   loadData(0)
 }
 
-onMounted(() => loadData())
+onMounted(() => {
+  loadData()
+  subscribeTopic('/topic/admin/thuoc-tinh', (msg) => {
+    console.log('Realtime attribute update', msg)
+    loadData(currentPage.value)
+  })
+})
 
 const visiblePages = computed(() => {
   const pages = []

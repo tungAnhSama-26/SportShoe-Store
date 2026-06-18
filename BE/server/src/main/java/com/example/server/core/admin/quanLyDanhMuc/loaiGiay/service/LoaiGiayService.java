@@ -44,14 +44,16 @@ public class LoaiGiayService {
         String ten = req.ten().trim();
         var existingOpt = loaiGiayRepository.findByTenIgnoreCase(req.ten().trim());
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() == 0) {
-                existing.setTrangThai(1);
-                existing.setMoTa(req.moTa());
-                existing.setMa(ma);
-                return toLoaiGiay(loaiGiayRepository.save(existing));
+            LoaiGiay existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Loại giày '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                throw new BusinessException("T�n lo?i gi�y '" + req.ten() + "' d� t?n t?i");
+                existing.setTrangThai(1);
+                existing.setNgayCapNhat(Instant.now());
+                if (req.moTa() != null && !req.moTa().isBlank()) {
+                    existing.setMoTa(req.moTa().trim());
+                }
+                return toLoaiGiay(loaiGiayRepository.save(existing));
             }
         }
 

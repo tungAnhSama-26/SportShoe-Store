@@ -233,37 +233,107 @@ export function usePosCoupons({
     }, 250);
   });
 
-  watch([coTheTimPhieu, tongTien, selectedCustomer, activePendingInvoice], ([coTheTim]) => {
+  watch([coTheTimPhieu, tongTien, selectedCustomer, activePendingInvoice], async ([coTheTim]) => {
     if (!coTheTim) {
       couponResults.value = [];
       showCouponDropdown.value = false;
+      if (appliedCoupon.value) {
+        const ma = appliedCoupon.value.ma;
+        appliedCoupon.value = null;
+        couponCode.value = "";
+        pageError.value = `Đơn hàng không đủ điều kiện áp dụng phiếu giảm giá ${ma} nữa.`;
+        capNhatTienKhachThanhToan();
+      }
       return;
     }
+    
+    // Validate if the currently applied coupon is still valid
+    if (appliedCoupon.value) {
+      try {
+        const ketQua = await timPhieuGiamGiaTaiQuay({
+          keyword: appliedCoupon.value.ma,
+          hoaDonId: activePendingInvoice.value?.id ?? null,
+          khachHangId: layKhachHangIdHienTai(),
+          tongTienHang: tongTien.value
+        });
+        const isValid = ketQua.some(c => c.ma === appliedCoupon.value.ma);
+        if (!isValid) {
+           const ma = appliedCoupon.value.ma;
+           appliedCoupon.value = null;
+           couponCode.value = "";
+           pageError.value = `Phiếu giảm giá ${ma} không còn hợp lệ (hoặc đã hết hạn) cho đơn hàng này.`;
+           capNhatTienKhachThanhToan();
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    
     if (!couponCode.value.trim() && !showCouponDropdown.value) {
       return;
     }
     void fetchCoupons(couponCode.value);
   });
 
-  return {
-    couponCode,
-    appliedCoupon,
-    applyingCoupon,
-    couponResults,
-    loadingCoupons,
-    showCouponDropdown,
-    tienGiam,
-    tongTienSauGiamHienThi,
-    maPhieuChuaApDung,
-    coTheTimPhieu,
-    coTheApDungPhieu,
-    danhDauCanApDungLaiPhieu,
-    fetchCoupons,
-    handleCouponFocus,
-    handleCouponBlur,
-    chonPhieuGiamGia,
-    handleApplyCoupon,
-    handleRemoveCoupon,
-    clearCouponTimers
-  };
+    async function suggestBestCoupon() {
+      if (!coTheTimPhieu.value) {
+        pageError.value = "Vui lòng thêm sản phẩm vào hóa đơn trước khi áp dụng mã";
+        return;
+      }
+      
+      let ketQua = couponResults.value;
+      if (!ketQua.length) {
+        try {
+          loadingCoupons.value = true;
+          ketQua = await timPhieuGiamGiaTaiQuay({
+            keyword: "",
+            hoaDonId: activePendingInvoice.value?.id ?? null,
+            khachHangId: layKhachHangIdHienTai(),
+            tongTienHang: tongTien.value
+          });
+          couponResults.value = ketQua;
+        } catch (error) {
+          pageError.value = error instanceof Error ? error.message : "Không thể tìm phiếu giảm giá";
+          return;
+        } finally {
+          loadingCoupons.value = false;
+        }
+      }
+
+      if (!ketQua.length) {
+        pageError.value = "Không có phiếu giảm giá nào khả dụng cho hóa đơn này";
+        return;
+      }
+
+      // Find the coupon with the max soTienGiam
+      const bestCoupon = ketQua.reduce((max, current) => {
+        return (current.soTienGiam > max.soTienGiam) ? current : max;
+      }, ketQua[0]);
+
+      couponCode.value = bestCoupon.ma;
+      await handleApplyCoupon();
+    }
+
+    return {
+      couponCode,
+      appliedCoupon,
+      applyingCoupon,
+      couponResults,
+      loadingCoupons,
+      showCouponDropdown,
+      tienGiam,
+      tongTienSauGiamHienThi,
+      maPhieuChuaApDung,
+      coTheTimPhieu,
+      coTheApDungPhieu,
+      danhDauCanApDungLaiPhieu,
+      fetchCoupons,
+      handleCouponFocus,
+      handleCouponBlur,
+      chonPhieuGiamGia,
+      handleApplyCoupon,
+      handleRemoveCoupon,
+      clearCouponTimers,
+      suggestBestCoupon
+    };
 }

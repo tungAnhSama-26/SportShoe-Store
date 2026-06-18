@@ -313,6 +313,7 @@ const emit = defineEmits([
   "apply-coupon",
   "select-coupon",
   "remove-coupon",
+  "suggest-best-coupon",
   "update-shipping",
   "calculate-shipping",
   "update:paymentMethod",
@@ -474,6 +475,7 @@ const emit = defineEmits([
             @apply-coupon="emit('apply-coupon')"
             @select-coupon="emit('select-coupon', $event)"
             @remove-coupon="emit('remove-coupon')"
+            @suggest-best-coupon="emit('suggest-best-coupon')"
             @update-shipping="emit('update-shipping', $event)"
             @calculate-shipping="emit('calculate-shipping')"
             @update:payment-method="emit('update:paymentMethod', $event)"

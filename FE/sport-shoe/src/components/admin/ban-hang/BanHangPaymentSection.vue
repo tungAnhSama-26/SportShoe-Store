@@ -148,6 +148,7 @@ const emit = defineEmits([
   "apply-coupon",
   "select-coupon",
   "remove-coupon",
+  "suggest-best-coupon",
   "update-shipping",
   "calculate-shipping",
   "update:paymentMethod",
@@ -240,6 +241,15 @@ const sepayQrUrl = computed(() => {
                 @click="emit('apply-coupon')"
               >
                 {{ applyingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
+              </button>
+              <button
+                type="button"
+                class="rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                :disabled="!coTheTimPhieu || applyingCoupon"
+                title="Tự động chọn mã giảm nhiều nhất"
+                @click="emit('suggest-best-coupon')"
+              >
+                Gợi ý tốt nhất
               </button>
             </div>
 

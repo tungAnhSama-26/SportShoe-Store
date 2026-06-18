@@ -41,6 +41,10 @@ function handleFilterChange() {
           <h2 class="text-lg font-bold text-slate-800">Biến thể của: <span class="text-rose-600">{{ selectedProduct.ten }}</span></h2>
           <p class="mt-1 text-sm text-slate-500">Mã sản phẩm: <span class="font-semibold text-slate-700">{{ selectedProduct.ma }}</span></p>
         </div>
+        <button type="button" class="admin-btn-primary" @click="$emit('go-to-form')">
+          <Plus class="h-4 w-4" />
+          Tạo thêm biến thể
+        </button>
       </div>
 
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
