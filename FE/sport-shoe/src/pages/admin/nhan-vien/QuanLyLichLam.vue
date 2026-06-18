@@ -111,13 +111,18 @@ function homNay() {
   ngayHienTai.value = new Date();
 }
 
-// Màu avatar theo vai trò
-const MAU_VAI_TRO = {
-  1: "bg-primary",
-  2: "bg-emerald-500",
-};
-function mauNenNV(vaiTro) {
-  return MAU_VAI_TRO[vaiTro] ?? "bg-slate-400";
+const PALETTE = [
+  "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-amber-500", 
+  "bg-violet-500", "bg-teal-500", "bg-indigo-500", "bg-orange-500",
+  "bg-pink-500", "bg-cyan-500"
+];
+function mauNenNV(hoTen) {
+  if (!hoTen) return "bg-slate-400";
+  let sum = 0;
+  for (let i = 0; i < hoTen.length; i++) {
+    sum += hoTen.charCodeAt(i);
+  }
+  return PALETTE[sum % PALETTE.length];
 }
 
 // Tạo viết tắt từ họ tên
@@ -182,7 +187,7 @@ async function taiNhanVien() {
       chucVu: nv.tenVaiTro ?? "—",
       vaiTro: Number(nv.vaiTro) === 1 ? 1 : 2,
       hinhAnh: nv.hinhAnh ?? "",
-      mauNen: mauNenNV(Number(nv.vaiTro) === 1 ? 1 : 2),
+      mauNen: mauNenNV(nv.hoTen ?? ""),
       lich: Array(7).fill(null),
       tongGio: 0,
       overtime: 0,
@@ -292,7 +297,20 @@ function caDaDay(ca) {
   );
 }
 
+function laNgayQuaKhu(d) {
+  if (!d) return false;
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
+}
+
 function moModalThemCa(nv, ngayIdx) {
+  if (ngayIdx >= 0 && laNgayQuaKhu(cacNgayTrongTuan.value[ngayIdx])) {
+    showError("Không thể chỉnh sửa ca làm việc trong quá khứ!");
+    return;
+  }
   modalNV.value = nv;
   modalNgayIndex.value = ngayIdx;
   if (nv && ngayIdx >= 0) {
@@ -300,7 +318,8 @@ function moModalThemCa(nv, ngayIdx) {
   } else {
     modalCaChon.value = "sang";
     chonNhanVienId.value = danhSachNV.value[0]?.id || "";
-    chonNgayVal.value = formatISODate(cacNgayTrongTuan.value[0]);
+    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laNgayQuaKhu(d)) || cacNgayTrongTuan.value[0];
+    chonNgayVal.value = formatISODate(firstAvailableDay);
   }
   showModalThemCa.value = true;
 }
@@ -312,6 +331,10 @@ const modalThemNVNgayIdx = ref(-1);
 const modalThemNVNhanVienId = ref("");
 
 function moModalThemNhanVien(caId, ngayIdx) {
+  if (ngayIdx >= 0 && laNgayQuaKhu(cacNgayTrongTuan.value[ngayIdx])) {
+    showError("Không thể thêm nhân viên vào ca trong quá khứ!");
+    return;
+  }
   modalThemNVCa.value = caId;
   modalThemNVNgayIdx.value = ngayIdx;
   modalThemNVNhanVienId.value = "";
@@ -355,6 +378,11 @@ async function luuCa() {
     }
     nvId = chonNhanVienId.value;
     ngayStr = chonNgayVal.value;
+  }
+
+  if (laNgayQuaKhu(new Date(ngayStr))) {
+    showError("Không thể thêm hoặc sửa ca làm việc trong quá khứ!");
+    return;
   }
   if (modalCaChon.value && caDaDay(modalCaChon.value)) {
     showError(`Ca này đã đủ tối đa ${MAX_NHAN_VIEN_MOI_CA} nhân viên.`);
@@ -513,17 +541,17 @@ function isToday(date) {
     <!-- ───── HEADER ───── -->
     <section class="flex flex-wrap items-center gap-3 border-b border-slate-100 pb-4">
       <div class="flex-1">
-        <h1 class="text-xl font-bold text-slate-900">Quản lý lịch làm việc</h1>
-        <p class="text-xs text-slate-400">Phân ca và theo dõi giờ làm cho nhân viên</p>
+        <h1 class="text-2xl font-bold text-slate-800">Quản lý lịch làm việc</h1>
+        <p class="text-sm text-slate-500 mt-1">Phân ca và theo dõi giờ làm cho nhân viên</p>
       </div>
-      <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+      <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">
         <CalendarDays class="h-4 w-4 text-slate-400" />
         {{ formatTuanHienThi() }}
       </div>
-      <button v-if="laAdmin" @click="xepCaDong" class="admin-btn-soft gap-2">
+      <button v-if="laAdmin" @click="xepCaDong" class="flex items-center gap-2 rounded-2xl border border-[#CC0000] px-4 py-2 text-sm font-semibold text-[#CC0000] hover:bg-red-50 transition">
         <Shuffle class="h-4 w-4" /> Xếp ca tự động
       </button>
-      <button v-if="laAdmin" @click="moModalThemCa(null, -1)" class="admin-btn-primary gap-2">
+      <button v-if="laAdmin" @click="moModalThemCa(null, -1)" class="flex items-center gap-2 rounded-2xl bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 shadow-sm transition">
         <Plus class="h-4 w-4" /> Thêm ca mới
       </button>
     </section>
@@ -535,30 +563,30 @@ function isToday(date) {
       <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
 
         <!-- Nav tuần -->
-        <div class="mb-4 flex items-center justify-between gap-3">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2 text-sm text-slate-500">
             <span class="font-medium">Vai trò:</span>
             <select v-model="boLocVaiTro" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm outline-none">
               <option v-for="vt in dsVaiTro" :key="vt.value" :value="vt.value">{{ vt.label }}</option>
             </select>
           </div>
+          
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <CalendarDays class="h-4 w-4 text-violet-400" />
+            Tuần {{ formatTuanHienThi() }}
+          </div>
+
           <div class="flex items-center gap-2">
             <button @click="tuanTruoc" class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
               <ChevronLeft class="h-4 w-4" />
             </button>
-            <button @click="homNay" class="rounded-xl bg-primary px-4 py-1.5 text-sm font-semibold text-white hover:bg-primary-hover shadow-sm transition">
+            <button @click="homNay" class="rounded-xl bg-[#CC0000] px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700 shadow-sm transition">
               Hôm nay
             </button>
             <button @click="tuanSau" class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
               <ChevronRight class="h-4 w-4" />
             </button>
           </div>
-        </div>
-
-        <!-- Tiêu đề tuần -->
-        <div class="mb-3 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600">
-          <CalendarDays class="h-4 w-4 text-violet-400" />
-          Tuần {{ formatTuanHienThi() }}
         </div>
 
         <div v-if="loiTrang" class="mb-3 rounded-2xl bg-rose-50 px-4 py-2 text-sm text-rose-600">{{ loiTrang }}</div>
@@ -638,21 +666,18 @@ function isToday(date) {
       <!-- ── Sidebar ── -->
       <aside class="space-y-4">
         <!-- Theo dõi tăng ca -->
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm min-h-full">
           <div class="mb-4 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800">Theo dõi tăng ca</h3>
             <MoreHorizontal class="h-4 w-4 text-slate-400" />
           </div>
           <div class="space-y-4">
             <div v-for="nv in danhSachNV" :key="nv.id" class="space-y-1.5">
-              <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center justify-between text-sm border-b border-slate-100 pb-2">
                 <span class="font-semibold text-slate-700">{{ nv.ten }}</span>
                 <span :class="['text-xs font-bold', nv.overtime >= nv.gioiHanOT * 0.9 ? 'text-rose-500' : nv.overtime === 0 ? 'text-slate-400' : 'text-emerald-600']">
                   {{ nv.overtime }}h / {{ nv.gioiHanOT }}h
                 </span>
-              </div>
-              <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                <div :class="['h-full rounded-full transition-all duration-500', mauOvertimeBar(nv)]" :style="{ width: phanTramOT(nv) + '%' }" />
               </div>
             </div>
           </div>
@@ -660,36 +685,6 @@ function isToday(date) {
             <span class="font-bold">Lưu ý:</span>
             {{ danhSachNV.filter(nv => nv.overtime >= nv.gioiHanOT * 0.9).map(nv => nv.ten).join(", ") }}
             sắp vượt giới hạn tăng ca.
-          </div>
-        </div>
-
-        <!-- Thống kê nhanh -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-[20px] bg-emerald-50 p-4 text-center">
-            <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-              <Users class="h-5 w-5" />
-            </div>
-            <p class="text-xs font-semibold text-emerald-600">NV trực</p>
-            <p class="mt-1 text-xl font-bold text-emerald-700">{{ nvTruc }} / {{ tongNV }}</p>
-          </div>
-          <div class="rounded-[20px] bg-primary-light p-4 text-center">
-            <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <CalendarDays class="h-5 w-5" />
-            </div>
-            <p class="text-xs font-semibold text-primary">Chưa phân công</p>
-            <p class="mt-1 text-xl font-bold text-primary">{{ String(caUnassigned).padStart(2, "0") }}</p>
-          </div>
-        </div>
-
-        <!-- Phân loại ca -->
-        <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 class="mb-3 text-sm font-bold text-slate-800">Phân loại ca</h3>
-          <div class="space-y-2.5">
-            <div v-for="ca in DS_CA" :key="ca.id" class="flex items-center gap-3 text-sm">
-              <div :class="['h-3.5 w-3.5 rounded-sm', ca.mau]" />
-              <span class="font-semibold text-slate-700">{{ ca.nhan }}</span>
-              <span class="text-slate-400">({{ ca.gio }})</span>
-            </div>
           </div>
         </div>
       </aside>
@@ -748,8 +743,9 @@ function isToday(date) {
                   v-for="(ngay, idx) in cacNgayTrongTuan"
                   :key="idx"
                   :value="formatISODate(ngay)"
+                  :disabled="laNgayQuaKhu(ngay)"
                 >
-                  {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }})
+                  {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }}){{ laNgayQuaKhu(ngay) ? ' - Đã qua' : '' }}
                 </option>
               </select>
             </div>

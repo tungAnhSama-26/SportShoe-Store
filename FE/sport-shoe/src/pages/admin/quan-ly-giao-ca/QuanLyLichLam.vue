@@ -279,7 +279,20 @@ function caDaDay(ca) {
   );
 }
 
+function laNgayQuaKhu(d) {
+  if (!d) return false;
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
+}
+
 function moModalThemCa(nv, ngayIdx) {
+  if (ngayIdx >= 0 && laNgayQuaKhu(cacNgayTrongTuan.value[ngayIdx])) {
+    showError("Không thể chỉnh sửa ca làm việc trong quá khứ!");
+    return;
+  }
   modalNV.value = nv;
   modalNgayIndex.value = ngayIdx;
   if (nv && ngayIdx >= 0) {
@@ -287,7 +300,8 @@ function moModalThemCa(nv, ngayIdx) {
   } else {
     modalCaChon.value = "sang";
     chonNhanVienId.value = danhSachNV.value[0]?.id || "";
-    chonNgayVal.value = formatISODate(cacNgayTrongTuan.value[0]);
+    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laNgayQuaKhu(d)) || cacNgayTrongTuan.value[0];
+    chonNgayVal.value = formatISODate(firstAvailableDay);
   }
   showModalThemCa.value = true;
 }
@@ -305,6 +319,11 @@ async function luuCa() {
     }
     nvId = chonNhanVienId.value;
     ngayStr = chonNgayVal.value;
+  }
+
+  if (laNgayQuaKhu(new Date(ngayStr))) {
+    showError("Không thể thêm hoặc sửa ca làm việc trong quá khứ!");
+    return;
   }
   if (modalCaChon.value && caDaDay(modalCaChon.value)) {
     showError(`Ca này đã đủ tối đa ${MAX_NHAN_VIEN_MOI_CA} nhân viên.`);
@@ -867,8 +886,9 @@ const caUnassigned = computed(
                   v-for="(ngay, idx) in cacNgayTrongTuan"
                   :key="idx"
                   :value="formatISODate(ngay)"
+                  :disabled="laNgayQuaKhu(ngay)"
                 >
-                  {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }})
+                  {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }}){{ laNgayQuaKhu(ngay) ? ' - Đã qua' : '' }}
                 </option>
               </select>
             </div>
