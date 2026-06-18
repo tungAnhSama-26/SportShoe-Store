@@ -102,4 +102,7 @@ public class NhanVien {
     @Column(name = "han_doi_mat_khau")
     private Instant hanDoiMatKhau;
 
+    @Column(name = "face_descriptor", columnDefinition = "NVARCHAR(MAX)")
+    private String faceDescriptor;
+
 }

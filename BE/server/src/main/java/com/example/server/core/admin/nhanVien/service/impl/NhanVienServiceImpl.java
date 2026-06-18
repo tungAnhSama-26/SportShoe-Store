@@ -200,6 +200,15 @@ public class NhanVienServiceImpl implements NhanVienService {
         nhanVienRepository.delete(nv);
     }
 
+    @Override
+    @Transactional
+    public NhanVienResponse capNhatFaceId(UUID id, com.example.server.core.admin.nhanVien.dto.request.CapNhatFaceIdRequest request) {
+        NhanVien nv = findNhanVien(id);
+        nv.setFaceDescriptor(request.faceDescriptor());
+        nv.setNgayCapNhat(Instant.now());
+        return toItem(nhanVienRepository.save(nv));
+    }
+
     private NhanVien findNhanVien(UUID id) {
         return nhanVienRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
@@ -297,7 +306,8 @@ public class NhanVienServiceImpl implements NhanVienService {
                 emailDispatchResult != null ? emailDispatchResult.sent() : null,
                 emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null,
                 mustChangeTemporaryPassword(nv),
-                mustChangeTemporaryPassword(nv) ? nv.getHanDoiMatKhau() : null
+                mustChangeTemporaryPassword(nv) ? nv.getHanDoiMatKhau() : null,
+                nv.getFaceDescriptor()
         );
     }
 

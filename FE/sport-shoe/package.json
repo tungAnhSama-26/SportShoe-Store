@@ -8,6 +8,7 @@
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "chart.js": "^4.5.1",
+    "face-api.js": "^0.22.2",
     "html2pdf.js": "^0.14.0",
     "lucide-vue-next": "^1.0.0",
     "sockjs-client": "^1.6.1",
