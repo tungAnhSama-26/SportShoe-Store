@@ -62,18 +62,13 @@ const {
 <template>
   <div class="space-y-5 pb-10">
 
-    <section class="flex items-center gap-4">
+    <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <button
         @click="router.push({ name: 'admin-phieu-giam-gia' })"
         class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-5 w-5" />
       </button>
-      <div>
-        <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
-          {{ laMoi ? "Thêm phiếu giảm giá mới" : "Chi tiết phiếu giảm giá" }}
-        </h1>
-      </div>
     </section>
 
     <div

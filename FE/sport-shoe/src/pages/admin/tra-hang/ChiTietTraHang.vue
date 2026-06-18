@@ -415,10 +415,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="invoice-flat space-y-4 pb-10">
-    <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+    <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start border-b border-slate-100 pb-4">
       <div>
-        <h1 class="text-[22px] font-bold leading-tight text-slate-800 md:text-[24px]">Chi Tiết Phiếu Trả Hàng</h1>
-        <div v-if="phieu" class="mt-2 space-y-1 text-[13px] text-slate-500">
+        <div v-if="phieu" class="space-y-1 text-[13px] text-slate-500">
           <p>
             Mã Phiếu: <span class="font-semibold text-slate-700">{{ phieu.ma }}</span>
             <span class="mx-2 text-slate-300">|</span>

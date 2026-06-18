@@ -26,7 +26,7 @@ function xuLyAnhLoi(event) {
           <p class="mt-2 text-xs text-slate-500">Những lựa chọn được chọn riêng cho bạn</p>
         </div>
         <router-link
-          to="/san-pham"
+          to="/khachhang/san-pham"
           class="rounded-xl border border-primary/20 bg-white px-5 py-2.5 text-xs font-semibold text-primary transition-all hover:bg-primary/5 hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-sm"
         >
           Xem tất cả
@@ -42,7 +42,7 @@ function xuLyAnhLoi(event) {
         <router-link
           v-for="muc in sanPham"
           :key="muc.id ?? muc.ten"
-          :to="`/san-pham/${muc.id}`"
+          :to="`/khachhang/san-pham/${muc.id}`"
           class="group block overflow-hidden rounded-2xl border border-primary/15 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
         >
           <div class="relative h-60 overflow-hidden bg-slate-50">

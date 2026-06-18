@@ -300,7 +300,7 @@ async function hoanTatDatHang(maHoaDon) {
   xoaGioHang();
   gioHangStore.datSoLuong(0);
   await showSuccess(`Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`, 'Thành công');
-  router.push('/san-pham');
+  router.push('/khachhang/san-pham');
 }
 
 async function datHangMoi() {
@@ -385,7 +385,7 @@ function xuLyAnhLoi(event) {
 
       <div v-else-if="!gio.items.length" class="py-24 text-center">
         <p class="text-sm text-slate-500 mb-4">Giỏ hàng trống, không có gì để thanh toán.</p>
-        <router-link to="/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Mua sắm ngay</router-link>
+        <router-link to="/khachhang/san-pham" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Mua sắm ngay</router-link>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
@@ -571,7 +571,7 @@ function xuLyAnhLoi(event) {
           <button @click="datHangMoi" :disabled="dangDat" class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0">
             {{ dangDat ? 'Đang xử lý...' : (hinhThucThanhToan === 'VNPAY' ? 'Thanh toán VNPay' : 'Đặt hàng') }}
           </button>
-          <router-link to="/gio-hang" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Quay lại giỏ hàng</router-link>
+          <router-link to="/khachhang/gio-hang" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Quay lại giỏ hàng</router-link>
         </aside>
       </div>
     </div>

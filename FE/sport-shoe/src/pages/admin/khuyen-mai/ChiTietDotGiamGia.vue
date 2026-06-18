@@ -124,20 +124,13 @@ const filteredSelectedVariants = computed(() => {
     <!-- Toast Notification -->
 
 
-    <section class="flex items-center gap-4">
+    <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <button
         @click="router.push({ name: 'admin-dot-giam-gia' })"
         class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
       >
         <ArrowLeft class="h-4 w-4" />
       </button>
-      <div class="flex-1 min-w-0">
-        <div>
-          <h1 class="text-[26px] font-bold tracking-tight text-slate-800">
-            {{ laMoi ? "Thêm đợt giảm giá mới" : "Chi tiết đợt giảm giá" }}
-          </h1>
-        </div>
-      </div>
     </section>
 
     <div

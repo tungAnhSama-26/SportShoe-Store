@@ -31,15 +31,22 @@ const NHOM_LOC = [
 // Giá trị đã chọn cho mỗi nhóm (mảng).
 const boLoc = ref(Object.fromEntries(NHOM_LOC.map((n) => [n.khoa, []])));
 
+// Từ khóa tìm theo tên sản phẩm (từ ô tìm kiếm trên header: ?q=...).
+const tuKhoaTen = ref('');
+function boDau(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
 const route = useRoute();
 
-// Vào trang với ?hang=<tên hãng> (từ ô hãng ở trang chủ) -> tự tích bộ lọc hãng đó.
+// Vào trang với ?hang=<tên hãng> (lọc theo hãng) hoặc ?q=<từ khóa> (lọc theo tên).
 function apLocTuQuery() {
   const hang = route.query.hang;
   if (hang) boLoc.value.thuongHieu = [String(hang)];
+  tuKhoaTen.value = route.query.q ? String(route.query.q) : '';
 }
 
-watch(() => route.query.hang, apLocTuQuery);
+watch(() => [route.query.hang, route.query.q], apLocTuQuery);
 
 onMounted(async () => {
   apLocTuQuery();
@@ -70,6 +77,7 @@ const cacNhomCoGiaTri = computed(() =>
 
 const dangLoc = computed(
   () =>
+    tuKhoaTen.value.trim() !== '' ||
     giaMin.value !== '' ||
     giaMax.value !== '' ||
     NHOM_LOC.some((n) => boLoc.value[n.khoa].length)
@@ -92,6 +100,9 @@ const danhSachLoc = computed(() => {
   if (Number.isFinite(min)) ds = ds.filter((p) => p.gia >= min);
   if (Number.isFinite(max)) ds = ds.filter((p) => p.gia <= max);
 
+  const tk = boDau(tuKhoaTen.value);
+  if (tk) ds = ds.filter((p) => boDau(p.ten).includes(tk));
+
   ds = [...ds];
   if (sapXep.value === 'gia-tang') ds.sort((a, b) => a.gia - b.gia);
   else if (sapXep.value === 'gia-giam') ds.sort((a, b) => b.gia - a.gia);
@@ -102,6 +113,7 @@ function xoaLoc() {
   for (const n of NHOM_LOC) boLoc.value[n.khoa] = [];
   giaMin.value = '';
   giaMax.value = '';
+  tuKhoaTen.value = '';
 }
 
 function xuLyAnhLoi(event) {
@@ -116,8 +128,12 @@ function xuLyAnhLoi(event) {
     <!-- Hero Section -->
     <section class="bg-black text-white py-16 px-6 lg:px-10">
       <div class="mx-auto max-w-7xl">
-        <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">Tất cả sản phẩm</h1>
-        <p class="text-slate-400 max-w-xl text-sm md:text-base">Khám phá toàn bộ các mẫu giày đang được bán tại cửa hàng, được thiết kế cho mọi nhu cầu và phong cách.</p>
+        <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          {{ tuKhoaTen.trim() ? `Kết quả cho "${tuKhoaTen.trim()}"` : 'Tất cả sản phẩm' }}
+        </h1>
+        <p class="text-slate-400 max-w-xl text-sm md:text-base">
+          {{ tuKhoaTen.trim() ? `Các sản phẩm có tên khớp với "${tuKhoaTen.trim()}".` : 'Khám phá toàn bộ các mẫu giày đang được bán tại cửa hàng, được thiết kế cho mọi nhu cầu và phong cách.' }}
+        </p>
       </div>
     </section>
 
@@ -193,7 +209,7 @@ function xuLyAnhLoi(event) {
           <router-link
             v-for="sp in danhSachLoc"
             :key="sp.id"
-            :to="`/san-pham/${sp.id}`"
+            :to="`/khachhang/san-pham/${sp.id}`"
             class="block"
           >
             <Card

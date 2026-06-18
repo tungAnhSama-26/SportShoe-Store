@@ -681,7 +681,7 @@ export function useChiTietHoaDon() {
       if (!amThang) {
         loiTrang.value = getDisplayErrorMessage(
           error,
-          "Không thể tải chi tiết hóa đơn",
+          "Không thể tải chi tiết đơn hàng",
         );
       }
     } finally {
