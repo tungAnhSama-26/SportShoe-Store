@@ -100,6 +100,11 @@ function ensureAlertStyles() {
       background: linear-gradient(90deg, ${BRAND_RED}, #ff6a00) !important;
       height: 4px !important;
     }
+
+    .sportshoe-error-progress {
+      background: #cbd5e1 !important;
+      height: 4px !important;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -150,12 +155,34 @@ export function showSuccess(text = '', title = 'Thành công!') {
 }
 
 export function showError(text = '', title = 'Thất bại!') {
-  return toastSwal.fire({
+  ensureAlertStyles();
+
+  return Swal.fire({
     icon: 'error',
     title,
     text: text || undefined,
+    toast: false,
+    position: 'center',
+    showConfirmButton: false,
     timer: 3500,
+    timerProgressBar: true,
+    background: '#ffffff',
+    color: '#334155',
     iconColor: BRAND_RED,
+    showClass: {
+      popup: 'sportshoe-popup-show',
+      backdrop: 'swal2-noanimation',
+    },
+    hideClass: {
+      popup: 'sportshoe-popup-hide',
+      backdrop: 'swal2-noanimation',
+    },
+    customClass: {
+      popup: 'sportshoe-success-popup',
+      title: 'sportshoe-success-title',
+      htmlContainer: 'sportshoe-success-text',
+      timerProgressBar: 'sportshoe-error-progress',
+    },
   });
 }
 

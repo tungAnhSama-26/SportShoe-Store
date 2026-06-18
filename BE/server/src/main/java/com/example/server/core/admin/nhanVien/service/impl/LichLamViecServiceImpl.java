@@ -7,6 +7,7 @@ import com.example.server.entity.LichLamViec;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.repository.ChamCongRepository;
 import com.example.server.repository.LichLamViecRepository;
 import com.example.server.repository.NhanVienRepository;
 import org.springframework.stereotype.Service;
@@ -24,10 +25,12 @@ public class LichLamViecServiceImpl implements LichLamViecService {
 
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanVienRepository nhanVienRepository;
+    private final ChamCongRepository chamCongRepository;
 
-    public LichLamViecServiceImpl(LichLamViecRepository lichLamViecRepository, NhanVienRepository nhanVienRepository) {
+    public LichLamViecServiceImpl(LichLamViecRepository lichLamViecRepository, NhanVienRepository nhanVienRepository, ChamCongRepository chamCongRepository) {
         this.lichLamViecRepository = lichLamViecRepository;
         this.nhanVienRepository = nhanVienRepository;
+        this.chamCongRepository = chamCongRepository;
     }
 
     @Override
@@ -53,7 +56,11 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         if (request.ca() == null || request.ca().trim().isEmpty()) {
             // Delete schedule
             if (optLich.isPresent()) {
-                lichLamViecRepository.delete(optLich.get());
+                LichLamViec lichLamViec = optLich.get();
+                if (chamCongRepository.existsByLichLamViecId(lichLamViec.getId())) {
+                    throw new BusinessException("Không thể xóa ca làm việc vì nhân viên đã điểm danh.");
+                }
+                lichLamViecRepository.delete(lichLamViec);
             }
             return new LichLamViecResponse(null, request.nhanVienId(), request.ngay(), null);
         }
@@ -89,6 +96,10 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     public void xepCaTuDong(LocalDate tuNgay, LocalDate denNgay) {
         if (tuNgay == null || denNgay == null || tuNgay.isAfter(denNgay)) {
             throw new BusinessException("Khoảng thời gian không hợp lệ");
+        }
+
+        if (chamCongRepository.existsByNgayBetween(tuNgay, denNgay)) {
+            throw new BusinessException("Không thể xếp ca tự động vì đã có dữ liệu điểm danh trong khoảng thời gian này.");
         }
 
         // Delete existing shifts in the date range
