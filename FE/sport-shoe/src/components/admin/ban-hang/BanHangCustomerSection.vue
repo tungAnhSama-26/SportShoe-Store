@@ -45,7 +45,7 @@ const emit = defineEmits([
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 w-full">
     <div v-if="!selectedCustomer" class="relative">
 
       <div class="flex gap-3">
