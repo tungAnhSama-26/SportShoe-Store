@@ -972,11 +972,11 @@ function lopTrangThaiThanhToan(thanhToan) {
               <div class="space-y-1 text-sm">
                 <p>
                   <span class="font-bold text-slate-800">Ngân hàng:</span>
-                  <span class="text-slate-600">MB Bank</span>
+                  <span class="text-slate-600">VCB Bank</span>
                 </p>
                 <p>
                   <span class="font-bold text-slate-800">Số tài khoản:</span>
-                  <span class="text-slate-600">0876524519</span>
+                  <span class="text-slate-600">0965852782</span>
                 </p>
                 <p>
                   <span class="font-bold text-slate-800">Nội dung:</span>
