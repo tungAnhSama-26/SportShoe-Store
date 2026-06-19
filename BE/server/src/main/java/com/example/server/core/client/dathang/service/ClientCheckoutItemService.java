@@ -38,6 +38,18 @@ public class ClientCheckoutItemService {
 
     @Transactional(readOnly = true)
     public KetQua chuanBi(List<DatHangItemRequest> requests) {
+        return chuanBi(requests, null);
+    }
+
+    /**
+     * Chuẩn bị dòng hóa đơn từ giỏ.
+     *
+     * @param giaKhoa giá đã KHÓA theo biến thể (snapshot lúc tạo mã QR VNPAY/VietQR). Nếu có giá
+     *                khóa cho biến thể thì dùng đúng giá đó, không tính lại theo đợt giảm hiện tại
+     *                -> giá sản phẩm trong đơn không bị đổi dù đợt giảm thay đổi lúc khách đang trả.
+     */
+    @Transactional(readOnly = true)
+    public KetQua chuanBi(List<DatHangItemRequest> requests, Map<Integer, BigDecimal> giaKhoa) {
         if (requests == null || requests.isEmpty()) {
             throw new BusinessException("Giỏ hàng đang trống");
         }
@@ -67,7 +79,9 @@ public class ClientCheckoutItemService {
 
         for (GiayChiTiet bienThe : bienThes) {
             int soLuong = soLuongTheoBienThe.get(bienThe.getId());
-            BigDecimal gia = giaHienTai.getOrDefault(bienThe.getId(), bienThe.getGiaBan());
+            BigDecimal gia = giaKhoa != null && giaKhoa.get(bienThe.getId()) != null
+                    ? giaKhoa.get(bienThe.getId())
+                    : giaHienTai.getOrDefault(bienThe.getId(), bienThe.getGiaBan());
             BigDecimal thanhTien = gia.multiply(BigDecimal.valueOf(soLuong));
 
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();

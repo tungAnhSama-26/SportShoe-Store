@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { layChiTietSanPham, layDanhGia } from '../services/san-pham';
-import { themVaoGio as apiThemGio, layKhachId } from '../services/gio-hang';
+import { themVaoGio as apiThemGio } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -181,15 +181,9 @@ function kiemTraChon() {
   return true;
 }
 
-function yeuCauDangNhap() {
-  if (layKhachId()) return false;
-  showWarning('Vui lòng đăng nhập để mua hàng.');
-  router.push('/login');
-  return true;
-}
-
 async function themVaoGio() {
-  if (!kiemTraChon() || yeuCauDangNhap()) return;
+  // Khách vãng lai vẫn mua được, không bắt buộc đăng nhập.
+  if (!kiemTraChon()) return;
   try {
     const b = bienTheChon.value;
     const gio = await apiThemGio(b.id, soLuongMua.value, {
@@ -209,7 +203,7 @@ async function themVaoGio() {
 }
 
 async function muaNgay() {
-  if (!kiemTraChon() || yeuCauDangNhap()) return;
+  if (!kiemTraChon()) return;
   try {
     const b = bienTheChon.value;
     const gio = await apiThemGio(b.id, soLuongMua.value, {
