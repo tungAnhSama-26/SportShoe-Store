@@ -198,15 +198,22 @@ watch(
 let ngatRealtimeSP = null;
 let timerDongBoSP = null;
 
+function lenLichDongBo() {
+  if (timerDongBoSP) clearTimeout(timerDongBoSP);
+  timerDongBoSP = setTimeout(reSyncGio, 300);
+}
+
+function dongBoKhiQuayLaiTab() {
+  if (document.visibilityState === 'visible') lenLichDongBo();
+}
+
 onMounted(() => {
   tai();
-  // Realtime: admin đổi giá / ngừng bán -> đồng bộ lại giỏ ở bước thanh toán (ngầm).
-  ngatRealtimeSP = ketNoiSanPhamRealtime({
-    onSanPhamThayDoi: () => {
-      if (timerDongBoSP) clearTimeout(timerDongBoSP);
-      timerDongBoSP = setTimeout(reSyncGio, 300);
-    },
-  });
+  // Realtime: admin đổi giá / ngừng bán / ngừng phiếu -> đồng bộ lại giỏ + phiếu (ngầm).
+  ngatRealtimeSP = ketNoiSanPhamRealtime({ onSanPhamThayDoi: lenLichDongBo });
+  // Dự phòng khi SSE lỡ tín hiệu: quay lại tab/cửa sổ này thì kiểm lại ngay (không cần reload).
+  window.addEventListener('focus', lenLichDongBo);
+  document.addEventListener('visibilitychange', dongBoKhiQuayLaiTab);
 });
 
 async function reSyncGio() {
@@ -223,6 +230,8 @@ onUnmounted(() => {
   dungPoll();
   ngatRealtimeSP?.();
   if (timerDongBoSP) clearTimeout(timerDongBoSP);
+  window.removeEventListener('focus', lenLichDongBo);
+  document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTab);
 });
 
 onBeforeRouteLeave(() => {
