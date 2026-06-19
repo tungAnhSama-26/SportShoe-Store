@@ -50,8 +50,13 @@ export function usePosCart({
     return cartItems.value.filter((item) => item.chiTietId === chiTietId).reduce((sum, item) => sum + item.soLuong, 0);
   }
 
+  function soLuongDaLuu(chiTietId) {
+    return cartItems.value.filter((item) => item.chiTietId === chiTietId).reduce((sum, item) => sum + (item.soLuongBanDau || 0), 0);
+  }
+
   function soLuongConLai(chiTietId, soLuongTon) {
-    return Math.max(soLuongTon - soLuongDaChon(chiTietId), 0);
+    const unsavedAdded = Math.max(soLuongDaChon(chiTietId) - soLuongDaLuu(chiTietId), 0);
+    return Math.max(soLuongTon - unsavedAdded, 0);
   }
 
   function themSanPham(product, quantity = 1, options = {}) {
@@ -82,6 +87,7 @@ export function usePosCart({
           kichCo: product.kichCo,
           hinhAnh: product.hinhAnh || "",
           soLuong: quantity,
+          soLuongBanDau: 0,
           giaBan: product.giaBan,
           soLuongTon: product.soLuongTon,
           isPriceChanged: !!existingDifferentPrice // Flag indicating it has a different price than another item in cart

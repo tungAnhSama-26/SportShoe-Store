@@ -109,7 +109,7 @@ function ensureAlertStyles() {
   document.head.appendChild(style);
 }
 
-const toastSwal = Swal.mixin({
+export const toastSwal = Swal.mixin({
   toast: true,
   position: 'top-end',
   showConfirmButton: false,
@@ -150,7 +150,7 @@ export function showSuccess(text = '', title = 'Thành công!') {
     title: normalizeSuccessTitle(title),
     text: text || undefined,
     timer: 2000,
-    iconColor: '#10b981',
+    iconColor: BRAND_RED,
   });
 }
 
@@ -192,7 +192,7 @@ export function showToastSuccess(text = '', title = 'Thành công!') {
     title: normalizeSuccessTitle(title),
     text: text || undefined,
     timer: 2000,
-    iconColor: '#10b981',
+    iconColor: BRAND_RED,
   });
 }
 

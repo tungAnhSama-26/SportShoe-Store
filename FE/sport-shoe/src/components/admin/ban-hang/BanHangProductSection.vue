@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { QrCode, Search, X } from "lucide-vue-next";
 import AdminTableFooter from "../../common/AdminTableFooter.vue";
 import BanHangQrScannerModal from "./BanHangQrScannerModal.vue";
-import { showError } from "../../../utils/alert";
+import { toastSwal } from "../../../utils/alert";
 
 const props = defineProps({
   activePendingInvoice: {
@@ -106,7 +106,13 @@ function formatDiscountPercent(product) {
 
 function handleOpenProduct(product) {
   if (!props.activePendingInvoice) {
-    showError("Vui lòng tạo hóa đơn trước khi chọn sản phẩm.");
+    toastSwal.fire({
+      icon: 'error',
+      title: 'Thông báo',
+      text: 'Vui lòng tạo hóa đơn trước khi chọn sản phẩm.',
+      timer: 3000,
+      iconColor: '#cf1018'
+    });
     return;
   }
   emit("open-product", product);
@@ -115,7 +121,13 @@ function handleOpenProduct(product) {
 
 function moQuetQr() {
   if (!props.activePendingInvoice) {
-    showError("Vui lòng tạo hóa đơn trước khi chọn sản phẩm.");
+    toastSwal.fire({
+      icon: 'error',
+      title: 'Thông báo',
+      text: 'Vui lòng tạo hóa đơn trước khi chọn sản phẩm.',
+      timer: 3000,
+      iconColor: '#cf1018'
+    });
     return;
   }
   showQrScanner.value = true;
