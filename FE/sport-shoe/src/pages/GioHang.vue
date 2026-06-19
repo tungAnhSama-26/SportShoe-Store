@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { dongBoGiaGio, capNhatSoLuong, xoaItemGio } from '../services/gio-hang';
+import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showError, showConfirm } from '../utils/alert';
@@ -13,18 +14,49 @@ const gio = ref({ id: null, items: [], tongSoLuong: 0, tongTien: 0 });
 const dangTai = ref(true);
 const dangXuLy = ref(false);
 
-onMounted(taiGio);
+let ngatRealtime = null;
+let timerDongBo = null;
 
-async function taiGio() {
-  dangTai.value = true;
+// Sản phẩm không bán được = đã ngừng bán (conBan === false) hoặc hết hàng (tồn <= 0).
+function khongConBan(item) {
+  return item.conBan === false || Number(item.tonKho) <= 0;
+}
+const coSanPhamKhongBan = computed(() =>
+  (gio.value.items || []).some((it) => khongConBan(it)),
+);
+
+function diThanhToan() {
+  if (coSanPhamKhongBan.value) return;
+  router.push('/khachhang/thanh-toan');
+}
+
+onMounted(() => {
+  taiGio();
+  // Realtime: admin ngừng bán / đổi giá / đợt giảm -> tự đồng bộ lại giỏ (không reload trang).
+  ngatRealtime = ketNoiSanPhamRealtime({
+    onSanPhamThayDoi: () => {
+      if (timerDongBo) clearTimeout(timerDongBo);
+      timerDongBo = setTimeout(() => taiGio(true), 300); // gom nhiều ping thành 1 lần
+    },
+  });
+});
+
+onUnmounted(() => {
+  ngatRealtime?.();
+  if (timerDongBo) clearTimeout(timerDongBo);
+});
+
+// amTham=true: đồng bộ ngầm (không hiện spinner) khi nhận realtime.
+async function taiGio(amTham = false) {
+  if (!amTham) dangTai.value = true;
   try {
     // Đồng bộ giá hiện tại (đợt giảm có thể đã đổi sau lúc thêm vào giỏ).
     gio.value = await dongBoGiaGio();
     gioHangStore.datSoLuong(gio.value.tongSoLuong);
   } catch {
-    gio.value = { id: null, items: [], tongSoLuong: 0, tongTien: 0 };
+    if (!amTham) gio.value = { id: null, items: [], tongSoLuong: 0, tongTien: 0 };
   } finally {
-    dangTai.value = false;
+    if (!amTham) dangTai.value = false;
   }
 }
 
@@ -86,6 +118,7 @@ function thanhTien(item) {
             v-for="item in gio.items"
             :key="item.id"
             class="flex gap-4 rounded-2xl bg-white border border-slate-100 p-4 shadow-sm"
+            :class="{ 'opacity-60': khongConBan(item) }"
           >
             <router-link :to="`/khachhang/san-pham/${item.giayId}`" class="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-50">
               <img :src="item.hinhAnh || anhMacDinh" :alt="item.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
@@ -103,7 +136,8 @@ function thanhTien(item) {
                       <span class="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">Đã giảm giá</span>
                     </template>
                   </div>
-                  <p v-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm đã hết hàng</p>
+                  <p v-if="item.conBan === false" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm này đã ngừng bán</p>
+                  <p v-else-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm này đã hết hàng</p>
                   <p v-else-if="item.soLuong > item.tonKho" class="mt-1 text-xs font-semibold text-amber-600">⚠ Chỉ còn {{ item.tonKho }} sản phẩm</p>
                 </div>
                 <button @click="xoa(item)" class="text-slate-300 hover:text-rose-500 transition" aria-label="Xóa">
@@ -135,11 +169,15 @@ function thanhTien(item) {
             <span class="text-xl font-bold text-primary">{{ dinhDangTienViet(gio.tongTien) }}</span>
           </div>
           <button
-            @click="router.push('/khachhang/thanh-toan')"
-            class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5"
+            @click="diThanhToan"
+            :disabled="coSanPhamKhongBan"
+            class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
             Tiến hành thanh toán
           </button>
+          <p v-if="coSanPhamKhongBan" class="mt-2 text-center text-xs font-medium text-rose-500">
+            Có sản phẩm đã hết hàng hoặc ngừng bán. Vui lòng xóa khỏi giỏ để tiếp tục.
+          </p>
           <router-link to="/khachhang/san-pham" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Tiếp tục mua sắm</router-link>
         </aside>
       </div>

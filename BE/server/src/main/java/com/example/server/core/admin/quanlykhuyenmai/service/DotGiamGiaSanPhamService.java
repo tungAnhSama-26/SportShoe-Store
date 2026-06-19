@@ -32,6 +32,7 @@ public class DotGiamGiaSanPhamService {
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public List<QuanLyDotGiamGiaSanPhamResponse> getAll() {
         return dotGiamGiaSanPhamRepository.hienThiQuanLyDotGiamGiaSanPham();
@@ -218,5 +219,7 @@ public class DotGiamGiaSanPhamService {
 
         gct.setNgayCapNhat(Instant.now());
         giayChiTietRepository.save(gct);
+        // Báo realtime để giỏ hàng khách tự đồng bộ lại giá khi đợt giảm thay đổi.
+        sanPhamRealtimePublisher.phatSauCommit("DOT_GIAM_GIA");
     }
 }
