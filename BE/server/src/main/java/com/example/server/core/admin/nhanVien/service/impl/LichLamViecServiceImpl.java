@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class LichLamViecServiceImpl implements LichLamViecService {
@@ -36,8 +38,28 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     @Override
     @Transactional(readOnly = true)
     public List<LichLamViecResponse> layLichLamViecTheoTuan(LocalDate tuNgay, LocalDate denNgay) {
+        List<com.example.server.entity.ChamCong> chamCongs = chamCongRepository.findByNgayBetween(tuNgay, denNgay);
+        Map<String, com.example.server.entity.ChamCong> chamCongMap = chamCongs.stream()
+                .collect(Collectors.toMap(
+                        cc -> cc.getNhanVien().getId() + "_" + cc.getNgay() + "_" + cc.getCa(),
+                        cc -> cc,
+                        (existing, replacement) -> existing
+                ));
+
         return lichLamViecRepository.findByNgayBetween(tuNgay, denNgay).stream()
-                .map(l -> new LichLamViecResponse(l.getId(), l.getNhanVien().getId(), l.getNgay(), l.getCa()))
+                .map(l -> {
+                    String key = l.getNhanVien().getId() + "_" + l.getNgay() + "_" + l.getCa();
+                    com.example.server.entity.ChamCong cc = chamCongMap.get(key);
+                    String trangThai = null;
+                    if (cc != null) {
+                        if (cc.getThoiGianVao() != null && cc.getThoiGianRa() == null) {
+                            trangThai = "check in";
+                        } else if (cc.getThoiGianRa() != null) {
+                            trangThai = "check out";
+                        }
+                    }
+                    return new LichLamViecResponse(l.getId(), l.getNhanVien().getId(), l.getNgay(), l.getCa(), trangThai);
+                })
                 .toList();
     }
 
@@ -62,7 +84,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 }
                 lichLamViecRepository.delete(lichLamViec);
             }
-            return new LichLamViecResponse(null, request.nhanVienId(), request.ngay(), null);
+            return new LichLamViecResponse(null, request.nhanVienId(), request.ngay(), null, null);
         }
 
         String ca = request.ca().trim().toLowerCase();
@@ -78,7 +100,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
             if (count >= MAX_NHAN_VIEN_MOI_CA) {
                 String tenCa = mapCaName(ca);
                 String formatNgay = request.ngay().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                throw new BusinessException("Ca " + tenCa + " ngày " + formatNgay + " đã đạt số lượng tối đa " + MAX_NHAN_VIEN_MOI_CA + " người!");
+                throw new BusinessException("Ca " + tenCa + " ngay " + formatNgay + " da dat so luong toi da " + MAX_NHAN_VIEN_MOI_CA + " nguoi!");
             }
         }
 
@@ -88,18 +110,18 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         lich.setCa(ca);
 
         LichLamViec saved = lichLamViecRepository.save(lich);
-        return new LichLamViecResponse(saved.getId(), saved.getNhanVien().getId(), saved.getNgay(), saved.getCa());
+        return new LichLamViecResponse(saved.getId(), saved.getNhanVien().getId(), saved.getNgay(), saved.getCa(), null);
     }
 
     @Override
     @Transactional
     public void xepCaTuDong(LocalDate tuNgay, LocalDate denNgay) {
         if (tuNgay == null || denNgay == null || tuNgay.isAfter(denNgay)) {
-            throw new BusinessException("Khoảng thời gian không hợp lệ");
+            throw new BusinessException("Khoang thoi gian khong hop le");
         }
 
         if (chamCongRepository.existsByNgayBetween(tuNgay, denNgay)) {
-            throw new BusinessException("Không thể xếp ca tự động vì đã có dữ liệu điểm danh trong khoảng thời gian này.");
+            throw new BusinessException("Khong the xep ca tu dong vi da co du lieu diem danh trong khoang thoi gian nay.");
         }
 
         // Delete existing shifts in the date range
@@ -156,9 +178,9 @@ public class LichLamViecServiceImpl implements LichLamViecService {
 
     private String mapCaName(String ca) {
         return switch (ca) {
-            case "sang" -> "Sáng";
-            case "chieu" -> "Chiều";
-            case "toi" -> "Tối";
+            case "sang" -> "Sang";
+            case "chieu" -> "Chieu";
+            case "toi" -> "Toi";
             default -> ca;
         };
     }

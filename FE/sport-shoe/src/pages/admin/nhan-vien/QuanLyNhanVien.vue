@@ -415,17 +415,17 @@ onUnmounted(() => {
       <div class="admin-table-scroll">
         <Table>
           <template #header>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">STT</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Ảnh</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Mã NV</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Họ tên</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Email</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Giới tính</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">SĐT</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Địa chỉ</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Vai trò</th>
-            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Trạng thái</th>
-            <th class="px-3 py-3 text-center whitespace-nowrap text-xs font-medium text-slate-500">Hành động</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">STT</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Ảnh</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Mã NV</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Họ tên</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Email</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Giới tính</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">SĐT</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Địa chỉ</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Vai trò</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-[14px] font-medium text-slate-500">Trạng thái</th>
+            <th class="px-3 py-3 text-center whitespace-nowrap text-[14px] font-medium text-slate-500">Hành động</th>
           </template>
           <template #body>
             <tr v-if="dangTai">
@@ -443,7 +443,7 @@ onUnmounted(() => {
               :key="nv.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50 transition-colors"
             >
-              <td class="rounded-l-2xl px-3 py-3 font-semibold text-xs text-center">
+              <td class="rounded-l-2xl px-3 py-3 font-semibold text-[14px] text-center">
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
               <td class="px-3 py-3">
@@ -458,29 +458,31 @@ onUnmounted(() => {
                   class="h-8 w-8 rounded-full object-cover ring-1 ring-slate-100"
                 />
               </td>
-              <td class="px-3 py-3 font-semibold text-slate-800 text-xs whitespace-nowrap">
+              <td class="px-3 py-3 font-semibold text-slate-800 text-[14px] whitespace-nowrap">
                 {{ nv.ma }}
               </td>
-              <td class="px-3 py-3 font-medium text-slate-800 text-xs whitespace-nowrap">
+              <td class="px-3 py-3 font-medium text-slate-800 text-[14px] whitespace-nowrap">
                 {{ nv.hoTen }}
               </td>
-              <td class="px-3 py-3 text-slate-600 text-xs">
+              <td class="px-3 py-3 text-slate-600 text-[14px]">
                 {{ nv.email }}
               </td>
-              <td class="px-3 py-3 text-slate-600 text-xs whitespace-nowrap">
+              <td class="px-3 py-3 text-slate-600 text-[14px] whitespace-nowrap">
                 {{ nv.gioiTinh || "—" }}
               </td>
-              <td class="px-3 py-3 text-slate-600 text-xs whitespace-nowrap">
+              <td class="px-3 py-3 text-slate-600 text-[14px] whitespace-nowrap">
                 {{ nv.sdt || "—" }}
               </td>
-              <td class="px-3 py-3 text-slate-600 text-xs whitespace-nowrap">
+              <td class="px-3 py-3 text-slate-600 text-[14px]">
+                <div class="min-w-[200px] max-w-[300px] whitespace-normal break-words" :title="nv.diaChi">
                   {{ nv.diaChi || "—" }}
+                </div>
               </td>
-              <td class="px-3 py-3 text-slate-600 text-xs whitespace-nowrap">
+              <td class="px-3 py-3 text-slate-600 text-[14px] whitespace-nowrap">
                 {{ hienThiVaiTro(nv) }}
               </td>
-              <td class="px-3 py-3 text-xs whitespace-nowrap">
-                <Badge :variant="nv.trangThai === 1 ? 'success' : 'danger'" class="text-[11px] px-2 py-0.5">
+              <td class="px-3 py-3 text-[14px] whitespace-nowrap">
+                <Badge :variant="nv.trangThai === 1 ? 'success' : 'danger'" class="text-[12px] px-2 py-0.5">
                   {{ hienThiTrangThai(nv) }}
                 </Badge>
               </td>

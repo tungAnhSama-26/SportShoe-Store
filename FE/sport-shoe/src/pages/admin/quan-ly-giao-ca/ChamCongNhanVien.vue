@@ -61,9 +61,10 @@ function homNay() { ngayHienTai.value = new Date(); }
 const keyword = ref("");
 const locNhanVienId = ref("");
 const locTrangThai = ref("");
+const locCa = ref("");
 
 const DS_TRANG_THAI = [
-  { value: "", label: "Tất cả" },
+  { value: "", label: "Tất cả trạng thái" },
   { value: "DUNG_GIO", label: "Đúng giờ" },
   { value: "DI_TRE", label: "Đi trễ" },
   { value: "VE_SOM", label: "Về sớm" },
@@ -84,7 +85,7 @@ function taoMockChamCong(nvList) {
   const rows = [];
   let id = 1;
   cacNgay.value.forEach((ngay) => {
-    nvList.slice(0, 6).forEach((nv) => {
+    nvList.forEach((nv) => {
       const trangThai = trangThais[Math.floor(Math.random() * trangThais.length)];
       const ca = cas[Math.floor(Math.random() * cas.length)];
       rows.push({
@@ -131,10 +132,21 @@ const danhSachHienThi = computed(() => {
   let list = danhSachChamCong.value;
   if (locNhanVienId.value) list = list.filter((r) => String(r.nhanVienId) === locNhanVienId.value);
   if (locTrangThai.value) list = list.filter((r) => r.trangThai === locTrangThai.value);
+  if (locCa.value) list = list.filter((r) => r.ca === locCa.value);
   if (keyword.value.trim()) {
     const kw = keyword.value.trim().toLowerCase();
     list = list.filter((r) => r.tenNhanVien?.toLowerCase().includes(kw));
   }
+
+  // Sắp xếp: Đưa các ca của hôm nay lên đầu tiên, sau đó sắp xếp theo ngày gần nhất
+  const todayStr = formatISODate(new Date());
+  list.sort((a, b) => {
+    if (a.ngay === todayStr && b.ngay !== todayStr) return -1;
+    if (b.ngay === todayStr && a.ngay !== todayStr) return 1;
+    // Nếu cùng là hôm nay hoặc cùng không phải hôm nay, sắp xếp theo ngày giảm dần
+    return new Date(b.ngay) - new Date(a.ngay);
+  });
+
   return list;
 });
 
@@ -312,6 +324,16 @@ function caBadge(ca) {
         <option v-for="nv in danhSachNV" :key="nv.id" :value="String(nv.id)">
           {{ nv.hoTen }}
         </option>
+      </select>
+      <!-- Lọc ca -->
+      <select
+        v-model="locCa"
+        class="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus:border-primary focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+      >
+        <option value="">Tất cả ca</option>
+        <option value="sang">Ca sáng</option>
+        <option value="chieu">Ca chiều</option>
+        <option value="toi">Ca tối</option>
       </select>
       <!-- Lọc trạng thái -->
       <select

@@ -87,7 +87,7 @@
               Check-in
             </button>
             <button 
-              v-else-if="trangThaiChamCong('sang') === 'Đang làm'"
+              v-else-if="trangThaiChamCong('sang') === 'Đã check-in'"
               @click="thucHienCheckOut"
               :disabled="dangXuLy"
               class="px-4 py-2 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
@@ -95,7 +95,7 @@
               Check-out
             </button>
             <span v-else class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-600">
-              Hoàn thành
+              Đã check-out
             </span>
           </template>
           <template v-else>
@@ -117,7 +117,7 @@
           </div>
           <div>
             <h3 class="font-bold text-orange-600 text-base">Ca chiều</h3>
-            <p class="text-sm font-semibold text-orange-500 mb-1">13:00 - 17:00</p>
+            <p class="text-sm font-semibold text-orange-500 mb-1">12:00 - 17:00</p>
             <div class="flex items-center gap-1 text-xs text-slate-500">
               <MapPin class="h-3 w-3" />
               <span>Văn phòng Hà Nội</span>
@@ -139,7 +139,7 @@
               Check-in
             </button>
             <button 
-              v-else-if="trangThaiChamCong('chieu') === 'Đang làm'"
+              v-else-if="trangThaiChamCong('chieu') === 'Đã check-in'"
               @click="thucHienCheckOut"
               :disabled="dangXuLy"
               class="px-4 py-2 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
@@ -147,7 +147,7 @@
               Check-out
             </button>
             <span v-else class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-600">
-              Hoàn thành
+              Đã check-out
             </span>
           </template>
           <template v-else>
@@ -169,7 +169,7 @@
           </div>
           <div>
             <h3 class="font-bold text-purple-700 text-base">Ca tối</h3>
-            <p class="text-sm font-semibold text-purple-600 mb-1">18:00 - 22:00</p>
+            <p class="text-sm font-semibold text-purple-600 mb-1">17:00 - 22:00</p>
             <div class="flex items-center gap-1 text-xs text-slate-500">
               <MapPin class="h-3 w-3" />
               <span>Văn phòng Hà Nội</span>
@@ -191,7 +191,7 @@
               Check-in
             </button>
             <button 
-              v-else-if="trangThaiChamCong('toi') === 'Đang làm'"
+              v-else-if="trangThaiChamCong('toi') === 'Đã check-in'"
               @click="thucHienCheckOut"
               :disabled="dangXuLy"
               class="px-4 py-2 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
@@ -199,7 +199,7 @@
               Check-out
             </button>
             <span v-else class="px-3 py-1.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-600">
-              Hoàn thành
+              Đã check-out
             </span>
           </template>
           <template v-else>
@@ -425,8 +425,8 @@ function getChamCongData(caNhan) {
 function trangThaiChamCong(caNhan) {
   const c = getChamCongData(caNhan);
   if (!c || !c.thoiGianVao) return 'Chưa Check-in';
-  if (c.thoiGianVao && !c.thoiGianRa) return 'Đang làm';
-  return 'Hoàn thành';
+  if (c.thoiGianVao && !c.thoiGianRa) return 'Đã check-in';
+  return 'Đã check-out';
 }
 
 function formatTime(isoString) {

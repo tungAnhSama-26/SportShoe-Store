@@ -16,6 +16,7 @@ public record AdminLoginResponse(
         String tenVaiTro,
         String hinhAnh,
         Boolean batBuocDoiMatKhau,
-        Instant hanDoiMatKhau
+        Instant hanDoiMatKhau,
+        String faceDescriptor
 ) {
 }
