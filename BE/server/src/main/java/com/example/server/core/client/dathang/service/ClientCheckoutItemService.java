@@ -68,6 +68,11 @@ public class ClientCheckoutItemService {
             GiayChiTiet bienThe = giayChiTietRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Biến thể sản phẩm không tồn tại: " + id));
+            // Chặn đặt sản phẩm đã ngừng bán (admin ẩn biến thể) dù còn tồn kho.
+            if (!Integer.valueOf(1).equals(bienThe.getKichHoat())) {
+                throw new BusinessException(
+                        "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng bán");
+            }
             inventoryUseCase.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             bienThes.add(bienThe);
         }

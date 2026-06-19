@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen, layTinhGhn, layHuyenGhn, layXaGhn } from '../services/gio-hang';
+import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -194,10 +195,34 @@ watch(
   }
 );
 
-onMounted(tai);
+let ngatRealtimeSP = null;
+let timerDongBoSP = null;
+
+onMounted(() => {
+  tai();
+  // Realtime: admin đổi giá / ngừng bán -> đồng bộ lại giỏ ở bước thanh toán (ngầm).
+  ngatRealtimeSP = ketNoiSanPhamRealtime({
+    onSanPhamThayDoi: () => {
+      if (timerDongBoSP) clearTimeout(timerDongBoSP);
+      timerDongBoSP = setTimeout(reSyncGio, 300);
+    },
+  });
+});
+
+async function reSyncGio() {
+  try {
+    gio.value = await dongBoGiaGio();
+  } catch {
+    // bỏ qua lỗi mạng -> giữ giỏ hiện tại
+  }
+  // Phiếu đang áp vừa bị ngừng -> gỡ + báo ngay (không đợi tới lúc bấm thanh toán).
+  await kiemTraLaiVoucher();
+}
 
 onUnmounted(() => {
   dungPoll();
+  ngatRealtimeSP?.();
+  if (timerDongBoSP) clearTimeout(timerDongBoSP);
 });
 
 onBeforeRouteLeave(() => {
@@ -270,6 +295,21 @@ function boVoucher() {
   maVoucher.value = '';
 }
 
+// Kiểm tra lại phiếu đang áp còn hiệu lực không (vd admin vừa ngừng hoạt động phiếu).
+// Trả về true nếu hợp lệ; nếu không -> gỡ phiếu + báo và trả về false (chặn thanh toán).
+async function kiemTraLaiVoucher() {
+  if (!voucher.value) return true;
+  try {
+    voucher.value = await kiemTraVoucher(voucher.value.ma);
+    return true;
+  } catch {
+    voucher.value = null;
+    maVoucher.value = '';
+    showError('Phiếu giảm giá đã bị ngừng hoạt động, vui lòng chọn phiếu khác.');
+    return false;
+  }
+}
+
 function taoPayload() {
   const f = form.value;
   return {
@@ -320,8 +360,20 @@ async function hoanTatDatHang(maHoaDon) {
   router.push('/khachhang/san-pham');
 }
 
+// Giỏ có sản phẩm đã ngừng bán hoặc hết hàng -> không cho đặt.
+function coSanPhamKhongBan() {
+  return (gio.value.items || []).some(
+    (it) => it.conBan === false || Number(it.tonKho) <= 0,
+  );
+}
+
 async function datHangMoi() {
   if (!hopLeThongTin()) return;
+  if (coSanPhamKhongBan()) {
+    return showError('Trong giỏ có sản phẩm đã hết hàng hoặc ngừng bán. Vui lòng quay lại giỏ hàng để xóa.');
+  }
+  // Phiếu đang áp có thể vừa bị admin ngừng -> kiểm tra lại trước khi thanh toán.
+  if (!(await kiemTraLaiVoucher())) return;
   if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
     return moThanhToanVnPay();
   }
