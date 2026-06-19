@@ -142,7 +142,6 @@ const setSelectedCategoryFilter = (val) => { selectedCategoryFilter.value = val;
 const setCouponCode = (val) => { couponCode.value = val; };
 const setPaymentMethod = (val) => { paymentMethod.value = val; };
 const setPaymentNote = (val) => { paymentNote.value = val; };
-const setAmountPaid = (val) => { amountPaid.value = val; };
 
 </script>
 
@@ -252,8 +251,8 @@ const setAmountPaid = (val) => { amountPaid.value = val; };
     @update-shipping="updateShippingInfo"
     @calculate-shipping="handleCalculateShippingFee"
     @update:payment-method="setPaymentMethod"
-    @amount-input="setAmountPaid"
     @update:payment-note="setPaymentNote"
+    @amount-input="handleAmountPaidInput"
     @print-invoice="handlePrintInvoice"
     @pay-now="handlePayNow"
     @cancel-pending-invoice="handleCancelPendingInvoice"
