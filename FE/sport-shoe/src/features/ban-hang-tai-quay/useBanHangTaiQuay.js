@@ -479,11 +479,17 @@ function useBanHangTaiQuay() {
       pageError.value = msg;
       
       // Nếu lỗi do phiếu giảm giá, gỡ bỏ phiếu giảm giá trên frontend để tránh lỗi liên tục
-      if (msg.includes("Phiếu giảm giá")) {
+      if (msg.toLowerCase().includes("phiếu giảm giá")) {
+        const maLoi = appliedCoupon.value?.ma || couponCode.value;
         appliedCoupon.value = null;
         couponCode.value = "";
+        
+        // Gọi suggestBestCoupon để tự động tìm phiếu khác
+        if (maLoi) {
+          pageError.value = `Phiếu giảm giá ${maLoi} không còn hợp lệ. Hệ thống đang tự động tìm phiếu giảm giá thay thế...`;
+          suggestBestCoupon();
+        }
       }
-      
       throw error;
     }
   }
@@ -597,7 +603,19 @@ function useBanHangTaiQuay() {
       await fetchPendingInvoices();
       resetDraft();
     } catch (error) {
-      pageError.value = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
+      const msg = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
+      pageError.value = msg;
+      
+      if (msg.toLowerCase().includes("phiếu giảm giá")) {
+        const maLoi = appliedCoupon.value?.ma || couponCode.value;
+        appliedCoupon.value = null;
+        couponCode.value = "";
+        
+        if (maLoi) {
+          pageError.value = `Phiếu giảm giá ${maLoi} không còn hợp lệ. Hệ thống đang tự động tìm phiếu giảm giá thay thế...`;
+          suggestBestCoupon();
+        }
+      }
     } finally {
       payingInvoice.value = false;
     }

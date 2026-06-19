@@ -261,8 +261,9 @@ export function usePosCoupons({
            const ma = appliedCoupon.value.ma;
            appliedCoupon.value = null;
            couponCode.value = "";
-           pageError.value = `Phiếu giảm giá ${ma} không còn hợp lệ (hoặc đã hết hạn) cho đơn hàng này.`;
+           pageError.value = `Phiếu giảm giá ${ma} không còn hợp lệ. Hệ thống đang tự động tìm phiếu giảm giá thay thế...`;
            capNhatTienKhachThanhToan();
+           suggestBestCoupon();
         }
       } catch (e) {
         // ignore
@@ -301,7 +302,11 @@ export function usePosCoupons({
       }
 
       if (!ketQua.length) {
-        pageError.value = "Không có phiếu giảm giá nào khả dụng cho hóa đơn này";
+        if (pageError.value.includes("tìm phiếu giảm giá thay thế")) {
+          pageError.value = pageError.value.replace("Hệ thống đang tự động tìm phiếu giảm giá thay thế...", "Tuy nhiên, hiện không có phiếu giảm giá nào khác khả dụng.");
+        } else {
+          pageError.value = "Không có phiếu giảm giá nào khả dụng cho hóa đơn này";
+        }
         return;
       }
 
@@ -312,6 +317,10 @@ export function usePosCoupons({
 
       couponCode.value = bestCoupon.ma;
       await handleApplyCoupon();
+      if (appliedCoupon.value?.ma === bestCoupon.ma) {
+        pageError.value = "";
+        successMessage.value = `Đã tự động thay thế bằng phiếu giảm giá ${bestCoupon.ma} tối ưu nhất.`;
+      }
     }
 
     return {
