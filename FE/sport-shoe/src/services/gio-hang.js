@@ -79,11 +79,17 @@ export async function dongBoGiaGio() {
   );
   for (const item of gio.items) {
     const moi = theoId.get(Number(item.giayChiTietId));
-    if (!moi) continue;
+    if (!moi) {
+      // Biến thể không còn tồn tại (đã bị xóa) -> coi như ngừng bán.
+      item.conBan = false;
+      item.tonKho = 0;
+      continue;
+    }
     // Cách A: 1 dòng, cập nhật về giá mới; giữ giá niêm yết để hiển thị gạch ngang.
     item.giaNiemYet = Number(moi.giaNiemYet ?? item.giaBan);
     item.giaBan = Number(moi.giaHienTai ?? item.giaBan);
     if (moi.tonKho != null) item.tonKho = Number(moi.tonKho);
+    item.conBan = moi.conBan !== false; // false = admin đã ngừng bán
   }
   luuGioHangLocal(gio.items);
   return taoGioHangResponse(gio.items);

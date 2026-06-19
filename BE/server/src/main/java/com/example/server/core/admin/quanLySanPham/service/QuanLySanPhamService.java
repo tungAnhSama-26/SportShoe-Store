@@ -91,6 +91,7 @@ public class QuanLySanPhamService {
     private final ChatLieuGiayRepository chatLieuGiayRepository;
     private final TrongLuongRepository trongLuongRepository;
     private final CongNgheDemRepository congNgheDemRepository;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public QuanLySanPhamService(
             GiayRepository giayRepository,
@@ -106,7 +107,8 @@ public class QuanLySanPhamService {
             CoGiayRepository coGiayRepository,
             ChatLieuGiayRepository chatLieuGiayRepository,
             TrongLuongRepository trongLuongRepository,
-            CongNgheDemRepository congNgheDemRepository
+            CongNgheDemRepository congNgheDemRepository,
+            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher
     ) {
         this.giayRepository = giayRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -122,6 +124,7 @@ public class QuanLySanPhamService {
         this.chatLieuGiayRepository = chatLieuGiayRepository;
         this.trongLuongRepository = trongLuongRepository;
         this.congNgheDemRepository = congNgheDemRepository;
+        this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
     }
 
     // ─── Danh mục ────────────────────────────────────────────────────────────
@@ -813,6 +816,7 @@ public class QuanLySanPhamService {
         gct.setNgayCapNhat(Instant.now());
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
+        sanPhamRealtimePublisher.phatSauCommit("CAP_NHAT_BIEN_THE");
         return toBienThe(saved, null);
     }
 
@@ -829,6 +833,7 @@ public class QuanLySanPhamService {
         gct.setNgayCapNhat(Instant.now());
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
+        sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_BIEN_THE");
         return toBienThe(saved, null);
     }
 
@@ -839,6 +844,7 @@ public class QuanLySanPhamService {
         Integer giayId = gct.getGiay().getId();
         giayChiTietRepository.deleteById(id);
         updateTrangThaiTuSoLuong(giayId);
+        sanPhamRealtimePublisher.phatSauCommit("XOA_BIEN_THE");
     }
 
     private BienTheResponse toBienThe(GiayChiTiet gct, ActiveDiscountInfo activeDiscount) {
