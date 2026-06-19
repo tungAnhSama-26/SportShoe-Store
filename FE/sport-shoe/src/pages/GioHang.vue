@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { layGioHang, capNhatSoLuong, xoaItemGio, layKhachId } from '../services/gio-hang';
+import { dongBoGiaGio, capNhatSoLuong, xoaItemGio } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showError, showConfirm } from '../utils/alert';
@@ -12,14 +12,14 @@ const router = useRouter();
 const gio = ref({ id: null, items: [], tongSoLuong: 0, tongTien: 0 });
 const dangTai = ref(true);
 const dangXuLy = ref(false);
-const daDangNhap = computed(() => Boolean(layKhachId()));
 
 onMounted(taiGio);
 
 async function taiGio() {
   dangTai.value = true;
   try {
-    gio.value = await layGioHang();
+    // Đồng bộ giá hiện tại (đợt giảm có thể đã đổi sau lúc thêm vào giỏ).
+    gio.value = await dongBoGiaGio();
     gioHangStore.datSoLuong(gio.value.tongSoLuong);
   } catch {
     gio.value = { id: null, items: [], tongSoLuong: 0, tongTien: 0 };
@@ -72,12 +72,7 @@ function thanhTien(item) {
     <div class="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
       <h1 class="text-3xl font-bold text-slate-900 mb-8">Giỏ hàng</h1>
 
-      <div v-if="!daDangNhap" class="py-24 text-center">
-        <p class="text-sm text-slate-500 mb-4">Vui lòng đăng nhập để xem giỏ hàng của bạn.</p>
-        <router-link to="/login" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Đăng nhập</router-link>
-      </div>
-
-      <div v-else-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải giỏ hàng...</div>
+      <div v-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải giỏ hàng...</div>
 
       <div v-else-if="!gio.items.length" class="py-24 text-center">
         <p class="text-sm text-slate-500 mb-4">Giỏ hàng của bạn đang trống.</p>
@@ -101,6 +96,13 @@ function thanhTien(item) {
                 <div>
                   <router-link :to="`/khachhang/san-pham/${item.giayId}`" class="text-sm font-bold text-slate-900 hover:text-primary line-clamp-2">{{ item.tenSanPham }}</router-link>
                   <p class="mt-1 text-xs text-slate-400">Màu: {{ item.mauSac }} · Size: {{ item.kichCo }}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-bold text-primary">{{ dinhDangTienViet(item.giaBan) }}</span>
+                    <template v-if="Number(item.giaNiemYet) > Number(item.giaBan)">
+                      <span class="text-xs text-slate-400 line-through">{{ dinhDangTienViet(item.giaNiemYet) }}</span>
+                      <span class="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">Đã giảm giá</span>
+                    </template>
+                  </div>
                   <p v-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm đã hết hàng</p>
                   <p v-else-if="item.soLuong > item.tonKho" class="mt-1 text-xs font-semibold text-amber-600">⚠ Chỉ còn {{ item.tonKho }} sản phẩm</p>
                 </div>
