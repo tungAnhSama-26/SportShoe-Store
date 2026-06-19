@@ -19,7 +19,7 @@ import { usePosCustomers } from "./usePosCustomers";
 import { usePosPayment } from "./usePosPayment";
 import { usePosProducts } from "./usePosProducts";
 import { usePosShipping } from "./usePosShipping";
-import { showConfirm, showToastSuccess, showError } from "../../utils/alert";
+import { showConfirm, showToastSuccess, showError, toastSwal } from "../../utils/alert";
 
 function useBanHangTaiQuay() {
   const pendingInvoices = ref([]);
@@ -394,21 +394,25 @@ function useBanHangTaiQuay() {
         email: null
       }
       : null;
+    isSavingInternal = true;
     cartItems.value = invoice.items.map((item) => {
       const thongTinSanPham = thongTinTheoChiTietId.get(item.chiTietId);
       return {
+        cartItemId: Date.now().toString() + Math.random().toString(),
         chiTietId: item.chiTietId,
         maSanPham: item.maSanPham,
         tenSanPham: item.tenSanPham,
-        sku: thongTinSanPham?.sku || "",
-        mauSac: thongTinSanPham?.mauSac || "",
-        kichCo: thongTinSanPham?.kichCo || "",
-        hinhAnh: thongTinSanPham?.hinhAnh || "",
+        sku: item.sku || thongTinSanPham?.sku || "",
+        mauSac: item.mauSac || thongTinSanPham?.mauSac || "",
+        kichCo: item.kichCo || thongTinSanPham?.kichCo || "",
+        hinhAnh: item.hinhAnh || thongTinSanPham?.hinhAnh || "",
         soLuong: item.soLuong,
+        soLuongBanDau: item.soLuong,
         giaBan: item.giaBan,
         soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
       };
     });
+    setTimeout(() => { isSavingInternal = false; }, 50);
     deliveryEnabled.value = Boolean(thongTinGiaoHang?.giaoHang);
     deliveryRecipientName.value = thongTinGiaoHang?.tenNguoiNhan || "";
     deliveryRecipientPhone.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
@@ -459,12 +463,29 @@ function useBanHangTaiQuay() {
           soLuong: item.soLuong
         })),
       };
-      await capNhatHoaDonCho(activePendingInvoice.value.id, payload);
+      const response = await capNhatHoaDonCho(activePendingInvoice.value.id, payload);
+      // Cập nhật lại soLuongBanDau vì backend đã trừ tồn kho
+      isSavingInternal = true;
+      cartItems.value = cartItems.value.map(item => ({
+        ...item,
+        soLuongBanDau: item.soLuong
+      }));
+      setTimeout(() => { isSavingInternal = false; }, 50);
     } catch (error) {
       console.error("Lỗi khi lưu hóa đơn chờ trước khi chuyển trang", error);
       throw error;
     }
   }
+  
+  let isSavingInternal = false;
+  let autoSaveTimeout = null;
+  watch(() => cartItems.value, () => {
+    if (isSavingInternal) return;
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      saveCurrentInvoice().catch(() => {});
+    }, 1000);
+  }, { deep: true });
 
   async function chonHoaDonCho(invoice) {
     if (activePendingInvoice.value && activePendingInvoice.value.id !== invoice.id) {
@@ -572,7 +593,18 @@ function useBanHangTaiQuay() {
   }
 
   async function handleCancelPendingInvoice() {
-    if (!activePendingInvoice.value || cancelingPendingInvoice.value) {
+    if (cancelingPendingInvoice.value) {
+      return;
+    }
+    
+    if (!activePendingInvoice.value) {
+      toastSwal.fire({
+        icon: 'warning',
+        title: 'Thông báo',
+        text: 'Vui lòng chọn hóa đơn cần hủy',
+        timer: 3000,
+        iconColor: '#cf1018'
+      });
       return;
     }
 
@@ -583,10 +615,17 @@ function useBanHangTaiQuay() {
 
     cancelingPendingInvoice.value = true;
     pageError.value = "";
-    successMessage.value = "";
     try {
       await huyHoaDonCho(activePendingInvoice.value.id);
-      successMessage.value = `Đã hủy hóa đơn chờ ${activePendingInvoice.value.ma}`;
+      
+      toastSwal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: `Đã hủy hóa đơn chờ ${activePendingInvoice.value.ma}`,
+        timer: 3000,
+        iconColor: '#cf1018'
+      });
+
       await fetchPendingInvoices();
       resetDraft();
     } catch (error) {

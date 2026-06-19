@@ -418,8 +418,8 @@ const sepayQrUrl = computed(() => {
           <button
             type="button"
             class="rounded-2xl bg-slate-200 px-4 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-            :disabled="!activePendingInvoice || cancelingPendingInvoice"
-            @click="confirm('Bạn có chắc chắn muốn hủy hóa đơn này không?') && emit('cancel-pending-invoice')"
+            :disabled="cancelingPendingInvoice"
+            @click="emit('cancel-pending-invoice')"
           >
             {{ cancelingPendingInvoice ? "Đang hủy..." : "Hủy hóa đơn" }}
           </button>

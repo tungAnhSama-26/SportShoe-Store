@@ -276,7 +276,7 @@ public class BanHangTaiQuayService {
 
         for (PhieuGiamGia phieuGiamGia : phieuGiamGiaRepository.searchByKeyword(
                 chuanHoaTuKhoa(keyword),
-                PageRequest.of(0, 20)
+                PageRequest.of(0, 100)
         )) {
             try {
                 validatePhieuGiamGia(phieuGiamGia, khachHang, tongTienHangHienTai, hoaDonHienTai);
@@ -289,7 +289,7 @@ public class BanHangTaiQuayService {
                 // Bo qua cac phieu khong hop le voi gio hang hien tai.
             }
 
-            if (ketQua.size() >= 8) {
+            if (ketQua.size() >= 50) {
                 break;
             }
         }
@@ -892,14 +892,25 @@ public class BanHangTaiQuayService {
                 mapThongTinPhieuGiamGiaHoaDon(hoaDon),
                 hoaDon.getNgayTao(),
                 items.stream()
-                        .map(item -> new HoaDonChoDongSanPhamResponse(
-                                item.getGiayChiTiet().getId(),
-                                item.getGiayChiTiet().getGiay().getMa(),
-                                item.getGiayChiTiet().getGiay().getTen(),
-                                item.getSoLuong(),
-                                item.getGiaDonVi(),
-                                item.getThanhTien()
-                        ))
+                        .map(item -> {
+                                String hinhAnh = null;
+                                var hinhAnhs = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(item.getGiayChiTiet().getId(), 1);
+                                if (hinhAnhs != null && !hinhAnhs.isEmpty()) {
+                                    hinhAnh = hinhAnhs.get(0).getUrl();
+                                }
+                                return new HoaDonChoDongSanPhamResponse(
+                                        item.getGiayChiTiet().getId(),
+                                        item.getGiayChiTiet().getGiay().getMa(),
+                                        item.getGiayChiTiet().getGiay().getTen(),
+                                        item.getGiayChiTiet().getMauSac().getTen(),
+                                        item.getGiayChiTiet().getKichCo().getGiaTri(),
+                                        item.getGiayChiTiet().getSku(),
+                                        hinhAnh,
+                                        item.getSoLuong(),
+                                        item.getGiaDonVi(),
+                                        item.getThanhTien()
+                                );
+                        })
                         .toList()
         );
     }
