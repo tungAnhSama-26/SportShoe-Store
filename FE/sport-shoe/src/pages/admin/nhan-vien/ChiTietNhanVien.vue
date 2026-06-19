@@ -71,6 +71,7 @@ async function handleSaveFaceId(descriptorString) {
                 type="button"
                 @click="fileInputAvatar?.click()"
                 class="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-center text-[42px] font-light text-slate-500 transition hover:bg-slate-200"
+                :class="{'ring-2 ring-rose-400': loiForm.hinhAnh}"
               >
                 <img
                   v-if="form.hinhAnh"
@@ -97,6 +98,7 @@ async function handleSaveFaceId(descriptorString) {
 
             <h2 class="mt-5 text-base font-bold text-slate-900">{{ form.hoTen || "Nhân viên mới" }}</h2>
             <p class="mt-1 text-sm text-slate-400">{{ form.email || "Chưa cập nhật email" }}</p>
+            <p v-if="loiForm.hinhAnh" class="mt-2 text-xs text-rose-500 font-medium px-4">{{ loiForm.hinhAnh }}</p>
             <div v-if="!laMoi" class="mt-3">
               <span
                 class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
