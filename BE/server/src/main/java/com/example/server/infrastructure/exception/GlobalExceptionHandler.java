@@ -12,7 +12,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -82,8 +84,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(ErrorCode.BUSINESS_ERROR, exception.getMessage()));
     }
 
+    // Bỏ qua lỗi client disconnect khi dùng SSE/WebSocket
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsableException(org.springframework.web.context.request.async.AsyncRequestNotUsableException e) {
+        log.warn("Client disconnected during SSE/async request: {}", e.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnhandled(Exception exception) {
+        exception.printStackTrace(); // Added for debugging
+        log.error("Unhandled exception", exception);
         String detail = exception.getMessage() != null ? exception.getMessage() : "No message";
         String message = ErrorCode.UNEXPECTED_ERROR.messageTemplate() + " | " + exception.getClass().getSimpleName() + ": " + detail;
         

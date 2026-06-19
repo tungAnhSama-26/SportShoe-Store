@@ -109,7 +109,7 @@ function ensureAlertStyles() {
   document.head.appendChild(style);
 }
 
-const toastSwal = Swal.mixin({
+export const toastSwal = Swal.mixin({
   toast: true,
   position: 'top-end',
   showConfirmButton: false,
@@ -145,34 +145,12 @@ function normalizeSuccessTitle(title) {
 }
 
 export function showSuccess(text = '', title = 'Thành công!') {
-  ensureAlertStyles();
-
-  return Swal.fire({
+  return toastSwal.fire({
     icon: 'success',
     title: normalizeSuccessTitle(title),
     text: text || undefined,
-    toast: false,
-    position: 'center',
-    showConfirmButton: false,
-    timer: 1400,
-    timerProgressBar: true,
-    background: '#ffffff',
-    color: '#334155',
+    timer: 2000,
     iconColor: BRAND_RED,
-    showClass: {
-      popup: 'sportshoe-popup-show',
-      backdrop: 'swal2-noanimation',
-    },
-    hideClass: {
-      popup: 'sportshoe-popup-hide',
-      backdrop: 'swal2-noanimation',
-    },
-    customClass: {
-      popup: 'sportshoe-success-popup',
-      title: 'sportshoe-success-title',
-      htmlContainer: 'sportshoe-success-text',
-      timerProgressBar: 'sportshoe-success-progress',
-    },
   });
 }
 
@@ -208,28 +186,23 @@ export function showError(text = '', title = 'Thất bại!') {
   });
 }
 
-export function showWarning(text = '', title = 'Thông báo') {
-  ensureAlertStyles();
+export function showToastSuccess(text = '', title = 'Thành công!') {
+  return toastSwal.fire({
+    icon: 'success',
+    title: normalizeSuccessTitle(title),
+    text: text || undefined,
+    timer: 2000,
+    iconColor: BRAND_RED,
+  });
+}
 
-  return Swal.fire({
+export function showWarning(text = '', title = 'Thông báo') {
+  return toastSwal.fire({
     icon: 'warning',
     title,
     text: text || undefined,
-    toast: false,
-    position: 'center',
-    showConfirmButton: true,
-    confirmButtonText: 'Đã hiểu',
-    background: '#ffffff',
-    color: '#334155',
-    iconColor: BRAND_RED,
-    buttonsStyling: false,
-    customClass: {
-      popup: 'sportshoe-success-popup',
-      title: 'sportshoe-success-title',
-      htmlContainer: 'sportshoe-success-text',
-      confirmButton:
-        'bg-[#cf1018] text-white px-8 py-2.5 rounded-full font-semibold hover:bg-rose-700 transition focus:ring-4 focus:ring-rose-100 mt-4',
-    },
+    timer: 4000,
+    iconColor: '#f59e0b',
   });
 }
 

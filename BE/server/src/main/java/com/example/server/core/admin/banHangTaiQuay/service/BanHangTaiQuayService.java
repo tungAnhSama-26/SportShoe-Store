@@ -65,6 +65,8 @@ import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.PhieuGiamGiaRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
+import com.example.server.repository.DiaChiKhachHangRepository;
+import com.example.server.entity.DiaChiKhachHang;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -129,6 +131,7 @@ public class BanHangTaiQuayService {
     private final BanHangTaiQuayShippingUseCase shippingUseCase;
     private final BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
+    private final DiaChiKhachHangRepository diaChiKhachHangRepository;
 
     public BanHangTaiQuayService(
             KhachHangRepository khachHangRepository,
@@ -149,7 +152,8 @@ public class BanHangTaiQuayService {
             BanHangTaiQuayPaymentUseCase paymentUseCase,
             BanHangTaiQuayShippingUseCase shippingUseCase,
             BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase,
-            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
+            DiaChiKhachHangRepository diaChiKhachHangRepository
     ) {
         this.khachHangRepository = khachHangRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -170,6 +174,7 @@ public class BanHangTaiQuayService {
         this.shippingUseCase = shippingUseCase;
         this.invoiceStateUseCase = invoiceStateUseCase;
         this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
+        this.diaChiKhachHangRepository = diaChiKhachHangRepository;
     }
 
     @Transactional(readOnly = true)
@@ -177,12 +182,22 @@ public class BanHangTaiQuayService {
         return khachHangRepository.searchByKeyword(chuanHoaTuKhoa(keyword))
                 .stream()
                 .limit(10)
-                .map(khachHang -> new KhachHangTaiQuayResponse(
-                        khachHang.getId(),
-                        khachHang.getHoTen(),
-                        khachHang.getSdt(),
-                        khachHang.getEmail()
-                ))
+                .map(khachHang -> {
+                    DiaChiKhachHang diaChiMacDinh = diaChiKhachHangRepository
+                            .findFirstByKhachHangIdAndLaMacDinhTrue(khachHang.getId())
+                            .orElse(null);
+                    String diaChiMacDinhText = diaChiMacDinh != null
+                            ? diaChiMacDinh.getDiaChiCuThe() + ", " + diaChiMacDinh.getPhuongXa() + ", "
+                                    + diaChiMacDinh.getQuanHuyen() + ", " + diaChiMacDinh.getTinhThanh()
+                            : null;
+                    return new KhachHangTaiQuayResponse(
+                            khachHang.getId(),
+                            khachHang.getHoTen(),
+                            khachHang.getSdt(),
+                            khachHang.getEmail(),
+                            diaChiMacDinhText
+                    );
+                })
                 .toList();
     }
 
@@ -261,7 +276,7 @@ public class BanHangTaiQuayService {
 
         for (PhieuGiamGia phieuGiamGia : phieuGiamGiaRepository.searchByKeyword(
                 chuanHoaTuKhoa(keyword),
-                PageRequest.of(0, 20)
+                PageRequest.of(0, 100)
         )) {
             try {
                 validatePhieuGiamGia(phieuGiamGia, khachHang, tongTienHangHienTai, hoaDonHienTai);
@@ -274,7 +289,7 @@ public class BanHangTaiQuayService {
                 // Bo qua cac phieu khong hop le voi gio hang hien tai.
             }
 
-            if (ketQua.size() >= 8) {
+            if (ketQua.size() >= 50) {
                 break;
             }
         }
@@ -329,8 +344,8 @@ public class BanHangTaiQuayService {
     @Transactional
     public HoaDonChoChiTietResponse taoHoaDonCho(TaoHoaDonChoRequest request) {
         long soLuongHoaDonCho = hoaDonRepository.countByKenhBanAndTrangThai(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_XAC_NHAN);
-        if (soLuongHoaDonCho >= 10) {
-            throw new BusinessException("Đã đạt giới hạn tối đa 10 hóa đơn chờ");
+        if (soLuongHoaDonCho >= 5) {
+            throw new BusinessException("Đã đạt giới hạn tối đa 5 hóa đơn chờ");
         }
 
         HoaDon savedHoaDon = taoHoaDon(
@@ -376,7 +391,7 @@ public class BanHangTaiQuayService {
         // Add new items
         validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new java.util.ArrayList<>());
         List<HoaDonChiTiet> chiTietTam = request.items() != null && !request.items().isEmpty() ? request.items().stream()
-                .map(item -> taoDongHoaDon(item.chiTietId(), item.soLuong()))
+                .map(item -> taoDongHoaDon(item))
                 .toList() : new java.util.ArrayList<>();
 
         BigDecimal tongTienHang = chiTietTam.stream()
@@ -587,7 +602,7 @@ public class BanHangTaiQuayService {
         validationUseCase.validateDuplicateItems(items != null ? items : new ArrayList<>());
 
         List<HoaDonChiTiet> chiTietTam = items != null && !items.isEmpty() ? items.stream()
-                .map(item -> taoDongHoaDon(item.chiTietId(), item.soLuong()))
+                .map(item -> taoDongHoaDon(item))
                 .toList() : new ArrayList<>();
 
         BigDecimal tongTienHang = chiTietTam.stream()
@@ -756,7 +771,7 @@ public class BanHangTaiQuayService {
         int tongSoLuong = phieuGiamGia.getSoLuong() == null ? 0 : phieuGiamGia.getSoLuong();
         int daDung = phieuGiamGia.getSoLuongDaDung() == null ? 0 : phieuGiamGia.getSoLuongDaDung();
         if (validateSoLuong && !isAlreadyApplied && tongSoLuong != 999999 && daDung >= tongSoLuong) {
-            throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng");
+            throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác.");
         }
 
         BigDecimal soTienGiam = pricingUseCase.tinhSoTienGiam(phieuGiamGia, tongTienHang);
@@ -772,16 +787,16 @@ public class BanHangTaiQuayService {
             HoaDon hoaDon
     ) {
         if (phieuGiamGia.getTrangThai() == null || phieuGiamGia.getTrangThai() != TRANG_THAI_PHIEU_HOAT_DONG) {
-            throw new BusinessException("Phiếu giảm giá không hoạt động");
+            throw new BusinessException("Phiếu giảm giá không hoạt động. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác.");
         }
 
         Instant now = Instant.now();
         if (phieuGiamGia.getNgayBatDau() != null && now.isBefore(phieuGiamGia.getNgayBatDau())) {
-            throw new BusinessException("Phiếu giảm giá chưa đến thời gian áp dụng");
+            throw new BusinessException("Phiếu giảm giá chưa đến thời gian áp dụng. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác.");
         }
 
         if (phieuGiamGia.getNgayKetThuc() != null && now.isAfter(phieuGiamGia.getNgayKetThuc())) {
-            throw new BusinessException("Phiếu giảm giá đã hết hạn sử dụng");
+            throw new BusinessException("Phiếu giảm giá đã hết hạn sử dụng. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác.");
         }
 
         if (phieuGiamGia.getGiaTriToiThieu() != null && tongTienHang.compareTo(phieuGiamGia.getGiaTriToiThieu()) < 0) {
@@ -792,14 +807,14 @@ public class BanHangTaiQuayService {
 
         if (phieuGiamGia.getLoaiPhieu() != null && phieuGiamGia.getLoaiPhieu() == 2) {
             if (khachHang == null) {
-                throw new BusinessException("Phiếu giảm giá này chỉ áp dụng cho khách hàng thành viên");
+                throw new BusinessException("Phiếu giảm giá này chỉ áp dụng cho khách hàng thành viên. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác.");
             }
             PhieuGiamGiaKhachHang pggh = phieuGiamGiaKhachHangRepository
                     .findByPhieuGiamGiaIdAndKhachHangId(phieuGiamGia.getId(), khachHang.getId())
-                    .orElseThrow(() -> new BusinessException("Khách hàng không sở hữu phiếu giảm giá này"));
+                    .orElseThrow(() -> new BusinessException("Khách hàng không sở hữu phiếu giảm giá này. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác."));
 
             if (!isAlreadyApplied && pggh.getTrangThai() != TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG) {
-                throw new BusinessException("Phiếu giảm giá đã được khách hàng sử dụng");
+                throw new BusinessException("Phiếu giảm giá đã được khách hàng sử dụng. Vui lòng thông báo cho khách hàng và chọn phiếu giảm giá khác.");
             }
         }
     }
@@ -834,18 +849,22 @@ public class BanHangTaiQuayService {
         return hoaDon;
     }
 
-    private HoaDonChiTiet taoDongHoaDon(Integer chiTietId, Integer soLuong) {
-        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(chiTietId, soLuong);
+    private HoaDonChiTiet taoDongHoaDon(TaoHoaDonChoItemRequest itemRequest) {
+        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(itemRequest.chiTietId(), itemRequest.soLuong());
 
-        inventoryUseCase.deductStock(giayChiTiet, soLuong);
+        inventoryUseCase.deductStock(giayChiTiet, itemRequest.soLuong());
         giayChiTietRepository.save(giayChiTiet);
 
         BigDecimal giaThucTe = layGiaBanThucTe(giayChiTiet);
+        if (itemRequest.giaBan() != null && giaThucTe.compareTo(itemRequest.giaBan()) != 0) {
+            throw new BusinessException("Sản phẩm " + giayChiTiet.getGiay().getTen() + " đã thay đổi đợt giảm giá. Vui lòng cập nhật lại giỏ hàng.");
+        }
+        
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
-        hoaDonChiTiet.setSoLuong(soLuong);
+        hoaDonChiTiet.setSoLuong(itemRequest.soLuong());
         hoaDonChiTiet.setGiaDonVi(giaThucTe);
-        hoaDonChiTiet.setThanhTien(giaThucTe.multiply(BigDecimal.valueOf(soLuong.longValue())));
+        hoaDonChiTiet.setThanhTien(giaThucTe.multiply(BigDecimal.valueOf(itemRequest.soLuong().longValue())));
         hoaDonChiTiet.setTrangThai(1);
         hoaDonChiTiet.setNgayTao(Instant.now());
         return hoaDonChiTiet;
@@ -873,14 +892,25 @@ public class BanHangTaiQuayService {
                 mapThongTinPhieuGiamGiaHoaDon(hoaDon),
                 hoaDon.getNgayTao(),
                 items.stream()
-                        .map(item -> new HoaDonChoDongSanPhamResponse(
-                                item.getGiayChiTiet().getId(),
-                                item.getGiayChiTiet().getGiay().getMa(),
-                                item.getGiayChiTiet().getGiay().getTen(),
-                                item.getSoLuong(),
-                                item.getGiaDonVi(),
-                                item.getThanhTien()
-                        ))
+                        .map(item -> {
+                                String hinhAnh = null;
+                                var hinhAnhs = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(item.getGiayChiTiet().getId(), 1);
+                                if (hinhAnhs != null && !hinhAnhs.isEmpty()) {
+                                    hinhAnh = hinhAnhs.get(0).getUrl();
+                                }
+                                return new HoaDonChoDongSanPhamResponse(
+                                        item.getGiayChiTiet().getId(),
+                                        item.getGiayChiTiet().getGiay().getMa(),
+                                        item.getGiayChiTiet().getGiay().getTen(),
+                                        item.getGiayChiTiet().getMauSac().getTen(),
+                                        item.getGiayChiTiet().getKichCo().getGiaTri(),
+                                        item.getGiayChiTiet().getSku(),
+                                        hinhAnh,
+                                        item.getSoLuong(),
+                                        item.getGiaDonVi(),
+                                        item.getThanhTien()
+                                );
+                        })
                         .toList()
         );
     }
@@ -899,6 +929,11 @@ public class BanHangTaiQuayService {
     private HoaDonChiTiet taoDongHoaDonTam(TaoHoaDonChoItemRequest item) {
         GiayChiTiet giayChiTiet = layGiayChiTietHopLe(item.chiTietId(), item.soLuong());
         BigDecimal giaThucTe = layGiaBanThucTe(giayChiTiet);
+        
+        if (item.giaBan() != null && giaThucTe.compareTo(item.giaBan()) != 0) {
+            throw new BusinessException("Sản phẩm " + giayChiTiet.getGiay().getTen() + " đã thay đổi đợt giảm giá. Vui lòng cập nhật lại giỏ hàng.");
+        }
+        
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
         hoaDonChiTiet.setSoLuong(item.soLuong());
@@ -1006,7 +1041,7 @@ public class BanHangTaiQuayService {
         if (tenKhachHang != null && !tenKhachHang.isBlank()) {
             return tenKhachHang.trim();
         }
-        return KHACH_VANG_LAI;
+        return "";
     }
 
     private String laySoDienThoai(KhachHang khachHang, String soDienThoai) {
@@ -1016,7 +1051,7 @@ public class BanHangTaiQuayService {
         if (soDienThoai != null && !soDienThoai.isBlank()) {
             return soDienThoai.trim();
         }
-        return KHONG_CO;
+        return "";
     }
 
     private String resolveTenKhachHangHoaDon(HoaDon hoaDon) {
@@ -1064,8 +1099,8 @@ public class BanHangTaiQuayService {
 
         return switch (normalizeTextKey(value)) {
             case "mua tai quay" -> DIA_CHI_TAI_QUAY;
-            case "không có" -> KHONG_CO;
-            case "khach le", "khach vang lai" -> KHACH_VANG_LAI;
+            case "không có" -> "";
+            case "khach le", "khach vang lai" -> "";
             case "hoa don cho tao tu man hinh ban hang tai quay" -> GHI_CHU_TAO_HOA_DON_TAI_QUAY;
             default -> value;
         };

@@ -25,6 +25,10 @@ const {
   pageSize,
   totalItems,
   totalPages,
+  selectedBrandFilter,
+  selectedCategoryFilter,
+  availableBrands,
+  availableCategories,
   productSearchLabel,
   cartItems,
   selectedProductDetail,
@@ -75,10 +79,10 @@ const {
   chonKhachVangLai,
   boChonKhachHang,
   moDanhSachSanPham,
-   dongDanhSachSanPham,
-   moChiTietSanPham,
-   handleProductQrScan,
-   tangSoLuong,
+  dongDanhSachSanPham,
+  moChiTietSanPham,
+  handleProductQrScan,
+  tangSoLuong,
   giamSoLuong,
   dongChiTietSanPham,
   chonMauSac,
@@ -91,6 +95,7 @@ const {
   handleApplyCoupon,
   chonPhieuGiamGia,
   handleRemoveCoupon,
+  suggestBestCoupon,
   updateShippingInfo,
   handleCalculateShippingFee,
   handleAmountPaidInput,
@@ -103,6 +108,19 @@ const {
 } = useBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
+import { useRealtime } from "../../../composables/useRealtime";
+
+const { subscribeTopic } = useRealtime();
+
+subscribeTopic('/topic/admin/san-pham', (message) => {
+  console.log("Realtime update: Product changed", message);
+  fetchProducts();
+});
+
+subscribeTopic('/topic/admin/thuoc-tinh', (message) => {
+  console.log("Realtime update: Attribute changed", message);
+  fetchProducts();
+});
 
 onBeforeRouteLeave(async (to, from, next) => {
   if (cartItems.value && cartItems.value.length > 0 && !activePendingInvoice.value) {
@@ -114,6 +132,17 @@ onBeforeRouteLeave(async (to, from, next) => {
   }
   next();
 });
+
+const setCustomerKeyword = (val) => { customerKeyword.value = val; };
+const setProductKeyword = (val) => { productKeyword.value = val; };
+const setCurrentPage = (val) => { currentPage.value = val; };
+const setPageSize = (val) => { pageSize.value = val; };
+const setSelectedBrandFilter = (val) => { selectedBrandFilter.value = val; };
+const setSelectedCategoryFilter = (val) => { selectedCategoryFilter.value = val; };
+const setCouponCode = (val) => { couponCode.value = val; };
+const setPaymentMethod = (val) => { paymentMethod.value = val; };
+const setPaymentNote = (val) => { paymentNote.value = val; };
+
 </script>
 
 <template>
@@ -135,6 +164,15 @@ onBeforeRouteLeave(async (to, from, next) => {
     :loading-products="loadingProducts"
     :show-product-dropdown="showProductDropdown"
     :product-results="productResults"
+    :paginated-products="paginatedProducts"
+    :current-page="currentPage"
+    :page-size="pageSize"
+    :total-items="totalItems"
+    :total-pages="totalPages"
+    :selected-brand-filter="selectedBrandFilter"
+    :selected-category-filter="selectedCategoryFilter"
+    :available-brands="availableBrands"
+    :available-categories="availableCategories"
     :product-search-label="productSearchLabel"
     :cart-items="cartItems"
     :selected-product-detail="selectedProductDetail"
@@ -180,13 +218,17 @@ onBeforeRouteLeave(async (to, from, next) => {
     @reset-draft="resetDraft"
     @create-empty-invoice="handleCreateEmptyInvoice"
     @select-invoice="chonHoaDonCho"
-    @update:customer-keyword="customerKeyword = $event"
+    @update:customer-keyword="setCustomerKeyword"
     @focus-customer="moDanhSachKhachHang"
     @blur-customer="dongDanhSachKhachHang"
     @select-customer="chonKhachHang"
     @select-guest="chonKhachVangLai"
     @clear-customer="boChonKhachHang"
-    @update:product-keyword="productKeyword = $event"
+    @update:product-keyword="setProductKeyword"
+    @update:current-page="setCurrentPage"
+    @update:page-size="setPageSize"
+    @update:selected-brand-filter="setSelectedBrandFilter"
+    @update:selected-category-filter="setSelectedCategoryFilter"
     @focus-product="moDanhSachSanPham"
     @blur-product="dongDanhSachSanPham"
     @open-product="moChiTietSanPham"
@@ -199,17 +241,18 @@ onBeforeRouteLeave(async (to, from, next) => {
     @decrease-quantity="giamSoLuongChiTiet"
     @increase-quantity="tangSoLuongChiTiet"
     @add-selected-variant="themBienTheDangChon"
-    @update:coupon-code="couponCode = $event"
+    @update:coupon-code="setCouponCode"
     @focus-coupon="handleCouponFocus"
     @blur-coupon="handleCouponBlur"
     @apply-coupon="handleApplyCoupon"
     @select-coupon="chonPhieuGiamGia"
     @remove-coupon="handleRemoveCoupon"
+    @suggest-best-coupon="suggestBestCoupon"
     @update-shipping="updateShippingInfo"
     @calculate-shipping="handleCalculateShippingFee"
-    @update:payment-method="paymentMethod = $event"
+    @update:payment-method="setPaymentMethod"
+    @update:payment-note="setPaymentNote"
     @amount-input="handleAmountPaidInput"
-    @update:payment-note="paymentNote = $event"
     @print-invoice="handlePrintInvoice"
     @pay-now="handlePayNow"
     @cancel-pending-invoice="handleCancelPendingInvoice"

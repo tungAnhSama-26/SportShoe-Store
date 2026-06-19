@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onUnmounted } from "vue";
-import { Printer } from "lucide-vue-next";
+import { Printer, X } from "lucide-vue-next";
 import ghnLogo from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
 const props = defineProps({
   activePendingInvoice: {
@@ -148,6 +148,7 @@ const emit = defineEmits([
   "apply-coupon",
   "select-coupon",
   "remove-coupon",
+  "suggest-best-coupon",
   "update-shipping",
   "calculate-shipping",
   "update:paymentMethod",
@@ -160,6 +161,7 @@ const emit = defineEmits([
 ]);
 
 const timeLeft = ref(300);
+const showLargeQr = ref(false);
 let timer = null;
 
 watch(() => props.paymentMethod, (newVal) => {
@@ -240,6 +242,15 @@ const sepayQrUrl = computed(() => {
               >
                 {{ applyingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
               </button>
+              <button
+                type="button"
+                class="rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                :disabled="!coTheTimPhieu || applyingCoupon"
+                title="Tự động chọn mã giảm nhiều nhất"
+                @click="emit('suggest-best-coupon')"
+              >
+                Gợi ý tốt nhất
+              </button>
             </div>
 
             <div v-if="showCouponDropdown" class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
@@ -312,7 +323,7 @@ const sepayQrUrl = computed(() => {
           <span class="text-sm text-slate-500">Tiền giảm</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-emerald-600">-{{ dinhDangTien(tienGiam) }}</span>
         </div>
-        <div v-if="!isGuestCustomer && shippingInfo.giaoHang" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+        <div v-if="shippingInfo.giaoHang" class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <span class="text-sm text-slate-500">Phí ship</span>
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(shippingInfo.phiVanChuyen || 0) }}</span>
         </div>
@@ -321,139 +332,7 @@ const sepayQrUrl = computed(() => {
           <span class="max-w-[65%] break-all text-right text-lg font-bold text-slate-900">{{ dinhDangTien(khachCanTra) }}</span>
         </div>
 
-        <div v-if="!isGuestCustomer" class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-              <p class="text-sm font-semibold text-slate-800">Giao hàng</p>
-              <img :src="ghnLogo" alt="GHN" class="h-4 object-contain" />
-            </div>
-            <label class="relative inline-flex cursor-pointer items-center gap-3">
-              <div class="relative flex items-center">
-                <input
-                  type="checkbox"
-                  class="peer sr-only"
-                  :checked="shippingInfo.giaoHang"
-                  @change="emit('update-shipping', { giaoHang: $event.target.checked })"
-                />
-                <div class="h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-red-500 peer-focus:outline-none"></div>
-                <div class="absolute left-[2px] top-[2px] h-5 w-5 rounded-full border border-slate-300 bg-white transition-all peer-checked:translate-x-full peer-checked:border-white"></div>
-              </div>
-              <span class="text-sm font-medium text-slate-700">{{ shippingInfo.giaoHang ? "Bật" : "Tắt" }}</span>
-            </label>
-          </div>
-
-          <div v-if="shippingInfo.giaoHang" class="mt-4 space-y-3">
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="space-y-2">
-                <span class="block text-xs font-medium text-slate-500">Người nhận</span>
-                <input
-                  :value="shippingInfo.tenNguoiNhan || ''"
-                  type="text"
-                  placeholder="Nhập tên người nhận"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @input="emit('update-shipping', { tenNguoiNhan: $event.target.value })"
-                />
-              </label>
-              <label class="space-y-2">
-                <span class="block text-xs font-medium text-slate-500">Số điện thoại</span>
-                <input
-                  :value="shippingInfo.soDienThoaiNguoiNhan || ''"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="Nhập số điện thoại"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @input="emit('update-shipping', { soDienThoaiNguoiNhan: $event.target.value })"
-                />
-              </label>
-            </div>
-
-            <label class="space-y-2">
-              <span class="block text-xs font-medium text-slate-500">Địa chỉ giao hàng</span>
-              <textarea
-                :value="shippingInfo.diaChiGiaoHang || ''"
-                rows="2"
-                placeholder="Nhập địa chỉ giao hàng đầy đủ"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                @input="emit('update-shipping', { diaChiGiaoHang: $event.target.value })"
-              />
-            </label>
-
-            <div v-if="shippingInfo.diaChiDaDo" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              GHN dò: <span class="font-semibold text-slate-800">{{ shippingInfo.diaChiDaDo }}</span>
-            </div>
-
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="space-y-2">
-                <span class="block text-xs font-medium text-slate-500">Loại dịch vụ</span>
-                <select
-                  :value="shippingInfo.serviceTypeId ?? 2"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @change="emit('update-shipping', { serviceTypeId: Number($event.target.value) })"
-                >
-                  <option :value="2">Hàng nhẹ</option>
-                  <option :value="5">Hàng nặng</option>
-                </select>
-              </label>
-              <label class="space-y-2">
-                <span class="block text-xs font-medium text-slate-500">Cân nặng (gram)</span>
-                <input
-                  :value="shippingInfo.weight ?? 500"
-                  type="number"
-                  min="1"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @input="emit('update-shipping', { weight: Number($event.target.value) })"
-                />
-              </label>
-              <label class="space-y-2">
-                <span class="block text-xs font-medium text-slate-500">Dài (cm)</span>
-                <input
-                  :value="shippingInfo.length ?? 30"
-                  type="number"
-                  min="1"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @input="emit('update-shipping', { length: Number($event.target.value) })"
-                />
-              </label>
-              <label class="space-y-2">
-                <span class="block text-xs font-medium text-slate-500">Rộng (cm)</span>
-                <input
-                  :value="shippingInfo.width ?? 20"
-                  type="number"
-                  min="1"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @input="emit('update-shipping', { width: Number($event.target.value) })"
-                />
-              </label>
-              <label class="space-y-2 sm:col-span-2">
-                <span class="block text-xs font-medium text-slate-500">Cao (cm)</span>
-                <input
-                  :value="shippingInfo.height ?? 12"
-                  type="number"
-                  min="1"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300"
-                  @input="emit('update-shipping', { height: Number($event.target.value) })"
-                />
-              </label>
-            </div>
-
-            <div class="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-              <div class="min-w-0">
-                <p class="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Phí ship</p>
-                <p class="mt-1 text-lg font-bold text-slate-900">
-                  {{ shippingInfo.daTinhPhi ? dinhDangTien(shippingInfo.phiVanChuyen || 0) : "Chưa tính" }}
-                </p>
-              </div>
-              <button
-                type="button"
-                class="rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-                :disabled="!shippingInfo.coTheTinhPhi"
-                @click="emit('calculate-shipping')"
-              >
-                {{ shippingInfo.dangTinhPhi ? "Đang tính..." : "Tính phí GHN" }}
-              </button>
-            </div>
-          </div>
-        </div>
+        <!-- Shipping Section moved to BanHangShippingSection.vue -->
         <div>
           <p class="mb-2 text-sm text-slate-500">Hình thức thanh toán</p>
           <div class="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -471,7 +350,7 @@ const sepayQrUrl = computed(() => {
                 :checked="paymentMethod === 2"
                 type="radio"
                 class="h-4 w-4 accent-red-500"
-                @change="emit('update:paymentMethod', 2)"
+                @click="emit('update:paymentMethod', 2); showLargeQr = true"
               />
               <span>Chuyển khoản</span>
             </label>
@@ -503,7 +382,13 @@ const sepayQrUrl = computed(() => {
         <div v-if="paymentMethod === 2" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p class="mb-3 text-sm font-semibold text-slate-800">Quét mã QR để thanh toán</p>
           <div v-if="timeLeft > 0">
-            <img :src="sepayQrUrl" alt="VietQR" class="h-48 w-48 rounded-xl border border-slate-100 object-contain" />
+            <img 
+              :src="sepayQrUrl" 
+              alt="VietQR" 
+              class="h-48 w-48 cursor-pointer rounded-xl border border-slate-100 object-contain transition hover:scale-105" 
+              title="Bấm để phóng to"
+              @click="showLargeQr = true"
+            />
             <p class="mt-3 text-center text-xs text-slate-500">
               QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
             </p>
@@ -533,7 +418,7 @@ const sepayQrUrl = computed(() => {
           <button
             type="button"
             class="rounded-2xl bg-slate-200 px-4 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-            :disabled="!activePendingInvoice || cancelingPendingInvoice"
+            :disabled="cancelingPendingInvoice"
             @click="emit('cancel-pending-invoice')"
           >
             {{ cancelingPendingInvoice ? "Đang hủy..." : "Hủy hóa đơn" }}
@@ -554,5 +439,23 @@ const sepayQrUrl = computed(() => {
       </p>
 
     </div>
+
+    <Teleport to="body">
+      <div v-if="showLargeQr" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" @click="showLargeQr = false">
+        <div class="relative rounded-[32px] bg-white p-8 shadow-2xl" @click.stop>
+          <button
+            class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+            @click="showLargeQr = false"
+          >
+            <X class="h-6 w-6" />
+          </button>
+          <h3 class="mb-6 text-center text-xl font-bold text-slate-800">Quét mã QR để thanh toán</h3>
+          <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-2xl border-2 border-slate-100 object-contain shadow-sm" />
+          <p class="mt-6 text-center text-base font-medium text-slate-600">
+            QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
+          </p>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

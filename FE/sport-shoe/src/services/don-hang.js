@@ -32,7 +32,7 @@ export async function yeuCauHuyDonHang(donId) {
   return apiRequest(`/client/don-hang/${donId}/yeu-cau-huy`, {
     method: "POST",
     authScope: "customer",
-    fallbackMessage: "Không thể gửi yêu cầu hủy đơn hàng",
+    fallbackMessage: "Không thể hủy đơn hàng",
   });
 }
 

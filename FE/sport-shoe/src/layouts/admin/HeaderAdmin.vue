@@ -88,7 +88,7 @@ const subRouteBreadcrumbs = {
   'admin-hoa-don-chi-tiet': {
     parentPath: '/admin/hoa-don',
     parentTitle: 'Hóa đơn',
-    childTitle: 'Chi tiết đơn hàng'
+    childTitle: 'Chi tiết hóa đơn'
   },
   'admin-san-pham-them': {
     parentPath: '/admin/san-pham',
@@ -105,6 +105,11 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Sản phẩm',
     childTitle: 'Chi tiết sản phẩm'
   },
+  'admin-bien-the-san-pham': {
+    parentPath: '/admin/san-pham',
+    parentTitle: 'Sản phẩm',
+    childTitle: 'Biến thể sản phẩm'
+  },
   'admin-bien-the-san-pham-them': {
     parentPath: '/admin/bien-the-san-pham',
     parentTitle: 'Biến thể sản phẩm',
@@ -120,6 +125,16 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Đợt giảm giá',
     childTitle: 'Chi tiết đợt giảm giá'
   },
+  'admin-dot-giam-gia-san-pham-them': {
+    parentPath: '/admin/dot-giam-gia-san-pham',
+    parentTitle: 'Đợt giảm giá sản phẩm',
+    childTitle: 'Thêm đợt giảm giá'
+  },
+  'admin-dot-giam-gia-san-pham-chi-tiet': {
+    parentPath: '/admin/dot-giam-gia-san-pham',
+    parentTitle: 'Đợt giảm giá sản phẩm',
+    childTitle: 'Chi tiết đợt giảm giá'
+  },
   'admin-nhan-vien-them': {
     parentPath: '/admin/nhan-vien',
     parentTitle: 'Nhân viên',
@@ -130,10 +145,15 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Nhân viên',
     childTitle: 'Chi tiết nhân viên'
   },
-  'admin-nhan-vien-lich-lam-chi-tiet': {
+  'admin-nhan-vien-lich-lam': {
     parentPath: '/admin/nhan-vien',
     parentTitle: 'Nhân viên',
     childTitle: 'Lịch làm việc'
+  },
+  'admin-nhan-vien-lich-lam-chi-tiet': {
+    parentPath: '/admin/nhan-vien-lich-lam',
+    parentTitle: 'Lịch làm việc',
+    childTitle: 'Chi tiết lịch làm việc'
   },
   'admin-khach-hang-them': {
     parentPath: '/admin/khach-hang',

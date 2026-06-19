@@ -11,6 +11,7 @@ export function usePosCustomers({
   activePendingInvoice,
   deliveryRecipientName,
   deliveryRecipientPhone,
+  deliveryAddress,
   danhDauCanApDungLaiPhieu,
   clearFeedback,
   pageError
@@ -68,6 +69,9 @@ export function usePosCustomers({
     }
     if (!deliveryRecipientPhone.value.trim()) {
       deliveryRecipientPhone.value = customer.sdt || "";
+    }
+    if (deliveryAddress && !deliveryAddress.value.trim() && customer.diaChiMacDinh) {
+      deliveryAddress.value = customer.diaChiMacDinh;
     }
     customerResults.value = [];
     showCustomerDropdown.value = false;

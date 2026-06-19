@@ -92,6 +92,7 @@ export function useChiTietHoaDon() {
   });
   const dangTinhPhiGhn = ref(false);
   const diaChiGhnDaDo = ref("");
+  let lanCapNhatCucBoGanNhat = 0;
 
   const trangThaiMoiXacNhan = ref(null);
   const ghiChuXacNhan = ref("");
@@ -317,10 +318,45 @@ export function useChiTietHoaDon() {
     return 0;
   });
 
+  const chuanHoaTrangThaiText = (value) =>
+    String(value ?? "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const laTrangThaiCanHoanTien = (value) => {
+    const stt = chuanHoaTrangThaiText(value);
+    return stt === "can hoan tien" || stt === "can_hoan_tien";
+  };
+
+  const laGiaTriHeThong = (value) => {
+    const text = chuanHoaTrangThaiText(value);
+    return !text || text === "he thong" || text === "chua cap nhat";
+  };
+
+  const laLogHoanTien = (log) => {
+    const trangThai = chuanHoaTrangThaiText(log?.trangThai);
+    const ghiChu = chuanHoaTrangThaiText(log?.ghiChu);
+    return trangThai.includes("xac nhan hoan tien") || ghiChu.includes("hoan tien");
+  };
+
+  const laLogKhachHuyDon = (log) => {
+    const ghiChu = chuanHoaTrangThaiText(log?.ghiChu);
+    return ghiChu.includes("khach hang huy don") || ghiChu.includes("khach huy don");
+  };
+
   const donDaHoanThanh = computed(() => {
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     return (
       stt === "hoàn thành" || stt === "đã hoàn thành" || stt === "hoan_thanh"
+    );
+  });
+
+  const donDaXacNhan = computed(() => {
+    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+    return (
+      stt === "đã xác nhận" || stt === "da_xac_nhan"
     );
   });
 
@@ -337,13 +373,10 @@ export function useChiTietHoaDon() {
   });
 
   const donDangChoHoanTien = computed(() => {
-    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     const coThanhToanCanHoan = (hoaDon.value?.lichSuThanhToan ?? []).some(
-      (item) => item.trangThaiThanhToan === "Cần hoàn tiền",
+      (item) => laTrangThaiCanHoanTien(item.trangThaiThanhToan),
     );
-    return (
-      stt === "cần hoàn tiền" || stt === "can_hoan_tien" || coThanhToanCanHoan
-    );
+    return laTrangThaiCanHoanTien(hoaDon.value?.trangThai) || coThanhToanCanHoan;
   });
 
   const donDaKetThuc = computed(
@@ -359,6 +392,11 @@ export function useChiTietHoaDon() {
     } else {
       showError(noiDung || tieuDe, tieuDe);
     }
+  }
+
+  function ganHoaDonSauThaoTac(data) {
+    hoaDon.value = data;
+    lanCapNhatCucBoGanNhat = Date.now();
   }
 
   function thongBaoDonDaHoanThanh() {
@@ -401,7 +439,9 @@ export function useChiTietHoaDon() {
     if (!hoaDon.value || dangLuuGiaoHang.value) return;
     dangLuuGiaoHang.value = true;
     try {
-      hoaDon.value = await capNhatThongTinGiaoHang(hoaDon.value.id, payload);
+      ganHoaDonSauThaoTac(
+        await capNhatThongTinGiaoHang(hoaDon.value.id, payload),
+      );
       formThongTin.value.tenKhachHang = hoaDon.value.tenKhachHang || "";
       formThongTin.value.soDienThoai = hoaDon.value.soDienThoai || "";
       formThongTin.value.diaChi = hoaDon.value.diaChi || "";
@@ -464,12 +504,18 @@ export function useChiTietHoaDon() {
   const thanhToanCanHoanTien = computed(
     () =>
       (hoaDon.value?.lichSuThanhToan ?? []).find(
-        (item) => item.trangThaiThanhToan === "Cần hoàn tiền",
+        (item) => laTrangThaiCanHoanTien(item.trangThaiThanhToan),
       ) ?? null,
   );
-  const coTheHoanTien = computed(() => Boolean(thanhToanCanHoanTien.value));
+  const coTheHoanTien = computed(
+    () => Boolean(thanhToanCanHoanTien.value) || donDangChoHoanTien.value,
+  );
   const tongTienHoan = computed(
-    () => thanhToanCanHoanTien.value?.tongTien ?? 0,
+    () =>
+      thanhToanCanHoanTien.value?.tongTien ??
+      hoaDon.value?.tongTien ??
+      hoaDon.value?.tongThanhToan ??
+      0,
   );
   const tongTienThanhToanCod = computed(
     () =>
@@ -483,7 +529,7 @@ export function useChiTietHoaDon() {
   const qrThanhToanCodUrl = computed(() => {
     const amount = Math.max(Number(tongTienThanhToanCod.value) || 0, 0);
     const description = encodeURIComponent(noiDungChuyenKhoanCod.value);
-    return `https://img.vietqr.io/image/MB-0876524519-compact2.png?amount=${amount}&addInfo=${description}&accountName=SPORTSHOE%20STORE`;
+    return `https://img.vietqr.io/image/VCB-0965852782-compact2.png?amount=${amount}&addInfo=${description}&accountName=SPORTSHOE%20STORE`;
   });
   const tienThieuThanhToanCod = computed(() => {
     if (formThanhToanCod.value.hinhThucThanhToan !== 1) {
@@ -608,7 +654,10 @@ export function useChiTietHoaDon() {
         ? cacBuocYeuCauHuy
         : cacBuoc.value;
     return nguonBuoc.map((buoc) => {
+      const logHoanTien =
+        buoc.id === 6 ? lichSu.find((item) => laLogHoanTien(item)) : null;
       const banGhi =
+        logHoanTien ??
         lichSu.find(
           (item) =>
             (item.trangThai || "").toLowerCase() === buoc.key.toLowerCase() ||
@@ -616,6 +665,9 @@ export function useChiTietHoaDon() {
         ) ?? null;
       let time = banGhi?.ngayTao;
       let staff = banGhi?.maNhanVien;
+      if (buoc.id === 6 && laGiaTriHeThong(staff) && laLogKhachHuyDon(banGhi)) {
+        staff = "Khách hàng";
+      }
       if (!banGhi && buoc.id === 1) {
         time = hoaDon.value?.ngayTao;
         staff = hoaDon.value?.maNhanVien ?? "Hệ thống";
@@ -708,10 +760,12 @@ export function useChiTietHoaDon() {
     }
     dangCapNhat.value = true;
     try {
-      hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
-        trangThai: trangThaiMoiXacNhan.value,
-        ghiChu: ghiChuXacNhan.value,
-      });
+      ganHoaDonSauThaoTac(
+        await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+          trangThai: trangThaiMoiXacNhan.value,
+          ghiChu: ghiChuXacNhan.value,
+        }),
+      );
       hienThiThongBao(
         "success",
         "Cập Nhật Thành Công",
@@ -736,13 +790,15 @@ export function useChiTietHoaDon() {
     if (!hoaDon.value || dangCapNhat.value) return;
     dangCapNhat.value = true;
     try {
-      hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
-        trangThai,
-        ghiChu:
-          trangThai === "Hủy"
-            ? "Xác nhận yêu cầu hủy của khách hàng"
-            : "Từ chối yêu cầu hủy của khách hàng",
-      });
+      ganHoaDonSauThaoTac(
+        await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+          trangThai,
+          ghiChu:
+            trangThai === "Hủy"
+              ? "Xác nhận yêu cầu hủy của khách hàng"
+              : "Từ chối yêu cầu hủy của khách hàng",
+        }),
+      );
       hienThiThongBao(
         "success",
         trangThai === "Hủy" ? "Đã Xác Nhận Hủy" : "Đã Từ Chối Hủy",
@@ -832,12 +888,14 @@ export function useChiTietHoaDon() {
     }
     dangCapNhat.value = true;
     try {
-      hoaDon.value = await capNhatSanPhamHoaDon(hoaDon.value.id, {
-        items: danhSachSanPhamUpdate.value.map((i) => ({
-          chiTietId: i.chiTietId,
-          soLuong: i.soLuong,
-        })),
-      });
+      ganHoaDonSauThaoTac(
+        await capNhatSanPhamHoaDon(hoaDon.value.id, {
+          items: danhSachSanPhamUpdate.value.map((i) => ({
+            chiTietId: i.chiTietId,
+            soLuong: i.soLuong,
+          })),
+        }),
+      );
       hienThiThongBao(
         "success",
         "Cập Nhật Thành Công",
@@ -1060,18 +1118,22 @@ export function useChiTietHoaDon() {
             "Chỉ có thể sửa thông tin giao hàng trước khi đơn bắt đầu giao.",
           );
         }
-        hoaDon.value = await capNhatThongTinGiaoHang(hoaDon.value.id, {
-          tenNguoiNhan: formThongTin.value.tenKhachHang.trim(),
-          sdtNguoiNhan: formThongTin.value.soDienThoai.trim(),
-          diaChiGiaoHang: formThongTin.value.diaChi.trim(),
-        });
+        ganHoaDonSauThaoTac(
+          await capNhatThongTinGiaoHang(hoaDon.value.id, {
+            tenNguoiNhan: formThongTin.value.tenKhachHang.trim(),
+            sdtNguoiNhan: formThongTin.value.soDienThoai.trim(),
+            diaChiGiaoHang: formThongTin.value.diaChi.trim(),
+          }),
+        );
       }
 
       if (formThongTin.value.trangThai !== hoaDon.value.trangThai) {
-        hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
-          trangThai: formThongTin.value.trangThai,
-          ghiChu: "",
-        });
+        ganHoaDonSauThaoTac(
+          await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+            trangThai: formThongTin.value.trangThai,
+            ghiChu: "",
+          }),
+        );
       }
       hienThiThongBao(
         "success",
@@ -1119,7 +1181,7 @@ export function useChiTietHoaDon() {
       ]
         .filter(Boolean)
         .join(", ");
-      hoaDon.value = await layChiTietHoaDon(hoaDon.value.id);
+      ganHoaDonSauThaoTac(await layChiTietHoaDon(hoaDon.value.id));
       hienThiThongBao(
         "success",
         "Đã Tính Phí GHN",
@@ -1170,13 +1232,15 @@ export function useChiTietHoaDon() {
 
     dangXacNhanThanhToanCod.value = true;
     try {
-      hoaDon.value = await xacNhanThanhToanCod(hoaDon.value.id, {
-        hinhThucThanhToan: formThanhToanCod.value.hinhThucThanhToan,
-        tienKhachDua:
-          Number(formThanhToanCod.value.tienKhachDua) ||
-          tongTienThanhToanCod.value,
-        ghiChu: formThanhToanCod.value.ghiChu,
-      });
+      ganHoaDonSauThaoTac(
+        await xacNhanThanhToanCod(hoaDon.value.id, {
+          hinhThucThanhToan: formThanhToanCod.value.hinhThucThanhToan,
+          tienKhachDua:
+            Number(formThanhToanCod.value.tienKhachDua) ||
+            tongTienThanhToanCod.value,
+          ghiChu: formThanhToanCod.value.ghiChu,
+        }),
+      );
       hienThiThongBao(
         "success",
         "Đã xác nhận thanh toán",
@@ -1248,7 +1312,7 @@ export function useChiTietHoaDon() {
     if (
       !hoaDon.value ||
       dangXacNhanHoanTien.value ||
-      !thanhToanCanHoanTien.value
+      !coTheHoanTien.value
     )
       return;
     const soTienHoan = Number(formHoanTien.value.soTienHoan) || 0;
@@ -1283,16 +1347,18 @@ export function useChiTietHoaDon() {
 
     dangXacNhanHoanTien.value = true;
     try {
-      hoaDon.value = await xacNhanHoanTien(hoaDon.value.id, {
-        hinhThucHoanTien: formHoanTien.value.hinhThucHoanTien,
-        soTienHoan,
-        maGiaoDichHoan: formHoanTien.value.maGiaoDichHoan,
-        ghiChu: formHoanTien.value.ghiChu,
-        taiKhoanNganHangId:
-          Number(formHoanTien.value.hinhThucHoanTien) === 2
-            ? taiKhoanNganHangChon.value?.id
-            : null,
-      });
+      ganHoaDonSauThaoTac(
+        await xacNhanHoanTien(hoaDon.value.id, {
+          hinhThucHoanTien: formHoanTien.value.hinhThucHoanTien,
+          soTienHoan,
+          maGiaoDichHoan: formHoanTien.value.maGiaoDichHoan,
+          ghiChu: formHoanTien.value.ghiChu,
+          taiKhoanNganHangId:
+            Number(formHoanTien.value.hinhThucHoanTien) === 2
+              ? taiKhoanNganHangChon.value?.id
+              : null,
+        }),
+      );
       hienThiThongBao(
         "success",
         "Đã xác nhận hoàn tiền",
@@ -1322,10 +1388,12 @@ export function useChiTietHoaDon() {
 
     dangCapNhat.value = true;
     try {
-      hoaDon.value = await capNhatTrangThaiHoaDon(hoaDon.value.id, {
-        trangThai: "Hủy",
-        ghiChu: "Hủy đơn hàng từ màn hình chỉnh sửa bởi Admin",
-      });
+      ganHoaDonSauThaoTac(
+        await capNhatTrangThaiHoaDon(hoaDon.value.id, {
+          trangThai: "Hủy",
+          ghiChu: "Hủy đơn hàng từ màn hình chỉnh sửa bởi Admin",
+        }),
+      );
       hienThiThongBao(
         "success",
         "Hủy đơn hàng thành công",
@@ -1352,6 +1420,7 @@ export function useChiTietHoaDon() {
       authScope: "admin",
       onHoaDonThayDoi: (event) => {
         if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+        if (Date.now() - lanCapNhatCucBoGanNhat < 2000) return;
         if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
         realtimeRefreshTimeout = setTimeout(() => taiChiTiet(true), 150);
       },
@@ -1462,6 +1531,7 @@ export function useChiTietHoaDon() {
     vietHoaChuCaiDau,
     buocHienTai,
     donDaHoanThanh,
+    donDaXacNhan,
     donYeuCauHuy,
     donGiaoThatBai,
     donDaHuy,

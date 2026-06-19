@@ -44,14 +44,16 @@ public class ThuongHieuService {
         String ten = req.ten().trim();
         var existingOpt = thuongHieuRepository.findByTenIgnoreCase(req.ten().trim());
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() == 0) {
-                existing.setTrangThai(1);
-                existing.setMoTa(req.moTa());
-                existing.setMa(ma);
-                return toThuongHieu(thuongHieuRepository.save(existing));
+            ThuongHieu existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Thương hiệu '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                throw new BusinessException("T�n thuong hi?u '" + req.ten() + "' d� t?n t?i");
+                existing.setTrangThai(1);
+                existing.setNgayCapNhat(Instant.now());
+                if (req.moTa() != null && !req.moTa().isBlank()) {
+                    existing.setMoTa(req.moTa().trim());
+                }
+                return toThuongHieu(thuongHieuRepository.save(existing));
             }
         }
 

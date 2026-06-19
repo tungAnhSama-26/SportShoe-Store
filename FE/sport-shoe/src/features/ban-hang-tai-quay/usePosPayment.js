@@ -1,10 +1,16 @@
 import { computed, ref, watch } from "vue";
 import { dinhDangSo, dinhDangTienNhap, layChuSoTien } from "./money";
 
-export function usePosPayment({ cartItems, khachCanTra, pageError }) {
+export function usePosPayment({ cartItems, khachCanTra, pageError, activePendingInvoice }) {
   const paymentMethod = ref(1);
   const amountPaid = ref("");
   const paymentNote = ref("");
+
+  watch(() => activePendingInvoice.value, () => {
+    paymentMethod.value = 1;
+    amountPaid.value = "";
+    paymentNote.value = "";
+  });
 
   const tienKhachThanhToan = computed(() => {
     const parsed = Number(layChuSoTien(amountPaid.value));

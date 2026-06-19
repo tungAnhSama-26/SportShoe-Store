@@ -32,7 +32,7 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
         </tr>
       </thead>
       <tbody class="bg-white text-sm text-slate-700">
-        <tr v-for="(item, index) in cartItems" :key="item.chiTietId" class="border-t border-slate-100 text-xs font-medium">
+        <tr v-for="(item, index) in cartItems" :key="item.cartItemId || item.chiTietId" class="border-t border-slate-100 text-xs font-medium">
           <td class="px-3 py-2 text-slate-900">{{ index + 1 }}</td>
           <td class="px-3 py-2 text-slate-600">{{ item.maSanPham }}</td>
           <td class="px-3 py-2">
@@ -41,7 +41,12 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
               </div>
-              <p class="font-medium text-slate-900 line-clamp-2">{{ item.tenSanPham }}</p>
+              <div>
+                <p class="font-medium text-slate-900 line-clamp-2">{{ item.tenSanPham }}</p>
+                <p v-if="item.isPriceChanged" class="mt-0.5 text-[10px] text-amber-600 font-semibold italic">
+                  * Sản phẩm đã thay đổi đợt giảm giá
+                </p>
+              </div>
             </div>
           </td>
           <td class="px-3 py-2 text-slate-700">{{ item.mauSac || "--" }}</td>
@@ -52,7 +57,7 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
               <button
                 type="button"
                 class="px-2 py-0.5 text-sm font-bold text-slate-500 transition hover:text-red-500"
-                @click="emit('decrease-item', item.chiTietId)"
+                @click="emit('decrease-item', item.cartItemId || item.chiTietId)"
               >
                 -
               </button>
@@ -65,7 +70,7 @@ const emit = defineEmits(["increase-item", "decrease-item"]);
                     ? 'cursor-not-allowed text-slate-300'
                     : 'text-slate-500 hover:text-red-500'
                 "
-                @click="emit('increase-item', item.chiTietId)"
+                @click="emit('increase-item', item.cartItemId || item.chiTietId)"
               >
                 +
               </button>

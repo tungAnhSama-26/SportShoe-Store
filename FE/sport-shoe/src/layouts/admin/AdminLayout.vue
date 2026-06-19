@@ -46,7 +46,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="admin-shell min-h-screen w-full flex font-sans text-gray-800 dark:text-slate-100 relative transition-colors duration-300">
+  <div class="admin-shell h-screen w-full flex font-sans text-gray-800 dark:text-slate-100 relative transition-colors duration-300 overflow-hidden">
     <!-- Mobile overlay -->
     <div 
       v-show="!isDesktopSidebar && isSidebarOpen" 
@@ -55,9 +55,9 @@ onBeforeUnmount(() => {
     ></div>
 
     <SidebarAdmin />
-    <div class="flex-1 flex min-w-0 flex-col">
+    <div class="flex-1 flex min-w-0 h-full flex-col overflow-hidden">
       <HeaderAdmin />
-      <main class="admin-content flex-1 w-full min-w-0 overflow-x-hidden p-4 lg:p-6">
+      <main class="admin-content flex-1 w-full min-w-0 overflow-x-hidden overflow-y-auto p-4 lg:p-6">
         <RouterView v-slot="{ Component, route }">
           <Transition name="page-fade" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
