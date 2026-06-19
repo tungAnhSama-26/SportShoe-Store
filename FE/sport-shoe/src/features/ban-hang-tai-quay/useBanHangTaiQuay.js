@@ -472,7 +472,16 @@ function useBanHangTaiQuay() {
       }));
       setTimeout(() => { isSavingInternal = false; }, 50);
     } catch (error) {
-      console.error("Lỗi khi lưu hóa đơn chờ trước khi chuyển trang", error);
+      console.error("Lỗi khi lưu hóa đơn chờ:", error);
+      const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
+      pageError.value = msg;
+      
+      // Nếu lỗi do phiếu giảm giá, gỡ bỏ phiếu giảm giá trên frontend để tránh lỗi liên tục
+      if (msg.includes("Phiếu giảm giá")) {
+        appliedCoupon.value = null;
+        couponCode.value = "";
+      }
+      
       throw error;
     }
   }
