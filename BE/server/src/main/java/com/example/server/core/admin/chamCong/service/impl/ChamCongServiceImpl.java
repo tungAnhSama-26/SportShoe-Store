@@ -19,7 +19,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ChamCongServiceImpl implements ChamCongService {
@@ -102,8 +104,23 @@ public class ChamCongServiceImpl implements ChamCongService {
     @Override
     @Transactional(readOnly = true)
     public List<ChamCongResponse> layDanhSachChamCong(LocalDate tuNgay, LocalDate denNgay) {
-        return chamCongRepository.findByNgayBetween(tuNgay, denNgay)
-                .stream().map(this::toResponse).toList();
+        List<LichLamViec> lichLamViecs = lichLamViecRepository.findByNgayBetween(tuNgay, denNgay);
+        List<ChamCong> chamCongs = chamCongRepository.findByNgayBetween(tuNgay, denNgay);
+
+        Map<String, ChamCong> chamCongMap = chamCongs.stream()
+                .collect(Collectors.toMap(
+                        cc -> cc.getNhanVien().getId() + "_" + cc.getNgay() + "_" + cc.getCa(),
+                        cc -> cc,
+                        (existing, replacement) -> existing
+                ));
+
+        return lichLamViecs.stream()
+                .map(l -> {
+                    String key = l.getNhanVien().getId() + "_" + l.getNgay() + "_" + l.getCa();
+                    ChamCong cc = chamCongMap.get(key);
+                    return toResponse(l, cc);
+                })
+                .toList();
     }
 
     private String xacDinhTrangThaiVao(String ca, LocalTime timeNow) {
@@ -113,7 +130,7 @@ public class ChamCongServiceImpl implements ChamCongService {
             case "toi" -> LocalTime.of(18, 0);
             default -> LocalTime.of(8, 0);
         };
-        // Check-in muộn quá 5 phút thì coi là đi trễ
+        // Check-in muon qua 5 phut thi coi la di tre
         if (timeNow.isAfter(thoiGianChuan.plusMinutes(5))) {
             return "DI_TRE";
         }
@@ -127,7 +144,7 @@ public class ChamCongServiceImpl implements ChamCongService {
             case "toi" -> LocalTime.of(22, 0);
             default -> LocalTime.of(12, 0);
         };
-        // Check-out sớm hơn 5 phút thì coi là về sớm
+        // Check-out som hon 5 phut thi coi la ve som
         if (timeNow.isBefore(thoiGianChuan.minusMinutes(5))) {
             return "VE_SOM";
         }
@@ -147,5 +164,23 @@ public class ChamCongServiceImpl implements ChamCongService {
                 c.getTrangThaiRa(),
                 c.getGhiChu()
         );
+    }
+
+    private ChamCongResponse toResponse(LichLamViec l, ChamCong c) {
+        if (c == null) {
+            return new ChamCongResponse(
+                    l.getId(), // use lichLamViec id as key
+                    l.getNhanVien().getId(),
+                    l.getNhanVien().getHoTen(),
+                    l.getNgay(),
+                    l.getCa(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
+        return toResponse(c);
     }
 }

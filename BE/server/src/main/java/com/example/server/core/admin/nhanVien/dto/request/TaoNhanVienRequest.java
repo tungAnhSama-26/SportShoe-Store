@@ -26,6 +26,7 @@ public record TaoNhanVienRequest(
         @Size(max = 10) String gioiTinh,
         @Past(message = "Ngày sinh không được là ngày trong tương lai") LocalDate ngaySinh,
         @Size(max = 200) String diaChi,
+        @NotBlank(message = "Hình ảnh không được để trống")
         String hinhAnh,
         @NotNull Integer vaiTro
 ) {}
