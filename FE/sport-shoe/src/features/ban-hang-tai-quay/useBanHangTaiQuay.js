@@ -59,7 +59,7 @@ function useBanHangTaiQuay() {
       !sanPhamValidationMessage.value
   );
   const canPay = computed(() => {
-    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || payingInvoice?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value || !daChonKhach?.value) {
+    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || payingInvoice?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value) {
       return false;
     }
     if (paymentMethod?.value === 1) {
@@ -100,6 +100,8 @@ function useBanHangTaiQuay() {
       if (activePendingInvoice.value.khachHangId) return true;
       if (activePendingInvoice.value.tenKhachHang === GUEST_LABEL) return true;
     }
+    // Nếu keyword trống, mặc định coi như khách lẻ -> đã chọn
+    if (!customerKeyword.value.trim()) return true;
     return false;
   });
 
