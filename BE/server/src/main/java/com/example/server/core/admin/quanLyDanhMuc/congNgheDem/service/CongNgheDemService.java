@@ -44,14 +44,16 @@ public class CongNgheDemService {
         String ten = req.ten().trim();
         var existingOpt = congNgheDemRepository.findByTenIgnoreCase(req.ten().trim());
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() == 0) {
-                existing.setTrangThai(1);
-                existing.setMoTa(req.moTa());
-                existing.setMa(ma);
-                return toCongNgheDem(congNgheDemRepository.save(existing));
+            CongNgheDem existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Công nghệ đệm '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                throw new BusinessException("T�n c�ng ngh? d?m '" + req.ten() + "' d� t?n t?i");
+                existing.setTrangThai(1);
+                existing.setNgayCapNhat(Instant.now());
+                if (req.moTa() != null && !req.moTa().isBlank()) {
+                    existing.setMoTa(req.moTa().trim());
+                }
+                return toCongNgheDem(congNgheDemRepository.save(existing));
             }
         }
 

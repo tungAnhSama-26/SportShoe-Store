@@ -80,8 +80,8 @@ public enum TrangThaiHoaDon {
     private Set<TrangThaiHoaDon> cacTrangThaiKeTiep() {
         return switch (this) {
             case CHO_XAC_NHAN -> EnumSet.of(DA_XAC_NHAN, HUY, YEU_CAU_HUY);
-            case DA_XAC_NHAN -> EnumSet.of(CHO_LAY_HANG, HUY, YEU_CAU_HUY);
-            case CHO_LAY_HANG -> EnumSet.of(DANG_GIAO_HANG, HUY, YEU_CAU_HUY);
+            case DA_XAC_NHAN -> EnumSet.of(CHO_LAY_HANG);
+            case CHO_LAY_HANG -> EnumSet.of(DANG_GIAO_HANG);
             case DANG_GIAO_HANG -> EnumSet.of(DA_GIAO_HANG, GIAO_HANG_THAT_BAI);
             case DA_GIAO_HANG -> EnumSet.of(HOAN_THANH, GIAO_HANG_THAT_BAI);
             case GIAO_HANG_THAT_BAI -> EnumSet.of(DANG_GIAO_HANG, HUY);

@@ -1,5 +1,4 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import html2pdf from "html2pdf.js";
 import {
   huyHoaDonCho,
   layChiTietHoaDonCho,
@@ -19,7 +18,16 @@ import { usePosCustomers } from "./usePosCustomers";
 import { usePosPayment } from "./usePosPayment";
 import { usePosProducts } from "./usePosProducts";
 import { usePosShipping } from "./usePosShipping";
-import { showConfirm, showSuccess, showError } from "../../utils/alert";
+import { showConfirm, showToastSuccess, showError, toastSwal } from "../../utils/alert";
+
+let html2pdfLoader = null;
+
+async function loadHtml2Pdf() {
+  if (!html2pdfLoader) {
+    html2pdfLoader = import("html2pdf.js").then((module) => module.default ?? module);
+  }
+  return html2pdfLoader;
+}
 
 function useBanHangTaiQuay() {
   const pendingInvoices = ref([]);
@@ -59,7 +67,7 @@ function useBanHangTaiQuay() {
       !sanPhamValidationMessage.value
   );
   const canPay = computed(() => {
-    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || payingInvoice?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value || !daChonKhach?.value) {
+    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || payingInvoice?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value) {
       return false;
     }
     if (paymentMethod?.value === 1) {
@@ -87,6 +95,7 @@ function useBanHangTaiQuay() {
     activePendingInvoice,
     deliveryRecipientName,
     deliveryRecipientPhone,
+    deliveryAddress,
     danhDauCanApDungLaiPhieu: markCouponDirty,
     clearFeedback,
     pageError
@@ -99,6 +108,8 @@ function useBanHangTaiQuay() {
       if (activePendingInvoice.value.khachHangId) return true;
       if (activePendingInvoice.value.tenKhachHang === GUEST_LABEL) return true;
     }
+    // Nếu keyword trống, mặc định coi như khách lẻ -> đã chọn
+    if (!customerKeyword.value.trim()) return true;
     return false;
   });
 
@@ -169,7 +180,8 @@ function useBanHangTaiQuay() {
     chonPhieuGiamGia,
     handleApplyCoupon,
     handleRemoveCoupon,
-    clearCouponTimers
+    clearCouponTimers,
+    suggestBestCoupon
   } = usePosCoupons({
     cartItems,
     tongTien,
@@ -198,7 +210,8 @@ function useBanHangTaiQuay() {
   } = usePosPayment({
     cartItems,
     khachCanTra,
-    pageError
+    pageError,
+    activePendingInvoice
   });
 
   const {
@@ -217,6 +230,10 @@ function useBanHangTaiQuay() {
     pageSize,
     totalItems,
     totalPages,
+    selectedBrandFilter,
+    selectedCategoryFilter,
+    availableBrands,
+    availableCategories,
     colorOptions,
     sizeOptions,
     selectedVariant,
@@ -264,11 +281,7 @@ function useBanHangTaiQuay() {
     markShippingFeeDirty();
   }
 
-  watch(isGuestCustomer, (newVal) => {
-    if (newVal) {
-      updateShippingInfo({ giaoHang: false });
-    }
-  });
+
 
   function markCouponDirty() {
     danhDauCanApDungLaiPhieu();
@@ -360,7 +373,7 @@ function useBanHangTaiQuay() {
     if (!message) {
       return;
     }
-    showSuccess(message);
+    showToastSuccess(message);
     successMessage.value = "";
   });
 
@@ -372,7 +385,7 @@ function useBanHangTaiQuay() {
     const success = themSanPham(selectedVariant.value, selectedQuantity.value);
     if (success) {
       dongChiTietSanPham();
-      showSuccess(`Đã thêm ${selectedQuantity.value} sản phẩm vào hóa đơn`);
+      showToastSuccess(`Đã thêm ${selectedQuantity.value} sản phẩm vào hóa đơn`);
     }
   }
 
@@ -391,21 +404,25 @@ function useBanHangTaiQuay() {
         email: null
       }
       : null;
+    isSavingInternal = true;
     cartItems.value = invoice.items.map((item) => {
       const thongTinSanPham = thongTinTheoChiTietId.get(item.chiTietId);
       return {
+        cartItemId: Date.now().toString() + Math.random().toString(),
         chiTietId: item.chiTietId,
         maSanPham: item.maSanPham,
         tenSanPham: item.tenSanPham,
-        sku: thongTinSanPham?.sku || "",
-        mauSac: thongTinSanPham?.mauSac || "",
-        kichCo: thongTinSanPham?.kichCo || "",
-        hinhAnh: thongTinSanPham?.hinhAnh || "",
+        sku: item.sku || thongTinSanPham?.sku || "",
+        mauSac: item.mauSac || thongTinSanPham?.mauSac || "",
+        kichCo: item.kichCo || thongTinSanPham?.kichCo || "",
+        hinhAnh: item.hinhAnh || thongTinSanPham?.hinhAnh || "",
         soLuong: item.soLuong,
+        soLuongBanDau: item.soLuong,
         giaBan: item.giaBan,
         soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
       };
     });
+    setTimeout(() => { isSavingInternal = false; }, 50);
     deliveryEnabled.value = Boolean(thongTinGiaoHang?.giaoHang);
     deliveryRecipientName.value = thongTinGiaoHang?.tenNguoiNhan || "";
     deliveryRecipientPhone.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
@@ -456,12 +473,44 @@ function useBanHangTaiQuay() {
           soLuong: item.soLuong
         })),
       };
-      await capNhatHoaDonCho(activePendingInvoice.value.id, payload);
+      const response = await capNhatHoaDonCho(activePendingInvoice.value.id, payload);
+      // Cập nhật lại soLuongBanDau vì backend đã trừ tồn kho
+      isSavingInternal = true;
+      cartItems.value = cartItems.value.map(item => ({
+        ...item,
+        soLuongBanDau: item.soLuong
+      }));
+      setTimeout(() => { isSavingInternal = false; }, 50);
     } catch (error) {
-      console.error("Lỗi khi lưu hóa đơn chờ trước khi chuyển trang", error);
+      console.error("Lỗi khi lưu hóa đơn chờ:", error);
+      const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
+      pageError.value = msg;
+      
+      // Nếu lỗi do phiếu giảm giá, gỡ bỏ phiếu giảm giá trên frontend để tránh lỗi liên tục
+      if (msg.toLowerCase().includes("phiếu giảm giá")) {
+        const maLoi = appliedCoupon.value?.ma || couponCode.value;
+        appliedCoupon.value = null;
+        couponCode.value = "";
+        
+        // Gọi suggestBestCoupon để tự động tìm phiếu khác
+        if (maLoi) {
+          pageError.value = `Phiếu giảm giá ${maLoi} không còn hợp lệ. Hệ thống đang tự động tìm phiếu giảm giá thay thế...`;
+          suggestBestCoupon();
+        }
+      }
       throw error;
     }
   }
+  
+  let isSavingInternal = false;
+  let autoSaveTimeout = null;
+  watch(() => cartItems.value, () => {
+    if (isSavingInternal) return;
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      saveCurrentInvoice().catch(() => {});
+    }, 1000);
+  }, { deep: true });
 
   async function chonHoaDonCho(invoice) {
     if (activePendingInvoice.value && activePendingInvoice.value.id !== invoice.id) {
@@ -562,22 +611,58 @@ function useBanHangTaiQuay() {
       await fetchPendingInvoices();
       resetDraft();
     } catch (error) {
-      pageError.value = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
+      const msg = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
+      pageError.value = msg;
+      
+      if (msg.toLowerCase().includes("phiếu giảm giá")) {
+        const maLoi = appliedCoupon.value?.ma || couponCode.value;
+        appliedCoupon.value = null;
+        couponCode.value = "";
+        
+        if (maLoi) {
+          pageError.value = `Phiếu giảm giá ${maLoi} không còn hợp lệ. Hệ thống đang tự động tìm phiếu giảm giá thay thế...`;
+          suggestBestCoupon();
+        }
+      }
     } finally {
       payingInvoice.value = false;
     }
   }
 
   async function handleCancelPendingInvoice() {
-    if (!activePendingInvoice.value || cancelingPendingInvoice.value) {
+    if (cancelingPendingInvoice.value) {
       return;
     }
+    
+    if (!activePendingInvoice.value) {
+      toastSwal.fire({
+        icon: 'warning',
+        title: 'Thông báo',
+        text: 'Vui lòng chọn hóa đơn cần hủy',
+        timer: 3000,
+        iconColor: '#cf1018'
+      });
+      return;
+    }
+
+    const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn hủy hóa đơn ${activePendingInvoice.value.ma} không?`);
+    if (!isConfirmed) {
+      return;
+    }
+
     cancelingPendingInvoice.value = true;
     pageError.value = "";
-    successMessage.value = "";
     try {
       await huyHoaDonCho(activePendingInvoice.value.id);
-      successMessage.value = `Đã hủy hóa đơn chờ ${activePendingInvoice.value.ma}`;
+      
+      toastSwal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: `Đã hủy hóa đơn chờ ${activePendingInvoice.value.ma}`,
+        timer: 3000,
+        iconColor: '#cf1018'
+      });
+
       await fetchPendingInvoices();
       resetDraft();
     } catch (error) {
@@ -629,7 +714,7 @@ function useBanHangTaiQuay() {
     clearCouponTimers();
   }
 
-  function handlePrintInvoice() {
+  async function handlePrintInvoice() {
     if (!activePendingInvoice.value) return;
     
     successMessage.value = `Đang tạo PDF hóa đơn ${activePendingInvoice.value.ma}...`;
@@ -712,11 +797,354 @@ function useBanHangTaiQuay() {
       jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
     };
 
+    const html2pdf = await loadHtml2Pdf();
     html2pdf().set(opt).from(invoiceHtml).save().then(() => {
        successMessage.value = `Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.`;
        setTimeout(() => { successMessage.value = ""; }, 3000);
     }).catch(err => {
        pageError.value = "Có lỗi xảy ra khi in PDF: " + err.message;
+    });
+  }
+
+  async function handlePrintStoreInvoice() {
+    if (!activePendingInvoice.value) return;
+
+    successMessage.value = `Đang tạo PDF hóa đơn ${activePendingInvoice.value.ma}...`;
+
+    const rowsHtml = cartItems.value.map((item, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>
+          <strong>${item.tenSanPham}</strong>
+          <span>${item.mauSac || "-"} / ${item.kichCo || "-"}</span>
+        </td>
+        <td class="cell-center">${item.soLuong}</td>
+        <td class="cell-money">${item.giaBan.toLocaleString("vi-VN")} đ</td>
+        <td class="cell-money">${(item.soLuong * item.giaBan).toLocaleString("vi-VN")} đ</td>
+      </tr>
+    `).join("");
+
+    const deliveryFeeRow = deliveryFee.value > 0 ? `
+      <div class="money-row">
+        <span>Phí giao hàng</span>
+        <strong>+ ${deliveryFee.value.toLocaleString("vi-VN")} đ</strong>
+      </div>
+    ` : "";
+
+    const discountRow = tienGiam.value > 0 ? `
+      <div class="money-row discount">
+        <span>Giảm giá</span>
+        <strong>- ${tienGiam.value.toLocaleString("vi-VN")} đ</strong>
+      </div>
+    ` : "";
+
+    const invoiceHtml = `
+      <div class="pos-invoice">
+        <style>
+          .pos-invoice {
+            width: 148mm;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #0f172a;
+            font-family: "Inter", "Segoe UI", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.45;
+          }
+
+          .pos-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            background: #c52220;
+            color: #ffffff;
+            padding: 14px 16px;
+          }
+
+          .pos-brand {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 900;
+          }
+
+          .pos-subtitle,
+          .pos-code-label {
+            margin: 4px 0 0;
+            color: #fee2e2;
+            font-size: 10px;
+          }
+
+          .pos-code {
+            text-align: right;
+          }
+
+          .pos-code strong {
+            display: block;
+            margin-top: 4px;
+            font-size: 14px;
+          }
+
+          .pos-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #fecaca;
+            background: #fff7f7;
+          }
+
+          .pos-title h1 {
+            margin: 0;
+            color: #991b1b;
+            font-size: 24px;
+            line-height: 1.1;
+          }
+
+          .pos-title p {
+            margin: 7px 0 0;
+            color: #64748b;
+            font-size: 11px;
+          }
+
+          .pos-badge {
+            align-self: flex-start;
+            border: 1px solid #fecaca;
+            border-radius: 999px;
+            color: #c52220;
+            padding: 6px 11px;
+            font-weight: 700;
+            white-space: nowrap;
+          }
+
+          .pos-section {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+
+          .pos-section h2 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            font-weight: 900;
+          }
+
+          .pos-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 18px;
+          }
+
+          .pos-info {
+            display: grid;
+            grid-template-columns: 92px minmax(0, 1fr);
+            gap: 8px;
+          }
+
+          .pos-info span {
+            color: #64748b;
+            font-weight: 700;
+          }
+
+          .pos-info strong {
+            font-weight: 700;
+            word-break: break-word;
+          }
+
+          .pos-table {
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid #dbe3ef;
+            border-radius: 6px;
+            border-spacing: 0;
+          }
+
+          .pos-table th,
+          .pos-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+          }
+
+          .pos-table th {
+            background: #fff1f2;
+            color: #991b1b;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+          }
+
+          .pos-table tr:last-child td {
+            border-bottom: 0;
+          }
+
+          .pos-table strong {
+            display: block;
+          }
+
+          .pos-table span {
+            display: block;
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 10px;
+          }
+
+          .cell-center {
+            text-align: center !important;
+          }
+
+          .cell-money {
+            text-align: right !important;
+            white-space: nowrap;
+          }
+
+          .money-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 6px 0;
+            color: #64748b;
+          }
+
+          .money-row strong {
+            color: #0f172a;
+            white-space: nowrap;
+          }
+
+          .money-row.discount strong {
+            color: #059669;
+          }
+
+          .money-total {
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid #fecaca;
+            color: #c52220;
+            font-size: 16px;
+            font-weight: 900;
+          }
+
+          .money-total strong {
+            color: #c52220;
+            font-size: 18px;
+          }
+
+          .pos-thanks {
+            padding: 14px 16px 16px;
+            color: #64748b;
+          }
+
+          .pos-thanks strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #0f172a;
+            font-size: 14px;
+          }
+        </style>
+
+        <header class="pos-header">
+          <div>
+            <p class="pos-brand">SportShoe</p>
+            <p class="pos-subtitle">Giày thể thao chính hãng</p>
+          </div>
+          <div class="pos-code">
+            <span class="pos-code-label">Mã hóa đơn</span>
+            <strong>${activePendingInvoice.value.ma}</strong>
+          </div>
+        </header>
+
+        <section class="pos-title">
+          <div>
+            <h1>Hóa đơn bán hàng</h1>
+            <p>Ngày tạo: ${new Date().toLocaleString("vi-VN")} · Loại đơn: Cửa hàng</p>
+          </div>
+          <span class="pos-badge">Tại quầy</span>
+        </section>
+
+        <section class="pos-section">
+          <h2>Thông tin hóa đơn</h2>
+          <div class="pos-info-grid">
+            <div class="pos-info">
+              <span>Nhân viên</span>
+              <strong>${activePendingInvoice.value.maNhanVien || "Chưa gán"}</strong>
+            </div>
+            <div class="pos-info">
+              <span>Khách hàng</span>
+              <strong>${tenKhachHangHienThi.value}</strong>
+            </div>
+            <div class="pos-info">
+              <span>Số điện thoại</span>
+              <strong>${soDienThoaiKhachHangHienThi.value || "Không có"}</strong>
+            </div>
+            <div class="pos-info">
+              <span>Địa chỉ</span>
+              <strong>${deliveryAddress.value || "Mua tại quầy"}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="pos-section">
+          <h2>Danh sách sản phẩm</h2>
+          <table class="pos-table">
+            <colgroup>
+              <col style="width: 42px" />
+              <col />
+              <col style="width: 78px" />
+              <col style="width: 108px" />
+              <col style="width: 118px" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Sản phẩm</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || '<tr><td colspan="5" class="cell-center">Không có sản phẩm</td></tr>'}
+            </tbody>
+          </table>
+        </section>
+
+        <section class="pos-section">
+          <h2>Tổng kết thanh toán</h2>
+          <div class="money-row">
+            <span>Tổng tiền hàng</span>
+            <strong>${tongTien.value.toLocaleString("vi-VN")} đ</strong>
+          </div>
+          ${deliveryFeeRow}
+          ${discountRow}
+          <div class="money-row money-total">
+            <span>Khách cần trả</span>
+            <strong>${khachCanTra.value.toLocaleString("vi-VN")} đ</strong>
+          </div>
+        </section>
+
+        <footer class="pos-thanks">
+          <strong>Cảm ơn quý khách!</strong>
+          Hóa đơn được phát hành bởi SportShoe. Vui lòng kiểm tra sản phẩm và tổng thanh toán trước khi rời quầy.
+        </footer>
+      </div>
+    `;
+
+    const opt = {
+      margin: 10,
+      filename: `HoaDon_${activePendingInvoice.value.ma}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a5", orientation: "portrait" }
+    };
+
+    const html2pdf = await loadHtml2Pdf();
+    html2pdf().set(opt).from(invoiceHtml).save().then(() => {
+      successMessage.value = `Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.`;
+      setTimeout(() => { successMessage.value = ""; }, 3000);
+    }).catch((err) => {
+      pageError.value = `Có lỗi xảy ra khi in PDF: ${err.message}`;
     });
   }
 
@@ -752,6 +1180,10 @@ function useBanHangTaiQuay() {
     pageSize,
     totalItems,
     totalPages,
+    selectedBrandFilter,
+    selectedCategoryFilter,
+    availableBrands,
+    availableCategories,
     productSearchLabel,
     cartItems,
     selectedProductDetail,
@@ -817,6 +1249,7 @@ function useBanHangTaiQuay() {
     handleApplyCoupon,
     chonPhieuGiamGia,
     handleRemoveCoupon,
+    suggestBestCoupon,
     updateShippingInfo,
     handleCalculateShippingFee,
     handleAmountPaidInput,
@@ -824,7 +1257,7 @@ function useBanHangTaiQuay() {
     handleCreateEmptyInvoice,
     handlePayNow,
     handleCancelPendingInvoice,
-    handlePrintInvoice
+    handlePrintInvoice: handlePrintStoreInvoice
   };
 }
 

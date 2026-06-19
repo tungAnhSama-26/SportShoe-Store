@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   capNhatThongTinGiaoHang,
-  capNhatSoLuongDonHang,
   layChiTietDonHang,
   xacNhanDaNhanHang,
   yeuCauHuyDonHang,
@@ -21,7 +20,10 @@ import {
 import anhMacDinh from '../assets/login-shoe.png';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 import ChinhSuaGiaoHangModal from '../components/common/ChinhSuaGiaoHangModal.vue';
-import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
+import {
+  ketNoiHoaDonRealtime,
+  langNgheHoaDonThayDoiNoiBo,
+} from '../services/hoa-don-realtime';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import { API_BASE_URL } from '../services/api-client';
 
@@ -54,6 +56,7 @@ function resolveHinhAnh(url) {
 
 const route = useRoute();
 const router = useRouter();
+const REALTIME_POLL_INTERVAL_MS = 3000;
 
 const don = ref(null);
 const dangTai = ref(true);
@@ -89,7 +92,29 @@ function lopBadgeTraHang(tt) {
 }
 
 let ngatKetNoiRealtime = null;
+let ngatKetNoiRealtimeNoiBo = null;
 let realtimeRefreshTimeout = null;
+let realtimePollingInterval = null;
+
+function laSuKienCuaDonHienTai(event) {
+  const idHienTai = [route.params.id, don.value?.id, don.value?.hoaDonId]
+    .filter((value) => value !== undefined && value !== null && value !== "")
+    .map((value) => Number(value));
+  const idSuKien = [event?.hoaDonId, event?.id]
+    .filter((value) => value !== undefined && value !== null && value !== "")
+    .map((value) => Number(value));
+
+  if (idSuKien.some((id) => idHienTai.includes(id))) return true;
+
+  const maHienTai = [don.value?.ma, don.value?.maHoaDon]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toLowerCase());
+  const maSuKien = [event?.maHoaDon, event?.ma]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toLowerCase());
+
+  return maSuKien.some((ma) => maHienTai.includes(ma));
+}
 
 function lenLichTaiLaiChiTiet() {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
@@ -102,14 +127,27 @@ function dongBoKhiQuayLaiTrang() {
   }
 }
 
+function batDauDongBoDinhKy() {
+  if (realtimePollingInterval) return;
+  realtimePollingInterval = window.setInterval(() => {
+    taiChiTiet(true);
+  }, REALTIME_POLL_INTERVAL_MS);
+}
+
 onMounted(() => {
   taiChiTiet();
+  batDauDongBoDinhKy();
   window.addEventListener('focus', lenLichTaiLaiChiTiet);
+  window.addEventListener('pageshow', lenLichTaiLaiChiTiet);
   document.addEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
+  ngatKetNoiRealtimeNoiBo = langNgheHoaDonThayDoiNoiBo((event) => {
+    if (!laSuKienCuaDonHienTai(event)) return;
+    lenLichTaiLaiChiTiet();
+  });
   ngatKetNoiRealtime = ketNoiHoaDonRealtime({
     authScope: 'customer',
     onHoaDonThayDoi: (event) => {
-      if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+      if (!laSuKienCuaDonHienTai(event)) return;
       lenLichTaiLaiChiTiet();
     },
     onConnectionChange: (status) => {
@@ -122,9 +160,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   ngatKetNoiRealtime?.();
+  ngatKetNoiRealtimeNoiBo?.();
   window.removeEventListener('focus', lenLichTaiLaiChiTiet);
+  window.removeEventListener('pageshow', lenLichTaiLaiChiTiet);
   document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+  if (realtimePollingInterval) clearInterval(realtimePollingInterval);
 });
 
 watch(() => route.params.id, () => taiChiTiet());
@@ -341,6 +382,7 @@ function lopBadge(tt) {
     case 5: return 'bg-emerald-50 text-emerald-600';
     case 6: return 'bg-rose-50 text-rose-600';
     case 7: return 'bg-amber-50 text-amber-700';
+    case 8: return 'bg-rose-50 text-rose-600 border border-rose-100';
     case 10: return 'bg-rose-50 text-rose-600';
     default: return 'bg-slate-100 text-slate-600';
   }
@@ -351,60 +393,6 @@ const daHoanThanh = computed(() => don.value?.trangThai === 5);
 // Quyền hủy/sửa do backend quyết định theo hình thức thanh toán + trạng thái.
 const coTheYeuCauHuy = computed(() => don.value?.coTheHuy === true);
 const coTheSuaThongTinGiaoHang = computed(() => don.value?.coTheCapNhatGiaoHang === true);
-const coTheSuaSoLuong = computed(() => don.value?.coTheCapNhatSoLuong === true);
-
-const dangSuaSoLuong = ref(false);
-const dangLuuSoLuong = ref(false);
-const soLuongSua = ref({});
-
-function batDauSuaSoLuong() {
-  const map = {};
-  (don.value?.sanPhams || []).forEach((sp) => {
-    map[sp.hoaDonChiTietId] = Number(sp.soLuong) || 1;
-  });
-  soLuongSua.value = map;
-  dangSuaSoLuong.value = true;
-}
-
-function huySuaSoLuong() {
-  dangSuaSoLuong.value = false;
-  soLuongSua.value = {};
-}
-
-function doiSoLuong(id, delta) {
-  const hienTai = Number(soLuongSua.value[id]) || 0;
-  soLuongSua.value = { ...soLuongSua.value, [id]: Math.max(0, hienTai + delta) };
-}
-
-async function luuSoLuong() {
-  if (dangLuuSoLuong.value) return;
-  const items = Object.entries(soLuongSua.value)
-    .map(([hoaDonChiTietId, soLuong]) => ({
-      hoaDonChiTietId: Number(hoaDonChiTietId),
-      soLuong: Number(soLuong),
-    }))
-    .filter((it) => it.soLuong >= 1);
-  if (items.length === 0) {
-    showError('Đơn hàng phải còn ít nhất 1 sản phẩm.');
-    return;
-  }
-  dangLuuSoLuong.value = true;
-  try {
-    const res = await capNhatSoLuongDonHang(route.params.id, items);
-    don.value = res?.donHang || don.value;
-    dangSuaSoLuong.value = false;
-    const canhBao = Array.isArray(res?.canhBaoDoiGia) ? res.canhBaoDoiGia : [];
-    if (canhBao.length) {
-      showSuccess('Đã cập nhật số lượng. Lưu ý giá đã thay đổi:\n' + canhBao.join('\n'));
-    } else {
-      showSuccess('Đã cập nhật số lượng sản phẩm.');
-    }
-  } catch (e) {
-    showError(getDisplayErrorMessage(e, 'Không thể cập nhật số lượng sản phẩm'));
-  } finally {
-    dangLuuSoLuong.value = false;
-  }
-}
 
 async function moModalSuaThongTinGiaoHang() {
   const khachHangId = layKhachId();
@@ -636,45 +624,25 @@ function xuLyAnhLoi(event) {
         <section class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-base font-bold text-slate-800">Sản phẩm</h2>
-            <button
-              v-if="coTheSuaSoLuong && !dangSuaSoLuong"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
-              @click="batDauSuaSoLuong"
-            >
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-              </svg>
-              Sửa số lượng
-            </button>
-            <div v-else-if="dangSuaSoLuong" class="flex gap-2">
-              <button type="button" :disabled="dangLuuSoLuong" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60" @click="huySuaSoLuong">Hủy</button>
-              <button type="button" :disabled="dangLuuSoLuong" class="rounded-xl bg-rose-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-600 disabled:opacity-60" @click="luuSoLuong">{{ dangLuuSoLuong ? 'Đang lưu...' : 'Lưu' }}</button>
-            </div>
           </div>
           <div class="space-y-4">
-            <div v-for="(sp, i) in don.sanPhams" :key="i" class="flex gap-4">
+            <div
+              v-for="(sp, i) in don.sanPhams"
+              :key="sp.hoaDonChiTietId ?? i"
+              class="flex gap-4"
+            >
               <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800">{{ sp.tenSanPham }}</p>
-                <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }}<span v-if="!dangSuaSoLuong"> · x{{ sp.soLuong }}</span></p>
+                <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }} · x{{ sp.soLuong }}</p>
                 <div class="mt-1 flex items-center gap-2">
                   <span class="font-semibold text-primary">{{ dinhDangTienViet(sp.giaDonVi) }}</span>
                   <span v-if="Number(sp.giaNiemYet) > Number(sp.giaDonVi)" class="text-xs text-slate-400 line-through">{{ dinhDangTienViet(sp.giaNiemYet) }}</span>
-                </div>
-                <div v-if="dangSuaSoLuong" class="mt-2 inline-flex items-center rounded-lg border border-slate-200">
-                  <button type="button" class="px-3 py-1 text-base font-bold text-slate-600 hover:bg-slate-50" @click="doiSoLuong(sp.hoaDonChiTietId, -1)">−</button>
-                  <span class="min-w-[2.5rem] text-center text-sm font-semibold text-slate-800">{{ soLuongSua[sp.hoaDonChiTietId] ?? 0 }}</span>
-                  <button type="button" class="px-3 py-1 text-base font-bold text-slate-600 hover:bg-slate-50" @click="doiSoLuong(sp.hoaDonChiTietId, 1)">+</button>
                 </div>
               </div>
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(sp.thanhTien) }}</p>
             </div>
           </div>
-          <p v-if="dangSuaSoLuong" class="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 border border-amber-100">
-            Giảm số lượng về 0 để bỏ sản phẩm khỏi đơn. Đơn phải còn ít nhất 1 sản phẩm. Nếu giá sản phẩm đã thay đổi, hệ thống sẽ cập nhật theo giá hiện tại và thông báo cho bạn.
-          </p>
         </section>
 
         <!-- Chi tiết trả hàng / hoàn tiền -->

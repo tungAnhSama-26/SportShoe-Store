@@ -20,6 +20,9 @@ import Badge from "../../../components/ui/Badge.vue";
 import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError } from "../../../utils/alert";
+import { useRealtime } from "../../../composables/useRealtime";
+
+const { subscribeTopic } = useRealtime();
 
 const router = useRouter();
 
@@ -334,6 +337,17 @@ function applyStatusFilter(value) {
 onMounted(async () => {
   await loadDanhMuc();
   await loadData(0);
+
+  subscribeTopic('/topic/admin/san-pham', (message) => {
+    console.log("Realtime update: Product list changed", message);
+    loadData(currentPage.value);
+  });
+
+  subscribeTopic('/topic/admin/thuoc-tinh', (message) => {
+    console.log("Realtime update: Attribute changed", message);
+    loadDanhMuc();
+    loadData(currentPage.value);
+  });
 });
 
 watch(

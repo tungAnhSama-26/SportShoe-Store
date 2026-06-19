@@ -2,14 +2,14 @@ package com.example.server.core.client.dathang.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
 
 public record DatHangRequest(
-        @NotNull(message = "Thiếu thông tin khách hàng")
+        // Khách vãng lai (chưa đăng nhập) -> null. Khách có tài khoản -> id khách.
         UUID khachHangId,
 
         @NotEmpty(message = "Giỏ hàng đang trống")
@@ -44,5 +44,9 @@ public record DatHangRequest(
 
         // GHN: mã quận/huyện + phường/xã (để tính phí chính xác, tùy chọn).
         Integer toDistrictId,
-        String toWardCode
+        String toWardCode,
+
+        // Email nhận xác nhận đơn cho khách vãng lai (không có tài khoản). Tùy chọn.
+        @Email(message = "Email không hợp lệ")
+        String emailNguoiNhan
 ) {}

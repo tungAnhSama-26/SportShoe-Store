@@ -9,12 +9,6 @@ import org.springframework.stereotype.Component;
 public class BanHangTaiQuayValidationUseCase {
 
     public void validateDuplicateItems(List<TaoHoaDonChoItemRequest> items) {
-        long distinctCount = items.stream()
-                .map(TaoHoaDonChoItemRequest::chiTietId)
-                .distinct()
-                .count();
-        if (distinctCount != items.size()) {
-            throw new BusinessException("Mỗi sản phẩm chỉ được xuất hiện 1 lần trong hóa đơn");
-        }
+        // Removed validation to allow same chiTietId with different prices
     }
 }

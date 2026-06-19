@@ -9,3 +9,4 @@ FE/sport-shoe/build/index.html
 ### Node ###
 node_modules/
 /fe_mobile
+BE/server/uploads

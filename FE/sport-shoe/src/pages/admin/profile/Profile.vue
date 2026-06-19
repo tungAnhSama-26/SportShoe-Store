@@ -14,7 +14,6 @@ import {
   Lock,
   ArrowLeft,
 } from "lucide-vue-next";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import {
   capNhatHoSoNhanVien,
   doiMatKhauHoSoNhanVien,
@@ -147,7 +146,16 @@ const loiCamera = ref("");
 const videoRef = ref(null);
 const thongBaoQrOk = ref("");
 let zxingReader = null;
+let BrowserMultiFormatReaderCtor = null;
 let daXuLyQr = false;
+
+async function layBrowserMultiFormatReader() {
+  if (!BrowserMultiFormatReaderCtor) {
+    const zxingBrowser = await import("@zxing/browser");
+    BrowserMultiFormatReaderCtor = zxingBrowser.BrowserMultiFormatReader;
+  }
+  return BrowserMultiFormatReaderCtor;
+}
 
 async function batDauQuet() {
   daXuLyQr = false;
@@ -157,6 +165,7 @@ async function batDauQuet() {
   await nextTick();
   try {
     if (!videoRef.value) throw new Error("Không tìm thấy video element");
+    const BrowserMultiFormatReader = await layBrowserMultiFormatReader();
     zxingReader = new BrowserMultiFormatReader();
 
     const constraints = {

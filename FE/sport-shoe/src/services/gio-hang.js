@@ -12,10 +12,12 @@ export function layKhachId() {
 
 const GIO_RONG = { id: null, items: [], tongSoLuong: 0, tongTien: 0 };
 const GIO_HANG_KEY_PREFIX = "sportshoe-cart:";
+// Khách vãng lai (chưa đăng nhập) vẫn có giỏ riêng lưu cục bộ với khóa "guest".
+const KHOA_VANG_LAI = "guest";
 
 function khoaGioHang() {
   const id = layKhachId();
-  return id ? `${GIO_HANG_KEY_PREFIX}${id}` : null;
+  return `${GIO_HANG_KEY_PREFIX}${id || KHOA_VANG_LAI}`;
 }
 
 function docGioHangLocal() {
@@ -55,9 +57,46 @@ export async function layGioHang() {
   return docGioHangLocal();
 }
 
+// Đồng bộ giá giỏ với server: cập nhật giá hiện tại (sau giảm) + giá niêm yết + tồn cho từng item.
+// Dùng khi vào giỏ/thanh toán để giá luôn đúng dù đợt giảm giá thay đổi sau lúc thêm vào giỏ.
+export async function dongBoGiaGio() {
+  const gio = docGioHangLocal();
+  if (!gio.items.length) return gio;
+  const ids = gio.items.map((it) => Number(it.giayChiTietId)).filter(Boolean);
+  let ds = [];
+  try {
+    ds = await apiRequest(`/client/san-pham/dong-bo-gia`, {
+      method: "POST",
+      authenticated: false,
+      body: JSON.stringify({ ids }),
+      fallbackMessage: "",
+    });
+  } catch {
+    return taoGioHangResponse(gio.items); // lỗi mạng -> giữ giá cũ
+  }
+  const theoId = new Map(
+    (Array.isArray(ds) ? ds : []).map((x) => [Number(x.giayChiTietId), x]),
+  );
+  for (const item of gio.items) {
+    const moi = theoId.get(Number(item.giayChiTietId));
+    if (!moi) {
+      // Biến thể không còn tồn tại (đã bị xóa) -> coi như ngừng bán.
+      item.conBan = false;
+      item.tonKho = 0;
+      continue;
+    }
+    // Cách A: 1 dòng, cập nhật về giá mới; giữ giá niêm yết để hiển thị gạch ngang.
+    item.giaNiemYet = Number(moi.giaNiemYet ?? item.giaBan);
+    item.giaBan = Number(moi.giaHienTai ?? item.giaBan);
+    if (moi.tonKho != null) item.tonKho = Number(moi.tonKho);
+    item.conBan = moi.conBan !== false; // false = admin đã ngừng bán
+  }
+  luuGioHangLocal(gio.items);
+  return taoGioHangResponse(gio.items);
+}
+
 export async function themVaoGio(giayChiTietId, soLuong = 1, thongTin = {}) {
-  const id = layKhachId();
-  if (!id) throw new Error("Vui lòng đăng nhập để mua hàng.");
+  // Khách vãng lai vẫn thêm được vào giỏ (lưu cục bộ theo khóa "guest").
   const gio = docGioHangLocal();
   const bienTheId = Number(giayChiTietId);
   const hienTai = gio.items.find((item) => Number(item.giayChiTietId) === bienTheId);
@@ -124,6 +163,43 @@ export function xoaGioHang() {
   if (key) localStorage.removeItem(key);
 }
 
+// Khi khách vãng lai đăng nhập: gộp giỏ "guest" vào giỏ của tài khoản rồi xóa giỏ guest.
+export function chuyenGioHangVangLai(userId) {
+  if (!userId) return;
+  const guestKey = `${GIO_HANG_KEY_PREFIX}${KHOA_VANG_LAI}`;
+  const userKey = `${GIO_HANG_KEY_PREFIX}${userId}`;
+  let guestItems = [];
+  try {
+    guestItems = JSON.parse(localStorage.getItem(guestKey) || "[]");
+  } catch {
+    guestItems = [];
+  }
+  if (!Array.isArray(guestItems) || !guestItems.length) {
+    localStorage.removeItem(guestKey);
+    return;
+  }
+  let userItems = [];
+  try {
+    userItems = JSON.parse(localStorage.getItem(userKey) || "[]");
+  } catch {
+    userItems = [];
+  }
+  if (!Array.isArray(userItems)) userItems = [];
+
+  for (const gItem of guestItems) {
+    const dangCo = userItems.find(
+      (u) => Number(u.giayChiTietId) === Number(gItem.giayChiTietId),
+    );
+    if (dangCo) {
+      dangCo.soLuong = Math.min(10, Number(dangCo.soLuong || 0) + Number(gItem.soLuong || 0));
+    } else {
+      userItems.push(gItem);
+    }
+  }
+  localStorage.setItem(userKey, JSON.stringify(userItems));
+  localStorage.removeItem(guestKey);
+}
+
 // Lấy danh sách địa chỉ giao hàng của khách (cho trang thanh toán).
 export async function layDiaChiKhachHang() {
   const id = layKhachId();
@@ -140,12 +216,12 @@ export async function layDiaChiKhachHang() {
 
 // Đặt hàng từ giỏ. payload: { tenNguoiNhan, sdtNguoiNhan, tinhThanh, quanHuyen, phuongXa, diaChiCuThe, hinhThucThanhToan, ghiChu }
 export async function datHang(payload) {
+  // khachHangId null = khách vãng lai (đơn khách lẻ).
   const id = layKhachId();
-  if (!id) throw new Error("Vui lòng đăng nhập.");
   return apiRequest(`/client/dat-hang`, {
     method: "POST",
     authenticated: false,
-    body: JSON.stringify({ khachHangId: id, sanPhams: danhSachDatHang(), ...payload }),
+    body: JSON.stringify({ khachHangId: id || null, sanPhams: danhSachDatHang(), ...payload }),
     fallbackMessage: "Không thể đặt hàng",
   });
 }
@@ -167,12 +243,12 @@ export function huyGiuHangBeacon() {
 
 // VNPay giả lập: tạo mã QR cho đơn (chưa tạo đơn).
 export async function taoMaVnPay(payload) {
+  // khachHangId null = khách vãng lai.
   const id = layKhachId();
-  if (!id) throw new Error("Vui lòng đăng nhập.");
   return apiRequest(`/client/vnpay/tao-ma`, {
     method: "POST",
     authenticated: false,
-    body: JSON.stringify({ khachHangId: id, sanPhams: danhSachDatHang(), ...payload }),
+    body: JSON.stringify({ khachHangId: id || null, sanPhams: danhSachDatHang(), ...payload }),
     fallbackMessage: "Không thể tạo mã thanh toán",
   });
 }
@@ -188,13 +264,13 @@ export async function trangThaiVnPay(token) {
 // Tính phí vận chuyển (GHN) cho giỏ hiện tại tới địa chỉ nhận.
 // Trả về { phiVanChuyen, uocTinh, moTa } hoặc null nếu chưa đăng nhập.
 export async function tinhPhiVanChuyen({ tinhThanh, quanHuyen, phuongXa, diaChiCuThe, toDistrictId, toWardCode }) {
+  // Khách vãng lai vẫn tính được phí ship (chỉ cần địa chỉ + danh sách sản phẩm).
   const id = layKhachId();
-  if (!id) return null;
   return apiRequest(`/client/phi-van-chuyen`, {
     method: "POST",
     authenticated: false,
     body: JSON.stringify({
-      khachHangId: id,
+      khachHangId: id || null,
       sanPhams: danhSachDatHang(),
       tinhThanh,
       quanHuyen,

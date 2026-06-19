@@ -6,6 +6,7 @@ public record KhachHangTaiQuayResponse(
         UUID id,
         String hoTen,
         String sdt,
-        String email
+        String email,
+        String diaChiMacDinh
 ) {
 }

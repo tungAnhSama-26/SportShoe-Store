@@ -1,7 +1,6 @@
 import { nextTick, onMounted, onUnmounted, ref, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Camera, Save, ScanLine, X } from "lucide-vue-next";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import {
   capNhatNhanVien,
   doiMatKhauNhanVien,
@@ -31,7 +30,16 @@ export function useChiTietNhanVien() {
   const dangQuetFile = ref(false);
   const thongBaoQrOk = ref("");
   let zxingReader = null;
+  let BrowserMultiFormatReaderCtor = null;
   let daXuLyQr = false;
+
+  async function layBrowserMultiFormatReader() {
+    if (!BrowserMultiFormatReaderCtor) {
+      const zxingBrowser = await import("@zxing/browser");
+      BrowserMultiFormatReaderCtor = zxingBrowser.BrowserMultiFormatReader;
+    }
+    return BrowserMultiFormatReaderCtor;
+  }
 
   async function batDauQuet() {
     daXuLyQr = false;
@@ -41,6 +49,7 @@ export function useChiTietNhanVien() {
     await nextTick();
     try {
       if (!videoRef.value) throw new Error("Không tìm thấy video element");
+      const BrowserMultiFormatReader = await layBrowserMultiFormatReader();
       zxingReader = new BrowserMultiFormatReader();
 
       const constraints = {

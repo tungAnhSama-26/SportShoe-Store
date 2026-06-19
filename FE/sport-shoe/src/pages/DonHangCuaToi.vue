@@ -88,6 +88,7 @@ function lopTrangThai(tt) {
     case 5: return 'bg-emerald-50 text-emerald-600';
     case 6: return 'bg-stone-100 text-stone-600';
     case 7: return 'bg-primary/5 text-primary';
+    case 8: return 'bg-rose-50 text-rose-600 border border-rose-100';
     case 10: return 'bg-rose-50 text-rose-600';
     default: return 'bg-slate-100 text-slate-600';
   }
@@ -123,7 +124,7 @@ const dsTrangThai = [
 const trangThaiDangChon = ref("");
 
 const danhSachHopLe = computed(() => {
-  return danhSach.value.filter((d) => [1, 9, 2, 3, 4, 5, 6, 7, 10].includes(d.trangThai));
+  return danhSach.value.filter((d) => [1, 9, 2, 3, 4, 5, 6, 7, 8, 10].includes(d.trangThai));
 });
 
 const danhSachHienThi = computed(() => {
@@ -131,7 +132,7 @@ const danhSachHienThi = computed(() => {
     return danhSachHopLe.value;
   }
   if (trangThaiDangChon.value === "TRA_HANG") {
-    return danhSachHopLe.value.filter((d) => d.phieuTraHangId != null);
+    return danhSachHopLe.value.filter((d) => d.phieuTraHangId != null || d.trangThai === 8);
   }
   return danhSachHopLe.value.filter(
     (d) => d.phieuTraHangId == null && d.trangThai === trangThaiDangChon.value,
@@ -179,9 +180,9 @@ async function xuLyTaoPhieuTraHangThanhCong() {
 
 async function guiYeuCauHuy(don) {
   const daXacNhan = await showConfirm(
-    'Sau khi gửi yêu cầu, cửa hàng sẽ xem xét và xác nhận hủy đơn.',
-    'Yêu cầu hủy đơn hàng',
-    'Gửi yêu cầu',
+    'Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác. Nếu đơn đã thanh toán, cửa hàng sẽ hoàn tiền cho bạn.',
+    'Hủy đơn hàng',
+    'Hủy đơn',
     'Quay lại',
   );
   if (!daXacNhan) return;
@@ -190,9 +191,20 @@ async function guiYeuCauHuy(don) {
   try {
     await yeuCauHuyDonHang(don.id);
     await taiDanhSach(true);
-    showSuccess('Yêu cầu hủy đơn hàng đã được gửi.');
+    // Sau khi hủy, nhảy sang đúng tab chứa đơn để khách thấy kết quả.
+    const donSauKhiHuy = danhSach.value.find((item) => item.id === don.id);
+    if (Number(donSauKhiHuy?.trangThai) === 8 || donSauKhiHuy?.phieuTraHangId != null) {
+      // Đơn chuyển khoản đã thanh toán -> cần hoàn tiền.
+      trangThaiDangChon.value = "TRA_HANG";
+      showSuccess('Đơn hàng đã được hủy. Cửa hàng sẽ hoàn tiền cho bạn.');
+    } else {
+      if (Number(donSauKhiHuy?.trangThai) === 6) {
+        trangThaiDangChon.value = 6;
+      }
+      showSuccess('Đơn hàng đã được hủy.');
+    }
   } catch (error) {
-    showError(getDisplayErrorMessage(error, 'Không thể gửi yêu cầu hủy đơn hàng'));
+    showError(getDisplayErrorMessage(error, 'Không thể hủy đơn hàng'));
   } finally {
     donDangGuiYeuCauHuy.value = null;
   }
@@ -311,12 +323,12 @@ async function guiYeuCauHuy(don) {
               </div>
               <div class="flex items-center gap-2">
                 <button
-                  v-if="[1, 9, 2].includes(Number(don.trangThai))"
+                  v-if="Number(don.trangThai) === 1"
                   @click="guiYeuCauHuy(don)"
                   :disabled="donDangGuiYeuCauHuy === don.id"
                   class="px-5 py-2 text-xs md:text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {{ donDangGuiYeuCauHuy === don.id ? 'Đang gửi...' : 'Yêu cầu hủy' }}
+                  {{ donDangGuiYeuCauHuy === don.id ? 'Đang xử lý...' : 'Hủy đơn' }}
                 </button>
                 <!-- Cho phép gửi lại sau khi phiếu trước bị từ chối/hủy và vẫn còn trong thời hạn trả hàng. -->
                 <button
