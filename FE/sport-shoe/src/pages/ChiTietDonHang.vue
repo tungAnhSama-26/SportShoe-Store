@@ -56,6 +56,7 @@ function resolveHinhAnh(url) {
 
 const route = useRoute();
 const router = useRouter();
+const REALTIME_POLL_INTERVAL_MS = 3000;
 
 const don = ref(null);
 const dangTai = ref(true);
@@ -93,6 +94,27 @@ function lopBadgeTraHang(tt) {
 let ngatKetNoiRealtime = null;
 let ngatKetNoiRealtimeNoiBo = null;
 let realtimeRefreshTimeout = null;
+let realtimePollingInterval = null;
+
+function laSuKienCuaDonHienTai(event) {
+  const idHienTai = [route.params.id, don.value?.id, don.value?.hoaDonId]
+    .filter((value) => value !== undefined && value !== null && value !== "")
+    .map((value) => Number(value));
+  const idSuKien = [event?.hoaDonId, event?.id]
+    .filter((value) => value !== undefined && value !== null && value !== "")
+    .map((value) => Number(value));
+
+  if (idSuKien.some((id) => idHienTai.includes(id))) return true;
+
+  const maHienTai = [don.value?.ma, don.value?.maHoaDon]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toLowerCase());
+  const maSuKien = [event?.maHoaDon, event?.ma]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toLowerCase());
+
+  return maSuKien.some((ma) => maHienTai.includes(ma));
+}
 
 function lenLichTaiLaiChiTiet() {
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
@@ -105,19 +127,27 @@ function dongBoKhiQuayLaiTrang() {
   }
 }
 
+function batDauDongBoDinhKy() {
+  if (realtimePollingInterval) return;
+  realtimePollingInterval = window.setInterval(() => {
+    taiChiTiet(true);
+  }, REALTIME_POLL_INTERVAL_MS);
+}
+
 onMounted(() => {
   taiChiTiet();
+  batDauDongBoDinhKy();
   window.addEventListener('focus', lenLichTaiLaiChiTiet);
   window.addEventListener('pageshow', lenLichTaiLaiChiTiet);
   document.addEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
   ngatKetNoiRealtimeNoiBo = langNgheHoaDonThayDoiNoiBo((event) => {
-    if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+    if (!laSuKienCuaDonHienTai(event)) return;
     lenLichTaiLaiChiTiet();
   });
   ngatKetNoiRealtime = ketNoiHoaDonRealtime({
     authScope: 'customer',
     onHoaDonThayDoi: (event) => {
-      if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+      if (!laSuKienCuaDonHienTai(event)) return;
       lenLichTaiLaiChiTiet();
     },
     onConnectionChange: (status) => {
@@ -135,6 +165,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('pageshow', lenLichTaiLaiChiTiet);
   document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
+  if (realtimePollingInterval) clearInterval(realtimePollingInterval);
 });
 
 watch(() => route.params.id, () => taiChiTiet());

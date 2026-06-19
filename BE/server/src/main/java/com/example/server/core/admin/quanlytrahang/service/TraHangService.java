@@ -523,13 +523,23 @@ public class TraHangService {
         String maGiaoDich = request.maGiaoDich() == null || request.maGiaoDich().isBlank()
                 ? "RF" + System.currentTimeMillis()
                 : request.maGiaoDich().trim();
+        String maNhanVien = nhanVien != null ? nhanVien.getMa() : "Hệ thống";
+        String tenKhachHang = "Khách hàng";
+        if (phieu.getHoaDon().getTenNguoiNhan() != null && !phieu.getHoaDon().getTenNguoiNhan().isBlank()) {
+            tenKhachHang = phieu.getHoaDon().getTenNguoiNhan().trim();
+        } else if (phieu.getHoaDon().getKhachHang() != null 
+                && phieu.getHoaDon().getKhachHang().getHoTen() != null 
+                && !phieu.getHoaDon().getKhachHang().getHoTen().isBlank()) {
+            tenKhachHang = phieu.getHoaDon().getKhachHang().getHoTen().trim();
+        }
+        String ghiChu = String.format("%s đã hoàn tiền cho khách hàng %s", maNhanVien, tenKhachHang);
         ThanhToan giaoDichHoan = GiaoDichHoanTienFactory.tao(
                 giaoDichGoc,
                 phieu,
                 phieu.getTongTienThucTe(),
                 request.hinhThucHoan(),
                 maGiaoDich,
-                request.ghiChu()
+                ghiChu
         );
         TaiKhoanNganHang taiKhoanNhan = refundBankAccountResolver.resolve(
                 phieu.getKhachHang(),
