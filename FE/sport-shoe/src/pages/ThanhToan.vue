@@ -299,6 +299,9 @@ function boVoucher() {
 // Trả về true nếu hợp lệ; nếu không -> gỡ phiếu + báo và trả về false (chặn thanh toán).
 async function kiemTraLaiVoucher() {
   if (!voucher.value) return true;
+  // Giỏ đang có SP ngừng bán/hết -> đó là lỗi sản phẩm (chuanBi sẽ ném), không phải voucher.
+  // Bỏ qua kiểm voucher để phần kiểm sản phẩm báo đúng thông điệp.
+  if (coSanPhamKhongBan()) return true;
   try {
     voucher.value = await kiemTraVoucher(voucher.value.ma);
     return true;
@@ -369,6 +372,8 @@ function coSanPhamKhongBan() {
 
 async function datHangMoi() {
   if (!hopLeThongTin()) return;
+  // Đồng bộ giỏ mới nhất để biết SP còn bán không (tránh trạng thái cũ -> báo nhầm voucher).
+  try { gio.value = await dongBoGiaGio(); } catch { /* lỗi mạng -> dùng trạng thái hiện có */ }
   if (coSanPhamKhongBan()) {
     return showError('Trong giỏ có sản phẩm đã hết hàng hoặc ngừng bán. Vui lòng quay lại giỏ hàng để xóa.');
   }
