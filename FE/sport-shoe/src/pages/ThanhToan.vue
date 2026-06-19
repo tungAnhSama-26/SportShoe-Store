@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen, layTinhGhn, layHuyenGhn, layXaGhn } from '../services/gio-hang';
+import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen, layTinhGhn, layHuyenGhn, layXaGhn } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -20,6 +20,7 @@ const daDangNhap = computed(() => Boolean(layKhachId()));
 const form = ref({
   hoTen: '',
   sdt: '',
+  email: '',
   tinhThanh: '',
   quanHuyen: '',
   phuongXa: '',
@@ -207,7 +208,7 @@ async function tai() {
   dangTai.value = true;
   try {
     const [g, dc, tinh] = await Promise.all([
-      layGioHang(),
+      dongBoGiaGio(),
       layDiaChiKhachHang(),
       layTinhGhn().catch(() => []),
     ]);
@@ -236,6 +237,7 @@ async function chonDiaChi(dc) {
   form.value = {
     hoTen: dc.hoTen || '',
     sdt: dc.sdt || '',
+    email: form.value.email || '',
     tinhThanh: dc.tinhThanh || '',
     quanHuyen: dc.quanHuyen || '',
     phuongXa: dc.phuongXa || '',
@@ -281,6 +283,8 @@ function taoPayload() {
     maPhieuGiamGia: voucher.value?.ma || null,
     toDistrictId: ghn.value.huyenId,
     toWardCode: ghn.value.wardCode,
+    // Khách vãng lai có thể nhập email để nhận xác nhận đơn (tùy chọn).
+    emailNguoiNhan: f.email.trim() || null,
   };
 }
 
@@ -292,14 +296,27 @@ function hopLeThongTin() {
     showWarning('Vui lòng nhập đầy đủ địa chỉ giao hàng.');
     return false;
   }
+  // Khách vãng lai bắt buộc nhập email vì đây là đầu mối duy nhất để nhận xác nhận / theo dõi đơn.
+  if (!daDangNhap.value && !f.email.trim()) {
+    showWarning('Vui lòng nhập email để nhận xác nhận và theo dõi đơn hàng.');
+    return false;
+  }
+  if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+    showWarning('Email không hợp lệ.');
+    return false;
+  }
   return true;
 }
 
 async function hoanTatDatHang(maHoaDon) {
   daDatHang.value = true;
+  const email = form.value.email.trim();
   xoaGioHang();
   gioHangStore.datSoLuong(0);
-  await showSuccess(`Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`, 'Thành công');
+  const thongBao = !daDangNhap.value && email
+    ? `Đặt hàng thành công! Mã đơn: ${maHoaDon}. Xác nhận đơn đã được gửi về email ${email}, vui lòng kiểm tra để theo dõi đơn.`
+    : `Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`;
+  await showSuccess(thongBao, 'Thành công');
   router.push('/khachhang/san-pham');
 }
 
@@ -379,12 +396,7 @@ function xuLyAnhLoi(event) {
       <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
       <p class="text-sm text-slate-400 mb-8">Bước 1: Thông tin giao hàng</p>
 
-      <div v-if="!daDangNhap" class="py-24 text-center">
-        <p class="text-sm text-slate-500 mb-4">Vui lòng đăng nhập để thanh toán.</p>
-        <router-link to="/login" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Đăng nhập</router-link>
-      </div>
-
-      <div v-else-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải...</div>
+      <div v-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải...</div>
 
       <div v-else-if="!gio.items.length" class="py-24 text-center">
         <p class="text-sm text-slate-500 mb-4">Giỏ hàng trống, không có gì để thanh toán.</p>
@@ -418,7 +430,11 @@ function xuLyAnhLoi(event) {
 
           <!-- Form thông tin người nhận -->
           <section class="rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
-            <h2 class="text-base font-bold text-slate-900 mb-4">Thông tin người nhận</h2>
+            <h2 class="text-base font-bold text-slate-900 mb-1">Thông tin người nhận</h2>
+            <p v-if="!daDangNhap" class="mb-4 text-xs text-slate-400">
+              Bạn đang đặt hàng không cần tài khoản. Vui lòng nhập đầy đủ thông tin nhận hàng và email để nhận xác nhận / theo dõi đơn.
+            </p>
+            <div v-else class="mb-4"></div>
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="space-y-1.5">
                 <span class="text-sm font-medium text-slate-600">Họ và tên người nhận <span class="text-rose-500">*</span></span>
@@ -452,6 +468,11 @@ function xuLyAnhLoi(event) {
               <label class="space-y-1.5 sm:col-span-2">
                 <span class="text-sm font-medium text-slate-600">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
                 <input v-model="form.diaChiCuThe" type="text" placeholder="Số nhà, tên đường..." class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+              <label v-if="!daDangNhap" class="space-y-1.5 sm:col-span-2">
+                <span class="text-sm font-medium text-slate-600">Email nhận xác nhận đơn <span class="text-rose-500">*</span></span>
+                <input v-model="form.email" type="email" placeholder="email@example.com" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <span class="block text-xs text-slate-400">Xác nhận & chi tiết đơn sẽ gửi về email này. Bạn dùng email để theo dõi đơn (không có tài khoản nên hãy lưu lại).</span>
               </label>
             </div>
             <p v-if="diaChiDayDu" class="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
@@ -502,8 +523,8 @@ function xuLyAnhLoi(event) {
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(Number(item.giaBan) * Number(item.soLuong)) }}</p>
             </div>
           </div>
-          <!-- Mã giảm giá -->
-          <div class="mt-4 border-t border-slate-100 pt-4">
+          <!-- Mã giảm giá (chỉ áp cho khách có tài khoản) -->
+          <div v-if="daDangNhap" class="mt-4 border-t border-slate-100 pt-4">
             <div v-if="!voucher">
               <div class="flex gap-2">
                 <input
