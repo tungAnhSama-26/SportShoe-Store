@@ -352,6 +352,13 @@ export function useChiTietHoaDon() {
     );
   });
 
+  const donDaXacNhan = computed(() => {
+    const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
+    return (
+      stt === "đã xác nhận" || stt === "da_xac_nhan"
+    );
+  });
+
   const donYeuCauHuy = computed(() => {
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     return stt === "yêu cầu hủy" || stt === "yeu_cau_huy";
@@ -1499,6 +1506,7 @@ export function useChiTietHoaDon() {
     vietHoaChuCaiDau,
     buocHienTai,
     donDaHoanThanh,
+    donDaXacNhan,
     donYeuCauHuy,
     donGiaoThatBai,
     donDaHuy,

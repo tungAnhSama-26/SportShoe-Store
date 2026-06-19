@@ -564,9 +564,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 && !request.maGiaoDichHoan().isBlank()
                 ? request.maGiaoDichHoan().trim()
                 : "RF" + System.currentTimeMillis();
-        String ghiChu = request.ghiChu() != null && !request.ghiChu().isBlank()
-                ? request.ghiChu().trim()
-                : "Đã hoàn tiền cho khách hàng";
+        String maNhanVien = nhanVienXuLy != null ? nhanVienXuLy.getMa() : "Hệ thống";
+        String tenKhach = resolveTenKhachHang(hoaDon);
+        String ghiChu = String.format("%s đã hoàn tiền cho khách hàng %s", maNhanVien, tenKhach);
         ThanhToan giaoDichHoan = GiaoDichHoanTienFactory.taoKhongQuaPhieuTraHang(
                 thanhToan,
                 soTienHoan,

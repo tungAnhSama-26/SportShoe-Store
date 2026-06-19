@@ -120,6 +120,12 @@ function dinhDangTien(value) {
   }).format(Number(value || 0));
 }
 
+function dinhDangTienKhongDonVi(value) {
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(
+    Number(value || 0),
+  );
+}
+
 function dinhDangNgay(value) {
   if (!value) return "Chưa cập nhật";
   return new Intl.DateTimeFormat("vi-VN", {
@@ -801,10 +807,11 @@ onBeforeUnmount(() => {
 
     <div
       v-if="modal"
-      class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm"
+      class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm overflow-y-auto"
       @click.self="modal = ''"
     >
-      <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[6px] border border-rose-100 bg-white shadow-2xl">
+      <div class="flex flex-col md:flex-row gap-6 max-w-[1000px] w-full max-h-[92vh] items-center md:items-stretch justify-center">
+        <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[6px] border border-rose-100 bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
           <h3 class="text-lg font-bold text-slate-800">
             {{
@@ -969,7 +976,7 @@ onBeforeUnmount(() => {
           <template v-else-if="modal === 'hoan-tien'">
             <div class="rounded-[6px] bg-rose-50 px-5 py-4">
               <p class="text-sm text-rose-600 font-semibold">Số tiền cần hoàn</p>
-              <p class="mt-1 text-2xl font-bold text-primary">{{ dinhDangTien(phieu.tongTienThucTe) }}</p>
+              <p class="mt-1 text-2xl font-bold text-primary">{{ dinhDangTienKhongDonVi(phieu.tongTienThucTe) }}</p>
             </div>
 
             <!-- Chi tiết phân tích số tiền hoàn trong modal -->
@@ -978,7 +985,7 @@ onBeforeUnmount(() => {
               
               <div class="flex items-center justify-between text-slate-600">
                 <span>Tiền sản phẩm hoàn trả</span>
-                <span class="font-semibold">{{ dinhDangTien(tongTienSanPhamHoan) }}</span>
+                <span class="font-semibold">{{ dinhDangTienKhongDonVi(tongTienSanPhamHoan) }}</span>
               </div>
 
               <div v-if="hoaDonGoc && hoanPhiVanChuyen > 0" class="flex items-center justify-between text-slate-600">
@@ -993,7 +1000,7 @@ onBeforeUnmount(() => {
                   </span>
                 </span>
                 <span class="text-slate-700 font-semibold">
-                  +{{ dinhDangTien(hoanPhiVanChuyen) }}
+                  +{{ dinhDangTienKhongDonVi(hoanPhiVanChuyen) }}
                 </span>
               </div>
 
@@ -1012,7 +1019,7 @@ onBeforeUnmount(() => {
                       </span>
                     </span>
                   </span>
-                  <span class="text-emerald-600 font-semibold">-{{ dinhDangTien(hoaDonGoc.giamGia) }}</span>
+                  <span class="text-emerald-600 font-semibold">-{{ dinhDangTienKhongDonVi(hoaDonGoc.giamGia) }}</span>
                 </div>
               </div>
             </div>
@@ -1041,17 +1048,6 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <!-- VietQR Code Image -->
-              <div v-if="taiKhoanNganHangChon" class="flex flex-col items-center justify-center border border-slate-100 rounded-[6px] p-5 bg-slate-50/80 gap-3">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quét mã VietQR để chuyển tiền</span>
-                <div class="h-44 w-44 overflow-hidden rounded-[6px] border border-slate-200 bg-white p-2 flex items-center justify-center shadow-sm">
-                  <img :src="qrHoanTienUrl" alt="VietQR Hoàn Tiền" class="h-full w-full object-contain" />
-                </div>
-                <div class="text-center space-y-0.5">
-                  <p class="text-xs font-bold text-slate-700">Chủ TK: <span class="uppercase text-[#B82220]">{{ taiKhoanNganHangChon.tenChuTaiKhoan }}</span></p>
-                  <p class="text-xs font-semibold text-slate-500">STK: {{ taiKhoanNganHangChon.soTaiKhoan }} ({{ taiKhoanNganHangChon.tenNganHang }})</p>
-                </div>
-              </div>
             </div>
             <label class="block space-y-2">
               <span class="text-sm font-semibold text-slate-600">Mã giao dịch</span>
@@ -1081,8 +1077,35 @@ onBeforeUnmount(() => {
           </template>
         </div>
       </div>
+
+      <!-- Separate QR Card -->
+      <div
+        v-if="modal === 'hoan-tien' && formHoanTien.hinhThucHoan === 2 && taiKhoanNganHangChon"
+        class="w-full md:w-[320px] rounded-[6px] border border-rose-100 bg-white shadow-2xl p-6 flex flex-col items-center justify-center text-center shrink-0 self-center"
+      >
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          Quét mã VietQR để chuyển tiền
+        </span>
+        <div
+          class="my-4 h-44 w-44 overflow-hidden rounded-[6px] border border-slate-200 bg-white p-2 flex items-center justify-center shadow-sm"
+        >
+          <img :src="qrHoanTienUrl" alt="VietQR Hoàn Tiền" class="h-full w-full object-contain" />
+        </div>
+        <div class="space-y-1 text-center">
+          <p class="text-xs font-bold text-slate-700">
+            Chủ TK: <span class="uppercase text-[#B82220]">{{ taiKhoanNganHangChon.tenChuTaiKhoan }}</span>
+          </p>
+          <p class="text-xs font-semibold text-slate-600">
+            STK: {{ taiKhoanNganHangChon.soTaiKhoan }}
+          </p>
+          <p class="text-xs font-semibold text-slate-500">
+            Ngân hàng: {{ taiKhoanNganHangChon.tenNganHang }}
+          </p>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 </template>
 <style scoped>
 .invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
