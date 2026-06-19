@@ -161,14 +161,19 @@ const denNgayHienThi = computed({
   },
 });
 
+const thongKeTrangThai = computed(() => {
+  const thongKe = new Map(dsTrangThai.map((trangThai) => [trangThai, 0]));
+  for (const hoaDon of danhSach.value) {
+    thongKe.set(hoaDon.trangThai, (thongKe.get(hoaDon.trangThai) || 0) + 1);
+  }
+  thongKe.set("Tất cả", danhSach.value.length);
+  return thongKe;
+});
+
 const tongTheoTrangThai = computed(() =>
   dsTrangThai.map((trangThai) => ({
     ten: trangThai,
-    tong:
-      trangThai === "Tất cả"
-        ? danhSach.value.length
-        : danhSach.value.filter((hoaDon) => hoaDon.trangThai === trangThai)
-            .length,
+    tong: thongKeTrangThai.value.get(trangThai) || 0,
   })),
 );
 
