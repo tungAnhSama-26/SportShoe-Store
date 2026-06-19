@@ -143,7 +143,8 @@ public class AuthService {
                 isAdmin(nhanVien) ? "Quản trị viên" : "Nhân viên",
                 nhanVien.getHinhAnh(),
                 mustChangeTemporaryPassword(nhanVien),
-                mustChangeTemporaryPassword(nhanVien) ? nhanVien.getHanDoiMatKhau() : null
+                mustChangeTemporaryPassword(nhanVien) ? nhanVien.getHanDoiMatKhau() : null,
+                nhanVien.getFaceDescriptor()
         );
     }
 

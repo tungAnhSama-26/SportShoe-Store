@@ -224,6 +224,7 @@ export function useChiTietNhanVien() {
     sdt: "",
     cccd: "",
     ngaySinh: "",
+    hinhAnh: "",
   });
 
   const form = ref({
@@ -541,7 +542,7 @@ export function useChiTietNhanVien() {
   }
 
   async function luu() {
-    loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "", ngaySinh: "" };
+    loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "", ngaySinh: "", hinhAnh: "" };
     let hasError = false;
 
     const loiHoTen = validateFullName(form.value.hoTen, "Họ và tên nhân viên");
@@ -568,6 +569,11 @@ export function useChiTietNhanVien() {
     if (!isValidVnPhone(form.value.sdt)) {
       loiForm.value.sdt =
         "Số điện thoại không đúng định dạng (VD: 0901234567).";
+      hasError = true;
+    }
+
+    if (laMoi && !form.value.hinhAnh) {
+      loiForm.value.hinhAnh = "Vui lòng tải lên hình ảnh nhân viên để phục vụ chấm công.";
       hasError = true;
     }
 

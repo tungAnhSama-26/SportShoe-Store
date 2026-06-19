@@ -132,12 +132,6 @@
 
           <!-- Camera Viewfinder -->
           <div class="relative w-full flex-1 min-h-[400px] rounded-3xl overflow-hidden bg-slate-100 flex items-center justify-center">
-            <!-- Mock Portrait Image -->
-            <img 
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop" 
-              alt="Camera Feed Placeholder" 
-              class="absolute inset-0 w-full h-full object-cover grayscale-[20%]"
-            />
             
             <!-- Scanning Overlay -->
             <div class="absolute inset-0 bg-white/10"></div>
