@@ -1,5 +1,5 @@
 <script setup>
-import ChinhSuaGiaoHangModal from "../../../../components/common/ChinhSuaGiaoHangModal.vue";
+import { defineAsyncComponent } from "vue";
 import { useChiTietHoaDon } from "../useChiTietHoaDon";
 import { provideInvoiceDetailContext } from "./composables/useInvoiceDetailContext";
 import DetailHeader from "./components/DetailHeader.vue";
@@ -9,13 +9,17 @@ import CustomerInfoCard from "./components/CustomerInfoCard.vue";
 import ShippingInfoCard from "./components/ShippingInfoCard.vue";
 import PaymentHistoryPanel from "./components/PaymentHistoryPanel.vue";
 import ProductListSection from "./components/ProductListSection.vue";
-import CodPaymentModal from "./modals/CodPaymentModal.vue";
-import RefundPaymentModal from "./modals/RefundPaymentModal.vue";
-import ConfirmStatusModal from "./modals/ConfirmStatusModal.vue";
-import ConfirmCancelModal from "./modals/ConfirmCancelModal.vue";
-import OperationHistoryModal from "./modals/OperationHistoryModal.vue";
-import ProductEditModal from "./modals/ProductEditModal.vue";
-import UpdateOrderModal from "./modals/UpdateOrderModal.vue";
+
+const ChinhSuaGiaoHangModal = defineAsyncComponent(() =>
+  import("../../../../components/common/ChinhSuaGiaoHangModal.vue"),
+);
+const CodPaymentModal = defineAsyncComponent(() => import("./modals/CodPaymentModal.vue"));
+const RefundPaymentModal = defineAsyncComponent(() => import("./modals/RefundPaymentModal.vue"));
+const ConfirmStatusModal = defineAsyncComponent(() => import("./modals/ConfirmStatusModal.vue"));
+const ConfirmCancelModal = defineAsyncComponent(() => import("./modals/ConfirmCancelModal.vue"));
+const OperationHistoryModal = defineAsyncComponent(() => import("./modals/OperationHistoryModal.vue"));
+const ProductEditModal = defineAsyncComponent(() => import("./modals/ProductEditModal.vue"));
+const UpdateOrderModal = defineAsyncComponent(() => import("./modals/UpdateOrderModal.vue"));
 
 const invoiceDetail = useChiTietHoaDon();
 provideInvoiceDetailContext(invoiceDetail);
@@ -26,6 +30,13 @@ const {
   dangTai,
   loiTrang,
   hienModalGiaoHang,
+  hienModalThanhToanCod,
+  hienModalHoanTien,
+  hienModalXacNhan,
+  hienModalXacNhanHuy,
+  hienModalLichSu,
+  hienModalSanPham,
+  hienModalThongTin,
   dangLuuGiaoHang,
   diaChiDaLuu,
   formThongTin,
@@ -61,15 +72,16 @@ const {
       <ProductListSection />
     </template>
 
-    <CodPaymentModal />
-    <RefundPaymentModal />
-    <ConfirmStatusModal />
-    <ConfirmCancelModal />
-    <OperationHistoryModal />
-    <ProductEditModal />
-    <UpdateOrderModal />
+    <CodPaymentModal v-if="hienModalThanhToanCod" />
+    <RefundPaymentModal v-if="hienModalHoanTien" />
+    <ConfirmStatusModal v-if="hienModalXacNhan" />
+    <ConfirmCancelModal v-if="hienModalXacNhanHuy" />
+    <OperationHistoryModal v-if="hienModalLichSu" />
+    <ProductEditModal v-if="hienModalSanPham" />
+    <UpdateOrderModal v-if="hienModalThongTin" />
 
     <ChinhSuaGiaoHangModal
+      v-if="hienModalGiaoHang"
       v-model="hienModalGiaoHang"
       title="Chỉnh sửa thông tin nhận hàng"
       :initial-data="{

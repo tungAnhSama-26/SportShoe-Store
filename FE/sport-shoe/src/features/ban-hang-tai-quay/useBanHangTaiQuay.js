@@ -1,5 +1,4 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import html2pdf from "html2pdf.js";
 import {
   huyHoaDonCho,
   layChiTietHoaDonCho,
@@ -20,6 +19,15 @@ import { usePosPayment } from "./usePosPayment";
 import { usePosProducts } from "./usePosProducts";
 import { usePosShipping } from "./usePosShipping";
 import { showConfirm, showToastSuccess, showError, toastSwal } from "../../utils/alert";
+
+let html2pdfLoader = null;
+
+async function loadHtml2Pdf() {
+  if (!html2pdfLoader) {
+    html2pdfLoader = import("html2pdf.js").then((module) => module.default ?? module);
+  }
+  return html2pdfLoader;
+}
 
 function useBanHangTaiQuay() {
   const pendingInvoices = ref([]);
@@ -686,7 +694,7 @@ function useBanHangTaiQuay() {
     clearCouponTimers();
   }
 
-  function handlePrintInvoice() {
+  async function handlePrintInvoice() {
     if (!activePendingInvoice.value) return;
     
     successMessage.value = `Đang tạo PDF hóa đơn ${activePendingInvoice.value.ma}...`;
@@ -769,6 +777,7 @@ function useBanHangTaiQuay() {
       jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
     };
 
+    const html2pdf = await loadHtml2Pdf();
     html2pdf().set(opt).from(invoiceHtml).save().then(() => {
        successMessage.value = `Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.`;
        setTimeout(() => { successMessage.value = ""; }, 3000);
@@ -777,7 +786,7 @@ function useBanHangTaiQuay() {
     });
   }
 
-  function handlePrintStoreInvoice() {
+  async function handlePrintStoreInvoice() {
     if (!activePendingInvoice.value) return;
 
     successMessage.value = `Đang tạo PDF hóa đơn ${activePendingInvoice.value.ma}...`;
@@ -1110,6 +1119,7 @@ function useBanHangTaiQuay() {
       jsPDF: { unit: "mm", format: "a5", orientation: "portrait" }
     };
 
+    const html2pdf = await loadHtml2Pdf();
     html2pdf().set(opt).from(invoiceHtml).save().then(() => {
       successMessage.value = `Đã tải PDF hóa đơn ${activePendingInvoice.value.ma}.`;
       setTimeout(() => { successMessage.value = ""; }, 3000);

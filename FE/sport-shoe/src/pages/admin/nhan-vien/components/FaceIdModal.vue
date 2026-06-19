@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { Camera, X, Upload, ScanFace, CheckCircle2 } from 'lucide-vue-next';
-import * as faceapi from 'face-api.js';
 import Button from '../../../../components/ui/Button.vue';
 import { showError, showSuccess } from '../../../../utils/alert';
 
@@ -29,12 +28,23 @@ const extractedDescriptor = ref(null);
 // Variables for webcam
 let stream = null;
 let detectionInterval = null;
+let faceapi = null;
+let faceapiLoader = null;
+
+async function loadFaceApi() {
+  if (!faceapiLoader) {
+    faceapiLoader = import('face-api.js');
+  }
+  faceapi = faceapi ?? await faceapiLoader;
+  return faceapi;
+}
 
 async function loadModels() {
   if (isModelsLoaded.value) return;
   isLoading.value = true;
   loadingMessage.value = 'Đang tải AI models...';
   try {
+    await loadFaceApi();
     const MODEL_URL = '/models';
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
