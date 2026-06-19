@@ -771,7 +771,7 @@ public class BanHangTaiQuayService {
         int tongSoLuong = phieuGiamGia.getSoLuong() == null ? 0 : phieuGiamGia.getSoLuong();
         int daDung = phieuGiamGia.getSoLuongDaDung() == null ? 0 : phieuGiamGia.getSoLuongDaDung();
         if (validateSoLuong && !isAlreadyApplied && tongSoLuong != 999999 && daDung >= tongSoLuong) {
-            throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng");
+            throw new BusinessException("Phiếu giảm giá đã hết lượt sử dụng. Vui lòng chọn phiếu giảm giá khác.");
         }
 
         BigDecimal soTienGiam = pricingUseCase.tinhSoTienGiam(phieuGiamGia, tongTienHang);
@@ -787,16 +787,16 @@ public class BanHangTaiQuayService {
             HoaDon hoaDon
     ) {
         if (phieuGiamGia.getTrangThai() == null || phieuGiamGia.getTrangThai() != TRANG_THAI_PHIEU_HOAT_DONG) {
-            throw new BusinessException("Phiếu giảm giá không hoạt động");
+            throw new BusinessException("Phiếu giảm giá không hoạt động. Vui lòng chọn phiếu giảm giá khác.");
         }
 
         Instant now = Instant.now();
         if (phieuGiamGia.getNgayBatDau() != null && now.isBefore(phieuGiamGia.getNgayBatDau())) {
-            throw new BusinessException("Phiếu giảm giá chưa đến thời gian áp dụng");
+            throw new BusinessException("Phiếu giảm giá chưa đến thời gian áp dụng. Vui lòng chọn phiếu giảm giá khác.");
         }
 
         if (phieuGiamGia.getNgayKetThuc() != null && now.isAfter(phieuGiamGia.getNgayKetThuc())) {
-            throw new BusinessException("Phiếu giảm giá đã hết hạn sử dụng");
+            throw new BusinessException("Phiếu giảm giá đã hết hạn sử dụng. Vui lòng chọn phiếu giảm giá khác.");
         }
 
         if (phieuGiamGia.getGiaTriToiThieu() != null && tongTienHang.compareTo(phieuGiamGia.getGiaTriToiThieu()) < 0) {
@@ -807,14 +807,14 @@ public class BanHangTaiQuayService {
 
         if (phieuGiamGia.getLoaiPhieu() != null && phieuGiamGia.getLoaiPhieu() == 2) {
             if (khachHang == null) {
-                throw new BusinessException("Phiếu giảm giá này chỉ áp dụng cho khách hàng thành viên");
+                throw new BusinessException("Phiếu giảm giá này chỉ áp dụng cho khách hàng thành viên. Vui lòng chọn phiếu giảm giá khác.");
             }
             PhieuGiamGiaKhachHang pggh = phieuGiamGiaKhachHangRepository
                     .findByPhieuGiamGiaIdAndKhachHangId(phieuGiamGia.getId(), khachHang.getId())
-                    .orElseThrow(() -> new BusinessException("Khách hàng không sở hữu phiếu giảm giá này"));
+                    .orElseThrow(() -> new BusinessException("Khách hàng không sở hữu phiếu giảm giá này. Vui lòng chọn phiếu giảm giá khác."));
 
             if (!isAlreadyApplied && pggh.getTrangThai() != TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG) {
-                throw new BusinessException("Phiếu giảm giá đã được khách hàng sử dụng");
+                throw new BusinessException("Phiếu giảm giá đã được khách hàng sử dụng. Vui lòng chọn phiếu giảm giá khác.");
             }
         }
     }
