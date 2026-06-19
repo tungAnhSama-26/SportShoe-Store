@@ -155,6 +155,41 @@ public class ClientVoucherService {
         return tienGiam;
     }
 
+    /**
+     * Áp voucher ĐÃ KHÓA (đã chốt lúc tạo mã QR VNPAY/VietQR) vào hóa đơn khi tạo đơn:
+     * gán phiếu, trừ lượt, đánh dấu phiếu cá nhân đã dùng — KHÔNG kiểm tra lại hiệu lực/lượt
+     * (vì đã khóa lúc mã còn hợp lệ; dù sau đó bị hủy kích hoạt vẫn giữ cho khách).
+     *
+     * @param tienGiamDaKhoa tiền giảm đã chốt lúc tạo mã QR.
+     * @return chính {@code tienGiamDaKhoa} (hoặc 0 nếu phiếu đã bị xóa khỏi hệ thống).
+     */
+    @Transactional
+    public BigDecimal apDungVoucherDaKhoa(
+            HoaDon hoaDon, String maPhieu, KhachHang khachHang, BigDecimal tienGiamDaKhoa) {
+        if (maPhieu == null || maPhieu.isBlank()) {
+            return BigDecimal.ZERO;
+        }
+        PhieuGiamGia phieu = phieuGiamGiaRepository.findByMaIgnoreCaseForUpdate(maPhieu.trim())
+                .orElse(null);
+        if (phieu == null) {
+            return BigDecimal.ZERO; // phiếu đã bị xóa -> không áp, nhưng không chặn tạo đơn
+        }
+        hoaDon.setPhieuGiamGia(phieu);
+        phieu.setSoLuongDaDung((phieu.getSoLuongDaDung() == null ? 0 : phieu.getSoLuongDaDung()) + 1);
+        phieuGiamGiaRepository.save(phieu);
+
+        if (phieu.getLoaiPhieu() != null && phieu.getLoaiPhieu() == LOAI_PHIEU_CA_NHAN && khachHang != null) {
+            phieuGiamGiaKhachHangRepository
+                    .findByPhieuGiamGiaIdAndKhachHangId(phieu.getId(), khachHang.getId())
+                    .ifPresent(pggh -> {
+                        pggh.setTrangThai(PHIEU_KH_DA_DUNG);
+                        pggh.setNgaySuDung(Instant.now());
+                        phieuGiamGiaKhachHangRepository.save(pggh);
+                    });
+        }
+        return tienGiamDaKhoa == null ? BigDecimal.ZERO : tienGiamDaKhoa;
+    }
+
     private PhieuGiamGia timVaValidate(String maPhieu, UUID khachHangId, BigDecimal tongTienHang, boolean kiemTraLuot) {
         if (maPhieu == null || maPhieu.isBlank()) {
             throw new BusinessException("Vui lòng nhập mã giảm giá");

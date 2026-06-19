@@ -302,7 +302,8 @@ public class ClientXemDonHangService {
                 lyDoTraHangMa, lyDoTraHangMoTa, tongTienDuKienTra, tongTienThucTeTra,
                 hinhAnhTraHang, chiTietTraHang,
                 laCK ? "CHUYEN_KHOAN" : "COD",
-                dangChoXacNhan, coTheSua, coTheSua);
+                // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
+                dangChoXacNhan, coTheSua, false);
     }
 
     /** Khách xác nhận đã nhận hàng (đơn phải đã hoàn thành). */
