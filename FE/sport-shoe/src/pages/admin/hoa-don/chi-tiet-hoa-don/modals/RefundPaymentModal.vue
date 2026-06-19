@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
 
 const {
@@ -19,10 +20,25 @@ const {
 } = useInvoiceDetailContext();
 
 const dinhDangTienKhongDonVi = (value) => {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "";
+  }
+  const rawValue = String(value).replace(/\D/g, "");
+  if (!rawValue) return "";
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(
-    Number(value) || 0,
+    Number(rawValue) || 0,
   );
 };
+
+const soTienHoanHienThi = computed(() =>
+  dinhDangTienKhongDonVi(formHoanTien.value.soTienHoan),
+);
+
+function capNhatSoTienHoan(event) {
+  const rawValue = String(event.target.value || "").replace(/\D/g, "");
+  formHoanTien.value.soTienHoan = rawValue;
+  event.target.value = dinhDangTienKhongDonVi(rawValue);
+}
 </script>
 
 <template>
@@ -110,15 +126,12 @@ const dinhDangTienKhongDonVi = (value) => {
             <label class="block space-y-2">
               <span class="text-sm font-bold text-slate-600">Số tiền hoàn</span>
               <input
-                v-model="formHoanTien.soTienHoan"
-                type="number"
-                min="0"
+                :value="soTienHoanHienThi"
+                type="text"
                 inputmode="numeric"
                 class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                @input="capNhatSoTienHoan"
               />
-              <p class="text-[11px] font-semibold text-slate-400 mt-1">
-                Định dạng: {{ dinhDangTienKhongDonVi(formHoanTien.soTienHoan) }}
-              </p>
             </label>
             <label class="block space-y-2">
               <span class="text-sm font-bold text-slate-600">Mã giao dịch hoàn</span>
