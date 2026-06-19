@@ -41,7 +41,7 @@ public class TrongLuongService {
             throw new BusinessException("Mã trọng lượng '" + ma + "' đã tồn tại");
         }
 
-        String giaTri = normalizeTrongLuongGiaTri(req.giaTri());
+        Integer giaTri = req.giaTri();
         var existingOpt = trongLuongRepository.findByGiaTri(giaTri);
         if (existingOpt.isPresent()) {
             TrongLuong existing = existingOpt.get();
@@ -50,9 +50,6 @@ public class TrongLuongService {
             } else {
                 existing.setTrangThai(1);
                 existing.setNgayCapNhat(Instant.now());
-                if (req.donVi() != null && !req.donVi().isBlank()) {
-                    existing.setDonVi(req.donVi().trim());
-                }
                 return toTrongLuong(trongLuongRepository.save(existing));
             }
         }

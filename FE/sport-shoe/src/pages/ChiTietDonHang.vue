@@ -21,7 +21,10 @@ import {
 import anhMacDinh from '../assets/login-shoe.png';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 import ChinhSuaGiaoHangModal from '../components/common/ChinhSuaGiaoHangModal.vue';
-import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
+import {
+  ketNoiHoaDonRealtime,
+  langNgheHoaDonThayDoiNoiBo,
+} from '../services/hoa-don-realtime';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import { API_BASE_URL } from '../services/api-client';
 
@@ -89,6 +92,7 @@ function lopBadgeTraHang(tt) {
 }
 
 let ngatKetNoiRealtime = null;
+let ngatKetNoiRealtimeNoiBo = null;
 let realtimeRefreshTimeout = null;
 
 function lenLichTaiLaiChiTiet() {
@@ -105,7 +109,12 @@ function dongBoKhiQuayLaiTrang() {
 onMounted(() => {
   taiChiTiet();
   window.addEventListener('focus', lenLichTaiLaiChiTiet);
+  window.addEventListener('pageshow', lenLichTaiLaiChiTiet);
   document.addEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
+  ngatKetNoiRealtimeNoiBo = langNgheHoaDonThayDoiNoiBo((event) => {
+    if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+    lenLichTaiLaiChiTiet();
+  });
   ngatKetNoiRealtime = ketNoiHoaDonRealtime({
     authScope: 'customer',
     onHoaDonThayDoi: (event) => {
@@ -122,7 +131,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   ngatKetNoiRealtime?.();
+  ngatKetNoiRealtimeNoiBo?.();
   window.removeEventListener('focus', lenLichTaiLaiChiTiet);
+  window.removeEventListener('pageshow', lenLichTaiLaiChiTiet);
   document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTrang);
   if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
 });
