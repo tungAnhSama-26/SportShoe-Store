@@ -307,37 +307,9 @@ async function batCamera() {
     }
 
     if (!hasBarcodeDetectorSupport.value || props.forceCompatibilityScanner) {
-      const [{ BrowserMultiFormatReader }, zxingLibrary] =
-        await Promise.all([
-          import("@zxing/browser"),
-          import("@zxing/library"),
-        ]);
+      const { BrowserMultiFormatReader } = await import("@zxing/browser");
 
-      const { BarcodeFormat } = zxingLibrary;
-      const barcodeFormatMap = {
-        qr_code: BarcodeFormat.QR_CODE,
-        code_128: BarcodeFormat.CODE_128,
-        code_39: BarcodeFormat.CODE_39,
-        ean_13: BarcodeFormat.EAN_13,
-        ean_8: BarcodeFormat.EAN_8,
-        upc_a: BarcodeFormat.UPC_A,
-        upc_e: BarcodeFormat.UPC_E,
-        pdf417: BarcodeFormat.PDF_417,
-        data_matrix: BarcodeFormat.DATA_MATRIX,
-        aztec: BarcodeFormat.AZTEC,
-      };
-
-      const possibleFormats = activeScanFormats.value
-        .map((format) => barcodeFormatMap[format])
-        .filter(Boolean);
-
-      const hints = new Map();
-      if (possibleFormats.length) {
-        hints.set(zxingLibrary.DecodeHintType.POSSIBLE_FORMATS, possibleFormats);
-      }
-      hints.set(zxingLibrary.DecodeHintType.TRY_HARDER, true);
-
-      zxingReaderInstance = new BrowserMultiFormatReader(hints);
+      zxingReaderInstance = new BrowserMultiFormatReader();
       usingCompatibilityScanner.value = true;
 
       zxingControls = await zxingReaderInstance.decodeFromConstraints(
@@ -355,13 +327,12 @@ async function batCamera() {
             return;
           }
 
-          if (
-            error &&
-            !(error instanceof zxingLibrary.NotFoundException) &&
-            !(error instanceof zxingLibrary.ChecksumException) &&
-            !(error instanceof zxingLibrary.FormatException) &&
-            !scannerError.value
-          ) {
+          const ignoredErrorNames = new Set([
+            "NotFoundException",
+            "ChecksumException",
+            "FormatException",
+          ]);
+          if (error && !ignoredErrorNames.has(error.name) && !scannerError.value) {
             scannerError.value = layThongBaoLoiCamera(
               error,
               "Khong the doc ma QR tu camera luc nay.",
