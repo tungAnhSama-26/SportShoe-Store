@@ -24,6 +24,7 @@ const {
   coTheHoanTien,
   donYeuCauHuy,
   donDaHoanThanh,
+  donDaXacNhan,
   donDaKetThuc,
   laDonTaiQuay,
   dinhDangGio,
@@ -162,7 +163,7 @@ const {
       </div>
     </div>
     <Button
-      v-if="donDaHoanThanh"
+      v-if="donDaHoanThanh || donDaXacNhan"
       @click="handlePrint"
       class="w-full bg-sky-500 hover:bg-sky-600 text-white border-transparent"
     >
