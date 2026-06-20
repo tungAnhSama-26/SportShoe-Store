@@ -108,6 +108,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setDiaChi(normalizeOptional(request.diaChi()));
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
+        nv.setFaceDescriptor(normalizeOptional(request.faceDescriptor()));
         nv.setTrangThai(1);
         Instant now = Instant.now();
         nv.setNgayTao(now);

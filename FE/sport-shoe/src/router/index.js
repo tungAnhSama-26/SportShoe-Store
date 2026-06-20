@@ -47,6 +47,8 @@ const QuanLyNhanVien = () => import("../pages/admin/nhan-vien/QuanLyNhanVien.vue
 const ChiTietNhanVien = () => import("../pages/admin/nhan-vien/ChiTietNhanVien.vue");
 const QuanLyLichLam = () => import("../pages/admin/nhan-vien/QuanLyLichLam.vue");
 const QuanLyChamCong = () => import("../pages/admin/lich-lam/QuanLyChamCong.vue");
+const QuanLyCaLam = () => import("../pages/admin/lich-lam/QuanLyCaLam.vue");
+const LichSuHoatDong = () => import("../pages/admin/lich-lam/LichSuHoatDong.vue");
 const Profile = () => import("../pages/admin/profile/Profile.vue");
 const QuanLyKhachHang = () => import("../pages/admin/khach-hang/QuanLyKhachHang.vue");
 const ChiTietKhachHang = () => import("../pages/admin/khach-hang/ChiTietKhachHang.vue");
@@ -397,9 +399,19 @@ const router = createRouter({
           component: QuanLyLichLam
         },
         {
+          path: "lich-ca-lam",
+          name: "admin-lich-ca-lam",
+          component: QuanLyCaLam
+        },
+        {
           path: "cham-cong",
           name: "admin-cham-cong",
           component: QuanLyChamCong
+        },
+        {
+          path: "lich-su-hoat-dong",
+          name: "admin-lich-su-hoat-dong",
+          component: LichSuHoatDong
         }
       ]
     },
