@@ -169,7 +169,7 @@
           </div>
 
           <!-- Action Button -->
-          <button @click="xuLyChamCong" :disabled="dangXuLy" class="w-full py-4 rounded-2xl bg-[#00A859] hover:bg-[#00914c] transition text-white font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_8px_20px_rgba(0,168,89,0.25)]">
+          <button @click="handleCheckInClick" :disabled="dangXuLy" class="w-full py-4 rounded-2xl bg-[#00A859] hover:bg-[#00914c] transition text-white font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_8px_20px_rgba(0,168,89,0.25)]">
             <Camera v-if="!dangXuLy" class="h-6 w-6" />
             <div v-else class="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             {{ dangXuLy ? 'Đang xử lý...' : 'Bắt đầu chấm công' }}
@@ -183,6 +183,12 @@
         </div>
       </div>
     </div>
+    <FaceIdCheckInModal 
+      :show="showFaceIdModal" 
+      :saved-descriptor-string="faceDescriptorString"
+      @close="showFaceIdModal = false"
+      @success="thucHienCheckIn"
+    />
   </div>
 </template>
 
@@ -196,6 +202,8 @@ import { showSuccess, showError } from '../../../utils/alert';
 import { checkIn } from '../../../services/cham-cong';
 import { useAdminSession } from '../../../composable/useAdminSession';
 import { getDisplayErrorMessage } from '../../../utils/error-message';
+import FaceIdCheckInModal from './components/FaceIdCheckInModal.vue';
+import { layChiTietNhanVien } from '../../../services/nhan-vien';
 
 const { adminSession } = useAdminSession();
 
@@ -203,6 +211,8 @@ const currentTime = ref(new Date());
 let timer = null;
 
 const dangXuLy = ref(false);
+const showFaceIdModal = ref(false);
+const faceDescriptorString = ref("");
 
 onMounted(() => {
   timer = setInterval(() => {
@@ -237,13 +247,34 @@ function formatDateShort(date) {
   return `${dayOfWeek}, ${d}/${m}/${y}`;
 }
 
+async function handleCheckInClick() {
+  if (!adminSession.value?.id) return;
+  
+  dangXuLy.value = true;
+  try {
+    const nv = await layChiTietNhanVien(adminSession.value.id);
+    if (!nv || !nv.faceDescriptor) {
+      showError("Bạn chưa đăng ký khuôn mặt. Vui lòng liên hệ Admin để đăng ký Face ID trước khi Check-in.");
+      return;
+    }
+    faceDescriptorString.value = nv.faceDescriptor;
+    showFaceIdModal.value = true;
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Không thể kiểm tra thông tin khuôn mặt"));
+  } finally {
+    dangXuLy.value = false;
+  }
+}
+
 // Gọi API chấm công thực tế
-async function xuLyChamCong() {
+async function thucHienCheckIn() {
+  showFaceIdModal.value = false;
   if (!adminSession.value?.id) return;
   dangXuLy.value = true;
   try {
     await checkIn({ nhanVienId: adminSession.value.id });
     showSuccess('Chấm công thành công! Bạn đã được ghi nhận.');
+    // Tải lại trang hoặc gọi lại API lịch sử nếu cần
   } catch (error) {
     showError(getDisplayErrorMessage(error, 'Không thể chấm công'));
   } finally {
