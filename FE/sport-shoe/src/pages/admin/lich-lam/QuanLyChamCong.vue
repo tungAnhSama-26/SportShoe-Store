@@ -100,7 +100,14 @@ const danhSachLoc = computed(() => {
   if (boLoc.value.denNgay) {
     result = result.filter((r) => r.ngay <= boLoc.value.denNgay);
   }
-  return result;
+  
+  // Sort descending by date (most recent first)
+  return [...result].sort((a, b) => {
+    const dateComp = b.ngay.localeCompare(a.ngay);
+    if (dateComp !== 0) return dateComp;
+    if (a.ca !== b.ca) return a.ca - b.ca;
+    return a.hoTen.localeCompare(b.hoTen);
+  });
 });
 
 const tongSoTrang = computed(

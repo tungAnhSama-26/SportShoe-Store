@@ -28,5 +28,6 @@ public record TaoNhanVienRequest(
         @Size(max = 200) String diaChi,
         @NotBlank(message = "Hình ảnh không được để trống")
         String hinhAnh,
-        @NotNull Integer vaiTro
+        @NotNull Integer vaiTro,
+        String faceDescriptor
 ) {}

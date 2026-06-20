@@ -242,6 +242,7 @@ export function useChiTietNhanVien() {
     tinhThanh: "",
     quanHuyen: "",
     xaPhuong: "",
+    faceDescriptor: "",
   });
 
   const dsVaiTro = [
@@ -632,6 +633,7 @@ export function useChiTietNhanVien() {
       diaChi: gopDiaChi() || form.value.diaChiCuThe.trim() || undefined,
       hinhAnh: form.value.hinhAnh || undefined,
       vaiTro: form.value.vaiTro,
+      faceDescriptor: form.value.faceDescriptor || undefined,
     };
     if (!laMoi) {
       payload.tenDangNhap = form.value.tenDangNhap.trim();

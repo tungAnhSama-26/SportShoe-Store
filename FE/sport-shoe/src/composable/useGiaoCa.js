@@ -57,7 +57,7 @@ async function handleBanGiaoCa(payload) {
 
 async function handleConfirmHandover(id, ghiChu) {
   try {
-    await xacNhanBanGiao(id, ghiChu);
+    await xacNhanBanGiao(id, { ghiChu });
     await loadActiveShift();
     await loadPendingHandovers();
     return { success: true, message: "Nhận bàn giao và mở ca mới thành công" };
