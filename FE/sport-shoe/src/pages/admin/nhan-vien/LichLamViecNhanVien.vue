@@ -263,7 +263,7 @@
     </div>
     <FaceIdCheckInModal 
       :show="showFaceIdModal" 
-      :saved-descriptor-string="adminUser?.faceDescriptor"
+      :saved-descriptor-string="faceDescriptorString"
       @close="showFaceIdModal = false"
       @success="thucHienCheckIn"
     />
@@ -287,6 +287,7 @@ import {
 import { useAdminSession } from '../../../composable/useAdminSession.js';
 import { layLichLamViec } from '../../../services/lich-lam.js';
 import { layChamCong } from '../../../services/cham-cong.js';
+import { layChiTietNhanVien } from '../../../services/nhan-vien.js';
 import { getDisplayErrorMessage } from '../../../utils/error-message.js';
 
 const NHAN_TUAN = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
@@ -439,18 +440,27 @@ const dangXuLy = ref(false);
 
 import { checkIn, checkOut } from '../../../services/cham-cong.js';
 import { showSuccess, showError } from '../../../utils/alert.js';
-import { getCurrentAdminUser } from '../../../services/auth';
 import FaceIdCheckInModal from './components/FaceIdCheckInModal.vue';
 
 const showFaceIdModal = ref(false);
-const adminUser = getCurrentAdminUser();
+const faceDescriptorString = ref("");
 
 async function handleCheckInClick() {
-  if (!adminUser || !adminUser.faceDescriptor) {
-    showError("Bạn chưa đăng ký khuôn mặt. Vui lòng liên hệ Admin để đăng ký Face ID trước khi Check-in.");
-    return;
+  if (!userId.value) return;
+  dangXuLy.value = true;
+  try {
+    const nv = await layChiTietNhanVien(userId.value);
+    if (!nv || !nv.faceDescriptor) {
+      showError("Bạn chưa đăng ký khuôn mặt. Vui lòng liên hệ Admin để đăng ký Face ID trước khi Check-in.");
+      return;
+    }
+    faceDescriptorString.value = nv.faceDescriptor;
+    showFaceIdModal.value = true;
+  } catch (error) {
+    showError(getDisplayErrorMessage(error, "Không thể kiểm tra thông tin khuôn mặt"));
+  } finally {
+    dangXuLy.value = false;
   }
-  showFaceIdModal.value = true;
 }
 
 async function thucHienCheckIn() {

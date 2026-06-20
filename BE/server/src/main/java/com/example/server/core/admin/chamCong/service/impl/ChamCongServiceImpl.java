@@ -120,6 +120,7 @@ public class ChamCongServiceImpl implements ChamCongService {
                     ChamCong cc = chamCongMap.get(key);
                     return toResponse(l, cc);
                 })
+                .sorted((a, b) -> b.ngay().compareTo(a.ngay()))
                 .toList();
     }
 

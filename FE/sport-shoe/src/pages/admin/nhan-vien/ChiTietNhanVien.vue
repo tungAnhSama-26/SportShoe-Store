@@ -22,7 +22,11 @@ function taoChuCaiDaiDien(value) {
 const showFaceIdModal = ref(false);
 
 async function handleSaveFaceId(descriptorString) {
-  if (laMoi) return;
+  if (laMoi) {
+    form.value.faceDescriptor = descriptorString;
+    showSuccess("Đã lưu tạm dữ liệu Face ID! Dữ liệu sẽ chính thức được lưu khi bạn bấm Tạo nhân viên.", "Thành công");
+    return;
+  }
   dangLuu.value = true;
   try {
     const updated = await capNhatFaceId(id, descriptorString);
@@ -110,6 +114,15 @@ async function handleSaveFaceId(descriptorString) {
             <p v-else class="mt-3 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
           </Card>
 
+          <Card class="!bg-white shadow-sm space-y-2">
+             <h3 class="mb-1 text-sm font-bold text-slate-800">Dữ liệu khuôn mặt (Face ID)</h3>
+             <p class="text-xs text-slate-500 mb-3">Dùng để nhân viên điểm danh (Check-in).</p>
+             <Button variant="outline" class="w-full justify-center gap-2" @click="showFaceIdModal = true">
+                <ScanFace class="h-4 w-4 text-primary" />
+                {{ (laMoi ? form.faceDescriptor : nhanVien?.faceDescriptor) ? 'Cập nhật lại Face ID' : 'Đăng ký Face ID' }}
+             </Button>
+          </Card>
+
           <template v-if="!laMoi">
             <Card class="!bg-white shadow-sm">
               <h3 class="mb-3 text-sm font-bold text-slate-800">Đổi mật khẩu</h3>
@@ -128,15 +141,6 @@ async function handleSaveFaceId(descriptorString) {
                   <Button variant="soft" class="flex-1 justify-center" @click="showDoiMatKhau = false; matKhauMoi = ''">Hủy</Button>
                 </div>
               </div>
-            </Card>
-
-            <Card class="!bg-white shadow-sm space-y-2">
-               <h3 class="mb-1 text-sm font-bold text-slate-800">Dữ liệu khuôn mặt (Face ID)</h3>
-               <p class="text-xs text-slate-500 mb-3">Dùng để nhân viên điểm danh (Check-in).</p>
-               <Button variant="outline" class="w-full justify-center gap-2" @click="showFaceIdModal = true">
-                  <ScanFace class="h-4 w-4 text-primary" />
-                  {{ nhanVien?.faceDescriptor ? 'Cập nhật lại Face ID' : 'Đăng ký Face ID' }}
-               </Button>
             </Card>
 
             <Card class="space-y-2 !bg-white shadow-sm">
@@ -408,10 +412,9 @@ async function handleSaveFaceId(descriptorString) {
     </template>
 
     <FaceIdModal 
-      v-if="!laMoi"
       :show="showFaceIdModal" 
-      :employee-name="form.hoTen"
-      :has-existing-face-id="!!nhanVien?.faceDescriptor"
+      :employee-name="form.hoTen || 'Nhân viên mới'"
+      :has-existing-face-id="!!(laMoi ? form.faceDescriptor : nhanVien?.faceDescriptor)"
       @close="showFaceIdModal = false" 
       @saved="handleSaveFaceId" 
     />

@@ -28,7 +28,7 @@ const router = useRouter();
 
 const MAX_NHAN_VIEN_MOI_CA = 3;
 
-const DS_CA = [
+const DS_CA = ref([
   {
     id: "sang",
     nhan: "Sáng",
@@ -50,7 +50,7 @@ const DS_CA = [
     mau: "bg-violet-400",
     muaNhat: "bg-violet-50 border-violet-200 text-violet-700",
   },
-];
+]);
 
 // ───────── Tuần hiện tại ─────────
 const ngayHienTai = ref(new Date());
@@ -231,7 +231,7 @@ const lichBoard = computed(() => {
       ngay: ngay,
       ngayStr: formatISODate(ngay),
       thu: NHAN_TUAN[ngayIndex],
-      cas: DS_CA.map((caInfo) => {
+      cas: DS_CA.value.map((caInfo) => {
         const nhanViens = danhSachLocVaiTro.value.filter(
           (nv) => nv.lich[ngayIndex] === caInfo.id
         );
@@ -258,6 +258,51 @@ const showModalThemCa = ref(false);
 const chonNhanVienId = ref("");
 const chonNgayVal = ref("");
 const chonCaVal = ref("sang");
+
+// ───────── Hiển thị modal Thêm ca làm mới (Modal 3) ─────────
+const showModalTaoCa = ref(false);
+const formTaoCa = ref({
+  tenCa: "",
+  gioBatDau: "",
+  gioKetThuc: "",
+  moTa: ""
+});
+
+function moModalTaoCa() {
+  formTaoCa.value = {
+    tenCa: "",
+    gioBatDau: "",
+    gioKetThuc: "",
+    moTa: ""
+  };
+  showModalTaoCa.value = true;
+}
+
+function huyTaoCa() {
+  showModalTaoCa.value = false;
+}
+
+function luuTaoCa() {
+  if (!formTaoCa.value.tenCa) {
+    showError("Vui lòng nhập tên ca làm.");
+    return;
+  }
+  if (!formTaoCa.value.gioBatDau || !formTaoCa.value.gioKetThuc) {
+    showError("Vui lòng chọn thời gian bắt đầu và kết thúc.");
+    return;
+  }
+
+  const idMoi = "ca_" + Date.now();
+  DS_CA.value.push({
+    id: idMoi,
+    nhan: formTaoCa.value.tenCa,
+    gio: `${formTaoCa.value.gioBatDau} - ${formTaoCa.value.gioKetThuc}`,
+    mauHex: "#475569",
+  });
+
+  showSuccess("Thêm ca làm mới thành công!");
+  showModalTaoCa.value = false;
+}
 
 // Giờ bắt đầu của mỗi ca
 const GIO_BAT_DAU_CA = { sang: 8, chieu: 12, toi: 17 };
@@ -492,7 +537,7 @@ function xuatExcel() {
 
 // ───────── Helpers ─────────
 function layThongTinCa(id) {
-  return id ? DS_CA.find((c) => c.id === id) : null;
+  return id ? DS_CA.value.find((c) => c.id === id) : null;
 }
 
 function mauOvertimeBar(nv) {
@@ -553,7 +598,10 @@ const caUnassigned = computed(
       <button @click="xuatExcel" class="admin-btn-soft gap-2">
         <Download class="h-4 w-4" /> Xuất Excel
       </button>
-      <button @click="moModalThemCaTuHeader" class="admin-btn-primary gap-2">
+      <button @click="moModalThemCaTuHeader" class="admin-btn-primary gap-2 bg-indigo-500 hover:bg-indigo-600 text-white">
+        <Users class="h-4 w-4" /> Phân ca
+      </button>
+      <button @click="moModalTaoCa" class="admin-btn-primary gap-2">
         <Plus class="h-4 w-4" /> Thêm ca mới
       </button>
     </section>
@@ -646,7 +694,7 @@ const caUnassigned = computed(
               </div>
 
               <!-- Shift Cards -->
-              <div v-for="ca in day.cas" :key="ca.id" class="rounded-[16px] p-3 border transition hover:shadow-md flex flex-col" :class="ca.muaNhat">
+              <div v-for="ca in day.cas" :key="ca.id" class="rounded-[16px] p-3 border transition hover:shadow-md flex flex-col" :class="ca.muaNhat" :style="ca.mauHex ? { backgroundColor: ca.mauHex + '15', borderColor: ca.mauHex + '40', color: ca.mauHex } : {}">
                 <div class="font-bold text-sm">{{ ca.nhan }}</div>
                 <div class="text-[11px] opacity-80 mt-0.5">{{ ca.gio }}</div>
                 <div class="mt-2 text-xs font-semibold">
@@ -658,8 +706,9 @@ const caUnassigned = computed(
                   :class="[
                     ca.id === 'sang' ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50' : 
                     ca.id === 'chieu' ? 'border-orange-400 text-orange-600 hover:bg-orange-50' : 
-                    'border-violet-400 text-violet-600 hover:bg-violet-50'
+                    ca.id === 'toi' ? 'border-violet-400 text-violet-600 hover:bg-violet-50' : ''
                   ]"
+                  :style="ca.mauHex ? { borderColor: ca.mauHex, color: ca.mauHex } : {}"
                 >
                   Xem thêm
                 </button>
@@ -766,7 +815,7 @@ const caUnassigned = computed(
               :key="ca.id"
               class="flex items-center gap-3 text-sm"
             >
-              <div :class="['h-3.5 w-3.5 rounded-sm', ca.mau]" />
+              <div :class="['h-3.5 w-3.5 rounded-sm', ca.mau]" :style="ca.mauHex ? { backgroundColor: ca.mauHex } : {}" />
               <span class="font-semibold text-slate-700">{{ ca.nhan }}</span>
               <span class="text-slate-400">({{ ca.gio }})</span>
             </div>
@@ -926,6 +975,83 @@ const caUnassigned = computed(
               class="flex-1 py-2.5 rounded-xl bg-rose-400 hover:bg-rose-500 text-white text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ dangTai ? 'Đang lưu...' : 'Thêm vào ca' }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
+    <!-- ======================= MODAL 3: THÊM CA LÀM MỚI ======================= -->
+    <Teleport to="body">
+      <div v-if="showModalTaoCa" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="huyTaoCa"></div>
+        <div class="relative w-full max-w-[500px] overflow-hidden rounded-[16px] bg-white shadow-xl animate-in zoom-in-95 duration-200">
+          
+          <!-- Header -->
+          <div class="p-6 pb-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-[18px] font-bold text-slate-800">Thêm mới Ca làm việc</h3>
+              <button @click="huyTaoCa" class="text-slate-400 hover:text-slate-600 transition">
+                <X class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="p-6 pt-0 space-y-5">
+            
+            <div class="space-y-1.5">
+              <label class="text-[14px] font-medium text-slate-700">Tên ca <span class="text-rose-500">*</span></label>
+              <input 
+                v-model="formTaoCa.tenCa" 
+                type="text" 
+                class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition placeholder-slate-400"
+                placeholder="VD: Ca Sáng, Ca Chiều..."
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-[14px] font-medium text-slate-700">Giờ bắt đầu</label>
+                <input 
+                  v-model="formTaoCa.gioBatDau" 
+                  type="time" 
+                  class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white"
+                />
+              </div>
+              
+              <div class="space-y-1.5">
+                <label class="text-[14px] font-medium text-slate-700">Giờ kết thúc</label>
+                <input 
+                  v-model="formTaoCa.gioKetThuc" 
+                  type="time" 
+                  class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[14px] font-medium text-slate-700">Mô tả</label>
+              <textarea 
+                v-model="formTaoCa.moTa" 
+                rows="4"
+                class="w-full p-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition placeholder-slate-400 resize-none"
+                placeholder="Ghi chú thêm về ca làm việc..."
+              ></textarea>
+            </div>
+            
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-end gap-3 p-6 pt-2">
+            <button @click="huyTaoCa" class="px-6 py-2.5 rounded-xl border border-slate-200 bg-white text-[14px] font-medium text-slate-700 hover:bg-slate-50 transition shadow-sm">
+              Hủy bỏ
+            </button>
+            <button 
+              @click="luuTaoCa" 
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-slate-900 text-white text-[14px] font-medium transition shadow-sm hover:opacity-90"
+            >
+              Thêm mới
             </button>
           </div>
 

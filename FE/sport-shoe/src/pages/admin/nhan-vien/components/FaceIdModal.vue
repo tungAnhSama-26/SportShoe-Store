@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-import { Camera, X, Upload, ScanFace, CheckCircle2 } from 'lucide-vue-next';
+import { Camera, X, ScanFace, CheckCircle2 } from 'lucide-vue-next';
 import Button from '../../../../components/ui/Button.vue';
 import { showError, showSuccess } from '../../../../utils/alert';
 
@@ -19,17 +19,16 @@ const errorMessage = ref('');
 
 const videoRef = ref(null);
 const canvasRef = ref(null);
-const fileInputRef = ref(null);
 
 const mode = ref('selection'); // 'selection' | 'webcam' | 'upload'
 const capturedImage = ref(null);
 const extractedDescriptor = ref(null);
 
-// Variables for webcam
 let stream = null;
 let detectionInterval = null;
 let faceapi = null;
 let faceapiLoader = null;
+let latestDetection = null;
 
 async function loadFaceApi() {
   if (!faceapiLoader) {
@@ -114,9 +113,10 @@ async function handleVideoPlay() {
       faceapi.draw.drawFaceLandmarks(canvasRef.value, resizedDetections);
     }
     
-    if (detections.length === 1) {
-      // Tự động nhận diện nếu tìm thấy 1 khuôn mặt và nút tự động được bật, 
-      // Nhưng ở đây nên để người dùng tự nhấn nút Capture
+    if (detections.length > 0) {
+      latestDetection = detections[0];
+    } else {
+      latestDetection = null;
     }
   }, 100);
 }
@@ -129,16 +129,12 @@ async function captureWebcam() {
   errorMessage.value = '';
   
   try {
-    const detection = await faceapi.detectSingleFace(videoRef.value, new faceapi.TinyFaceDetectorOptions())
-                                   .withFaceLandmarks()
-                                   .withFaceDescriptor();
-    
-    if (!detection) {
+    if (!latestDetection) {
       errorMessage.value = 'Không tìm thấy khuôn mặt nào. Vui lòng nhìn thẳng vào camera.';
       return;
     }
     
-    extractedDescriptor.value = detection.descriptor;
+    extractedDescriptor.value = latestDetection.descriptor;
     
     // Create snapshot for preview
     const canvas = document.createElement('canvas');
@@ -159,46 +155,6 @@ async function captureWebcam() {
   }
 }
 
-async function handleFileUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  await loadModels();
-  if (!isModelsLoaded.value) return;
-  
-  isLoading.value = true;
-  loadingMessage.value = 'Đang phân tích ảnh...';
-  errorMessage.value = '';
-  
-  try {
-    const imgElement = document.createElement('img');
-    const url = URL.createObjectURL(file);
-    imgElement.src = url;
-    
-    await new Promise((resolve) => {
-      imgElement.onload = resolve;
-    });
-    
-    const detection = await faceapi.detectSingleFace(imgElement, new faceapi.TinyFaceDetectorOptions())
-                                   .withFaceLandmarks()
-                                   .withFaceDescriptor();
-    
-    if (!detection) {
-      errorMessage.value = 'Không tìm thấy khuôn mặt trong ảnh này.';
-      return;
-    }
-    
-    extractedDescriptor.value = detection.descriptor;
-    capturedImage.value = url;
-    showSuccess('Trích xuất khuôn mặt thành công!');
-    
-  } catch (error) {
-    errorMessage.value = 'Lỗi khi đọc file ảnh.';
-    console.error(error);
-  } finally {
-    isLoading.value = false;
-  }
-}
 
 function saveFaceId() {
   if (!extractedDescriptor.value) return;
@@ -281,21 +237,13 @@ onUnmounted(() => {
               </div>
             </div>
             
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
               <button type="button" @click="startWebcam" class="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 p-6 transition hover:border-primary hover:bg-primary/5">
                 <div class="rounded-full bg-blue-50 p-4 text-blue-500">
                   <Camera class="h-8 w-8" />
                 </div>
-                <span class="text-sm font-semibold text-slate-700">Chụp bằng Webcam</span>
+                <span class="text-sm font-semibold text-slate-700">Quét khuôn mặt bằng Webcam</span>
               </button>
-              
-              <button type="button" @click="fileInputRef.click()" class="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-200 p-6 transition hover:border-primary hover:bg-primary/5">
-                <div class="rounded-full bg-violet-50 p-4 text-violet-500">
-                  <Upload class="h-8 w-8" />
-                </div>
-                <span class="text-sm font-semibold text-slate-700">Tải ảnh lên</span>
-              </button>
-              <input type="file" ref="fileInputRef" accept="image/*" class="hidden" @change="handleFileUpload" />
             </div>
           </div>
           

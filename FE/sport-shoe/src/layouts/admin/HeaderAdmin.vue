@@ -1,11 +1,14 @@
 <script setup>
-import { computed, ref } from "vue";
-import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound } from "lucide-vue-next";
+import { computed, ref, onMounted } from "vue";
+import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound, ArrowRightLeft } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
 import { useAdminSession } from "../../composable/useAdminSession";
 import { isAdminRole, logoutAdmin } from "../../services/auth";
+
+import { useGiaoCa } from "../../composable/useGiaoCa";
+import GiaoCaModal from "../../components/admin/giao-ca/GiaoCaModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -13,6 +16,13 @@ const { isDark, toggleDark } = useDarkMode();
 const { adminSession, avatarUrl } = useAdminSession();
 const FALLBACK_ADMIN_NAME = "Trần Vũ Tùng Anh";
 const hienMenuTaiKhoan = ref(false);
+
+const { activeShift, loadActiveShift } = useGiaoCa();
+const hienGiaoCaModal = ref(false);
+
+onMounted(() => {
+  loadActiveShift();
+});
 
 const pageTitle = computed(() => {
   const titles = {
@@ -49,6 +59,8 @@ const pageTitle = computed(() => {
     'admin-nhan-vien-lich-lam': 'Lịch làm việc',
     'admin-nhan-vien-chi-tiet': 'Chi tiết nhân viên',
     'admin-lich-lam-viec': 'Lịch làm việc',
+    'admin-lich-ca-lam': 'Lịch ca làm',
+    'admin-lich-su-hoat-dong': 'Lịch sử hoạt động',
     'admin-cham-cong': 'Chấm công',
     'admin-profile': 'Hồ sơ cá nhân',
     'nhanvien-profile': 'Hồ sơ cá nhân',
@@ -155,6 +167,11 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Lịch làm việc',
     childTitle: 'Chi tiết lịch làm việc'
   },
+  'admin-lich-su-hoat-dong': {
+    parentPath: '/admin/lich-lam-viec',
+    parentTitle: 'Lịch làm việc',
+    childTitle: 'Lịch sử hoạt động'
+  },
   'admin-khach-hang-them': {
     parentPath: '/admin/khach-hang',
     parentTitle: 'Khách hàng',
@@ -239,6 +256,19 @@ function dangXuat() {
       <div class="flex items-center gap-3">
         <button
           type="button"
+          @click="hienGiaoCaModal = true"
+          class="inline-flex h-11 px-4 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-semibold text-sm shadow-sm"
+        >
+          <ArrowRightLeft class="h-4 w-4 text-[#B82220] dark:text-rose-400" />
+          <span>{{ activeShift ? 'Giao ca' : 'Nhận ca' }}</span>
+          <span 
+            class="h-2 w-2 rounded-full" 
+            :class="activeShift ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'"
+          ></span>
+        </button>
+
+        <button
+          type="button"
           @click="toggleDark"
           class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
         >
@@ -305,4 +335,5 @@ function dangXuat() {
       </div>
     </div>
   </header>
+  <GiaoCaModal :show="hienGiaoCaModal" @close="hienGiaoCaModal = false" />
 </template>
