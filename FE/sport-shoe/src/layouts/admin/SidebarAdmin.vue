@@ -34,7 +34,8 @@ import {
   Ticket,
   UserRoundCog,
   Users,
-  Weight
+  Weight,
+  MessageSquare
 } from "lucide-vue-next";
 const route = useRoute();
 const { adminSession } = useAdminSession();
@@ -321,6 +322,12 @@ function subItemClass(active) {
         <Users :class="navIconClass(isActive('/admin/khach-hang'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; kh&#225;ch h&#224;ng</span>
       </router-link>
+
+      <router-link to="/admin/chat" :title="compactMode ? 'Hỗ trợ trực tuyến' : undefined" :class="navItemClass(isActive('/admin/chat'))">
+        <MessageSquare :class="navIconClass(isActive('/admin/chat'))" />
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Hỗ trợ trực tuyến</span>
+      </router-link>
+
 
       <router-link v-if="laAdmin" to="/admin/nhan-vien" :title="compactMode ? 'Qu\u1ea3n l\u00fd nh\u00e2n vi\u00ean' : undefined" :class="navItemClass(isActive('/admin/nhan-vien') && !isLichLamActive)"
         >

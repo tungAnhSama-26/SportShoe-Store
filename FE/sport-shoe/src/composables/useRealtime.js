@@ -57,6 +57,22 @@ export function useRealtime() {
         
         subscriptions.push(sub);
         componentSubscriptions.push(sub);
+        return sub;
+    };
+
+    const unsubscribeTopic = (sub) => {
+        if (!sub) return;
+        if (sub.stompSubscription) {
+            sub.stompSubscription.unsubscribe();
+        }
+        const index = subscriptions.indexOf(sub);
+        if (index > -1) {
+            subscriptions.splice(index, 1);
+        }
+        const compIndex = componentSubscriptions.indexOf(sub);
+        if (compIndex > -1) {
+            componentSubscriptions.splice(compIndex, 1);
+        }
     };
 
     onUnmounted(() => {
@@ -74,6 +90,8 @@ export function useRealtime() {
 
     return {
         isConnected,
-        subscribeTopic
+        subscribeTopic,
+        unsubscribeTopic
     };
 }
+
