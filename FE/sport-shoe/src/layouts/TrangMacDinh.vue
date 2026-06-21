@@ -1,6 +1,7 @@
 <script setup>
 import logoChinh from "../assets/logo/delete-background-logo.png";
 import KhungDauTrang from "../components/trang-chu/KhungDauTrang.vue";
+import ChatBox from "../components/common/ChatBox.vue";
 import { cuaHangUngDung } from "../stores/ung-dung";
 </script>
 
@@ -10,6 +11,9 @@ import { cuaHangUngDung } from "../stores/ung-dung";
     <div class="pt-[72px]">
       <router-view />
     </div>
+
+    <!-- Floating Chatbot Widget -->
+    <ChatBox />
 
     <footer class="bg-white border-t border-[#dadad3] px-6 py-12 text-[#62625b] lg:px-10">
       <div class="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1.4fr_0.7fr_0.7fr_1fr]">
