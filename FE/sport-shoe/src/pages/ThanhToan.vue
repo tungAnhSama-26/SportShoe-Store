@@ -151,6 +151,8 @@ async function chonVoucher(v) {
 // VNPay (giả lập)
 const qrVnPay = ref(null); // { token, qrData, maGiaoDich }
 let pollTimer = null;
+let countdownTimer = null;
+const demNguoc = ref(60); // phiên QR sống tối đa 60 giây
 
 // Phí vận chuyển (GHN) - tính lại mỗi khi địa chỉ thay đổi.
 const phiShip = ref(null); // { phiVanChuyen, uocTinh, moTa }
@@ -362,14 +364,10 @@ function hopLeThongTin() {
 
 async function hoanTatDatHang(maHoaDon) {
   daDatHang.value = true;
-  const email = form.value.email.trim();
   xoaGioHang();
   gioHangStore.datSoLuong(0);
-  const thongBao = !daDangNhap.value && email
-    ? `Đặt hàng thành công! Mã đơn: ${maHoaDon}. Xác nhận đơn đã được gửi về email ${email}, vui lòng kiểm tra để theo dõi đơn.`
-    : `Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`;
-  await showSuccess(thongBao, 'Thành công');
-  router.push('/khachhang/san-pham');
+  // Thay vì về trang sản phẩm -> sang màn cảm ơn + tra cứu đơn (hiện mã đơn + chi tiết hóa đơn).
+  router.push({ path: '/khachhang/tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
 }
 
 // Giỏ có sản phẩm đã ngừng bán hoặc hết hàng -> không cho đặt.
@@ -423,6 +421,12 @@ const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
 function batDauPoll() {
   dungPoll();
+  demNguoc.value = 60;
+  // Đếm ngược 60s: hết giờ chưa thanh toán -> phiên hết hạn (BE đã hoàn tồn về).
+  countdownTimer = setInterval(() => {
+    demNguoc.value -= 1;
+    if (demNguoc.value <= 0) ngatHetHan();
+  }, 1000);
   pollTimer = setInterval(async () => {
     if (!qrVnPay.value) return;
     try {
@@ -432,6 +436,8 @@ function batDauPoll() {
         const ma = tt.maHoaDon;
         qrVnPay.value = null;
         await hoanTatDatHang(ma);
+      } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
+        ngatHetHan();
       }
     } catch {
       // bỏ qua, thử lại lần poll sau
@@ -439,10 +445,20 @@ function batDauPoll() {
   }, 2000);
 }
 
+function ngatHetHan() {
+  dungPoll();
+  qrVnPay.value = null;
+  showError('Phiên thanh toán đã hết hạn (quá 1 phút). Sản phẩm đã được hoàn lại, vui lòng đặt lại đơn.');
+}
+
 function dungPoll() {
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
+  }
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
   }
 }
 
@@ -589,8 +605,8 @@ function xuLyAnhLoi(event) {
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(Number(item.giaBan) * Number(item.soLuong)) }}</p>
             </div>
           </div>
-          <!-- Mã giảm giá (chỉ áp cho khách có tài khoản) -->
-          <div v-if="daDangNhap" class="mt-4 border-t border-slate-100 pt-4">
+          <!-- Mã giảm giá (khách vãng lai dùng được voucher toàn sàn) -->
+          <div class="mt-4 border-t border-slate-100 pt-4">
             <div v-if="!voucher">
               <div class="flex gap-2">
                 <input
@@ -704,6 +720,11 @@ function xuLyAnhLoi(event) {
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
           </div>
+          <div class="mt-2 text-center text-sm">
+            <span class="text-slate-400">Phiên hết hạn sau </span>
+            <span :class="['font-bold', demNguoc <= 10 ? 'text-rose-600' : 'text-slate-700']">{{ demNguoc }}s</span>
+          </div>
+          <p class="mt-1 text-center text-[11px] text-slate-400">Quá 1 phút chưa thanh toán, đơn sẽ tự hủy và hoàn sản phẩm về kho.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>
