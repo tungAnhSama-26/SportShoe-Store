@@ -51,13 +51,6 @@ public class NhanVienController {
         ));
     }
 
-    @GetMapping("/cccd/{cccd}")
-    public ResponseEntity<ApiResponse<NhanVienResponse>> layTheoCccd(@PathVariable String cccd) {
-        return ResponseEntity.ok(ApiResponse.success(
-                "Lấy nhân viên theo CCCD thành công",
-                nhanVienService.layTheoCccd(cccd)
-        ));
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<NhanVienResponse>> taoNhanVien(

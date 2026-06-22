@@ -93,25 +93,16 @@ export function useChiTietNhanVien() {
     daXuLyQr = true;
     dungQuet();
     const resolvedRaw = raw.trim();
-    loiForm.value.cccd = "";
     loiCamera.value = "";
     try {
       if (isVneIdSecureQr(resolvedRaw)) {
-        loiForm.value.cccd =
-          "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+        showError("QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng.");
         return;
       }
 
       // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
       const parts = resolvedRaw.split("|");
       if (parts.length >= 3) {
-        const scannedCccd = parts[0]?.trim() ?? "";
-        if (!/^\d{12}$/.test(scannedCccd)) {
-          loiForm.value.cccd =
-            "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
-          return;
-        }
-        form.value.cccd = scannedCccd;
         if (parts[2]) form.value.hoTen = parts[2].trim();
         if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
         if (parts[4]) {
@@ -119,16 +110,12 @@ export function useChiTietNhanVien() {
           form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
         }
         if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
-      } else if (/^\d{12}$/.test(resolvedRaw)) {
-        form.value.cccd = resolvedRaw;
+        showSuccess("Đã điền thông tin từ CCCD", "Thành công");
       } else {
-        loiForm.value.cccd =
-          "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
-        return;
+        showError("Mã QR không đúng định dạng thẻ CCCD bản cứng.");
       }
-      showSuccess("Đã điền thông tin từ CCCD", "Thành công");
     } catch {
-      loiForm.value.cccd = "Không thể đọc dữ liệu CCCD từ mã QR này.";
+      showError("Không thể đọc dữ liệu từ mã QR này.");
     }
   }
 
@@ -144,24 +131,7 @@ export function useChiTietNhanVien() {
     return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
   }
 
-  function syncCurrentAdminCccd(updated) {
-    if (typeof window === "undefined" || !updated?.id) return;
 
-    const storageKeys = ["adminUser", "sport-shoe-admin-session"];
-    for (const key of storageKeys) {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) continue;
-      try {
-        const current = JSON.parse(raw);
-        if (String(current?.id) === String(updated.id)) {
-          const next = { ...current, cccd: updated.cccd ?? "" };
-          window.localStorage.setItem(key, JSON.stringify(next));
-        }
-      } catch {
-        // Ignore stale localStorage values.
-      }
-    }
-  }
 
   function dungQuet() {
     dangQuet.value = false;
@@ -222,7 +192,6 @@ export function useChiTietNhanVien() {
     hoTen: "",
     email: "",
     sdt: "",
-    cccd: "",
     ngaySinh: "",
     hinhAnh: "",
   });
@@ -233,7 +202,6 @@ export function useChiTietNhanVien() {
     email: "",
     matKhau: "",
     sdt: "",
-    cccd: "",
     diaChiCuThe: "",
     hinhAnh: "",
     vaiTro: 2,
@@ -522,7 +490,6 @@ export function useChiTietNhanVien() {
         email: data.email ?? "",
         matKhau: "",
         sdt: data.sdt ?? "",
-        cccd: data.cccd ?? "",
         gioiTinh: data.gioiTinh ?? "Nam",
         ngaySinh: data.ngaySinh ?? "",
         diaChiCuThe: data.diaChi ?? "",
@@ -543,7 +510,7 @@ export function useChiTietNhanVien() {
   }
 
   async function luu() {
-    loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "", ngaySinh: "", hinhAnh: "" };
+    loiForm.value = { hoTen: "", email: "", sdt: "", ngaySinh: "", hinhAnh: "" };
     let hasError = false;
 
     const loiHoTen = validateFullName(form.value.hoTen, "Họ và tên nhân viên");
@@ -627,7 +594,6 @@ export function useChiTietNhanVien() {
       hoTen: form.value.hoTen.trim(),
       email: form.value.email.trim(),
       sdt: form.value.sdt.trim() || undefined,
-      cccd: form.value.cccd.trim() || undefined,
       gioiTinh: form.value.gioiTinh || undefined,
       ngaySinh: form.value.ngaySinh || undefined,
       diaChi: gopDiaChi() || form.value.diaChiCuThe.trim() || undefined,
@@ -677,20 +643,6 @@ export function useChiTietNhanVien() {
 
       const updated = await capNhatNhanVien(id, payload);
       nhanVien.value = updated;
-      syncCurrentAdminCccd(updated);
-      if (
-        route.query.requireCccd === "1" &&
-        /^\d{12}$/.test(String(updated.cccd ?? ""))
-      ) {
-        const redirectPath =
-          typeof route.query.redirect === "string"
-            ? route.query.redirect
-            : "/admin";
-        router.push(
-          redirectPath.startsWith("/admin") ? redirectPath : "/admin",
-        );
-        return;
-      }
       await showSuccess("Đã lưu thay đổi thành công.", "Thành công");
       router.push({ name: "admin-nhan-vien" });
     } catch (error) {
@@ -822,7 +774,6 @@ export function useChiTietNhanVien() {
     xuLyKetQuaQr,
     isVneIdSecureQr,
     formatNgaySinh,
-    syncCurrentAdminCccd,
     dungQuet,
     route,
     router,

@@ -11,7 +11,6 @@ public record AdminLoginResponse(
         String tenDangNhap,
         String hoTen,
         String email,
-        String cccd,
         Integer vaiTro,
         String tenVaiTro,
         String hinhAnh,

@@ -19,6 +19,10 @@ public class TinNhan {
     @JoinColumn(name = "cuoc_hoi_thoai_id", nullable = false)
     private CuocHoiThoai cuocHoiThoai;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nhan_vien_id")
+    private NhanVien nhanVien;
+
     @Column(name = "nguoi_gui", nullable = false, length = 50)
     private String nguoiGui; // "CUSTOMER", "STAFF", "AI"
 

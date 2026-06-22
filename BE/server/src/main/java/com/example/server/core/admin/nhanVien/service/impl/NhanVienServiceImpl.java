@@ -63,11 +63,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         return toItem(findNhanVien(id));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public NhanVienResponse layTheoCccd(String cccd) {
-        return toItem(findNhanVienTheoCccd(cccd));
-    }
+
 
     @Override
     @Transactional
@@ -79,13 +75,6 @@ public class NhanVienServiceImpl implements NhanVienService {
             throw new BusinessException("Email đã được sử dụng");
         }
         String generatedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail, null);
-
-        String normalizedCccd = normalizeCccd(request.cccd());
-        if (normalizedCccd != null && nhanVienRepository.existsByCccd(normalizedCccd)) {
-            throw new BusinessException("CCCD đã được sử dụng");
-        }
-
-
 
         NhanVien nv = new NhanVien();
         nv.setId(UUID.randomUUID());
@@ -102,7 +91,6 @@ public class NhanVienServiceImpl implements NhanVienService {
         String randomMatKhau = generateTemporaryPassword();
         nv.setMatKhau(passwordService.hash(randomMatKhau));
         nv.setSdt(normalizeOptional(request.sdt()));
-        nv.setCccd(normalizedCccd);
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
         nv.setDiaChi(normalizeOptional(request.diaChi()));
@@ -142,22 +130,10 @@ public class NhanVienServiceImpl implements NhanVienService {
                 });
         String normalizedTenDangNhap = generateTenDangNhapFromEmail(normalizedEmail, id);
 
-        String normalizedCccd = normalizeCccd(request.cccd());
-        if (normalizedCccd != null) {
-            nhanVienRepository.findByCccd(normalizedCccd)
-                    .filter(existing -> !existing.getId().equals(id))
-                    .ifPresent(existing -> {
-                        throw new BusinessException("CCCD đã được sử dụng");
-                    });
-        }
-
-
-
         nv.setTenDangNhap(normalizedTenDangNhap);
         nv.setHoTen(request.hoTen().trim());
         nv.setEmail(normalizedEmail);
         nv.setSdt(normalizeOptional(request.sdt()));
-        nv.setCccd(normalizedCccd);
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
         nv.setDiaChi(normalizeOptional(request.diaChi()));
@@ -215,14 +191,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
     }
 
-    private NhanVien findNhanVienTheoCccd(String cccd) {
-        String normalizedCccd = normalizeCccd(cccd);
-        if (normalizedCccd == null) {
-            throw new ResourceNotFoundException("Nhân viên không tồn tại");
-        }
-        return nhanVienRepository.findByCccd(normalizedCccd)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
-    }
+
 
     private boolean matchKeyword(String keyword, NhanVien nv) {
         if (keyword == null || keyword.isBlank()) {
@@ -232,12 +201,10 @@ public class NhanVienServiceImpl implements NhanVienService {
         String ma = normalize(nv.getMa());
         String email = normalize(nv.getEmail());
         String sdt = nv.getSdt() != null ? nv.getSdt() : "";
-        String cccd = nv.getCccd() != null ? nv.getCccd() : "";
         return (ten != null && ten.contains(keyword))
                 || (ma != null && ma.contains(keyword))
                 || (email != null && email.contains(keyword))
-                || sdt.contains(keyword)
-                || cccd.contains(keyword);
+                || sdt.contains(keyword);
     }
 
     private String normalize(String value) {
@@ -276,10 +243,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         return resolved.isBlank() ? null : resolved;
     }
 
-    private String normalizeCccd(String value) {
-        String resolved = normalizeOptional(value);
-        return resolved == null ? null : resolved.replaceAll("\\s+", "");
-    }
+
 
     private NhanVienResponse toItem(NhanVien nv) {
         return toItem(nv, null, null);
@@ -293,7 +257,6 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getHoTen(),
                 nv.getEmail(),
                 nv.getSdt(),
-                nv.getCccd(),
                 nv.getGioiTinh(),
                 nv.getNgaySinh(),
                 nv.getDiaChi(),
