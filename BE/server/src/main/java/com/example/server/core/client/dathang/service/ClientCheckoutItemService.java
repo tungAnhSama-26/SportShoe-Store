@@ -80,10 +80,7 @@ public class ClientCheckoutItemService {
                 }
                 inventoryUseCase.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             }
-<<<<<<< Updated upstream
             tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
-=======
->>>>>>> Stashed changes
             bienThes.add(bienThe);
         }
 
