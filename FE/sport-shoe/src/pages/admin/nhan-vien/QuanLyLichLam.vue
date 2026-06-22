@@ -580,6 +580,7 @@ async function luuCa() {
   } finally {
     dangTai.value = false;
   }
+}
 
 async function xoaCa(nhanVien) {
   if (!currentChiTietCa.value) return;
@@ -1141,9 +1142,7 @@ function layThongTinCa(id) {
             </div>
 
           </div>
-        </div>
-      </aside>
-    </div>
+
 
           <!-- Footer -->
           <div class="flex items-center gap-3 p-5 pt-0">
