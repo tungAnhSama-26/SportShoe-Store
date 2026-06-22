@@ -15,4 +15,6 @@ public interface ChamCongRepository extends JpaRepository<ChamCong, UUID> {
     List<ChamCong> findByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
     boolean existsByLichLamViecId(UUID lichLamViecId);
     boolean existsByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
+    List<ChamCong> findByNhanVienIdAndThoiGianRaIsNull(UUID nhanVienId);
+    List<ChamCong> findByNgayBetweenAndThoiGianRaIsNull(LocalDate tuNgay, LocalDate denNgay);
 }

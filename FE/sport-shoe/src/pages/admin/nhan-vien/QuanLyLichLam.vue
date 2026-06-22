@@ -41,13 +41,26 @@ const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên
 
 const MAX_NHAN_VIEN_MOI_CA = 3;
 
-const DS_CA = [
+import { layDanhSachCaLam } from "../../../services/ca-lam.js";
+
+const SHIFT_COLORS = [
+  { mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+  { mau: "bg-orange-400", muaNhat: "bg-orange-50 border-orange-200 text-orange-700" },
+  { mau: "bg-violet-400", muaNhat: "bg-violet-50 border-violet-200 text-violet-700" },
+  { mau: "bg-blue-400", muaNhat: "bg-blue-50 border-blue-200 text-blue-700" },
+  { mau: "bg-rose-400", muaNhat: "bg-rose-50 border-rose-200 text-rose-700" },
+  { mau: "bg-amber-400", muaNhat: "bg-amber-50 border-amber-200 text-amber-700" },
+  { mau: "bg-teal-400", muaNhat: "bg-teal-50 border-teal-200 text-teal-700" }
+];
+
+const DS_CA = ref([
   {
     id: "sang",
     nhan: "Ca sáng",
     gio: "08:00 - 12:00",
     mau: "bg-emerald-500",
     muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    gioBatDau: "08:00",
   },
   {
     id: "chieu",
@@ -55,6 +68,7 @@ const DS_CA = [
     gio: "12:00 - 17:00",
     mau: "bg-orange-400",
     muaNhat: "bg-orange-50 border-orange-200 text-orange-700",
+    gioBatDau: "12:00",
   },
   {
     id: "toi",
@@ -62,12 +76,52 @@ const DS_CA = [
     gio: "17:00 - 22:00",
     mau: "bg-violet-400",
     muaNhat: "bg-violet-50 border-violet-200 text-violet-700",
+    gioBatDau: "17:00",
   },
-];
+]);
+
+async function taiDanhSachCa() {
+  try {
+    const list = await layDanhSachCaLam();
+    const activeList = list.filter(c => c.trangThai);
+    if (activeList.length > 0) {
+      const mapped = activeList.map((c, idx) => {
+        const colorSet = SHIFT_COLORS[idx % SHIFT_COLORS.length];
+        return {
+          id: c.id,
+          nhan: c.ten,
+          gio: `${c.gioBatDau} - ${c.gioKetThuc}`,
+          mau: colorSet.mau,
+          muaNhat: colorSet.muaNhat,
+          gioBatDau: c.gioBatDau,
+        };
+      });
+      mapped.sort((a, b) => {
+        const tA = a.gioBatDau || "00:00";
+        const tB = b.gioBatDau || "00:00";
+        return tA.localeCompare(tB);
+      });
+      DS_CA.value = mapped;
+    }
+  } catch (e) {
+    console.error("Không thể tải danh sách ca làm việc", e);
+  }
+}
 
 // ───────── Chế độ xem & Tuần hiện tại ─────────
 const calendarMode = ref('tuan'); // 'ngay', 'tuan', 'thang'
 const ngayHienTai = ref(new Date());
+
+const ngayLocSelect = computed({
+  get() {
+    return formatISODate(ngayHienTai.value);
+  },
+  set(val) {
+    if (val) {
+      ngayHienTai.value = new Date(val);
+    }
+  }
+});
 
 function dauTuan(d) {
   const nd = new Date(d);
@@ -249,6 +303,7 @@ async function taiNhanVien() {
   dangTai.value = true;
   loiTrang.value = "";
   try {
+    await taiDanhSachCa();
     const ds = await layDanhSachNhanVien({ trangThai: 1 });
     danhSachNV.value = ds.map((nv) => ({
       id: String(nv.id),
@@ -325,13 +380,17 @@ const danhSachLocVaiTro = computed(() => {
 const lichBoard = computed(() => {
   return cacNgayTrongTuan.value.map((ngay, ngayIndex) => {
     const ngayStr = formatISODate(ngay);
+    let activeCas = DS_CA.value;
+    if (boLocCaLam.value) {
+      activeCas = DS_CA.value.filter(c => String(c.id).toLowerCase() === boLocCaLam.value.toLowerCase());
+    }
     return {
       ngay: ngay,
       ngayStr: ngayStr,
       thu: NHAN_TUAN[ngayIndex],
-      cas: DS_CA.map((caInfo) => {
+      cas: activeCas.map((caInfo) => {
         const nhanViens = danhSachLocVaiTro.value.filter(
-          (nv) => nv.lich[ngayStr] === caInfo.id
+          (nv) => nv.lich[ngayStr] && nv.lich[ngayStr].toLowerCase() === caInfo.id.toLowerCase()
         );
         return {
           ...caInfo,
@@ -374,23 +433,57 @@ const danhSachCaLamBang = computed(() => {
       }
     });
   });
-  // Sắp xếp theo ngày giảm dần, rồi theo nhân viên
+  // Sắp xếp theo ngày giảm dần, rồi đến giờ ca làm bắt đầu sớm hơn lên trước
   result.sort((a, b) => {
     if (a.ngayStr !== b.ngayStr) return b.ngayStr.localeCompare(a.ngayStr);
+    const gioA = a.caInfo?.gioBatDau || "00:00";
+    const gioB = b.caInfo?.gioBatDau || "00:00";
+    if (gioA !== gioB) return gioA.localeCompare(gioB);
     return a.nv.ten.localeCompare(b.nv.ten);
   });
   return result;
 });
 
 const timKiemNhanVien = ref("");
+const boLocCaLam = ref("");
 
 const danhSachCaLamBangLoc = computed(() => {
-  if (!timKiemNhanVien.value) return danhSachCaLamBang.value;
-  const keyword = timKiemNhanVien.value.toLowerCase();
-  return danhSachCaLamBang.value.filter(item => 
-    item.nv.ten.toLowerCase().includes(keyword) || 
-    item.nv.ma.toLowerCase().includes(keyword)
-  );
+  let list = danhSachCaLamBang.value;
+  if (timKiemNhanVien.value) {
+    const keyword = timKiemNhanVien.value.toLowerCase();
+    list = list.filter(item => 
+      item.nv.ten.toLowerCase().includes(keyword) || 
+      item.nv.ma.toLowerCase().includes(keyword)
+    );
+  }
+  if (boLocCaLam.value) {
+    list = list.filter(item => 
+      String(item.caId).toLowerCase() === boLocCaLam.value.toLowerCase()
+    );
+  }
+  return list;
+});
+
+// Phân trang cho view bảng
+const trangHienTai = ref(1);
+const soPhanTuMotTrang = ref(10);
+const pageSizeOptions = [5, 10, 20, 50];
+
+const tongSoTrang = computed(() => {
+  return Math.ceil(danhSachCaLamBangLoc.value.length / soPhanTuMotTrang.value) || 1;
+});
+
+const danhSachCaLamBangLocPhanTrang = computed(() => {
+  const start = (trangHienTai.value - 1) * soPhanTuMotTrang.value;
+  return danhSachCaLamBangLoc.value.slice(start, start + soPhanTuMotTrang.value);
+});
+
+watch(danhSachCaLamBangLoc, () => {
+  trangHienTai.value = 1;
+});
+
+watch(soPhanTuMotTrang, () => {
+  trangHienTai.value = 1;
 });
 
 // ───────── Hiển thị modal Chi tiết ca (Modal 1) ─────────
@@ -409,7 +502,14 @@ const chonNgayVal = ref("");
 const chonCaVal = ref("sang");
 
 // Giờ bắt đầu của mỗi ca
-const GIO_BAT_DAU_CA = { sang: 8, chieu: 12, toi: 17 };
+const GIO_BAT_DAU_CA = computed(() => {
+  const map = {};
+  DS_CA.value.forEach(c => {
+    const startHourStr = c.gio.split("-")[0].trim().split(":")[0];
+    map[c.id] = parseInt(startHourStr, 10) || 8;
+  });
+  return map;
+});
 
 function laCaDaKhoa(ngay, caId) {
   if (!ngay) return false;
@@ -424,7 +524,7 @@ function laCaDaKhoa(ngay, caId) {
 
   // Ngày hôm nay → kiểm tra ca đã bắt đầu chưa
   if (date.getTime() === today.getTime() && caId) {
-    const gioBatDau = GIO_BAT_DAU_CA[caId];
+    const gioBatDau = GIO_BAT_DAU_CA.value[caId];
     if (gioBatDau !== undefined && now.getHours() >= gioBatDau) return true;
   }
 
@@ -447,12 +547,13 @@ const xemNgayData = ref(null);
 
 function moModalThemCaThang(ngay) {
   const ngayStr = formatISODate(ngay);
-  const isPast = laCaDaKhoa(ngay, 'sang');
+  const defaultCaId = DS_CA.value[0]?.id || 'sang';
+  const isPast = laCaDaKhoa(ngay, defaultCaId);
 
   if (isPast) {
     // Ngày quá khứ: mở modal xem danh sách nhân viên nhóm theo ca
     const thuIdx = (ngay.getDay() + 6) % 7;
-    const caGroups = DS_CA.map(caInfo => {
+    const caGroups = DS_CA.value.map(caInfo => {
       const nhanViens = danhSachLocVaiTro.value.filter(nv => nv.lich[ngayStr] === caInfo.id);
       return { ...caInfo, nhanViens };
     }).filter(g => g.nhanViens.length > 0);
@@ -468,7 +569,7 @@ function moModalThemCaThang(ngay) {
   }
 
   chonNgayVal.value = ngayStr;
-  chonCaVal.value = "sang";
+  chonCaVal.value = DS_CA.value[0]?.id || "sang";
   danhSachChonNhanVienIds.value = [];
   currentChiTietCa.value = null;
   isThemCaThang.value = true;
@@ -483,9 +584,10 @@ function moModalThemCa() {
     chonNgayVal.value = currentChiTietCa.value.day.ngayStr;
     chonCaVal.value = currentChiTietCa.value.ca.id;
   } else {
-    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, 'sang')) || cacNgayTrongTuan.value[0];
+    const defaultCaId = DS_CA.value[0]?.id || 'sang';
+    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, defaultCaId)) || cacNgayTrongTuan.value[0];
     chonNgayVal.value = formatISODate(firstAvailableDay);
-    chonCaVal.value = "sang";
+    chonCaVal.value = defaultCaId;
   }
   showModalChiTietCa.value = false;
   showModalThemCa.value = true;
@@ -568,7 +670,7 @@ async function luuCa() {
       const { day, ca } = currentChiTietCa.value;
       const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
       if (updatedDay) {
-        const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+        const updatedCa = updatedDay.cas.find(c => c.id.toLowerCase() === ca.id.toLowerCase());
         if (updatedCa) {
           currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
           showModalChiTietCa.value = true;
@@ -607,7 +709,7 @@ async function xoaCa(nhanVien) {
     
     const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
     if (updatedDay) {
-      const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+      const updatedCa = updatedDay.cas.find(c => c.id.toLowerCase() === ca.id.toLowerCase());
       if (updatedCa) {
         currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
       }
@@ -709,7 +811,16 @@ function xuatExcel() {
 
 // ───────── Helpers ─────────
 function layThongTinCa(id) {
-  return id ? DS_CA.find((c) => c.id === id) : null;
+  if (!id) return null;
+  const found = DS_CA.value.find((c) => c.id.toLowerCase() === id.toLowerCase());
+  if (found) return found;
+  return {
+    id: id,
+    nhan: id,
+    gio: "—",
+    mau: "bg-slate-400",
+    muaNhat: "bg-slate-50 border-slate-200 text-slate-700"
+  };
 }
 
 </script>
@@ -735,10 +846,19 @@ function layThongTinCa(id) {
             </div>
           </div>
           <div class="flex items-center gap-2">
+            <span class="text-[13px] font-medium text-slate-700">Ca làm:</span>
+            <div class="relative w-40">
+              <select v-model="boLocCaLam" class="w-full h-9 px-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition bg-white cursor-pointer">
+                <option value="">Tất cả ca</option>
+                <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id">{{ ca.nhan }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
             <span class="text-[13px] font-medium text-slate-700">Ngày làm:</span>
-            <div class="flex items-center gap-2 h-9 px-3 border border-slate-200 rounded-lg bg-slate-50 text-[13px] text-slate-600">
-              <CalendarDays class="w-4 h-4 text-slate-400" />
-              <span>{{ formatTuanHienThi() }}</span>
+            <div class="relative flex items-center h-9 border border-slate-200 rounded-lg bg-white overflow-hidden focus-within:border-rose-400 transition">
+              <CalendarDays class="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input type="date" v-model="ngayLocSelect" class="w-36 h-full pl-9 pr-2 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
             </div>
           </div>
         </div>
@@ -825,18 +945,18 @@ function layThongTinCa(id) {
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-50/50 border-y border-slate-100">
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-12 text-center">STT</th>
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mã nhân viên</th>
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nhân viên</th>
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ca làm</th>
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Thời gian</th>
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Ngày làm</th>
-                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-24 whitespace-nowrap">Thao tác</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider w-12 text-center">STT</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider">Mã nhân viên</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider">Nhân viên</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider">Ca làm</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider text-center">Thời gian</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider text-center">Ngày làm</th>
+                <th class="py-2.5 px-3 text-[11px] font-bold text-slate-500 tracking-wider text-center w-24 whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, idx) in danhSachCaLamBangLoc" :key="idx" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-                <td class="py-2.5 px-3 text-[12px] text-slate-600 text-center">{{ idx + 1 }}</td>
+              <tr v-for="(item, idx) in danhSachCaLamBangLocPhanTrang" :key="idx" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+                <td class="py-2.5 px-3 text-[12px] text-slate-600 text-center">{{ (trangHienTai - 1) * soPhanTuMotTrang + idx + 1 }}</td>
                 <td class="py-2.5 px-3 text-[12px] text-slate-600">{{ item.nv.ma }}</td>
                 <td class="py-2.5 px-3 text-[12px] font-medium text-slate-800">{{ item.nv.ten }}</td>
                 <td class="py-2.5 px-3 text-[12px] text-slate-600">{{ item.caInfo.nhan }}</td>
@@ -853,7 +973,7 @@ function layThongTinCa(id) {
                   </div>
                 </td>
               </tr>
-              <tr v-if="danhSachCaLamBangLoc.length === 0">
+              <tr v-if="danhSachCaLamBangLocPhanTrang.length === 0">
                 <td colspan="7" class="py-10 text-center text-[13px] text-slate-500">
                   Không có dữ liệu ca làm việc phù hợp.
                 </td>
@@ -861,6 +981,18 @@ function layThongTinCa(id) {
             </tbody>
           </table>
         </div>
+        <AdminTableFooter
+          :current-page="trangHienTai"
+          :page-size="soPhanTuMotTrang"
+          :page-size-options="pageSizeOptions"
+          :total-items="danhSachCaLamBangLoc.length"
+          :total-pages="tongSoTrang"
+          compact
+          show-refresh
+          @refresh="taiNhanVien"
+          @update:current-page="trangHienTai = $event"
+          @update:page-size="soPhanTuMotTrang = $event"
+        />
       </div>
 
       <!-- BOARD VIEW -->
