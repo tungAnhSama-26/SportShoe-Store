@@ -28,6 +28,18 @@ const router = useRouter();
 
 const MAX_NHAN_VIEN_MOI_CA = 3;
 
+import { layDanhSachCaLam } from "../../../services/ca-lam.js";
+
+const SHIFT_COLORS = [
+  { mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+  { mau: "bg-orange-400", muaNhat: "bg-orange-50 border-orange-200 text-orange-700" },
+  { mau: "bg-violet-400", muaNhat: "bg-violet-50 border-violet-200 text-violet-700" },
+  { mau: "bg-blue-400", muaNhat: "bg-blue-50 border-blue-200 text-blue-700" },
+  { mau: "bg-rose-400", muaNhat: "bg-rose-50 border-rose-200 text-rose-700" },
+  { mau: "bg-amber-400", muaNhat: "bg-amber-50 border-amber-200 text-amber-700" },
+  { mau: "bg-teal-400", muaNhat: "bg-teal-50 border-teal-200 text-teal-700" }
+];
+
 const DS_CA = ref([
   {
     id: "sang",
@@ -51,6 +63,27 @@ const DS_CA = ref([
     muaNhat: "bg-violet-50 border-violet-200 text-violet-700",
   },
 ]);
+
+async function taiDanhSachCa() {
+  try {
+    const list = await layDanhSachCaLam();
+    const activeList = list.filter(c => c.trangThai);
+    if (activeList.length > 0) {
+      DS_CA.value = activeList.map((c, idx) => {
+        const colorSet = SHIFT_COLORS[idx % SHIFT_COLORS.length];
+        return {
+          id: c.id,
+          nhan: c.ten,
+          gio: `${c.gioBatDau} - ${c.gioKetThuc}`,
+          mau: colorSet.mau,
+          muaNhat: colorSet.muaNhat
+        };
+      });
+    }
+  } catch (e) {
+    console.error("Không thể tải danh sách ca làm việc", e);
+  }
+}
 
 // ───────── Tuần hiện tại ─────────
 const ngayHienTai = ref(new Date());
@@ -167,6 +200,7 @@ async function taiNhanVien() {
   dangTai.value = true;
   loiTrang.value = "";
   try {
+    await taiDanhSachCa();
     const ds = await layDanhSachNhanVien({ trangThai: 1 });
     danhSachNV.value = ds.map((nv) => ({
       id: String(nv.id),
@@ -233,7 +267,7 @@ const lichBoard = computed(() => {
       thu: NHAN_TUAN[ngayIndex],
       cas: DS_CA.value.map((caInfo) => {
         const nhanViens = danhSachLocVaiTro.value.filter(
-          (nv) => nv.lich[ngayIndex] === caInfo.id
+          (nv) => nv.lich[ngayIndex] && nv.lich[ngayIndex].toLowerCase() === caInfo.id.toLowerCase()
         );
         return {
           ...caInfo,
@@ -305,7 +339,14 @@ function luuTaoCa() {
 }
 
 // Giờ bắt đầu của mỗi ca
-const GIO_BAT_DAU_CA = { sang: 8, chieu: 12, toi: 17 };
+const GIO_BAT_DAU_CA = computed(() => {
+  const map = {};
+  DS_CA.value.forEach(c => {
+    const startHourStr = c.gio.split("-")[0].trim().split(":")[0];
+    map[c.id] = parseInt(startHourStr, 10) || 8;
+  });
+  return map;
+});
 
 function laCaDaKhoa(ngay, caId) {
   if (!ngay) return false;
@@ -320,7 +361,7 @@ function laCaDaKhoa(ngay, caId) {
 
   // Ngày hôm nay → kiểm tra ca đã bắt đầu chưa
   if (date.getTime() === today.getTime() && caId) {
-    const gioBatDau = GIO_BAT_DAU_CA[caId];
+    const gioBatDau = GIO_BAT_DAU_CA.value[caId];
     if (gioBatDau !== undefined && now.getHours() >= gioBatDau) return true;
   }
 
@@ -339,9 +380,10 @@ function moModalThemCa() {
   if (currentChiTietCa.value) {
     // Từ modal chi tiết ca — không cần check vì nút đã ẩn khi ca bị khóa
   } else {
-    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, 'sang')) || cacNgayTrongTuan.value[0];
+    const defaultCaId = DS_CA.value[0]?.id || 'sang';
+    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, defaultCaId)) || cacNgayTrongTuan.value[0];
     chonNgayVal.value = formatISODate(firstAvailableDay);
-    chonCaVal.value = "sang";
+    chonCaVal.value = defaultCaId;
   }
   showModalChiTietCa.value = false;
   showModalThemCa.value = true;
@@ -392,7 +434,7 @@ async function luuCa() {
     // Đếm số lượng nhân viên đã xếp ca này vào ngày này
     const ngayIdx = cacNgayTrongTuan.value.findIndex(d => formatISODate(d) === ngayStr);
     if (ngayIdx >= 0) {
-      const dem = danhSachLocVaiTro.value.filter(nv => nv.lich[ngayIdx] === caId).length;
+      const dem = danhSachLocVaiTro.value.filter(nv => nv.lich[ngayIdx] && nv.lich[ngayIdx].toLowerCase() === caId.toLowerCase()).length;
       if (dem >= MAX_NHAN_VIEN_MOI_CA) {
         showError(`Ca này đã đủ tối đa ${MAX_NHAN_VIEN_MOI_CA} nhân viên.`);
         return;
@@ -418,7 +460,7 @@ async function luuCa() {
       const { day, ca } = currentChiTietCa.value;
       const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
       if (updatedDay) {
-        const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+        const updatedCa = updatedDay.cas.find(c => c.id.toLowerCase() === ca.id.toLowerCase());
         if (updatedCa) {
           currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
           showModalChiTietCa.value = true;
@@ -458,7 +500,7 @@ async function xoaCa(nhanVien) {
     // Cập nhật lại currentChiTietCa
     const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
     if (updatedDay) {
-      const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+      const updatedCa = updatedDay.cas.find(c => c.id.toLowerCase() === ca.id.toLowerCase());
       if (updatedCa) {
         currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
       }
@@ -537,7 +579,16 @@ function xuatExcel() {
 
 // ───────── Helpers ─────────
 function layThongTinCa(id) {
-  return id ? DS_CA.value.find((c) => c.id === id) : null;
+  if (!id) return null;
+  const found = DS_CA.value.find((c) => c.id.toLowerCase() === id.toLowerCase());
+  if (found) return found;
+  return {
+    id: id,
+    nhan: id,
+    gio: "—",
+    mau: "bg-slate-400",
+    muaNhat: "bg-slate-50 border-slate-200 text-slate-700"
+  };
 }
 
 function mauOvertimeBar(nv) {

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import { Search, RefreshCw, Calendar as CalendarIcon, FileText } from "lucide-vue-next";
+import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut } from "lucide-vue-next";
 import { layLichSuGiaoCa } from "../../../services/giao-ca.js";
 import { dinhDangTienViet } from "../../../utils/dinhDangTien.js";
 import { showError } from "../../../utils/alert.js";
@@ -80,6 +80,88 @@ const formatTime = (timeStr) => {
   } catch (e) {
     return { time: "—", day: "—" };
   }
+};
+
+const formatDateTime = (timeStr) => {
+  if (!timeStr) return null;
+  try {
+    const date = new Date(timeStr);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  } catch (e) {
+    return null;
+  }
+};
+
+const getShiftDetails = (timeVaoStr, timeRaStr) => {
+  if (!timeVaoStr) {
+    return {
+      tenCa: "Ca làm việc",
+      gioCa: "—",
+      lateMin: 0,
+      earlyMin: 0
+    };
+  }
+
+  const dateVao = new Date(timeVaoStr);
+  const hourVao = dateVao.getHours();
+  const minVao = dateVao.getMinutes();
+
+  let tenCa = "";
+  let gioCa = "";
+  let startHour = 0;
+  let startMin = 0;
+  let endHour = 0;
+  let endMin = 0;
+
+  if (hourVao < 13) {
+    tenCa = "Ca Sáng";
+    gioCa = "08:00 - 13:00";
+    startHour = 8;
+    startMin = 0;
+    endHour = 13;
+    endMin = 0;
+  } else if (hourVao < 18) {
+    tenCa = "Ca Chiều";
+    gioCa = "13:00 - 18:00";
+    startHour = 13;
+    startMin = 0;
+    endHour = 18;
+    endMin = 0;
+  } else {
+    tenCa = "Ca Tối";
+    gioCa = "19:00 - 23:00";
+    startHour = 19;
+    startMin = 0;
+    endHour = 23;
+    endMin = 0;
+  }
+
+  const actualVaoMinutes = hourVao * 60 + minVao;
+  const targetVaoMinutes = startHour * 60 + startMin;
+  const lateMin = Math.max(0, actualVaoMinutes - targetVaoMinutes);
+
+  let earlyMin = 0;
+  if (timeRaStr) {
+    const dateRa = new Date(timeRaStr);
+    const hourRa = dateRa.getHours();
+    const minRa = dateRa.getMinutes();
+
+    const actualRaMinutes = hourRa * 60 + minRa;
+    const targetRaMinutes = endHour * 60 + endMin;
+    earlyMin = Math.max(0, targetRaMinutes - actualRaMinutes);
+  }
+
+  return {
+    tenCa,
+    gioCa,
+    lateMin,
+    earlyMin
+  };
 };
 
 onMounted(() => {
@@ -181,26 +263,37 @@ const onSearchInput = () => {
 
     <!-- Table Section -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <!-- Table Header -->
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-base font-bold text-slate-800">Danh sách hoạt động</h2>
+        <button 
+          @click="fetchLichSu"
+          class="h-8 w-8 rounded-full border border-slate-100 bg-white hover:bg-emerald-50 text-emerald-500 hover:text-emerald-600 flex items-center justify-center transition-all hover:scale-105 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-emerald-950/30"
+          title="Tải lại dữ liệu"
+        >
+          <RefreshCw class="w-4 h-4" :class="dangTai ? 'animate-spin' : ''" />
+        </button>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-slate-100">
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider w-16 text-center">#</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider">Tài khoản</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider text-center">Ca</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider text-center">Mở</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider text-center">Đóng</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider text-right">Tiền mặt</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider text-right">Chênh lệch</th>
-              <th class="py-3 px-4 text-[12px] font-bold text-slate-500 uppercase tracking-wider text-center">Trạng thái</th>
+            <tr class="bg-slate-50/50 border-b border-slate-100 text-slate-500 text-[12px] font-bold uppercase tracking-wider">
+              <th class="py-3 px-4 w-16 text-center">STT</th>
+              <th class="py-3 px-4 min-w-[220px]">Nhân viên / Ca làm việc</th>
+              <th class="py-3 px-4 text-center">Vào ca</th>
+              <th class="py-3 px-4 text-center">Ra ca</th>
+              <th class="py-3 px-4 text-right">Doanh thu ca</th>
+              <th class="py-3 px-4 text-center">Trạng thái</th>
+              <th class="py-3 px-4 min-w-[150px]">Ghi chú</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai" class="border-b border-slate-100">
-              <td colspan="8" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="7" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="danhSachLichSu.length === 0" class="border-b border-slate-100">
-              <td colspan="8" class="py-8 text-center">
+              <td colspan="7" class="py-8 text-center">
                 <div class="flex flex-col items-center justify-center text-slate-400">
                   <FileText class="w-10 h-10 mb-2 opacity-50" />
                   <span class="text-sm">Không tìm thấy dữ liệu lịch sử hoạt động</span>
@@ -208,62 +301,93 @@ const onSearchInput = () => {
               </td>
             </tr>
             <tr v-else v-for="(item, idx) in danhSachLichSu" :key="item.id || idx" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-              <td class="py-3 px-4 text-[13px] text-slate-500 text-center">{{ currentPage * pageSize + idx + 1 }}</td>
+              <td class="py-4 px-4 text-[13px] text-slate-500 text-center">{{ currentPage * pageSize + idx + 1 }}</td>
               
-              <!-- TÀI KHOẢN -->
-              <td class="py-3 px-4">
-                <div class="text-[14px] font-bold text-slate-700">{{ item.nhanVien?.tenTaiKhoan || item.nhanVien?.tenNhanVien || item.tenTaiKhoan || 'admin' }}</div>
-                <div class="text-[12px] text-slate-400 mt-0.5">
-                  Mã ca: {{ item.maCa || item.id || '—' }}
+              <!-- NHÂN VIÊN / CA LÀM VIỆC -->
+              <td class="py-4 px-4">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 font-bold text-sm border border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/30">
+                    {{ (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || 'A')[0].toUpperCase() }}
+                  </div>
+                  <div>
+                    <div class="text-[14px] font-bold text-slate-700 dark:text-slate-200">
+                      {{ item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || 'Chưa xác định' }}
+                      <span class="text-slate-500 font-semibold">({{ item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || 'NV0000' }})</span>
+                    </div>
+                    <div class="text-[12px] text-slate-400 mt-0.5">
+                      {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).tenCa }}
+                      ({{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).gioCa }})
+                    </div>
+                  </div>
                 </div>
               </td>
 
-              <!-- CA -->
-              <td class="py-3 px-4 text-center">
-                <span class="inline-block px-3 py-1 rounded-full text-[12px] font-bold" 
-                      :class="item.caLam?.tenCa === 'ADMIN' ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-600'">
-                  {{ item.caLam?.tenCa || item.tenCa || '—' }}
-                </span>
-              </td>
-
-              <!-- MỞ -->
-              <td class="py-3 px-4 text-center">
-                <div v-if="item.thoiGianVao || item.thoiGianMoCa">
-                  <div class="text-[13px] font-bold text-slate-800">{{ formatTime(item.thoiGianVao || item.thoiGianMoCa).time }}</div>
-                  <div class="text-[11px] text-slate-400">{{ formatTime(item.thoiGianVao || item.thoiGianMoCa).day }}</div>
+              <!-- VÀO CA -->
+              <td class="py-4 px-4">
+                <div v-if="item.thoiGianVao || item.thoiGianMoCa" class="flex flex-col items-center justify-center text-center">
+                  <div class="flex items-center gap-1.5 text-[13px] text-slate-700 dark:text-slate-300 font-medium">
+                    <LogIn class="w-4 h-4 text-emerald-500" />
+                    <span>{{ formatDateTime(item.thoiGianVao || item.thoiGianMoCa) }}</span>
+                  </div>
+                  <span v-if="getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).lateMin > 0" 
+                        class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 border border-rose-100 text-rose-500 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400">
+                    Đi muộn {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).lateMin }} phút
+                  </span>
                 </div>
-                <div v-else class="text-slate-400">—</div>
+                <div v-else class="text-center text-slate-400">—</div>
               </td>
 
-              <!-- ĐÓNG -->
-              <td class="py-3 px-4 text-center">
-                <div v-if="item.thoiGianRa || item.thoiGianDongCa">
-                  <div class="text-[13px] font-bold text-slate-800">{{ formatTime(item.thoiGianRa || item.thoiGianDongCa).time }}</div>
-                  <div class="text-[11px] text-slate-400">{{ formatTime(item.thoiGianRa || item.thoiGianDongCa).day }}</div>
+              <!-- RA CA -->
+              <td class="py-4 px-4">
+                <div v-if="item.thoiGianRa || item.thoiGianDongCa" class="flex flex-col items-center justify-center text-center">
+                  <div class="flex items-center gap-1.5 text-[13px] text-slate-700 dark:text-slate-300 font-medium">
+                    <LogOut class="w-4 h-4 text-amber-500" />
+                    <span>{{ formatDateTime(item.thoiGianRa || item.thoiGianDongCa) }}</span>
+                  </div>
+                  <span v-if="getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).earlyMin > 0" 
+                        class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 border border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400">
+                    Ra sớm {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).earlyMin }} phút
+                  </span>
                 </div>
-                <div v-else class="text-slate-400">—</div>
+                <div v-else class="text-center text-slate-400">—</div>
               </td>
 
-              <!-- TIỀN MẶT -->
-              <td class="py-3 px-4 text-right text-[13px] font-bold text-slate-800">
-                {{ item.tienMatGiaoCa != null ? dinhDangTienViet(item.tienMatGiaoCa) : (item.tongTienBanGiao != null ? dinhDangTienViet(item.tongTienBanGiao) : '0 đ') }}
-              </td>
-
-              <!-- CHÊNH LỆCH -->
-              <td class="py-3 px-4 text-right text-[13px] font-bold" :class="(item.tienChenhLech && item.tienChenhLech < 0) ? 'text-rose-500' : 'text-emerald-500'">
-                {{ item.tienChenhLech != null ? dinhDangTienViet(item.tienChenhLech) : '—' }}
+              <!-- DOANH THU CA -->
+              <td class="py-4 px-4 text-right">
+                <div class="text-[14px] font-bold text-slate-800 dark:text-slate-200">
+                  {{ dinhDangTienViet((item.tienMatTrongCa || item.tienMatGiaoCa || 0) + (item.tienChuyenKhoanTrongCa || 0)) }}
+                </div>
+                <div class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  Tiền mặt: {{ dinhDangTienViet(item.tienMatTrongCa || item.tienMatGiaoCa || 0) }}
+                </div>
+                <div class="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5">
+                  Chuyển khoản: {{ dinhDangTienViet(item.tienChuyenKhoanTrongCa || 0) }}
+                </div>
               </td>
 
               <!-- TRẠNG THÁI -->
-              <td class="py-3 px-4 text-center">
-                <span v-if="item.trangThai === 0 || item.trangThai === 'DANG_LAM'" class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-orange-50 border border-orange-100 text-orange-500">
+              <td class="py-4 px-4 text-center">
+                <span v-if="item.trangThai === 'MO_CA' || item.trangThai === 'DANG_LAM' || item.trangThai === '0' || item.trangThai === 0" 
+                      class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-orange-50 border border-orange-100 text-orange-500 dark:bg-orange-950/20 dark:border-orange-900/30 dark:text-orange-400">
                   Đang làm
                 </span>
-                <span v-else-if="item.trangThai === 1 || item.trangThai === 'HOAN_TAT'" class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-500">
-                  Hoàn tất
+                <span v-else-if="item.trangThai === 'DA_BAN_GIAO' || item.trangThai === 'HOAN_TAT' || item.trangThai === '1' || item.trangThai === 1" 
+                      class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-500 dark:bg-emerald-950/20 dark:border-emerald-900/30 dark:text-emerald-400">
+                  Đã kết ca
                 </span>
-                <span v-else class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-slate-50 border border-slate-100 text-slate-500">
-                  {{ item.trangThai === 2 ? 'Cho xác nhận' : item.trangThai || '—' }}
+                <span v-else-if="item.trangThai === 'CHO_BAN_GIAO' || item.trangThai === '2' || item.trangThai === 2" 
+                      class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-amber-50 border border-amber-100 text-amber-500 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400">
+                  Chờ xác nhận
+                </span>
+                <span v-else class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-slate-50 border border-slate-100 text-slate-500 dark:bg-slate-900/30 dark:border-slate-800 dark:text-slate-400">
+                  {{ item.trangThai || '—' }}
+                </span>
+              </td>
+
+              <!-- GHI CHÚ -->
+              <td class="py-4 px-4 text-[13px] text-slate-500 dark:text-slate-400">
+                <span :class="!item.ghiChu ? 'italic text-slate-400' : ''">
+                  {{ item.ghiChu || 'Không có' }}
                 </span>
               </td>
             </tr>

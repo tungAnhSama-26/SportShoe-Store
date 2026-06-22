@@ -41,4 +41,12 @@ public class ChamCongController {
         if (denNgay == null) denNgay = LocalDate.now();
         return ResponseEntity.ok(chamCongService.layDanhSachChamCong(tuNgay, denNgay));
     }
+
+    @GetMapping("/server-time")
+    public ResponseEntity<java.util.Map<String, String>> getServerTime() {
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        java.util.Map<String, String> response = new java.util.HashMap<>();
+        response.put("serverTime", now.format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        return ResponseEntity.ok(response);
+    }
 }

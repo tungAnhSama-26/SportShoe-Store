@@ -66,7 +66,9 @@ const pageTitle = computed(() => {
     'nhanvien-profile': 'Hồ sơ cá nhân',
     'admin-khach-hang': 'Khách hàng',
     'admin-khach-hang-them': 'Thêm khách hàng',
-    'admin-khach-hang-chi-tiet': 'Chi tiết khách hàng'
+    'admin-khach-hang-chi-tiet': 'Chi tiết khách hàng',
+    'admin-ban-giao-ca': 'Bàn giao ca',
+    'admin-mo-ca': 'Mở ca làm việc'
   };
   return titles[route.name] || 'Hệ thống Quản trị';
 });
@@ -255,8 +257,9 @@ function dangXuat() {
 
       <div class="flex items-center gap-3">
         <button
+          v-if="adminSession.vaiTro !== 'Quản trị viên'"
           type="button"
-          @click="hienGiaoCaModal = true"
+          @click="router.push('/admin/ban-giao-ca')"
           class="inline-flex h-11 px-4 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-semibold text-sm shadow-sm"
         >
           <ArrowRightLeft class="h-4 w-4 text-[#B82220] dark:text-rose-400" />

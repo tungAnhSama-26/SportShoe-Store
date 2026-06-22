@@ -78,14 +78,56 @@
         </div>
         <div class="flex items-center gap-3">
           <template v-if="laNgayHomNay">
-            <button 
-              v-if="trangThaiChamCong('sang') === 'Chưa Check-in'"
-              @click="handleCheckInClick"
-              :disabled="dangXuLy"
-              class="px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
-            >
-              Check-in
-            </button>
+            <!-- If not checked in -->
+            <template v-if="trangThaiChamCong('sang') === 'Chưa Check-in'">
+              <!-- Mốc 4 (Đã khóa ca) -->
+              <span v-if="getCaGateStatus('sang').status === 'VUNG_DO'" class="px-3 py-1.5 text-xs font-bold rounded-full bg-rose-100 text-rose-600">
+                Đã khóa ca
+              </span>
+              <!-- Mốc 1, 2, 3 -->
+              <template v-else>
+                <button 
+                  @click="getCaGateStatus('sang').status === 'VUNG_SOM' ? showError('Chưa tới giờ điểm danh. Cổng Check-in ca sáng mở lúc ' + getCaGateStatus('sang').openingTimeStr) : handleCheckInClick()"
+                  :disabled="dangXuLy"
+                  class="px-4 py-2 text-sm font-bold text-white rounded-xl shadow-sm transition disabled:opacity-50"
+                  :class="getCaGateStatus('sang').status === 'VUNG_SOM' ? 'bg-slate-300 hover:bg-slate-300 cursor-not-allowed' : (getCaGateStatus('sang').status === 'VUNG_XANH' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600')"
+                >
+                  Check-in
+                </button>
+                
+                <!-- Nút Cầu Cứu next to Check-in button -->
+                <div class="relative inline-block text-left">
+                  <button 
+                    @click.stop="toggleDropdown('sang')"
+                    class="px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition flex items-center justify-center gap-1"
+                  >
+                    <span>Xin phép</span>
+                    <ChevronDown class="h-3.5 w-3.5" />
+                  </button>
+                  
+                  <!-- Dropdown Menu -->
+                  <div 
+                    v-if="activeDropdown === 'sang'"
+                    class="absolute right-0 mt-2 w-48 rounded-2xl bg-white border border-slate-100 shadow-xl z-50 py-2"
+                  >
+                    <button @click="handleXinPhep('den_muon', 'sang')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                      <Clock class="h-4 w-4 text-amber-500" />
+                      Xin đến muộn
+                    </button>
+                    <button @click="handleXinPhep('da_ca', 'sang')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                      <UserPlus class="h-4 w-4 text-sky-500" />
+                      Xin nhờ đá ca
+                    </button>
+                    <button @click="handleXinPhep('nghi_phep', 'sang')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition flex items-center gap-2">
+                      <CalendarX class="h-4 w-4 text-rose-500" />
+                      Xin nghỉ phép
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </template>
+
+            <!-- If already checked in -->
             <button 
               v-else-if="trangThaiChamCong('sang') === 'Đã check-in'"
               @click="thucHienCheckOut"
@@ -130,14 +172,56 @@
         </div>
         <div class="flex items-center gap-3">
           <template v-if="laNgayHomNay">
-            <button 
-              v-if="trangThaiChamCong('chieu') === 'Chưa Check-in'"
-              @click="handleCheckInClick"
-              :disabled="dangXuLy"
-              class="px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
-            >
-              Check-in
-            </button>
+            <!-- If not checked in -->
+            <template v-if="trangThaiChamCong('chieu') === 'Chưa Check-in'">
+              <!-- Mốc 4 (Đã khóa ca) -->
+              <span v-if="getCaGateStatus('chieu').status === 'VUNG_DO'" class="px-3 py-1.5 text-xs font-bold rounded-full bg-rose-100 text-rose-600">
+                Đã khóa ca
+              </span>
+              <!-- Mốc 1, 2, 3 -->
+              <template v-else>
+                <button 
+                  @click="getCaGateStatus('chieu').status === 'VUNG_SOM' ? showError('Chưa tới giờ điểm danh. Cổng Check-in ca chiều mở lúc ' + getCaGateStatus('chieu').openingTimeStr) : handleCheckInClick()"
+                  :disabled="dangXuLy"
+                  class="px-4 py-2 text-sm font-bold text-white rounded-xl shadow-sm transition disabled:opacity-50"
+                  :class="getCaGateStatus('chieu').status === 'VUNG_SOM' ? 'bg-slate-300 hover:bg-slate-300 cursor-not-allowed' : (getCaGateStatus('chieu').status === 'VUNG_XANH' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600')"
+                >
+                  Check-in
+                </button>
+                
+                <!-- Nút Cầu Cứu next to Check-in button -->
+                <div class="relative inline-block text-left">
+                  <button 
+                    @click.stop="toggleDropdown('chieu')"
+                    class="px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition flex items-center justify-center gap-1"
+                  >
+                    <span>Xin phép</span>
+                    <ChevronDown class="h-3.5 w-3.5" />
+                  </button>
+                  
+                  <!-- Dropdown Menu -->
+                  <div 
+                    v-if="activeDropdown === 'chieu'"
+                    class="absolute right-0 mt-2 w-48 rounded-2xl bg-white border border-slate-100 shadow-xl z-50 py-2"
+                  >
+                    <button @click="handleXinPhep('den_muon', 'chieu')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                      <Clock class="h-4 w-4 text-amber-500" />
+                      Xin đến muộn
+                    </button>
+                    <button @click="handleXinPhep('da_ca', 'chieu')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                      <UserPlus class="h-4 w-4 text-sky-500" />
+                      Xin nhờ đá ca
+                    </button>
+                    <button @click="handleXinPhep('nghi_phep', 'chieu')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition flex items-center gap-2">
+                      <CalendarX class="h-4 w-4 text-rose-500" />
+                      Xin nghỉ phép
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </template>
+
+            <!-- If already checked in -->
             <button 
               v-else-if="trangThaiChamCong('chieu') === 'Đã check-in'"
               @click="thucHienCheckOut"
@@ -182,14 +266,56 @@
         </div>
         <div class="flex items-center gap-3">
           <template v-if="laNgayHomNay">
-            <button 
-              v-if="trangThaiChamCong('toi') === 'Chưa Check-in'"
-              @click="handleCheckInClick"
-              :disabled="dangXuLy"
-              class="px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-sm transition disabled:opacity-50"
-            >
-              Check-in
-            </button>
+            <!-- If not checked in -->
+            <template v-if="trangThaiChamCong('toi') === 'Chưa Check-in'">
+              <!-- Mốc 4 (Đã khóa ca) -->
+              <span v-if="getCaGateStatus('toi').status === 'VUNG_DO'" class="px-3 py-1.5 text-xs font-bold rounded-full bg-rose-100 text-rose-600">
+                Đã khóa ca
+              </span>
+              <!-- Mốc 1, 2, 3 -->
+              <template v-else>
+                <button 
+                  @click="getCaGateStatus('toi').status === 'VUNG_SOM' ? showError('Chưa tới giờ điểm danh. Cổng Check-in ca tối mở lúc ' + getCaGateStatus('toi').openingTimeStr) : handleCheckInClick()"
+                  :disabled="dangXuLy"
+                  class="px-4 py-2 text-sm font-bold text-white rounded-xl shadow-sm transition disabled:opacity-50"
+                  :class="getCaGateStatus('toi').status === 'VUNG_SOM' ? 'bg-slate-300 hover:bg-slate-300 cursor-not-allowed' : (getCaGateStatus('toi').status === 'VUNG_XANH' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600')"
+                >
+                  Check-in
+                </button>
+                
+                <!-- Nút Cầu Cứu next to Check-in button -->
+                <div class="relative inline-block text-left">
+                  <button 
+                    @click.stop="toggleDropdown('toi')"
+                    class="px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition flex items-center justify-center gap-1"
+                  >
+                    <span>Xin phép</span>
+                    <ChevronDown class="h-3.5 w-3.5" />
+                  </button>
+                  
+                  <!-- Dropdown Menu -->
+                  <div 
+                    v-if="activeDropdown === 'toi'"
+                    class="absolute right-0 mt-2 w-48 rounded-2xl bg-white border border-slate-100 shadow-xl z-50 py-2"
+                  >
+                    <button @click="handleXinPhep('den_muon', 'toi')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                      <Clock class="h-4 w-4 text-amber-500" />
+                      Xin đến muộn
+                    </button>
+                    <button @click="handleXinPhep('da_ca', 'toi')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+                      <UserPlus class="h-4 w-4 text-sky-500" />
+                      Xin nhờ đá ca
+                    </button>
+                    <button @click="handleXinPhep('nghi_phep', 'toi')" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition flex items-center gap-2">
+                      <CalendarX class="h-4 w-4 text-rose-500" />
+                      Xin nghỉ phép
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </template>
+
+            <!-- If already checked in -->
             <button 
               v-else-if="trangThaiChamCong('toi') === 'Đã check-in'"
               @click="thucHienCheckOut"
@@ -231,18 +357,31 @@
           <div class="rounded-3xl border border-slate-200 p-6 shadow-sm bg-white">
             <h3 class="font-bold text-slate-800 text-lg mb-6">Tổng quan ngày</h3>
             <div class="flex flex-col gap-6">
-              <div class="flex justify-between items-center border-b border-slate-100 pb-4">
-                <p class="text-sm font-medium text-slate-500">Ca làm phân công</p>
-                <p class="text-xl font-bold text-slate-800">{{ tongCaHomNay }}/3</p>
-              </div>
-              <div class="flex justify-between items-center border-b border-slate-100 pb-4">
-                <p class="text-sm font-medium text-slate-500">Giờ làm việc dự kiến</p>
-                <p class="text-xl font-bold text-slate-800">{{ tongGioLamHomNay }}h</p>
-              </div>
-              <div class="flex justify-between items-center">
-                <p class="text-sm font-medium text-slate-500">Thời gian còn lại</p>
-                <p class="text-xl font-bold text-[#CC0000]">{{ gioConLai }}</p>
-              </div>
+               <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+                 <p class="text-sm font-medium text-slate-500">Tổng số ca hôm nay</p>
+                 <p class="text-xl font-bold text-slate-800">{{ String(tongCaHomNay).padStart(2, '0') }} ca</p>
+               </div>
+               <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+                 <p class="text-sm font-medium text-slate-500">Giờ làm việc dự kiến</p>
+                 <p class="text-xl font-bold text-slate-800">{{ tongGioLamHomNay }}h</p>
+               </div>
+               <div class="flex flex-col gap-2 pb-2">
+                 <div class="flex justify-between items-center">
+                   <p class="text-sm font-medium text-slate-500">Định mức ca</p>
+                   <p class="text-base font-bold text-slate-700">4.0 giờ</p>
+                 </div>
+                 <!-- Progress Bar -->
+                 <div class="w-full bg-slate-100 rounded-full h-2 mt-1">
+                   <div 
+                     class="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+                     :style="{ width: `${thongTinTienTrinhCa.phanTram}%` }"
+                   ></div>
+                 </div>
+                 <div class="flex justify-between items-center text-xs text-slate-400 font-semibold mt-1">
+                   <span>{{ thongTinTienTrinhCa.label }}</span>
+                   <span>{{ thongTinTienTrinhCa.phanTram }}%</span>
+                 </div>
+                </div>
             </div>
           </div>
         </div>
@@ -271,7 +410,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { 
   CalendarDays, 
   Bell, 
@@ -282,13 +421,20 @@ import {
   MapPin, 
   ChevronRight,
   ChevronLeft, 
-  Megaphone 
+  Megaphone,
+  ChevronDown,
+  Clock,
+  UserPlus,
+  CalendarX
 } from 'lucide-vue-next';
+import Swal from 'sweetalert2';
 import { useAdminSession } from '../../../composable/useAdminSession.js';
 import { layLichLamViec } from '../../../services/lich-lam.js';
-import { layChamCong } from '../../../services/cham-cong.js';
+import { layChamCong, layServerTime, checkIn, checkOut } from '../../../services/cham-cong.js';
 import { layChiTietNhanVien } from '../../../services/nhan-vien.js';
 import { getDisplayErrorMessage } from '../../../utils/error-message.js';
+import { showSuccess, showError } from '../../../utils/alert.js';
+import FaceIdCheckInModal from './components/FaceIdCheckInModal.vue';
 
 const NHAN_TUAN = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
@@ -302,6 +448,16 @@ const dangTai = ref(false);
 
 const lichLamViecTuan = ref([]);
 const chamCongTuan = ref([]);
+
+const currentTime = ref(new Date());
+const clockOffset = ref(0);
+let timer = null;
+
+const activeDropdown = ref(null);
+
+function toggleDropdown(caName) {
+  activeDropdown.value = activeDropdown.value === caName ? null : caName;
+}
 
 function tinhCacNgayTrongTuan(ngay) {
   const d = new Date(ngay);
@@ -322,7 +478,6 @@ function initDate(date = new Date()) {
   ngayHienTai.value = date;
   cacNgayTrongTuan.value = tinhCacNgayTrongTuan(date);
   
-  // Set selected day to today if week is current week, else default to Monday
   const todayStr = formatISODate(new Date());
   const idx = cacNgayTrongTuan.value.findIndex(d => formatISODate(d) === todayStr);
   if (idx >= 0) {
@@ -365,6 +520,19 @@ function formatNgayHienThi(d) {
   return `${dayOfWeek}, ${d.getDate()} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
 }
 
+async function syncServerTime() {
+  try {
+    const res = await layServerTime();
+    if (res && res.serverTime) {
+      const serverTimeMs = new Date(res.serverTime).getTime();
+      const localTimeMs = Date.now();
+      clockOffset.value = serverTimeMs - localTimeMs;
+    }
+  } catch (error) {
+    console.error("Lỗi đồng bộ thời gian từ server:", error);
+  }
+}
+
 async function taiDuLieu() {
   if (!userId.value) return;
   dangTai.value = true;
@@ -390,9 +558,27 @@ async function taiDuLieu() {
   }
 }
 
-onMounted(() => {
+const clickOutsideHandler = (e) => {
+  if (!e.target.closest('.relative')) {
+    activeDropdown.value = null;
+  }
+};
+
+onMounted(async () => {
   initDate();
-  taiDuLieu();
+  await syncServerTime();
+  
+  timer = setInterval(() => {
+    currentTime.value = new Date(Date.now() + clockOffset.value);
+  }, 1000);
+  
+  await taiDuLieu();
+  window.addEventListener('click', clickOutsideHandler);
+});
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
+  window.removeEventListener('click', clickOutsideHandler);
 });
 
 // Helpers
@@ -437,13 +623,37 @@ function formatTime(isoString) {
 }
 
 const dangXuLy = ref(false);
-
-import { checkIn, checkOut } from '../../../services/cham-cong.js';
-import { showSuccess, showError } from '../../../utils/alert.js';
-import FaceIdCheckInModal from './components/FaceIdCheckInModal.vue';
-
 const showFaceIdModal = ref(false);
 const faceDescriptorString = ref("");
+
+function getCaGateStatus(caName) {
+  const now = currentTime.value;
+  const start = new Date(now);
+  const end = new Date(now);
+  
+  if (caName === 'sang') {
+    start.setHours(8, 0, 0, 0);
+    end.setHours(12, 0, 0, 0);
+  } else if (caName === 'chieu') {
+    start.setHours(13, 0, 0, 0);
+    end.setHours(17, 0, 0, 0);
+  } else if (caName === 'toi') {
+    start.setHours(18, 0, 0, 0);
+    end.setHours(22, 0, 0, 0);
+  } else {
+    start.setHours(8, 0, 0, 0);
+    end.setHours(12, 0, 0, 0);
+  }
+  
+  const opening = new Date(start.getTime() - 30 * 60 * 1000);
+  const startPlus5 = new Date(start.getTime() + 5 * 60 * 1000);
+  const midpoint = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  
+  if (now < opening) return { status: 'VUNG_SOM', label: 'Chưa mở', openingTimeStr: opening.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) };
+  if (now >= opening && now <= startPlus5) return { status: 'VUNG_XANH', label: 'Đúng giờ' };
+  if (now > startPlus5 && now <= midpoint) return { status: 'VUNG_CAM', label: 'Đi trễ' };
+  return { status: 'VUNG_DO', label: 'Đã khóa' };
+}
 
 async function handleCheckInClick() {
   if (!userId.value) return;
@@ -464,13 +674,14 @@ async function handleCheckInClick() {
 }
 
 async function thucHienCheckIn() {
+  if (dangXuLy.value) return;
   showFaceIdModal.value = false;
   if (!userId.value) return;
   dangXuLy.value = true;
   try {
     await checkIn({ nhanVienId: userId.value });
     showSuccess("Check-in thành công!");
-    await taiDuLieu(); // Tải lại để cập nhật trạng thái
+    await taiDuLieu();
   } catch (error) {
     showError(getDisplayErrorMessage(error, "Check-in thất bại"));
   } finally {
@@ -479,12 +690,13 @@ async function thucHienCheckIn() {
 }
 
 async function thucHienCheckOut() {
+  if (dangXuLy.value) return;
   if (!userId.value) return;
   dangXuLy.value = true;
   try {
     await checkOut({ nhanVienId: userId.value });
     showSuccess("Check-out thành công!");
-    await taiDuLieu(); // Tải lại để cập nhật trạng thái
+    await taiDuLieu();
   } catch (error) {
     showError(getDisplayErrorMessage(error, "Check-out thất bại"));
   } finally {
@@ -493,18 +705,133 @@ async function thucHienCheckOut() {
 }
 
 const tongCaHomNay = computed(() => lichNgayDangChon.value.length);
-const tongGioLamHomNay = computed(() => tongCaHomNay.value * 4); // Assume 4h per shift
+const tongGioLamHomNay = computed(() => tongCaHomNay.value * 4);
 
-const gioConLai = computed(() => {
-  if (tongGioLamHomNay.value === 0) return "0h 00m";
-  // Mock logic for remaining hours
-  const today = formatISODate(new Date());
-  const selected = formatISODate(cacNgayTrongTuan.value[chonNgayIdx.value]);
+const thongTinTienTrinhCa = computed(() => {
+  const activeCa = ['sang', 'chieu', 'toi'].find(ca => trangThaiChamCong(ca) === 'Đã check-in');
+  if (!activeCa) {
+    const completedCa = ['sang', 'chieu', 'toi'].find(ca => trangThaiChamCong(ca) === 'Đã check-out');
+    if (completedCa) {
+      return {
+        dangLam: false,
+        daLam: 4.0,
+        phanTram: 100,
+        label: 'Đã làm: 4.0 / 4.0h'
+      };
+    }
+    return {
+      dangLam: false,
+      daLam: 0.0,
+      phanTram: 0,
+      label: 'Đã làm: 0.0 / 4.0h'
+    };
+  }
+
+  const c = getChamCongData(activeCa);
+  if (!c || !c.thoiGianVao) {
+    return { dangLam: false, daLam: 0.0, phanTram: 0, label: 'Đã làm: 0.0 / 4.0h' };
+  }
+
+  const timeVao = new Date(c.thoiGianVao).getTime();
+  const nowTime = currentTime.value.getTime();
+  const diffMs = nowTime - timeVao;
+  let diffHours = diffMs / (1000 * 60 * 60);
+  if (diffHours < 0) diffHours = 0;
+  if (diffHours > 4.0) diffHours = 4.0;
   
-  if (selected < today) return "0h 00m";
-  if (selected > today) return `${tongGioLamHomNay.value}h 00m`;
-  
-  // If today, mock something like half of it is done
-  return `${Math.ceil(tongGioLamHomNay.value / 2)}h 30m`;
+  const roundedHours = Math.round(diffHours * 10) / 10;
+  const percent = Math.min(100, Math.round((roundedHours / 4.0) * 100));
+
+  return {
+    dangLam: true,
+    daLam: roundedHours,
+    phanTram: percent,
+    label: `Đã làm: ${roundedHours.toFixed(1)} / 4.0h`
+  };
 });
+
+async function handleXinPhep(loai, caName) {
+  activeDropdown.value = null;
+  const caText = caName === 'sang' ? 'Ca sáng' : caName === 'chieu' ? 'Ca chiều' : 'Ca tối';
+  
+  if (loai === 'den_muon') {
+    const { value: reason } = await Swal.fire({
+      title: 'Xin đến muộn',
+      text: `Nhập lý do xin đến muộn cho ${caText}:`,
+      input: 'textarea',
+      inputPlaceholder: 'Ví dụ: Hỏng xe, có lịch học đột xuất...',
+      showCancelButton: true,
+      confirmButtonText: 'Gửi yêu cầu',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#00A859',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-3xl p-6 font-sans',
+        confirmButton: 'rounded-xl px-5 py-2.5 text-sm font-semibold',
+        cancelButton: 'rounded-xl px-5 py-2.5 text-sm font-semibold'
+      }
+    });
+    if (reason) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã gửi yêu cầu',
+        text: 'Yêu cầu xin đến muộn đã được gửi tới Đức admin phê duyệt.',
+        confirmButtonColor: '#00A859',
+        customClass: { popup: 'rounded-3xl p-6 font-sans' }
+      });
+    }
+  } else if (loai === 'da_ca') {
+    const { value: companion } = await Swal.fire({
+      title: 'Xin nhờ đá ca',
+      text: `Nhập tên đồng nghiệp bạn muốn nhờ làm thay cho ${caText}:`,
+      input: 'text',
+      inputPlaceholder: 'Nhập tên đồng nghiệp...',
+      showCancelButton: true,
+      confirmButtonText: 'Gửi yêu cầu',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#00A859',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-3xl p-6 font-sans',
+        confirmButton: 'rounded-xl px-5 py-2.5 text-sm font-semibold',
+        cancelButton: 'rounded-xl px-5 py-2.5 text-sm font-semibold'
+      }
+    });
+    if (companion) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã gửi yêu cầu',
+        text: `Đã gửi yêu cầu đá ca cùng ${companion} tới Quản lý phê duyệt.`,
+        confirmButtonColor: '#00A859',
+        customClass: { popup: 'rounded-3xl p-6 font-sans' }
+      });
+    }
+  } else if (loai === 'nghi_phep') {
+    const { value: reason } = await Swal.fire({
+      title: 'Xin nghỉ phép',
+      text: `Nhập lý do xin nghỉ phép cho ${caText}:`,
+      input: 'textarea',
+      inputPlaceholder: 'Nhập lý do nghỉ phép...',
+      showCancelButton: true,
+      confirmButtonText: 'Gửi yêu cầu',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#00A859',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-3xl p-6 font-sans',
+        confirmButton: 'rounded-xl px-5 py-2.5 text-sm font-semibold',
+        cancelButton: 'rounded-xl px-5 py-2.5 text-sm font-semibold'
+      }
+    });
+    if (reason) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã gửi yêu cầu',
+        text: 'Yêu cầu xin nghỉ phép đã được gửi đi.',
+        confirmButtonColor: '#00A859',
+        customClass: { popup: 'rounded-3xl p-6 font-sans' }
+      });
+    }
+  }
+}
 </script>
