@@ -108,8 +108,7 @@ export function isAdminRole() {
 }
 
 export function hasRequiredAdminCccd() {
-  const cccd = String(getCurrentAdminUser()?.cccd ?? "").trim();
-  return /^\d{12}$/.test(cccd);
+  return true;
 }
 
 export function mustChangeAdminPassword() {

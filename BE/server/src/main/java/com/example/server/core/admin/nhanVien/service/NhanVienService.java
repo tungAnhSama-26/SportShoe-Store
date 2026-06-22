@@ -12,7 +12,6 @@ import java.util.UUID;
 public interface NhanVienService {
     List<NhanVienResponse> layDanhSach(String keyword, Integer vaiTro, Integer trangThai);
     NhanVienResponse layChiTiet(UUID id);
-    NhanVienResponse layTheoCccd(String cccd);
     NhanVienResponse taoNhanVien(TaoNhanVienRequest request);
     NhanVienResponse capNhatNhanVien(UUID id, CapNhatNhanVienRequest request);
     NhanVienResponse doiTrangThai(UUID id, DoiTrangThaiRequest request);

@@ -39,6 +39,7 @@ const dangLuu = ref(false);
 const dangUpload = ref(false);
 const loiTrang = ref("");
 
+
 const fileInputAvatar = ref(null);
 
 const showDoiMatKhau = ref(false);
@@ -48,7 +49,6 @@ const loiForm = ref({
   hoTen: "",
   email: "",
   sdt: "",
-  cccd: "",
 });
 
 const form = ref({
@@ -56,7 +56,6 @@ const form = ref({
   tenDangNhap: "",
   email: "",
   sdt: "",
-  cccd: "",
   diaChiCuThe: "",
   hinhAnh: "",
   vaiTro: 2,
@@ -66,10 +65,6 @@ const form = ref({
   quanHuyen: "",
   xaPhuong: "",
 });
-
-const cccdDaXacMinh = computed(() =>
-  /^\d{12}$/.test(String(form.value.cccd ?? "").trim()),
-);
 
 const dsTinhThanh = [
   { value: "01", label: "Thành phố Hà Nội" },
@@ -140,144 +135,6 @@ const dsTinhThanh = [
 const dsQuanHuyen = ref([]);
 const dsXaPhuong = ref([]);
 
-// QR Scanner
-const dangQuet = ref(false);
-const loiCamera = ref("");
-const videoRef = ref(null);
-const thongBaoQrOk = ref("");
-let zxingReader = null;
-let BrowserMultiFormatReaderCtor = null;
-let daXuLyQr = false;
-
-async function layBrowserMultiFormatReader() {
-  if (!BrowserMultiFormatReaderCtor) {
-    const zxingBrowser = await import("@zxing/browser");
-    BrowserMultiFormatReaderCtor = zxingBrowser.BrowserMultiFormatReader;
-  }
-  return BrowserMultiFormatReaderCtor;
-}
-
-async function batDauQuet() {
-  daXuLyQr = false;
-  loiCamera.value = "";
-  dungQuet();
-  dangQuet.value = true;
-  await nextTick();
-  try {
-    if (!videoRef.value) throw new Error("Không tìm thấy video element");
-    const BrowserMultiFormatReader = await layBrowserMultiFormatReader();
-    zxingReader = new BrowserMultiFormatReader();
-
-    const constraints = {
-      video: {
-        facingMode: { ideal: "environment" },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    };
-
-    await zxingReader.decodeFromConstraints(
-      constraints,
-      videoRef.value,
-      (result, err) => {
-        if (result) {
-          xuLyKetQuaQr(result.getText());
-        }
-        if (err && err.name !== "NotFoundException") {
-          console.warn("[ZXing scan error]", err);
-        }
-      },
-    );
-  } catch (e) {
-    console.error("[batDauQuet]", e);
-    const msg = String(e?.message ?? "");
-    if (
-      msg.toLowerCase().includes("permission") ||
-      msg.toLowerCase().includes("notallowed")
-    ) {
-      loiCamera.value = "Vui lòng cho phép truy cập camera và thử lại.";
-    } else {
-      loiCamera.value =
-        "Không thể mở camera. Hãy kiểm tra quyền truy cập và thử lại.";
-    }
-    zxingReader = null;
-  }
-}
-
-function xuLyKetQuaQr(raw) {
-  if (daXuLyQr) return;
-  daXuLyQr = true;
-  dungQuet();
-  const resolvedRaw = raw.trim();
-  loiForm.value.cccd = "";
-  loiCamera.value = "";
-  try {
-    if (isVneIdSecureQr(resolvedRaw)) {
-      loiForm.value.cccd =
-        "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
-      return;
-    }
-
-    // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
-    const parts = resolvedRaw.split("|");
-    if (parts.length >= 3) {
-      const scannedCccd = parts[0]?.trim() ?? "";
-      if (!/^\d{12}$/.test(scannedCccd)) {
-        loiForm.value.cccd =
-          "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
-        return;
-      }
-      form.value.cccd = scannedCccd;
-      if (parts[2]) form.value.hoTen = parts[2].trim();
-      if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
-      if (parts[4]) {
-        const gt = parts[4].trim().toLowerCase();
-        form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
-      }
-      if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
-    } else if (/^\d{12}$/.test(resolvedRaw)) {
-      form.value.cccd = resolvedRaw;
-    } else {
-      loiForm.value.cccd =
-        "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
-      return;
-    }
-    thongBaoQrOk.value = "Đã điền thông tin từ CCCD";
-    setTimeout(() => {
-      thongBaoQrOk.value = "";
-    }, 4000);
-  } catch {
-    loiForm.value.cccd = "Không thể đọc dữ liệu CCCD từ mã QR này.";
-  }
-}
-
-function isVneIdSecureQr(raw) {
-  return (
-    /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw) ||
-    raw.length > 100
-  );
-}
-
-function formatNgaySinh(ddmmyyyy) {
-  if (!ddmmyyyy || ddmmyyyy.length !== 8) return "";
-  return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
-}
-
-function dungQuet() {
-  dangQuet.value = false;
-  // Explicitly stop all camera tracks
-  if (videoRef.value && videoRef.value.srcObject instanceof MediaStream) {
-    videoRef.value.srcObject.getTracks().forEach((track) => track.stop());
-    videoRef.value.srcObject = null;
-  }
-  try {
-    zxingReader?.reset();
-  } catch {
-    /* ignore */
-  }
-  zxingReader = null;
-}
-
 async function taiChiTiet() {
   if (!id) return;
   dangTai.value = true;
@@ -288,7 +145,6 @@ async function taiChiTiet() {
       tenDangNhap: data.tenDangNhap ?? "",
       email: data.email ?? "",
       sdt: data.sdt ?? "",
-      cccd: data.cccd ?? "",
       gioiTinh: data.gioiTinh ?? "Nam",
       ngaySinh: data.ngaySinh ?? "",
       diaChiCuThe: data.diaChi ?? "",
@@ -310,7 +166,7 @@ async function taiChiTiet() {
 
 async function luu() {
   if (!id) return;
-  loiForm.value = { hoTen: "", email: "", sdt: "", cccd: "" };
+  loiForm.value = { hoTen: "", email: "", sdt: "" };
   let hasError = false;
 
   if (!form.value.hoTen.trim()) {
@@ -328,7 +184,6 @@ async function luu() {
     hoTen: form.value.hoTen.trim(),
     email: form.value.email.trim(),
     sdt: form.value.sdt.trim() || undefined,
-    cccd: form.value.cccd.trim() || undefined,
     gioiTinh: form.value.gioiTinh,
     ngaySinh: form.value.ngaySinh || undefined,
     diaChi: form.value.diaChiCuThe.trim() || undefined,
@@ -397,7 +252,7 @@ async function xuLyUploadAnh(event) {
 }
 
 onMounted(taiChiTiet);
-onUnmounted(dungQuet);
+
 </script>
 
 <template>
@@ -646,38 +501,6 @@ onUnmounted(dungQuet);
               </div>
             </div>
 
-            <!-- CCCD -->
-            <div class="space-y-1.5">
-              <label class="text-[13px] font-bold text-slate-600"
-                >Xác minh CCCD</label
-              >
-              <div class="flex gap-2">
-                <div
-                  class="flex h-11 flex-1 items-center gap-3 rounded-2xl border px-4 text-sm font-semibold"
-                  :class="
-                    cccdDaXacMinh
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                      : 'border-amber-200 bg-amber-50 text-amber-700'
-                  "
-                >
-                  <ScanLine class="h-4 w-4 shrink-0" />
-                  <span>{{
-                    cccdDaXacMinh ? "Đã xác minh CCCD" : "Chưa xác minh CCCD"
-                  }}</span>
-                </div>
-                <button
-                  type="button"
-                  @click="batDauQuet"
-                  class="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
-                  title="Quét CCCD"
-                >
-                  <ScanLine class="h-5 w-5" />
-                </button>
-              </div>
-              <p v-if="loiForm.cccd" class="text-xs text-rose-500">
-                {{ loiForm.cccd }}
-              </p>
-            </div>
           </div>
 
           <div class="mt-8 h-px bg-slate-100"></div>
@@ -697,134 +520,11 @@ onUnmounted(dungQuet);
         </div>
       </section>
     </div>
-
-    <!-- QR Scanner Modal -->
-    <Teleport to="body">
-      <div
-        v-show="dangQuet"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      >
-        <div
-          class="relative w-full max-w-lg rounded-[32px] bg-white p-6 shadow-2xl"
-        >
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-xl font-bold text-slate-900">Quét mã CCCD</h3>
-            <button
-              @click="dungQuet"
-              class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
-            >
-              <X class="h-5 w-5" />
-            </button>
-          </div>
-          <div
-            class="relative overflow-hidden rounded-2xl bg-black aspect-video"
-          >
-            <video
-              ref="videoRef"
-              class="h-full w-full object-cover"
-              autoplay
-              playsinline
-              muted
-            ></video>
-            <!-- Khung quét overlay -->
-            <div
-              class="absolute inset-0 flex items-center justify-center pointer-events-none"
-            >
-              <div class="relative h-48 w-64">
-                <span
-                  class="absolute top-0 left-0 h-8 w-8 border-t-[3px] border-l-[3px] border-white rounded-tl-md"
-                ></span>
-                <span
-                  class="absolute top-0 right-0 h-8 w-8 border-t-[3px] border-r-[3px] border-white rounded-tr-md"
-                ></span>
-                <span
-                  class="absolute bottom-0 left-0 h-8 w-8 border-b-[3px] border-l-[3px] border-white rounded-bl-md"
-                ></span>
-                <span
-                  class="absolute bottom-0 right-0 h-8 w-8 border-b-[3px] border-r-[3px] border-white rounded-br-md"
-                ></span>
-                <div class="scan-line"></div>
-              </div>
-            </div>
-          </div>
-          <p
-            v-if="loiCamera"
-            class="mt-4 text-center text-sm font-medium text-rose-500"
-          >
-            {{ loiCamera }}
-          </p>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Toast -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-4"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition duration-200 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 translate-y-4"
-      >
-        <div
-          v-if="thongBaoQrOk"
-          class="fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 flex items-center gap-3 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-xl"
-        >
-          <ScanLine class="h-4 w-4 text-emerald-400" />
-          {{ thongBaoQrOk }}
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
 <style scoped>
-.scan-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    #38bdf8,
-    #0ea5e9,
-    #38bdf8,
-    transparent
-  );
-  border-radius: 2px;
-  animation: scanMove 2s linear infinite;
-  box-shadow: 0 0 8px 2px rgba(56, 189, 248, 0.6);
-}
 .invoice-flat :deep([class*="rounded-"]:not(.rounded-full)) {
   border-radius: 6px !important;
-}
-@keyframes scanMove {
-  0% {
-    top: 0%;
-    opacity: 1;
-  }
-  48% {
-    top: 100%;
-    opacity: 1;
-  }
-  50% {
-    top: 100%;
-    opacity: 0;
-  }
-  52% {
-    top: 0%;
-    opacity: 0;
-  }
-  54% {
-    top: 0%;
-    opacity: 1;
-  }
-  100% {
-    top: 100%;
-    opacity: 1;
-  }
 }
 </style>

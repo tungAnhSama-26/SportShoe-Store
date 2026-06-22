@@ -5,7 +5,8 @@ import {
   layDanhSachPhienAdmin, 
   layTinNhanAdmin, 
   nhanVienPhanHoi, 
-  dongPhienChatAdmin 
+  dongPhienChatAdmin,
+  layLichSuPhienAdmin
 } from "../../../services/chatbot";
 import { useRealtime } from "../../../composables/useRealtime";
 import { 
@@ -25,6 +26,7 @@ import Swal from "sweetalert2";
 const { subscribeTopic, unsubscribeTopic } = useRealtime();
 
 const sessions = ref([]);
+const historySessions = ref([]);
 const filteredSessions = ref([]);
 const activeSession = ref(null);
 const messages = ref([]);
@@ -33,6 +35,8 @@ const replyText = ref("");
 const chatContainer = ref(null);
 const isLoadingSessions = ref(false);
 const isLoadingMessages = ref(false);
+const isLoadingHistory = ref(false);
+const activeTab = ref("active");
 
 // Lưu trữ đối tượng subscribe để hủy khi chuyển session
 let activeSessionSubscription = null;
@@ -52,13 +56,27 @@ async function TaiDanhSachPhien() {
   }
 }
 
+async function TaiLichSuPhien() {
+  isLoadingHistory.value = true;
+  try {
+    const data = await layLichSuPhienAdmin();
+    historySessions.value = data || [];
+    LocDanhSachPhien();
+  } catch (error) {
+    console.error("Lỗi khi lấy lịch sử phiên chat:", error);
+  } finally {
+    isLoadingHistory.value = false;
+  }
+}
+
 // Lọc phiên chat theo từ khóa tìm kiếm
 function LocDanhSachPhien() {
+  const listToFilter = activeTab.value === "active" ? sessions.value : historySessions.value;
   if (!searchKeyword.value.trim()) {
-    filteredSessions.value = sessions.value;
+    filteredSessions.value = listToFilter;
   } else {
     const keyword = searchKeyword.value.toLowerCase().trim();
-    filteredSessions.value = sessions.value.filter(s => 
+    filteredSessions.value = listToFilter.filter(s => 
       s.tenKhachHang.toLowerCase().includes(keyword) || 
       (s.soDienThoai && s.soDienThoai.includes(keyword))
     );
@@ -197,6 +215,20 @@ function renderMarkdown(text) {
 // Theo dõi thay đổi từ khóa để lọc danh sách
 watch(searchKeyword, LocDanhSachPhien);
 
+watch(activeTab, (newTab) => {
+  activeSession.value = null;
+  messages.value = [];
+  if (activeSessionSubscription) {
+    unsubscribeTopic(activeSessionSubscription);
+    activeSessionSubscription = null;
+  }
+  if (newTab === "active") {
+    TaiDanhSachPhien();
+  } else {
+    TaiLichSuPhien();
+  }
+});
+
 onMounted(() => {
   TaiDanhSachPhien();
 
@@ -208,12 +240,25 @@ onMounted(() => {
       // Nếu session kết thúc (trang thai = 4), xóa khỏi danh sách hoạt động
       if (updatedSession.trangThai === 4) {
         sessions.value = sessions.value.filter(s => s.id !== updatedSession.id);
+        
+        // Thêm/cập nhật vào historySessions
+        const histIdx = historySessions.value.findIndex(s => s.id === updatedSession.id);
+        if (histIdx === -1) {
+          historySessions.value.unshift(updatedSession);
+        } else {
+          historySessions.value[histIdx] = updatedSession;
+        }
+
         if (activeSession.value?.id === updatedSession.id) {
-          activeSession.value = null;
-          messages.value = [];
-          if (activeSessionSubscription) {
-            unsubscribeTopic(activeSessionSubscription);
-            activeSessionSubscription = null;
+          if (activeTab.value === "active") {
+            activeSession.value = null;
+            messages.value = [];
+            if (activeSessionSubscription) {
+              unsubscribeTopic(activeSessionSubscription);
+              activeSessionSubscription = null;
+            }
+          } else {
+            activeSession.value.trangThai = 4;
           }
         }
       } else {
@@ -222,6 +267,12 @@ onMounted(() => {
           sessions.value[index] = updatedSession;
         } else {
           sessions.value.unshift(updatedSession);
+        }
+        
+        // Cập nhật ở historySessions nếu có
+        const histIdx = historySessions.value.findIndex(s => s.id === updatedSession.id);
+        if (histIdx > -1) {
+          historySessions.value.splice(histIdx, 1);
         }
       }
       LocDanhSachPhien();
@@ -254,8 +305,8 @@ onUnmounted(() => {
       
       <!-- Left sidebar: Session list -->
       <div class="w-80 border-r border-slate-100 dark:border-slate-700/50 flex flex-col shrink-0 bg-slate-50/50 dark:bg-slate-800/50">
-        <!-- Search bar -->
-        <div class="p-4 border-b border-slate-100 dark:border-slate-700/50">
+        <!-- Search bar & Tabs -->
+        <div class="p-4 pb-2 border-b border-slate-100 dark:border-slate-700/50 space-y-3">
           <div class="relative">
             <Search class="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input 
@@ -265,11 +316,29 @@ onUnmounted(() => {
               class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
           </div>
+
+          <!-- Tabs -->
+          <div class="flex bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg text-xs font-semibold">
+            <button 
+              @click="activeTab = 'active'"
+              class="flex-1 py-1.5 rounded-md text-center transition-all"
+              :class="activeTab === 'active' ? 'bg-white dark:bg-slate-600 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'"
+            >
+              Đang hoạt động
+            </button>
+            <button 
+              @click="activeTab = 'history'"
+              class="flex-1 py-1.5 rounded-md text-center transition-all"
+              :class="activeTab === 'history' ? 'bg-white dark:bg-slate-600 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'"
+            >
+              Lịch sử chat
+            </button>
+          </div>
         </div>
 
         <!-- Session List container -->
         <div class="flex-1 overflow-y-auto p-2 space-y-1">
-          <div v-if="isLoadingSessions" class="flex flex-col items-center justify-center py-10 space-y-2">
+          <div v-if="isLoadingSessions || isLoadingHistory" class="flex flex-col items-center justify-center py-10 space-y-2">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             <span class="text-xs text-slate-400">Đang tải danh sách...</span>
           </div>
@@ -277,7 +346,9 @@ onUnmounted(() => {
           <div v-else-if="filteredSessions.length === 0" class="flex flex-col items-center justify-center py-12 text-center px-4">
             <MessageSquare class="h-10 w-10 text-slate-300 dark:text-slate-600 mb-2" />
             <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Không có cuộc trò chuyện nào</p>
-            <p class="text-xs text-slate-400 mt-1">Hiện không có khách hàng nào đang yêu cầu hỗ trợ trực tuyến.</p>
+            <p class="text-xs text-slate-400 mt-1">
+              {{ activeTab === 'active' ? 'Hiện không có khách hàng nào đang yêu cầu hỗ trợ trực tuyến.' : 'Không tìm thấy lịch sử cuộc trò chuyện nào.' }}
+            </p>
           </div>
 
           <button
@@ -328,6 +399,13 @@ onUnmounted(() => {
                   <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                   Đang chat
                 </span>
+                <span 
+                  v-else-if="session.trangThai === 4" 
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                >
+                  <CheckCircle class="h-3 w-3 text-slate-500" />
+                  Đã đóng
+                </span>
               </div>
             </div>
           </button>
@@ -360,6 +438,7 @@ onUnmounted(() => {
 
             <!-- Close Session Button -->
             <button 
+              v-if="activeSession.trangThai !== 4"
               @click="DongPhienChat"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors"
             >
@@ -386,7 +465,9 @@ onUnmounted(() => {
               >
                 <!-- Avatar and Sender Name (optional details) -->
                 <div class="flex items-center space-x-1.5 mb-1 text-[11px] text-slate-400 px-1">
-                  <span v-if="msg.nguoiGui === 'STAFF'" class="font-semibold text-primary">Bạn (Nhân viên)</span>
+                  <span v-if="msg.nguoiGui === 'STAFF'" class="font-semibold text-primary">
+                    {{ msg.maNhanVien ? `Nhân viên (${msg.maNhanVien})` : 'Bạn (Nhân viên)' }}
+                  </span>
                   <span v-else-if="msg.nguoiGui === 'AI'" class="font-semibold text-purple-600 flex items-center">
                     <HelpCircle class="h-3 w-3 mr-0.5" /> Trợ lý AI
                   </span>
@@ -418,7 +499,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Message Input area -->
-          <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700/50 shadow-sm">
+          <div v-if="activeSession.trangThai !== 4" class="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700/50 shadow-sm">
             <form @submit.prevent="GuiPhanHoi" class="flex gap-2 items-end">
               <textarea
                 v-model="replyText"
@@ -435,6 +516,9 @@ onUnmounted(() => {
                 <Send class="h-5 w-5" />
               </button>
             </form>
+          </div>
+          <div v-else class="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-700/50 text-center text-xs text-slate-400 font-medium">
+            Cuộc hội thoại này đã kết thúc. Bạn không thể gửi thêm tin nhắn.
           </div>
         </template>
 

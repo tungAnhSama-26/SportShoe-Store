@@ -15,6 +15,14 @@ public class CuocHoiThoai {
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "khach_hang_id")
+    private KhachHang khachHang;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nhan_vien_id")
+    private NhanVien nhanVien;
+
     @Column(name = "ten_khach_hang", length = 250)
     private String tenKhachHang;
 
