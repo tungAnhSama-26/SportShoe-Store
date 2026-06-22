@@ -47,7 +47,6 @@ public class NhanVienProfileController {
                 request.tenDangNhap(),
                 request.email(),
                 request.sdt(),
-                request.cccd(),
                 request.gioiTinh(),
                 request.ngaySinh(),
                 request.diaChi(),

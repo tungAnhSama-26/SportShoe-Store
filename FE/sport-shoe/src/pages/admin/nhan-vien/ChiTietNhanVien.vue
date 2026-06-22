@@ -8,7 +8,7 @@ import FaceIdModal from "./components/FaceIdModal.vue";
 import { capNhatFaceId } from "../../../services/nhan-vien";
 import { showSuccess, showError } from "../../../utils/alert";
 
-const { nextTick, onMounted, onUnmounted, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
+const { nextTick, onMounted, onUnmounted, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
 
 function taoChuCaiDaiDien(value) {
   return String(value || "NV")
@@ -231,17 +231,12 @@ async function handleSaveFaceId(descriptorString) {
               <button
                 type="button"
                 @click="batDauQuet"
-                :class="[
-                  'inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition whitespace-nowrap shadow-sm',
-                  loiForm.cccd ? 'border-rose-400 bg-white text-black hover:bg-rose-50' : 'border-rose-200 bg-white text-black hover:bg-rose-50'
-                ]"
+                class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-4 text-sm font-bold text-black hover:bg-rose-50 transition whitespace-nowrap shadow-sm"
               >
                 <ScanLine class="h-4 w-4" />
-                {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
+                Quét mã CCCD
               </button>
-              <span v-if="form.cccd" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">Đã có CCCD</span>
             </div>
-            <p v-if="loiForm.cccd" class="mt-2 text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
