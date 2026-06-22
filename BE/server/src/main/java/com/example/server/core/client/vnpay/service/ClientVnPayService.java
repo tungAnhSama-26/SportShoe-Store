@@ -226,7 +226,7 @@ public class ClientVnPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString());
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString()).replace("+", "%20");
         } catch (Exception ex) {
             return "";
         }
@@ -276,6 +276,10 @@ public class ClientVnPayService {
         vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
         vnp_Params.put("vnp_IpAddr", clientIp != null ? clientIp : "127.0.0.1");
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+        
+        java.time.ZonedDateTime expireGmt7 = nowGmt7.plusMinutes(15);
+        String vnp_ExpireDate = expireGmt7.format(formatter);
+        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);

@@ -300,8 +300,8 @@ export function useChiTietSanPhamFormPage() {
   }
   function syncQuickCreateColorFields() {
     quickCreateForm.ma = generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
-    if (!isValidHexColor(quickCreateForm.maMauHex)) {
-      quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
+    if (!quickCreateForm.maMauHex) {
+       quickCreateForm.maMauHex = '#94A3B8'
     }
     quickCreateForm.maMauHex = quickCreateForm.maMauHex.toUpperCase()
   }
@@ -314,7 +314,7 @@ export function useChiTietSanPhamFormPage() {
       Object.assign(quickCreateForm, {
         ma: '',
         ten: normalizeRequiredText(preset),
-        maMauHex: generateHexColorFromText(preset),
+        maMauHex: '#94A3B8',
         giaTri: '',
         ghiChu: ''
       })
@@ -426,20 +426,10 @@ export function useChiTietSanPhamFormPage() {
     }
   }
   function updateQuickCreateForm(nextForm) {
-    const previousTen = quickCreateForm.ten
-    const previousAutoHex = generateHexColorFromText(previousTen)
     Object.assign(quickCreateForm, nextForm)
     if (quickCreateType.value === 'mauSac') {
       quickCreateForm.ma = generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
-      if (!isValidHexColor(quickCreateForm.maMauHex)) {
-        quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
-      } else if (
-        quickCreateForm.ten !== previousTen &&
-        String(nextForm.maMauHex || '').toUpperCase() === previousAutoHex.toUpperCase()
-      ) {
-        quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
-      }
-      quickCreateForm.maMauHex = quickCreateForm.maMauHex.toUpperCase()
+      quickCreateForm.maMauHex = String(quickCreateForm.maMauHex || '').toUpperCase()
     }
   }
   async function handleQuickCreateSave() {

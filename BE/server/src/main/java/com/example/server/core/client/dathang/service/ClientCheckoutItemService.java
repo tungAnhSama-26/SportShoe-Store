@@ -1,6 +1,6 @@
 package com.example.server.core.client.dathang.service;
 
-import com.example.server.core.admin.banHangTaiQuay.service.usecase.BanHangTaiQuayInventoryUseCase;
+import com.example.server.core.admin.banHangTaiQuay.service.TonKhoTaiQuayService;
 import com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService;
 import com.example.server.core.client.dathang.dto.DatHangItemRequest;
 import com.example.server.entity.GiayChiTiet;
@@ -23,16 +23,16 @@ public class ClientCheckoutItemService {
     private static final int MAX_MOI_SAN_PHAM = 10;
 
     private final GiayChiTietRepository giayChiTietRepository;
-    private final BanHangTaiQuayInventoryUseCase inventoryUseCase;
+    private final TonKhoTaiQuayService tonKhoService;
     private final QuanLySanPhamService quanLySanPhamService;
 
     public ClientCheckoutItemService(
             GiayChiTietRepository giayChiTietRepository,
-            BanHangTaiQuayInventoryUseCase inventoryUseCase,
+            TonKhoTaiQuayService tonKhoService,
             QuanLySanPhamService quanLySanPhamService
     ) {
         this.giayChiTietRepository = giayChiTietRepository;
-        this.inventoryUseCase = inventoryUseCase;
+        this.tonKhoService = tonKhoService;
         this.quanLySanPhamService = quanLySanPhamService;
     }
 
@@ -73,7 +73,7 @@ public class ClientCheckoutItemService {
                 throw new BusinessException(
                         "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng bán");
             }
-            inventoryUseCase.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
+            tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             bienThes.add(bienThe);
         }
 
