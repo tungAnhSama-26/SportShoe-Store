@@ -177,7 +177,23 @@ public class ClientXemDonHangService {
         if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Bạn không có quyền xem đơn hàng này");
         }
+        return buildChiTiet(hd);
+    }
 
+    /** Tra cứu đơn hàng theo mã hóa đơn - công khai, không cần đăng nhập (cho cả khách vãng lai). */
+    @Transactional(readOnly = true)
+    public DonHangChiTietResponse traCuuTheoMa(String ma) {
+        if (ma == null || ma.isBlank()) {
+            throw new BusinessException("Vui lòng nhập mã hóa đơn");
+        }
+        HoaDon hd = hoaDonRepository.findDetailByMa(ma.trim())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy đơn hàng với mã \"" + ma.trim() + "\""));
+        return buildChiTiet(hd);
+    }
+
+    /** Dựng chi tiết đơn từ HoaDon (dùng chung cho xem đơn của khách + tra cứu công khai). */
+    private DonHangChiTietResponse buildChiTiet(HoaDon hd) {
         List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findGioItems(hd.getId());
 
         // Map dòng hóa đơn chi tiết -> đánh giá (nếu đã đánh giá).
