@@ -58,6 +58,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.infrastructure.service.EmailService;
 
 @Service
 public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
@@ -111,6 +112,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final PhieuTraHangRepository phieuTraHangRepository;
     private final RefundBankAccountResolver refundBankAccountResolver;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    private final EmailService emailService;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -124,8 +126,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             GhnShippingService ghnShippingService,
             PhieuTraHangRepository phieuTraHangRepository,
             RefundBankAccountResolver refundBankAccountResolver,
-            HoaDonRealtimePublisher hoaDonRealtimePublisher
+            HoaDonRealtimePublisher hoaDonRealtimePublisher,
+            EmailService emailService
     ) {
+        this.emailService = emailService;
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
@@ -363,8 +367,55 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         ghiLichSuHoaDon(hoaDon, resolveTrangThaiHoaDon(hoaDon, vanChuyen), request.ghiChu());
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRANG_THAI");
+        guiEmailCapNhatTrangThai(hoaDon, trangThaiMoi.getTen(), vanChuyen);
 
         return mapHoaDonDetail(findHoaDon(id));
+    }
+
+    private void guiEmailCapNhatTrangThai(HoaDon hoaDon, String trangThaiMoi, VanChuyen vanChuyen) {
+        String emailNhan = resolveEmail(hoaDon.getKhachHang());
+        if (emailNhan == null || emailNhan.isBlank()) {
+            return;
+        }
+        
+        List<EmailService.DongDonHangEmail> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId())
+                .stream()
+                .map(ct -> {
+                    GiayChiTiet gct = ct.getGiayChiTiet();
+                    String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+                    return new EmailService.DongDonHangEmail(
+                            gct.getGiay().getTen(),
+                            bienThe,
+                            gct.getGiay().getHinhAnh(),
+                            ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
+                            ct.getGiaDonVi(),
+                            ct.getThanhTien()
+                    );
+                })
+                .toList();
+
+        String hinhThucThanhToan = thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId())
+                .stream()
+                .findFirst()
+                .map(ThanhToan::getCongThanhToan)
+                .orElse("COD");
+
+        emailService.sendOrderStatusUpdatedEmailAsync(new EmailService.DonHangEmail(
+                emailNhan,
+                hoaDon.getTenNguoiNhan(),
+                emailNhan,
+                hoaDon.getMa(),
+                hoaDon.getNgayLap(),
+                hoaDon.getTenNguoiNhan(),
+                hoaDon.getSdtNguoiNhan(),
+                hoaDon.getDiaChiGiaoHang(),
+                hinhThucThanhToan,
+                vanChuyen != null ? vanChuyen.getPhiVanChuyen() : BigDecimal.ZERO,
+                hoaDon.getTienGiam(),
+                hoaDon.getTongTienHang(),
+                hoaDon.getTongTienThanhToan(),
+                items
+        ), trangThaiMoi);
     }
 
     @Override

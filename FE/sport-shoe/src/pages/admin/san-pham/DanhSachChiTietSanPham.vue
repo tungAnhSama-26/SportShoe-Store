@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
-import BanHangQrScannerModal from '../../../components/admin/ban-hang/BanHangQrScannerModal.vue'
+import ModalQuetQR from '../../../components/admin/ban-hang/ModalQuetQR.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import ProductVariantFilters from '../../../components/admin/san-pham/ProductVariantFilters.vue'
@@ -778,7 +778,7 @@ onUnmounted(() => {
       @error="showToast($event, 'error')"
     />
 
-    <BanHangQrScannerModal
+    <ModalQuetQR
       :is-open="showScannerModal"
       :is-admin="true"
       @close="showScannerModal = false"

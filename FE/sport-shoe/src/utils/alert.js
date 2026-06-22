@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { dinhDangTienViet } from './dinhDangTien';
 
 const BRAND_RED = '#cf1018';
 const BRAND_RED_DARK = '#a90d14';
@@ -224,4 +225,81 @@ export async function showConfirm(
   });
 
   return result.isConfirmed;
+}
+
+export async function showPaymentConfirmWithCoupon({
+  oldCouponCode,
+  newCouponCode,
+  oldDiscount,
+  newDiscount,
+  tongTienHang
+}) {
+  const savings = newDiscount - oldDiscount;
+  const finalTotal = tongTienHang - newDiscount;
+
+  const html = `
+    <div class="text-left font-sans text-slate-800">
+      <div class="bg-red-50 border border-red-100 rounded-lg p-3 mb-5 flex items-center gap-2">
+        <svg class="w-5 h-5 text-[#cf1018] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span class="text-[#a90d14] font-medium text-[15px]">Có voucher tốt hơn cho đơn hàng của bạn!</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div>
+          <div class="text-sm text-slate-500 mb-1.5 font-medium">Voucher hiện tại</div>
+          ${oldCouponCode ? `<div class="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-md text-sm font-semibold mb-2">${oldCouponCode}</div>` : `<div class="text-sm text-slate-400 mb-2 italic">Không có</div>`}
+          <div class="text-sm text-slate-600 flex items-center gap-1">Giảm: <span class="${oldDiscount > 0 ? 'line-through text-slate-400' : ''}">${dinhDangTienViet(oldDiscount)}</span></div>
+        </div>
+        <div>
+          <div class="text-sm text-[#cf1018] mb-1.5 font-medium">Voucher mới</div>
+          <div class="inline-block px-2.5 py-1 bg-red-50 text-[#cf1018] border border-red-100 rounded-md text-sm font-semibold mb-2">${newCouponCode}</div>
+          <div class="text-sm text-[#cf1018] font-medium">Giảm: ${dinhDangTienViet(newDiscount)}</div>
+        </div>
+      </div>
+
+      <div class="bg-red-50 rounded-lg p-3 mb-5 flex justify-between items-center">
+        <span class="text-slate-700 font-semibold text-[15px]">Bạn tiết kiệm thêm:</span>
+        <span class="text-[#cf1018] font-bold text-[15px]">+${dinhDangTienViet(savings)}</span>
+      </div>
+
+      <div class="border-t border-slate-100 pt-4 mb-2">
+        <div class="flex justify-between items-center mb-2.5">
+          <span class="text-slate-500 text-[15px]">Tổng tiền hàng:</span>
+          <span class="text-slate-700 font-medium">${dinhDangTienViet(tongTienHang)}</span>
+        </div>
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-slate-500 text-[15px]">Giảm giá:</span>
+          <span class="text-[#cf1018] font-medium">-${dinhDangTienViet(newDiscount)}</span>
+        </div>
+        <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+          <span class="text-slate-800 font-semibold text-[15px]">Tổng thanh toán:</span>
+          <span class="text-[#cf1018] font-bold text-lg">${dinhDangTienViet(finalTotal)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const result = await Swal.fire({
+    title: `<div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-[#cf1018] text-white flex items-center justify-center font-bold text-[15px]">i</div> <span class="text-lg">Có voucher tốt hơn</span></div>`,
+    html: html,
+    showCancelButton: true,
+    showDenyButton: false,
+    showCloseButton: true,
+    confirmButtonText: 'Dùng voucher mới (tiết kiệm hơn)',
+    cancelButtonText: oldCouponCode ? 'Giữ voucher cũ' : 'Không dùng voucher',
+    customClass: {
+      popup: 'rounded-xl p-5 shadow-2xl border-0 w-full max-w-[480px]',
+      title: 'text-xl font-bold text-slate-800 m-0 text-left border-0 w-full flex items-center',
+      htmlContainer: 'm-0 mt-5',
+      confirmButton: `bg-[#cf1018] text-white px-4 py-2 rounded text-[15px] font-medium hover:bg-[#a90d14] transition order-2`,
+      cancelButton: 'bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded text-[15px] font-medium hover:bg-slate-50 transition order-1',
+      actions: 'gap-3 mt-6 justify-end w-full flex-nowrap',
+      closeButton: 'focus:outline-none mt-2 mr-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700 transition'
+    },
+    buttonsStyling: false
+  });
+
+  if (result.isConfirmed) return 'use_new';
+  if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) return 'use_old';
+  return 'cancel';
 }

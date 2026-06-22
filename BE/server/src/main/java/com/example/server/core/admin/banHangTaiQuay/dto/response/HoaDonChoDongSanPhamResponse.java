@@ -11,6 +11,7 @@ public record HoaDonChoDongSanPhamResponse(
         String sku,
         String hinhAnh,
         Integer soLuong,
+        Integer soLuongTon,
         BigDecimal giaBan,
         BigDecimal thanhTien
 ) {

@@ -16,7 +16,7 @@ function timKhachHangTheoSoDienThoai(phone) {
 }
 function timSanPhamTaiQuay(keyword) {
   const params = new URLSearchParams();
-  if (keyword.trim()) {
+  if (keyword && keyword.trim()) {
     params.set("keyword", keyword.trim());
   }
   return request(`/admin/ban-hang-tai-quay/san-pham?${params.toString()}`);
