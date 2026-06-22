@@ -3,14 +3,18 @@ package com.example.server.core.client.chatbot.service;
 import com.example.server.core.client.chatbot.dto.*;
 import com.example.server.entity.CuocHoiThoai;
 import com.example.server.entity.TinNhan;
+import com.example.server.entity.NhanVien;
 import com.example.server.repository.CuocHoiThoaiRepository;
 import com.example.server.repository.TinNhanRepository;
+import com.example.server.repository.NhanVienRepository;
 import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,6 +26,7 @@ public class ChatbotService {
     private final ChatClient.Builder chatClientBuilder;
     private final CuocHoiThoaiRepository cuocHoiThoaiRepository;
     private final TinNhanRepository tinNhanRepository;
+    private final NhanVienRepository nhanVienRepository;
     private final WebSocketNotificationService webSocketNotificationService;
 
     @Value("${app.debug-errors:false}")
@@ -31,10 +36,12 @@ public class ChatbotService {
             ChatClient.Builder chatClientBuilder,
             CuocHoiThoaiRepository cuocHoiThoaiRepository,
             TinNhanRepository tinNhanRepository,
+            NhanVienRepository nhanVienRepository,
             WebSocketNotificationService webSocketNotificationService) {
         this.chatClientBuilder = chatClientBuilder;
         this.cuocHoiThoaiRepository = cuocHoiThoaiRepository;
         this.tinNhanRepository = tinNhanRepository;
+        this.nhanVienRepository = nhanVienRepository;
         this.webSocketNotificationService = webSocketNotificationService;
     }
 
@@ -71,30 +78,68 @@ public class ChatbotService {
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/session/" + session.getId(),
                 "NEW_MESSAGE",
-                new ChatbotMessageDto(khachMsg.getId(), "CUSTOMER", khachMsg.getNoiDung(), khachMsg.getNgayTao())
+                new ChatbotMessageDto(khachMsg.getId(), "CUSTOMER", khachMsg.getNoiDung(), khachMsg.getNgayTao(), null)
         );
 
         String botReply;
         if (session.getTrangThai() == 1) {
-            // Chat với AI
-            botReply = generateAiResponse(request.message());
+            // Kiểm tra xem tin nhắn khách gửi có phải là yêu cầu gặp nhân viên không
+            if ("Tôi muốn gặp nhân viên trực tiếp hỗ trợ".equals(request.message()) || 
+                "Liên hệ trực tiếp với nhân viên".equals(request.message())) {
+                
+                session.setTrangThai(2); // Yêu cầu trợ giúp từ nhân viên
+                session.setNgayCapNhat(Instant.now());
+                session = cuocHoiThoaiRepository.save(session);
+                
+                botReply = "Đã gửi yêu cầu kết nối với nhân viên tư vấn. Nhân viên trực sẽ phản hồi bạn trong giây lát!";
+                
+                TinNhan aiMsg = new TinNhan();
+                aiMsg.setCuocHoiThoai(session);
+                aiMsg.setNguoiGui("AI");
+                aiMsg.setNoiDung(botReply);
+                aiMsg.setNgayTao(Instant.now());
+                tinNhanRepository.save(aiMsg);
+                
+                // Phát WebSocket phản hồi từ AI/Hệ thống
+                webSocketNotificationService.sendToTopic(
+                        "/topic/chatbot/session/" + session.getId(),
+                        "NEW_MESSAGE",
+                        new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
+                );
+                
+                webSocketNotificationService.sendToTopic(
+                        "/topic/chatbot/session/" + session.getId(),
+                        "STATE_CHANGED",
+                        2
+                );
 
-            TinNhan aiMsg = new TinNhan();
-            aiMsg.setCuocHoiThoai(session);
-            aiMsg.setNguoiGui("AI");
-            aiMsg.setNoiDung(botReply);
-            aiMsg.setNgayTao(Instant.now());
-            tinNhanRepository.save(aiMsg);
-
-            // Phát WebSocket phản hồi từ AI
-            webSocketNotificationService.sendToTopic(
-                    "/topic/chatbot/session/" + session.getId(),
-                    "NEW_MESSAGE",
-                    new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao())
-            );
+                // Gửi thông báo đến danh sách phiên chat admin
+                webSocketNotificationService.sendToTopic(
+                        "/topic/chatbot/sessions",
+                        "SESSION_UPDATED",
+                        convertToDto(session)
+                );
+            } else {
+                // Chat với AI thông thường
+                botReply = generateAiResponse(request.message());
+                
+                TinNhan aiMsg = new TinNhan();
+                aiMsg.setCuocHoiThoai(session);
+                aiMsg.setNguoiGui("AI");
+                aiMsg.setNoiDung(botReply);
+                aiMsg.setNgayTao(Instant.now());
+                tinNhanRepository.save(aiMsg);
+                
+                // Phát WebSocket phản hồi từ AI
+                webSocketNotificationService.sendToTopic(
+                        "/topic/chatbot/session/" + session.getId(),
+                        "NEW_MESSAGE",
+                        new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
+                );
+            }
         } else {
-            // Khi đang đợi hoặc đang chat với nhân viên
-            botReply = "Yêu cầu của bạn đã được gửi tới nhân viên tư vấn. Vui lòng chờ nhân viên trực liên hệ hỗ trợ.";
+            // Khi đang đợi hoặc đang chat với nhân viên, hệ thống/AI không tự động phản hồi nữa
+            botReply = null;
             // Gửi thông báo đến danh sách phiên chat admin
             webSocketNotificationService.sendToTopic(
                     "/topic/chatbot/sessions",
@@ -126,7 +171,7 @@ public class ChatbotService {
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/session/" + sessionId,
                 "NEW_MESSAGE",
-                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao())
+                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao(), null)
         );
 
         webSocketNotificationService.sendToTopic(
@@ -143,12 +188,20 @@ public class ChatbotService {
     }
 
     @Transactional
-    public void replyFromStaff(Integer sessionId, String message) {
+    public void replyFromStaff(Integer sessionId, String message, UUID staffId) {
         CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
 
         session.setTrangThai(3); // Đang chat với nhân viên
         session.setNgayCapNhat(Instant.now());
+        
+        NhanVien currentStaff = null;
+        if (staffId != null) {
+            currentStaff = nhanVienRepository.findById(staffId).orElse(null);
+            if (currentStaff != null) {
+                session.setNhanVien(currentStaff);
+            }
+        }
         cuocHoiThoaiRepository.save(session);
 
         TinNhan staffMsg = new TinNhan();
@@ -156,13 +209,18 @@ public class ChatbotService {
         staffMsg.setNguoiGui("STAFF");
         staffMsg.setNoiDung(message);
         staffMsg.setNgayTao(Instant.now());
+        if (currentStaff != null) {
+            staffMsg.setNhanVien(currentStaff);
+        }
         tinNhanRepository.save(staffMsg);
+
+        String maNhanVien = currentStaff != null ? currentStaff.getMa() : null;
 
         // Phát WebSocket cho cuộc hội thoại
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/session/" + sessionId,
                 "NEW_MESSAGE",
-                new ChatbotMessageDto(staffMsg.getId(), "STAFF", staffMsg.getNoiDung(), staffMsg.getNgayTao())
+                new ChatbotMessageDto(staffMsg.getId(), "STAFF", staffMsg.getNoiDung(), staffMsg.getNgayTao(), maNhanVien)
         );
 
         webSocketNotificationService.sendToTopic(
@@ -198,7 +256,7 @@ public class ChatbotService {
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/session/" + sessionId,
                 "NEW_MESSAGE",
-                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao())
+                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao(), null)
         );
 
         // Phát thông báo đóng session
@@ -215,6 +273,7 @@ public class ChatbotService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<ChatbotSessionDto> getActiveSessions() {
         return cuocHoiThoaiRepository.findByTrangThaiInOrderByNgayTaoDesc(List.of(2, 3))
                 .stream()
@@ -222,10 +281,25 @@ public class ChatbotService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<ChatbotSessionDto> getClosedSessions() {
+        return cuocHoiThoaiRepository.findByTrangThaiInOrderByNgayTaoDesc(List.of(4))
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<ChatbotMessageDto> getMessagesBySession(Integer sessionId) {
         return tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessionId)
                 .stream()
-                .map(m -> new ChatbotMessageDto(m.getId(), m.getNguoiGui(), m.getNoiDung(), m.getNgayTao()))
+                .map(m -> new ChatbotMessageDto(
+                        m.getId(),
+                        m.getNguoiGui(),
+                        m.getNoiDung(),
+                        m.getNgayTao(),
+                        m.getNhanVien() != null ? m.getNhanVien().getMa() : null
+                ))
                 .collect(Collectors.toList());
     }
 

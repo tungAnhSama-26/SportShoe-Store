@@ -225,14 +225,51 @@ async function GuiTinNhan(textToSend) {
 
 // Yêu cầu kết nối với nhân viên trực
 async function YeuCauKetNoiNhanVien() {
+  isSending.value = true;
+  
+  // Hiển thị tin nhắn yêu cầu của khách hàng trước
+  const requestText = "Tôi muốn gặp nhân viên trực tiếp hỗ trợ";
+  const userMsgExists = messages.value.some(m => m.nguoiGui === "CUSTOMER" && m.noiDung === requestText);
+  if (!userMsgExists) {
+    messages.value.push({
+      id: Date.now(),
+      nguoiGui: "CUSTOMER",
+      noiDung: requestText,
+      ngayTao: new Date().toISOString()
+    });
+    CuonXuongCuoi();
+  }
+
+  let alreadyRequested = false;
+
   if (!sessionId.value) {
     // Nếu chưa chat bao giờ mà click luôn nút hỗ trợ, cần tạo session trước
-    isSending.value = true;
     try {
-      const res = await guiTinNhanClient("Tôi muốn gặp nhân viên trực tiếp hỗ trợ", null, "Khách hàng", "");
+      const res = await guiTinNhanClient(requestText, null, "Khách hàng", "");
       sessionId.value = res.sessionId;
       localStorage.setItem("chatbot_session_id", res.sessionId);
       DongBoWebsocket(res.sessionId);
+      
+      // Hiển thị tin nhắn phản hồi của AI/Hệ thống nếu có
+      if (res && res.response) {
+        const alreadyPushed = messages.value.some(m => 
+          m.nguoiGui === "AI" && m.noiDung === res.response
+        );
+        if (!alreadyPushed) {
+          messages.value.push({
+            id: Date.now() + 1,
+            nguoiGui: "AI",
+            noiDung: res.response,
+            ngayTao: new Date().toISOString()
+          });
+          CuonXuongCuoi();
+        }
+      }
+
+      if (res && res.trangThai === 2) {
+        sessionState.value = 2;
+        alreadyRequested = true;
+      }
     } catch (e) {
       console.error(e);
       isSending.value = false;
@@ -240,14 +277,32 @@ async function YeuCauKetNoiNhanVien() {
     }
   }
 
-  try {
-    await yeuCauNhanVien(sessionId.value);
-    sessionState.value = 2; // Đang chờ hỗ trợ
-    CuonXuongCuoi();
-  } catch (error) {
-    console.error("Lỗi khi yêu cầu nhân viên hỗ trợ:", error);
-  } finally {
+  if (!alreadyRequested) {
+    try {
+      await yeuCauNhanVien(sessionId.value);
+      sessionState.value = 2; // Đang chờ hỗ trợ
+      
+      // Hiển thị tin nhắn hệ thống phản hồi ngay lập tức
+      const sysMsgContent = "Đã gửi yêu cầu kết nối với nhân viên tư vấn. Nhân viên trực sẽ phản hồi bạn trong giây lát!";
+      const exists = messages.value.some(m => m.nguoiGui === "AI" && m.noiDung === sysMsgContent);
+      if (!exists) {
+        messages.value.push({
+          id: Date.now() + 2,
+          nguoiGui: "AI",
+          noiDung: sysMsgContent,
+          ngayTao: new Date().toISOString()
+        });
+        CuonXuongCuoi();
+      }
+    } catch (error) {
+      console.error("Lỗi khi yêu cầu nhân viên hỗ trợ:", error);
+    } finally {
+      isSending.value = false;
+      CuonXuongCuoi();
+    }
+  } else {
     isSending.value = false;
+    CuonXuongCuoi();
   }
 }
 

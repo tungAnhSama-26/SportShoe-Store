@@ -34,7 +34,6 @@ CREATE TABLE nhan_vien (
     email          VARCHAR(100)     NOT NULL,
     mat_khau       VARCHAR(255)     NOT NULL,
     sdt            VARCHAR(20)      NULL,
-    cccd           VARCHAR(12)      NULL,
     gioi_tinh      NVARCHAR(10)     NULL,
     ngay_sinh      DATE             NULL,
     dia_chi        NVARCHAR(200)    NULL,
@@ -47,13 +46,10 @@ CREATE TABLE nhan_vien (
     CONSTRAINT uq_nhan_vien_ten_dang_nhap UNIQUE (ten_dang_nhap),
     CONSTRAINT uq_nhan_vien_email UNIQUE (email),
     CONSTRAINT ck_nhan_vien_vai_tro CHECK (vai_tro IN (1, 2, 3)),
-    CONSTRAINT ck_nhan_vien_trang_thai CHECK (trang_thai IN (0, 1)),
-    CONSTRAINT ck_nhan_vien_cccd CHECK (cccd IS NULL OR (LEN(cccd) = 12 AND cccd NOT LIKE '%[^0-9]%'))
+    CONSTRAINT ck_nhan_vien_trang_thai CHECK (trang_thai IN (0, 1))
 );
 GO
 
-CREATE UNIQUE INDEX ux_nhan_vien_cccd_not_null ON nhan_vien(cccd) WHERE cccd IS NOT NULL;
-GO
 
 CREATE TABLE khach_hang (
     id             UNIQUEIDENTIFIER NOT NULL CONSTRAINT pk_khach_hang PRIMARY KEY DEFAULT NEWID(),

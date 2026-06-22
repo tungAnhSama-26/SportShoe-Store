@@ -6,6 +6,7 @@ public record ChatbotMessageDto(
         Integer id,
         String nguoiGui,
         String noiDung,
-        Instant ngayTao
+        Instant ngayTao,
+        String maNhanVien
 ) {
 }

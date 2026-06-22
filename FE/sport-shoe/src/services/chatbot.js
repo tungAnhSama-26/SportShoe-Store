@@ -62,3 +62,11 @@ export async function dongPhienChatAdmin(sessionId) {
     authenticated: true,
   });
 }
+
+export async function layLichSuPhienAdmin() {
+  return apiRequest("/admin/chat/sessions/history", {
+    method: "GET",
+    authScope: "admin",
+    authenticated: true,
+  });
+}

@@ -15,7 +15,6 @@ public final class NhanVienResponses {
             String hoTen,
             String email,
             String sdt,
-            String cccd,
             String gioiTinh,
             LocalDate ngaySinh,
             String diaChi,

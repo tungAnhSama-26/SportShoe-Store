@@ -82,18 +82,18 @@ DBCC CHECKIDENT ('tai_khoan_ngan_hang', RESEED, 0);
 GO
 
 INSERT INTO nhan_vien
-(ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, cccd, gioi_tinh, ngay_sinh, dia_chi, vai_tro, trang_thai, hinh_anh)
+(ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, ngay_sinh, dia_chi, vai_tro, trang_thai, hinh_anh)
 VALUES
-('NV001', 'nv001', N'Nguyễn Văn An', 'an.nguyen@giay.com', '123456', '0912345678', '001086000001', N'Nam', '1986-02-12', N'12 Láng Hạ, Đống Đa, Hà Nội', 1, 1, N'/assets/avatar/nv001.png'),
-('NV002', 'nv002', N'Trần Thị Bình', 'binh.tran@giay.com', '123456', '0987654321', '001092000002', N'Nữ', '1992-05-20', N'45 Nguyễn Trãi, Thanh Xuân, Hà Nội', 2, 1, N'/assets/avatar/nv002.png'),
-('NV003', 'nv003', N'Lê Hoàng Cường', 'cuong.le@giay.com', '123456', '0978123456', '048090000003', N'Nam', '1990-09-11', N'78 Trần Phú, Hải Châu, Đà Nẵng', 2, 1, N'/assets/avatar/nv003.png'),
-('NV004', 'nv004', N'Phạm Thị Dung', 'dung.pham@giay.com', '123456', '0901234567', '079094000004', N'Nữ', '1994-12-01', N'67 Nguyễn Lương Bằng, Quận 7, Hồ Chí Minh', 2, 1, N'/assets/avatar/nv004.png'),
-('NV005', 'nv005', N'Hoàng Minh Đức', 'duc.hoang@giay.com', '123456', '0934567890', '001088000005', N'Nam', '1988-07-07', N'161 Thái Hà, Đống Đa, Hà Nội', 1, 1, N'/assets/avatar/nv005.png'),
-('NV006', 'nv006', N'Vũ Thị Hương', 'huong.vu@giay.com', '123456', '0918765432', '092096000006', N'Nữ', '1996-03-25', N'89 Võ Văn Tần, Ninh Kiều, Cần Thơ', 2, 1, N'/assets/avatar/nv006.png'),
-('NV007', 'nv007', N'Đặng Văn Khải', 'khai.dang@giay.com', '123456', '0945678901', '001091000007', N'Nam', '1991-10-18', N'14 Phan Tây Nhạc, Nam Từ Liêm, Hà Nội', 3, 1, N'/assets/avatar/nv007.png'),
-('NV008', 'nv008', N'Bùi Ngọc Linh', 'linh.bui@giay.com', '123456', '0963456789', '031097000008', N'Nữ', '1997-04-09', N'23 Lạch Tray, Ngô Quyền, Hải Phòng', 2, 1, N'/assets/avatar/nv008.png'),
-('NV009', 'nv009', N'Đỗ Quốc Minh', 'minh.do@giay.com', '123456', '0923456789', '074089000009', N'Nam', '1989-08-15', N'10 Hùng Vương, Nha Trang, Khánh Hòa', 2, 1, N'/assets/avatar/nv009.png'),
-('NV010', 'nv010', N'Ngô Thanh Tâm', 'tam.ngo@giay.com', '123456', '0956789012', '001095000010', N'Nữ', '1995-11-29', N'5 Lê Lợi, Huế, Thừa Thiên Huế', 3, 1, N'/assets/avatar/nv010.png');
+('NV001', 'nv001', N'Nguyễn Văn An', 'an.nguyen@giay.com', '123456', '0912345678', N'Nam', '1986-02-12', N'12 Láng Hạ, Đống Đa, Hà Nội', 1, 1, N'/assets/avatar/nv001.png'),
+('NV002', 'nv002', N'Trần Thị Bình', 'binh.tran@giay.com', '123456', '0987654321', N'Nữ', '1992-05-20', N'45 Nguyễn Trãi, Thanh Xuân, Hà Nội', 2, 1, N'/assets/avatar/nv002.png'),
+('NV003', 'nv003', N'Lê Hoàng Cường', 'cuong.le@giay.com', '123456', '0978123456', N'Nam', '1990-09-11', N'78 Trần Phú, Hải Châu, Đà Nẵng', 2, 1, N'/assets/avatar/nv003.png'),
+('NV004', 'nv004', N'Phạm Thị Dung', 'dung.pham@giay.com', '123456', '0901234567', N'Nữ', '1994-12-01', N'67 Nguyễn Lương Bằng, Quận 7, Hồ Chí Minh', 2, 1, N'/assets/avatar/nv004.png'),
+('NV005', 'nv005', N'Hoàng Minh Đức', 'duc.hoang@giay.com', '123456', '0934567890', N'Nam', '1988-07-07', N'161 Thái Hà, Đống Đa, Hà Nội', 1, 1, N'/assets/avatar/nv005.png'),
+('NV006', 'nv006', N'Vũ Thị Hương', 'huong.vu@giay.com', '123456', '0918765432', N'Nữ', '1996-03-25', N'89 Võ Văn Tần, Ninh Kiều, Cần Thơ', 2, 1, N'/assets/avatar/nv006.png'),
+('NV007', 'nv007', N'Đặng Văn Khải', 'khai.dang@giay.com', '123456', '0945678901', N'Nam', '1991-10-18', N'14 Phan Tây Nhạc, Nam Từ Liêm, Hà Nội', 3, 1, N'/assets/avatar/nv007.png'),
+('NV008', 'nv008', N'Bùi Ngọc Linh', 'linh.bui@giay.com', '123456', '0963456789', N'Nữ', '1997-04-09', N'23 Lạch Tray, Ngô Quyền, Hải Phòng', 2, 1, N'/assets/avatar/nv008.png'),
+('NV009', 'nv009', N'Đỗ Quốc Minh', 'minh.do@giay.com', '123456', '0923456789', N'Nam', '1989-08-15', N'10 Hùng Vương, Nha Trang, Khánh Hòa', 2, 1, N'/assets/avatar/nv009.png'),
+('NV010', 'nv010', N'Ngô Thanh Tâm', 'tam.ngo@giay.com', '123456', '0956789012', N'Nữ', '1995-11-29', N'5 Lê Lợi, Huế, Thừa Thiên Huế', 3, 1, N'/assets/avatar/nv010.png');
 GO
 
 INSERT INTO khach_hang
