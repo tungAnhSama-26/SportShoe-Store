@@ -40,11 +40,16 @@ public class ChatbotService {
 
     @Transactional
     public ClientChatResponse handleClientMessage(ClientChatRequest request) {
-        CuocHoiThoai session;
+        CuocHoiThoai session = null;
         if (request.sessionId() != null) {
-            session = cuocHoiThoaiRepository.findById(request.sessionId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
-        } else {
+            session = cuocHoiThoaiRepository.findById(request.sessionId()).orElse(null);
+            // Nếu phiên đã đóng (trạng thái = 4), ta sẽ bắt đầu phiên mới
+            if (session != null && Integer.valueOf(4).equals(session.getTrangThai())) {
+                session = null;
+            }
+        }
+
+        if (session == null) {
             session = new CuocHoiThoai();
             session.setTenKhachHang(request.customerName() != null && !request.customerName().isBlank()
                     ? request.customerName() : "Khách vãng lai");
@@ -244,14 +249,19 @@ public class ChatbotService {
                   1. Giày và các sản phẩm giày dép (Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`).
                   2. Phiếu giảm giá / Vouchers / Coupons (Sử dụng công cụ `search_coupons_tool`).
                   3. Chương trình / Đợt giảm giá / Sales / Promotions (Sử dụng công cụ `search_promotions_tool`).
-                - Đối với bất kỳ câu hỏi nào KHÔNG liên quan đến 3 phạm vi trên, hãy lịch sự từ chối trả lời và khuyên khách hàng chỉ hỏi các thông tin liên quan đến sản phẩm giày và khuyến mãi của cửa hàng.
+                  4. Hóa đơn / Tra cứu đơn hàng / Đơn mua (Sử dụng công cụ `search_invoice_tool`).
+                - Đối với bất kỳ câu hỏi nào KHÔNG liên quan đến 4 phạm vi trên, hãy lịch sự từ chối trả lời và khuyên khách hàng chỉ hỏi các thông tin liên quan đến sản phẩm, khuyến mãi hoặc hóa đơn của cửa hàng.
                 
-                # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM (QUAN TRỌNG)
-                Khi hiển thị thông tin sản phẩm tìm thấy từ cơ sở dữ liệu, hãy luôn đính kèm một liên kết Markdown dẫn đến chi tiết sản phẩm đó theo định dạng chuẩn:
-                [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
-                (Trong đó ID_SAN_PHAM là ID dạng số của sản phẩm đó lấy từ kết quả gọi hàm hệ thống).
-                Ví dụ: "Bạn có thể xem chi tiết đôi **[Adidas UltraBoost]** tại đây: [Xem chi tiết giày](/khachhang/san-pham/12)".
-                Hệ thống giao diện sẽ tự động chuyển đổi liên kết này thành một nút bấm đẹp mắt để khách hàng click xem chi tiết đôi giày đó.
+                # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM & HÓA ĐƠN (QUAN TRỌNG)
+                - Khi hiển thị thông tin sản phẩm tìm thấy từ cơ sở dữ liệu, hãy luôn đính kèm một liên kết Markdown dẫn đến chi tiết sản phẩm đó theo định dạng chuẩn:
+                  [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
+                  (Trong đó ID_SAN_PHAM là ID dạng số của sản phẩm đó lấy từ kết quả gọi hàm hệ thống).
+                  Ví dụ: "Bạn có thể xem chi tiết đôi **[Adidas UltraBoost]** tại đây: [Xem chi tiết giày](/khachhang/san-pham/12)".
+                - Khi hiển thị thông tin hóa đơn tìm thấy từ cơ sở dữ liệu, hãy đính kèm một liên kết Markdown dẫn đến chi tiết hóa đơn đó theo định dạng chuẩn:
+                  [Xem chi tiết hóa đơn](/khachhang/don-hang/ID_HOA_DON)
+                  (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm hệ thống).
+                  Ví dụ: "Tôi tìm thấy hóa đơn **[HD0001]** của bạn. Hãy click vào đây để xem chi tiết: [Xem chi tiết hóa đơn](/khachhang/don-hang/10)".
+                - Hệ thống giao diện sẽ tự động chuyển đổi liên kết này thành một nút bấm đẹp mắt để khách hàng click xem chi tiết.
                 
                 # NGUYÊN TẮC HOẠT ĐỘNG
                 - Khách hàng hỏi gì thì tự động gọi các công cụ (tools) tương ứng để truy vấn cơ sở dữ liệu lấy thông tin thực tế. Không tự bịa thông tin.
@@ -265,7 +275,7 @@ public class ChatbotService {
 
             return chatClient.prompt()
                     .user(userMessage)
-                    .functions("search_products_tool", "get_best_selling_shoes_tool", "search_coupons_tool", "search_promotions_tool")
+                    .functions("search_products_tool", "get_best_selling_shoes_tool", "search_coupons_tool", "search_promotions_tool", "search_invoice_tool")
                     .call()
                     .content();
         } catch (Exception e) {
