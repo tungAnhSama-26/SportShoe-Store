@@ -10,6 +10,7 @@ import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.ChamCongRepository;
 import com.example.server.repository.LichLamViecRepository;
 import com.example.server.repository.NhanVienRepository;
+import com.example.server.repository.CaLamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +29,13 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanVienRepository nhanVienRepository;
     private final ChamCongRepository chamCongRepository;
+    private final CaLamRepository caLamRepository;
 
-    public LichLamViecServiceImpl(LichLamViecRepository lichLamViecRepository, NhanVienRepository nhanVienRepository, ChamCongRepository chamCongRepository) {
+    public LichLamViecServiceImpl(LichLamViecRepository lichLamViecRepository, NhanVienRepository nhanVienRepository, ChamCongRepository chamCongRepository, CaLamRepository caLamRepository) {
         this.lichLamViecRepository = lichLamViecRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.chamCongRepository = chamCongRepository;
+        this.caLamRepository = caLamRepository;
     }
 
     @Override
@@ -87,9 +90,12 @@ public class LichLamViecServiceImpl implements LichLamViecService {
             return new LichLamViecResponse(null, request.nhanVienId(), request.ngay(), null, null);
         }
 
-        String ca = request.ca().trim().toLowerCase();
-        if (!List.of("sang", "chieu", "toi").contains(ca)) {
-            throw new BusinessException("Ca làm việc không hợp lệ. Phải là 'sang', 'chieu' hoặc 'toi'");
+        String ca = request.ca().trim();
+        if (!caLamRepository.existsById(ca) && !caLamRepository.existsById(ca.toLowerCase())) {
+            throw new BusinessException("Ca làm việc không hợp lệ.");
+        }
+        if (caLamRepository.existsById(ca.toLowerCase())) {
+            ca = ca.toLowerCase();
         }
 
         // Validate max people per shift rule:
@@ -177,11 +183,8 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     }
 
     private String mapCaName(String ca) {
-        return switch (ca) {
-            case "sang" -> "Sang";
-            case "chieu" -> "Chieu";
-            case "toi" -> "Toi";
-            default -> ca;
-        };
+        return caLamRepository.findById(ca)
+                .map(com.example.server.entity.CaLam::getTen)
+                .orElse(ca);
     }
 }

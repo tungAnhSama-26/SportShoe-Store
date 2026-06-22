@@ -10,6 +10,7 @@ import {
 } from "../../composable/useSidebar";
 import { useAdminSession } from "../../composable/useAdminSession";
 import {
+  ArrowRightLeft,
   Award,
   BadgePercent,
   Box,
@@ -17,6 +18,7 @@ import {
   ChevronDown,
   ChevronsLeft,
   ClipboardList,
+  Clock,
   Feather,
   History,
   Footprints,
@@ -63,7 +65,7 @@ const checkKhuyenMaiActive = (newPath) => {
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
 };
 const checkLichLamActive = (newPath) => {
-  const routes = ["/admin/lich-lam-viec", "/admin/lich-ca-lam", "/admin/cham-cong"];
+  const routes = ["/admin/lich-lam-viec", "/admin/lich-ca-lam", "/admin/cham-cong", "/admin/ban-giao-ca", "/admin/mo-ca"];
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
 };
 const compactMode = computed(() => isDesktopSidebar.value && isSidebarCollapsed.value);
@@ -381,6 +383,14 @@ function subItemClass(active) {
         <router-link to="/admin/cham-cong" :title="compactMode ? 'Ch\u1ea5m c\u00f4ng' : undefined" :class="navItemClass(isActive('/admin/cham-cong'))">
           <ClipboardList :class="navIconClass(isActive('/admin/cham-cong'))" />
           <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Ch&#7845;m c&#244;ng</span>
+        </router-link>
+        <router-link to="/admin/ban-giao-ca" :title="compactMode ? 'Bàn giao ca' : undefined" :class="navItemClass(isActive('/admin/ban-giao-ca'))">
+          <ArrowRightLeft :class="navIconClass(isActive('/admin/ban-giao-ca'))" />
+          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Bàn giao ca</span>
+        </router-link>
+        <router-link to="/admin/mo-ca" :title="compactMode ? 'Mở ca' : undefined" :class="navItemClass(isActive('/admin/mo-ca'))">
+          <Clock :class="navIconClass(isActive('/admin/mo-ca'))" />
+          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Mở ca</span>
         </router-link>
       </template>
     </nav>
