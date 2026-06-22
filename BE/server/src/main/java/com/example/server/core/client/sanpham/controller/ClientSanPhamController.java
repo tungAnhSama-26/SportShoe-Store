@@ -7,6 +7,8 @@ import com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService;
 import com.example.server.core.client.sanpham.dto.ClientChiTietSanPhamResponse;
 import com.example.server.core.client.sanpham.dto.ClientChiTietSanPhamResponse.BienTheItem;
 import com.example.server.core.client.sanpham.dto.ClientSanPhamResponse;
+import com.example.server.core.client.sanpham.dto.DongBoGiaGioRequest;
+import com.example.server.core.client.sanpham.dto.GiaBienTheGioResponse;
 import com.example.server.entity.Giay;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.infrastructure.api.ApiResponse;
@@ -27,6 +29,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -225,6 +229,31 @@ public class ClientSanPhamController {
                 tt != null ? tt.trongLuong() : null,
                 detail.gioiTinh(), hinhAnhSanPham, daBan, items);
         return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết sản phẩm thành công", data));
+    }
+
+    /**
+     * Đồng bộ giá giỏ hàng: trả giá niêm yết + giá sau giảm HIỆN TẠI + tồn của các biến thể.
+     * Giỏ hàng (lưu cục bộ) gọi để cập nhật lại giá khi đợt giảm giá thay đổi sau lúc thêm vào giỏ.
+     */
+    @PostMapping("/dong-bo-gia")
+    public ResponseEntity<ApiResponse<List<GiaBienTheGioResponse>>> dongBoGiaGio(
+            @RequestBody DongBoGiaGioRequest request
+    ) {
+        List<Integer> ids = request == null || request.ids() == null ? List.of() : request.ids();
+        if (ids.isEmpty()) {
+            return ResponseEntity.ok(ApiResponse.success("Đồng bộ giá thành công", List.of()));
+        }
+        List<GiayChiTiet> bienThes = giayChiTietRepository.findAllById(ids);
+        Map<Integer, BigDecimal> giaSauGiamMap = service.layGiaSauGiam(bienThes);
+        List<GiaBienTheGioResponse> data = bienThes.stream()
+                .map(gct -> new GiaBienTheGioResponse(
+                        gct.getId(),
+                        gct.getGiaBan(),
+                        giaSauGiamMap.getOrDefault(gct.getId(), gct.getGiaBan()),
+                        gct.getSoLuong(),
+                        Integer.valueOf(1).equals(gct.getKichHoat())))
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success("Đồng bộ giá thành công", data));
     }
 
     /**

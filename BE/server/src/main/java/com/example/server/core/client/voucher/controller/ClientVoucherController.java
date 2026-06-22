@@ -48,7 +48,7 @@ public class ClientVoucherController {
     /** Danh sách voucher khách có thể dùng cho giỏ hiện tại (toàn sàn + voucher riêng được gửi). */
     @GetMapping("/kha-dung")
     public ResponseEntity<ApiResponse<List<VoucherKhaDungResponse>>> khaDung(
-            @RequestParam UUID khachHangId,
+            @RequestParam(required = false) UUID khachHangId,
             @RequestParam(defaultValue = "0") BigDecimal tongTienHang
     ) {
         BigDecimal tong = tongTienHang.max(BigDecimal.ZERO);

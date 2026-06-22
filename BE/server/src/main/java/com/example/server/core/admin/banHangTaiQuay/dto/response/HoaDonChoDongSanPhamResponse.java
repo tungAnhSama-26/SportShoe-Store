@@ -6,7 +6,12 @@ public record HoaDonChoDongSanPhamResponse(
         Integer chiTietId,
         String maSanPham,
         String tenSanPham,
+        String mauSac,
+        String kichCo,
+        String sku,
+        String hinhAnh,
         Integer soLuong,
+        Integer soLuongTon,
         BigDecimal giaBan,
         BigDecimal thanhTien
 ) {

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { layChiTietSanPham, layDanhGia } from '../services/san-pham';
-import { themVaoGio as apiThemGio, layKhachId } from '../services/gio-hang';
+import { themVaoGio as apiThemGio } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -163,10 +163,24 @@ watch(tonKho, (ton) => {
 });
 
 function tangSoLuong() {
-  if (tonKho.value == null || soLuongMua.value < tonKho.value) soLuongMua.value += 1;
+  if (tonKho.value == null || soLuongMua.value < tonKho.value) soLuongMua.value = (Number(soLuongMua.value) || 0) + 1;
 }
 function giamSoLuong() {
-  if (soLuongMua.value > 1) soLuongMua.value -= 1;
+  if (Number(soLuongMua.value) > 1) soLuongMua.value = Number(soLuongMua.value) - 1;
+}
+
+// Cho phép gõ trực tiếp số lượng (chỉ giữ chữ số khi đang gõ).
+function onNhapSoLuong(e) {
+  const digits = String(e.target.value).replace(/\D/g, '').slice(0, 4);
+  e.target.value = digits;
+  soLuongMua.value = digits === '' ? '' : Number(digits);
+}
+// Khi rời ô / Enter: kẹp về [1, tồn kho].
+function chuanHoaSoLuong() {
+  let n = Math.floor(Number(soLuongMua.value) || 0);
+  if (n < 1) n = 1;
+  if (tonKho.value != null && tonKho.value > 0 && n > tonKho.value) n = tonKho.value;
+  soLuongMua.value = n;
 }
 
 function kiemTraChon() {
@@ -181,15 +195,10 @@ function kiemTraChon() {
   return true;
 }
 
-function yeuCauDangNhap() {
-  if (layKhachId()) return false;
-  showWarning('Vui lòng đăng nhập để mua hàng.');
-  router.push('/login');
-  return true;
-}
-
 async function themVaoGio() {
-  if (!kiemTraChon() || yeuCauDangNhap()) return;
+  // Khách vãng lai vẫn mua được, không bắt buộc đăng nhập.
+  if (!kiemTraChon()) return;
+  chuanHoaSoLuong();
   try {
     const b = bienTheChon.value;
     const gio = await apiThemGio(b.id, soLuongMua.value, {
@@ -209,7 +218,8 @@ async function themVaoGio() {
 }
 
 async function muaNgay() {
-  if (!kiemTraChon() || yeuCauDangNhap()) return;
+  if (!kiemTraChon()) return;
+  chuanHoaSoLuong();
   try {
     const b = bienTheChon.value;
     const gio = await apiThemGio(b.id, soLuongMua.value, {
@@ -334,7 +344,15 @@ function xuLyAnhLoi(event) {
               <p class="text-sm font-semibold text-slate-700">Số lượng</p>
               <div class="flex items-center rounded-xl border border-slate-200">
                 <button @click="giamSoLuong" class="px-3 py-2 text-slate-500 hover:text-primary">−</button>
-                <span class="w-10 text-center text-sm font-semibold">{{ soLuongMua }}</span>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  :value="soLuongMua"
+                  @input="onNhapSoLuong"
+                  @blur="chuanHoaSoLuong"
+                  @keyup.enter="chuanHoaSoLuong"
+                  class="w-14 border-0 bg-transparent text-center text-sm font-semibold text-slate-800 outline-none"
+                />
                 <button @click="tangSoLuong" class="px-3 py-2 text-slate-500 hover:text-primary">+</button>
               </div>
               <span v-if="bienTheChon" class="text-xs text-slate-400">Còn {{ tonKho }} sản phẩm</span>

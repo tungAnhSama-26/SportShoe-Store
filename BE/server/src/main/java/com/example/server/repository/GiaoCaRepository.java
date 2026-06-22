@@ -25,8 +25,7 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
            "(:nhanVienId IS NULL OR g.nhanVienTrongCa.id = :nhanVienId) AND " +
            "(:trangThai IS NULL OR g.trangThai = :trangThai) AND " +
            "(:tuNgay IS NULL OR g.thoiGianVao >= :tuNgay) AND " +
-           "(:denNgay IS NULL OR g.thoiGianVao <= :denNgay) " +
-           "ORDER BY g.thoiGianVao DESC")
+           "(:denNgay IS NULL OR g.thoiGianVao <= :denNgay)")
     Page<GiaoCa> searchHistory(
             @Param("nhanVienId") UUID nhanVienId,
             @Param("trangThai") String trangThai,

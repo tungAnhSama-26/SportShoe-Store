@@ -33,6 +33,7 @@ public class PhieuGiamGiaService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final EmailService emailService;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
@@ -62,6 +63,7 @@ public class PhieuGiamGiaService {
 
     public void remove(Integer id) {
         phieuGiamGiaRepository.deleteById(id);
+        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
     }
 
     public PhieuGiamGia add(PhieuGiamGiaRequest request) {
@@ -71,7 +73,9 @@ public class PhieuGiamGiaService {
         mapRequestToEntity(request, phieuGiamGia);
         phieuGiamGia.setSoLuongDaDung(0);
         phieuGiamGia.setNgayTao(Instant.now());
-        return phieuGiamGiaRepository.save(phieuGiamGia);
+        PhieuGiamGia saved = phieuGiamGiaRepository.save(phieuGiamGia);
+        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
+        return saved;
     }
 
     public PhieuGiamGia update(Integer id, PhieuGiamGiaRequest request) {
@@ -95,6 +99,8 @@ public class PhieuGiamGiaService {
         mapRequestToEntity(request, phieuGiamGia);
 
         PhieuGiamGia saved = phieuGiamGiaRepository.save(phieuGiamGia);
+        // Báo realtime để màn thanh toán kiểm tra lại phiếu khách đang áp (vd phiếu bị ngừng).
+        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
 
         // Kiểm tra xem trạng thái thay đổi sang Ngừng hoạt động (0)
         boolean statusChangedToDeactivated = (oldTrangThai == null || oldTrangThai != 0) && (saved.getTrangThai() != null && saved.getTrangThai() == 0);

@@ -44,14 +44,16 @@ public class CoGiayService {
         String ten = req.ten().trim();
         var existingOpt = coGiayRepository.findByTenIgnoreCase(req.ten().trim());
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() == 0) {
-                existing.setTrangThai(1);
-                existing.setMoTa(req.moTa());
-                existing.setMa(ma);
-                return toCoGiay(coGiayRepository.save(existing));
+            CoGiay existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Cổ giày '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                throw new BusinessException("T�n c? gi�y '" + req.ten() + "' d� t?n t?i");
+                existing.setTrangThai(1);
+                existing.setNgayCapNhat(Instant.now());
+                if (req.moTa() != null && !req.moTa().isBlank()) {
+                    existing.setMoTa(req.moTa().trim());
+                }
+                return toCoGiay(coGiayRepository.save(existing));
             }
         }
 
