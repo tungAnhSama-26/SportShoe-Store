@@ -682,7 +682,6 @@ async function luuCa() {
   } finally {
     dangTai.value = false;
   }
-}
 
 async function xoaCa(nhanVien) {
   if (!currentChiTietCa.value) return;
@@ -737,6 +736,14 @@ async function xoaCaTuBang(nv, ngayStr, caInfo) {
     });
     showSuccess("Xóa ca làm việc thành công!");
     await taiDuLieuLich();
+    
+    const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
+    if (updatedDay) {
+      const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+      if (updatedCa) {
+        currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
+      }
+    }
   } catch (e) {
     showError(getDisplayErrorMessage(e, "Không thể xóa ca làm việc"));
   } finally {
@@ -1266,6 +1273,9 @@ function layThongTinCa(id) {
             </div>
 
           </div>
+        </div>
+      </aside>
+    </div>
 
           <!-- Footer -->
           <div class="flex items-center gap-3 p-5 pt-0">
@@ -1337,6 +1347,7 @@ function layThongTinCa(id) {
                 </div>
               </div>
             </div>
+
           </div>
 
           <!-- Footer -->
