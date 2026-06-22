@@ -1,7 +1,7 @@
 <script setup>
 import { useThongKeDashboard } from "./useThongKeDashboard";
 import { TrendingDown } from "lucide-vue-next";
-const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions } = useThongKeDashboard();
+const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter } = useThongKeDashboard();
 </script>
 
 <template>
@@ -12,7 +12,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       </div>
     </div>
 
-    <Card>
+    <Card class="!overflow-visible relative z-30">
       <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
           <Filter class="h-4 w-4 text-primary" />
@@ -145,18 +145,30 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
           </div>
         </div>
 
-        <div class="space-y-2 md:col-span-2 xl:col-span-1">
-          <label class="text-xs font-medium text-slate-500">Tìm sản phẩm</label>
+        <div ref="brandSearchContainerRef" class="space-y-2 md:col-span-2 xl:col-span-1 relative">
+          <label class="text-xs font-medium text-slate-500">Tìm theo thương hiệu</label>
           <div class="relative">
             <Search class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              v-model="filters.keyword"
+              v-model="brandSearchText"
               type="text"
-              placeholder="Mã hoặc tên sản phẩm"
+              placeholder="Nhập tên thương hiệu..."
               class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-primary focus:bg-white"
-              @input="scheduleDashboardFetch"
-              @keyup.enter="onApplyFilters"
+              @keyup.enter="onBrandSearchEnter"
             >
+          </div>
+
+          <!-- Suggestions Dropdown -->
+          <div v-if="brandHints.length" class="absolute left-0 right-0 z-50 mt-1 flex max-h-60 flex-col gap-1 overflow-y-auto rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-200">
+            <div
+              v-for="item in brandHints"
+              :key="item.id"
+              class="flex flex-col cursor-pointer rounded-xl p-3 hover:bg-slate-50 transition text-left"
+              @click="chonThuongHieuGoiY(item)"
+            >
+              <p class="text-sm font-bold text-slate-900">{{ item.ten }}</p>
+              <p v-if="item.ma" class="text-xs text-slate-500 mt-0.5">{{ item.ma }}</p>
+            </div>
           </div>
         </div>
 
@@ -183,7 +195,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       <span>Đang hiển thị dữ liệu thống kê từ ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.fromDate) }}</strong> đến ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.toDate) }}</strong></span>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[2.2fr_2fr_2fr_1.6fr_2.2fr_1.8fr_1.2fr]">
       <div
         v-for="card in summaryCards"
         :key="card.label"
@@ -209,7 +221,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
           <div>
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
               <BarChart3 class="h-4 w-4 text-rose-500" />
-              Sản phẩm bán được theo {{ periodLabel }}
+              Thương hiệu bán được theo {{ periodLabel }}
             </div>
           </div>
           <div v-if="isLoading" class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
@@ -294,8 +306,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
             <thead>
               <tr class="text-xs font-bold tracking-[0.05em] text-slate-950">
                 <th class="px-4 py-2 text-center whitespace-nowrap">Thời gian</th>
-                <th class="px-4 py-2 text-center whitespace-nowrap">Doanh thu gốc</th>
-                <th class="px-4 py-2 text-center whitespace-nowrap">Doanh thu thực tế</th>
+                <th class="px-4 py-2 text-center whitespace-nowrap">Doanh thu</th>
                 <th class="px-4 py-2 text-center whitespace-nowrap">Số đơn</th>
                 <th class="px-4 py-2 text-center whitespace-nowrap">AOV (Trung bình/đơn)</th>
                 <th class="px-4 py-2 text-center whitespace-nowrap">Tăng trưởng</th>
@@ -312,9 +323,6 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
                 </td>
                 <td class="px-4 py-4 text-center font-semibold text-slate-700">
                   {{ formatCurrency(row.doanhThu) }}
-                </td>
-                <td class="px-4 py-4 text-center font-semibold text-emerald-600">
-                  {{ formatCurrency(row.doanhThuThucTe) }}
                 </td>
                 <td class="px-4 py-4 text-center font-semibold text-slate-800">
                   {{ formatNumber(row.soDon) }}
