@@ -11,7 +11,7 @@ import {
   MessageCircle, 
   X, 
   Send, 
-  Sparkles, 
+  Bot, 
   Headphones, 
   Minus, 
   User, 
@@ -99,10 +99,8 @@ async function KhoiTaoChatbox() {
       messages.value = history || [];
       
       // Kiểm tra trạng thái phiên thông qua tin nhắn cuối cùng hoặc api (tạm thời lấy thông tin)
-      if (messages.value.length > 0) {
-        // Dự kiến đồng bộ WebSocket
-        DongBoWebsocket(sessionId.value);
-      }
+      // Đồng bộ WebSocket cho phiên chat hiện tại
+      DongBoWebsocket(sessionId.value);
       CuonXuongCuoi();
     } catch (e) {
       console.error("Không thể tải lịch sử chat cũ:", e);
@@ -183,21 +181,30 @@ async function GuiTinNhan(textToSend) {
   try {
     const res = await guiTinNhanClient(text, sessionId.value, customerName, phoneNumber);
     
-    // Hiển thị tin nhắn trả lời của AI ngay lập tức trên UI từ kết quả HTTP
-    if (res && res.message) {
-      messages.value.push({
-        id: Date.now() + 1,
-        nguoiGui: "AI",
-        noiDung: res.message,
-        ngayTao: new Date().toISOString()
-      });
+    // Hiển thị tin nhắn trả lời của AI ngay lập tức trên UI từ kết quả HTTP (nếu chưa được hiển thị qua WebSocket)
+    if (res && res.response) {
+      const alreadyPushed = messages.value.some(m => 
+        m.nguoiGui === "AI" && m.noiDung === res.response
+      );
+      if (!alreadyPushed) {
+        messages.value.push({
+          id: Date.now() + 1,
+          nguoiGui: "AI",
+          noiDung: res.response,
+          ngayTao: new Date().toISOString()
+        });
+      }
     }
 
-    // Lưu session ID nếu là lần chat đầu tiên
-    if (!sessionId.value && res.sessionId) {
-      sessionId.value = res.sessionId;
-      localStorage.setItem("chatbot_session_id", res.sessionId);
-      DongBoWebsocket(res.sessionId);
+    // Đồng bộ session ID mới từ server (lần đầu chat hoặc khi server tạo phiên mới)
+    if (res && res.sessionId) {
+      const isNewSession = res.sessionId !== sessionId.value;
+      const isNotSubscribed = !sessionSubscription;
+      if (isNewSession || isNotSubscribed) {
+        sessionId.value = res.sessionId;
+        localStorage.setItem("chatbot_session_id", res.sessionId);
+        DongBoWebsocket(res.sessionId);
+      }
     }
 
     sessionState.value = res.trangThai;
@@ -292,10 +299,10 @@ onUnmounted(() => {
       class="mb-4 w-96 h-[500px] bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden flex flex-col transition-all duration-300"
     >
       <!-- Chat Header -->
-      <div class="px-5 py-4 bg-gradient-to-r from-primary to-[#4f46e5] text-white flex items-center justify-between shrink-0">
+      <div class="px-5 py-4 bg-primary text-white flex items-center justify-between shrink-0">
         <div class="flex items-center space-x-2.5">
           <div class="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
-            <Sparkles class="h-4.5 w-4.5 text-white" />
+            <Bot class="h-4.5 w-4.5 text-white" />
           </div>
           <div>
             <h4 class="font-bold text-sm leading-none flex items-center gap-1">
@@ -345,7 +352,7 @@ onUnmounted(() => {
         <!-- Empty State / Welcome Screen -->
         <div v-if="messages.length === 0" class="py-6 px-2 text-center flex flex-col items-center justify-center space-y-4">
           <div class="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <Sparkles class="h-7 w-7" />
+            <Bot class="h-7 w-7" />
           </div>
           <div>
             <h5 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Xin chào! 👋</h5>
@@ -381,8 +388,8 @@ onUnmounted(() => {
               <span v-else-if="msg.nguoiGui === 'STAFF'" class="text-primary font-bold flex items-center">
                 <Headphones class="h-3 w-3 mr-0.5" /> Nhân viên trực
               </span>
-              <span v-else class="text-purple-600 font-bold flex items-center">
-                <Sparkles class="h-3 w-3 mr-0.5" /> Trợ lý AI
+              <span v-else class="text-primary font-bold flex items-center">
+                <Bot class="h-3 w-3 mr-0.5" /> Trợ lý AI
               </span>
             </div>
 
@@ -403,7 +410,7 @@ onUnmounted(() => {
                   <button 
                     v-else-if="seg.type === 'link'" 
                     @click="handleNavigate(seg.url)"
-                    class="inline-flex items-center justify-center px-4 py-2.5 mt-1.5 font-bold text-xs bg-gradient-to-r from-primary to-[#4f46e5] hover:opacity-90 text-white rounded-xl shadow-md transition-all cursor-pointer gap-1.5 w-full text-center"
+                    class="inline-flex items-center justify-center px-4 py-2.5 mt-1.5 font-bold text-xs bg-primary hover:bg-primary-hover text-white rounded-xl shadow-md transition-all cursor-pointer gap-1.5 w-full text-center"
                   >
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -419,8 +426,8 @@ onUnmounted(() => {
           <!-- AI Loading bubble -->
           <div v-if="isSending" class="flex flex-col items-start">
             <div class="flex items-center space-x-1 mb-0.5 text-[10px] text-slate-400 px-1">
-              <Sparkles class="h-3 w-3 text-purple-600 animate-spin" />
-              <span class="text-purple-600 font-bold">AI đang viết...</span>
+              <Bot class="h-3 w-3 text-primary animate-pulse" />
+              <span class="text-primary font-bold">AI đang viết...</span>
             </div>
             <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-2xl rounded-tl-none px-3.5 py-3 shadow-sm flex items-center space-x-1">
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce"></div>
@@ -434,12 +441,12 @@ onUnmounted(() => {
       <!-- Human Support Trigger Banner -->
       <div 
         v-if="messages.length > 0 && sessionState === 1"
-        class="bg-purple-50 dark:bg-purple-950/20 border-t border-b border-purple-100 dark:border-purple-900/30 px-4 py-2.5 flex items-center justify-between shrink-0"
+        class="bg-red-50 dark:bg-red-950/20 border-t border-b border-red-100 dark:border-red-900/30 px-4 py-2.5 flex items-center justify-between shrink-0"
       >
-        <span class="text-[10px] text-purple-800 dark:text-purple-400 font-medium">Bạn chưa tìm thấy thông tin phù hợp?</span>
+        <span class="text-[10px] text-red-800 dark:text-red-400 font-medium">Bạn chưa tìm thấy thông tin phù hợp?</span>
         <button 
           @click="YeuCauKetNoiNhanVien"
-          class="inline-flex items-center gap-1 bg-white hover:bg-purple-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-primary border border-purple-200 dark:border-purple-900/40 shadow-sm transition-colors"
+          class="inline-flex items-center gap-1 bg-white hover:bg-red-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-primary border border-red-200 dark:border-red-900/40 shadow-sm transition-colors"
         >
           <Headphones class="h-3.5 w-3.5" />
           Gặp nhân viên
@@ -484,7 +491,7 @@ onUnmounted(() => {
     <!-- Floating Chat Widget Button -->
     <button
       @click="ToggleChat"
-      class="h-14 w-14 rounded-full bg-gradient-to-r from-primary to-[#4f46e5] text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all focus:outline-none"
+      class="h-14 w-14 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all focus:outline-none"
     >
       <X v-if="isOpen" class="h-6 w-6" />
       <MessageCircle v-else class="h-6 w-6" />
