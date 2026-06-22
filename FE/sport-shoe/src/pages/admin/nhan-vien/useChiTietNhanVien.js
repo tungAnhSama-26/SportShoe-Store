@@ -67,8 +67,11 @@ export function useChiTietNhanVien() {
           if (result) {
             xuLyKetQuaQr(result.getText());
           }
-          if (err && err.name !== "NotFoundException") {
-            console.warn("[ZXing scan error]", err);
+          if (err) {
+            const isIgnored = err.name === "NotFoundException" || (err.message && err.message.includes("No MultiFormat Readers"));
+            if (!isIgnored) {
+              console.warn("[ZXing scan error]", err);
+            }
           }
         },
       );
