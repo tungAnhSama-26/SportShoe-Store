@@ -80,6 +80,16 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             """)
     java.util.Optional<HoaDon> findDetailById(@Param("id") Integer id);
 
+    @Query("""
+            select hd
+            from HoaDon hd
+            left join fetch hd.khachHang
+            left join fetch hd.nhanVien
+            left join fetch hd.phieuGiamGia
+            where upper(hd.ma) = upper(:ma)
+            """)
+    java.util.Optional<HoaDon> findDetailByMa(@Param("ma") String ma);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select hd

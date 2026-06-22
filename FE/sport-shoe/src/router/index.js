@@ -13,6 +13,7 @@ const ChiTietDonHang = () => import("../pages/ChiTietDonHang.vue");
 const DanhGiaDonHang = () => import("../pages/DanhGiaDonHang.vue");
 const SanPhamNoiBat = () => import("../pages/SanPhamNoiBat.vue");
 const GioiThieu = () => import("../pages/GioiThieu.vue");
+const TraCuuDonHang = () => import("../pages/TraCuuDonHang.vue");
 const ClientProfile = () => import("../pages/Profile.vue");
 const Login = () => import("../pages/login/Login.vue");
 const AdminLogin = () => import("../pages/login/AdminLogin.vue");
@@ -187,6 +188,11 @@ const router = createRouter({
           path: "gioi-thieu",
           name: "gioi-thieu",
           component: GioiThieu
+        },
+        {
+          path: "tra-cuu-don",
+          name: "tra-cuu-don",
+          component: TraCuuDonHang
         },
         {
           path: "profile",
