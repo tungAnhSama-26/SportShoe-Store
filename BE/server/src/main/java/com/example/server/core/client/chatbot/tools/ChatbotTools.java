@@ -1,6 +1,7 @@
 package com.example.server.core.client.chatbot.tools;
 
 import com.example.server.core.client.chatbot.dto.ProductDto;
+import com.example.server.core.admin.quanlyhoadon.domain.TrangThaiHoaDon;
 import jakarta.persistence.EntityManager;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -28,13 +29,102 @@ public class ChatbotTools {
             String keyword,
             String color,
             String category,
-            String brand
+            String brand,
+            Boolean onSale
     ) {}
 
     public record BestSellerRequest() {}
 
+    public record InvoiceSearchRequest(
+            String code
+    ) {}
+
+    public record InvoiceDto(
+            Integer id,
+            String ma,
+            String tenNguoiNhan,
+            String sdtNguoiNhan,
+            BigDecimal tongTienThanhToan,
+            String trangThaiText,
+            String ngayLap
+    ) {}
+
+    private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
+        try {
+            List<com.example.server.entity.GiayChiTiet> gcts = entityManager.createQuery(
+                    "SELECT gct FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", com.example.server.entity.GiayChiTiet.class)
+                    .setParameter("giayId", giayId)
+                    .getResultList();
+
+            if (gcts.isEmpty()) {
+                return defaultGiaBan != null ? defaultGiaBan : BigDecimal.ZERO;
+            }
+
+            BigDecimal minPrice = null;
+            java.time.LocalDate now = java.time.LocalDate.now();
+
+            for (com.example.server.entity.GiayChiTiet gct : gcts) {
+                BigDecimal price = gct.getGiaBan();
+                
+                List<com.example.server.entity.DotGiamGia> promos = entityManager.createQuery(
+                        "SELECT dgt.dotGiamGia FROM DotGiamGiaSanPham dgt WHERE dgt.giayChiTiet.id = :gctId AND dgt.trangThai = 1 AND dgt.dotGiamGia.kichHoat = 1", com.example.server.entity.DotGiamGia.class)
+                        .setParameter("gctId", gct.getId())
+                        .getResultList();
+                
+                for (com.example.server.entity.DotGiamGia dgg : promos) {
+                    if (dgg.getNgayBatDau() != null && now.isBefore(dgg.getNgayBatDau())) {
+                        continue;
+                    }
+                    if (dgg.getNgayKetThuc() != null && now.isAfter(dgg.getNgayKetThuc())) {
+                        continue;
+                    }
+                    
+                    BigDecimal discounted = gct.getGiaBan();
+                    if (dgg.getLoaiGiam() != null && dgg.getLoaiGiam() == 1) {
+                        BigDecimal discountAmount = gct.getGiaBan().multiply(dgg.getGiaTriGiam())
+                                .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                        discounted = gct.getGiaBan().subtract(discountAmount);
+                    } else if (dgg.getLoaiGiam() != null && dgg.getLoaiGiam() == 2) {
+                        discounted = gct.getGiaBan().subtract(dgg.getGiaTriGiam());
+                    }
+                    
+                    if (discounted.compareTo(BigDecimal.ZERO) < 0) {
+                        discounted = BigDecimal.ZERO;
+                    }
+                    
+                    if (discounted.compareTo(price) < 0) {
+                        price = discounted;
+                    }
+                }
+                
+                if (minPrice == null || price.compareTo(minPrice) < 0) {
+                    minPrice = price;
+                }
+            }
+            
+            return minPrice != null ? minPrice : (defaultGiaBan != null ? defaultGiaBan : BigDecimal.ZERO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultGiaBan != null ? defaultGiaBan : BigDecimal.ZERO;
+        }
+    }
+
+    private ProductDto buildProductDto(com.example.server.entity.Giay g, BigDecimal giaBan, List<String> mauSacs, List<String> kichCos, Long soLuongTon, Long daBan) {
+        BigDecimal actualPrice = calculateActualPrice(g.getId(), giaBan);
+        String moTa = g.getMoTa() != null ? g.getMoTa() : "";
+        String suffix = "";
+        if (giaBan != null && actualPrice.compareTo(giaBan) < 0) {
+            suffix = " [ĐANG GIẢM GIÁ - Giá gốc: " + giaBan.setScale(0) + "đ, giá sau giảm: " + actualPrice.setScale(0) + "đ]";
+        }
+        return new ProductDto(
+                 g.getId(), g.getMa(), g.getTen(), moTa + suffix, g.getHinhAnh(),
+                 actualPrice,
+                 mauSacs, kichCos, soLuongTon, daBan
+        );
+    }
+
     @Bean("search_products_tool")
-    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa, màu sắc, loại giày (category), hoặc thương hiệu (brand)")
+    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa, màu sắc, loại giày (category), thương hiệu (brand) hoặc trạng thái giảm giá (onSale = true)")
     public Function<SearchRequest, List<ProductDto>> searchProductsTool() {
         return new Function<SearchRequest, List<ProductDto>>() {
             @Override
@@ -58,6 +148,9 @@ public class ChatbotTools {
                     if (request.brand() != null && !request.brand().isBlank()) {
                         jpql.append("AND LOWER(th.ten) LIKE :brand ");
                         params.put("brand", "%" + request.brand().toLowerCase().trim() + "%");
+                    }
+                    if (Boolean.TRUE.equals(request.onSale())) {
+                        jpql.append("AND EXISTS (SELECT dgt.id FROM DotGiamGiaSanPham dgt JOIN dgt.giayChiTiet gct JOIN dgt.dotGiamGia dg WHERE gct.giay.id = g.id AND dg.kichHoat = 1 AND dgt.trangThai = 1) ");
                     }
 
                     var query = entityManager.createQuery(jpql.toString(), com.example.server.entity.Giay.class);
@@ -99,11 +192,7 @@ public class ChatbotTools {
                             }
                         }
 
-                        result.add(new ProductDto(
-                                 g.getId(), g.getMa(), g.getTen(), g.getMoTa(), g.getHinhAnh(),
-                                 giaBan != null ? giaBan : BigDecimal.ZERO,
-                                 mauSacs, kichCos, soLuongTon, daBan
-                        ));
+                        result.add(buildProductDto(g, giaBan, mauSacs, kichCos, soLuongTon, daBan));
                     }
                     return result;
                 } catch (Exception e) {
@@ -157,11 +246,7 @@ public class ChatbotTools {
 
                         Long daBan = (Long) row[1];
 
-                        result.add(new ProductDto(
-                                g.getId(), g.getMa(), g.getTen(), g.getMoTa(), g.getHinhAnh(),
-                                giaBan != null ? giaBan : BigDecimal.ZERO,
-                                mauSacs, kichCos, soLuongTon, daBan
-                        ));
+                        result.add(buildProductDto(g, giaBan, mauSacs, kichCos, soLuongTon, daBan));
                     }
 
                     if (result.isEmpty()) {
@@ -190,11 +275,7 @@ public class ChatbotTools {
                                     .setParameter("giayId", g.getId())
                                     .getSingleResult();
 
-                            result.add(new ProductDto(
-                                    g.getId(), g.getMa(), g.getTen(), g.getMoTa(), g.getHinhAnh(),
-                                    giaBan != null ? giaBan : BigDecimal.ZERO,
-                                    mauSacs, kichCos, soLuongTon, 0L
-                            ));
+                            result.add(buildProductDto(g, giaBan, mauSacs, kichCos, soLuongTon, 0L));
                         }
                     }
                     return result;
@@ -333,6 +414,73 @@ public class ChatbotTools {
                 } catch (Exception e) {
                     e.printStackTrace();
                     return List.of();
+                }
+            }
+        };
+    }
+
+    @Bean("search_invoice_tool")
+    @Description("Tìm kiếm hóa đơn theo mã hóa đơn (ví dụ: HD0001) để lấy thông tin chi tiết và trạng thái của hóa đơn")
+    public Function<InvoiceSearchRequest, InvoiceDto> searchInvoiceTool() {
+        return new Function<InvoiceSearchRequest, InvoiceDto>() {
+            @Override
+            public InvoiceDto apply(InvoiceSearchRequest request) {
+                try {
+                    if (request.code() == null || request.code().isBlank()) {
+                        return null;
+                    }
+                    String cleanCode = request.code().trim();
+                    if (cleanCode.startsWith("#")) {
+                        cleanCode = cleanCode.substring(1);
+                    }
+                    cleanCode = cleanCode.toLowerCase();
+
+                    // Tìm kiếm chính xác trước
+                    List<com.example.server.entity.HoaDon> results = entityManager.createQuery(
+                                    "SELECT h FROM HoaDon h WHERE LOWER(h.ma) = :code", com.example.server.entity.HoaDon.class)
+                            .setParameter("code", cleanCode)
+                            .getResultList();
+
+                    if (results.isEmpty()) {
+                        // Nếu không thấy, thử tìm kiếm gần đúng với LIKE
+                        results = entityManager.createQuery(
+                                        "SELECT h FROM HoaDon h WHERE LOWER(h.ma) LIKE :codeLike", com.example.server.entity.HoaDon.class)
+                                .setParameter("codeLike", "%" + cleanCode + "%")
+                                .setMaxResults(1)
+                                .getResultList();
+                    }
+
+                    if (results.isEmpty()) {
+                        return null;
+                    }
+
+                    com.example.server.entity.HoaDon h = results.get(0);
+
+                    // Ánh xạ trạng thái
+                    String trangThaiText = "Không xác định";
+                    if (h.getTrangThai() != null) {
+                        try {
+                            trangThaiText = TrangThaiHoaDon.tuMa(h.getTrangThai()).getTen();
+                        } catch (Exception ex) {
+                            trangThaiText = "Mã trạng thái: " + h.getTrangThai();
+                        }
+                    }
+
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault());
+                    String ngayLapStr = h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "";
+
+                    return new InvoiceDto(
+                            h.getId(),
+                            h.getMa(),
+                            h.getTenNguoiNhan(),
+                            h.getSdtNguoiNhan(),
+                            h.getTongTienThanhToan(),
+                            trangThaiText,
+                            ngayLapStr
+                    );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
                 }
             }
         };
