@@ -65,3 +65,10 @@ export function capNhatChamCong(id, payload) {
 export function layThongKeChamCong(tuNgay, denNgay) {
   return request(`/admin/cham-cong/thong-ke?tuNgay=${tuNgay}&denNgay=${denNgay}`);
 }
+
+/**
+ * Lấy thời gian từ server
+ */
+export function layServerTime() {
+  return request("/admin/cham-cong/server-time");
+}

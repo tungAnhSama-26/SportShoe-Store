@@ -1,16 +1,30 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { 
   Filter, Plus, RotateCcw, Clock, Eye, X, Search 
 } from 'lucide-vue-next';
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import TimePicker24h from "../../../components/common/TimePicker24h.vue";
+import { layDanhSachCaLam, taoCaLam, capNhatCaLam } from '../../../services/ca-lam.js';
 
-// --- Dữ liệu Mock ---
-const danhSachCaLam = ref([
-  { id: 'CA00002', ten: 'Ca chiều', gioBatDau: '13:30', gioKetThuc: '17:30', trangThai: true },
-  { id: 'CA00001', ten: 'Ca sáng', gioBatDau: '08:00', gioKetThuc: '12:00', trangThai: true },
-]);
+// --- Dữ liệu Ca làm việc ---
+const danhSachCaLam = ref([]);
+const dangTai = ref(false);
+
+async function taiDanhSach() {
+  dangTai.value = true;
+  try {
+    danhSachCaLam.value = await layDanhSachCaLam();
+  } catch (e) {
+    showError("Không thể tải danh sách ca làm việc");
+  } finally {
+    dangTai.value = false;
+  }
+}
+
+onMounted(() => {
+  taiDanhSach();
+});
 
 // --- Bộ lọc ---
 const filters = ref({
@@ -44,9 +58,22 @@ function lamMoi() {
   filters.value = { timKiem: '', gioBatDau: '', gioKetThuc: '', trangThai: 'all' };
 }
 
-function toggleTrangThai(ca) {
-  ca.trangThai = !ca.trangThai;
-  showSuccess(`Đã thay đổi trạng thái ca ${ca.ten}`);
+async function toggleTrangThai(ca) {
+  const confirmed = await showConfirm(`Bạn có chắc chắn muốn thay đổi trạng thái ca ${ca.ten}?`, "Xác nhận");
+  if (!confirmed) return;
+
+  try {
+    await capNhatCaLam(ca.id, {
+      ten: ca.ten,
+      gioBatDau: ca.gioBatDau,
+      gioKetThuc: ca.gioKetThuc,
+      trangThai: !ca.trangThai
+    });
+    showSuccess(`Đã thay đổi trạng thái ca ${ca.ten}`);
+    await taiDanhSach();
+  } catch (e) {
+    showError(e.message || "Không thể thay đổi trạng thái ca làm việc");
+  }
 }
 
 // --- Modal Thêm/Sửa Ca ---
@@ -127,27 +154,30 @@ async function luuTaoCa() {
   const confirmed = await showConfirm(`Bạn có chắc chắn muốn ${actionText} ca làm việc này không?`, "Xác nhận");
   if (!confirmed) return;
 
-  if (isEdit.value) {
-    const idx = danhSachCaLam.value.findIndex(c => c.id === formTaoCa.value.id);
-    if (idx !== -1) {
-      danhSachCaLam.value[idx].ten = formTaoCa.value.tenCa;
-      danhSachCaLam.value[idx].gioBatDau = formTaoCa.value.gioBatDau;
-      danhSachCaLam.value[idx].gioKetThuc = formTaoCa.value.gioKetThuc;
+  try {
+    if (isEdit.value) {
+      const targetCa = danhSachCaLam.value.find(c => c.id === formTaoCa.value.id);
+      await capNhatCaLam(formTaoCa.value.id, {
+        ten: formTaoCa.value.tenCa,
+        gioBatDau: formTaoCa.value.gioBatDau,
+        gioKetThuc: formTaoCa.value.gioKetThuc,
+        trangThai: targetCa ? targetCa.trangThai : true
+      });
+      showSuccess("Cập nhật ca làm việc thành công!");
+    } else {
+      await taoCaLam({
+        ten: formTaoCa.value.tenCa,
+        gioBatDau: formTaoCa.value.gioBatDau,
+        gioKetThuc: formTaoCa.value.gioKetThuc,
+        trangThai: true
+      });
+      showSuccess("Thêm mới ca làm việc thành công!");
     }
-    showSuccess("Cập nhật ca làm việc thành công!");
-  } else {
-    const nextId = "CA" + String(danhSachCaLam.value.length + 1).padStart(5, '0');
-    danhSachCaLam.value.unshift({
-      id: nextId,
-      ten: formTaoCa.value.tenCa,
-      gioBatDau: formTaoCa.value.gioBatDau,
-      gioKetThuc: formTaoCa.value.gioKetThuc,
-      trangThai: true
-    });
-    showSuccess("Thêm mới ca làm việc thành công!");
+    await taiDanhSach();
+    showModalTaoCa.value = false;
+  } catch (e) {
+    showError(e.message || "Có lỗi xảy ra khi lưu ca làm việc");
   }
-
-  showModalTaoCa.value = false;
 }
 </script>
 
@@ -236,52 +266,59 @@ async function luuTaoCa() {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(ca, idx) in dsHienThi" :key="ca.id" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
-              <td class="py-4 px-4 text-[14px] text-slate-600">{{ idx + 1 }}</td>
-              <td class="py-4 px-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
-                    <Clock class="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div class="text-[14px] font-bold text-slate-800">{{ ca.ten }}</div>
-                    <div class="text-[12px] text-slate-500 mt-0.5">{{ ca.id }}</div>
-                  </div>
-                </div>
-              </td>
-              <td class="py-4 px-4 text-center">
-                <span class="inline-block px-3 py-1.5 rounded-full bg-emerald-100/50 text-emerald-600 text-[13px] font-bold border border-emerald-100">
-                  {{ ca.gioBatDau }}
-                </span>
-              </td>
-              <td class="py-4 px-4 text-center">
-                <span class="inline-block px-3 py-1.5 rounded-full bg-rose-100/50 text-rose-500 text-[13px] font-bold border border-rose-100">
-                  {{ ca.gioKetThuc }}
-                </span>
-              </td>
-              <td class="py-4 px-4 text-center">
-                <button 
-                  @click="toggleTrangThai(ca)"
-                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-                  :class="ca.trangThai ? 'bg-rose-500' : 'bg-slate-200'"
-                >
-                  <span 
-                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
-                    :class="ca.trangThai ? 'translate-x-6' : 'translate-x-1'"
-                  />
-                </button>
-              </td>
-              <td class="py-4 px-4 text-center">
-                <button @click="moModalSuaCa(ca)" class="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-sm">
-                  <Eye class="w-4 h-4" />
-                </button>
-              </td>
-            </tr>
-            <tr v-if="dsHienThi.length === 0">
+            <tr v-if="dangTai">
               <td colspan="6" class="py-8 text-center text-[14px] text-slate-500">
-                Không tìm thấy ca làm việc nào phù hợp.
+                Đang tải danh sách ca làm việc...
               </td>
             </tr>
+            <template v-else>
+              <tr v-for="(ca, idx) in dsHienThi" :key="ca.id" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+                <td class="py-4 px-4 text-[14px] text-slate-600">{{ idx + 1 }}</td>
+                <td class="py-4 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                      <Clock class="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div class="text-[14px] font-bold text-slate-800">{{ ca.ten }}</div>
+                      <div class="text-[12px] text-slate-500 mt-0.5">{{ ca.id }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-center">
+                  <span class="inline-block px-3 py-1.5 rounded-full bg-emerald-100/50 text-emerald-600 text-[13px] font-bold border border-emerald-100">
+                    {{ ca.gioBatDau }}
+                  </span>
+                </td>
+                <td class="py-4 px-4 text-center">
+                  <span class="inline-block px-3 py-1.5 rounded-full bg-rose-100/50 text-rose-500 text-[13px] font-bold border border-rose-100">
+                    {{ ca.gioKetThuc }}
+                  </span>
+                </td>
+                <td class="py-4 px-4 text-center">
+                  <button 
+                    @click="toggleTrangThai(ca)"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+                    :class="ca.trangThai ? 'bg-rose-500' : 'bg-slate-200'"
+                  >
+                    <span 
+                      class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
+                      :class="ca.trangThai ? 'translate-x-6' : 'translate-x-1'"
+                    />
+                  </button>
+                </td>
+                <td class="py-4 px-4 text-center">
+                  <button @click="moModalSuaCa(ca)" class="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-sm">
+                    <Eye class="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="dsHienThi.length === 0">
+                <td colspan="6" class="py-8 text-center text-[14px] text-slate-500">
+                  Không tìm thấy ca làm việc nào phù hợp.
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
