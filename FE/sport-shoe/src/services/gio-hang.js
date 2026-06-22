@@ -78,6 +78,9 @@ export async function dongBoGiaGio() {
     (Array.isArray(ds) ? ds : []).map((x) => [Number(x.giayChiTietId), x]),
   );
   for (const item of gio.items) {
+    // "giá lúc thêm" = mốc để so sánh. Chỉ gạch giá cũ khi giá ĐỔI sau lúc thêm vào giỏ
+    // (đợt giảm mới / admin đổi giá gốc), KHÔNG gạch với phần giảm vốn đã có sẵn lúc thêm.
+    if (item.giaThem == null) item.giaThem = Number(item.giaBan || 0);
     const moi = theoId.get(Number(item.giayChiTietId));
     if (!moi) {
       // Biến thể không còn tồn tại (đã bị xóa) -> coi như ngừng bán.
@@ -85,9 +88,8 @@ export async function dongBoGiaGio() {
       item.tonKho = 0;
       continue;
     }
-    // Cách A: 1 dòng, cập nhật về giá mới; giữ giá niêm yết để hiển thị gạch ngang.
     item.giaNiemYet = Number(moi.giaNiemYet ?? item.giaBan);
-    item.giaBan = Number(moi.giaHienTai ?? item.giaBan);
+    item.giaBan = Number(moi.giaHienTai ?? item.giaBan); // giá hiện tại (sau đợt giảm)
     if (moi.tonKho != null) item.tonKho = Number(moi.tonKho);
     item.conBan = moi.conBan !== false; // false = admin đã ngừng bán
   }
@@ -103,9 +105,6 @@ export async function themVaoGio(giayChiTietId, soLuong = 1, thongTin = {}) {
   const soLuongMoi = Number(soLuong) + Number(hienTai?.soLuong || 0);
   const tonKho = Number(thongTin.tonKho ?? thongTin.soLuong ?? hienTai?.tonKho ?? 0);
 
-  if (soLuongMoi > 10) {
-    throw new Error("Mỗi sản phẩm chỉ được mua tối đa 10 sản phẩm.");
-  }
   if (tonKho > 0 && soLuongMoi > tonKho) {
     throw new Error(`Sản phẩm chỉ còn ${tonKho} sản phẩm.`);
   }
@@ -128,6 +127,7 @@ export async function themVaoGio(giayChiTietId, soLuong = 1, thongTin = {}) {
       kichCo: thongTin.kichCo || "",
       hinhAnh: thongTin.hinhAnh || "",
       giaBan: Number(thongTin.giaBan || 0),
+      giaThem: Number(thongTin.giaBan || 0), // giá lúc thêm vào giỏ (mốc so sánh khi đổi giá sau này)
       soLuong: Number(soLuong),
       tonKho,
     });
@@ -140,7 +140,7 @@ export async function capNhatSoLuong(itemId, soLuong) {
   const gio = docGioHangLocal();
   const item = gio.items.find((dong) => Number(dong.id) === Number(itemId));
   if (!item) throw new Error("Sản phẩm không còn trong giỏ hàng.");
-  if (Number(soLuong) < 1 || Number(soLuong) > 10) {
+  if (Number(soLuong) < 1) {
     throw new Error("Số lượng sản phẩm không hợp lệ.");
   }
   if (Number(item.tonKho) > 0 && Number(soLuong) > Number(item.tonKho)) {
@@ -310,29 +310,28 @@ export async function layXaGhn(huyenId) {
   return Array.isArray(data) ? data : [];
 }
 
-// Danh sách voucher khách có thể dùng cho giỏ hiện tại (toàn sàn + voucher riêng được gửi).
+// Danh sách voucher có thể dùng cho giỏ hiện tại.
+// Khách đăng nhập: toàn sàn + voucher riêng được gửi. Khách vãng lai: chỉ voucher toàn sàn.
 export async function layVoucherKhaDung() {
   const id = layKhachId();
-  if (!id) return [];
   const tongTienHang = docGioHangLocal().tongTien;
-  const data = await apiRequest(
-    `/client/voucher/kha-dung?khachHangId=${id}&tongTienHang=${encodeURIComponent(tongTienHang)}`,
-    {
+  const params = new URLSearchParams();
+  if (id) params.set("khachHangId", id); // khách vãng lai -> không gửi -> BE trả voucher toàn sàn
+  params.set("tongTienHang", String(tongTienHang));
+  const data = await apiRequest(`/client/voucher/kha-dung?${params.toString()}`, {
     authenticated: false,
     fallbackMessage: "Không thể tải danh sách voucher",
-    },
-  );
+  });
   return Array.isArray(data) ? data : [];
 }
 
-// Kiểm tra / áp mã giảm giá trên giỏ hiện tại.
+// Kiểm tra / áp mã giảm giá trên giỏ hiện tại (khách vãng lai chỉ áp được voucher toàn sàn).
 export async function kiemTraVoucher(maPhieu) {
   const id = layKhachId();
-  if (!id) throw new Error("Vui lòng đăng nhập.");
   return apiRequest(`/client/voucher/kiem-tra`, {
     method: "POST",
     authenticated: false,
-    body: JSON.stringify({ khachHangId: id, sanPhams: danhSachDatHang(), maPhieu }),
+    body: JSON.stringify({ khachHangId: id || null, sanPhams: danhSachDatHang(), maPhieu }),
     fallbackMessage: "Không thể áp mã giảm giá",
   });
 }

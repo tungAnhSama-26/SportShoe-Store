@@ -98,13 +98,22 @@ public class ClientDatHangService {
      */
     public record KhoaThanhToan(Map<Integer, BigDecimal> giaSanPham, BigDecimal tienGiamVoucher) {}
 
-    /**
-     * @param khoa snapshot khóa lúc tạo mã QR; null nếu COD/đặt thường (tính giá + voucher hiện tại).
-     */
     @Transactional
     public DatHangResponse datHang(DatHangRequest request, String maGiaoDich, KhoaThanhToan khoa) {
+        return datHang(request, maGiaoDich, khoa, false);
+    }
+
+    /**
+     * @param khoa     snapshot khóa lúc tạo mã QR; null nếu COD/đặt thường.
+     * @param daGiuCho true khi tồn đã được giữ chỗ (trừ kho) lúc tạo mã QR -> không kiểm/trừ lại,
+     *                 và đánh dấu đơn ĐÃ TRỪ KHO (nhân viên xác nhận sẽ không trừ trùng).
+     */
+    @Transactional
+    public DatHangResponse datHang(
+            DatHangRequest request, String maGiaoDich, KhoaThanhToan khoa, boolean daGiuCho) {
         Map<Integer, BigDecimal> giaKhoa = khoa == null ? null : khoa.giaSanPham();
-        ClientCheckoutItemService.KetQua checkout = checkoutItemService.chuanBi(request.sanPhams(), giaKhoa);
+        ClientCheckoutItemService.KetQua checkout =
+                checkoutItemService.chuanBi(request.sanPhams(), giaKhoa, daGiuCho);
         List<HoaDonChiTiet> dong = checkout.chiTiets();
         // Khách vãng lai (chưa đăng nhập) -> khachHangId null -> hóa đơn không gắn khách (khách lẻ).
         KhachHang khachHang = request.khachHangId() == null
@@ -125,7 +134,8 @@ public class ClientDatHangService {
         hoaDon.setNgayTao(now);
         hoaDon.setNgayCapNhat(now);
         hoaDon.setDaNhanHang(false);
-        hoaDon.setDaTruKho(false);
+        // Đơn QR đã giữ chỗ tồn -> đánh dấu đã trừ kho để nhân viên xác nhận không trừ trùng.
+        hoaDon.setDaTruKho(daGiuCho);
 
         String diaChi = Stream.of(
                         request.diaChiCuThe(),
@@ -145,9 +155,9 @@ public class ClientDatHangService {
 
         BigDecimal tongTienHang = checkout.tongTienHang();
         BigDecimal tienGiam = BigDecimal.ZERO;
-        // Voucher chỉ áp cho khách có tài khoản; khách vãng lai bỏ qua.
-        if (khachHang != null
-                && request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
+        // Khách có tài khoản: dùng cả voucher cá nhân + toàn sàn. Khách vãng lai (khachHang null):
+        // chỉ voucher toàn sàn (voucher cá nhân sẽ bị từ chối "chỉ dành cho thành viên" khi validate).
+        if (request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
             if (khoa != null) {
                 // Luồng QR: voucher đã khóa lúc tạo mã. Chỉ áp khi lúc đó còn hợp lệ (tiền giảm > 0);
                 // áp theo tiền giảm đã khóa, KHÔNG kiểm tra lại hiệu lực (dù sau đó bị hủy vẫn giữ).
