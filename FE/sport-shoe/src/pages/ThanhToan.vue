@@ -1,7 +1,8 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { layGioHang, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen, layTinhGhn, layHuyenGhn, layXaGhn } from '../services/gio-hang';
+import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen, layTinhGhn, layHuyenGhn, layXaGhn } from '../services/gio-hang';
+import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
@@ -20,6 +21,7 @@ const daDangNhap = computed(() => Boolean(layKhachId()));
 const form = ref({
   hoTen: '',
   sdt: '',
+  email: '',
   tinhThanh: '',
   quanHuyen: '',
   phuongXa: '',
@@ -149,6 +151,8 @@ async function chonVoucher(v) {
 // VNPay (giả lập)
 const qrVnPay = ref(null); // { token, qrData, maGiaoDich }
 let pollTimer = null;
+let countdownTimer = null;
+const demNguoc = ref(60); // phiên QR sống tối đa 60 giây
 
 // Phí vận chuyển (GHN) - tính lại mỗi khi địa chỉ thay đổi.
 const phiShip = ref(null); // { phiVanChuyen, uocTinh, moTa }
@@ -193,10 +197,43 @@ watch(
   }
 );
 
-onMounted(tai);
+let ngatRealtimeSP = null;
+let timerDongBoSP = null;
+
+function lenLichDongBo() {
+  if (timerDongBoSP) clearTimeout(timerDongBoSP);
+  timerDongBoSP = setTimeout(reSyncGio, 300);
+}
+
+function dongBoKhiQuayLaiTab() {
+  if (document.visibilityState === 'visible') lenLichDongBo();
+}
+
+onMounted(() => {
+  tai();
+  // Realtime: admin đổi giá / ngừng bán / ngừng phiếu -> đồng bộ lại giỏ + phiếu (ngầm).
+  ngatRealtimeSP = ketNoiSanPhamRealtime({ onSanPhamThayDoi: lenLichDongBo });
+  // Dự phòng khi SSE lỡ tín hiệu: quay lại tab/cửa sổ này thì kiểm lại ngay (không cần reload).
+  window.addEventListener('focus', lenLichDongBo);
+  document.addEventListener('visibilitychange', dongBoKhiQuayLaiTab);
+});
+
+async function reSyncGio() {
+  try {
+    gio.value = await dongBoGiaGio();
+  } catch {
+    // bỏ qua lỗi mạng -> giữ giỏ hiện tại
+  }
+  // Phiếu đang áp vừa bị ngừng -> gỡ + báo ngay (không đợi tới lúc bấm thanh toán).
+  await kiemTraLaiVoucher();
+}
 
 onUnmounted(() => {
   dungPoll();
+  ngatRealtimeSP?.();
+  if (timerDongBoSP) clearTimeout(timerDongBoSP);
+  window.removeEventListener('focus', lenLichDongBo);
+  document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTab);
 });
 
 onBeforeRouteLeave(() => {
@@ -207,7 +244,7 @@ async function tai() {
   dangTai.value = true;
   try {
     const [g, dc, tinh] = await Promise.all([
-      layGioHang(),
+      dongBoGiaGio(),
       layDiaChiKhachHang(),
       layTinhGhn().catch(() => []),
     ]);
@@ -236,6 +273,7 @@ async function chonDiaChi(dc) {
   form.value = {
     hoTen: dc.hoTen || '',
     sdt: dc.sdt || '',
+    email: form.value.email || '',
     tinhThanh: dc.tinhThanh || '',
     quanHuyen: dc.quanHuyen || '',
     phuongXa: dc.phuongXa || '',
@@ -268,6 +306,24 @@ function boVoucher() {
   maVoucher.value = '';
 }
 
+// Kiểm tra lại phiếu đang áp còn hiệu lực không (vd admin vừa ngừng hoạt động phiếu).
+// Trả về true nếu hợp lệ; nếu không -> gỡ phiếu + báo và trả về false (chặn thanh toán).
+async function kiemTraLaiVoucher() {
+  if (!voucher.value) return true;
+  // Giỏ đang có SP ngừng bán/hết -> đó là lỗi sản phẩm (chuanBi sẽ ném), không phải voucher.
+  // Bỏ qua kiểm voucher để phần kiểm sản phẩm báo đúng thông điệp.
+  if (coSanPhamKhongBan()) return true;
+  try {
+    voucher.value = await kiemTraVoucher(voucher.value.ma);
+    return true;
+  } catch {
+    voucher.value = null;
+    maVoucher.value = '';
+    showError('Phiếu giảm giá đã bị ngừng hoạt động, vui lòng chọn phiếu khác.');
+    return false;
+  }
+}
+
 function taoPayload() {
   const f = form.value;
   return {
@@ -281,6 +337,8 @@ function taoPayload() {
     maPhieuGiamGia: voucher.value?.ma || null,
     toDistrictId: ghn.value.huyenId,
     toWardCode: ghn.value.wardCode,
+    // Khách vãng lai có thể nhập email để nhận xác nhận đơn (tùy chọn).
+    emailNguoiNhan: f.email.trim() || null,
   };
 }
 
@@ -292,6 +350,15 @@ function hopLeThongTin() {
     showWarning('Vui lòng nhập đầy đủ địa chỉ giao hàng.');
     return false;
   }
+  // Khách vãng lai bắt buộc nhập email vì đây là đầu mối duy nhất để nhận xác nhận / theo dõi đơn.
+  if (!daDangNhap.value && !f.email.trim()) {
+    showWarning('Vui lòng nhập email để nhận xác nhận và theo dõi đơn hàng.');
+    return false;
+  }
+  if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+    showWarning('Email không hợp lệ.');
+    return false;
+  }
   return true;
 }
 
@@ -299,12 +366,26 @@ async function hoanTatDatHang(maHoaDon) {
   daDatHang.value = true;
   xoaGioHang();
   gioHangStore.datSoLuong(0);
-  await showSuccess(`Đặt hàng thành công! Mã đơn: ${maHoaDon}. Cảm ơn bạn đã mua hàng.`, 'Thành công');
-  router.push('/khachhang/san-pham');
+  // Thay vì về trang sản phẩm -> sang màn cảm ơn + tra cứu đơn (hiện mã đơn + chi tiết hóa đơn).
+  router.push({ path: '/khachhang/tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
+}
+
+// Giỏ có sản phẩm đã ngừng bán hoặc hết hàng -> không cho đặt.
+function coSanPhamKhongBan() {
+  return (gio.value.items || []).some(
+    (it) => it.conBan === false || Number(it.tonKho) <= 0,
+  );
 }
 
 async function datHangMoi() {
   if (!hopLeThongTin()) return;
+  // Đồng bộ giỏ mới nhất để biết SP còn bán không (tránh trạng thái cũ -> báo nhầm voucher).
+  try { gio.value = await dongBoGiaGio(); } catch { /* lỗi mạng -> dùng trạng thái hiện có */ }
+  if (coSanPhamKhongBan()) {
+    return showError('Trong giỏ có sản phẩm đã hết hàng hoặc ngừng bán. Vui lòng quay lại giỏ hàng để xóa.');
+  }
+  // Phiếu đang áp có thể vừa bị admin ngừng -> kiểm tra lại trước khi thanh toán.
+  if (!(await kiemTraLaiVoucher())) return;
   if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
     return moThanhToanVnPay();
   }
@@ -340,6 +421,12 @@ const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
 function batDauPoll() {
   dungPoll();
+  demNguoc.value = 60;
+  // Đếm ngược 60s: hết giờ chưa thanh toán -> phiên hết hạn (BE đã hoàn tồn về).
+  countdownTimer = setInterval(() => {
+    demNguoc.value -= 1;
+    if (demNguoc.value <= 0) ngatHetHan();
+  }, 1000);
   pollTimer = setInterval(async () => {
     if (!qrVnPay.value) return;
     try {
@@ -349,6 +436,8 @@ function batDauPoll() {
         const ma = tt.maHoaDon;
         qrVnPay.value = null;
         await hoanTatDatHang(ma);
+      } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
+        ngatHetHan();
       }
     } catch {
       // bỏ qua, thử lại lần poll sau
@@ -356,10 +445,20 @@ function batDauPoll() {
   }, 2000);
 }
 
+function ngatHetHan() {
+  dungPoll();
+  qrVnPay.value = null;
+  showError('Phiên thanh toán đã hết hạn (quá 1 phút). Sản phẩm đã được hoàn lại, vui lòng đặt lại đơn.');
+}
+
 function dungPoll() {
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
+  }
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
   }
 }
 
@@ -379,12 +478,7 @@ function xuLyAnhLoi(event) {
       <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
       <p class="text-sm text-slate-400 mb-8">Bước 1: Thông tin giao hàng</p>
 
-      <div v-if="!daDangNhap" class="py-24 text-center">
-        <p class="text-sm text-slate-500 mb-4">Vui lòng đăng nhập để thanh toán.</p>
-        <router-link to="/login" class="inline-flex rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90">Đăng nhập</router-link>
-      </div>
-
-      <div v-else-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải...</div>
+      <div v-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải...</div>
 
       <div v-else-if="!gio.items.length" class="py-24 text-center">
         <p class="text-sm text-slate-500 mb-4">Giỏ hàng trống, không có gì để thanh toán.</p>
@@ -418,7 +512,11 @@ function xuLyAnhLoi(event) {
 
           <!-- Form thông tin người nhận -->
           <section class="rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
-            <h2 class="text-base font-bold text-slate-900 mb-4">Thông tin người nhận</h2>
+            <h2 class="text-base font-bold text-slate-900 mb-1">Thông tin người nhận</h2>
+            <p v-if="!daDangNhap" class="mb-4 text-xs text-slate-400">
+              Bạn đang đặt hàng không cần tài khoản. Vui lòng nhập đầy đủ thông tin nhận hàng và email để nhận xác nhận / theo dõi đơn.
+            </p>
+            <div v-else class="mb-4"></div>
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="space-y-1.5">
                 <span class="text-sm font-medium text-slate-600">Họ và tên người nhận <span class="text-rose-500">*</span></span>
@@ -452,6 +550,11 @@ function xuLyAnhLoi(event) {
               <label class="space-y-1.5 sm:col-span-2">
                 <span class="text-sm font-medium text-slate-600">Địa chỉ cụ thể <span class="text-rose-500">*</span></span>
                 <input v-model="form.diaChiCuThe" type="text" placeholder="Số nhà, tên đường..." class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+              <label v-if="!daDangNhap" class="space-y-1.5 sm:col-span-2">
+                <span class="text-sm font-medium text-slate-600">Email nhận xác nhận đơn <span class="text-rose-500">*</span></span>
+                <input v-model="form.email" type="email" placeholder="email@example.com" class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <span class="block text-xs text-slate-400">Xác nhận & chi tiết đơn sẽ gửi về email này. Bạn dùng email để theo dõi đơn (không có tài khoản nên hãy lưu lại).</span>
               </label>
             </div>
             <p v-if="diaChiDayDu" class="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
@@ -502,7 +605,7 @@ function xuLyAnhLoi(event) {
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(Number(item.giaBan) * Number(item.soLuong)) }}</p>
             </div>
           </div>
-          <!-- Mã giảm giá -->
+          <!-- Mã giảm giá (khách vãng lai dùng được voucher toàn sàn) -->
           <div class="mt-4 border-t border-slate-100 pt-4">
             <div v-if="!voucher">
               <div class="flex gap-2">
@@ -617,6 +720,11 @@ function xuLyAnhLoi(event) {
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
           </div>
+          <div class="mt-2 text-center text-sm">
+            <span class="text-slate-400">Phiên hết hạn sau </span>
+            <span :class="['font-bold', demNguoc <= 10 ? 'text-rose-600' : 'text-slate-700']">{{ demNguoc }}s</span>
+          </div>
+          <p class="mt-1 text-center text-[11px] text-slate-400">Quá 1 phút chưa thanh toán, đơn sẽ tự hủy và hoàn sản phẩm về kho.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>

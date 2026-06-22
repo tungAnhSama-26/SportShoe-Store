@@ -2,6 +2,8 @@ import { API_BASE_URL, getAuthHeaders } from "./api-client";
 
 const REALTIME_PATH = "/realtime/hoa-don";
 const RETRY_DELAY_MS = 3000;
+const LOCAL_CHANNEL_NAME = "sportshoe-hoa-don-realtime";
+const LOCAL_STORAGE_KEY = "sportshoe:hoa-don-realtime";
 
 function parseEventBlock(block) {
   let eventName = "message";
@@ -125,5 +127,57 @@ export function ketNoiHoaDonRealtime({
     }
     controller?.abort();
     controller = null;
+  };
+}
+
+export function phatTinHoaDonThayDoiNoiBo(event = {}) {
+  if (typeof window === "undefined") return;
+
+  const payload = {
+    ...event,
+    thoiGianPhat: Date.now(),
+  };
+
+  if ("BroadcastChannel" in window) {
+    const channel = new BroadcastChannel(LOCAL_CHANNEL_NAME);
+    channel.postMessage(payload);
+    channel.close();
+  }
+
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Bỏ qua nếu trình duyệt chặn localStorage.
+  }
+}
+
+export function langNgheHoaDonThayDoiNoiBo(onHoaDonThayDoi) {
+  if (typeof window === "undefined") return () => {};
+
+  let channel = null;
+  const handleEvent = (event) => {
+    if (!event) return;
+    onHoaDonThayDoi?.(event);
+  };
+
+  if ("BroadcastChannel" in window) {
+    channel = new BroadcastChannel(LOCAL_CHANNEL_NAME);
+    channel.onmessage = (message) => handleEvent(message.data);
+  }
+
+  const handleStorage = (storageEvent) => {
+    if (storageEvent.key !== LOCAL_STORAGE_KEY || !storageEvent.newValue) return;
+    try {
+      handleEvent(JSON.parse(storageEvent.newValue));
+    } catch {
+      // Dữ liệu cũ/hỏng thì bỏ qua.
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    channel?.close();
+    window.removeEventListener("storage", handleStorage);
   };
 }

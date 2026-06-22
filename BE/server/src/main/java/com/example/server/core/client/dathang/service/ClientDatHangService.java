@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,10 +89,37 @@ public class ClientDatHangService {
 
     @Transactional
     public DatHangResponse datHang(DatHangRequest request, String maGiaoDich) {
-        ClientCheckoutItemService.KetQua checkout = checkoutItemService.chuanBi(request.sanPhams());
+        return datHang(request, maGiaoDich, null);
+    }
+
+    /**
+     * Snapshot KHÓA lúc tạo mã QR (VNPAY/VietQR): giá sản phẩm theo biến thể + tiền giảm voucher
+     * đã chốt. Khi tạo đơn dùng đúng snapshot này, không tính lại theo trạng thái hiện tại.
+     */
+    public record KhoaThanhToan(Map<Integer, BigDecimal> giaSanPham, BigDecimal tienGiamVoucher) {}
+
+    @Transactional
+    public DatHangResponse datHang(DatHangRequest request, String maGiaoDich, KhoaThanhToan khoa) {
+        return datHang(request, maGiaoDich, khoa, false);
+    }
+
+    /**
+     * @param khoa     snapshot khóa lúc tạo mã QR; null nếu COD/đặt thường.
+     * @param daGiuCho true khi tồn đã được giữ chỗ (trừ kho) lúc tạo mã QR -> không kiểm/trừ lại,
+     *                 và đánh dấu đơn ĐÃ TRỪ KHO (nhân viên xác nhận sẽ không trừ trùng).
+     */
+    @Transactional
+    public DatHangResponse datHang(
+            DatHangRequest request, String maGiaoDich, KhoaThanhToan khoa, boolean daGiuCho) {
+        Map<Integer, BigDecimal> giaKhoa = khoa == null ? null : khoa.giaSanPham();
+        ClientCheckoutItemService.KetQua checkout =
+                checkoutItemService.chuanBi(request.sanPhams(), giaKhoa, daGiuCho);
         List<HoaDonChiTiet> dong = checkout.chiTiets();
-        KhachHang khachHang = khachHangRepository.findById(request.khachHangId())
-                .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
+        // Khách vãng lai (chưa đăng nhập) -> khachHangId null -> hóa đơn không gắn khách (khách lẻ).
+        KhachHang khachHang = request.khachHangId() == null
+                ? null
+                : khachHangRepository.findById(request.khachHangId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
         Instant now = Instant.now();
 
         HoaDon hoaDon = new HoaDon();
@@ -106,7 +134,8 @@ public class ClientDatHangService {
         hoaDon.setNgayTao(now);
         hoaDon.setNgayCapNhat(now);
         hoaDon.setDaNhanHang(false);
-        hoaDon.setDaTruKho(false);
+        // Đơn QR đã giữ chỗ tồn -> đánh dấu đã trừ kho để nhân viên xác nhận không trừ trùng.
+        hoaDon.setDaTruKho(daGiuCho);
 
         String diaChi = Stream.of(
                         request.diaChiCuThe(),
@@ -126,14 +155,29 @@ public class ClientDatHangService {
 
         BigDecimal tongTienHang = checkout.tongTienHang();
         BigDecimal tienGiam = BigDecimal.ZERO;
+        // Khách có tài khoản: dùng cả voucher cá nhân + toàn sàn. Khách vãng lai (khachHang null):
+        // chỉ voucher toàn sàn (voucher cá nhân sẽ bị từ chối "chỉ dành cho thành viên" khi validate).
         if (request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
-            tienGiam = voucherService.apDungVaoHoaDon(
-                    hoaDon,
-                    request.maPhieuGiamGia(),
-                    hoaDon.getKhachHang(),
-                    tongTienHang
-            );
-            hoaDon.setTienGiam(tienGiam);
+            if (khoa != null) {
+                // Luồng QR: voucher đã khóa lúc tạo mã. Chỉ áp khi lúc đó còn hợp lệ (tiền giảm > 0);
+                // áp theo tiền giảm đã khóa, KHÔNG kiểm tra lại hiệu lực (dù sau đó bị hủy vẫn giữ).
+                BigDecimal giamKhoa = khoa.tienGiamVoucher() == null
+                        ? BigDecimal.ZERO : khoa.tienGiamVoucher();
+                if (giamKhoa.signum() > 0) {
+                    tienGiam = voucherService.apDungVoucherDaKhoa(
+                            hoaDon, request.maPhieuGiamGia(), khachHang, giamKhoa);
+                    hoaDon.setTienGiam(tienGiam);
+                }
+                // giamKhoa == 0 -> mã không hợp lệ lúc tạo QR -> không áp (đúng quy tắc "mất").
+            } else {
+                tienGiam = voucherService.apDungVaoHoaDon(
+                        hoaDon,
+                        request.maPhieuGiamGia(),
+                        hoaDon.getKhachHang(),
+                        tongTienHang
+                );
+                hoaDon.setTienGiam(tienGiam);
+            }
         }
 
         // Tính lại phí vận chuyển từ địa chỉ và danh sách sản phẩm ngay trước khi lưu đơn.
@@ -153,7 +197,12 @@ public class ClientDatHangService {
         luuVanChuyen(hoaDon, phiShip, now);
         taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
-        guiEmailXacNhanDon(hoaDon, khachHang, dong, hinhThuc, phiShip);
+        // Email xác nhận: khách có tài khoản -> email tài khoản; khách vãng lai -> email tự nhập (nếu có).
+        String emailNhan = khachHang != null && khachHang.getEmail() != null && !khachHang.getEmail().isBlank()
+                ? khachHang.getEmail()
+                : request.emailNguoiNhan();
+        String tenNhan = khachHang != null ? khachHang.getHoTen() : hoaDon.getTenNguoiNhan();
+        guiEmailXacNhanDon(hoaDon, emailNhan, tenNhan, dong, hinhThuc, phiShip);
 
         return new DatHangResponse(
                 hoaDon.getId(),
@@ -167,12 +216,13 @@ public class ClientDatHangService {
     /** Gửi email xác nhận đơn hàng cho khách (chạy ở luồng nền, lỗi không chặn đặt hàng). */
     private void guiEmailXacNhanDon(
             HoaDon hoaDon,
-            KhachHang khachHang,
+            String emailNhan,
+            String tenNhan,
             List<HoaDonChiTiet> dong,
             String hinhThuc,
             BigDecimal phiShip
     ) {
-        if (khachHang == null || khachHang.getEmail() == null || khachHang.getEmail().isBlank()) {
+        if (emailNhan == null || emailNhan.isBlank()) {
             return;
         }
         List<EmailService.DongDonHangEmail> items = new ArrayList<>();
@@ -189,9 +239,9 @@ public class ClientDatHangService {
             ));
         }
         emailService.sendOrderConfirmationEmailAsync(new EmailService.DonHangEmail(
-                khachHang.getEmail(),
-                khachHang.getHoTen(),
-                khachHang.getEmail(),
+                emailNhan,
+                tenNhan,
+                emailNhan,
                 hoaDon.getMa(),
                 hoaDon.getNgayLap(),
                 hoaDon.getTenNguoiNhan(),

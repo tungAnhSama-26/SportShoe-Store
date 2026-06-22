@@ -10,6 +10,7 @@ import {
 } from "../../composable/useSidebar";
 import { useAdminSession } from "../../composable/useAdminSession";
 import {
+  ArrowRightLeft,
   Award,
   BadgePercent,
   Box,
@@ -17,7 +18,9 @@ import {
   ChevronDown,
   ChevronsLeft,
   ClipboardList,
+  Clock,
   Feather,
+  History,
   Footprints,
   Home,
   LayoutDashboard,
@@ -33,7 +36,8 @@ import {
   Ticket,
   UserRoundCog,
   Users,
-  Weight
+  Weight,
+  MessageSquare
 } from "lucide-vue-next";
 const route = useRoute();
 const { adminSession } = useAdminSession();
@@ -62,7 +66,7 @@ const checkKhuyenMaiActive = (newPath) => {
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
 };
 const checkLichLamActive = (newPath) => {
-  const routes = ["/admin/lich-lam-viec", "/admin/cham-cong"];
+  const routes = ["/admin/lich-lam-viec", "/admin/lich-ca-lam", "/admin/cham-cong", "/admin/ban-giao-ca", "/admin/mo-ca"];
   return routes.some((currentRoute) => newPath.startsWith(currentRoute));
 };
 const compactMode = computed(() => isDesktopSidebar.value && isSidebarCollapsed.value);
@@ -321,6 +325,12 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Qu&#7843;n l&#253; kh&#225;ch h&#224;ng</span>
       </router-link>
 
+      <router-link to="/admin/chat" :title="compactMode ? 'Hỗ trợ trực tuyến' : undefined" :class="navItemClass(isActive('/admin/chat'))">
+        <MessageSquare :class="navIconClass(isActive('/admin/chat'))" />
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Hỗ trợ trực tuyến</span>
+      </router-link>
+
+
       <router-link v-if="laAdmin" to="/admin/nhan-vien" :title="compactMode ? 'Qu\u1ea3n l\u00fd nh\u00e2n vi\u00ean' : undefined" :class="navItemClass(isActive('/admin/nhan-vien') && !isLichLamActive)"
         >
         <UserRoundCog :class="navIconClass(isActive('/admin/nhan-vien') && !isLichLamActive)" />
@@ -356,9 +366,17 @@ function subItemClass(active) {
             <CalendarDays class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-lam-viec') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
             <span v-if="!compactMode" class="leading-tight">L&#7883;ch l&#224;m vi&#7879;c</span>
           </router-link>
+          <router-link to="/admin/lich-ca-lam" :title="compactMode ? 'L\u1ecbch ca l\u00e0m' : undefined" :class="subItemClass(isActive('/admin/lich-ca-lam'))">
+            <CalendarDays class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-ca-lam') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="leading-tight">L&#7883;ch ca l&#224;m</span>
+          </router-link>
           <router-link to="/admin/cham-cong" :title="compactMode ? 'Ch\u1ea5m c\u00f4ng' : undefined" :class="subItemClass(isActive('/admin/cham-cong'))">
             <ClipboardList class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/cham-cong') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
             <span v-if="!compactMode" class="leading-tight">Ch&#7845;m c&#244;ng</span>
+          </router-link>
+          <router-link to="/admin/lich-su-hoat-dong" :title="compactMode ? 'L\u1ecbch s\u1eed ho\u1ea1t \u0111\u1ed9ng' : undefined" :class="subItemClass(isActive('/admin/lich-su-hoat-dong'))">
+            <History class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-su-hoat-dong') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
+            <span v-if="!compactMode" class="leading-tight">Lịch sử hoạt động</span>
           </router-link>
         </div>
       </div>
@@ -372,6 +390,14 @@ function subItemClass(active) {
         <router-link to="/admin/cham-cong" :title="compactMode ? 'Ch\u1ea5m c\u00f4ng' : undefined" :class="navItemClass(isActive('/admin/cham-cong'))">
           <ClipboardList :class="navIconClass(isActive('/admin/cham-cong'))" />
           <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Ch&#7845;m c&#244;ng</span>
+        </router-link>
+        <router-link to="/admin/ban-giao-ca" :title="compactMode ? 'Bàn giao ca' : undefined" :class="navItemClass(isActive('/admin/ban-giao-ca'))">
+          <ArrowRightLeft :class="navIconClass(isActive('/admin/ban-giao-ca'))" />
+          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Bàn giao ca</span>
+        </router-link>
+        <router-link to="/admin/mo-ca" :title="compactMode ? 'Mở ca' : undefined" :class="navItemClass(isActive('/admin/mo-ca'))">
+          <Clock :class="navIconClass(isActive('/admin/mo-ca'))" />
+          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Mở ca</span>
         </router-link>
       </template>
     </nav>

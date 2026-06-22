@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
-import BanHangQrScannerModal from '../../../components/admin/ban-hang/BanHangQrScannerModal.vue'
+import ModalQuetQR from '../../../components/admin/ban-hang/ModalQuetQR.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
 import ProductVariantFilters from '../../../components/admin/san-pham/ProductVariantFilters.vue'
@@ -15,6 +15,9 @@ import { exportRowsToExcel } from '../../../utils/export-excel'
 import { getDisplayErrorMessage, getFieldErrors } from '../../../utils/error-message'
 import { showSuccess, showError } from '../../../utils/alert'
 import { createQrCodeSvg } from '../../../utils/qr-code'
+import { useRealtime } from '../../../composables/useRealtime'
+
+const { subscribeTopic } = useRealtime()
 
 const route = useRoute()
 const router = useRouter()
@@ -682,6 +685,21 @@ onMounted(async () => {
   await loadDanhMuc()
   await syncSelectedProduct()
   await loadData(0)
+
+  subscribeTopic('/topic/admin/san-pham', (message) => {
+    console.log("Realtime update: Variant list changed", message)
+    if (!suppressGiayIdWatch) {
+      loadData(currentPage.value)
+    }
+  })
+
+  subscribeTopic('/topic/admin/thuoc-tinh', (message) => {
+    console.log("Realtime update: Attribute changed", message)
+    loadDanhMuc()
+    if (!suppressGiayIdWatch) {
+      loadData(currentPage.value)
+    }
+  })
 })
 
 onUnmounted(() => {
@@ -760,7 +778,7 @@ onUnmounted(() => {
       @error="showToast($event, 'error')"
     />
 
-    <BanHangQrScannerModal
+    <ModalQuetQR
       :is-open="showScannerModal"
       :is-admin="true"
       @close="showScannerModal = false"

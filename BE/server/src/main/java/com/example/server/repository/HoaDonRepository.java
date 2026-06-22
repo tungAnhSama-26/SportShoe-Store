@@ -16,6 +16,18 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     long countByKenhBanAndTrangThai(Integer kenhBan, Integer trangThai);
 
+    @Query("""
+            select hd from HoaDon hd
+            where hd.kenhBan = :kenhBan
+              and hd.trangThai = :trangThai
+              and hd.ngayTao <= :moc
+            """)
+    List<HoaDon> findExpiredPendingInvoices(
+            @Param("kenhBan") Integer kenhBan,
+            @Param("trangThai") Integer trangThai,
+            @Param("moc") Instant moc
+    );
+
     /** Các giỏ đang giữ hàng đã quá hạn (để scheduler hoàn tồn). */
     List<HoaDon> findByTrangThaiAndHanGiuHangIsNotNullAndHanGiuHangBefore(Integer trangThai, Instant moc);
 
@@ -67,6 +79,16 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             where hd.id = :id
             """)
     java.util.Optional<HoaDon> findDetailById(@Param("id") Integer id);
+
+    @Query("""
+            select hd
+            from HoaDon hd
+            left join fetch hd.khachHang
+            left join fetch hd.nhanVien
+            left join fetch hd.phieuGiamGia
+            where upper(hd.ma) = upper(:ma)
+            """)
+    java.util.Optional<HoaDon> findDetailByMa(@Param("ma") String ma);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

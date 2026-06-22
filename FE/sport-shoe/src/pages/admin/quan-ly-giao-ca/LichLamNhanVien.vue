@@ -36,8 +36,8 @@ const DS_CA = [
   {
     id: "chieu",
     nhan: "Chiều",
-    gio: "13:00 – 17:00",
-    gioVao: "13:00",
+    gio: "12:00 – 17:00",
+    gioVao: "12:00",
     gioRa: "17:00",
     soGio: 4,
     icon: Sunset,
@@ -50,8 +50,8 @@ const DS_CA = [
   {
     id: "toi",
     nhan: "Tối",
-    gio: "18:00 – 22:00",
-    gioVao: "18:00",
+    gio: "17:00 – 22:00",
+    gioVao: "17:00",
     gioRa: "22:00",
     soGio: 4,
     icon: Moon,

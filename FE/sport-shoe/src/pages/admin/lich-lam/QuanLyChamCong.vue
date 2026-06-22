@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useAdminSession } from "../../../composable/useAdminSession.js";
 import ChamCongNhanVien from "../../admin/nhan-vien/ChamCongNhanVien.vue";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
+import { layChamCong } from "../../../services/cham-cong";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError } from "../../../utils/alert";
 import { exportRowsToExcel } from "../../../utils/export-excel";
@@ -44,8 +45,7 @@ interface ChamCongRecord {
 const CA_LABELS: Record<number, string> = { 1: "Ca Sáng", 2: "Ca Chiều", 3: "Ca Tối" };
 const TRANG_THAI_CONFIG: Record<string, { label: string; variant: string }> = {
   dung_gio: { label: "Đúng giờ", variant: "success" },
-  tre: { label: "Đi trễ", variant: "warning" },
-  ve_som: { label: "Về sớm", variant: "warning" },
+  tre: { label: "Đến muộn", variant: "warning" },
   vang_mat: { label: "Vắng mặt", variant: "danger" },
 };
 
@@ -69,9 +69,9 @@ const boLoc = ref({
 });
 
 // Phân trang
-const soPhanTuMotTrang = ref(10);
+const soPhanTuMotTrang = ref(5);
 const trangHienTai = ref(1);
-const pageSizeOptions = [10, 20, 50];
+const pageSizeOptions = [5, 10, 20, 50];
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 
@@ -100,7 +100,14 @@ const danhSachLoc = computed(() => {
   if (boLoc.value.denNgay) {
     result = result.filter((r) => r.ngay <= boLoc.value.denNgay);
   }
-  return result;
+  
+  // Sort descending by date (most recent first)
+  return [...result].sort((a, b) => {
+    const dateComp = b.ngay.localeCompare(a.ngay);
+    if (dateComp !== 0) return dateComp;
+    if (a.ca !== b.ca) return a.ca - b.ca;
+    return a.hoTen.localeCompare(b.hoTen);
+  });
 });
 
 const tongSoTrang = computed(
@@ -125,49 +132,6 @@ watch(soPhanTuMotTrang, () => { trangHienTai.value = 1; });
 
 // ─── Mock / API ───────────────────────────────────────────────────────────────
 
-function formatGio(gio: number, phut: number = 0): string {
-  const h = Math.floor(gio) % 24;
-  const p = phut;
-  return `${String(h).padStart(2, "0")}:${String(p).padStart(2, "0")}`;
-}
-
-function taoMock(dsnv: { id: string; ma: string; hoTen: string }[]): ChamCongRecord[] {
-  if (!dsnv.length) return [];
-  const trangThaiList: ChamCongRecord["trangThai"][] = ["dung_gio", "dung_gio", "tre", "ve_som", "vang_mat"];
-  const records: ChamCongRecord[] = [];
-  const today = new Date();
-  for (let d = 0; d < 7; d++) {
-    const ngay = new Date(today);
-    ngay.setDate(today.getDate() - d);
-    const ngayStr = ngay.toISOString().slice(0, 10);
-    dsnv.slice(0, Math.min(dsnv.length, 8)).forEach((nv, i) => {
-      const ca = (i % 3) + 1;
-      const tt = trangThaiList[i % trangThaiList.length];
-      // Thời gian vào/ra chuẩn cho từng ca
-      const gioVaoChuanList = [8, 13, 18]; // Ca 1: 8:00, Ca 2: 13:00, Ca 3: 18:00
-      const gioRaChuanList = [12, 17, 22]; // Ca 1: 12:00, Ca 2: 17:00, Ca 3: 22:00
-      const gioVaoChuanVal = gioVaoChuanList[ca - 1];
-      const gioRaChuanVal = gioRaChuanList[ca - 1];
-      
-      let gioVaoPhut = tt === "tre" ? 15 : 0;
-      let gioRaPhut = tt === "ve_som" ? 30 : 0;
-      
-      records.push({
-        id: `${nv.id}-${ngayStr}-${ca}`,
-        nhanVienId: nv.id,
-        hoTen: nv.hoTen,
-        ma: nv.ma,
-        ngay: ngayStr,
-        ca,
-        gioVao: tt !== "vang_mat" ? formatGio(gioVaoChuanVal, gioVaoPhut) : undefined,
-        gioRa: tt !== "vang_mat" ? formatGio(gioRaChuanVal, gioRaPhut) : undefined,
-        trangThai: tt,
-      });
-    });
-  }
-  return records;
-}
-
 async function taiDanhSach() {
   if (!laAdmin.value) return; // Chỉ admin mới tải dữ liệu chấm công tổng
   dangTai.value = true;
@@ -175,8 +139,58 @@ async function taiDanhSach() {
   try {
     const ds = await layDanhSachNhanVien({ trangThai: 1 });
     danhSachNhanVien.value = Array.isArray(ds) ? ds : [];
-    // TODO: Thay bằng API chấm công thực tế khi backend sẵn sàng
-    danhSach.value = taoMock(danhSachNhanVien.value);
+    
+    const records = await layChamCong({
+      tuNgay: boLoc.value.tuNgay || undefined,
+      denNgay: boLoc.value.denNgay || undefined
+    });
+
+    danhSach.value = Array.isArray(records) ? records.map((r: any) => {
+      const nv = danhSachNhanVien.value.find(n => String(n.id) === String(r.nhanVienId)) || { ma: "", hinhAnh: "" };
+      
+      let mappedCa = 1;
+      if (r.ca === "chieu") mappedCa = 2;
+      if (r.ca === "toi") mappedCa = 3;
+
+      let tt = "vang_mat";
+      if (r.thoiGianVao) {
+        const dVao = new Date(r.thoiGianVao);
+        const gioVao = dVao.getHours();
+
+        let chamCongSaiCa = false;
+        if (r.ca === "sang" && gioVao >= 12) chamCongSaiCa = true;
+        if (r.ca === "chieu" && (gioVao < 12 || gioVao >= 17)) chamCongSaiCa = true;
+        if (r.ca === "toi" && gioVao < 17) chamCongSaiCa = true;
+
+        if (!chamCongSaiCa) {
+          if (r.trangThaiVao === "DI_TRE" || r.trangThaiVao === "MUON") {
+            tt = "tre";
+          } else {
+            tt = "dung_gio";
+          }
+        }
+      }
+
+      const formatGio = (iso: string) => {
+        if (!iso) return undefined;
+        const d = new Date(iso);
+        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      };
+
+      return {
+        id: r.id,
+        nhanVienId: r.nhanVienId,
+        hoTen: r.tenNhanVien || (nv as any).hoTen,
+        ma: (nv as any).ma,
+        hinhAnh: (nv as any).hinhAnh,
+        ngay: r.ngay,
+        ca: mappedCa,
+        gioVao: formatGio(r.thoiGianVao),
+        gioRa: formatGio(r.thoiGianRa),
+        trangThai: tt as "dung_gio" | "tre" | "ve_som" | "vang_mat",
+        ghiChu: r.ghiChu
+      };
+    }) : [];
   } catch (e) {
     loiTrang.value = getDisplayErrorMessage(e, "Không thể tải dữ liệu chấm công.");
   } finally {
@@ -260,7 +274,7 @@ onMounted(taiDanhSach);
             <Clock class="h-5 w-5" />
           </div>
           <div>
-            <p class="text-xs text-slate-400">Đi trễ</p>
+            <p class="text-xs text-slate-400">Đến muộn</p>
             <p class="text-xl font-bold text-amber-600">{{ thongKe.tre }}</p>
           </div>
         </div>
@@ -338,8 +352,7 @@ onMounted(taiDanhSach);
             >
               <option value="">Tất cả trạng thái</option>
               <option value="dung_gio">Đúng giờ</option>
-              <option value="tre">Đi trễ</option>
-              <option value="ve_som">Về sớm</option>
+              <option value="tre">Đến muộn</option>
               <option value="vang_mat">Vắng mặt</option>
             </select>
           </div>
@@ -406,16 +419,16 @@ onMounted(taiDanhSach);
       <div class="admin-table-scroll">
         <Table>
           <template #header>
-            <th class="px-3 py-3 whitespace-nowrap">STT</th>
-            <th class="px-3 py-3 whitespace-nowrap">Ảnh</th>
-            <th class="px-3 py-3 whitespace-nowrap">Mã NV</th>
-            <th class="px-3 py-3 whitespace-nowrap">Họ tên</th>
-            <th class="px-3 py-3 whitespace-nowrap">Ngày</th>
-            <th class="px-3 py-3 whitespace-nowrap">Ca làm</th>
-            <th class="px-3 py-3 whitespace-nowrap">Giờ vào</th>
-            <th class="px-3 py-3 whitespace-nowrap">Giờ ra</th>
-            <th class="px-3 py-3 whitespace-nowrap">Trạng thái</th>
-            <th class="px-3 py-3 whitespace-nowrap">Ghi chú</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">STT</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Ảnh</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Mã NV</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Họ tên</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Ngày</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Ca làm</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Giờ vào</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Giờ ra</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Trạng thái</th>
+            <th class="px-3 py-3 text-left whitespace-nowrap text-xs font-medium text-slate-500">Ghi chú</th>
           </template>
           <template #body>
             <tr v-if="dangTai">
@@ -433,7 +446,7 @@ onMounted(taiDanhSach);
               :key="row.id"
               class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
             >
-              <td class="rounded-l-2xl px-3 py-3 font-semibold">
+              <td class="rounded-l-2xl px-3 py-3 font-semibold text-xs text-center">
                 {{ (trangHienTai - 1) * soPhanTuMotTrang + index + 1 }}
               </td>
               <td class="px-3 py-3">
@@ -448,13 +461,13 @@ onMounted(taiDanhSach);
                   class="h-9 w-9 rounded-full object-cover ring-2 ring-slate-100"
                 />
               </td>
-              <td class="px-3 py-3 font-semibold text-slate-800">
-                <div class="truncate" :title="row.ma">{{ row.ma }}</div>
+              <td class="px-3 py-3 font-semibold text-slate-800 text-xs whitespace-nowrap">
+                {{ row.ma }}
               </td>
-              <td class="px-3 py-3 font-semibold text-slate-800">
-                <div class="truncate" :title="row.hoTen">{{ row.hoTen }}</div>
+              <td class="px-3 py-3 font-medium text-slate-800 text-xs whitespace-nowrap">
+                {{ row.hoTen }}
               </td>
-              <td class="px-3 py-3 text-slate-600">
+              <td class="px-3 py-3 text-slate-600 text-xs">
                 {{ formatNgay(row.ngay) }}
               </td>
               <td class="px-3 py-3">

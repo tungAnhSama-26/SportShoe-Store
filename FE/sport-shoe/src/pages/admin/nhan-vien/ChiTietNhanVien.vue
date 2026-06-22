@@ -8,7 +8,7 @@ import FaceIdModal from "./components/FaceIdModal.vue";
 import { capNhatFaceId } from "../../../services/nhan-vien";
 import { showSuccess, showError } from "../../../utils/alert";
 
-const { nextTick, onMounted, onUnmounted, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, syncCurrentAdminCccd, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
+const { nextTick, onMounted, onUnmounted, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
 
 function taoChuCaiDaiDien(value) {
   return String(value || "NV")
@@ -22,7 +22,11 @@ function taoChuCaiDaiDien(value) {
 const showFaceIdModal = ref(false);
 
 async function handleSaveFaceId(descriptorString) {
-  if (laMoi) return;
+  if (laMoi) {
+    form.value.faceDescriptor = descriptorString;
+    showSuccess("Đã lưu tạm dữ liệu Face ID! Dữ liệu sẽ chính thức được lưu khi bạn bấm Tạo nhân viên.", "Thành công");
+    return;
+  }
   dangLuu.value = true;
   try {
     const updated = await capNhatFaceId(id, descriptorString);
@@ -71,6 +75,7 @@ async function handleSaveFaceId(descriptorString) {
                 type="button"
                 @click="fileInputAvatar?.click()"
                 class="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-center text-[42px] font-light text-slate-500 transition hover:bg-slate-200"
+                :class="{'ring-2 ring-rose-400': loiForm.hinhAnh}"
               >
                 <img
                   v-if="form.hinhAnh"
@@ -97,6 +102,7 @@ async function handleSaveFaceId(descriptorString) {
 
             <h2 class="mt-5 text-base font-bold text-slate-900">{{ form.hoTen || "Nhân viên mới" }}</h2>
             <p class="mt-1 text-sm text-slate-400">{{ form.email || "Chưa cập nhật email" }}</p>
+            <p v-if="loiForm.hinhAnh" class="mt-2 text-xs text-rose-500 font-medium px-4">{{ loiForm.hinhAnh }}</p>
             <div v-if="!laMoi" class="mt-3">
               <span
                 class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
@@ -106,6 +112,15 @@ async function handleSaveFaceId(descriptorString) {
               </span>
             </div>
             <p v-else class="mt-3 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
+          </Card>
+
+          <Card class="!bg-white shadow-sm space-y-2">
+             <h3 class="mb-1 text-sm font-bold text-slate-800">Dữ liệu khuôn mặt (Face ID)</h3>
+             <p class="text-xs text-slate-500 mb-3">Dùng để nhân viên điểm danh (Check-in).</p>
+             <Button variant="outline" class="w-full justify-center gap-2" @click="showFaceIdModal = true">
+                <ScanFace class="h-4 w-4 text-primary" />
+                {{ (laMoi ? form.faceDescriptor : nhanVien?.faceDescriptor) ? 'Cập nhật lại Face ID' : 'Đăng ký Face ID' }}
+             </Button>
           </Card>
 
           <template v-if="!laMoi">
@@ -126,15 +141,6 @@ async function handleSaveFaceId(descriptorString) {
                   <Button variant="soft" class="flex-1 justify-center" @click="showDoiMatKhau = false; matKhauMoi = ''">Hủy</Button>
                 </div>
               </div>
-            </Card>
-
-            <Card class="!bg-white shadow-sm space-y-2">
-               <h3 class="mb-1 text-sm font-bold text-slate-800">Dữ liệu khuôn mặt (Face ID)</h3>
-               <p class="text-xs text-slate-500 mb-3">Dùng để nhân viên điểm danh (Check-in).</p>
-               <Button variant="outline" class="w-full justify-center gap-2" @click="showFaceIdModal = true">
-                  <ScanFace class="h-4 w-4 text-primary" />
-                  {{ nhanVien?.faceDescriptor ? 'Cập nhật lại Face ID' : 'Đăng ký Face ID' }}
-               </Button>
             </Card>
 
             <Card class="space-y-2 !bg-white shadow-sm">
@@ -225,17 +231,12 @@ async function handleSaveFaceId(descriptorString) {
               <button
                 type="button"
                 @click="batDauQuet"
-                :class="[
-                  'inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition whitespace-nowrap shadow-sm',
-                  loiForm.cccd ? 'border-rose-400 bg-white text-black hover:bg-rose-50' : 'border-rose-200 bg-white text-black hover:bg-rose-50'
-                ]"
+                class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-4 text-sm font-bold text-black hover:bg-rose-50 transition whitespace-nowrap shadow-sm"
               >
                 <ScanLine class="h-4 w-4" />
-                {{ form.cccd ? 'Quét lại CCCD' : 'Quét mã CCCD' }}
+                Quét mã CCCD
               </button>
-              <span v-if="form.cccd" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">Đã có CCCD</span>
             </div>
-            <p v-if="loiForm.cccd" class="mt-2 text-xs text-rose-500">{{ loiForm.cccd }}</p>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -406,10 +407,9 @@ async function handleSaveFaceId(descriptorString) {
     </template>
 
     <FaceIdModal 
-      v-if="!laMoi"
       :show="showFaceIdModal" 
-      :employee-name="form.hoTen"
-      :has-existing-face-id="!!nhanVien?.faceDescriptor"
+      :employee-name="form.hoTen || 'Nhân viên mới'"
+      :has-existing-face-id="!!(laMoi ? form.faceDescriptor : nhanVien?.faceDescriptor)"
       @close="showFaceIdModal = false" 
       @saved="handleSaveFaceId" 
     />

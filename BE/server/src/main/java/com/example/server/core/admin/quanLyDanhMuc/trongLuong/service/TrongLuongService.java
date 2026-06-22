@@ -41,16 +41,16 @@ public class TrongLuongService {
             throw new BusinessException("Mã trọng lượng '" + ma + "' đã tồn tại");
         }
 
-        var existingOpt = trongLuongRepository.findByGiaTri(req.giaTri());
+        Integer giaTri = req.giaTri();
+        var existingOpt = trongLuongRepository.findByGiaTri(giaTri);
         if (existingOpt.isPresent()) {
-            var existing = existingOpt.get();
-            if (existing.getTrangThai() == 0) {
-                existing.setTrangThai(1);
-                existing.setMoTa(req.moTa());
-                existing.setMa(ma);
-                return toTrongLuong(trongLuongRepository.save(existing));
+            TrongLuong existing = existingOpt.get();
+            if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
+                throw new BusinessException("Trọng lượng '" + req.giaTri() + "g' đã tồn tại và đang hoạt động.");
             } else {
-                throw new BusinessException("Gi� tr? tr?ng lu?ng '" + req.giaTri() + "' d� t?n t?i");
+                existing.setTrangThai(1);
+                existing.setNgayCapNhat(Instant.now());
+                return toTrongLuong(trongLuongRepository.save(existing));
             }
         }
 

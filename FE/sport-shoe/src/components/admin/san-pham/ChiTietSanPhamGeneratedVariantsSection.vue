@@ -380,9 +380,25 @@ async function handleSaveClick() {
     return;
   }
 
-  const selectedCount = props.generatedVariants.filter(v => v.selected !== false).length;
+  const selectedVariants = props.generatedVariants.filter(v => v.selected !== false);
+  const selectedCount = selectedVariants.length;
   if (selectedCount === 0) {
     emit("error", "Vui lòng chọn ít nhất một biến thể để lưu");
+    return;
+  }
+
+  const uniqueColors = new Set(selectedVariants.map(v => v.mauSacId));
+  const missingImageColors = [];
+  for (const colorId of uniqueColors) {
+    const images = props.draftVariantImages[String(colorId)] || [];
+    if (images.length === 0) {
+      const colorName = selectedVariants.find(v => v.mauSacId === colorId)?.mauSac;
+      missingImageColors.push(formatColorName(colorName || ""));
+    }
+  }
+
+  if (missingImageColors.length > 0) {
+    emit("error", `Vui lòng thêm ít nhất 1 ảnh sản phẩm cho màu: ${missingImageColors.join(", ")}`);
     return;
   }
 

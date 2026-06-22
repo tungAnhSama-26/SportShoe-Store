@@ -23,7 +23,16 @@ var stdin_default = defineConfig({
   plugins: [vue(), tailwindcss()],
   build: {
     target: "esnext",
-    outDir: "build"
+    outDir: "build",
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("face-api.js")) return "face-api";
+          if (id.includes("html2pdf.js")) return "html2pdf";
+        }
+      }
+    }
   },
   server: {
     host: "0.0.0.0",

@@ -1,4 +1,5 @@
 import { apiRequest, getAuthHeaders as getApiAuthHeaders } from "./api-client";
+import { chuyenGioHangVangLai } from "./gio-hang";
 
 const ADMIN_ROLE_NOTICE_KEY = "sport-shoe-admin-role-notice";
 const ADMIN_ROLE_NOTICE_PENDING_KEY = "sport-shoe-admin-role-notice-pending";
@@ -24,6 +25,8 @@ export async function login(username, password) {
   if (result.data) {
     localStorage.setItem("customerToken", result.data.token);
     localStorage.setItem("user", JSON.stringify(result.data.user));
+    // Gộp giỏ hàng đã thêm lúc còn là khách vãng lai vào tài khoản vừa đăng nhập.
+    chuyenGioHangVangLai(result.data.user?.id);
   }
 
   return result.data?.user;
@@ -105,8 +108,7 @@ export function isAdminRole() {
 }
 
 export function hasRequiredAdminCccd() {
-  const cccd = String(getCurrentAdminUser()?.cccd ?? "").trim();
-  return /^\d{12}$/.test(cccd);
+  return true;
 }
 
 export function mustChangeAdminPassword() {

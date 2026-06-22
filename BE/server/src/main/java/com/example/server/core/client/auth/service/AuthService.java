@@ -138,12 +138,12 @@ public class AuthService {
                 nhanVien.getTenDangNhap(),
                 nhanVien.getHoTen(),
                 nhanVien.getEmail(),
-                nhanVien.getCccd(),
                 vaiTro,
                 isAdmin(nhanVien) ? "Quản trị viên" : "Nhân viên",
                 nhanVien.getHinhAnh(),
                 mustChangeTemporaryPassword(nhanVien),
-                mustChangeTemporaryPassword(nhanVien) ? nhanVien.getHanDoiMatKhau() : null
+                mustChangeTemporaryPassword(nhanVien) ? nhanVien.getHanDoiMatKhau() : null,
+                nhanVien.getFaceDescriptor()
         );
     }
 

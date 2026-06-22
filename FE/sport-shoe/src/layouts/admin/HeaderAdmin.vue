@@ -1,11 +1,14 @@
 <script setup>
-import { computed, ref } from "vue";
-import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound } from "lucide-vue-next";
+import { computed, ref, onMounted } from "vue";
+import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound, ArrowRightLeft } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
 import { useAdminSession } from "../../composable/useAdminSession";
 import { isAdminRole, logoutAdmin } from "../../services/auth";
+
+import { useGiaoCa } from "../../composable/useGiaoCa";
+import GiaoCaModal from "../../components/admin/giao-ca/GiaoCaModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -13,6 +16,13 @@ const { isDark, toggleDark } = useDarkMode();
 const { adminSession, avatarUrl } = useAdminSession();
 const FALLBACK_ADMIN_NAME = "Trần Vũ Tùng Anh";
 const hienMenuTaiKhoan = ref(false);
+
+const { activeShift, loadActiveShift } = useGiaoCa();
+const hienGiaoCaModal = ref(false);
+
+onMounted(() => {
+  loadActiveShift();
+});
 
 const pageTitle = computed(() => {
   const titles = {
@@ -49,12 +59,16 @@ const pageTitle = computed(() => {
     'admin-nhan-vien-lich-lam': 'Lịch làm việc',
     'admin-nhan-vien-chi-tiet': 'Chi tiết nhân viên',
     'admin-lich-lam-viec': 'Lịch làm việc',
+    'admin-lich-ca-lam': 'Lịch ca làm',
+    'admin-lich-su-hoat-dong': 'Lịch sử hoạt động',
     'admin-cham-cong': 'Chấm công',
     'admin-profile': 'Hồ sơ cá nhân',
     'nhanvien-profile': 'Hồ sơ cá nhân',
     'admin-khach-hang': 'Khách hàng',
     'admin-khach-hang-them': 'Thêm khách hàng',
-    'admin-khach-hang-chi-tiet': 'Chi tiết khách hàng'
+    'admin-khach-hang-chi-tiet': 'Chi tiết khách hàng',
+    'admin-ban-giao-ca': 'Bàn giao ca',
+    'admin-mo-ca': 'Mở ca làm việc'
   };
   return titles[route.name] || 'Hệ thống Quản trị';
 });
@@ -88,7 +102,7 @@ const subRouteBreadcrumbs = {
   'admin-hoa-don-chi-tiet': {
     parentPath: '/admin/hoa-don',
     parentTitle: 'Hóa đơn',
-    childTitle: 'Chi tiết đơn hàng'
+    childTitle: 'Chi tiết hóa đơn'
   },
   'admin-san-pham-them': {
     parentPath: '/admin/san-pham',
@@ -105,6 +119,11 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Sản phẩm',
     childTitle: 'Chi tiết sản phẩm'
   },
+  'admin-bien-the-san-pham': {
+    parentPath: '/admin/san-pham',
+    parentTitle: 'Sản phẩm',
+    childTitle: 'Biến thể sản phẩm'
+  },
   'admin-bien-the-san-pham-them': {
     parentPath: '/admin/bien-the-san-pham',
     parentTitle: 'Biến thể sản phẩm',
@@ -120,6 +139,16 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Đợt giảm giá',
     childTitle: 'Chi tiết đợt giảm giá'
   },
+  'admin-dot-giam-gia-san-pham-them': {
+    parentPath: '/admin/dot-giam-gia-san-pham',
+    parentTitle: 'Đợt giảm giá sản phẩm',
+    childTitle: 'Thêm đợt giảm giá'
+  },
+  'admin-dot-giam-gia-san-pham-chi-tiet': {
+    parentPath: '/admin/dot-giam-gia-san-pham',
+    parentTitle: 'Đợt giảm giá sản phẩm',
+    childTitle: 'Chi tiết đợt giảm giá'
+  },
   'admin-nhan-vien-them': {
     parentPath: '/admin/nhan-vien',
     parentTitle: 'Nhân viên',
@@ -130,10 +159,20 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Nhân viên',
     childTitle: 'Chi tiết nhân viên'
   },
-  'admin-nhan-vien-lich-lam-chi-tiet': {
+  'admin-nhan-vien-lich-lam': {
     parentPath: '/admin/nhan-vien',
     parentTitle: 'Nhân viên',
     childTitle: 'Lịch làm việc'
+  },
+  'admin-nhan-vien-lich-lam-chi-tiet': {
+    parentPath: '/admin/nhan-vien-lich-lam',
+    parentTitle: 'Lịch làm việc',
+    childTitle: 'Chi tiết lịch làm việc'
+  },
+  'admin-lich-su-hoat-dong': {
+    parentPath: '/admin/lich-lam-viec',
+    parentTitle: 'Lịch làm việc',
+    childTitle: 'Lịch sử hoạt động'
   },
   'admin-khach-hang-them': {
     parentPath: '/admin/khach-hang',
@@ -218,6 +257,20 @@ function dangXuat() {
 
       <div class="flex items-center gap-3">
         <button
+          v-if="adminSession.vaiTro !== 'Quản trị viên'"
+          type="button"
+          @click="router.push('/admin/ban-giao-ca')"
+          class="inline-flex h-11 px-4 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-semibold text-sm shadow-sm"
+        >
+          <ArrowRightLeft class="h-4 w-4 text-[#B82220] dark:text-rose-400" />
+          <span>{{ activeShift ? 'Giao ca' : 'Nhận ca' }}</span>
+          <span 
+            class="h-2 w-2 rounded-full" 
+            :class="activeShift ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'"
+          ></span>
+        </button>
+
+        <button
           type="button"
           @click="toggleDark"
           class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
@@ -285,4 +338,5 @@ function dangXuat() {
       </div>
     </div>
   </header>
+  <GiaoCaModal :show="hienGiaoCaModal" @close="hienGiaoCaModal = false" />
 </template>

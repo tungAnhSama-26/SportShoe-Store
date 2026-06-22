@@ -8,7 +8,10 @@ import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
+import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
+import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.infrastructure.exception.BusinessException;
+import org.springframework.scheduling.annotation.Scheduled;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -41,11 +44,18 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_CHO = "CHO";
     public static final String TRANG_THAI_DA_THANH_TOAN = "DA_THANH_TOAN";
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
+    public static final String TRANG_THAI_HET_HAN = "HET_HAN";
+
+    /** Phiên QR sống tối đa 1 phút; quá hạn chưa thanh toán -> hủy + hoàn tồn đã giữ chỗ. */
+    private static final long PHIEN_TTL_MS = 60_000L;
+    /** Dọn hẳn phiên đã thanh toán / hết hạn khỏi bộ nhớ sau 5 phút. */
+    private static final long PHIEN_DON_SAU_MS = 300_000L;
 
     private final ClientDatHangService datHangService;
     private final ClientCheckoutItemService checkoutItemService;
     private final ClientVoucherService voucherService;
     private final ClientPhiVanChuyenService phiVanChuyenService;
+    private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
     private final Map<String, Phien> phienMap = new ConcurrentHashMap<>();
 
     private final String sepayBank;
@@ -69,6 +79,7 @@ public class ClientVnPayService {
             ClientCheckoutItemService checkoutItemService,
             ClientVoucherService voucherService,
             ClientPhiVanChuyenService phiVanChuyenService,
+            SanPhamRealtimePublisher sanPhamRealtimePublisher,
             @Value("${sepay.bank:}") String sepayBank,
             @Value("${sepay.account-number:}") String sepayAccount,
             @Value("${sepay.prefix:SHOE}") String sepayPrefix
@@ -77,6 +88,7 @@ public class ClientVnPayService {
         this.checkoutItemService = checkoutItemService;
         this.voucherService = voucherService;
         this.phiVanChuyenService = phiVanChuyenService;
+        this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
         this.sepayBank = sepayBank;
         this.sepayAccount = sepayAccount;
         this.sepayPrefix = (sepayPrefix == null || sepayPrefix.isBlank()) ? "SHOE" : sepayPrefix;
@@ -86,13 +98,19 @@ public class ClientVnPayService {
         final DatHangRequest request;
         final String maThanhToan;   // nội dung chuyển khoản, dùng để khớp đơn + lưu làm mã giao dịch
         final long soTienKyVong;    // số tiền khách phải chuyển
+        final ClientDatHangService.KhoaThanhToan khoa; // giá SP + tiền giảm voucher đã khóa lúc tạo QR
+        final Map<Integer, Integer> giuCho;            // tồn đã giữ chỗ (biến thể -> số lượng)
+        final long thoiDiemTao = System.currentTimeMillis();
         volatile String trangThai = TRANG_THAI_CHO;
         volatile String maHoaDon;
 
-        Phien(DatHangRequest request, String maThanhToan, long soTienKyVong) {
+        Phien(DatHangRequest request, String maThanhToan, long soTienKyVong,
+                ClientDatHangService.KhoaThanhToan khoa, Map<Integer, Integer> giuCho) {
             this.request = request;
             this.maThanhToan = maThanhToan;
             this.soTienKyVong = soTienKyVong;
+            this.khoa = khoa;
+            this.giuCho = giuCho;
         }
     }
 
@@ -100,8 +118,21 @@ public class ClientVnPayService {
     public TaoMaVnPayResponse taoMa(DatHangRequest request) {
         String token = UUID.randomUUID().toString().replace("-", "");
         String maThanhToan = sepayPrefix + token.substring(0, 10).toUpperCase(Locale.ROOT);
-        long soTien = tinhSoTienPhaiTra(request);
-        phienMap.put(token, new Phien(request, maThanhToan, soTien));
+        // Khóa giá sản phẩm tại thời điểm tạo mã QR: đợt giảm/giá đổi sau đó không ảnh hưởng đơn.
+        ClientCheckoutItemService.KetQua checkout = checkoutItemService.chuanBi(request.sanPhams());
+        Map<Integer, BigDecimal> giaKhoa = new HashMap<>();
+        for (HoaDonChiTiet ct : checkout.chiTiets()) {
+            giaKhoa.putIfAbsent(ct.getGiayChiTiet().getId(), ct.getGiaDonVi());
+        }
+        // Khóa voucher: nếu mã còn hợp lệ lúc tạo QR thì chốt tiền giảm; sau đó dù bị hủy vẫn giữ.
+        BigDecimal tienGiamKhoa = tinhTienGiamKhoa(request, checkout.tongTienHang());
+        ClientDatHangService.KhoaThanhToan khoa =
+                new ClientDatHangService.KhoaThanhToan(giaKhoa, tienGiamKhoa);
+        long soTien = tinhSoTienPhaiTra(request, checkout.tongTienHang(), tienGiamKhoa);
+        // Giữ chỗ tồn kho NGAY (trừ kho) -> tránh oversell + đảm bảo tạo đơn không lỗi thiếu hàng.
+        // Nếu quá 1 phút không thanh toán, scheduler sẽ hoàn lại tồn này.
+        Map<Integer, Integer> giuCho = checkoutItemService.giuChoTonKho(request.sanPhams());
+        phienMap.put(token, new Phien(request, maThanhToan, soTien, khoa, giuCho));
 
         String qrData;
         if ("VNPAY".equalsIgnoreCase(request.hinhThucThanhToan())
@@ -120,19 +151,26 @@ public class ClientVnPayService {
         return new TaoMaVnPayResponse(token, qrData, maThanhToan);
     }
 
-    /** Số tiền khách phải chuyển = tổng tiền hàng - giảm giá voucher (nếu có) + phí vận chuyển. */
-    private long tinhSoTienPhaiTra(DatHangRequest request) {
-        BigDecimal tong = checkoutItemService.chuanBi(request.sanPhams()).tongTienHang();
-        if (request.maPhieuGiamGia() != null && !request.maPhieuGiamGia().isBlank()) {
-            try {
-                BigDecimal giam = voucherService
-                        .kiemTra(request.khachHangId(), request.maPhieuGiamGia(), tong)
-                        .tienGiam();
-                tong = tong.subtract(giam).max(BigDecimal.ZERO);
-            } catch (RuntimeException ignored) {
-                // Mã không hợp lệ -> giữ nguyên tổng (đặt hàng sẽ xử lý lại voucher sau).
-            }
+    /** Tiền giảm voucher đã khóa lúc tạo QR: mã còn hợp lệ -> chốt tiền giảm; không hợp lệ -> 0. */
+    private BigDecimal tinhTienGiamKhoa(DatHangRequest request, BigDecimal tongTienHang) {
+        if (request.maPhieuGiamGia() == null || request.maPhieuGiamGia().isBlank()) {
+            return BigDecimal.ZERO;
         }
+        try {
+            return voucherService
+                    .kiemTra(request.khachHangId(), request.maPhieuGiamGia(), tongTienHang)
+                    .tienGiam();
+        } catch (RuntimeException ignored) {
+            return BigDecimal.ZERO; // mã không hợp lệ lúc tạo QR -> không giảm (đúng quy tắc "mất")
+        }
+    }
+
+    /** Số tiền khách phải chuyển = tổng tiền hàng (đã khóa) - giảm voucher (đã khóa) + phí ship. */
+    private long tinhSoTienPhaiTra(
+            DatHangRequest request, BigDecimal tongTienHangDaKhoa, BigDecimal tienGiamKhoa) {
+        BigDecimal tong = tongTienHangDaKhoa
+                .subtract(tienGiamKhoa == null ? BigDecimal.ZERO : tienGiamKhoa)
+                .max(BigDecimal.ZERO);
 
         // Cộng phí vận chuyển GHN theo địa chỉ nhận (cùng cách tính với lúc đặt hàng).
         BigDecimal phiShip = phiVanChuyenService.tinhPhi(new TinhPhiShipRequest(
@@ -157,12 +195,39 @@ public class ClientVnPayService {
         if (phien == null) {
             throw new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn");
         }
+        if (TRANG_THAI_HET_HAN.equals(phien.trangThai)) {
+            throw new BusinessException("Phiên thanh toán đã hết hạn (quá 1 phút), vui lòng đặt lại");
+        }
         if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
-            DatHangResponse ketQua = datHangService.datHang(phien.request, phien.maThanhToan);
+            // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA lúc tạo mã QR. Tồn đã giữ chỗ -> daGiuCho=true.
+            DatHangResponse ketQua = datHangService.datHang(
+                    phien.request, phien.maThanhToan, phien.khoa, true);
             phien.maHoaDon = ketQua.maHoaDon();
             phien.trangThai = TRANG_THAI_DA_THANH_TOAN;
         }
         return phien.maHoaDon;
+    }
+
+    /**
+     * Dọn phiên QR: phiên quá 1 phút chưa thanh toán -> HOÀN tồn đã giữ chỗ + đánh dấu hết hạn.
+     * Phiên đã thanh toán/hết hạn quá 5 phút -> xóa khỏi bộ nhớ (tránh rò rỉ).
+     */
+    @Scheduled(fixedRate = 15_000L)
+    public synchronized void donPhien() {
+        long now = System.currentTimeMillis();
+        for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
+            Phien phien = entry.getValue();
+            if (TRANG_THAI_CHO.equals(phien.trangThai)
+                    && now - phien.thoiDiemTao > PHIEN_TTL_MS) {
+                // Hết hạn: hoàn lại tồn đã giữ chỗ + thông báo realtime cho giỏ khách.
+                checkoutItemService.hoanGiuCho(phien.giuCho);
+                phien.trangThai = TRANG_THAI_HET_HAN;
+                sanPhamRealtimePublisher.phatSauCommit("HOAN_GIU_CHO");
+            } else if (!TRANG_THAI_CHO.equals(phien.trangThai)
+                    && now - phien.thoiDiemTao > PHIEN_DON_SAU_MS) {
+                phienMap.remove(entry.getKey());
+            }
+        }
     }
 
     /**
@@ -177,6 +242,9 @@ public class ClientVnPayService {
         for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
             Phien phien = entry.getValue();
             if (content.contains(phien.maThanhToan)) {
+                if (TRANG_THAI_HET_HAN.equals(phien.trangThai)) {
+                    return null; // phiên đã hết hạn (quá 1 phút) -> tiền tới trễ, không tạo đơn
+                }
                 if (phien.soTienKyVong > 0 && soTien < phien.soTienKyVong) {
                     return null; // chuyển thiếu tiền -> không tạo đơn
                 }
@@ -203,7 +271,7 @@ public class ClientVnPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString());
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString()).replace("+", "%20");
         } catch (Exception ex) {
             return "";
         }
@@ -253,6 +321,10 @@ public class ClientVnPayService {
         vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
         vnp_Params.put("vnp_IpAddr", clientIp != null ? clientIp : "127.0.0.1");
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+        
+        java.time.ZonedDateTime expireGmt7 = nowGmt7.plusMinutes(15);
+        String vnp_ExpireDate = expireGmt7.format(formatter);
+        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
