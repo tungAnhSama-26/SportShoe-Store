@@ -1,18 +1,18 @@
 package com.example.server.core.admin.quanLyDanhMuc.aspect;
 
+import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
 public class DanhMucRealtimeAspect {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketNotificationService webSocketNotificationService;
 
-    public DanhMucRealtimeAspect(SimpMessagingTemplate messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
+    public DanhMucRealtimeAspect(WebSocketNotificationService webSocketNotificationService) {
+        this.webSocketNotificationService = webSocketNotificationService;
     }
 
     @AfterReturning("execution(* com.example.server.core.admin.quanLyDanhMuc.*.service.*Service.tao*(..)) || " +
@@ -20,6 +20,6 @@ public class DanhMucRealtimeAspect {
                     "execution(* com.example.server.core.admin.quanLyDanhMuc.*.service.*Service.doiTrangThai*(..)) || " +
                     "execution(* com.example.server.core.admin.quanLyDanhMuc.*.service.*Service.xoa*(..))")
     public void afterDanhMucModified() {
-        messagingTemplate.convertAndSend("/topic/admin/thuoc-tinh", "Cập nhật thuộc tính");
+        webSocketNotificationService.sendToTopic("/topic/admin/thuoc-tinh", "ATTRIBUTE_UPDATED", "Cập nhật thuộc tính");
     }
 }

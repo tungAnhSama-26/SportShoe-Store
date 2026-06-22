@@ -85,7 +85,8 @@ export function useThongKeDashboard() {
     },
     tongQuan: {
       tongDoanhThu: 0,
-      doanhThuThucTe: 0,
+      tongTienMat: 0,
+      tongChuyenKhoan: 0,
       tongDonHang: 0,
       sanPhamDaBan: 0,
       khachMoi: 0
@@ -114,6 +115,83 @@ export function useThongKeDashboard() {
   let dashboardRequestController;
   let latestDashboardRequestId = 0;
 
+  const brandSearchText = ref("");
+  const brandHints = ref([]);
+  const brandSearchContainerRef = ref(null);
+
+  watch([() => filters.brandId, () => dashboard.value.thuongHieus], ([newBrandId, brands]) => {
+    if (newBrandId == null) {
+      brandSearchText.value = "";
+    } else if (brands && brands.length > 0) {
+      const brand = brands.find(b => b.id === newBrandId);
+      if (brand) {
+        brandSearchText.value = brand.ten;
+      }
+    }
+  }, { immediate: true });
+
+  watch(brandSearchText, (val) => {
+    const currentBrand = dashboard.value.thuongHieus.find(b => b.id === filters.brandId);
+    if (currentBrand && currentBrand.ten === val) {
+      brandHints.value = [];
+      return;
+    }
+
+    if (!val || val.trim().length === 0) {
+      brandHints.value = [];
+      if (filters.brandId !== null) {
+        filters.brandId = null;
+        fetchDashboard();
+      }
+      return;
+    }
+
+    const keyword = val.trim().toLowerCase();
+    brandHints.value = dashboard.value.thuongHieus.filter(b => {
+      const tenLower = b.ten.toLowerCase();
+      const maLower = b.ma ? b.ma.toLowerCase() : "";
+      
+      if (tenLower.startsWith(keyword) || maLower.startsWith(keyword)) {
+        return true;
+      }
+      
+      const words = tenLower.split(/\s+/);
+      return words.some(word => word.startsWith(keyword));
+    });
+  });
+
+  function clickOutsideHandler(event) {
+    if (brandSearchContainerRef.value && !brandSearchContainerRef.value.contains(event.target)) {
+      brandHints.value = [];
+    }
+  }
+
+  function chonThuongHieuGoiY(brand) {
+    filters.brandId = brand.id;
+    brandSearchText.value = brand.ten;
+    brandHints.value = [];
+    fetchDashboard();
+  }
+
+  function onBrandSearchEnter() {
+    const keyword = brandSearchText.value.trim().toLowerCase();
+    if (!keyword) {
+      filters.brandId = null;
+      brandHints.value = [];
+      fetchDashboard();
+      return;
+    }
+    const matchedBrand = dashboard.value.thuongHieus.find(b => 
+      b.ten.toLowerCase() === keyword || (b.ma && b.ma.toLowerCase() === keyword)
+    );
+    if (matchedBrand) {
+      filters.brandId = matchedBrand.id;
+      brandSearchText.value = matchedBrand.ten;
+      brandHints.value = [];
+      fetchDashboard();
+    }
+  }
+
   const periodLabel = computed(() => {
     switch (filters.periodType) {
       case "MONTH":
@@ -140,11 +218,18 @@ export function useThongKeDashboard() {
       badgeClass: "bg-emerald-50"
     },
     {
-      label: "Doanh thu thực tế",
-      value: formatCurrency(dashboard.value.tongQuan.doanhThuThucTe),
+      label: "Tổng tiền mặt",
+      value: formatCurrency(dashboard.value.tongQuan.tongTienMat),
       icon: TrendingUp,
       iconClass: "text-teal-600",
       badgeClass: "bg-teal-50"
+    },
+    {
+      label: "Tổng tiền chuyển khoản",
+      value: formatCurrency(dashboard.value.tongQuan.tongChuyenKhoan),
+      icon: CreditCard,
+      iconClass: "text-indigo-600",
+      badgeClass: "bg-indigo-50"
     },
     {
       label: "Tổng đơn hàng",
@@ -461,7 +546,7 @@ export function useThongKeDashboard() {
         fromDate: filters.fromDate,
         toDate: filters.toDate,
         brandId: filters.brandId,
-        keyword: filters.keyword,
+        keyword: null,
         periodType: filters.periodType
       }, {
         signal: dashboardRequestController.signal
@@ -495,6 +580,7 @@ export function useThongKeDashboard() {
     Object.assign(filters, createDefaultFilters());
     resetProductFilters();
     resetEmployeeFilters();
+    brandSearchText.value = "";
     fetchDashboard();
   }
 
@@ -533,7 +619,7 @@ export function useThongKeDashboard() {
     filters.fromDate = serverFilters.tuNgay || filters.fromDate;
     filters.toDate = serverFilters.denNgay || filters.toDate;
     filters.brandId = serverFilters.thuongHieuId ?? null;
-    filters.keyword = serverFilters.keyword ?? filters.keyword;
+    // filters.keyword = serverFilters.keyword ?? filters.keyword;
   }
 
   function normalizeDashboard(data) {
@@ -541,7 +627,8 @@ export function useThongKeDashboard() {
       boLoc: data?.boLoc ?? EMPTY_DASHBOARD().boLoc,
       tongQuan: {
         tongDoanhThu: Number(data?.tongQuan?.tongDoanhThu ?? 0),
-        doanhThuThucTe: Number(data?.tongQuan?.doanhThuThucTe ?? 0),
+        tongTienMat: Number(data?.tongQuan?.tongTienMat ?? 0),
+        tongChuyenKhoan: Number(data?.tongQuan?.tongChuyenKhoan ?? 0),
         tongDonHang: Number(data?.tongQuan?.tongDonHang ?? 0),
         sanPhamDaBan: Number(data?.tongQuan?.sanPhamDaBan ?? 0),
         khachMoi: Number(data?.tongQuan?.khachMoi ?? 0)
@@ -817,6 +904,7 @@ export function useThongKeDashboard() {
 
   onMounted(() => {
     fetchDashboard();
+    window.addEventListener("click", clickOutsideHandler);
   });
 
   onBeforeUnmount(() => {
@@ -824,8 +912,9 @@ export function useThongKeDashboard() {
       window.clearTimeout(dashboardFilterTimer);
     }
     dashboardRequestController?.abort();
+    window.removeEventListener("click", clickOutsideHandler);
   });
 
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter };
 }
 

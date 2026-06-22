@@ -476,7 +476,6 @@ CREATE TABLE hoa_don_chi_tiet (
     thanh_tien        DECIMAL(18,2) NOT NULL,
     trang_thai        INT           NOT NULL CONSTRAINT df_hdct_trang_thai DEFAULT 1,
     ngay_tao          DATETIME2     NOT NULL CONSTRAINT df_hdct_ngay_tao DEFAULT SYSDATETIME(),
-    CONSTRAINT uq_hdct UNIQUE (hoa_don_id, giay_chi_tiet_id),
     CONSTRAINT ck_hdct_so_luong CHECK (so_luong > 0),
     CONSTRAINT ck_hdct_gia_don_vi CHECK (gia_don_vi > 0),
     CONSTRAINT ck_hdct_thanh_tien CHECK (thanh_tien = so_luong * gia_don_vi),

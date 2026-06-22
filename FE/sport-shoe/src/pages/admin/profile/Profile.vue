@@ -135,6 +135,147 @@ const dsTinhThanh = [
 const dsQuanHuyen = ref([]);
 const dsXaPhuong = ref([]);
 
+// QR Scanner
+const dangQuet = ref(false);
+const loiCamera = ref("");
+const videoRef = ref(null);
+const thongBaoQrOk = ref("");
+let zxingReader = null;
+let BrowserMultiFormatReaderCtor = null;
+let daXuLyQr = false;
+
+async function layBrowserMultiFormatReader() {
+  if (!BrowserMultiFormatReaderCtor) {
+    const zxingBrowser = await import("@zxing/browser");
+    BrowserMultiFormatReaderCtor = zxingBrowser.BrowserMultiFormatReader;
+  }
+  return BrowserMultiFormatReaderCtor;
+}
+
+async function batDauQuet() {
+  daXuLyQr = false;
+  loiCamera.value = "";
+  dungQuet();
+  dangQuet.value = true;
+  await nextTick();
+  try {
+    if (!videoRef.value) throw new Error("Không tìm thấy video element");
+    const BrowserMultiFormatReader = await layBrowserMultiFormatReader();
+    zxingReader = new BrowserMultiFormatReader();
+
+    const constraints = {
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    };
+
+    await zxingReader.decodeFromConstraints(
+      constraints,
+      videoRef.value,
+      (result, err) => {
+        if (result) {
+          xuLyKetQuaQr(result.getText());
+        }
+        if (err) {
+          const isIgnored = err.name === "NotFoundException" || (err.message && err.message.includes("No MultiFormat Readers"));
+          if (!isIgnored) {
+            console.warn("[ZXing scan error]", err);
+          }
+        }
+      },
+    );
+  } catch (e) {
+    console.error("[batDauQuet]", e);
+    const msg = String(e?.message ?? "");
+    if (
+      msg.toLowerCase().includes("permission") ||
+      msg.toLowerCase().includes("notallowed")
+    ) {
+      loiCamera.value = "Vui lòng cho phép truy cập camera và thử lại.";
+    } else {
+      loiCamera.value =
+        "Không thể mở camera. Hãy kiểm tra quyền truy cập và thử lại.";
+    }
+    zxingReader = null;
+  }
+}
+
+function xuLyKetQuaQr(raw) {
+  if (daXuLyQr) return;
+  daXuLyQr = true;
+  dungQuet();
+  const resolvedRaw = raw.trim();
+  loiForm.value.cccd = "";
+  loiCamera.value = "";
+  try {
+    if (isVneIdSecureQr(resolvedRaw)) {
+      loiForm.value.cccd =
+        "QR trên ứng dụng VNeID là mã bảo mật, không chứa trực tiếp số CCCD. Vui lòng quét QR trên thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+      return;
+    }
+
+    // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
+    const parts = resolvedRaw.split("|");
+    if (parts.length >= 3) {
+      const scannedCccd = parts[0]?.trim() ?? "";
+      if (!/^\d{12}$/.test(scannedCccd)) {
+        loiForm.value.cccd =
+          "QR không có số CCCD hợp lệ. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+        return;
+      }
+      form.value.cccd = scannedCccd;
+      if (parts[2]) form.value.hoTen = parts[2].trim();
+      if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
+      if (parts[4]) {
+        const gt = parts[4].trim().toLowerCase();
+        form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
+      }
+      if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
+    } else if (/^\d{12}$/.test(resolvedRaw)) {
+      form.value.cccd = resolvedRaw;
+    } else {
+      loiForm.value.cccd =
+        "Mã QR không đúng định dạng CCCD. Vui lòng quét thẻ CCCD bản cứng hoặc nhập tay 12 số CCCD.";
+      return;
+    }
+    thongBaoQrOk.value = "Đã điền thông tin từ CCCD";
+    setTimeout(() => {
+      thongBaoQrOk.value = "";
+    }, 4000);
+  } catch {
+    loiForm.value.cccd = "Không thể đọc dữ liệu CCCD từ mã QR này.";
+  }
+}
+
+function isVneIdSecureQr(raw) {
+  return (
+    /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw) ||
+    raw.length > 100
+  );
+}
+
+function formatNgaySinh(ddmmyyyy) {
+  if (!ddmmyyyy || ddmmyyyy.length !== 8) return "";
+  return `${ddmmyyyy.slice(4, 8)}-${ddmmyyyy.slice(2, 4)}-${ddmmyyyy.slice(0, 2)}`;
+}
+
+function dungQuet() {
+  dangQuet.value = false;
+  // Explicitly stop all camera tracks
+  if (videoRef.value && videoRef.value.srcObject instanceof MediaStream) {
+    videoRef.value.srcObject.getTracks().forEach((track) => track.stop());
+    videoRef.value.srcObject = null;
+  }
+  try {
+    zxingReader?.reset();
+  } catch {
+    /* ignore */
+  }
+  zxingReader = null;
+}
+
 async function taiChiTiet() {
   if (!id) return;
   dangTai.value = true;
