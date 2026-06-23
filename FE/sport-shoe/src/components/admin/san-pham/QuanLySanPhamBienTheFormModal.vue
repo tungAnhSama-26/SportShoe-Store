@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
       >
         <div
           class="modal-container flex max-h-[90vh] w-full flex-col shadow-2xl"
-          :class="editingBienThe ? 'max-w-4xl overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.24)]' : 'max-w-6xl rounded-2xl bg-white'"
+          :class="editingBienThe ? 'max-w-4xl overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.24)]' : 'max-w-6xl rounded-md bg-white'"
       >
         <!-- Single Edit Header -->
         <div v-if="editingBienThe" class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
           </div>
           <button
             type="button"
-            class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-slate-200"
             @click="emit('close')"
           >
             <X :size="18" />
@@ -306,14 +306,14 @@ onBeforeUnmount(() => {
           <h2 class="text-lg font-semibold text-gray-800">
             Tạo danh sách biến thể
           </h2>
-          <button type="button" class="rounded-lg p-1.5 hover:bg-gray-100" @click="emit('close')">
+          <button type="button" class="rounded-md p-1.5 hover:bg-gray-100" @click="emit('close')">
             <X :size="18" />
           </button>
         </div>
 
         <div class="overflow-y-auto" :class="editingBienThe ? 'p-0' : 'p-6'">
           <!-- Optional Banner for Bulk Add -->
-          <div v-if="!editingBienThe" class="mb-4 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-700">
+          <div v-if="!editingBienThe" class="mb-4 rounded-md border border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-700">
             {{ selectedGiay?.ten }} · {{ selectedGiay?.ma }}
           </div>
 
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
                 <div v-if="editingBienThe.hinhAnh" class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm">
                   <img :src="editingBienThe.hinhAnh" :alt="selectedGiay?.ten" class="h-full w-full object-contain transition group-hover:opacity-60" />
                   <div class="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-                    <div class="flex items-center gap-2 rounded-2xl bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg backdrop-blur-sm">
+                    <div class="flex items-center gap-2 rounded-md bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-lg backdrop-blur-sm">
                       <span v-if="uploadingImage" class="flex items-center gap-2">
                         <RefreshCw :size="14" class="animate-spin text-rose-500" />
                         Đang tải lên...
@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
                 </div>
                 <div v-else class="flex aspect-[4/3] items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-white text-slate-400 transition group-hover:border-rose-300 group-hover:bg-rose-50">
                   <div class="text-center">
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 transition group-hover:bg-rose-100 group-hover:text-rose-500">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition group-hover:bg-rose-100 group-hover:text-rose-500">
                       <span v-if="uploadingImage"><RefreshCw :size="20" class="animate-spin" /></span>
                       <Images v-else :size="20" />
                     </div>
@@ -365,14 +365,14 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="grid gap-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <div class="rounded-md border border-slate-200 bg-white px-3 py-3 shadow-sm">
                   <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Màu sắc</p>
                   <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
                     <span v-if="editingBienThe.maMauHex" class="h-3 w-3 shrink-0 rounded-full border border-slate-300" :style="{ backgroundColor: editingBienThe.maMauHex }"></span>
                     <span class="truncate">{{ editingBienThe.mauSac }}</span>
                   </div>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <div class="rounded-md border border-slate-200 bg-white px-3 py-3 shadow-sm">
                   <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Kích cỡ</p>
                   <p class="mt-2 text-sm font-semibold text-slate-800">Size {{ editingBienThe.kichCo }}</p>
                 </div>
@@ -391,7 +391,7 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bienTheForm.soLuong"
                       :min="0"
-                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      class="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
                       :class="inputErrorClass(resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong))"
                     />
                     <p v-if="resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.soLuong, bienTheErrors.soLuong) }}</p>
@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bienTheForm.giaGoc"
                       :min="0"
-                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      class="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
                       :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc))"
                     />
                     <p v-if="resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaGoc, bienTheErrors.giaGoc) }}</p>
@@ -413,7 +413,7 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bienTheForm.giaBan"
                       :min="0"
-                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      class="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
                       :class="inputErrorClass(resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan))"
                     />
                     <p v-if="resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(editingFieldErrors.giaBan, bienTheErrors.giaBan) }}</p>
@@ -423,7 +423,7 @@ onBeforeUnmount(() => {
                     <label class="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-600">Trạng thái</label>
                     <select
                       v-model.number="bienTheForm.kichHoat"
-                      class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
+                      class="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/10"
                       :class="inputErrorClass(bienTheErrors.kichHoat)"
                     >
                       <option :value="1">Đang bán</option>
@@ -438,7 +438,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   :disabled="savingBienThe"
-                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-rose-500 px-4 py-3.5 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
                   @click="handleSaveClick"
                 >
                   <Save :size="18" />
@@ -450,7 +450,7 @@ onBeforeUnmount(() => {
 
           <div v-else class="space-y-5">
             <div class="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-              <section class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <section class="rounded-md border border-slate-100 bg-slate-50 p-4">
                 <div class="mb-4">
                   <h3 class="text-sm font-bold text-slate-800">Bước 1: Chọn màu và kích cỡ</h3>
                   <p class="mt-1 text-xs text-slate-400">
@@ -463,7 +463,7 @@ onBeforeUnmount(() => {
                     <label class="mb-1 block text-xs font-medium text-gray-700">Màu sắc *</label>
                     <button
                       type="button"
-                      class="flex min-h-10 w-full items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] transition hover:bg-white"
+                      class="flex min-h-10 w-full items-start justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] transition hover:bg-white"
                       :class="selectedMauSacItems.length ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
                       @click="toggleSelectionDropdown('mauSac')"
                     >
@@ -473,7 +473,7 @@ onBeforeUnmount(() => {
 
                     <div
                       v-if="openSelectionDropdown === 'mauSac'"
-                      class="absolute left-0 top-full z-30 mt-1 w-full min-w-[260px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
+                      class="absolute left-0 top-full z-30 mt-1 w-full min-w-[260px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
                     >
                       <div class="border-b border-slate-100 p-3">
                         <div class="relative">
@@ -482,7 +482,7 @@ onBeforeUnmount(() => {
                             v-model="mauSacSearch"
                             type="text"
                             placeholder="Tìm màu sắc..."
-                            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                            class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
                             @keydown.enter.prevent='() => {}'
                             @keydown.stop
                           />
@@ -493,7 +493,7 @@ onBeforeUnmount(() => {
                         <button
                           v-if="selectedMauSacItems.length"
                           type="button"
-                          class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                          class="mb-1 flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
                           @click="clearSelectedValues('mauSacIds')"
                         >
                           <span>Bỏ chọn tất cả</span>
@@ -504,7 +504,7 @@ onBeforeUnmount(() => {
                           v-for="item in filteredMauSacItems"
                           :key="item.id"
                           type="button"
-                          class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
+                          class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-slate-50"
                           :class="isSelected('mauSacIds', item.id) ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
                           @click="toggleSelectedValue('mauSacIds', item.id)"
                         >
@@ -520,7 +520,7 @@ onBeforeUnmount(() => {
 
                         <div
                           v-if="!filteredMauSacItems.length"
-                          class="rounded-xl px-3 py-6 text-center text-sm text-slate-400"
+                          class="rounded-md px-3 py-6 text-center text-sm text-slate-400"
                         >
                           Không tìm thấy màu sắc phù hợp.
                         </div>
@@ -537,7 +537,7 @@ onBeforeUnmount(() => {
                     <label class="mb-1 block text-xs font-medium text-gray-700">Kích cỡ *</label>
                     <button
                       type="button"
-                      class="flex min-h-10 w-full items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] transition hover:bg-white"
+                      class="flex min-h-10 w-full items-start justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] transition hover:bg-white"
                       :class="selectedKichCoItems.length ? 'border-rose-300 text-rose-600' : 'text-slate-600'"
                       @click="toggleSelectionDropdown('kichCo')"
                     >
@@ -547,7 +547,7 @@ onBeforeUnmount(() => {
 
                     <div
                       v-if="openSelectionDropdown === 'kichCo'"
-                      class="absolute left-0 top-full z-30 mt-1 w-full min-w-[260px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
+                      class="absolute left-0 top-full z-30 mt-1 w-full min-w-[260px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
                     >
                       <div class="border-b border-slate-100 p-3">
                         <div class="relative">
@@ -556,7 +556,7 @@ onBeforeUnmount(() => {
                             v-model="kichCoSearch"
                             type="text"
                             placeholder="Tìm kích cỡ..."
-                            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                            class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
                             @keydown.enter.prevent='() => {}'
                             @keydown.stop
                           />
@@ -567,7 +567,7 @@ onBeforeUnmount(() => {
                         <button
                           v-if="selectedKichCoItems.length"
                           type="button"
-                          class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                          class="mb-1 flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
                           @click="clearSelectedValues('kichCoIds')"
                         >
                           <span>Bỏ chọn tất cả</span>
@@ -578,7 +578,7 @@ onBeforeUnmount(() => {
                           v-for="item in filteredKichCoItems"
                           :key="item.id"
                           type="button"
-                          class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
+                          class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-slate-50"
                           :class="isSelected('kichCoIds', item.id) ? 'bg-rose-50 text-rose-600' : 'text-slate-700'"
                           @click="toggleSelectedValue('kichCoIds', item.id)"
                         >
@@ -588,7 +588,7 @@ onBeforeUnmount(() => {
 
                         <div
                           v-if="!filteredKichCoItems.length"
-                          class="rounded-xl px-3 py-6 text-center text-sm text-slate-400"
+                          class="rounded-md px-3 py-6 text-center text-sm text-slate-400"
                         >
                           Không tìm thấy kích cỡ phù hợp.
                         </div>
@@ -603,7 +603,7 @@ onBeforeUnmount(() => {
 
                   <button
                     type="button"
-                    class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    class="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     @click="emit('generate-bulk')"
                   >
                     Tạo danh sách biến thể
@@ -611,7 +611,7 @@ onBeforeUnmount(() => {
                 </div>
               </section>
 
-              <section class="rounded-2xl border border-slate-100 bg-white p-4">
+              <section class="rounded-md border border-slate-100 bg-white p-4">
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h3 class="text-sm font-bold text-slate-800">Bước 2: Nhập số lượng và giá bán</h3>
@@ -630,14 +630,14 @@ onBeforeUnmount(() => {
 
                 <div
                   v-if="generatedBulkBienThes.length"
-                  class="mb-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_1fr_auto]"
+                  class="mb-4 grid gap-3 rounded-md border border-slate-100 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_1fr_auto]"
                 >
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Số lượng mặc định</label>
                     <AdminFormattedNumberInput
                       v-model="bulkBienTheForm.soLuong"
                       :min="0"
-                      class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      class="w-full rounded-md border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                       :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.soLuong, bulkBienTheErrors.soLuong))"
                     />
                     <p v-if="resolveFieldError(bulkDefaultErrors.soLuong, bulkBienTheErrors.soLuong)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.soLuong, bulkBienTheErrors.soLuong) }}</p>
@@ -648,7 +648,7 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bulkBienTheForm.giaGoc"
                       :min="0"
-                      class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      class="w-full rounded-md border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                       :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc))"
                     />
                     <p v-if="resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc) }}</p>
@@ -659,7 +659,7 @@ onBeforeUnmount(() => {
                     <AdminFormattedNumberInput
                       v-model="bulkBienTheForm.giaBan"
                       :min="0"
-                      class="w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      class="w-full rounded-md border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                       :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan))"
                     />
                     <p v-if="resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan) }}</p>
@@ -668,7 +668,7 @@ onBeforeUnmount(() => {
                   <div class="flex items-end">
                     <button
                       type="button"
-                      class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      class="w-full rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       @click="applyGeneratedDefaults"
                     >
                       Áp dụng
@@ -676,7 +676,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
 
-                <div v-if="generatedBulkBienThes.length" class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                <div v-if="generatedBulkBienThes.length" class="overflow-x-auto rounded-md border border-slate-200 bg-white">
                   <table class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-slate-500">
                       <tr>
@@ -700,7 +700,7 @@ onBeforeUnmount(() => {
                           <AdminFormattedNumberInput
                             v-model="item.soLuong"
                             :min="0"
-                            class="w-28 rounded-lg border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            class="w-28 rounded-md border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                             :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.soLuong)"
                           />
                           <p v-if="generatedBulkFieldErrors[item.key]?.soLuong" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].soLuong }}</p>
@@ -709,7 +709,7 @@ onBeforeUnmount(() => {
                           <AdminFormattedNumberInput
                             v-model="item.giaGoc"
                             :min="0"
-                            class="w-32 rounded-lg border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            class="w-32 rounded-md border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                             :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.giaGoc)"
                           />
                           <p v-if="generatedBulkFieldErrors[item.key]?.giaGoc" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].giaGoc }}</p>
@@ -718,7 +718,7 @@ onBeforeUnmount(() => {
                           <AdminFormattedNumberInput
                             v-model="item.giaBan"
                             :min="0"
-                            class="w-32 rounded-lg border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                            class="w-32 rounded-md border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                             :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.giaBan)"
                           />
                           <p v-if="generatedBulkFieldErrors[item.key]?.giaBan" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].giaBan }}</p>
@@ -726,7 +726,7 @@ onBeforeUnmount(() => {
                         <td class="px-3 py-2 text-center">
                           <button
                             type="button"
-                            class="inline-flex rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
+                            class="inline-flex rounded-md p-2 text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
                             @click="confirmRemoveGeneratedBulk(item.key)"
                           >
                             <Trash2 :size="14" />
@@ -739,7 +739,7 @@ onBeforeUnmount(() => {
 
                 <div
                   v-else
-                  class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400"
+                  class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400"
                 >
                   Chọn màu sắc và kích cỡ trong dropdown, sau đó bấm tạo danh sách biến thể.
                 </div>
@@ -751,7 +751,7 @@ onBeforeUnmount(() => {
         <div v-if="!editingBienThe" class="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
           <button
             type="button"
-            class="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
+            class="rounded-md border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
             @click="emit('close')"
           >
             Hủy
@@ -759,7 +759,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             :disabled="savingBienThe"
-            class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:opacity-60"
+            class="rounded-md bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:opacity-60"
             @click="handleSaveClick"
           >
             {{ savingBienThe ? 'Đang lưu...' : 'Lưu danh sách biến thể' }}

@@ -1,6 +1,6 @@
 <script setup>
 import { CheckCircle2, ArrowLeft } from 'lucide-vue-next'
-import BienTheImageManager from '../../../components/admin/san-pham/BienTheImageManager.vue'
+import QuanLyAnhBienThe from '../../../components/admin/san-pham/QuanLyAnhBienThe.vue'
 
 const props = defineProps({
   representativeCreatedVariants: {
@@ -53,7 +53,7 @@ function relatedCreatedVariants(mauSacId) {
     </div>
 
     <div class="mt-6 grid gap-5">
-      <BienTheImageManager
+      <QuanLyAnhBienThe
         v-for="item in representativeCreatedVariants"
         :key="item.id"
         :ref="(instance) => setCreatedImageManagerRef(item.mauSacId, instance)"

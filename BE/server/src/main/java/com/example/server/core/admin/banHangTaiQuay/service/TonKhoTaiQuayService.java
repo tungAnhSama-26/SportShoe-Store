@@ -9,8 +9,10 @@ import org.springframework.stereotype.Component;
 public class TonKhoTaiQuayService {
 
     public void validateAvailable(GiayChiTiet giayChiTiet, Integer soLuong) {
-        if (giayChiTiet.getKichHoat() == null || giayChiTiet.getKichHoat() != 1) {
-            throw new BusinessException("Sản phẩm đã ngừng kinh doanh");
+        if (giayChiTiet.getKichHoat() == null || giayChiTiet.getKichHoat() != 1 || 
+            giayChiTiet.getGiay() == null || giayChiTiet.getGiay().getTrangThai() == null || giayChiTiet.getGiay().getTrangThai() != 1) {
+            String tenGiay = giayChiTiet.getGiay() != null ? giayChiTiet.getGiay().getTen() : "";
+            throw new BusinessException("Sản phẩm " + tenGiay + " đã ngừng kinh doanh");
         }
 
         if (giayChiTiet.getSoLuong() == null || giayChiTiet.getSoLuong() < soLuong) {

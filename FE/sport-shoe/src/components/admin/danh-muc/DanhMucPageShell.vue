@@ -62,11 +62,11 @@ function onKeywordInput(event) {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
     <Transition name="fade">
       <div
         v-if="toast?.show && toast.type !== 'success'"
-        class="fixed right-4 top-[88px] z-50 rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
+        class="fixed right-4 top-[88px] z-50 rounded-md px-4 py-3 text-sm font-medium text-white shadow-lg"
         :class="toast.type === 'success' ? 'bg-[#ff6a00]' : 'bg-[#cf1018]'"
       >
         {{ toast.message }}
@@ -91,7 +91,7 @@ function onKeywordInput(event) {
               :value="keyword"
               type="text"
               :placeholder="searchPlaceholder"
-              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @input="onKeywordInput"
               @keyup.enter="emit('search')"
             />

@@ -472,7 +472,7 @@ defineExpose({
 
 <template>
   <div
-    class="rounded-3xl border border-slate-200 bg-white"
+    class="rounded-md border border-slate-200 bg-white"
     :class="compact ? 'p-4' : 'p-5'"
   >
     <div class="flex items-center justify-between gap-3">
@@ -488,7 +488,7 @@ defineExpose({
       <div class="flex items-center gap-2">
         <button
           type="button"
-          class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           title="Tải lại"
           :disabled="isDraftMode"
           @click="loadImages"
@@ -497,7 +497,7 @@ defineExpose({
         </button>
         <label
           v-if="displayedImages.length === 0"
-          class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+          class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
           :class="{ 'opacity-60 pointer-events-none': uploading }"
         >
           <Plus :size="14" v-if="!uploading" />
@@ -509,7 +509,7 @@ defineExpose({
     </div>
 
     <div class="mt-4">
-      <div v-if="loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+      <div v-if="loading" class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
         Đang tải ảnh...
       </div>
 
@@ -517,7 +517,7 @@ defineExpose({
         <div
           v-for="item in displayedImages"
           :key="item.id"
-          class="group overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+          class="group overflow-hidden rounded-md border border-slate-200 bg-slate-50"
         >
           <div class="relative aspect-square">
             <img :src="item.url" :alt="item.moTa || ''" class="h-full w-full object-cover" />
@@ -537,7 +537,7 @@ defineExpose({
             <div class="flex items-center gap-1">
               <button
                 type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition hover:bg-blue-200 disabled:opacity-60"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 text-blue-700 transition hover:bg-blue-200 disabled:opacity-60"
                 title="Sửa ảnh"
                 @click="openEditForm(item)"
               >
@@ -546,7 +546,7 @@ defineExpose({
               <button
                 v-if="!item.laHinhChinh"
                 type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700 transition hover:bg-rose-200 disabled:opacity-60"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-rose-100 text-rose-700 transition hover:bg-rose-200 disabled:opacity-60"
                 :disabled="settingMainId === item.id"
                 title="Đặt ảnh chính"
                 @click="handleSetMain(item.id)"
@@ -555,7 +555,7 @@ defineExpose({
               </button>
               <button
                 type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-600 transition hover:bg-rose-200 disabled:opacity-60"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-rose-100 text-rose-600 transition hover:bg-rose-200 disabled:opacity-60"
                 :disabled="deletingId === item.id"
                 title="Xóa ảnh"
                 @click="handleDelete(item.id)"
@@ -569,9 +569,9 @@ defineExpose({
 
       <div
         v-else
-        class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"
+        class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"
       >
-        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-300 shadow-sm">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-white text-slate-300 shadow-sm">
           <ImageOff :size="20" />
         </div>
         <p class="mt-3 text-sm font-medium text-slate-600">Nhóm màu này chưa có ảnh</p>
@@ -581,13 +581,13 @@ defineExpose({
       </div>
     </div>
 
-    <div v-if="showAddForm" class="mt-3 rounded-xl border border-rose-100 bg-rose-50 p-3">
+    <div v-if="showAddForm" class="mt-3 rounded-md border border-rose-100 bg-rose-50 p-3">
       <div class="flex flex-col gap-3 sm:flex-row">
         <div class="flex-shrink-0 w-32 space-y-2">
-          <div v-if="form.url" class="overflow-hidden rounded-xl border border-slate-200 bg-white aspect-square">
+          <div v-if="form.url" class="overflow-hidden rounded-md border border-slate-200 bg-white aspect-square">
             <img :src="form.url" alt="" class="h-full w-full object-cover" />
           </div>
-          <label class="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-dashed border-rose-200 bg-white px-2 py-2 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-100/50 text-center">
+          <label class="flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-rose-200 bg-white px-2 py-2 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-100/50 text-center">
             <Upload :size="12" />
             {{ uploading ? 'Đang tải...' : 'Chọn ảnh' }}
             <input type="file" accept="image/*" class="hidden" @change="handleUploadFile" />
@@ -601,7 +601,7 @@ defineExpose({
               v-model="form.url"
               type="url"
               placeholder="https://..."
-              class="w-full rounded-lg border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-rose-400"
+              class="w-full rounded-md border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-rose-400"
               :class="errors.url ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'"
             />
             <p v-if="errors.url" class="mt-1 text-[10px] text-rose-500">{{ errors.url }}</p>
@@ -610,14 +610,14 @@ defineExpose({
           <div class="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100"
+              class="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100"
               @click="closeAddForm"
             >
               Hủy
             </button>
             <button
               type="button"
-              class="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:opacity-60"
+              class="rounded-md bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:opacity-60"
               :disabled="saving"
               @click="handleSave"
             >

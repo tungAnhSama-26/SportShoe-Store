@@ -53,7 +53,7 @@ const emit = defineEmits([
           :value="customerKeyword"
           type="text"
           placeholder="Nhập tên hoặc số điện thoại khách hàng"
-          class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
+          class="w-full rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:bg-white"
           @input="emit('update:customerKeyword', $event.target.value)"
           @focus="emit('focus-customer')"
           @blur="emit('blur-customer')"
@@ -65,16 +65,16 @@ const emit = defineEmits([
 
       <div
         v-if="showCustomerDropdown"
-        class="absolute z-20 mt-2 w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_24px_50px_rgba(15,23,42,0.12)]"
+        class="absolute z-20 mt-2 w-full rounded-md border border-slate-200 bg-white p-2 shadow-[0_24px_50px_rgba(15,23,42,0.12)]"
       >
-        <div v-if="!loadingCustomers && !customerResults.length" class="rounded-2xl px-3 py-3 text-sm text-slate-500">
+        <div v-if="!loadingCustomers && !customerResults.length" class="rounded-md px-3 py-3 text-sm text-slate-500">
           Không tìm thấy khách hàng phù hợp.
         </div>
         <button
           v-for="customer in customerResults"
           :key="customer.id"
           type="button"
-          class="w-full rounded-2xl px-3 py-3 text-left transition hover:bg-red-50"
+          class="w-full rounded-md px-3 py-3 text-left transition hover:bg-red-50"
           @click="emit('select-customer', customer)"
         >
           <p class="text-sm font-semibold text-slate-900">{{ customer.hoTen }}</p>
@@ -83,9 +83,9 @@ const emit = defineEmits([
       </div>
     </div>
 
-    <div v-if="selectedCustomer" class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+    <div v-if="selectedCustomer" class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
       <div class="flex items-center justify-between gap-2">
-        <div>
+        <div class="space-y-0.5">
           <p class="text-sm font-bold text-slate-900">{{ tenKhachHangHienThi }}</p>
           <p class="text-xs text-slate-500">{{ soDienThoaiKhachHangHienThi }}</p>
         </div>

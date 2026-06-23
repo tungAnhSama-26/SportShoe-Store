@@ -205,7 +205,7 @@ defineExpose({
         </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
-            <th class="rounded-tl-2xl bg-slate-100 text-center">
+            <th class="rounded-tl-md bg-slate-100 text-center">
               <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500" 
                      :checked="items.length > 0 && selectedVariantIds.size === items.length"
                      @change="toggleSelectAll" />
@@ -220,7 +220,7 @@ defineExpose({
             <th class="bg-slate-100">Giá bán</th>
             <th class="bg-slate-100 text-center">Giảm</th>
             <th class="bg-slate-100 text-center">Trạng thái</th>
-            <th class="rounded-tr-2xl bg-slate-100 text-center">Hành động</th>
+            <th class="rounded-tr-md bg-slate-100 text-center">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -238,7 +238,7 @@ defineExpose({
               isFocusedVariant(item) ? 'bg-rose-50 ring-2 ring-rose-200' : 'bg-white ring-1 ring-slate-100'
             ]"
           >
-            <td class="rounded-l-2xl px-2.5 py-4 align-middle text-center">
+            <td class="rounded-l-md px-2.5 py-4 align-middle text-center">
               <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
                      :checked="selectedVariantIds.has(item.id)"
                      @change="toggleSelectVariant(item.id)" />
@@ -259,7 +259,7 @@ defineExpose({
                 <!-- Badge giảm giá khi có đợt giảm giá đang áp dụng -->
                 <div
                   v-if="item.dotGiamGiaId && formatDiscountPercent(item) !== '—'"
-                  class="absolute left-0 top-0 origin-top-left scale-[0.65] rounded-br-lg rounded-tl-lg bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                  class="absolute left-0 top-0 origin-top-left scale-[0.65] rounded-br-md rounded-tl-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
                   :title="item.tenDotGiamGia || item.maDotGiamGia || 'Đang giảm giá'"
                 >
                   -{{ formatDiscountPercent(item) }}
@@ -326,7 +326,7 @@ defineExpose({
                 {{ bienTheTrangThaiLabel(item) }}
               </span>
             </td>
-            <td class="rounded-r-2xl px-4 py-4 align-middle text-center">
+            <td class="rounded-r-md px-4 py-4 align-middle text-center">
               <div class="flex items-center justify-center gap-2">
                 <AdminQuickStatusAction
                   :loading="isUpdatingStatus(item.id)"

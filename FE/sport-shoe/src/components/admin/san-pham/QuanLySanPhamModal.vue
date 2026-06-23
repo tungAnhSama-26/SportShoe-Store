@@ -4,27 +4,27 @@ import { ImageOff, X } from 'lucide-vue-next'
 import AdminSearchableSelect from '../../common/AdminSearchableSelect.vue'
 
 const props = defineProps({
-  open: {
+  hienThiModal: {
     type: Boolean,
     default: false
   },
-  mode: {
+  cheDo: {
     type: String,
-    default: 'add'
+    default: 'them'
   },
-  title: {
-    type: String,
-    default: ''
-  },
-  description: {
+  tieuDe: {
     type: String,
     default: ''
   },
-  loading: {
+  moTa: {
+    type: String,
+    default: ''
+  },
+  dangTai: {
     type: Boolean,
     default: false
   },
-  saving: {
+  dangLuu: {
     type: Boolean,
     default: false
   },
@@ -32,99 +32,99 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  productForm: {
+  formSanPham: {
     type: Object,
     required: true
   },
-  productErrors: {
+  loiSanPham: {
     type: Object,
     required: true
   },
-  selectedProduct: {
-    type: Object,
-    default: null
-  },
-  mainImage: {
+  sanPhamDaChon: {
     type: Object,
     default: null
   },
-  thuongHieuName: {
+  hinhAnhChinh: {
+    type: Object,
+    default: null
+  },
+  layTenThuongHieu: {
     type: Function,
     required: true
   },
-  loaiGiayName: {
+  layTenLoaiGiay: {
     type: Function,
     required: true
   },
-  gioiTinhLabel: {
+  layNhanGioiTinh: {
     type: Function,
     required: true
   },
-  trangThaiClass: {
+  layLopTrangThai: {
     type: Function,
     required: true
   },
-  trangThaiLabel: {
+  layNhanTrangThai: {
     type: Function,
     required: true
   },
-  selectedAttributeList: {
+  layDanhSachThuocTinh: {
     type: Function,
     required: true
   }
 })
 
-const emit = defineEmits(['close', 'save'])
+const emit = defineEmits(['dong', 'luu'])
 
-const genderOptions = [
+const luaChonGioiTinh = [
   { value: 1, label: 'Nam' },
   { value: 2, label: 'Nữ' },
   { value: 3, label: 'Unisex' }
 ]
 
-const thuongHieuOptions = computed(() =>
+const luaChonThuongHieu = computed(() =>
   (props.danhMuc?.thuongHieu || []).map((item) => ({
     value: item.id,
     label: item.ten
   }))
 )
 
-const loaiGiayOptions = computed(() =>
+const luaChonLoaiGiay = computed(() =>
   (props.danhMuc?.loaiGiay || []).map((item) => ({
     value: item.id,
     label: item.ten
   }))
 )
 
-const chatLieuOptions = computed(() =>
+const luaChonChatLieu = computed(() =>
   (props.danhMuc?.chatLieuGiay || []).map((item) => ({
     value: item.id,
     label: item.ten
   }))
 )
 
-const deGiayOptions = computed(() =>
+const luaChonDeGiay = computed(() =>
   (props.danhMuc?.deGiay || []).map((item) => ({
     value: item.id,
     label: item.ten
   }))
 )
 
-const coGiayOptions = computed(() =>
+const luaChonCoGiay = computed(() =>
   (props.danhMuc?.coGiay || []).map((item) => ({
     value: item.id,
     label: item.ten
   }))
 )
 
-const congNgheDemOptions = computed(() =>
+const luaChonCongNgheDem = computed(() =>
   (props.danhMuc?.congNgheDem || []).map((item) => ({
     value: item.id,
     label: item.ten
   }))
 )
 
-const trongLuongOptions = computed(() =>
+const luaChonTrongLuong = computed(() =>
   (props.danhMuc?.trongLuong || []).map((item) => ({
     value: item.id,
     label: Number(item.giaTri || 0).toLocaleString('vi-VN'),
@@ -136,25 +136,25 @@ const trongLuongOptions = computed(() =>
 <template>
   <Teleport to="body">
     <div
-      v-if="open"
+      v-if="hienThiModal"
       class="fixed inset-0 z-[55] flex items-center justify-center bg-black/55 p-4"
-      @click.self="emit('close')"
+      @click.self="emit('dong')"
     >
       <div class="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
         <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
           <div>
-            <h2 class="text-xl font-bold text-slate-800">{{ title }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ description }}</p>
+            <h2 class="text-xl font-bold text-slate-800">{{ tieuDe }}</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ moTa }}</p>
           </div>
           <button
-            class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-            @click="emit('close')"
+            class="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            @click="emit('dong')"
           >
             <X :size="18" />
           </button>
         </div>
 
-        <div v-if="loading" class="px-6 py-16 text-center text-sm text-slate-400">
+        <div v-if="dangTai" class="px-6 py-16 text-center text-sm text-slate-400">
           Đang tải chi tiết sản phẩm...
         </div>
 
@@ -165,7 +165,7 @@ const trongLuongOptions = computed(() =>
                 <h3 class="text-base font-bold text-slate-800">Thông tin cơ bản</h3>
                 <p class="mt-1 text-xs text-slate-400">
                   {{
-                    mode === 'add'
+                    cheDo === 'them'
                       ? 'Nhập thông tin sản phẩm rồi quản lý biến thể ở popup riêng.'
                       : 'Cập nhật nhanh thông tin nền và tìm thuộc tính ngay trong dropdown.'
                   }}
@@ -173,75 +173,75 @@ const trongLuongOptions = computed(() =>
               </div>
 
               <div class="grid gap-4 md:grid-cols-2">
-                <div v-if="mode === 'add'">
+                <div v-if="cheDo === 'them'">
                   <label class="mb-1 block text-xs font-medium text-gray-700">Mã sản phẩm</label>
-                  <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                  <div class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
                     Tự sinh khi lưu
                   </div>
                 </div>
 
-                <div :class="mode === 'add' ? '' : 'md:col-span-2'">
+                <div :class="cheDo === 'them' ? '' : 'md:col-span-2'">
                   <label class="mb-1 block text-xs font-medium text-gray-700">Tên sản phẩm <span class="text-rose-500">*</span></label>
                   <input
-                    v-model="productForm.ten"
+                    v-model="formSanPham.ten"
                     type="text"
-                    class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    :class="productErrors.ten ? 'border-red-400' : 'border-gray-200'"
+                    class="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    :class="loiSanPham.ten ? 'border-red-400' : 'border-gray-200'"
                     placeholder="Tên sản phẩm"
                   />
-                  <p v-if="productErrors.ten" class="mt-1 text-xs text-red-500">{{ productErrors.ten }}</p>
+                  <p v-if="loiSanPham.ten" class="mt-1 text-xs text-red-500">{{ loiSanPham.ten }}</p>
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Thương hiệu <span class="text-rose-500">*</span></label>
                   <AdminSearchableSelect
-                    :model-value="productForm.thuongHieuId"
-                    :options="thuongHieuOptions"
+                    :model-value="formSanPham.thuongHieuId"
+                    :options="luaChonThuongHieu"
                     placeholder="Chọn thương hiệu"
                     search-placeholder="Tìm thương hiệu..."
-                    :error="Boolean(productErrors.thuongHieuId)"
-                    @update:model-value="productForm.thuongHieuId = $event"
+                    :error="Boolean(loiSanPham.thuongHieuId)"
+                    @update:model-value="formSanPham.thuongHieuId = $event"
                   />
-                  <p v-if="productErrors.thuongHieuId" class="mt-1 text-xs text-red-500">{{ productErrors.thuongHieuId }}</p>
+                  <p v-if="loiSanPham.thuongHieuId" class="mt-1 text-xs text-red-500">{{ loiSanPham.thuongHieuId }}</p>
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Loại giày <span class="text-rose-500">*</span></label>
                   <AdminSearchableSelect
-                    :model-value="productForm.loaiGiayId"
-                    :options="loaiGiayOptions"
+                    :model-value="formSanPham.loaiGiayId"
+                    :options="luaChonLoaiGiay"
                     placeholder="Chọn loại giày"
                     search-placeholder="Tìm loại giày..."
-                    :error="Boolean(productErrors.loaiGiayId)"
-                    @update:model-value="productForm.loaiGiayId = $event"
+                    :error="Boolean(loiSanPham.loaiGiayId)"
+                    @update:model-value="formSanPham.loaiGiayId = $event"
                   />
-                  <p v-if="productErrors.loaiGiayId" class="mt-1 text-xs text-red-500">{{ productErrors.loaiGiayId }}</p>
+                  <p v-if="loiSanPham.loaiGiayId" class="mt-1 text-xs text-red-500">{{ loiSanPham.loaiGiayId }}</p>
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Giới tính</label>
                   <AdminSearchableSelect
-                    :model-value="productForm.gioiTinh"
-                    :options="genderOptions"
+                    :model-value="formSanPham.gioiTinh"
+                    :options="luaChonGioiTinh"
                     placeholder="Tất cả"
                     search-placeholder="Tìm giới tính..."
-                    @update:model-value="productForm.gioiTinh = $event"
+                    @update:model-value="formSanPham.gioiTinh = $event"
                   />
                 </div>
 
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-700">Chất liệu</label>
                   <AdminSearchableSelect
-                    :model-value="productForm.chatLieuGiayId"
-                    :options="chatLieuOptions"
+                    :model-value="formSanPham.chatLieuGiayId"
+                    :options="luaChonChatLieu"
                     placeholder="Chọn chất liệu giày"
                     search-placeholder="Tìm chất liệu..."
-                    @update:model-value="productForm.chatLieuGiayId = $event"
+                    @update:model-value="formSanPham.chatLieuGiayId = $event"
                   />
                 </div>
               </div>
 
-              <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div class="mt-5 rounded-md border border-slate-100 bg-slate-50 p-4">
                 <div class="mb-4">
                   <h3 class="text-sm font-bold text-slate-700">Thuộc tính kỹ thuật</h3>
                   <p class="mt-1 text-xs text-slate-400">
@@ -253,44 +253,44 @@ const trongLuongOptions = computed(() =>
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Đế giày</label>
                     <AdminSearchableSelect
-                      :model-value="productForm.deGiayId"
-                      :options="deGiayOptions"
+                      :model-value="formSanPham.deGiayId"
+                      :options="luaChonDeGiay"
                       placeholder="Không có"
                       search-placeholder="Tìm đế giày..."
-                      @update:model-value="productForm.deGiayId = $event"
+                      @update:model-value="formSanPham.deGiayId = $event"
                     />
                   </div>
 
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Cổ giày</label>
                     <AdminSearchableSelect
-                      :model-value="productForm.coGiayId"
-                      :options="coGiayOptions"
+                      :model-value="formSanPham.coGiayId"
+                      :options="luaChonCoGiay"
                       placeholder="Không có"
                       search-placeholder="Tìm cổ giày..."
-                      @update:model-value="productForm.coGiayId = $event"
+                      @update:model-value="formSanPham.coGiayId = $event"
                     />
                   </div>
 
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Công nghệ đệm</label>
                     <AdminSearchableSelect
-                      :model-value="productForm.congNgheDemId"
-                      :options="congNgheDemOptions"
+                      :model-value="formSanPham.congNgheDemId"
+                      :options="luaChonCongNgheDem"
                       placeholder="Không có"
                       search-placeholder="Tìm công nghệ đệm..."
-                      @update:model-value="productForm.congNgheDemId = $event"
+                      @update:model-value="formSanPham.congNgheDemId = $event"
                     />
                   </div>
 
                   <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700">Trọng lượng</label>
                     <AdminSearchableSelect
-                      :model-value="productForm.trongLuongId"
-                      :options="trongLuongOptions"
+                      :model-value="formSanPham.trongLuongId"
+                      :options="luaChonTrongLuong"
                       placeholder="Không có"
                       search-placeholder="Tìm trọng lượng..."
-                      @update:model-value="productForm.trongLuongId = $event"
+                      @update:model-value="formSanPham.trongLuongId = $event"
                     />
                   </div>
                 </div>
@@ -299,9 +299,9 @@ const trongLuongOptions = computed(() =>
               <div class="mt-5">
                 <label class="mb-1 block text-xs font-medium text-gray-700">Mô tả</label>
                 <textarea
-                  v-model="productForm.moTa"
+                  v-model="formSanPham.moTa"
                   rows="5"
-                  class="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  class="w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                   placeholder="Mô tả sản phẩm"
                 ></textarea>
               </div>
@@ -311,23 +311,23 @@ const trongLuongOptions = computed(() =>
               <section class="rounded-[24px] border border-slate-100 bg-white p-5">
                 <div class="mb-4">
                   <h3 class="text-base font-bold text-slate-800">
-                    {{ mode === 'add' ? 'Thông tin nhanh' : 'Tóm tắt' }}
+                    {{ cheDo === 'them' ? 'Thông tin nhanh' : 'Tóm tắt' }}
                   </h3>
                   <p class="mt-1 text-xs text-slate-400">
                     {{
-                      mode === 'add'
+                      cheDo === 'them'
                         ? 'Lưu xong sẽ mở popup biến thể để bạn thêm màu, size, giá và số lượng.'
                         : 'Theo dõi nhanh trạng thái hiện tại của sản phẩm.'
                     }}
                   </p>
                 </div>
 
-                <div v-if="mode === 'edit'" class="space-y-4">
-                  <div class="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                <div v-if="cheDo === 'sua'" class="space-y-4">
+                  <div class="overflow-hidden rounded-md border border-slate-100 bg-slate-50">
                     <div class="aspect-square">
                       <img
-                        v-if="mainImage"
-                        :src="mainImage.url"
+                        v-if="hinhAnhChinh"
+                        :src="hinhAnhChinh.url"
                         alt=""
                         class="h-full w-full object-cover"
                       />
@@ -340,19 +340,19 @@ const trongLuongOptions = computed(() =>
                   <div class="space-y-2 text-sm text-slate-600">
                     <div class="flex items-center justify-between gap-3">
                       <span class="text-slate-400">Mã sản phẩm</span>
-                      <span class="font-semibold text-slate-700">{{ selectedProduct?.ma }}</span>
+                      <span class="font-semibold text-slate-700">{{ sanPhamDaChon?.ma }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-3">
                       <span class="text-slate-400">Trạng thái</span>
-                      <span class="admin-status-chip whitespace-nowrap" :class="trangThaiClass(selectedProduct?.trangThai)">
-                        {{ trangThaiLabel(selectedProduct?.trangThai) }}
+                      <span class="admin-status-chip whitespace-nowrap" :class="layLopTrangThai(sanPhamDaChon?.trangThai)">
+                        {{ layNhanTrangThai(sanPhamDaChon?.trangThai) }}
                       </span>
                     </div>
                   </div>
 
                   <div class="flex flex-wrap gap-2">
                     <span
-                      v-for="attribute in selectedAttributeList(selectedProduct)"
+                      v-for="attribute in layDanhSachThuocTinh(sanPhamDaChon)"
                       :key="attribute"
                       class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
                     >
@@ -362,7 +362,7 @@ const trongLuongOptions = computed(() =>
                 </div>
 
                 <div v-else class="space-y-4">
-                  <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div class="rounded-md border border-slate-100 bg-slate-50 p-4">
                     <div class="space-y-2 text-sm text-slate-600">
                       <div class="flex items-center justify-between gap-3">
                         <span class="text-slate-400">Mã sản phẩm</span>
@@ -381,22 +381,22 @@ const trongLuongOptions = computed(() =>
 
                   <div class="flex flex-wrap gap-2">
                     <span
-                      v-if="productForm.thuongHieuId"
+                      v-if="formSanPham.thuongHieuId"
                       class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
                     >
-                      {{ thuongHieuName(productForm.thuongHieuId) }}
+                      {{ layTenThuongHieu(formSanPham.thuongHieuId) }}
                     </span>
                     <span
-                      v-if="productForm.loaiGiayId"
+                      v-if="formSanPham.loaiGiayId"
                       class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
                     >
-                      {{ loaiGiayName(productForm.loaiGiayId) }}
+                      {{ layTenLoaiGiay(formSanPham.loaiGiayId) }}
                     </span>
                     <span
-                      v-if="productForm.gioiTinh"
+                      v-if="formSanPham.gioiTinh"
                       class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
                     >
-                      {{ gioiTinhLabel(productForm.gioiTinh) }}
+                      {{ layNhanGioiTinh(formSanPham.gioiTinh) }}
                     </span>
                   </div>
                 </div>
@@ -407,17 +407,17 @@ const trongLuongOptions = computed(() =>
 
         <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
           <button
-            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            @click="emit('close')"
+            class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            @click="emit('dong')"
           >
             Hủy
           </button>
           <button
-            :disabled="saving || loading"
-            class="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-            @click="emit('save')"
+            :disabled="dangLuu || dangTai"
+            class="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+            @click="emit('luu')"
           >
-            {{ saving ? 'Đang lưu...' : (mode === 'add' ? 'Lưu sản phẩm' : 'Lưu thay đổi') }}
+            {{ dangLuu ? 'Đang lưu...' : (cheDo === 'them' ? 'Lưu sản phẩm' : 'Lưu thay đổi') }}
           </button>
         </div>
       </div>

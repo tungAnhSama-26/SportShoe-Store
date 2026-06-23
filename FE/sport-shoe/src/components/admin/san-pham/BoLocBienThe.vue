@@ -56,12 +56,12 @@ function handleFilterChange() {
               v-model="filters.keyword"
               type="text"
               placeholder="Tìm theo mã SP / mã CTSP / tên sản phẩm..."
-              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-12 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-12 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @keyup.enter="handleKeywordEnter"
             />
             <button
               type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
+              class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
               title="Quét QR / Mã vạch"
               @click="$emit('open-scanner')"
             >
@@ -96,7 +96,7 @@ function handleFilterChange() {
           <span class="admin-filter-label mb-1">Màu sắc</span>
           <select
             v-model.number="filters.mauSacId"
-            class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả màu sắc</option>
@@ -110,7 +110,7 @@ function handleFilterChange() {
           <span class="admin-filter-label mb-1">Kích cỡ</span>
           <select
             v-model.number="filters.kichCoId"
-            class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả kích cỡ</option>
@@ -123,12 +123,12 @@ function handleFilterChange() {
           <span class="admin-filter-label mb-1">Trạng thái</span>
           <select
             v-model.number="filters.trangThai"
-            class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả trạng thái</option>
             <option :value="1">Đang bán</option>
-            <option :value="2">Ngừng bán</option>
+            <option :value="0">Ngừng bán</option>
           </select>
         </label>
       </div>

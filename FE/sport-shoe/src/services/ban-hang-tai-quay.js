@@ -10,7 +10,7 @@ async function request(path, init) {
 function timKhachHangTheoSoDienThoai(phone) {
   const params = new URLSearchParams();
   if (phone.trim()) {
-    params.set("phone", phone.trim());
+    params.set("q", phone.trim());
   }
   return request(`/admin/ban-hang-tai-quay/khach-hang?${params.toString()}`);
 }

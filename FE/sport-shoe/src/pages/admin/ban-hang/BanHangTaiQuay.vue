@@ -35,11 +35,15 @@ const {
   tongSoTrang,
   boLocThuongHieuDaChon,
   boLocDanhMucDaChon,
+  boLocMauSacDaChon,
+  boLocKichCoDaChon,
   giaToiThieuDaChon,
   giaToiDaDaChon,
   giaToiDaCoSan,
   thuongHieuCoSan,
   danhMucCoSan,
+  mauSacCoSan,
+  kichCoCoSan,
   nhanTimKiemSanPham,
   cartItems,
   chiTietSanPhamDaChon,
@@ -99,12 +103,14 @@ const {
   moDanhSachSanPham,
   dongDanhSachSanPham,
   moChiTietSanPham,
+  themTrucTiepBienThe,
   xuLyQuetQrSanPham,
   tangSoLuong,
   giamSoLuong,
   dongChiTietSanPham,
   chonMauSac,
   chonKichCo,
+  chonBienThe,
   giamSoLuongChiTiet,
   tangSoLuongChiTiet,
   capNhatSoLuongChiTiet,
@@ -125,7 +131,8 @@ const {
   xuLyThanhToanSau,
   xuLyHuyHoaDonCho,
   xuLyInHoaDon,
-  daInHoaDon
+  daInHoaDon,
+  bienTheLienQuan
 } = LogicBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
@@ -208,6 +215,8 @@ const datTrangHienTai = (val) => { trangHienTai.value = val; };
 const datKichThuocTrang = (val) => { kichThuocTrang.value = val; };
 const datBoLocThuongHieu = (val) => { boLocThuongHieuDaChon.value = val; };
 const datBoLocDanhMuc = (val) => { boLocDanhMucDaChon.value = val; };
+const datBoLocMauSac = (val) => { boLocMauSacDaChon.value = val; };
+const datBoLocKichCo = (val) => { boLocKichCoDaChon.value = val; };
 const datGiaToiThieu = (val) => { giaToiThieuDaChon.value = val; };
 const datGiaToiDa = (val) => { giaToiDaDaChon.value = val; };
 const datMaPhieuGiamGia = (val) => { maPhieuGiamGia.value = val; };
@@ -233,7 +242,7 @@ function xuLyMaQuet(keyword) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 p-2 h-full overflow-hidden">
+  <div class="flex flex-col gap-2 p-2 h-full overflow-hidden radius-6px">
     <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
       <!-- Left Column: Pending Invoices, Cart -->
       <div class="flex flex-col gap-4 min-h-0">
@@ -274,11 +283,15 @@ function xuLyMaQuet(keyword) {
                 :total-pages="tongSoTrang"
                 :selected-brand-filter="boLocThuongHieuDaChon"
                 :selected-category-filter="boLocDanhMucDaChon"
+                :selected-color-filter="boLocMauSacDaChon"
+                :selected-size-filter="boLocKichCoDaChon"
                 :selected-min-price="giaToiThieuDaChon"
                 :selected-max-price="giaToiDaDaChon"
                 :max-available-price="giaToiDaCoSan"
                 :available-brands="thuongHieuCoSan"
                 :available-categories="danhMucCoSan"
+                :available-colors="mauSacCoSan"
+                :available-sizes="kichCoCoSan"
                 :product-search-label="nhanTimKiemSanPham"
                 :dinh-dang-tien="dinhDangTien"
                 :so-luong-con-lai="soLuongConLai"
@@ -287,12 +300,14 @@ function xuLyMaQuet(keyword) {
                 @update:page-size="datKichThuocTrang"
                 @update:selected-brand-filter="datBoLocThuongHieu"
                 @update:selected-category-filter="datBoLocDanhMuc"
+                @update:selected-color-filter="datBoLocMauSac"
+                @update:selected-size-filter="datBoLocKichCo"
                 @update:selected-min-price="datGiaToiThieu"
                 @update:selected-max-price="datGiaToiDa"
                 @refresh="taiSanPham"
                 @focus-product="moDanhSachSanPham"
                 @blur-product="dongDanhSachSanPham"
-                @open-product="moChiTietSanPham"
+                @open-product="themTrucTiepBienThe"
                 @scan-product="xuLyQuetQrSanPham"
                 @open-qr-scanner="moQuetQr"
                 @update:show-product-dropdown="hienThiDanhSachSanPham = $event"
@@ -316,6 +331,7 @@ function xuLyMaQuet(keyword) {
             <PhanGiaoHang
               :shipping-info="thongTinGiaoHang"
               :dinh-dang-tien="dinhDangTien"
+              :customer-id="khachHangDuocChon?.id"
               @update-shipping="capNhatThongTinGiaoHang"
               @calculate-shipping="xuLyTinhPhiVanChuyen"
             />
@@ -421,6 +437,7 @@ function xuLyMaQuet(keyword) {
       :chi-tiet-dang-chon="chiTietDangChon"
       :current-product-image="hinhAnhDangChon"
       :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
+      :bien-the-lien-quan="bienTheLienQuan"
       :color-options="luaChonMauSac"
       :size-options="luaChonKichCo"
       :selected-color="mauSacDaChon"
@@ -431,6 +448,7 @@ function xuLyMaQuet(keyword) {
       @close="dongChiTietSanPham"
       @select-color="chonMauSac"
       @select-size="chonKichCo"
+      @select-variant="chonBienThe"
       @decrease-quantity="giamSoLuongChiTiet"
       @increase-quantity="tangSoLuongChiTiet"
       @update-quantity="capNhatSoLuongChiTiet"

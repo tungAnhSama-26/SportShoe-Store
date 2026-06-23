@@ -635,3 +635,51 @@ table td * {
     min-width: 560px;
   }
 }
+
+/* Modifier to set 6px radius for specific screens */
+.radius-6px .admin-section-card,
+.radius-6px .admin-section-icon,
+.radius-6px .admin-btn-soft,
+.radius-6px .admin-btn-primary,
+.radius-6px .pvf-panel,
+.radius-6px .pvf-input,
+.radius-6px .pvf-select,
+.radius-6px .pvf-file-field,
+.radius-6px .pvf-btn,
+.radius-6px .pvf-pagination-button {
+  border-radius: 6px !important;
+}
+
+.radius-6px .danh-muc-table thead th:first-child,
+.radius-6px .admin-table thead th:first-child,
+.radius-6px .danh-muc-table tbody td:first-child,
+.radius-6px .admin-table tbody td:first-child {
+  border-top-left-radius: 6px !important;
+  border-bottom-left-radius: 6px !important;
+}
+
+.radius-6px .danh-muc-table thead th:last-child,
+.radius-6px .admin-table thead th:last-child,
+.radius-6px .danh-muc-table tbody td:last-child,
+.radius-6px .admin-table tbody td:last-child {
+  border-top-right-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+}
+
+.radius-6px .rounded-2xl,
+.radius-6px .rounded-xl,
+.radius-6px .rounded-lg,
+.radius-6px .rounded-md {
+  border-radius: 6px !important;
+}
+
+/* For modals that might be appended to body */
+.el-overlay.radius-6px-modal .el-dialog {
+  border-radius: 6px !important;
+}
+.el-overlay.radius-6px-modal .rounded-2xl,
+.el-overlay.radius-6px-modal .rounded-xl,
+.el-overlay.radius-6px-modal .rounded-lg,
+.el-overlay.radius-6px-modal .rounded-md {
+  border-radius: 6px !important;
+}

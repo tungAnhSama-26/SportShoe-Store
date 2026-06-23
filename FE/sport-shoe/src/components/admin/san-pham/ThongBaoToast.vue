@@ -12,7 +12,7 @@ const props = defineProps({
     <Transition name="fade">
       <div
         v-if="toast.show && toast.type !== 'success'"
-        class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
+        class="fixed right-5 top-5 z-[100] rounded-md px-4 py-3 text-sm font-medium text-white shadow-lg"
         :class="toast.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
       >
         {{ toast.message }}

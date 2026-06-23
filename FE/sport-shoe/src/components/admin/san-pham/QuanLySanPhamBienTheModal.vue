@@ -139,7 +139,7 @@ function formatDiscountPercent(item) {
             </p>
           </div>
           <button
-            class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            class="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             @click="emit('close')"
           >
             <X :size="18" />
@@ -147,13 +147,13 @@ function formatDiscountPercent(item) {
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-6">
-          <div v-if="loading" class="rounded-2xl border border-slate-100 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
+          <div v-if="loading" class="rounded-md border border-slate-100 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
             Đang tải CTSP...
           </div>
 
           <template v-else-if="selectedGiay">
             <div class="mb-5 grid gap-4 xl:grid-cols-[1fr_220px]">
-              <div class="rounded-3xl border border-slate-100 bg-slate-50 p-5">
+              <div class="rounded-md border border-slate-100 bg-slate-50 p-5">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
@@ -187,14 +187,14 @@ function formatDiscountPercent(item) {
 
                   <div class="flex flex-wrap gap-2">
                     <button
-                      class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                      class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                       @click="emit('edit-product', selectedGiay)"
                     >
                       <Pencil :size="15" />
                       Sửa sản phẩm
                     </button>
                     <button
-                      class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                      class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                       @click="emit('close')"
                     >
                       <X :size="15" />
@@ -204,8 +204,8 @@ function formatDiscountPercent(item) {
                 </div>
               </div>
 
-              <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                <div class="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div class="rounded-md border border-slate-100 bg-slate-50 p-4">
+                <div class="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white">
                   <img
                     v-if="selectedGiayMainImage"
                     :src="selectedGiayMainImage.url"
@@ -228,7 +228,7 @@ function formatDiscountPercent(item) {
               </div>
 
               <button
-                class="inline-flex h-10 items-center gap-2 rounded-xl bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600"
+                class="inline-flex h-10 items-center gap-2 rounded-md bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600"
                 @click="emit('open-add-bienthe')"
               >
                 <Plus :size="15" />
@@ -331,7 +331,7 @@ function formatDiscountPercent(item) {
             </div>
           </template>
 
-          <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
+          <div v-else class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
             Không thể tải dữ liệu biến thể cho sản phẩm này.
           </div>
         </div>

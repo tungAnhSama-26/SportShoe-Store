@@ -238,7 +238,7 @@ const sepayQrUrl = computed(() => {
       <div class="mt-1 space-y-3">
 
         <!-- Voucher khả dụng (Applied Coupon) -->
-        <div v-if="appliedCoupon && appliedCoupon.ma" class="bg-[#F2F9F4] rounded-xl p-3.5 flex flex-col relative border border-[#E3F2E8]">
+        <div v-if="appliedCoupon && appliedCoupon.ma" class="bg-[#F2F9F4] rounded-md p-3.5 flex flex-col relative border border-[#E3F2E8]">
            <button @click="emit('remove-coupon')" class="absolute top-2.5 right-2.5 p-1 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors">
              <X class="w-4 h-4" />
            </button>
@@ -290,7 +290,7 @@ const sepayQrUrl = computed(() => {
             <span class="text-[15px] font-bold text-emerald-600">Gợi ý mua thêm</span>
             <span class="text-[11px] font-semibold text-amber-600 bg-[#FFF8ED] border border-amber-200 px-2.5 py-0.5 rounded-full">1 đề xuất</span>
           </div>
-          <div class="rounded-xl border border-slate-100 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex flex-col gap-2">
+          <div class="rounded-md border border-slate-100 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-3 flex flex-col gap-2">
             <div class="flex items-center gap-3">
               <span class="text-[13px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full min-w-[48px] text-center whitespace-nowrap">{{ nextTierCoupon.loai === 1 ? nextTierCoupon.giaTri + '%' : dinhDangTien(nextTierCoupon.giaTri) }}</span>
               <span class="font-bold text-[15px] text-slate-800">{{ nextTierCoupon.ma }}</span>
@@ -327,7 +327,7 @@ const sepayQrUrl = computed(() => {
 
             <!-- Fee amount box -->
             <span
-              class="inline-flex min-w-[72px] items-center justify-end rounded-lg border bg-white px-2.5 py-1 text-sm font-semibold"
+              class="inline-flex min-w-[72px] items-center justify-end rounded-md border bg-white px-2.5 py-1 text-sm font-semibold"
               :class="shippingInfo.daTinhPhi && shippingInfo.phiVanChuyen > 0
                 ? 'border-emerald-200 text-emerald-700'
                 : 'border-slate-200 text-slate-400'"
@@ -340,7 +340,7 @@ const sepayQrUrl = computed(() => {
               v-if="!shippingInfo.dangTinhPhi && shippingInfo.coTheTinhPhi"
               type="button"
               title="Tính phí vận chuyển"
-              class="flex h-7 w-7 items-center justify-center rounded-lg border border-orange-200 bg-orange-50 text-orange-500 transition hover:bg-orange-100 active:scale-95"
+              class="flex h-7 w-7 items-center justify-center rounded-md border border-orange-200 bg-orange-50 text-orange-500 transition hover:bg-orange-100 active:scale-95"
               @click="emit('calculate-shipping')"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -397,7 +397,7 @@ const sepayQrUrl = computed(() => {
             autocomplete="off"
             :disabled="paymentMethod !== 1"
             :placeholder="paymentMethod === 1 ? 'Nhập số tiền khách đưa' : 'Tự động bằng số tiền cần thanh toán'"
-            class="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-semibold text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            class="w-full rounded-md border px-3 py-2.5 text-left text-sm font-semibold text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             :class="isAmountTouched && paymentValidationMessage ? 'border-rose-300 bg-rose-50 focus:border-rose-400' : 'border-slate-200 focus:border-red-300'"
             @input="emit('amount-input', $event.target.value); isAmountTouched = false"
             @blur="isAmountTouched = true"
@@ -412,13 +412,13 @@ const sepayQrUrl = computed(() => {
           <span class="max-w-[65%] break-all text-right text-base font-bold text-slate-900">{{ dinhDangTien(tienThua) }}</span>
         </div>
 
-        <div v-if="paymentMethod === 2" class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div v-if="paymentMethod === 2" class="flex flex-col items-center justify-center rounded-md border border-slate-200 bg-white p-3 shadow-sm">
           <p class="mb-2 text-sm font-semibold text-slate-800">Quét mã QR để thanh toán</p>
           <div v-if="timeLeft > 0">
             <img
               :src="sepayQrUrl"
               alt="VietQR"
-              class="h-40 w-40 cursor-pointer rounded-xl border border-slate-100 object-contain transition hover:scale-105"
+              class="h-40 w-40 cursor-pointer rounded-md border border-slate-100 object-contain transition hover:scale-105"
               title="Bấm để phóng to"
               @click="showLargeQr = true"
             />
@@ -426,7 +426,7 @@ const sepayQrUrl = computed(() => {
               QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
             </p>
           </div>
-          <div v-else class="flex h-40 w-40 flex-col items-center justify-center rounded-xl border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
+          <div v-else class="flex h-40 w-40 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
             <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -440,7 +440,7 @@ const sepayQrUrl = computed(() => {
             :value="paymentNote"
             rows="2"
             placeholder="Ghi chú thêm nếu cần"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-red-300"
+            class="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-red-300"
             @input="emit('update:paymentNote', $event.target.value)"
           />
         </div>
@@ -450,7 +450,7 @@ const sepayQrUrl = computed(() => {
         <div class="grid gap-3 sm:grid-cols-2">
           <button
             type="button"
-            class="rounded-xl bg-slate-200 px-3 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            class="rounded-md bg-slate-200 px-3 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             :disabled="cancelingPendingInvoice"
             @click="emit('cancel-pending-invoice')"
           >
@@ -459,7 +459,7 @@ const sepayQrUrl = computed(() => {
 
           <button
             type="button"
-            class="rounded-xl bg-red-500 px-3 py-3 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.35)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none whitespace-nowrap"
+            class="rounded-md bg-red-500 px-3 py-3 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.35)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none whitespace-nowrap"
             :disabled="!canPay || payingInvoice"
             @click="emit('pay-now')"
           >
@@ -483,7 +483,7 @@ const sepayQrUrl = computed(() => {
             <X class="h-6 w-6" />
           </button>
           <h3 class="mb-6 text-center text-xl font-bold text-slate-800">Quét mã QR để thanh toán</h3>
-          <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-2xl border-2 border-slate-100 object-contain shadow-sm" />
+          <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-md border-2 border-slate-100 object-contain shadow-sm" />
           <p class="mt-6 text-center text-base font-medium text-slate-600">
             QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
           </p>

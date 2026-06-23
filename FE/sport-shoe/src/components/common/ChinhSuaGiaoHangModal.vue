@@ -1,5 +1,5 @@
 <script setup>
-import { CheckCircle2, MapPin, Save, X } from "lucide-vue-next";
+import { Info, X } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps({
@@ -7,7 +7,6 @@ const props = defineProps({
   initialData: { type: Object, default: () => ({}) },
   savedAddresses: { type: Array, default: () => [] },
   saving: { type: Boolean, default: false },
-  title: { type: String, default: "Chỉnh sửa thông tin giao hàng" },
 });
 
 const emit = defineEmits(["update:modelValue", "save"]);
@@ -25,19 +24,30 @@ function taoFormRong() {
   return {
     tenNguoiNhan: "",
     sdtNguoiNhan: "",
+    email: "",
+    diaChiId: "new",
     tinhThanh: "",
     quanHuyen: "",
     phuongXa: "",
     diaChiCuThe: "",
+    ghiChu: "",
   };
 }
 
-const diaChiDayDu = computed(() => [
-  form.value.diaChiCuThe,
-  form.value.phuongXa,
-  form.value.quanHuyen,
-  form.value.tinhThanh,
-].filter(Boolean).join(", "));
+const diaChiDayDu = computed(() => {
+  if (form.value.diaChiId !== "new") {
+    const selected = props.savedAddresses.find(a => a.id === form.value.diaChiId);
+    if (selected) {
+      return [selected.diaChiCuThe, selected.phuongXa, selected.quanHuyen, selected.tinhThanh].filter(Boolean).join(", ");
+    }
+  }
+  return [
+    form.value.diaChiCuThe,
+    form.value.phuongXa,
+    form.value.quanHuyen,
+    form.value.tinhThanh,
+  ].filter(Boolean).join(", ");
+});
 
 function dongModal() {
   emit("update:modelValue", false);
@@ -118,16 +128,29 @@ async function dienDuLieuDiaPhuong() {
 
 async function khoiTaoForm() {
   const diaChi = tachDiaChiDayDu(props.initialData?.diaChiGiaoHang);
+  let defaultDiaChiId = "new";
+  
+  let defaultAddr = null;
+  if (props.savedAddresses?.length > 0) {
+    defaultAddr = props.savedAddresses.find(a => a.laMacDinh) || props.savedAddresses[0];
+    defaultDiaChiId = defaultAddr.id;
+  }
+
   form.value = {
-    tenNguoiNhan: props.initialData?.tenNguoiNhan || "",
-    sdtNguoiNhan: props.initialData?.sdtNguoiNhan || "",
+    tenNguoiNhan: defaultAddr?.hoTen || props.initialData?.tenNguoiNhan || "",
+    sdtNguoiNhan: defaultAddr?.sdt || props.initialData?.soDienThoaiNguoiNhan || props.initialData?.sdtNguoiNhan || "",
+    email: defaultAddr?.email || props.initialData?.email || "",
+    diaChiId: defaultDiaChiId,
+    ghiChu: props.initialData?.ghiChu || "",
     ...diaChi,
   };
+  
   errors.value = {};
   maTinhChon.value = "";
   maHuyenChon.value = "";
   dsHuyen.value = [];
   dsXa.value = [];
+  
   try {
     await dienDuLieuDiaPhuong();
   } catch {
@@ -162,33 +185,20 @@ async function chonHuyen(event) {
   }
 }
 
-async function dungDiaChiDaLuu(diaChi) {
-  form.value = {
-    tenNguoiNhan: diaChi.hoTen || "",
-    sdtNguoiNhan: diaChi.sdt || "",
-    tinhThanh: diaChi.tinhThanh || "",
-    quanHuyen: diaChi.quanHuyen || "",
-    phuongXa: diaChi.phuongXa || "",
-    diaChiCuThe: diaChi.diaChiCuThe || "",
-  };
-  errors.value = {};
-  try {
-    await dienDuLieuDiaPhuong();
-  } catch {
-    errors.value.diaPhuong = "Đã chọn địa chỉ, nhưng không thể tải lại danh sách địa phương.";
-  }
-}
-
 function validate() {
   const next = {};
   if (!form.value.tenNguoiNhan.trim()) next.tenNguoiNhan = "Vui lòng nhập tên người nhận.";
   if (!/^(0|\+84)[35789]\d{8}$/.test(form.value.sdtNguoiNhan.trim())) {
     next.sdtNguoiNhan = "Số điện thoại không đúng định dạng.";
   }
-  if (!form.value.tinhThanh) next.tinhThanh = "Vui lòng chọn tỉnh/thành phố.";
-  if (!form.value.quanHuyen) next.quanHuyen = "Vui lòng chọn quận/huyện.";
-  if (!form.value.phuongXa) next.phuongXa = "Vui lòng chọn phường/xã.";
-  if (!form.value.diaChiCuThe.trim()) next.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+  
+  if (form.value.diaChiId === "new") {
+    if (!form.value.tinhThanh) next.tinhThanh = "Vui lòng chọn tỉnh/thành phố.";
+    if (!form.value.quanHuyen) next.quanHuyen = "Vui lòng chọn quận/huyện.";
+    if (!form.value.phuongXa) next.phuongXa = "Vui lòng chọn phường/xã.";
+    if (!form.value.diaChiCuThe.trim()) next.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+  }
+  
   errors.value = next;
   return Object.keys(next).length === 0;
 }
@@ -198,7 +208,9 @@ function luu() {
   emit("save", {
     tenNguoiNhan: form.value.tenNguoiNhan.trim(),
     sdtNguoiNhan: form.value.sdtNguoiNhan.trim(),
+    email: form.value.email.trim(),
     diaChiGiaoHang: diaChiDayDu.value,
+    ghiChu: form.value.ghiChu.trim()
   });
 }
 
@@ -207,6 +219,20 @@ watch(
   (visible) => {
     if (visible) khoiTaoForm();
   },
+);
+
+watch(
+  () => form.value.diaChiId,
+  (newId) => {
+    if (newId !== "new") {
+      const selected = props.savedAddresses.find(a => a.id === newId);
+      if (selected) {
+        if (selected.hoTen) form.value.tenNguoiNhan = selected.hoTen;
+        if (selected.sdt) form.value.sdtNguoiNhan = selected.sdt;
+        if (selected.email) form.value.email = selected.email;
+      }
+    }
+  }
 );
 </script>
 
@@ -217,96 +243,120 @@ watch(
       class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
       @click.self="dongModal"
     >
-      <div class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl">
-        <header class="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
+      <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-md bg-white shadow-2xl">
+        <header class="sticky top-0 z-10 flex items-center justify-between bg-white px-6 py-4">
           <div class="flex items-center gap-3">
-            <span class="flex size-10 items-center justify-center rounded-lg bg-rose-50 text-[#B82220]">
-              <MapPin class="size-5" />
+            <span class="flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white">
+              <Info class="size-4" />
             </span>
-            <div>
-              <h2 class="text-lg font-bold text-slate-900">{{ title }}</h2>
-              <p class="text-xs text-slate-500">Có thể chỉnh sửa đến khi đơn chuyển sang giao hàng.</p>
-            </div>
+            <h2 class="text-lg font-bold text-slate-800">Thông tin người nhận</h2>
           </div>
-          <button type="button" class="rounded-full p-2 text-slate-400 hover:bg-slate-100" @click="dongModal">
+          <button type="button" class="rounded-full p-2 text-slate-400 hover:bg-slate-100 transition" @click="dongModal">
             <X class="size-5" />
           </button>
         </header>
 
-        <div class="space-y-6 p-6">
-          <section v-if="savedAddresses.length" class="space-y-3">
-            <h3 class="text-sm font-bold text-slate-700">Địa chỉ đã lưu</h3>
-            <div class="grid gap-3 md:grid-cols-2">
-              <button
-                v-for="diaChi in savedAddresses"
-                :key="diaChi.id"
-                type="button"
-                class="relative min-h-28 rounded-lg border border-slate-200 p-4 text-left transition hover:border-rose-300 hover:bg-rose-50/40"
-                @click="dungDiaChiDaLuu(diaChi)"
-              >
-                <span v-if="diaChi.laMacDinh" class="absolute right-3 top-3 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-                  <CheckCircle2 class="size-3.5" /> Mặc định
-                </span>
-                <p class="pr-20 text-sm font-bold text-slate-800">{{ diaChi.hoTen }}</p>
-                <p class="mt-1 text-xs text-slate-500">{{ diaChi.sdt }}</p>
-                <p class="mt-2 text-xs leading-5 text-slate-600">
-                  {{ diaChi.diaChiCuThe }}, {{ diaChi.phuongXa }}, {{ diaChi.quanHuyen }}, {{ diaChi.tinhThanh }}
-                </p>
-              </button>
-            </div>
-          </section>
+        <div class="space-y-5 px-6 pb-2 mt-4">
+          <!-- User info -->
+          <div class="grid grid-cols-2 gap-4">
+            <label class="space-y-1.5">
+              <span class="text-[13px] text-slate-600">Tên người nhận <b class="text-red-500">*</b></span>
+              <input v-model="form.tenNguoiNhan" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+              <p v-if="errors.tenNguoiNhan" class="text-xs text-red-500">{{ errors.tenNguoiNhan }}</p>
+            </label>
+            <label class="space-y-1.5">
+              <span class="text-[13px] text-slate-600">Số điện thoại <b class="text-red-500">*</b></span>
+              <input v-model="form.sdtNguoiNhan" type="tel" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+              <p v-if="errors.sdtNguoiNhan" class="text-xs text-red-500">{{ errors.sdtNguoiNhan }}</p>
+            </label>
+          </div>
 
-          <section class="grid gap-4 border-t border-slate-100 pt-5 md:grid-cols-2">
-            <label class="space-y-1.5">
-              <span class="text-sm font-semibold text-slate-700">Tên người nhận <b class="text-rose-500">*</b></span>
-              <input v-model="form.tenNguoiNhan" class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white" />
-              <p v-if="errors.tenNguoiNhan" class="text-xs text-rose-500">{{ errors.tenNguoiNhan }}</p>
-            </label>
-            <label class="space-y-1.5">
-              <span class="text-sm font-semibold text-slate-700">Số điện thoại <b class="text-rose-500">*</b></span>
-              <input v-model="form.sdtNguoiNhan" type="tel" class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white" />
-              <p v-if="errors.sdtNguoiNhan" class="text-xs text-rose-500">{{ errors.sdtNguoiNhan }}</p>
-            </label>
-            <label class="space-y-1.5">
-              <span class="text-sm font-semibold text-slate-700">Tỉnh/Thành phố <b class="text-rose-500">*</b></span>
-              <select :value="maTinhChon" :disabled="dangTaiDiaPhuong" class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300" @change="chonTinh">
-                <option value="">-- Chọn tỉnh/thành --</option>
-                <option v-for="tinh in dsTinh" :key="tinh.code" :value="tinh.code">{{ tinh.name }}</option>
-              </select>
-              <p v-if="errors.tinhThanh" class="text-xs text-rose-500">{{ errors.tinhThanh }}</p>
-            </label>
-            <label class="space-y-1.5">
-              <span class="text-sm font-semibold text-slate-700">Quận/Huyện <b class="text-rose-500">*</b></span>
-              <select :value="maHuyenChon" :disabled="!maTinhChon" class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 disabled:opacity-50" @change="chonHuyen">
-                <option value="">-- Chọn quận/huyện --</option>
-                <option v-for="huyen in dsHuyen" :key="huyen.code" :value="huyen.code">{{ huyen.name }}</option>
-              </select>
-              <p v-if="errors.quanHuyen" class="text-xs text-rose-500">{{ errors.quanHuyen }}</p>
-            </label>
-            <label class="space-y-1.5">
-              <span class="text-sm font-semibold text-slate-700">Phường/Xã <b class="text-rose-500">*</b></span>
-              <select v-model="form.phuongXa" :disabled="!maHuyenChon" class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 disabled:opacity-50">
-                <option value="">-- Chọn phường/xã --</option>
-                <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">{{ xa.name }}</option>
-              </select>
-              <p v-if="errors.phuongXa" class="text-xs text-rose-500">{{ errors.phuongXa }}</p>
-            </label>
-            <label class="space-y-1.5 md:col-span-2">
-              <span class="text-sm font-semibold text-slate-700">Địa chỉ cụ thể <b class="text-rose-500">*</b></span>
-              <input v-model="form.diaChiCuThe" placeholder="Số nhà, tên đường..." class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white" />
-              <p v-if="errors.diaChiCuThe" class="text-xs text-rose-500">{{ errors.diaChiCuThe }}</p>
-            </label>
-            <div v-if="diaChiDayDu" class="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600 md:col-span-2">
-              Giao đến: <span class="font-semibold text-slate-800">{{ diaChiDayDu }}</span>
+          <label class="block space-y-1.5">
+            <span class="text-[13px] text-slate-600">Email (Tùy chọn)</span>
+            <input v-model="form.email" type="email" placeholder="example@gmail.com" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+          </label>
+
+          <!-- Address selection box -->
+          <div class="rounded-md border border-slate-100 bg-slate-50/50 p-5">
+            <h3 class="mb-4 text-[14px] font-bold text-slate-800">Giao đến địa chỉ:</h3>
+            <div class="space-y-4">
+              <label 
+                v-for="diaChi in savedAddresses" 
+                :key="diaChi.id" 
+                class="flex items-start gap-3 cursor-pointer"
+              >
+                <input 
+                  type="radio" 
+                  v-model="form.diaChiId" 
+                  :value="diaChi.id" 
+                  class="mt-1 size-4 accent-emerald-600" 
+                />
+                <div>
+                  <p class="text-[14px] font-bold text-slate-800">{{ diaChi.diaChiCuThe }}</p>
+                  <p class="text-[13px] text-slate-500 mt-0.5">Phường/Xã: {{ diaChi.phuongXa }}, Tỉnh/TP: {{ diaChi.tinhThanh }}</p>
+                  <span v-if="diaChi.laMacDinh" class="mt-1.5 inline-block rounded bg-emerald-100/80 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                    Mặc định
+                  </span>
+                </div>
+              </label>
+
+              <div :class="{'pt-4 mt-2 border-t border-slate-200/60': savedAddresses.length}">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    v-model="form.diaChiId" 
+                    value="new" 
+                    class="size-4 accent-emerald-600" 
+                  />
+                  <span class="text-[14px] font-semibold text-emerald-600">+ Giao đến một địa chỉ khác (Nhập mới)</span>
+                </label>
+              </div>
             </div>
-            <p v-if="errors.diaPhuong" class="text-xs text-amber-600 md:col-span-2">{{ errors.diaPhuong }}</p>
-          </section>
+
+            <!-- New address form -->
+            <div v-if="form.diaChiId === 'new'" class="mt-5 grid gap-4 border-t border-slate-200/60 pt-5 md:grid-cols-2">
+              <label class="space-y-1.5">
+                <span class="text-[13px] text-slate-600">Tỉnh/Thành phố <b class="text-red-500">*</b></span>
+                <select :value="maTinhChon" :disabled="dangTaiDiaPhuong" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" @change="chonTinh">
+                  <option value="">-- Chọn tỉnh/thành --</option>
+                  <option v-for="tinh in dsTinh" :key="tinh.code" :value="tinh.code">{{ tinh.name }}</option>
+                </select>
+                <p v-if="errors.tinhThanh" class="text-xs text-red-500">{{ errors.tinhThanh }}</p>
+              </label>
+              <label class="space-y-1.5">
+                <span class="text-[13px] text-slate-600">Quận/Huyện <b class="text-red-500">*</b></span>
+                <select :value="maHuyenChon" :disabled="!maTinhChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500 disabled:bg-slate-50 disabled:opacity-70" @change="chonHuyen">
+                  <option value="">-- Chọn quận/huyện --</option>
+                  <option v-for="huyen in dsHuyen" :key="huyen.code" :value="huyen.code">{{ huyen.name }}</option>
+                </select>
+                <p v-if="errors.quanHuyen" class="text-xs text-red-500">{{ errors.quanHuyen }}</p>
+              </label>
+              <label class="space-y-1.5">
+                <span class="text-[13px] text-slate-600">Phường/Xã <b class="text-red-500">*</b></span>
+                <select v-model="form.phuongXa" :disabled="!maHuyenChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500 disabled:bg-slate-50 disabled:opacity-70">
+                  <option value="">-- Chọn phường/xã --</option>
+                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">{{ xa.name }}</option>
+                </select>
+                <p v-if="errors.phuongXa" class="text-xs text-red-500">{{ errors.phuongXa }}</p>
+              </label>
+              <label class="space-y-1.5 md:col-span-2">
+                <span class="text-[13px] text-slate-600">Địa chỉ cụ thể <b class="text-red-500">*</b></span>
+                <input v-model="form.diaChiCuThe" placeholder="Số nhà, tên đường..." class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+                <p v-if="errors.diaChiCuThe" class="text-xs text-red-500">{{ errors.diaChiCuThe }}</p>
+              </label>
+              <p v-if="errors.diaPhuong" class="text-xs text-amber-600 md:col-span-2">{{ errors.diaPhuong }}</p>
+            </div>
+          </div>
+
+          <label class="block space-y-1.5">
+            <span class="text-[13px] text-slate-600">Ghi chú đơn hàng</span>
+            <textarea v-model="form.ghiChu" rows="2" placeholder="Nhập ghi chú giao hàng (nếu có)" class="w-full rounded border border-slate-200 px-3 py-2 text-[14px] text-slate-800 outline-none focus:border-emerald-500 custom-scrollbar"></textarea>
+          </label>
         </div>
 
-        <footer class="sticky bottom-0 flex justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4">
-          <button type="button" class="h-10 rounded-lg border border-slate-200 px-5 text-sm font-bold text-slate-600 hover:bg-slate-50" @click="dongModal">Hủy</button>
-          <button type="button" :disabled="saving" class="inline-flex h-10 items-center gap-2 rounded-lg bg-[#B82220] px-5 text-sm font-bold text-white hover:bg-[#a51d1b] disabled:opacity-50" @click="luu">
-            <Save class="size-4" />
+        <footer class="sticky bottom-0 flex justify-end gap-3 bg-white px-6 py-5">
+          <button type="button" class="h-[42px] rounded border border-slate-200 px-6 text-[14px] font-semibold text-slate-600 transition hover:bg-slate-50" @click="dongModal">Hủy</button>
+          <button type="button" :disabled="saving" class="h-[42px] rounded bg-[#00a36c] px-6 text-[14px] font-semibold text-white transition hover:bg-[#008f5d] disabled:opacity-50" @click="luu">
             {{ saving ? "Đang lưu..." : "Lưu thông tin" }}
           </button>
         </footer>
