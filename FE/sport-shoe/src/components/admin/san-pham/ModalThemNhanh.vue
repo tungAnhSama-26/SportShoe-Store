@@ -52,7 +52,7 @@ function handleInput(field, value) {
 
             <button
               type="button"
-              class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-slate-200"
               @click="$emit('close')"
             >
               <X :size="16" />
@@ -75,13 +75,13 @@ function handleInput(field, value) {
                     <input
                       :value="form[field.key]"
                       type="color"
-                      class="h-11 w-16 cursor-pointer rounded-2xl border border-slate-200 bg-white p-1"
+                      class="h-11 w-16 cursor-pointer rounded-md border border-slate-200 bg-white p-1"
                       @input="handleInput(field.key, String($event.target.value || '').toUpperCase())"
                     />
                     <input
                       :value="form[field.key]"
                       type="text"
-                      class="h-11 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300 uppercase"
+                      class="h-11 flex-1 rounded-md border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300 uppercase"
                       placeholder="#000000"
                       maxlength="7"
                       @input="e => {
@@ -100,7 +100,7 @@ function handleInput(field, value) {
                   :min="field.min"
                   :readonly="field.readonly"
                   :disabled="saving"
-                  class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                  class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                   :class="[
                     errors[field.key]
                       ? 'border-rose-300 bg-rose-50'

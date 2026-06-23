@@ -1,4 +1,4 @@
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { tinhPhiVanChuyenTaiQuay } from "../../services/ban-hang-tai-quay";
 import { showError } from "../../utils/alert";
 
@@ -36,10 +36,19 @@ export function LogicGiaoHang({
     return hoaDonChoDaChon.value?.thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
   });
   const phiVanChuyenHienThi = computed(() => choPhepGiaoHang.value ? phiVanChuyen.value : 0);
+  const diaChiGiaoHangHienThi = computed(() => {
+    if (diaChiGiaoHang.value && typeof diaChiGiaoHang.value === 'string' && diaChiGiaoHang.value.trim()) {
+      return diaChiGiaoHang.value.trim();
+    }
+    if (khachHangDuocChon.value?.diaChiMacDinh) {
+      return khachHangDuocChon.value.diaChiMacDinh;
+    }
+    return hoaDonChoDaChon.value?.thongTinGiaoHang?.diaChiGiaoHang || "";
+  });
   const coTheTinhPhiVanChuyen = computed(
     () => choPhepGiaoHang.value &&
       cartItems.value.length > 0 &&
-      Boolean(diaChiGiaoHang.value.trim()) &&
+      Boolean(diaChiGiaoHangHienThi.value.trim()) &&
       !dangTinhPhiVanChuyen.value
   );
   const coThongTinGiaoHangHopLe = computed(
@@ -47,15 +56,15 @@ export function LogicGiaoHang({
       (
         Boolean(tenNguoiNhanGiaoHangHienThi.value) &&
         Boolean(soDienThoaiNguoiNhanGiaoHangHienThi.value) &&
-        Boolean(diaChiGiaoHang.value.trim()) &&
+        Boolean(diaChiGiaoHangHienThi.value.trim()) &&
         daTinhPhiVanChuyen.value
       )
   );
   const thongTinGiaoHang = computed(() => ({
     giaoHang: choPhepGiaoHang.value,
-    tenNguoiNhan: tenNguoiNhanGiaoHang.value,
-    soDienThoaiNguoiNhan: sdtNguoiNhanGiaoHang.value,
-    diaChiGiaoHang: diaChiGiaoHang.value,
+    tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
+    soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
+    diaChiGiaoHang: diaChiGiaoHangHienThi.value,
     donViVanChuyen: donViVanChuyen.value,
     phiVanChuyen: phiVanChuyen.value,
     diaChiDaDo: diaChiDaXacNhan.value,
@@ -94,7 +103,7 @@ export function LogicGiaoHang({
       giaoHang: true,
       tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
       soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
-      diaChiGiaoHang: diaChiGiaoHang.value.trim(),
+      diaChiGiaoHang: diaChiGiaoHangHienThi.value.trim(),
       phiVanChuyen: phiVanChuyen.value,
       donViVanChuyen: donViVanChuyen.value || "GHN"
     };
@@ -167,6 +176,13 @@ export function LogicGiaoHang({
 
   async function xuLyTinhPhiVanChuyen() {
     if (!coTheTinhPhiVanChuyen.value) {
+      if (!choPhepGiaoHang.value || !diaChiGiaoHangHienThi.value.trim()) {
+        phiVanChuyen.value = 0;
+        donViVanChuyen.value = "";
+        daTinhPhiVanChuyen.value = true;
+        dangTinhPhiVanChuyen.value = false;
+        return;
+      }
       return;
     }
     dangTinhPhiVanChuyen.value = true;
@@ -176,7 +192,7 @@ export function LogicGiaoHang({
         soLuong: item.soLuong
       }));
       const result = await tinhPhiVanChuyenTaiQuay({
-        toAddress: diaChiGiaoHang.value,
+        toAddress: diaChiGiaoHangHienThi.value,
         serviceTypeId: cauHinhGiaoHang.value.serviceTypeId,
         length: cauHinhGiaoHang.value.length,
         width: cauHinhGiaoHang.value.width,
@@ -196,6 +212,25 @@ export function LogicGiaoHang({
       dangTinhPhiVanChuyen.value = false;
     }
   }
+
+  let phiVanChuyenTimeout = null;
+  watch(
+    () => [
+      diaChiGiaoHangHienThi.value,
+      cartItems.value,
+      choPhepGiaoHang.value,
+      cauHinhGiaoHang.value
+    ],
+    () => {
+      if (coTheTinhPhiVanChuyen.value) {
+        if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
+        phiVanChuyenTimeout = setTimeout(() => {
+          xuLyTinhPhiVanChuyen().catch(() => {});
+        }, 800);
+      }
+    },
+    { deep: true }
+  );
 
   return {
     tenNguoiNhanGiaoHangHienThi,

@@ -91,7 +91,7 @@ function LogicBanHangTaiQuay() {
     tenNguoiNhanGiaoHang,
     sdtNguoiNhanGiaoHang,
     diaChiGiaoHang,
-    danhDauCanApDungLaiPhieu: danhDauCanApDungLaiPhieu,
+    danhDauCanApDungLaiPhieu: () => { if (typeof danhDauCanApDungLaiPhieu === 'function') danhDauCanApDungLaiPhieu() },
     xoaPhanHoi,
     thongBaoLoi
   });
@@ -122,9 +122,9 @@ function LogicBanHangTaiQuay() {
     xoaSanPham,
     capNhatSoLuong
   } = LogicGioHang({
-    danhDauCanTinhLaiPhiVanChuyen,
-    capNhatTienKhachThanhToan: capNhatTienKhachThanhToan,
-    danhDauCanApDungLaiPhieu: danhDauCanApDungLaiPhieu,
+    danhDauCanTinhLaiPhiVanChuyen: () => { if (typeof danhDauCanTinhLaiPhiVanChuyen === 'function') danhDauCanTinhLaiPhiVanChuyen() },
+    capNhatTienKhachThanhToan: (v) => { if (typeof capNhatTienKhachThanhToan === 'function') capNhatTienKhachThanhToan(v) },
+    danhDauCanApDungLaiPhieu: () => { if (typeof danhDauCanApDungLaiPhieu === 'function') danhDauCanApDungLaiPhieu() },
     dongBoSanPhamSauKhiThemVaoGio: dongBoSanPhamSauKhiThemVaoGio,
     xoaPhanHoi: xoaPhanHoi
   });
@@ -176,7 +176,14 @@ function LogicBanHangTaiQuay() {
     xuLyApDungPhieu,
     xuLyGoPhieu,
     xoaCacBoDemThoiGianPhieu,
-    tuDongApDungVaDeXuatHangMucTiepTheo
+    tuDongApDungVaDeXuatHangMucTiepTheo,
+    phieuGiamGiaHangMucTiepTheo: phieuGiamGiaMucTiepTheo,
+    soTienThieuDeDatHangMuc: soTienThieuChoMucTiepTheo,
+    soSanPhamThieuDeDatHangMuc: soSanPhamThieuChoMucTiepTheo,
+    soTienGiamCuaHangMucTiepTheo: soTienGiamMucTiepTheo,
+    phieuTotHonDeXuat: loiNhomPhieuGiamGiaTotHon,
+    tuChoiPhieuTotHon: tuChoiPhieuGiamGiaTotHon,
+    chapNhanPhieuTotHon: chapNhanPhieuGiamGiaTotHon
   } = LogicPhieuGiamGia({
     cartItems,
     tongTien,
@@ -184,7 +191,7 @@ function LogicBanHangTaiQuay() {
     khachHangDuocChon,
     layIdKhachHangHienTai,
     taoDanhSachSanPhamThanhToan,
-    capNhatTienKhachThanhToan: capNhatTienKhachThanhToan,
+    capNhatTienKhachThanhToan: (v) => { if (typeof capNhatTienKhachThanhToan === 'function') capNhatTienKhachThanhToan(v) },
     thongBaoLoi,
     thongBaoThanhCong,
     xoaPhanHoi
@@ -231,8 +238,16 @@ function LogicBanHangTaiQuay() {
     tongSoTrang,
     boLocThuongHieuDaChon,
     boLocDanhMucDaChon,
+    boLocMauSacDaChon,
+    boLocKichCoDaChon,
     thuongHieuCoSan,
     danhMucCoSan,
+    mauSacCoSan,
+    kichCoCoSan,
+    giaThapNhatDaChon,
+    giaCaoNhatDaChon,
+    giaCaoNhatCoSan,
+    bienTheLienQuan,
     luaChonMauSac,
     luaChonKichCo,
     bienTheDaChon,
@@ -247,8 +262,11 @@ function LogicBanHangTaiQuay() {
     xuLyQuetQrSanPham,
     chonMauSac,
     chonKichCo,
+    chonBienThe,
     giamSoLuongChiTiet,
     tangSoLuongChiTiet,
+    capNhatSoLuongChiTiet,
+    themTrucTiepBienThe,
     moDanhSachSanPham,
     dongDanhSachSanPham,
     xoaBoDemThoiGianSanPham
@@ -519,13 +537,33 @@ function LogicBanHangTaiQuay() {
           }
         }
       }
+
+      // Rollback giỏ hàng nếu lỗi liên quan đến sản phẩm (vd: ngừng kinh doanh, hết hàng)
+      if (hoaDonChoDaChon.value) {
+        try {
+          const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
+          chuyenHoaDonThanhBanNhap(detail);
+        } catch (e) {
+          console.error("Không thể tải lại hóa đơn để rollback:", e);
+        }
+      }
+
       throw error;
     }
   }
   
   let dangLuuNoiBo = false;
   let boDemTuDongLuu = null;
-  watch(() => cartItems.value, () => {
+  watch(() => [
+    cartItems.value,
+    choPhepGiaoHang.value,
+    tenNguoiNhanGiaoHang.value,
+    sdtNguoiNhanGiaoHang.value,
+    diaChiGiaoHang.value,
+    phiVanChuyen.value,
+    khachHangDuocChon.value,
+    phieuGiamGiaDaApDung.value
+  ], () => {
     if (dangLuuNoiBo) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {
@@ -786,19 +824,27 @@ function LogicBanHangTaiQuay() {
     tongSoTrang,
     boLocThuongHieuDaChon,
     boLocDanhMucDaChon,
+    boLocMauSacDaChon,
+    boLocKichCoDaChon,
     thuongHieuCoSan,
     danhMucCoSan,
+    mauSacCoSan,
+    kichCoCoSan,
+    giaToiThieuDaChon: giaThapNhatDaChon,
+    giaToiDaDaChon: giaCaoNhatDaChon,
+    giaToiDaCoSan: giaCaoNhatCoSan,
     nhanTimKiemSanPham,
     cartItems,
-    chiTietSanPhamDaChon: chiTietSanPhamDaChon,
+    chiTietSanPhamDaChon,
     chiTietDangChon,
     hinhAnhDangChon,
     soLuongTonSauKhiChon,
+    bienTheLienQuan,
     luaChonMauSac,
     luaChonKichCo,
-    mauSacDaChon: mauSacDaChon,
-    kichCoDaChon: kichCoDaChon,
-    soLuongDaChon: soLuongDaChon,
+    mauSacDaChon,
+    kichCoDaChon,
+    soLuongDaChon,
     soLuongTonKhaDungChiTiet,
     dangTaiChiTietHoaDon,
     tongSoLuong,
@@ -815,6 +861,13 @@ function LogicBanHangTaiQuay() {
     ketQuaTimKiemPhieu: ketQuaTimKiemPhieu,
     phieuGiamGiaDaApDung: phieuGiamGiaDaApDung,
     maPhieuChuaApDung,
+    phieuGiamGiaMucTiepTheo,
+    soTienThieuChoMucTiepTheo,
+    soSanPhamThieuChoMucTiepTheo,
+    soTienGiamMucTiepTheo,
+    loiNhomPhieuGiamGiaTotHon,
+    tuChoiPhieuGiamGiaTotHon,
+    chapNhanPhieuGiamGiaTotHon,
     khachCanTra,
     thongTinGiaoHang,
     phuongThucThanhToan: phuongThucThanhToan,
@@ -846,9 +899,13 @@ function LogicBanHangTaiQuay() {
     dongChiTietSanPham,
     chonMauSac,
     chonKichCo,
+    chonBienThe,
     giamSoLuongChiTiet,
     tangSoLuongChiTiet,
+    capNhatSoLuongChiTiet,
     themBienTheDangChon,
+    themTrucTiepBienThe,
+    taiSanPham,
     xuLyQuetQrSanPham,
     xuLyKhiFocusPhieu: xuLyKhiFocusPhieu,
     xuLyKhiBlurPhieu: xuLyKhiBlurPhieu,

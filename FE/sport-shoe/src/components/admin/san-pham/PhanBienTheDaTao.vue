@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { Package2, Save, Trash2, X } from "lucide-vue-next";
-import BienTheImageManager from "./BienTheImageManager.vue";
+import QuanLyAnhBienThe from "./QuanLyAnhBienThe.vue";
 import AdminFormattedNumberInput from "../../common/AdminFormattedNumberInput.vue";
 import {
   generateHexColorFromText,
@@ -439,7 +439,7 @@ async function handleSaveClick() {
         <AdminFormattedNumberInput
           v-model="variantBuilder.soLuong"
           :min="0"
-          class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+          class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
           :class="
             fieldErrorClass(
               resolveFieldError(defaultFieldErrors.soLuong, variantErrors.soLuong),
@@ -461,7 +461,7 @@ async function handleSaveClick() {
         <AdminFormattedNumberInput
           v-model="variantBuilder.giaGoc"
           :min="0"
-          class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+          class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
           :class="
             fieldErrorClass(
               resolveFieldError(defaultFieldErrors.giaGoc, variantErrors.giaGoc),
@@ -483,7 +483,7 @@ async function handleSaveClick() {
         <AdminFormattedNumberInput
           v-model="variantBuilder.giaBan"
           :min="0"
-          class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+          class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
           :class="
             fieldErrorClass(
               resolveFieldError(defaultFieldErrors.giaBan, variantErrors.giaBan),
@@ -539,7 +539,7 @@ async function handleSaveClick() {
           <table class="min-w-full border-separate border-spacing-y-2 text-sm">
             <thead>
               <tr class="text-left text-sm font-bold text-slate-500">
-                <th class="rounded-l-2xl bg-slate-100 px-4 py-3 w-[50px] text-center">
+                <th class="rounded-l-md bg-slate-100 px-4 py-3 w-[50px] text-center">
                   <input type="checkbox" :checked="isGroupAllSelected(group)" @change="toggleGroupAll(group, $event.target.checked)" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
                 </th>
                 <th class="bg-slate-100 px-4 py-3 w-[60px] text-center">STT</th>
@@ -547,7 +547,7 @@ async function handleSaveClick() {
                 <th class="bg-slate-100 px-4 py-3">Số lượng</th>
                 <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
                 <th class="bg-slate-100 px-4 py-3">Giá bán</th>
-                <th class="rounded-r-2xl bg-slate-100 px-4 py-3 text-right">
+                <th class="rounded-r-md bg-slate-100 px-4 py-3 text-right">
                   Xóa
                 </th>
               </tr>
@@ -559,7 +559,7 @@ async function handleSaveClick() {
                 :key="item.key"
                 class="bg-white shadow-sm"
               >
-                <td class="rounded-l-2xl px-4 py-4 text-center">
+                <td class="rounded-l-md px-4 py-4 text-center">
                   <input type="checkbox" v-model="item.selected" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
                 </td>
                 <td class="px-4 py-4 text-center font-semibold text-slate-500">
@@ -572,7 +572,7 @@ async function handleSaveClick() {
                   <AdminFormattedNumberInput
                     v-model="item.soLuong"
                     :min="0"
-                    class="h-10 w-28 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    class="h-10 w-28 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                     :class="
                       fieldErrorClass(generatedVariantFieldErrors[item.key]?.soLuong)
                     "
@@ -588,7 +588,7 @@ async function handleSaveClick() {
                   <AdminFormattedNumberInput
                     v-model="item.giaGoc"
                     :min="0"
-                    class="h-10 w-36 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    class="h-10 w-36 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                     :class="
                       fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaGoc)
                     "
@@ -604,7 +604,7 @@ async function handleSaveClick() {
                   <AdminFormattedNumberInput
                     v-model="item.giaBan"
                     :min="0"
-                    class="h-10 w-36 rounded-2xl border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+                    class="h-10 w-36 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                     :class="
                       fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaBan)
                     "
@@ -616,11 +616,11 @@ async function handleSaveClick() {
                     {{ generatedVariantFieldErrors[item.key].giaBan }}
                   </p>
                 </td>
-                <td class="rounded-r-2xl px-4 py-4">
+                <td class="rounded-r-md px-4 py-4">
                   <div class="flex justify-end">
                     <button
                       type="button"
-                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition hover:bg-rose-100"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-rose-50 text-rose-600 transition hover:bg-rose-100"
                       @click="emit('remove-generated-variant', item.key)"
                     >
                       <Trash2 :size="15" />
@@ -653,7 +653,7 @@ async function handleSaveClick() {
         class="mt-5 grid gap-4 sm:grid-cols-2"
         :class="representativeGeneratedVariants.length >= 3 ? 'lg:grid-cols-3' : ''"
       >
-        <BienTheImageManager
+        <QuanLyAnhBienThe
           v-for="item in representativeGeneratedVariants"
           :key="`draft-color-${item.mauSacId}`"
           :ref="(instance) => setDraftImageManagerRef(item.mauSacId, instance)"

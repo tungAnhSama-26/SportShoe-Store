@@ -39,7 +39,7 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
           <td class="px-3 py-2 text-slate-600">{{ item.maSanPham }}</td>
           <td class="px-3 py-2">
             <div class="flex items-center gap-2">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-xs font-bold text-red-400">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-xs font-bold text-red-400">
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
               </div>
@@ -58,7 +58,7 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
             <div class="flex items-center justify-center">
               <button
                 type="button"
-                class="p-1.5 text-slate-400 transition hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center"
+                class="p-1.5 text-slate-400 transition hover:text-red-500 hover:bg-red-50 rounded-md flex items-center justify-center"
                 @click="emit('remove-item', item.cartItemId || item.chiTietId)"
                 title="Xóa sản phẩm"
               >

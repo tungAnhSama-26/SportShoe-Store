@@ -26,7 +26,7 @@ function handleFilterChange() {
 <template>
   <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
     <div class="mb-5 flex items-center gap-3">
-      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+      <div class="flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-600">
         <Filter class="h-5 w-5" />
       </div>
       <div>
@@ -44,7 +44,7 @@ function handleFilterChange() {
               v-model="filters.keyword"
               type="text"
               placeholder="Tìm theo mã SP / tên sản phẩm..."
-              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @keyup.enter="handleKeywordEnter"
             />
           </div>
@@ -71,7 +71,7 @@ function handleFilterChange() {
           <span class="admin-filter-label mb-1">Thương hiệu</span>
           <select
             v-model.number="filters.thuongHieuId"
-            class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả thương hiệu</option>
@@ -85,7 +85,7 @@ function handleFilterChange() {
           <span class="admin-filter-label mb-1">Loại giày</span>
           <select
             v-model.number="filters.loaiGiayId"
-            class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả loại giày</option>
@@ -98,7 +98,7 @@ function handleFilterChange() {
           <span class="admin-filter-label mb-1">Trạng thái</span>
           <select
             v-model.number="filters.trangThai"
-            class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+            class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             @change="handleFilterChange"
           >
             <option :value="null">Tất cả trạng thái</option>

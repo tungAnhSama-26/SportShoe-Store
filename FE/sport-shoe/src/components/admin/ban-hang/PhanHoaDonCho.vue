@@ -36,7 +36,7 @@ const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
       <div class="flex items-center gap-3">
         <button
           type="button"
-          class="flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-slate-700 transition hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:hover:text-slate-400"
+          class="flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-slate-700 transition hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:hover:text-slate-400"
           title="Thêm hóa đơn chờ"
           :disabled="pendingInvoiceLimitReached"
           @click="emit('create-empty-invoice')"
@@ -59,7 +59,7 @@ const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
         v-for="invoice in pendingInvoices"
         :key="invoice.id"
         type="button"
-        class="min-w-[200px] max-w-[300px] flex-1 shrink-0 snap-start rounded-2xl border px-4 py-3 text-left transition"
+        class="min-w-[200px] max-w-[300px] flex-1 shrink-0 snap-start rounded-md border px-4 py-3 text-left transition"
         :class="
           activePendingInvoice?.id === invoice.id
             ? 'border-red-500 bg-red-50 shadow-[0_16px_30px_rgba(239,68,68,0.15)]'
@@ -74,7 +74,7 @@ const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
 
       <div
         v-if="!loadingPendingInvoices && !pendingInvoices.length"
-        class="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500"
+        class="rounded-md border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500"
       >
         Chưa có hóa đơn chờ nào.
       </div>

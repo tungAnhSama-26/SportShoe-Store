@@ -163,7 +163,7 @@ function handlePageSizeChange(size) {
 <template>
   <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
     <div class="mb-5 flex items-center gap-3">
-      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
+      <div class="flex h-11 w-11 items-center justify-center rounded-md bg-[#B82220]/5 text-[#B82220]">
         <Package class="h-5 w-5" />
       </div>
       <div>
@@ -175,7 +175,7 @@ function handlePageSizeChange(size) {
       <table class="min-w-[980px] w-full table-auto border-separate border-spacing-0 text-sm">
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950">
-            <th class="w-14 rounded-tl-2xl bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
+            <th class="w-14 rounded-tl-md bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
             <th class="w-28 bg-slate-100 px-3 py-3 whitespace-nowrap">Mã SP</th>
             <th class="bg-slate-100 px-3 py-3 whitespace-nowrap">Tên SP</th>
             <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Thương hiệu</th>
@@ -183,7 +183,7 @@ function handlePageSizeChange(size) {
             <th class="w-20 bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Số lượng</th>
             <th class="w-36 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
             <th class="w-32 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
-            <th class="w-24 rounded-tr-2xl bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+            <th class="w-24 rounded-tr-md bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -198,7 +198,7 @@ function handlePageSizeChange(size) {
             :key="item.id"
             class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
           >
-            <td class="rounded-l-2xl px-3 py-4 align-middle font-semibold text-slate-500">
+            <td class="rounded-l-md px-3 py-4 align-middle font-semibold text-slate-500">
               {{ currentPage * pageSize + index + 1 }}
             </td>
             <td class="px-3 py-4 align-middle font-semibold text-slate-800 break-words">{{ item.ma }}</td>
@@ -243,7 +243,7 @@ function handlePageSizeChange(size) {
                 {{ trangThaiLabel(item.trangThai) }}
               </span>
             </td>
-            <td class="rounded-r-2xl px-3 py-4 align-middle text-center">
+            <td class="rounded-r-md px-3 py-4 align-middle text-center">
               <div class="flex items-center justify-center gap-1">
                 <AdminQuickStatusAction
                   :loading="isUpdatingStatus(item.id)"

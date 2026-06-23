@@ -30,7 +30,7 @@ public class KhachHangTaiQuayService {
                 .map(khachHang -> {
                     DiaChiKhachHang diaChiMacDinh = diaChiKhachHangRepository
                             .findFirstByKhachHangIdAndLaMacDinhTrue(khachHang.getId())
-                            .orElse(null);
+                            .orElseGet(() -> diaChiKhachHangRepository.findByKhachHangIdOrderByLaMacDinhDesc(khachHang.getId()).stream().findFirst().orElse(null));
                     String diaChiMacDinhText = diaChiMacDinh != null
                             ? diaChiMacDinh.getDiaChiCuThe() + ", " + diaChiMacDinh.getPhuongXa() + ", "
                             + diaChiMacDinh.getQuanHuyen() + ", " + diaChiMacDinh.getTinhThanh()
@@ -54,3 +54,4 @@ public class KhachHangTaiQuayService {
         return normalized.isEmpty() ? null : normalized;
     }
 }
+

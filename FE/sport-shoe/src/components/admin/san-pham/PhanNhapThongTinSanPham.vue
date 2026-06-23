@@ -127,7 +127,7 @@ function updateProductField(field, value, numeric = false) {
         <div class="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
           <label class="block">
             <span class="mb-1 block text-[13px] font-semibold text-slate-500">Mã sản phẩm</span>
-            <div class="flex h-11 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+            <div class="flex h-11 items-center rounded-md border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700">
               {{ productCode }}
             </div>
           </label>
@@ -137,7 +137,7 @@ function updateProductField(field, value, numeric = false) {
             <input
               :value="productForm.ten"
               type="text"
-              class="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
               :class="
                 productErrors.ten
                   ? 'border-rose-300 bg-rose-50'

@@ -187,7 +187,7 @@ function generateVariants() {
           <div>
             <button
               type="button"
-              class="flex min-h-11 w-full items-start justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition hover:bg-white"
+              class="flex min-h-11 w-full items-start justify-between gap-2 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm transition hover:bg-white"
               :class="
                 selectedMauSacItems.length
                   ? 'border-slate-200 text-slate-700'
@@ -212,7 +212,7 @@ function generateVariants() {
                     :value="mauSacSearch"
                     type="text"
                     placeholder="Nhập màu sắc..."
-                    class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                    class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
                     @input="$emit('update:mau-sac-search', $event.target.value)"
                     @keydown.stop="handleMauSacKeydown"
                   />
@@ -223,7 +223,7 @@ function generateVariants() {
                 <button
                   v-if="showCreateMauSacOption"
                   type="button"
-                  class="mb-1 flex w-full items-center justify-between rounded-xl border border-dashed border-rose-200 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+                  class="mb-1 flex w-full items-center justify-between rounded-md border border-dashed border-rose-200 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-100"
                   :disabled="inlineCreatingType === 'mauSac'"
                   @click="handleInlineCreateAttribute('mauSac')"
                 >
@@ -236,7 +236,7 @@ function generateVariants() {
                 <button
                   v-if="selectedMauSacItems.length"
                   type="button"
-                  class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                  class="mb-1 flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
                   @click="clearSelectedValues('mauSacIds')"
                 >
                   <span>Bỏ chọn tất cả</span>
@@ -247,7 +247,7 @@ function generateVariants() {
                   v-for="item in filteredMauSacItems"
                   :key="item.id"
                   type="button"
-                  class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
+                  class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-slate-50"
                   :class="
                     isSelected('mauSacIds', item.id)
                       ? 'bg-slate-100 text-slate-700'
@@ -265,7 +265,7 @@ function generateVariants() {
                   <Check v-if="isSelected('mauSacIds', item.id)" :size="15" class="shrink-0" />
                 </button>
 
-                <div v-if="!filteredMauSacItems.length && !showCreateMauSacOption" class="rounded-xl px-3 py-6 text-center text-sm text-slate-400">
+                <div v-if="!filteredMauSacItems.length && !showCreateMauSacOption" class="rounded-md px-3 py-6 text-center text-sm text-slate-400">
                   Không tìm thấy màu sắc phù hợp.
                 </div>
               </div>
@@ -313,7 +313,7 @@ function generateVariants() {
           <div>
             <button
               type="button"
-              class="flex min-h-11 w-full items-start justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition hover:bg-white"
+              class="flex min-h-11 w-full items-start justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition hover:bg-white"
               :class="
                 selectedKichCoItems.length
                   ? 'border-slate-200 text-slate-700'
@@ -338,7 +338,7 @@ function generateVariants() {
                     :value="kichCoSearch"
                     type="text"
                     placeholder="Nhập kích cỡ..."
-                    class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+                    class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
                     @input="$emit('update:kich-co-search', $event.target.value)"
                     @keydown.stop="handleKichCoKeydown"
                   />
@@ -349,7 +349,7 @@ function generateVariants() {
                 <button
                   v-if="showCreateKichCoOption"
                   type="button"
-                  class="mb-1 flex w-full items-center justify-between rounded-xl border border-dashed border-rose-200 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+                  class="mb-1 flex w-full items-center justify-between rounded-md border border-dashed border-rose-200 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-100"
                   :disabled="inlineCreatingType === 'kichCo'"
                   @click="handleInlineCreateAttribute('kichCo')"
                 >
@@ -362,7 +362,7 @@ function generateVariants() {
                 <button
                   v-if="selectedKichCoItems.length"
                   type="button"
-                  class="mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+                  class="mb-1 flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
                   @click="clearSelectedValues('kichCoIds')"
                 >
                   <span>Bỏ chọn tất cả</span>
@@ -373,7 +373,7 @@ function generateVariants() {
                   v-for="item in filteredKichCoItems"
                   :key="item.id"
                   type="button"
-                  class="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
+                  class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-slate-50"
                   :class="
                     isSelected('kichCoIds', item.id)
                       ? 'bg-slate-100 text-slate-700'
@@ -385,7 +385,7 @@ function generateVariants() {
                   <Check v-if="isSelected('kichCoIds', item.id)" :size="15" class="shrink-0" />
                 </button>
 
-                <div v-if="!filteredKichCoItems.length && !showCreateKichCoOption" class="rounded-xl px-3 py-6 text-center text-sm text-slate-400">
+                <div v-if="!filteredKichCoItems.length && !showCreateKichCoOption" class="rounded-md px-3 py-6 text-center text-sm text-slate-400">
                   Không tìm thấy kích cỡ phù hợp.
                 </div>
               </div>
