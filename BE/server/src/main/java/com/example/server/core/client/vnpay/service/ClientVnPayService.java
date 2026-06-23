@@ -129,10 +129,8 @@ public class ClientVnPayService {
         ClientDatHangService.KhoaThanhToan khoa =
                 new ClientDatHangService.KhoaThanhToan(giaKhoa, tienGiamKhoa);
         long soTien = tinhSoTienPhaiTra(request, checkout.tongTienHang(), tienGiamKhoa);
-        // Giữ chỗ tồn kho NGAY (trừ kho) -> tránh oversell + đảm bảo tạo đơn không lỗi thiếu hàng.
-        // Nếu quá 1 phút không thanh toán, scheduler sẽ hoàn lại tồn này.
-        Map<Integer, Integer> giuCho = checkoutItemService.giuChoTonKho(request.sanPhams());
-        phienMap.put(token, new Phien(request, maThanhToan, soTien, khoa, giuCho));
+        // KHÔNG giữ chỗ tồn lúc tạo QR -> tồn chỉ bị trừ khi nhân viên xác nhận đơn (giống COD).
+        phienMap.put(token, new Phien(request, maThanhToan, soTien, khoa, java.util.Map.of()));
 
         String qrData;
         if ("VNPAY".equalsIgnoreCase(request.hinhThucThanhToan())
@@ -199,9 +197,9 @@ public class ClientVnPayService {
             throw new BusinessException("Phiên thanh toán đã hết hạn (quá 1 phút), vui lòng đặt lại");
         }
         if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
-            // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA lúc tạo mã QR. Tồn đã giữ chỗ -> daGiuCho=true.
+            // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA. KHÔNG trừ kho ở đây -> nhân viên xác nhận mới trừ.
             DatHangResponse ketQua = datHangService.datHang(
-                    phien.request, phien.maThanhToan, phien.khoa, true);
+                    phien.request, phien.maThanhToan, phien.khoa, false);
             phien.maHoaDon = ketQua.maHoaDon();
             phien.trangThai = TRANG_THAI_DA_THANH_TOAN;
         }
@@ -219,10 +217,8 @@ public class ClientVnPayService {
             Phien phien = entry.getValue();
             if (TRANG_THAI_CHO.equals(phien.trangThai)
                     && now - phien.thoiDiemTao > PHIEN_TTL_MS) {
-                // Hết hạn: hoàn lại tồn đã giữ chỗ + thông báo realtime cho giỏ khách.
-                checkoutItemService.hoanGiuCho(phien.giuCho);
+                // Quá hạn chưa thanh toán -> hết hạn phiên (không giữ chỗ tồn nên không cần hoàn gì).
                 phien.trangThai = TRANG_THAI_HET_HAN;
-                sanPhamRealtimePublisher.phatSauCommit("HOAN_GIU_CHO");
             } else if (!TRANG_THAI_CHO.equals(phien.trangThai)
                     && now - phien.thoiDiemTao > PHIEN_DON_SAU_MS) {
                 phienMap.remove(entry.getKey());
