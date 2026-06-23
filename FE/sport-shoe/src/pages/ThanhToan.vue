@@ -448,7 +448,7 @@ function batDauPoll() {
 function ngatHetHan() {
   dungPoll();
   qrVnPay.value = null;
-  showError('Phiên thanh toán đã hết hạn (quá 1 phút). Sản phẩm đã được hoàn lại, vui lòng đặt lại đơn.');
+  showError('Phiên thanh toán đã hết hạn (quá 1 phút), vui lòng đặt lại đơn.');
 }
 
 function dungPoll() {
@@ -724,7 +724,7 @@ function xuLyAnhLoi(event) {
             <span class="text-slate-400">Phiên hết hạn sau </span>
             <span :class="['font-bold', demNguoc <= 10 ? 'text-rose-600' : 'text-slate-700']">{{ demNguoc }}s</span>
           </div>
-          <p class="mt-1 text-center text-[11px] text-slate-400">Quá 1 phút chưa thanh toán, đơn sẽ tự hủy và hoàn sản phẩm về kho.</p>
+          <p class="mt-1 text-center text-[11px] text-slate-400">Quá 1 phút chưa thanh toán, mã QR sẽ hết hạn — vui lòng đặt lại.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>

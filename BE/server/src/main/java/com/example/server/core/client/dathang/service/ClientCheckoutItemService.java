@@ -78,7 +78,7 @@ public class ClientCheckoutItemService {
                     throw new BusinessException(
                             "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng bán");
                 }
-                inventoryUseCase.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
+                tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             }
             tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             bienThes.add(bienThe);
@@ -129,7 +129,7 @@ public class ClientCheckoutItemService {
             GiayChiTiet bienThe = giayChiTietRepository.findByIdForUpdate(e.getKey())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Biến thể sản phẩm không tồn tại: " + e.getKey()));
-            inventoryUseCase.deductStock(bienThe, e.getValue());
+            tonKhoService.deductStock(bienThe, e.getValue());
             giayChiTietRepository.save(bienThe);
             daGiu.put(e.getKey(), e.getValue());
         }
