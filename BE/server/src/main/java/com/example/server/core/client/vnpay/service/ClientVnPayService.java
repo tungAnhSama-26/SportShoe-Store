@@ -46,10 +46,10 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
     public static final String TRANG_THAI_HET_HAN = "HET_HAN";
 
-    /** Phiên QR sống tối đa 1 phút; quá hạn chưa thanh toán -> hủy + hoàn tồn đã giữ chỗ. */
-    private static final long PHIEN_TTL_MS = 60_000L;
-    /** Dọn hẳn phiên đã thanh toán / hết hạn khỏi bộ nhớ sau 5 phút. */
-    private static final long PHIEN_DON_SAU_MS = 300_000L;
+    /** Phiên QR sống tối đa 10 phút; quá hạn chưa thanh toán -> hủy + hoàn tồn đã giữ chỗ. */
+    private static final long PHIEN_TTL_MS = 600_000L;
+    /** Dọn hẳn phiên đã thanh toán / hết hạn khỏi bộ nhớ sau 15 phút. */
+    private static final long PHIEN_DON_SAU_MS = 900_000L;
 
     private final ClientDatHangService datHangService;
     private final ClientCheckoutItemService checkoutItemService;
@@ -267,7 +267,7 @@ public class ClientVnPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString()).replace("+", "%20");
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString());
         } catch (Exception ex) {
             return "";
         }
@@ -375,6 +375,19 @@ public class ClientVnPayService {
         
         String hashData = String.join("&", hashParts);
         String calculatedHash = hmactSHA512(vnp_HashSecret, hashData);
+        
+        try {
+            java.io.FileWriter fw = new java.io.FileWriter("D:\\SportShoe-Store\\vnpay_debug.txt", true);
+            java.io.PrintWriter pw = new java.io.PrintWriter(fw);
+            pw.println("=== NEW CALLBACK TIME: " + new java.util.Date() + " ===");
+            pw.println("Params: " + params);
+            pw.println("HashData: " + hashData);
+            pw.println("Secret: " + vnp_HashSecret);
+            pw.println("Calculated Hash: " + calculatedHash);
+            pw.println("Received Hash: " + vnp_SecureHash);
+            pw.println("========================================\n");
+            pw.close();
+        } catch (Exception ignored) {}
         
         System.out.println("=== VNPAY DEBUG CALLBACK ===");
         System.out.println("vnp_SecureHash received: " + vnp_SecureHash);
