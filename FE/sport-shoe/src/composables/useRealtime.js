@@ -60,6 +60,15 @@ export function useRealtime() {
         return sub;
     };
 
+    const publishMessage = (topic, message) => {
+        if (client.connected) {
+            client.publish({
+                destination: topic,
+                body: JSON.stringify(message)
+            });
+        }
+    };
+
     const unsubscribeTopic = (sub) => {
         if (!sub) return;
         if (sub.stompSubscription) {
@@ -91,7 +100,8 @@ export function useRealtime() {
     return {
         isConnected,
         subscribeTopic,
-        unsubscribeTopic
+        unsubscribeTopic,
+        publishMessage
     };
 }
 
