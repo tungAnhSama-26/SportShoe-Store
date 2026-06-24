@@ -509,7 +509,11 @@ public class GhnShippingService {
 
     private Map<String, Object> mapItem(HoaDonChiTiet item) {
         Map<String, Object> mapped = new LinkedHashMap<>();
-        mapped.put("name", item.getGiayChiTiet().getGiay().getTen());
+        String productName = "Sản phẩm";
+        if (item.getGiayChiTiet() != null && item.getGiayChiTiet().getGiay() != null) {
+            productName = item.getGiayChiTiet().getGiay().getTen();
+        }
+        mapped.put("name", productName);
         mapped.put("quantity", item.getSoLuong());
         mapped.put("length", defaultLength);
         mapped.put("width", defaultWidth);
