@@ -583,9 +583,9 @@ function xuLyAnhLoi(event) {
             Đánh giá sản phẩm
           </button>
 
-          <!-- Yêu cầu trả hàng chỉ hiển thị trong thời hạn chính sách. -->
+          <!-- Yêu cầu trả hàng: chỉ hiện khi CHƯA bấm "Đã nhận hàng" và còn trong thời hạn chính sách. -->
           <button
-            v-if="(don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !daQuaHanTraHang"
+            v-if="!don.daNhanHang && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !daQuaHanTraHang"
             @click="hienModalTraHang = true"
             class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3 text-sm font-bold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100"
           >

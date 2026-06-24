@@ -60,6 +60,12 @@ public class ClientTraHangService {
             throw new BusinessException("Hóa đơn này không thuộc về bạn");
         }
 
+        // Đã xác nhận "Đã nhận hàng" -> không cho yêu cầu trả hàng nữa (chỉ trả khi chưa nhận).
+        if (Boolean.TRUE.equals(hoaDon.getDaNhanHang())) {
+            throw new BusinessException(
+                    "Đơn hàng đã xác nhận nhận hàng nên không thể yêu cầu trả hàng/hoàn tiền");
+        }
+
         traHangPolicy.kiemTraHoaDonChoKhachHang(hoaDon);
 
         // Kiểm tra xem đã có phiếu trả hàng đang chờ xử lý hoặc đã duyệt chưa
