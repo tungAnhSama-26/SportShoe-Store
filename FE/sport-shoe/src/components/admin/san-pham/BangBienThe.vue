@@ -188,20 +188,20 @@ defineExpose({
   <section class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
 
     <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
-      <table class="w-full min-w-[1000px] table-fixed border-separate border-spacing-0 text-sm">
+      <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
-          <col class="w-[4%]" />
-          <col class="w-[4%]" />
-          <col class="w-[8%]" />
+          <col class="w-[3%]" />
+          <col class="w-[3%]" />
+          <col class="w-[9%]" />
           <col class="w-[9%]" />
           <col class="w-[6%]" />
-          <col class="w-[12%]" />
-          <col class="w-[7%]" />
-          <col class="w-[7%]" />
           <col class="w-[11%]" />
           <col class="w-[7%]" />
-          <col class="w-[11%]" />
-          <col class="w-[9%]" />
+          <col class="w-[7%]" />
+          <col class="w-[10%]" />
+          <col class="w-[7%]" />
+          <col class="w-[13%]" />
+          <col class="w-[15%]" />
         </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">

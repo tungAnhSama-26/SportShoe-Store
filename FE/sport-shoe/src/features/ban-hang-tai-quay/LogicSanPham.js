@@ -339,8 +339,6 @@ export function LogicSanPham({
       }
       
       if (variantToAdd) {
-        hienThiDanhSachSanPham.value = false;
-        lamMoiBoLoc();
         const result = themSanPham(variantToAdd, 1, {
           preserveProductSearch: true,
           scannedKeyword: keyword,
@@ -349,9 +347,14 @@ export function LogicSanPham({
         console.log("Kết quả themSanPham:", result);
         
         if (!result) {
-          showError(`Không thể thêm sản phẩm ${keyword} vào giỏ hàng dù đã tìm thấy.`);
+          // themSanPham đã tự hiển thị thông báo lỗi (vd: vượt giới hạn tồn kho)
+          // Vẫn giữ hiển thị danh sách sản phẩm để user thấy trạng thái "Hết hàng"
+          hienThiDanhSachSanPham.value = true;
           return;
         }
+
+        hienThiDanhSachSanPham.value = false;
+        lamMoiBoLoc();
 
         if (result.status === "added") {
           showSuccess(`Đã thêm "${result.tenSanPham}" vào giỏ hàng.`, "Thành công!");

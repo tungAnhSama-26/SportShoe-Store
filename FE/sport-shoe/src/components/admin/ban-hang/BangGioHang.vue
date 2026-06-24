@@ -45,6 +45,9 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
               </div>
               <div>
                 <p class="font-medium text-slate-900 line-clamp-2">{{ item.tenSanPham }}</p>
+                <p v-if="item.oldPrice && item.oldPrice !== item.giaBan" class="mt-1 text-[11px] font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded inline-block">
+                  Giá đổi từ {{ dinhDangTien(item.oldPrice) }} thành {{ dinhDangTien(item.giaBan) }}
+                </p>
               </div>
             </div>
           </td>

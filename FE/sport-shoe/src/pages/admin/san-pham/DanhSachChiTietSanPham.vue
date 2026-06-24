@@ -92,19 +92,19 @@ const focusedChiTietId = computed(() => {
 })
 
 const toastTitle = computed(() => {
-  if (toast.type === 'error') return 'Không thể hoàn tất thao tác'
-  if (toast.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
+  if (thongBao.type === 'error') return 'Không thể hoàn tất thao tác'
+  if (thongBao.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
   return 'Thao tác thành công'
 })
 
 const editingSelectedGiay = computed(() => {
-  if (selectedProduct.value) return selectedProduct.value
-  if (!editingVariant.value) return null
+  if (sanPhamDuocChon.value) return sanPhamDuocChon.value
+  if (!bienTheDangSua.value) return null
 
   return {
-    id: editingVariant.value.giayId,
-    ten: editingVariant.value.tenSanPham,
-    ma: editingVariant.value.maSanPham
+    id: bienTheDangSua.value.giayId,
+    ten: bienTheDangSua.value.tenSanPham,
+    ma: bienTheDangSua.value.maSanPham
   }
 })
 
@@ -120,11 +120,11 @@ function showToast(message, type = 'success') {
   }
 
   if (toastTimer) clearTimeout(toastTimer)
-  toast.message = message
-  toast.type = type
-  toast.show = true
+  thongBao.message = message
+  thongBao.type = type
+  thongBao.show = true
   toastTimer = setTimeout(() => {
-    toast.show = false
+    thongBao.show = false
     toastTimer = null
   }, 3000)
 }
@@ -134,7 +134,7 @@ function closeToast() {
     clearTimeout(toastTimer)
     toastTimer = null
   }
-  toast.show = false
+  thongBao.show = false
 }
 
 function dangCapNhatTrangThai(id) {
@@ -205,6 +205,15 @@ function openDiscountDetail(item) {
     name: 'admin-dot-giam-gia-chi-tiet',
     params: { id: item.dotGiamGiaId }
   })
+}
+
+function handleScannerResult(result) {
+  if (result) {
+    boLoc.keyword = result;
+    hienThiModalQuetMa.value = false;
+    showToast(`Đã quét mã: ${result}`);
+    loadData(0);
+  }
 }
 
 function bienTheTrangThaiLabel(item) {
@@ -499,14 +508,7 @@ function handleQrPrimaryAction() {
   }
 }
 
-function handleScannerResult(result) {
-  if (result) {
-    boLoc.keyword = result
-    hienThiModalQuetMa.value = false
-    loadData(0)
-    showToast('Đã tìm thấy mã: ' + result, 'success')
-  }
-}
+
 
 function triggerDownloadQr() {
   const selectedIds = bangBienTheRef.value?.selectedVariantIds

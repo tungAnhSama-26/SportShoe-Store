@@ -172,18 +172,29 @@ function handlePageSizeChange(size) {
     </div>
 
     <div class="admin-table-scroll rounded-[24px] border border-slate-100">
-      <table class="min-w-[980px] w-full table-auto border-separate border-spacing-0 text-sm">
+      <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
+        <colgroup>
+          <col class="w-[5%]" />
+          <col class="w-[10%]" />
+          <col class="w-[18%]" />
+          <col class="w-[12%]" />
+          <col class="w-[12%]" />
+          <col class="w-[8%]" />
+          <col class="w-[11%]" />
+          <col class="w-[12%]" />
+          <col class="w-[12%]" />
+        </colgroup>
         <thead>
-          <tr class="text-left text-sm font-bold text-slate-950">
-            <th class="w-14 rounded-tl-md bg-slate-100 px-3 py-3 whitespace-nowrap">STT</th>
-            <th class="w-28 bg-slate-100 px-3 py-3 whitespace-nowrap">Mã SP</th>
-            <th class="bg-slate-100 px-3 py-3 whitespace-nowrap">Tên SP</th>
-            <th class="w-32 bg-slate-100 px-3 py-3 whitespace-nowrap">Thương hiệu</th>
-            <th class="w-24 bg-slate-100 px-3 py-3 whitespace-nowrap">Loại giày</th>
-            <th class="w-20 bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Số lượng</th>
-            <th class="w-36 bg-slate-100 px-2 py-3 whitespace-nowrap">Giá bán</th>
-            <th class="w-32 bg-slate-100 px-2 py-3 whitespace-nowrap">Trạng thái</th>
-            <th class="w-24 rounded-tr-md bg-slate-100 px-3 py-3 text-center whitespace-nowrap">Hành động</th>
+          <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
+            <th class="rounded-tl-md bg-slate-100">STT</th>
+            <th class="bg-slate-100">Mã SP</th>
+            <th class="bg-slate-100">Tên SP</th>
+            <th class="bg-slate-100">Thương hiệu</th>
+            <th class="bg-slate-100">Loại giày</th>
+            <th class="bg-slate-100 text-center">Số lượng</th>
+            <th class="bg-slate-100">Giá bán</th>
+            <th class="bg-slate-100 text-center">Trạng thái</th>
+            <th class="rounded-tr-md bg-slate-100 text-center">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -236,7 +247,7 @@ function handlePageSizeChange(size) {
             </td>
             <td class="px-2 py-4 align-middle">
               <span
-                class="inline-flex max-w-[92px] overflow-hidden truncate whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
+                class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
                 :class="trangThaiClass(item.trangThai)"
                 :title="trangThaiLabel(item.trangThai)"
               >

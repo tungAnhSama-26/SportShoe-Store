@@ -92,6 +92,8 @@ public class QuanLySanPhamService {
     private final TrongLuongRepository trongLuongRepository;
     private final CongNgheDemRepository congNgheDemRepository;
     private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
+    private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final HoaDonRepository hoaDonRepository;
 
     public QuanLySanPhamService(
             GiayRepository giayRepository,
@@ -108,7 +110,9 @@ public class QuanLySanPhamService {
             ChatLieuGiayRepository chatLieuGiayRepository,
             TrongLuongRepository trongLuongRepository,
             CongNgheDemRepository congNgheDemRepository,
-            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher
+            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher,
+            HoaDonChiTietRepository hoaDonChiTietRepository,
+            HoaDonRepository hoaDonRepository
     ) {
         this.giayRepository = giayRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -125,6 +129,8 @@ public class QuanLySanPhamService {
         this.trongLuongRepository = trongLuongRepository;
         this.congNgheDemRepository = congNgheDemRepository;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
+        this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.hoaDonRepository = hoaDonRepository;
     }
 
     // ─── Danh mục ────────────────────────────────────────────────────────────
@@ -706,6 +712,9 @@ public class QuanLySanPhamService {
         for (GiayChiTiet ct : chiTiets) {
             ct.setKichHoat(kichHoatValue);
             ct.setNgayCapNhat(Instant.now());
+            if (kichHoatValue == 0) {
+                xoaKhoiGioHangCuaKhachHang(ct.getId());
+            }
             giayChiTietRepository.save(ct);
         }
 
@@ -736,6 +745,7 @@ public class QuanLySanPhamService {
                 for (GiayChiTiet ct : chiTiets) {
                     ct.setKichHoat(0);
                     ct.setNgayCapNhat(Instant.now());
+                    xoaKhoiGioHangCuaKhachHang(ct.getId());
                     giayChiTietRepository.save(ct);
                 }
             }
@@ -814,6 +824,9 @@ public class QuanLySanPhamService {
         gct.setGiaBan(req.giaBan());
         gct.setKichHoat(req.kichHoat());
         gct.setNgayCapNhat(Instant.now());
+        if (req.kichHoat() != null && req.kichHoat() == 0) {
+            xoaKhoiGioHangCuaKhachHang(id);
+        }
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("CAP_NHAT_BIEN_THE");
@@ -831,6 +844,9 @@ public class QuanLySanPhamService {
 
         gct.setKichHoat(req.kichHoat());
         gct.setNgayCapNhat(Instant.now());
+        if (req.kichHoat() != null && req.kichHoat() == 0) {
+            xoaKhoiGioHangCuaKhachHang(id);
+        }
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_BIEN_THE");
@@ -843,8 +859,41 @@ public class QuanLySanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
         Integer giayId = gct.getGiay().getId();
         giayChiTietRepository.deleteById(id);
+        xoaKhoiGioHangCuaKhachHang(id);
         updateTrangThaiTuSoLuong(giayId);
         sanPhamRealtimePublisher.phatSauCommit("XOA_BIEN_THE");
+    }
+
+    private void xoaKhoiGioHangCuaKhachHang(Integer giayChiTietId) {
+        List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0, 1));
+        for (HoaDonChiTiet hdct : toDelete) {
+            HoaDon hd = hdct.getHoaDon();
+            
+            BigDecimal currentTongTienHang = hd.getTongTienHang() != null ? hd.getTongTienHang() : BigDecimal.ZERO;
+            BigDecimal itemThanhTien = hdct.getThanhTien() != null ? hdct.getThanhTien() : BigDecimal.ZERO;
+            
+            BigDecimal newTongTienHang = currentTongTienHang.subtract(itemThanhTien);
+            if (newTongTienHang.compareTo(BigDecimal.ZERO) < 0) {
+                newTongTienHang = BigDecimal.ZERO;
+            }
+            hd.setTongTienHang(newTongTienHang);
+
+            BigDecimal currentTongTienThanhToan = hd.getTongTienThanhToan() != null ? hd.getTongTienThanhToan() : BigDecimal.ZERO;
+            BigDecimal newTongTienThanhToan = currentTongTienThanhToan.subtract(itemThanhTien);
+            if (newTongTienThanhToan.compareTo(BigDecimal.ZERO) < 0) {
+                newTongTienThanhToan = BigDecimal.ZERO;
+            }
+            hd.setTongTienThanhToan(newTongTienThanhToan);
+            
+            if (newTongTienHang.compareTo(BigDecimal.ZERO) == 0) {
+                hd.setTienGiam(BigDecimal.ZERO);
+                hd.setPhieuGiamGia(null);
+                hd.setTongTienThanhToan(BigDecimal.ZERO);
+            }
+            
+            hoaDonChiTietRepository.delete(hdct);
+            hoaDonRepository.save(hd);
+        }
     }
 
     private BienTheResponse toBienThe(GiayChiTiet gct, ActiveDiscountInfo activeDiscount) {

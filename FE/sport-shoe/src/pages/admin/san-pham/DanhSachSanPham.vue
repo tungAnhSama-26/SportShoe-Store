@@ -15,7 +15,7 @@ import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusA
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import BoLocSanPham from '../../../components/admin/san-pham/BoLocSanPham.vue'
 import BangSanPham from '../../../components/admin/san-pham/BangSanPham.vue'
-import QuanLySanPhamModal from '../../../components/admin/san-pham/QuanLySanPhamModal.vue'
+
 import Card from "../../../components/ui/Card.vue";
 import Table from "../../../components/ui/Table.vue";
 import Button from "../../../components/ui/Button.vue";
@@ -370,58 +370,31 @@ onUnmounted(() => {
   <div class="radius-6px">
     <div class="space-y-5">
       <BoLocSanPham
-        :bo-loc="boLoc"
+        :filters="boLoc"
         :danh-muc="danhMuc"
-        @reset="lamMoiBoLoc"
-        @them-moi="moModalThem"
+        @reset-filters="datLaiBoLoc"
+        @go-to-form="goToForm"
         @load-data="loadData(0)"
-        @xuat-excel="xuatExcel"
+        @export-excel="xuatExcel"
       />
 
       <BangSanPham
-        :danh-sach-san-pham="items"
-        :dang-tai="loading"
-        :trang-hien-tai="currentPage"
-        :kich-thuoc-trang="pageSize"
-        :tong-so-san-pham="totalItems"
-        :tong-so-trang="totalPages"
-        :lua-chon-kich-thuoc-trang="pageSizeOptions"
-        :danh-sach-id-dang-cap-nhat="danhSachIdDangCapNhat"
-        :gia-trong-bang="giaTrongBang"
-        :trang-thai-label="trangThaiLabel"
-        :co-the-chuyen-trang-thai-nhanh="coTheChuyenTrangThaiNhanh"
-        :nhan-chuyen-trang-thai-nhanh="nhanChuyenTrangThaiNhanh"
-        :tieu-de-khi-khong-the-chuyen-trang-thai="tieuDeKhiKhongTheChuyenTrangThai"
-        :tin-nhan-xac-nhan-chuyen-trang-thai="tinNhanXacNhanChuyenTrangThai"
-        :hanh-dong-chuyen-trang-thai-nhanh="hanhDongChuyenTrangThaiNhanh"
-        @chuyen-trang-thai="xuLyDoiTrangThai"
-        @sua="moModalSua"
-        @xem-chi-tiet="goToChiTietList"
-        @chuyen-trang="loadData"
-        @doi-kich-thuoc-trang="handlePageSizeChange"
+        :items="items"
+        :loading="loading"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total-items="totalItems"
+        :total-pages="totalPages"
+        :page-size-options="pageSizeOptions"
+        :updating-status-ids="updatingStatusIds"
+        @toggle-status="xuLyDoiTrangThai"
+        @open-qr="goToChiTietList"
+        @refresh="loadData"
+        @update:current-page="loadData"
+        @update:page-size="handlePageSizeChange"
       />
 
-      <QuanLySanPhamModal
-        :hien-thi-modal="hienThiModal"
-        :che-do="cheDoModal"
-        :tieu-de="cheDoModal === 'them' ? 'Thêm mới sản phẩm' : 'Sửa sản phẩm'"
-        :mo-ta="cheDoModal === 'them' ? 'Thêm một sản phẩm mới vào cửa hàng.' : 'Cập nhật thông tin cơ bản của sản phẩm.'"
-        :dang-tai="dangTaiThuocTinh"
-        :dang-luu="dangLuu"
-        :danh-muc="danhMuc"
-        :form-san-pham="formSanPham"
-        :loi-san-pham="loiSanPham"
-        :san-pham-da-chon="sanPhamDangChon"
-        :hinh-anh-chinh="sanPhamDangChon?.hinhAnh?.[0]"
-        :lay-ten-thuong-hieu="layTenThuongHieu"
-        :lay-ten-loai-giay="layTenLoaiGiay"
-        :lay-nhan-gioi-tinh="layNhanGioiTinh"
-        :lay-lop-trang-thai="layLopTrangThai"
-        :lay-nhan-trang-thai="layNhanTrangThai"
-        :lay-danh-sach-thuoc-tinh="layDanhSachThuocTinh"
-        @dong="dongModal"
-        @luu="luuSanPham"
-      />
+
     </div>
 
     <Teleport to="body">

@@ -1,5 +1,5 @@
 <script setup>
-import { RotateCcw, FileSpreadsheet, Plus, Search, Filter, QrCode } from 'lucide-vue-next'
+import { RotateCcw, FileSpreadsheet, Plus, Search, Filter, QrCode, Download } from 'lucide-vue-next'
 
 const props = defineProps({
   filters: {
@@ -49,24 +49,16 @@ function handleFilterChange() {
 
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <label class="min-w-0 flex-1 space-y-2">
-          <span class="admin-filter-label mb-1">Tìm kiếm</span>
-          <div class="relative max-w-3xl">
+          <span class="admin-filter-label mb-1">Tìm kiếm theo tên hoặc mã phân loại</span>
+          <div class="relative w-full">
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               v-model="filters.keyword"
               type="text"
-              placeholder="Tìm theo mã SP / mã CTSP / tên sản phẩm..."
-              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-12 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              placeholder="Nhập mã sản phẩm, phân loại, màu sắc..."
+              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @keyup.enter="handleKeywordEnter"
             />
-            <button
-              type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
-              title="Quét QR / Mã vạch"
-              @click="$emit('open-scanner')"
-            >
-              <QrCode class="h-4 w-4" />
-            </button>
           </div>
         </label>
 
@@ -75,23 +67,35 @@ function handleFilterChange() {
             <RotateCcw class="h-4 w-4" />
             Đặt lại
           </button>
+          
+          <button type="button" class="admin-btn-soft" @click="$emit('open-scanner')">
+            <QrCode class="h-4 w-4" />
+            Quét QR
+          </button>
+          
+          <button 
+            type="button" 
+            class="admin-btn-soft" 
+            :disabled="!hasSelectedVariants"
+            @click="$emit('download-qr')"
+          >
+            <Download class="h-4 w-4" />
+            Tải QR
+          </button>
+
           <button type="button" class="admin-btn-soft" @click="$emit('export-excel')">
             <FileSpreadsheet class="h-4 w-4" />
             Xuất Excel
           </button>
-          <button 
-            type="button" 
-            class="admin-btn-primary disabled:opacity-50 disabled:cursor-not-allowed" 
-            :disabled="!hasSelectedVariants"
-            @click="$emit('download-qr')"
-          >
-            <QrCode class="h-4 w-4" />
-            Tải mã QR
+
+          <button type="button" class="admin-btn-primary" @click="$emit('go-to-form')">
+            <Plus class="h-4 w-4" />
+            Thêm biến thể
           </button>
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:max-w-5xl xl:grid-cols-3">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <label class="space-y-2">
           <span class="admin-filter-label mb-1">Màu sắc</span>
           <select
