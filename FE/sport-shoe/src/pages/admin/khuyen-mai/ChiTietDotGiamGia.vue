@@ -120,7 +120,7 @@ const filteredSelectedVariants = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-5 pb-10">
+  <div class="space-y-5 pb-10 radius-6px">
     <!-- Toast Notification -->
 
 

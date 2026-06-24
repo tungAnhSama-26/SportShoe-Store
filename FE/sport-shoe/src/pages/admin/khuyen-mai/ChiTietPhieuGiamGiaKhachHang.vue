@@ -233,7 +233,7 @@ onMounted(taiDuLieu);
 </script>
 
 <template>
-  <div class="space-y-5 pb-10">
+  <div class="space-y-5 pb-10 radius-6px">
     <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <button
         @click="router.push({ name: 'admin-phieu-giam-gia-khach-hang' })"
