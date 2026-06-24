@@ -119,7 +119,13 @@ export async function apiRequest(path, options = {}) {
     throw requestError;
   }
 
-  return unwrapData ? payload?.data ?? payload : payload;
+  if (unwrapData) {
+    if (payload && typeof payload === "object" && ("success" in payload || "message" in payload)) {
+      return payload.data !== undefined ? payload.data : null;
+    }
+    return payload?.data ?? payload;
+  }
+  return payload;
 }
 
 function clearStoredSession(authScope) {
