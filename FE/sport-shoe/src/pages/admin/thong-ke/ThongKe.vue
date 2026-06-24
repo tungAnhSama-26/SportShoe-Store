@@ -1,16 +1,11 @@
 <script setup>
 import { useThongKeDashboard } from "./useThongKeDashboard";
-import { TrendingDown } from "lucide-vue-next";
-const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter } = useThongKeDashboard();
+import { TrendingDown, FileSpreadsheet } from "lucide-vue-next";
+const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Line, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, salesLineChartData, salesLineChartOptions, brandChartData, brandChartOptions, brandLineChartData, brandLineChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter, salesChartType, brandChartTypeFormat, partitionedBrandData, xuatExcelThoiGian, xuatExcelNhanVien, xuatExcelSanPham } = useThongKeDashboard();
 </script>
 
 <template>
-  <div class="space-y-6 pb-6">
-    <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h2 class="text-[24px] font-bold text-slate-800 dark:text-slate-100">Thống kê </h2>
-      </div>
-    </div>
+  <div class="space-y-6 pb-6 radius-6px">
 
     <Card class="!overflow-visible relative z-30">
       <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
@@ -217,20 +212,39 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2.5fr_1fr]">
       <Card>
-        <div class="mb-6 flex items-start justify-between gap-3">
+        <div class="mb-6 flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
               <BarChart3 class="h-4 w-4 text-rose-500" />
-              Thương hiệu bán được theo {{ periodLabel }}
+              Sản phẩm bán được theo {{ periodLabel }}
             </div>
           </div>
-          <div v-if="isLoading" class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-            Đang tải...
+          <div class="flex items-center gap-3">
+            <div v-if="isLoading" class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+              Đang tải...
+            </div>
+            <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                :class="['rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-200', salesChartType === 'bar' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700']"
+                @click="salesChartType = 'bar'"
+              >
+                Cột
+              </button>
+              <button
+                type="button"
+                :class="['rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-200', salesChartType === 'line' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700']"
+                @click="salesChartType = 'line'"
+              >
+                Đường
+              </button>
+            </div>
           </div>
         </div>
 
         <div v-if="hasSalesData" class="h-[320px]">
-          <Bar :data="salesChartData" :options="salesChartOptions" />
+          <Bar v-if="salesChartType === 'bar'" :data="salesChartData" :options="salesChartOptions" />
+          <Line v-else :data="salesLineChartData" :options="salesLineChartOptions" />
         </div>
         <div
           v-else
@@ -241,10 +255,28 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
       </Card>
 
       <Card>
-        <div class="mb-6 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <PieChart class="h-4 w-4 text-rose-500" />
-            Thương hiệu
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <PieChart class="h-4 w-4 text-rose-500" />
+              Thương hiệu
+            </div>
+            <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                :class="['rounded-lg px-2 py-1 text-[10px] font-semibold transition-all duration-200', brandChartTypeFormat === 'pie' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700']"
+                @click="brandChartTypeFormat = 'pie'"
+              >
+                Tròn
+              </button>
+              <button
+                type="button"
+                :class="['rounded-lg px-2 py-1 text-[10px] font-semibold transition-all duration-200', brandChartTypeFormat === 'line' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700']"
+                @click="brandChartTypeFormat = 'line'"
+              >
+                Đường
+              </button>
+            </div>
           </div>
           <select
             v-model="brandChartType"
@@ -258,7 +290,8 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
 
         <div v-if="hasBrandData" class="space-y-5">
           <div class="h-[250px]">
-            <Pie :data="brandChartData" :options="brandChartOptions" />
+            <Pie v-if="brandChartTypeFormat === 'pie'" :data="brandChartData" :options="brandChartOptions" />
+            <Line v-else :data="brandLineChartData" :options="brandLineChartOptions" />
           </div>
 
           <div class="space-y-3">
@@ -292,13 +325,21 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2.5fr_1fr]">
       <Card>
-        <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3">
           <div>
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
               <Calendar class="h-4 w-4 text-emerald-500" />
               Thống kê theo chu kỳ thời gian
             </div>
           </div>
+          <Button
+            variant="soft"
+            size="sm"
+            @click="xuatExcelThoiGian"
+          >
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+            Xuất Excel
+          </Button>
         </div>
 
         <div class="overflow-x-auto">
@@ -393,18 +434,24 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
     </div>
 
     <Card>
-      <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Users class="h-4 w-4 text-rose-500" />
             Thống kê doanh thu nhân viên
           </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="rounded-full bg-slate-50 px-4 py-2 text-sm font-medium text-slate-500">
+          <div class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
             {{ employeeCountLabel }}
           </div>
         </div>
+        <Button
+          variant="soft"
+          size="sm"
+          @click="xuatExcelNhanVien"
+        >
+          <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+          Xuất Excel
+        </Button>
       </div>
 
       <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_120px]">
@@ -524,16 +571,24 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
     </Card>
 
     <Card>
-      <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Package class="h-4 w-4 text-rose-500" />
             Thống kê sản phẩm
           </div>
+          <div class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+            {{ productCountLabel }}
+          </div>
         </div>
-        <div class="rounded-full bg-slate-50 px-4 py-2 text-sm font-medium text-slate-500">
-          {{ productCountLabel }}
-        </div>
+        <Button
+          variant="soft"
+          size="sm"
+          @click="xuatExcelSanPham"
+        >
+          <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
+          Xuất Excel
+        </Button>
       </div>
 
       <div class="mb-5 grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_120px]">
@@ -663,7 +718,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
             </tr>
 
             <tr v-if="filteredProducts.length === 0">
-              <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">
+              <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">
                 Không có sản phẩm phù hợp với bộ lọc hiện tại.
               </td>
             </tr>

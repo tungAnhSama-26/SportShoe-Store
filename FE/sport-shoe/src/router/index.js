@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { getCurrentAdminUser, hasRequiredAdminCccd, isAdminAuthenticated, isAdminRole } from "../services/auth";
-import { showWarning } from "../utils/alert";
+import { getCurrentAdminUser, isAdminAuthenticated, isAdminRole } from "../services/auth";
 
 const TrangMacDinh = () => import("../layouts/TrangMacDinh.vue");
 const TrangChu = () => import("../pages/TrangChu.vue");
@@ -486,20 +485,6 @@ router.beforeEach((to) => {
     };
   }
 
-  if (!hasRequiredAdminCccd() && !isOwnEmployeeProfile(to.path)) {
-    showWarning(
-      "Tài khoản của bạn chưa xác minh CCCD. Vui lòng vào hồ sơ cá nhân và quét CCCD trước khi sử dụng các chức năng khác.",
-      "Cần xác minh CCCD"
-    );
-    return {
-      path: ownEmployeeProfilePath(),
-      query: { requireCccd: "1", redirect: to.fullPath }
-    };
-  }
-
-  if (!hasRequiredAdminCccd() && isOwnEmployeeProfile(to.path)) {
-    return true;
-  }
 
   if (to.path.startsWith("/nhanvien")) {
     return isOwnEmployeeProfile(to.path) ? true : ownEmployeeProfilePath();

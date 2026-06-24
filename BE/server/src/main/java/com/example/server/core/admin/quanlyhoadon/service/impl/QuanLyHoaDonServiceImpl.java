@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -151,7 +152,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             String loaiDon,
             String trangThai,
             LocalDate tuNgay,
-            LocalDate denNgay
+            LocalDate denNgay,
+            UUID giaoCaId
     ) {
         Integer kenhBan = mapLoaiDonToKenhBan(loaiDon);
         Integer trangThaiDb = mapTrangThaiFilterToDb(trangThai);
@@ -204,6 +206,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         String searchKeyword = normalize(keyword);
 
         return hoaDons.stream()
+                .filter(hoaDon -> giaoCaId == null || (hoaDon.getGiaoCa() != null && hoaDon.getGiaoCa().getId().equals(giaoCaId)))
                 .filter(hoaDon -> matchKeyword(searchKeyword, hoaDon, latestThanhToanMap.get(hoaDon.getId()), latestLichSuNhanVienMap.get(hoaDon.getId())))
                 .filter(hoaDon -> matchLoaiDon(loaiDon, hoaDon))
                 .filter(hoaDon -> matchDerivedStatus(trangThai, hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())))
@@ -221,7 +224,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveEmail(hoaDon.getKhachHang()),
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null,
+                        latestThanhToanMap.containsKey(hoaDon.getId()) ? mapPhuongThucThanhToan(latestThanhToanMap.get(hoaDon.getId()).getHinhThuc()) : "Chưa thanh toán"
                 ))
                 .toList();
     }
@@ -258,7 +262,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveEmail(hoaDon.getKhachHang()),
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null
+                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null,
+                        "N/A" // phuongThucThanhToan is not easily available here without an extra query, and this method is for customer, so we can just return N/A or fetch it.
                 ))
                 .toList();
     }
@@ -919,16 +924,32 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private HoaDonProductResponse mapSanPham(HoaDonChiTiet item, Map<Integer, String> hinhAnhMap) {
+        String tenGiay = "Sản phẩm không tồn tại hoặc đã bị xóa";
+        String tenLoaiGiay = "";
+        String tenMauSac = "";
+        String giaTriKichCo = "";
+        Integer giayChiTietId = null;
+
+        if (item.getGiayChiTiet() != null) {
+            giayChiTietId = item.getGiayChiTiet().getId();
+            if (item.getGiayChiTiet().getGiay() != null) {
+                tenGiay = item.getGiayChiTiet().getGiay().getTen();
+                tenLoaiGiay = item.getGiayChiTiet().getGiay().getLoaiGiay() != null ? item.getGiayChiTiet().getGiay().getLoaiGiay().getTen() : "";
+            }
+            tenMauSac = item.getGiayChiTiet().getMauSac() != null ? item.getGiayChiTiet().getMauSac().getTen() : "";
+            giaTriKichCo = item.getGiayChiTiet().getKichCo() != null ? item.getGiayChiTiet().getKichCo().getGiaTri() : "";
+        }
+
         return new HoaDonProductResponse(
                 item.getId(),
-                item.getGiayChiTiet().getGiay().getTen(),
-                item.getGiayChiTiet().getGiay().getLoaiGiay() != null ? item.getGiayChiTiet().getGiay().getLoaiGiay().getTen() : "",
-                item.getGiayChiTiet().getMauSac() != null ? item.getGiayChiTiet().getMauSac().getTen() : "",
-                item.getGiayChiTiet().getKichCo() != null ? item.getGiayChiTiet().getKichCo().getGiaTri() : "",
+                tenGiay,
+                tenLoaiGiay,
+                tenMauSac,
+                giaTriKichCo,
                 item.getSoLuong(),
                 defaultMoney(item.getGiaDonVi()),
                 defaultMoney(item.getThanhTien()),
-                hinhAnhMap.getOrDefault(item.getGiayChiTiet().getId(), "")
+                giayChiTietId != null ? hinhAnhMap.getOrDefault(giayChiTietId, "") : ""
         );
     }
 

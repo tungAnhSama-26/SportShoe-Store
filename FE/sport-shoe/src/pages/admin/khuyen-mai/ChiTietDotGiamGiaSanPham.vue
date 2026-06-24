@@ -1,12 +1,7 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Save, Package, Search, CheckCircle2, CircleX, X } from "lucide-vue-next";
-import { computed } from "vue";
-import { onMounted, reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Save, Package, Search } from "lucide-vue-next";
-import { computed } from "vue";
 import {
   createDotGiamGiaSanPham,
   getDotGiamGiaSanPhamDetail,
@@ -151,7 +146,7 @@ onMounted(taiDuLieu);
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
     <!-- Header -->
     <section class="flex items-center gap-4">
       <button

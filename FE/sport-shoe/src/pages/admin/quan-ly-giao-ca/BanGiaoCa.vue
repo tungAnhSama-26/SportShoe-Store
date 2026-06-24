@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, watch } from "vue";
-import { useRoute } from "vue-router";
+import { ref, computed, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { 
   ArrowRightLeft, 
   CalendarDays, 
@@ -14,75 +14,60 @@ import {
   AlertTriangle,
   RotateCcw,
   Check,
-  X as CloseIcon
+  X as CloseIcon,
+  ChevronDown,
+  FileCheck
 } from "lucide-vue-next";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
-
 import { useAdminSession } from "../../../composable/useAdminSession";
+import { useGiaoCa } from "../../../composable/useGiaoCa";
+import { layDanhSachNhanVien } from "../../../services/nhan-vien";
+import { layThongTinGiaoCaCurrent } from "../../../services/giao-ca";
+import { layDanhSachHoaDon } from "../../../services/hoa-don";
 
 const route = useRoute();
+const router = useRouter();
 const { adminSession } = useAdminSession();
-const getLastWordOfName = computed(() => {
-  const parts = (adminSession.value.hoTen || "Nhân viên").trim().split(/\s+/);
-  return parts[parts.length - 1];
+
+const {
+  activeShift,
+  pendingHandovers,
+  loadingShift,
+  loadActiveShift,
+  loadPendingHandovers,
+  openShift,
+  submitHandover,
+  confirmHandover
+} = useGiaoCa();
+
+const listNhanVien = ref([]);
+const currentStats = ref(null);
+const loadingStats = ref(false);
+const isPaidInvoicesCollapsed = ref(true);
+
+const pendingInvoices = computed(() => {
+  return shiftTransactions.value.filter(tx => 
+    tx.trangThai === 'Chờ xác nhận' || tx.phuongThucThanhToan === 'Chưa thanh toán'
+  );
 });
-const isMoCaSángSớmMode = computed(() => route.path === "/admin/mo-ca");
 
-const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
-const forceStaffViewForAdmin = ref(false);
-const showAdminView = computed(() => isAdmin.value && !forceStaffViewForAdmin.value);
+const paidInvoices = computed(() => {
+  return shiftTransactions.value.filter(tx => 
+    tx.trangThai === 'Hoàn thành' || (tx.trangThai !== 'Chờ xác nhận' && tx.phuongThucThanhToan !== 'Chưa thanh toán')
+  );
+});
 
-const adminRejectionReason = ref("");
-const selectedHachToan = ref("tru-luong");
-const isCaDaChot = ref(false);
-
-function pheDuyetVaChotSo() {
-  showConfirm(
-    "Hành động này sẽ chốt số liệu ca làm việc này và không thể hoàn tác.",
-    "Phê duyệt & chốt số ca này?"
-  ).then((confirmed) => {
-    if (confirmed) {
-      isCaDaChot.value = true;
-      showSuccess("Đã phê duyệt đối soát và chốt số ca thành công!");
-    }
-  });
-}
-
-function cuongCheKetThucCa() {
-  showConfirm(
-    `Xác nhận cưỡng chế kết thúc ca làm việc của ${adminSession.value.hoTen}?`,
-    "Cưỡng chế kết thúc ca?"
-  ).then((confirmed) => {
-    if (confirmed) {
-      isCaDaChot.value = true;
-      showSuccess("Đã cưỡng chế kết thúc ca làm việc!");
-    }
-  });
-}
-
-// Active step control for interactive exploration:
-// 1: Mở ca (active), 2: Bàn giao, 3: Xác nhận, 4: Hoàn thành
 const buocHienTai = ref(1);
 
-// Mở ca state
-const tienMoCaThucTe = ref(5000000);
-const ghiChuMoCa = ref("");
+// Mở ca sáng sớm states
+const tienMoCaSángSớm = ref(500000); // Default to 500k starting cash
+const ghiChuMoCaSángSớm = ref("");
+
+// Báo cáo sự cố
 const showsIncidentModal = ref(false);
 const lyDoSucos = ref("");
 
-// Mở ca sáng sớm states
-const tienMoCaSángSớm = ref(15000000);
-const ghiChuMoCaSángSớm = ref("");
-
-const currentDateFormatted = computed(() => {
-  const d = new Date();
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-});
-
-// Denomination state for cash calculator popup
+// Calculator popup states
 const showsCalculator = ref(false);
 const denominations = ref([
   { value: 500000, count: 0 },
@@ -96,12 +81,154 @@ const denominations = ref([
   { value: 1000, count: 0 },
 ]);
 
-// Real-time actual cash calculated by calculator
+// Handover form states
+const tienThucTe = ref(0);
+const nhanVienNhanId = ref("");
+const lyDoChenhLech = ref("");
+const ghiChu = ref("");
+
+// Receiver confirmation note
+const ghiChuNhanCa = ref("");
+
+const processing = ref(false);
+
+const getLastWordOfName = computed(() => {
+  const parts = (adminSession.value.hoTen || "Nhân viên").trim().split(/\s+/);
+  return parts[parts.length - 1];
+});
+
+const isMoCaSángSớmMode = computed(() => route.path === "/admin/mo-ca");
+
+const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const forceStaffViewForAdmin = ref(false);
+const showAdminView = computed(() => isAdmin.value && !forceStaffViewForAdmin.value);
+
+const adminRejectionReason = ref("");
+const selectedHachToan = ref("tru-luong");
+const isCaDaChot = ref(false);
+
+const pendingHandover = computed(() => {
+  return pendingHandovers.value && pendingHandovers.value.length > 0 ? pendingHandovers.value[0] : null;
+});
+
+const displayShift = computed(() => activeShift.value || pendingHandover.value);
+
+const isMyShift = computed(() => {
+  if (!displayShift.value || !adminSession.value) return false;
+  return String(adminSession.value.id) === String(displayShift.value.nhanVienTrongCaId);
+});
+
+const shiftTransactions = ref([]);
+const loadingTransactions = ref(false);
+
+const directDisplayInvoices = computed(() => {
+  if (isMyShift.value) {
+    return shiftTransactions.value;
+  }
+  return pendingInvoices.value;
+});
+
+// Load stats for active ca
+async function taiThongKeCaHienTai() {
+  if (!activeShift.value) return;
+  loadingStats.value = true;
+  try {
+    const data = await layThongTinGiaoCaCurrent();
+    currentStats.value = data;
+    tienThucTe.value = data.tienCuoiCaHeThong || 0;
+  } catch (err) {
+    console.error("Lỗi tải thống kê ca:", err);
+  } finally {
+    loadingStats.value = false;
+  }
+}
+
+async function loadShiftTransactions() {
+  if (!displayShift.value || !displayShift.value.id) {
+    shiftTransactions.value = [];
+    return;
+  }
+  
+  loadingTransactions.value = true;
+  try {
+    const res = await layDanhSachHoaDon({
+      giaoCaId: displayShift.value.id
+    });
+    
+    if (res && res.length > 0) {
+      shiftTransactions.value = res.sort((a, b) => new Date(b.ngayTao).getTime() - new Date(a.ngayTao).getTime());
+    } else {
+      shiftTransactions.value = [];
+    }
+  } catch (err) {
+    console.error("Lỗi tải chi tiết giao dịch trong ca:", err);
+    shiftTransactions.value = [];
+  } finally {
+    loadingTransactions.value = false;
+  }
+}
+
+// Load active employees list
+async function taiNhanVienGiaoCa() {
+  try {
+    const list = await layDanhSachNhanVien({ trangThai: 1 });
+    listNhanVien.value = list.filter(
+      (nv) => String(nv.id) !== String(adminSession.value.id)
+    );
+  } catch (err) {
+    console.error("Lỗi tải danh sách nhân viên:", err);
+  }
+}
+
+// State Machine Sync based on BE states
+async function syncState() {
+  if (activeShift.value) {
+    if (activeShift.value.trangThai === "MO_CA") {
+      buocHienTai.value = 1;
+    } else if (activeShift.value.trangThai === "CHO_BAN_GIAO") {
+      buocHienTai.value = 2;
+    }
+    await taiThongKeCaHienTai();
+    await taiNhanVienGiaoCa();
+    await loadShiftTransactions();
+  } else {
+    if (pendingHandovers.value && pendingHandovers.value.length > 0) {
+      buocHienTai.value = 3;
+      await loadShiftTransactions();
+    } else {
+      // No active ca, no pending handover
+      buocHienTai.value = 1; // Show Screen B (Mở ca) if in /admin/mo-ca, else Screen A empty state
+    }
+  }
+  isPaidInvoicesCollapsed.value = !isMyShift.value;
+}
+
+onMounted(async () => {
+  await loadActiveShift();
+  await loadPendingHandovers();
+  await syncState();
+});
+
+watch([activeShift, pendingHandovers], () => {
+  syncState();
+});
+
+watch(() => route.path, () => {
+  syncState();
+});
+
+const currentDateFormatted = computed(() => {
+  const d = new Date();
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+});
+
 const calculatedCash = computed(() => {
   return denominations.value.reduce((sum, item) => sum + item.value * (item.count || 0), 0);
 });
 
-// Format currency
 function formatVND(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -109,33 +236,6 @@ function formatVND(value) {
   }).format(value || 0).replace("₫", "đ");
 }
 
-// Financial stats
-const tienDauCa = ref(5000000);
-const doanhThuTienMat = ref(12450000);
-const tongThuKhac = ref(250000);
-const tongChiTrongCa = ref(-150000);
-const tongHoanTien = ref(-200000);
-
-const tienTheoHeThong = computed(() => {
-  return tienDauCa.value + doanhThuTienMat.value + tongThuKhac.value + tongChiTrongCa.value + tongHoanTien.value;
-});
-
-// Tiền thực tế starting value is 15050000
-const tienThucTe = ref(15050000);
-
-const chenhLech = computed(() => {
-  return tienThucTe.value - tienTheoHeThong.value;
-});
-
-// Form state
-const nhanVienNhan = ref("Trần Thị B");
-const ghiChu = ref("Bàn giao đầy đủ tiền mặt và chứng từ trong ca.");
-
-// Rejection state for Step 3
-const lyDoTuChoi = ref("");
-const showsRejectionModal = ref(false);
-
-// Helper to convert number to Vietnamese words
 function docTienBangChu(money) {
   if (money === 0) return "Không đồng";
   
@@ -185,12 +285,10 @@ function docTienBangChu(money) {
   return `(Bằng chữ: ${str} đồng)`;
 }
 
-// Reset denominations count
 function resetCalculator() {
   denominations.value.forEach(item => item.count = 0);
 }
 
-// Apply cash calculator result
 function applyCalculatedCash() {
   if (isMoCaSángSớmMode.value) {
     tienMoCaSángSớm.value = calculatedCash.value;
@@ -201,8 +299,8 @@ function applyCalculatedCash() {
   showSuccess(`Đã áp dụng số tiền đếm được: ${formatVND(calculatedCash.value)}`);
 }
 
-// Actions
-function xacNhanMoCaSángSớmBtn() {
+// Action: Mở ca
+async function xacNhanMoCaSángSớmBtn() {
   if (tienMoCaSángSớm.value < 0) {
     showError("Số tiền mở ca không được âm");
     return;
@@ -210,26 +308,75 @@ function xacNhanMoCaSángSớmBtn() {
   showConfirm(
     `Số tiền mặt có trong két đếm được là: <strong>${formatVND(tienMoCaSángSớm.value)}</strong>`,
     "Xác nhận mở ca làm việc?"
-  ).then((confirmed) => {
+  ).then(async (confirmed) => {
     if (confirmed) {
-      showSuccess("Mở ca làm việc thành công!");
+      processing.value = true;
+      const res = await openShift(tienMoCaSángSớm.value, ghiChuMoCaSángSớm.value);
+      processing.value = false;
+      if (res.success) {
+        showSuccess(res.message);
+        router.push("/admin/ban-hang");
+      } else {
+        showError(res.message);
+      }
     }
   });
 }
 
-function xacNhanMoCa() {
-  if (tienMoCaThucTe.value < 0) {
-    showError("Số tiền mở ca không được âm");
+// Action: Bàn giao ca
+async function xacNhanBanGiaoCaBtn() {
+  if (!nhanVienNhanId.value) {
+    showError("Vui lòng chọn nhân viên nhận bàn giao ca");
     return;
   }
+  if (chenhLech.value !== 0 && (!lyDoChenhLech.value || !lyDoChenhLech.value.trim())) {
+    showError("Số tiền chênh lệch khác 0. Vui lòng nhập lý do chênh lệch.");
+    return;
+  }
+
   showConfirm(
-    `Số tiền bàn giao đầu ca thực tế đếm được là: <strong>${formatVND(tienMoCaThucTe.value)}</strong>`,
-    "Xác nhận mở ca làm việc?"
-  ).then((confirmed) => {
+    "Xác nhận bàn giao ca?",
+    "Thông tin bàn giao sẽ được chuyển đến nhân viên nhận để xác nhận."
+  ).then(async (confirmed) => {
     if (confirmed) {
-      tienDauCa.value = tienMoCaThucTe.value;
-      buocHienTai.value = 2; // Proceed to Step 2
-      showSuccess("Mở ca làm việc thành công!");
+      processing.value = true;
+      const res = await submitHandover({
+        tienCuoiCaThucTe: tienThucTe.value,
+        nhanVienNhanId: nhanVienNhanId.value,
+        lyDoChenhLech: lyDoChenhLech.value,
+        ghiChu: ghiChu.value
+      });
+      processing.value = false;
+      if (res.success) {
+        showSuccess(res.message);
+        await loadActiveShift();
+        await loadPendingHandovers();
+      } else {
+        showError(res.message);
+      }
+    }
+  });
+}
+
+// Action: Đồng ý nhận ca
+async function dongYNhanCaBtn(id) {
+  if (!id) return;
+  showConfirm(
+    "Đồng ý nhận bàn giao ca?",
+    "Bạn sẽ chính thức tiếp quản ca làm việc tiếp theo và hệ thống tự động mở ca cho bạn."
+  ).then(async (confirmed) => {
+    if (confirmed) {
+      processing.value = true;
+      const res = await confirmHandover(id, ghiChuNhanCa.value);
+      processing.value = false;
+      if (res.success) {
+        showSuccess(res.message);
+        await loadActiveShift();
+        await loadPendingHandovers();
+        router.push("/admin/ban-hang");
+      } else {
+        showError(res.message);
+      }
     }
   });
 }
@@ -244,48 +391,44 @@ function guiBaoCaoSuCo() {
   lyDoSucos.value = "";
 }
 
-function xacNhanBanGiao() {
+// Computeds for dynamic finance display
+const tienDauCa = computed(() => activeShift.value?.tienDauCa || 0);
+const doanhThuTienMat = computed(() => currentStats.value?.tienMatTrongCa || 0);
+const tongThuKhac = ref(0);
+const tongChiTrongCa = ref(0);
+const tongHoanTien = ref(0);
+
+const tienTheoHeThong = computed(() => {
+  if (!currentStats.value) return activeShift.value?.tienDauCa || 0;
+  return currentStats.value.tienCuoiCaHeThong;
+});
+
+const chenhLech = computed(() => {
+  return tienThucTe.value - tienTheoHeThong.value;
+});
+
+function pheDuyetVaChotSo() {
   showConfirm(
-    "Xác nhận bàn giao ca?",
-    "Thông tin bàn giao sẽ được chuyển đến Trần Thị B xác nhận.",
-    () => {
-      buocHienTai.value = 3;
-      showSuccess("Đã gửi yêu cầu bàn giao ca!");
+    "Hành động này sẽ chốt số liệu ca làm việc này và không thể hoàn tác.",
+    "Phê duyệt & chốt số ca này?"
+  ).then((confirmed) => {
+    if (confirmed) {
+      isCaDaChot.value = true;
+      showSuccess("Đã phê duyệt đối soát và chốt số ca thành công!");
     }
-  );
+  });
 }
 
-function dongYNhantCa() {
+function cuongCheKetThucCa() {
   showConfirm(
-    "Đồng ý nhận bàn giao ca?",
-    "Bạn sẽ chính thức tiếp quản ca làm việc tiếp theo.",
-    () => {
-      buocHienTai.value = 4;
-      showSuccess("Nhận bàn giao ca thành công!");
+    `Xác nhận cưỡng chế kết thúc ca làm việc của ${adminSession.value.hoTen}?`,
+    "Cưỡng chế kết thúc ca?"
+  ).then((confirmed) => {
+    if (confirmed) {
+      isCaDaChot.value = true;
+      showSuccess("Đã cưỡng chế kết thúc ca làm việc!");
     }
-  );
-}
-
-function submitTuChoi() {
-  if (!lyDoTuChoi.value.trim()) {
-    showError("Vui lòng nhập lý do từ chối bàn giao");
-    return;
-  }
-  showsRejectionModal.value = false;
-  showSuccess("Đã từ chối nhận bàn giao ca!");
-  buocHienTai.value = 2; // Return to editing
-}
-
-function huyBanGiao() {
-  showConfirm(
-    "Hủy bàn giao ca?",
-    "Hành động này sẽ xóa dữ liệu nháp hiện tại.",
-    () => {
-      tienThucTe.value = 15000000;
-      ghiChu.value = "";
-      showSuccess("Đã hủy bàn giao ca.");
-    }
-  );
+  });
 }
 </script>
 
@@ -293,12 +436,94 @@ function huyBanGiao() {
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- SCREEN B: MỞ CA SÁNG SỚM -->
     <div v-if="isMoCaSángSớmMode" class="flex items-center justify-center min-h-[70vh]">
-      <div class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
-        
+      <!-- Case 1: Active shift already exists -->
+      <div v-if="activeShift" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 text-center space-y-5">
+        <div class="mx-auto h-16 w-16 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-500 rounded-full flex items-center justify-center text-amber-500 shadow-md">
+          <AlertTriangle class="h-8 w-8 animate-pulse" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">Ca làm việc đã hoạt động</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            Bạn hiện đang có một ca làm việc đang hoạt động (Mã ca: <span class="font-bold text-primary">{{ activeShift.ma }}</span>).
+            Vui lòng thực hiện đóng ca và bàn giao ca trước khi mở ca mới.
+          </p>
+        </div>
+        <button 
+          @click="router.push('/admin/ban-giao-ca')" 
+          class="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl shadow-lg transition"
+        >
+          Đi đến Bàn giao ca
+        </button>
+      </div>
+
+      <!-- Case 2: Pending Handover waiting for confirmation -->
+      <div v-else-if="pendingHandover" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
+        <div class="text-center space-y-2">
+          <div class="mx-auto h-14 w-14 bg-blue-50 dark:bg-blue-950/20 border-2 border-primary rounded-full flex items-center justify-center text-primary shadow-sm">
+            <FileSpreadsheet class="h-7 w-7" />
+          </div>
+          <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase mt-2">
+            Xác nhận bàn giao ca
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+            Có ca bàn giao từ <span class="font-bold">{{ pendingHandover.nhanVienTrongCaTen }}</span> đang chờ bạn xác nhận để tiếp quản ca tiếp theo.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm space-y-2.5">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Số tiền bàn giao:</span>
+            <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatVND(pendingHandover.tienCuoiCaThucTe) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Giờ đóng ca:</span>
+            <span class="font-medium text-slate-700 dark:text-slate-200">{{ new Date(pendingHandover.thoiGianRa).toLocaleString('vi-VN') }}</span>
+          </div>
+          <div v-if="pendingHandover.tienChenhLech !== 0" class="flex justify-between">
+            <span class="text-amber-600 font-semibold">Chênh lệch:</span>
+            <span class="font-bold text-amber-600">{{ formatVND(pendingHandover.tienChenhLech) }}</span>
+          </div>
+          <div class="pt-2 border-t border-slate-200/60">
+            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ghi chú từ đồng nghiệp:</p>
+            <p class="text-slate-600 dark:text-slate-300 text-xs italic bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/60">
+              "{{ pendingHandover.ghiChu || 'Không có ghi chú' }}"
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs font-medium">
+          <AlertTriangle class="h-4 w-4 shrink-0" />
+          <span>Vui lòng kiểm tra kỹ số tiền mặt thực tế trước khi đồng ý nhận bàn giao.</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            Ghi chú nhận ca
+          </label>
+          <input 
+            type="text" 
+            v-model="ghiChuNhanCa"
+            placeholder="Nhập ghi chú phản hồi..."
+            class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </div>
+
+        <button 
+          @click="dongYNhanCaBtn(pendingHandover.id)"
+          :disabled="processing"
+          class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-sm uppercase tracking-wide disabled:opacity-50"
+        >
+          <Check class="h-5 w-5" />
+          {{ processing ? 'ĐANG XỬ LÝ...' : 'ĐỒNG Ý NHẬN CA' }}
+        </button>
+      </div>
+
+      <!-- Case 3: No active ca, no pending handover - show normal starting cash declaration -->
+      <div v-else class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
         <!-- Header -->
         <div class="text-center space-y-2">
           <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">
-            MỞ CA LÀM VIỆC - CA SÁNG ({{ currentDateFormatted }})
+            MỞ CA LÀM VIỆC - CA MỚI ({{ currentDateFormatted }})
           </h2>
           <div class="text-sm font-semibold text-slate-500 dark:text-slate-400">
             Thu ngân: <span class="text-slate-800 dark:text-white font-bold">{{ adminSession.hoTen }}</span>
@@ -355,7 +580,7 @@ function huyBanGiao() {
           <!-- Ghi chú -->
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Ghi chú
+              Ghi chú mở ca
             </label>
             <textarea 
               v-model="ghiChuMoCaSángSớm" 
@@ -370,12 +595,12 @@ function huyBanGiao() {
           <button 
             type="button"
             @click="xacNhanMoCaSángSớmBtn"
-            class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition text-sm uppercase tracking-wider"
+            :disabled="processing"
+            class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition text-sm uppercase tracking-wider disabled:opacity-50"
           >
-            BẮT ĐẦU CA LÀM VIỆC
+            {{ processing ? 'ĐANG MỞ CA...' : 'BẮT ĐẦU CA LÀM VIỆC' }}
           </button>
         </div>
-
       </div>
     </div>
 
@@ -687,7 +912,6 @@ function huyBanGiao() {
           </p>
         </div>
 
-        <!-- Quick Step Navigator for Testing & Switch back -->
         <div class="flex items-center gap-3">
           <button 
             v-if="isAdmin" 
@@ -696,18 +920,6 @@ function huyBanGiao() {
           >
             Quay lại Giao diện Admin
           </button>
-          
-          <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-            <button 
-              v-for="step in [1, 2, 3, 4]" 
-              :key="step"
-              @click="buocHienTai = step"
-              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition"
-              :class="buocHienTai === step ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'"
-            >
-              Bước {{ step }}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -727,336 +939,369 @@ function huyBanGiao() {
             </div>
           </div>
 
-        <!-- Step 2 -->
-        <div class="flex items-center gap-3 p-3 rounded-xl border transition"
-             :class="buocHienTai >= 2 ? 'border-primary/20 bg-primary/5 dark:bg-primary/10' : 'border-slate-100 dark:border-slate-700/60'">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-               :class="buocHienTai >= 2 ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
-            2
+          <!-- Step 2 -->
+          <div class="flex items-center gap-3 p-3 rounded-xl border transition"
+               :class="buocHienTai >= 2 ? 'border-primary/20 bg-primary/5 dark:bg-primary/10' : 'border-slate-100 dark:border-slate-700/60'">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                 :class="buocHienTai >= 2 ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
+              2
+            </div>
+            <div>
+              <p class="text-xs font-bold" :class="buocHienTai >= 2 ? 'text-slate-800 dark:text-white' : 'text-slate-400'">2. Bàn giao</p>
+              <p class="text-[10px] text-slate-400">Giao ca cho nhân viên tiếp theo</p>
+            </div>
           </div>
-          <div>
-            <p class="text-xs font-bold" :class="buocHienTai >= 2 ? 'text-slate-800 dark:text-white' : 'text-slate-400'">2. Bàn giao</p>
-            <p class="text-[10px] text-slate-400">Giao ca cho nhân viên tiếp theo</p>
-          </div>
-        </div>
 
-        <!-- Step 3 -->
-        <div class="flex items-center gap-3 p-3 rounded-xl border transition"
-             :class="buocHienTai >= 3 ? 'border-primary/20 bg-primary/5 dark:bg-primary/10' : 'border-slate-100 dark:border-slate-700/60'">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-               :class="buocHienTai >= 3 ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
-            3
+          <!-- Step 3 -->
+          <div class="flex items-center gap-3 p-3 rounded-xl border transition"
+               :class="buocHienTai >= 3 ? 'border-primary/20 bg-primary/5 dark:bg-primary/10' : 'border-slate-100 dark:border-slate-700/60'">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                 :class="buocHienTai >= 3 ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
+              3
+            </div>
+            <div>
+              <p class="text-xs font-bold" :class="buocHienTai >= 3 ? 'text-slate-800 dark:text-white' : 'text-slate-400'">3. Xác nhận</p>
+              <p class="text-[10px] text-slate-400">Nhân viên nhận ca xác nhận</p>
+            </div>
           </div>
-          <div>
-            <p class="text-xs font-bold" :class="buocHienTai >= 3 ? 'text-slate-800 dark:text-white' : 'text-slate-400'">3. Xác nhận</p>
-            <p class="text-[10px] text-slate-400">Nhân viên nhận ca xác nhận</p>
-          </div>
-        </div>
 
-        <!-- Step 4 -->
-        <div class="flex items-center gap-3 p-3 rounded-xl border transition"
-             :class="buocHienTai >= 4 ? 'border-primary/20 bg-primary/5 dark:bg-primary/10' : 'border-slate-100 dark:border-slate-700/60'">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-               :class="buocHienTai >= 4 ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
-            4
-          </div>
-          <div>
-            <p class="text-xs font-bold" :class="buocHienTai >= 4 ? 'text-slate-800 dark:text-white' : 'text-slate-400'">4. Hoàn thành</p>
-            <p class="text-[10px] text-slate-400">Bàn giao ca thành công</p>
+          <!-- Step 4 -->
+          <div class="flex items-center gap-3 p-3 rounded-xl border transition"
+               :class="buocHienTai >= 4 ? 'border-primary/20 bg-primary/5 dark:bg-primary/10' : 'border-slate-100 dark:border-slate-700/60'">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                 :class="buocHienTai >= 4 ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'">
+              4
+            </div>
+            <div>
+              <p class="text-xs font-bold" :class="buocHienTai >= 4 ? 'text-slate-800 dark:text-white' : 'text-slate-400'">4. Hoàn thành</p>
+              <p class="text-[10px] text-slate-400">Bàn giao ca thành công</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Left Column: Shift Info & Stats -->
-      <div class="lg:col-span-2 space-y-6">
-        
-        <!-- THÔNG TIN CA LÀM VIỆC -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Thông tin ca làm việc</h3>
-            <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Đã đóng</span>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5 text-sm">
-            <div class="flex justify-between md:justify-start gap-4">
-              <span class="text-slate-400 min-w-[100px]">Mã ca:</span>
-              <span class="font-bold text-primary">CA20250620001</span>
-            </div>
-            <div class="flex justify-between md:justify-start gap-4">
-              <span class="text-slate-400 min-w-[100px]">Thời gian:</span>
-              <span class="font-medium text-slate-700 dark:text-slate-200">08:00 - 16:00 (20/06/2026)</span>
-            </div>
-            <div class="flex justify-between md:justify-start gap-4">
-              <span class="text-slate-400 min-w-[100px]">Nhân viên:</span>
-              <span class="font-bold text-slate-700 dark:text-slate-200">{{ adminSession.hoTen }}</span>
-            </div>
-            <div class="flex justify-between md:justify-start gap-4">
-              <span class="text-slate-400 min-w-[100px]">Chức vụ:</span>
-              <span class="font-medium text-slate-700 dark:text-slate-200">Nhân viên bán hàng</span>
-            </div>
-            <div class="flex justify-between md:justify-start gap-4">
-              <span class="text-slate-400 min-w-[100px]">Ca làm việc:</span>
-              <span class="font-semibold text-slate-700 dark:text-slate-200">Ca sáng</span>
-            </div>
-            <div class="flex justify-between md:justify-start gap-4">
-              <span class="text-slate-400 min-w-[100px]">Giờ đóng ca:</span>
-              <span class="font-medium text-slate-700 dark:text-slate-200">16:00 20/06/2026</span>
-            </div>
-          </div>
+      <!-- Case when there's no active shift and no pending handover -->
+      <div v-if="!activeShift && !pendingHandover" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 text-center space-y-5 mx-auto">
+        <div class="mx-auto h-16 w-16 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-slate-400">
+          <Clock class="h-8 w-8" />
         </div>
-
-        <!-- TỔNG HỢP DOANH THU -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
-          <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Tổng hợp doanh thu</h3>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-              <span class="text-slate-500">Tiền đầu ca</span>
-              <span class="font-bold text-slate-700 dark:text-slate-200">{{ formatVND(tienDauCa) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-              <span class="text-slate-500">Tổng doanh thu tiền mặt</span>
-              <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(doanhThuTienMat) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-              <span class="text-slate-500">Tổng thu khác</span>
-              <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(tongThuKhac) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-              <span class="text-slate-500">Tổng chi trong ca</span>
-              <span class="font-bold text-rose-500">{{ formatVND(tongChiTrongCa) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-              <span class="text-slate-500">Tổng hoàn tiền</span>
-              <span class="font-bold text-rose-500">{{ formatVND(tongHoanTien) }}</span>
-            </div>
-          </div>
-
-          <!-- Totals Banner -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <!-- Hệ thống -->
-            <div class="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4 text-center">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Tiền theo hệ thống</span>
-              <p class="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1">{{ formatVND(tienTheoHeThong) }}</p>
-            </div>
-
-            <!-- Thực tế -->
-            <div class="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl p-4 text-center">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tiền thực tế</span>
-              <p class="text-lg font-bold text-emerald-700 dark:text-emerald-300 mt-1">{{ formatVND(tienThucTe) }}</p>
-            </div>
-
-            <!-- Chênh lệch -->
-            <div class="rounded-2xl p-4 text-center flex flex-col justify-center items-center"
-                 :class="chenhLech >= 0 ? 'bg-emerald-100/40 border border-emerald-200 dark:bg-emerald-950/20' : 'bg-rose-100/40 border border-rose-200 dark:bg-rose-950/20'">
-              <span class="text-[10px] font-bold uppercase tracking-wider"
-                    :class="chenhLech >= 0 ? 'text-emerald-700' : 'text-rose-700'">
-                Chênh lệch
-              </span>
-              <p class="text-lg font-bold mt-1" :class="chenhLech >= 0 ? 'text-emerald-700' : 'text-rose-700'">
-                {{ chenhLech >= 0 ? '+' : '' }}{{ formatVND(chenhLech) }}
-              </p>
-              <span class="text-[10px] font-semibold text-slate-500 mt-0.5">
-                ({{ chenhLech >= 0 ? 'Thừa' : 'Thiếu' }})
-              </span>
-            </div>
-          </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">Không có ca hoạt động</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            Bạn hiện không có ca làm việc nào đang hoạt động và không có ca bàn giao nào cần xác nhận.
+            Vui lòng mở ca làm việc để bắt đầu thực hiện bán hàng và quản lý ca.
+          </p>
         </div>
-
+        <button 
+          @click="router.push('/admin/mo-ca')" 
+          class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition"
+        >
+          Đi đến Mở ca làm việc
+        </button>
       </div>
 
-      <!-- Right Column: Handover Form / Status details -->
-      <div class="space-y-6">
-        
-        <!-- THÔNG TIN BÀN GIAO -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
-          <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Thông tin bàn giao</h3>
+      <!-- Main Content Grid when active shift or pending handover is present -->
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Shift Info & Stats -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- THÔNG TIN CA LÀM VIỆC -->
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Thông tin ca làm việc</h3>
+              <span 
+                class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+              >
+                {{ activeShift ? (activeShift.trangThai === 'MO_CA' ? 'Đang hoạt động' : 'Đang bàn giao') : 'Đang chờ xác nhận' }}
+              </span>
+            </div>
 
-          <!-- Step 1: Đóng ca (A nhập) -->
-          <div v-if="buocHienTai === 1" class="space-y-4">
-            <!-- Cash handover amount (READ-ONLY TEXT WITH CALCULATOR ICON) -->
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Số tiền bàn giao
-              </label>
-              
-              <div class="flex items-center gap-3">
-                <!-- Static text display resembling an input but disabled/non-editable -->
-                <div class="flex-1 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between text-lg font-bold text-blue-600 dark:text-blue-400">
-                  <span>{{ formatVND(tienThucTe) }}</span>
-                </div>
-                
-                <!-- Cash calculator button -->
-                <button 
-                  type="button" 
-                  @click="showsCalculator = true"
-                  title="Mở bảng tính đếm tiền"
-                  class="h-12 w-12 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition shadow-sm"
-                >
-                  <Calculator class="h-6 w-6" />
-                </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5 text-sm">
+              <div class="flex justify-between md:justify-start gap-4">
+                <span class="text-slate-400 min-w-[100px]">Mã ca:</span>
+                <span class="font-bold text-primary">{{ activeShift?.ma || pendingHandover?.ma }}</span>
               </div>
-
-              <!-- Vietnamese Words Representation -->
-              <p class="mt-2 text-xs italic text-slate-500 dark:text-slate-400 leading-normal">
-                {{ docTienBangChu(tienThucTe) }}
-              </p>
-            </div>
-
-            <!-- Receiver dropdown -->
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Chọn nhân viên nhận ca <span class="text-rose-500">*</span>
-              </label>
-              <select v-model="nhanVienNhan" class="w-full h-11 px-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900/60 text-sm font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-rose-400 transition cursor-pointer">
-                <option value="Trần Thị B">Trần Thị B (NV0002) - Nhân viên</option>
-                <option value="Lê Văn C">Lê Văn C (NV0003) - Nhân viên</option>
-              </select>
-            </div>
-
-            <!-- Note area -->
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Ghi chú
-              </label>
-              <textarea 
-                v-model="ghiChu" 
-                rows="3" 
-                maxlength="200"
-                class="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400 transition"
-                placeholder="Nhập nội dung bàn giao..."
-              ></textarea>
-              <div class="flex justify-end text-[10px] text-slate-400 mt-1">
-                {{ ghiChu.length }}/200
+              <div class="flex justify-between md:justify-start gap-4">
+                <span class="text-slate-400 min-w-[100px]">Thời gian vào:</span>
+                <span class="font-medium text-slate-700 dark:text-slate-200">
+                  {{ displayShift?.thoiGianChamCong ? new Date(displayShift.thoiGianChamCong).toLocaleString('vi-VN') : (displayShift?.thoiGianVao ? new Date(displayShift.thoiGianVao).toLocaleString('vi-VN') : 'N/A') }}
+                </span>
+              </div>
+              <div class="flex justify-between md:justify-start gap-4">
+                <span class="text-slate-400 min-w-[100px]">Nhân viên ca:</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">{{ displayShift?.nhanVienTrongCaTen }}</span>
+              </div>
+              <div class="flex justify-between md:justify-start gap-4">
+                <span class="text-slate-400 min-w-[100px]">Trạng thái:</span>
+                <span class="font-semibold text-slate-700 dark:text-slate-200">
+                  {{ displayShift?.trangThai === 'MO_CA' ? 'Đang làm việc' : (displayShift?.trangThai === 'CHO_BAN_GIAO' ? 'Đang bàn giao' : (displayShift?.trangThai === 'DA_BAN_GIAO' ? 'Đã đóng ca' : 'N/A')) }}
+                </span>
               </div>
             </div>
-
-            <!-- Button: GỬI YÊU CẦU BÀN GIAO -->
-            <button 
-              type="button"
-              @click="buocHienTai = 2; showSuccess('Đã gửi yêu cầu bàn giao ca!')"
-              class="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl shadow-md transition text-xs uppercase tracking-wider"
-            >
-              Gửi yêu cầu bàn giao
-            </button>
           </div>
 
-          <!-- Step 2: Bàn giao (Waiting layout) -->
-          <div v-else-if="buocHienTai === 2" class="space-y-4">
-            <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm text-center py-6 space-y-3">
-              <div class="mx-auto h-12 w-12 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-500 rounded-full flex items-center justify-center text-amber-500 shadow-sm animate-pulse">
-                <Clock class="h-6 w-6" />
+          <!-- TỔNG HỢP DOANH THU -->
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Tổng hợp doanh thu</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
+                <span class="text-slate-500">Tiền đầu ca</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">{{ formatVND(tienDauCa) }}</span>
               </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
+                <span class="text-slate-500">Doanh thu tiền mặt</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(doanhThuTienMat) }}</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
+                <span class="text-slate-500">Doanh thu chuyển khoản</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(currentStats?.tienChuyenKhoanTrongCa || pendingHandover?.tienChuyenKhoanTrongCa) }}</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
+                <span class="text-slate-500">Tổng thu khác</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(tongThuKhac) }}</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
+                <span class="text-slate-500">Tổng chi trong ca</span>
+                <span class="font-bold text-rose-500">{{ formatVND(tongChiTrongCa) }}</span>
+              </div>
+            </div>
+
+            <!-- Totals Banner -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <!-- Hệ thống -->
+              <div class="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4 text-center">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Tiền theo hệ thống</span>
+                <p class="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1">{{ formatVND(tienTheoHeThong) }}</p>
+              </div>
+
+              <!-- Thực tế -->
+              <div class="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl p-4 text-center">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tiền thực tế</span>
+                <p class="text-lg font-bold text-emerald-700 dark:text-emerald-300 mt-1">{{ formatVND(activeShift ? tienThucTe : pendingHandover?.tienCuoiCaThucTe) }}</p>
+              </div>
+
+              <!-- Chênh lệch -->
+              <div class="rounded-2xl p-4 text-center flex flex-col justify-center items-center"
+                   :class="(activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'bg-emerald-100/40 border border-emerald-200 dark:bg-emerald-950/20' : 'bg-rose-100/40 border border-rose-200 dark:bg-rose-950/20'">
+                <span class="text-[10px] font-bold uppercase tracking-wider"
+                      :class="(activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
+                  Chênh lệch
+                </span>
+                <p class="text-lg font-bold mt-1" :class="(activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
+                  {{ (activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? '+' : '' }}{{ formatVND(activeShift ? chenhLech : pendingHandover?.tienChenhLech) }}
+                </p>
+                <span class="text-[10px] font-semibold text-slate-500 mt-0.5">
+                  ({{ (activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'Thừa' : 'Thiếu' }})
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Handover Form / Status details -->
+        <div class="space-y-6">
+          <!-- THÔNG TIN BÀN GIAO -->
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Thông tin bàn giao</h3>
+
+            <!-- Step 1: Đóng ca & Bàn giao -->
+            <div v-if="buocHienTai === 1" class="space-y-4">
               <div>
-                <h4 class="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wide">Chờ Trần Thị B xác nhận</h4>
-                <p class="text-[11px] text-slate-400 mt-1 leading-normal">
-                  Yêu cầu bàn giao ca đã được gửi thành công. Đang chờ nhân viên nhận ca {{ nhanVienNhan }} kiểm tra thực tế và xác nhận.
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Số tiền bàn giao thực tế
+                </label>
+                
+                <div class="flex items-center gap-3">
+                  <div class="relative flex-1">
+                    <input 
+                      type="number"
+                      v-model.number="tienThucTe"
+                      min="0"
+                      placeholder="Nhập số tiền mặt thực tế..."
+                      class="w-full h-12 pl-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-lg font-bold text-blue-600 dark:text-blue-400 focus:outline-none focus:border-rose-400 transition"
+                    />
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">đ</span>
+                  </div>
+                  
+                  <button 
+                    type="button" 
+                    @click="showsCalculator = true"
+                    title="Mở bảng tính đếm tiền"
+                    class="h-12 w-12 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition shadow-sm"
+                  >
+                    <Calculator class="h-6 w-6" />
+                  </button>
+                </div>
+
+                <p class="mt-2 text-xs italic text-slate-500 dark:text-slate-400 leading-normal">
+                  {{ docTienBangChu(tienThucTe) }}
                 </p>
               </div>
+
+              <!-- Receiver dropdown -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Chọn nhân viên nhận ca <span class="text-rose-500">*</span>
+                </label>
+                <select v-model="nhanVienNhanId" class="w-full h-11 px-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900/60 text-sm font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-rose-400 transition cursor-pointer">
+                  <option value="" disabled>-- Chọn nhân viên nhận ca --</option>
+                  <option 
+                    v-for="nv in listNhanVien" 
+                    :key="nv.id" 
+                    :value="nv.id"
+                  >
+                    {{ nv.hoTen }} ({{ nv.ma }}) - {{ nv.tenVaiTro }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Lý do chênh lệch (nếu lệch tiền) -->
+              <div v-if="chenhLech !== 0">
+                <label class="block text-xs font-bold uppercase tracking-wider text-rose-500 mb-1.5">
+                  Lý do chênh lệch *
+                </label>
+                <input 
+                  type="text" 
+                  v-model="lyDoChenhLech"
+                  placeholder="Ví dụ: Đếm sai, thối nhầm tiền..."
+                  class="w-full h-11 px-3 border border-rose-300 dark:border-rose-800 rounded-xl bg-transparent text-sm focus:outline-none focus:border-rose-500 transition"
+                />
+              </div>
+
+              <!-- Note area -->
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Ghi chú bàn giao
+                </label>
+                <textarea 
+                  v-model="ghiChu" 
+                  rows="3" 
+                  maxlength="200"
+                  class="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400 transition"
+                  placeholder="Nhập ghi chú bàn giao..."
+                ></textarea>
+                <div class="flex justify-end text-[10px] text-slate-400 mt-1">
+                  {{ ghiChu.length }}/200
+                </div>
+              </div>
+
+              <!-- Button: GỬI YÊU CẦU BÀN GIAO -->
               <button 
                 type="button"
-                @click="buocHienTai = 1; showSuccess('Đã hủy yêu cầu bàn giao ca.')"
-                class="mt-2 text-xs font-semibold text-rose-600 hover:underline"
+                @click="xacNhanBanGiaoCaBtn"
+                :disabled="processing"
+                class="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl shadow-md transition text-xs uppercase tracking-wider disabled:opacity-50"
               >
-                Hủy yêu cầu bàn giao
+                {{ processing ? 'ĐANG GỬI BÀN GIAO...' : 'Gửi yêu cầu bàn giao' }}
               </button>
             </div>
-          </div>
 
-          <!-- Step 3: Receiver Confirmation (Person B Actions) -->
-          <div v-else-if="buocHienTai === 3" class="space-y-5">
-            <!-- Review Data Submitted by Person A -->
-            <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm space-y-2.5">
-              <div class="flex justify-between">
-                <span class="text-slate-400">Số tiền bàn giao:</span>
-                <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatVND(tienThucTe) }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">Nhân viên nhận:</span>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">{{ nhanVienNhan }}</span>
-              </div>
-              <div class="pt-2 border-t border-slate-200/60">
-                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ghi chú từ {{ adminSession.hoTen }}:</p>
-                <p class="text-slate-600 dark:text-slate-300 text-xs italic bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/60">
-                  "{{ ghiChu }}"
-                </p>
+            <!-- Step 2: Chờ nhận ca xác nhận -->
+            <div v-else-if="buocHienTai === 2" class="space-y-4">
+              <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm text-center py-6 space-y-3">
+                <div class="mx-auto h-12 w-12 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-500 rounded-full flex items-center justify-center text-amber-500 shadow-sm animate-pulse">
+                  <Clock class="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 class="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wide">Đang chờ xác nhận</h4>
+                  <p class="text-[11px] text-slate-400 mt-1 leading-normal">
+                    Yêu cầu bàn giao ca đã được gửi thành công. Đang chờ nhân viên nhận ca: <span class="font-bold text-primary">{{ activeShift?.nhanVienNhanTen }}</span> kiểm tra két sắt thực tế và xác nhận bàn giao.
+                  </p>
+                </div>
+                <div class="text-xs text-slate-400 italic pt-2">
+                  Vui lòng liên hệ người tiếp quản ca hoặc Admin nếu cần sửa đổi.
+                </div>
               </div>
             </div>
 
-            <!-- Warning Notice -->
-            <div class="flex items-start gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs font-medium">
-              <AlertTriangle class="h-4 w-4 shrink-0" />
-              <span>Vui lòng kiểm tra kỹ số tiền mặt thực tế tại két trước khi đồng ý nhận bàn giao ca.</span>
-            </div>
+            <!-- Step 3: Xác nhận nhận ca -->
+            <div v-else-if="buocHienTai === 3" class="space-y-5">
+              <!-- Review Data Submitted by Sender -->
+              <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm space-y-2.5">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Số tiền bàn giao:</span>
+                  <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatVND(pendingHandover?.tienCuoiCaThucTe) }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Người bàn giao:</span>
+                  <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pendingHandover?.nhanVienTrongCaTen }}</span>
+                </div>
+                <div v-if="pendingHandover?.tienChenhLech !== 0" class="flex justify-between">
+                  <span class="text-amber-600 font-semibold">Chênh lệch:</span>
+                  <span class="font-bold text-amber-600">{{ formatVND(pendingHandover?.tienChenhLech) }}</span>
+                </div>
+                <div v-if="pendingHandover?.lyDoChenhLech" class="flex flex-col gap-1 border-t border-slate-100 dark:border-slate-700/50 pt-2">
+                  <span class="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Lý do chênh lệch:</span>
+                  <span class="text-xs text-rose-600 dark:text-rose-400">{{ pendingHandover.lyDoChenhLech }}</span>
+                </div>
+                <div class="pt-2 border-t border-slate-200/60">
+                  <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ghi chú từ {{ pendingHandover?.nhanVienTrongCaTen }}:</p>
+                  <p class="text-slate-600 dark:text-slate-300 text-xs italic bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                    "{{ pendingHandover?.ghiChu || 'Không có ghi chú' }}"
+                  </p>
+                </div>
+              </div>
 
-            <!-- 2 BIG ACTION BUTTONS FOR PERSON B (ĐỒNG Ý NHẬN CA / TỪ CHỐI) -->
-            <div class="space-y-3 pt-2">
+              <!-- Warning Notice -->
+              <div class="flex items-start gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs font-medium">
+                <AlertTriangle class="h-4 w-4 shrink-0" />
+                <span>Vui lòng kiểm tra kỹ số tiền mặt thực tế tại két trước khi đồng ý nhận bàn giao ca.</span>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Ghi chú nhận ca
+                </label>
+                <input 
+                  type="text" 
+                  v-model="ghiChuNhanCa"
+                  placeholder="Nhập ghi chú phản hồi..."
+                  class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <!-- Action Button -->
               <button 
-                @click="dongYNhantCa"
-                class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
+                @click="dongYNhanCaBtn(pendingHandover?.id)"
+                :disabled="processing"
+                class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm uppercase tracking-wide disabled:opacity-50"
               >
                 <Check class="h-5 w-5" />
-                ĐỒNG Ý NHẬN CA
-              </button>
-
-              <button 
-                @click="showsRejectionModal = true"
-                class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2 text-xs uppercase tracking-wide"
-              >
-                <CloseIcon class="h-4.5 w-4.5" />
-                TỪ CHỐI - ĐẾM SAI TIỀN
+                {{ processing ? 'ĐANG TIẾP NHẬN...' : 'ĐỒNG Ý NHẬN CA' }}
               </button>
             </div>
-          </div>
 
-          <!-- Step 4: Finished/Completed Details -->
-          <div v-else-if="buocHienTai === 4" class="text-center py-6 space-y-4">
-            <div class="mx-auto h-16 w-16 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-500 rounded-full flex items-center justify-center text-emerald-500 shadow-md">
-              <CheckCircle2 class="h-8 w-8 animate-bounce" />
-            </div>
-            <div>
-              <h4 class="font-bold text-slate-800 dark:text-white">Bàn giao ca thành công</h4>
-              <p class="text-xs text-slate-400 mt-1">Hệ thống đã cập nhật số dư ca làm việc mới.</p>
-            </div>
-
-            <div class="rounded-xl border border-slate-100 p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 text-xs text-left space-y-2 max-w-xs mx-auto">
-              <div class="flex justify-between">
-                <span class="text-slate-400">Người bàn giao:</span>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">{{ adminSession.hoTen }}</span>
+            <!-- Step 4: Finished/Completed Details -->
+            <div v-else-if="buocHienTai === 4" class="text-center py-6 space-y-4">
+              <div class="mx-auto h-16 w-16 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-500 rounded-full flex items-center justify-center text-emerald-500 shadow-md">
+                <CheckCircle2 class="h-8 w-8 animate-bounce" />
               </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">Người tiếp quản:</span>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">Trần Thị B</span>
+              <div>
+                <h4 class="font-bold text-slate-800 dark:text-white">Bàn giao ca thành công</h4>
+                <p class="text-xs text-slate-400 mt-1">Hệ thống đã cập nhật số dư ca làm việc mới.</p>
               </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">Tiền cuối ca:</span>
-                <span class="font-bold text-emerald-600">{{ formatVND(tienThucTe) }}</span>
+
+              <div class="rounded-xl border border-slate-100 p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 text-xs text-left space-y-2 max-w-xs mx-auto">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Người bàn giao:</span>
+                  <span class="font-semibold text-slate-700 dark:text-slate-200">{{ displayShift?.nhanVienTrongCaTen }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Người tiếp quản:</span>
+                  <span class="font-semibold text-slate-700 dark:text-slate-200">{{ displayShift?.nhanVienNhanTen }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Tiền cuối ca:</span>
+                  <span class="font-bold text-emerald-600">{{ formatVND(displayShift?.tienCuoiCaThucTe) }}</span>
+                </div>
               </div>
             </div>
-
-            <button @click="buocHienTai = 2" class="mt-4 px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-600 transition flex items-center gap-1.5 mx-auto">
-              <RotateCcw class="h-3.5 w-3.5" />
-              Làm lại bàn giao
-            </button>
           </div>
-
-          <!-- Other steps placeholder -->
-          <div v-else class="text-center py-8 text-slate-400 text-xs">
-            Vui lòng chọn Bước 2 hoặc 3 trên bộ điều hướng để xem chi tiết.
-          </div>
-
-        </div>
-
       </div>
-
     </div>
 
     <!-- Bottom Section: Transactions & Confirmations -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div v-if="activeShift || pendingHandover" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       <!-- CHI TIẾT GIAO DỊCH TRONG CA (Left 2 columns span) -->
       <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
@@ -1065,16 +1310,7 @@ function huyBanGiao() {
         <!-- Tabs -->
         <div class="flex gap-2 overflow-x-auto pb-1">
           <button class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm shrink-0">
-            Doanh thu (35)
-          </button>
-          <button class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-700/40 dark:text-slate-300 dark:hover:bg-slate-700 shrink-0">
-            Thu khác (3)
-          </button>
-          <button class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-700/40 dark:text-slate-300 dark:hover:bg-slate-700 shrink-0">
-            Chi tiền (5)
-          </button>
-          <button class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-700/40 dark:text-slate-300 dark:hover:bg-slate-700 shrink-0">
-            Hoàn tiền (2)
+            Doanh thu ca làm việc
           </button>
         </div>
 
@@ -1084,54 +1320,89 @@ function huyBanGiao() {
             <thead>
               <tr class="border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30 text-slate-500 font-semibold">
                 <th class="px-3 py-2.5">Thời gian</th>
-                <th class="px-3 py-2.5">Mã giao dịch</th>
-                <th class="px-3 py-2.5">Nội dung</th>
+                <th class="px-3 py-2.5">Mã hóa đơn</th>
+                <th class="px-3 py-2.5">Loại doanh thu</th>
                 <th class="px-3 py-2.5">Số tiền</th>
                 <th class="px-3 py-2.5">Hình thức</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50 dark:divide-slate-700/40">
-              <tr class="text-slate-600 dark:text-slate-300">
-                <td class="px-3 py-3">08:15</td>
-                <td class="px-3 py-3 font-semibold text-primary">HD000125</td>
-                <td class="px-3 py-3">Bán hàng</td>
-                <td class="px-3 py-3 font-semibold">450.000</td>
-                <td class="px-3 py-3">Tiền mặt</td>
+              <tr v-if="loadingTransactions" class="text-center">
+                <td colspan="5" class="px-3 py-4 text-slate-500">Đang tải dữ liệu...</td>
               </tr>
-              <tr class="text-slate-600 dark:text-slate-300">
-                <td class="px-3 py-3">08:45</td>
-                <td class="px-3 py-3 font-semibold text-primary">HD000126</td>
-                <td class="px-3 py-3">Bán hàng</td>
-                <td class="px-3 py-3 font-semibold">1.250.000</td>
-                <td class="px-3 py-3">Tiền mặt</td>
+              <tr v-else-if="directDisplayInvoices.length === 0" class="text-center">
+                <td colspan="5" class="px-3 py-4 text-slate-500">
+                  {{ isMyShift ? 'Chưa có hóa đơn nào trong ca này' : 'Chưa có hóa đơn chưa thanh toán nào trong ca này' }}
+                </td>
               </tr>
-              <tr class="text-slate-600 dark:text-slate-300">
-                <td class="px-3 py-3">09:20</td>
-                <td class="px-3 py-3 font-semibold text-primary">HD000127</td>
-                <td class="px-3 py-3">Bán hàng</td>
-                <td class="px-3 py-3 font-semibold">780.000</td>
-                <td class="px-3 py-3">Tiền mặt</td>
-              </tr>
-              <tr class="text-slate-600 dark:text-slate-300">
-                <td class="px-3 py-3">10:05</td>
-                <td class="px-3 py-3 font-semibold text-primary">HD000128</td>
-                <td class="px-3 py-3">Bán hàng</td>
-                <td class="px-3 py-3 font-semibold">2.150.000</td>
-                <td class="px-3 py-3">Tiền mặt</td>
-              </tr>
-              <tr class="text-slate-600 dark:text-slate-300">
-                <td class="px-3 py-3">10:30</td>
-                <td class="px-3 py-3 font-semibold text-primary">HD000129</td>
-                <td class="px-3 py-3">Bán hàng</td>
-                <td class="px-3 py-3 font-semibold">950.000</td>
-                <td class="px-3 py-3">Tiền mặt</td>
+              <tr v-else v-for="tx in directDisplayInvoices" :key="tx.id" class="text-slate-600 dark:text-slate-300">
+                <td class="px-3 py-3">{{ new Date(tx.ngayTao).toLocaleTimeString('vi-VN') }}</td>
+                <td class="px-3 py-3 font-semibold text-primary">{{ tx.maHoaDon }}</td>
+                <td class="px-3 py-3">Bán hàng tại quầy</td>
+                <td class="px-3 py-3 font-semibold text-emerald-600">+{{ formatVND(tx.tongTien) }}</td>
+                <td class="px-3 py-3">
+                  <span class="px-2 py-0.5 text-[10px] font-medium rounded-full"
+                        :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-slate-100 dark:bg-slate-700'">
+                    {{ tx.phuongThucThanhToan || 'N/A' }}
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
 
+        <!-- Accordion / Collapse for Paid Invoices -->
+        <div v-if="!isMyShift" class="mt-4 border-t border-slate-100 dark:border-slate-700/60 pt-4">
+          <button 
+            @click="isPaidInvoicesCollapsed = !isPaidInvoicesCollapsed"
+            class="flex items-center justify-between w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/30 hover:bg-slate-100/70 dark:hover:bg-slate-900/50 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all border border-slate-100 dark:border-slate-700/40"
+          >
+            <span class="flex items-center gap-2">
+              <FileCheck class="h-4 w-4 text-emerald-500" />
+              <span>
+                {{ isPaidInvoicesCollapsed ? `Xem ${paidInvoices.length} hóa đơn đã thanh toán trong ca` : 'Thu gọn' }}
+              </span>
+            </span>
+            <ChevronDown 
+              class="h-4 w-4 text-slate-400 transition-transform duration-200" 
+              :class="{ 'rotate-180': !isPaidInvoicesCollapsed }"
+            />
+          </button>
+
+          <!-- Collapsible Content -->
+          <div v-show="!isPaidInvoicesCollapsed" class="mt-3 overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-xl">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30 text-slate-500 font-semibold">
+                  <th class="px-3 py-2.5">Thời gian</th>
+                  <th class="px-3 py-2.5">Mã hóa đơn</th>
+                  <th class="px-3 py-2.5">Loại doanh thu</th>
+                  <th class="px-3 py-2.5">Số tiền</th>
+                  <th class="px-3 py-2.5">Hình thức</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50 dark:divide-slate-700/40">
+                <tr v-if="paidInvoices.length === 0" class="text-center">
+                  <td colspan="5" class="px-3 py-4 text-slate-500">Không có hóa đơn đã thanh toán nào trong ca này</td>
+                </tr>
+                <tr v-else v-for="tx in paidInvoices" :key="tx.id" class="text-slate-600 dark:text-slate-300 hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
+                  <td class="px-3 py-3">{{ new Date(tx.ngayTao).toLocaleTimeString('vi-VN') }}</td>
+                  <td class="px-3 py-3 font-semibold text-primary">{{ tx.maHoaDon }}</td>
+                  <td class="px-3 py-3">Bán hàng tại quầy</td>
+                  <td class="px-3 py-3 font-semibold text-emerald-600">+{{ formatVND(tx.tongTien) }}</td>
+                  <td class="px-3 py-3">
+                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 dark:bg-slate-700">
+                      {{ tx.phuongThucThanhToan || 'N/A' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="text-center pt-2">
-          <a href="#" class="text-xs font-semibold text-primary hover:underline">Xem tất cả giao dịch →</a>
+          <span class="text-xs text-slate-400">Số liệu được cập nhật tự động theo thời gian thực từ các hóa đơn tại quầy.</span>
         </div>
       </div>
 
@@ -1145,17 +1416,20 @@ function huyBanGiao() {
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Nhân viên giao ca</p>
-                <h4 class="font-bold text-slate-700 dark:text-slate-200 mt-1">{{ adminSession.hoTen }}</h4>
-                <p class="text-[10px] text-slate-400 mt-0.5">Thời gian: 16:05 20/06/2026</p>
+                <h4 class="font-bold text-slate-700 dark:text-slate-200 mt-1">{{ displayShift?.nhanVienTrongCaTen || adminSession.hoTen }}</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">
+                  Vào ca: {{ displayShift?.thoiGianChamCong ? new Date(displayShift.thoiGianChamCong).toLocaleString('vi-VN') : (displayShift?.thoiGianVao ? new Date(displayShift.thoiGianVao).toLocaleString('vi-VN') : 'N/A') }}
+                </p>
               </div>
               
-              <!-- Badge: "Chờ gửi bàn giao" instead of "Đã xác nhận", signature image deleted -->
-              <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                Chờ gửi bàn giao
+              <span 
+                class="px-2.5 py-0.5 text-[10px] font-bold rounded-full"
+                :class="displayShift?.trangThai === 'DA_BAN_GIAO' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'"
+              >
+                {{ displayShift?.trangThai === 'DA_BAN_GIAO' ? 'Đã bàn giao' : (displayShift?.trangThai === 'CHO_BAN_GIAO' ? 'Chờ xác nhận' : 'Đang hoạt động') }}
               </span>
             </div>
             
-            <!-- Signature area replaced with a clean empty state text/box as requested (xóa hình chữ ký) -->
             <div class="mt-4 h-16 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-900/40">
               <span class="text-[10px] font-semibold text-slate-400">Không có chữ ký số</span>
             </div>
@@ -1166,21 +1440,23 @@ function huyBanGiao() {
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Nhân viên nhận ca</p>
-                <h4 class="font-bold text-slate-700 dark:text-slate-200 mt-1">{{ nhanVienNhan }}</h4>
+                <h4 class="font-bold text-slate-700 dark:text-slate-200 mt-1">{{ displayShift?.nhanVienNhanTen || 'Chưa nhận' }}</h4>
                 <p class="text-[10px] text-slate-400 mt-0.5">
-                  Thời gian: {{ buocHienTai === 4 ? '16:10 20/06/2026' : 'Chưa xác nhận' }}
+                  Nhận ca: {{ displayShift?.thoiGianRa ? new Date(displayShift.thoiGianRa).toLocaleString('vi-VN') : 'Chưa nhận' }}
                 </p>
               </div>
               
-              <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full"
-                    :class="buocHienTai === 4 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300'">
-                {{ buocHienTai === 4 ? 'Đã nhận ca' : 'Chờ xác nhận' }}
+              <span 
+                class="px-2.5 py-0.5 text-[10px] font-bold rounded-full"
+                :class="displayShift?.trangThai === 'DA_BAN_GIAO' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300'"
+              >
+                {{ displayShift?.trangThai === 'DA_BAN_GIAO' ? 'Đã nhận ca' : 'Chờ xác nhận' }}
               </span>
             </div>
 
             <!-- Signature block -->
             <div class="mt-4 h-16 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-900/40">
-              <div v-if="buocHienTai === 4" class="text-center">
+              <div v-if="displayShift?.trangThai === 'DA_BAN_GIAO'" class="text-center">
                 <span class="text-[10px] font-bold text-emerald-600">✓ ĐÃ KÝ XÁC NHẬN</span>
               </div>
               <span v-else class="text-[10px] font-semibold text-slate-400">Chưa có chữ ký</span>
@@ -1192,137 +1468,106 @@ function huyBanGiao() {
     </div> <!-- Closes bottom section grid -->
   </div> <!-- Closes Screen A wrapper (v-else) -->
 
-    <!-- POPUP MODAL: CASH CALCULATOR FOR QUICK BILL COUNTING -->
-    <div v-if="showsCalculator" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <!-- Backdrop overlay -->
-      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showsCalculator = false"></div>
+  <!-- POPUP MODAL: CASH CALCULATOR FOR QUICK BILL COUNTING -->
+  <div v-if="showsCalculator" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <!-- Backdrop overlay -->
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showsCalculator = false"></div>
 
-      <!-- Modal panel -->
-      <div class="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl p-6 transition-all space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
-          <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-            <Calculator class="h-5 w-5 text-primary" />
-            Hỗ trợ đếm tiền mặt
-          </h3>
-          <button @click="showsCalculator = false" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-            <CloseIcon class="h-5 w-5" />
-          </button>
-        </div>
+    <!-- Modal panel -->
+    <div class="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl p-6 transition-all space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+          <Calculator class="h-5 w-5 text-primary" />
+          Hỗ trợ đếm tiền mặt
+        </h3>
+        <button @click="showsCalculator = false" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <CloseIcon class="h-5 w-5" />
+        </button>
+      </div>
 
-        <!-- Calculator grid of denominations -->
-        <div class="max-h-[50vh] overflow-y-auto space-y-2.5 pr-1">
-          <div 
-            v-for="(item, idx) in denominations" 
-            :key="idx"
-            class="flex items-center justify-between gap-4 p-2 rounded-xl bg-slate-50/50 dark:bg-slate-900/20 border border-slate-100 dark:border-slate-700/60"
-          >
-            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[70px]">
-              {{ formatVND(item.value).replace(" đ", "") }}
-            </span>
-            
-            <span class="text-xs text-slate-400">x</span>
-            
-            <!-- Quantity input field -->
-            <input 
-              type="number" 
-              v-model.number="item.count" 
-              min="0"
-              placeholder="0"
-              class="w-24 h-8 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-center text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-400"
-            />
-            
-            <span class="text-xs text-slate-400 font-medium min-w-[80px] text-right">
-              = {{ formatVND(item.value * (item.count || 0)).replace(" đ", "") }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Total calculated summary -->
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm">
-          <span class="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Tổng cộng:</span>
-          <span class="text-base font-bold text-blue-600 dark:text-blue-400">{{ formatVND(calculatedCash) }}</span>
-        </div>
-
-        <!-- Actions -->
-        <div class="grid grid-cols-3 gap-3 pt-2">
-          <button @click="resetCalculator" class="h-10 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-500 transition">
-            Đặt lại
-          </button>
-          <button @click="applyCalculatedCash" class="col-span-2 h-10 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5">
-            <Check class="h-4.5 w-4.5" />
-            ÁP DỤNG
-          </button>
+      <!-- Calculator grid of denominations -->
+      <div class="max-h-[50vh] overflow-y-auto space-y-2.5 pr-1">
+        <div 
+          v-for="(item, idx) in denominations" 
+          :key="idx"
+          class="flex items-center justify-between gap-4 p-2 rounded-xl bg-slate-50/50 dark:bg-slate-900/20 border border-slate-100 dark:border-slate-700/60"
+        >
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[70px]">
+            {{ formatVND(item.value).replace(" đ", "") }}
+          </span>
+          
+          <span class="text-xs text-slate-400">x</span>
+          
+          <!-- Quantity input field -->
+          <input 
+            type="number" 
+            v-model.number="item.count" 
+            min="0"
+            placeholder="0"
+            class="w-24 h-8 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-center text-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-400"
+          />
+          
+          <span class="text-xs text-slate-400 font-medium min-w-[80px] text-right">
+            = {{ formatVND(item.value * (item.count || 0)).replace(" đ", "") }}
+          </span>
         </div>
       </div>
-    </div>
 
-    <!-- POPUP MODAL: REJECTION REASON FOR STEP 3 -->
-    <div v-if="showsRejectionModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showsRejectionModal = false"></div>
+      <!-- Total calculated summary -->
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm">
+        <span class="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Tổng cộng:</span>
+        <span class="text-base font-bold text-blue-600 dark:text-blue-400">{{ formatVND(calculatedCash) }}</span>
+      </div>
+
+      <!-- Actions -->
+      <div class="grid grid-cols-3 gap-3 pt-2">
+        <button @click="resetCalculator" class="h-10 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-500 transition">
+          Đặt lại
+        </button>
+        <button @click="applyCalculatedCash" class="col-span-2 h-10 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5">
+          <Check class="h-4.5 w-4.5" />
+          ÁP DỤNG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP MODAL: INCIDENT REPORT FOR STEP 1 -->
+  <div v-if="showsIncidentModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showsIncidentModal = false"></div>
+    
+    <div class="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl p-6 transition-all space-y-4">
+      <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 border-b border-slate-100 dark:border-slate-700 pb-3">
+        <AlertTriangle class="h-5 w-5 shrink-0" />
+        <h3 class="text-sm font-bold uppercase tracking-wider">Báo cáo két có dấu hiệu bị cạy/thất thoát</h3>
+      </div>
+
+      <div class="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs font-semibold leading-relaxed">
+        CẢNH BÁO: Vui lòng chụp ảnh hiện trường, giữ nguyên vị trí các đồ vật xung quanh két tiền và báo cáo sự việc khẩn cấp cho Quản lý.
+      </div>
       
-      <div class="relative w-full max-w-sm overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl p-6 transition-all space-y-4">
-        <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Lý do từ chối nhận ca</h3>
-        
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">
-            Lý do chi tiết (ví dụ: Thiếu 50.000đ tiền mặt tại két...)
-          </label>
-          <textarea 
-            v-model="lyDoTuChoi" 
-            rows="3" 
-            class="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400 transition"
-            placeholder="Nhập lý do..."
-          ></textarea>
-        </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+          Mô tả tình trạng két tiền <span class="text-rose-500">*</span>
+        </label>
+        <textarea 
+          v-model="lyDoSucos" 
+          rows="4" 
+          class="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400 transition"
+          placeholder="Mô tả cụ thể (ví dụ: Két tiền bị nạy khóa, mất khoảng bao nhiêu tiền...)"
+        ></textarea>
+      </div>
 
-        <div class="flex justify-end gap-3 pt-2">
-          <button @click="showsRejectionModal = false" class="h-10 px-4 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-500 transition">
-            Hủy
-          </button>
-          <button @click="submitTuChoi" class="h-10 px-5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-md">
-            GỬI TỪ CHỐI
-          </button>
-        </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button @click="showsIncidentModal = false" class="h-10 px-4 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-500 transition">
+          Hủy
+        </button>
+        <button @click="guiBaoCaoSuCo" class="h-10 px-5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-md">
+          GỬI BÁO CÁO KHẨN CẤP
+        </button>
       </div>
     </div>
-
-    <!-- POPUP MODAL: INCIDENT REPORT FOR STEP 1 -->
-    <div v-if="showsIncidentModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showsIncidentModal = false"></div>
-      
-      <div class="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl p-6 transition-all space-y-4">
-        <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 border-b border-slate-100 dark:border-slate-700 pb-3">
-          <AlertTriangle class="h-5 w-5 shrink-0" />
-          <h3 class="text-sm font-bold uppercase tracking-wider">Báo cáo két có dấu hiệu bị cạy/thất thoát</h3>
-        </div>
-
-        <div class="p-3 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs font-semibold leading-relaxed">
-          CẢNH BÁO: Vui lòng chụp ảnh hiện trường, giữ nguyên vị trí các đồ vật xung quanh két tiền và báo cáo sự việc khẩn cấp cho Quản lý.
-        </div>
-        
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-            Mô tả tình trạng két tiền <span class="text-rose-500">*</span>
-          </label>
-          <textarea 
-            v-model="lyDoSucos" 
-            rows="4" 
-            class="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400 transition"
-            placeholder="Mô tả cụ thể (ví dụ: Két tiền bị nạy khóa, mất khoảng bao nhiêu tiền...)"
-          ></textarea>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button @click="showsIncidentModal = false" class="h-10 px-4 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-500 transition">
-            Hủy
-          </button>
-          <button @click="guiBaoCaoSuCo" class="h-10 px-5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-md">
-            GỬI BÁO CÁO KHẨN CẤP
-          </button>
-        </div>
-      </div>
-    </div>
-
+  </div>
   </div>
 </template>
 
