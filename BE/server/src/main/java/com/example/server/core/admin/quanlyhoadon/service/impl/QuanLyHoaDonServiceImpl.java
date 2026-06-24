@@ -919,16 +919,32 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private HoaDonProductResponse mapSanPham(HoaDonChiTiet item, Map<Integer, String> hinhAnhMap) {
+        String tenGiay = "Sản phẩm không tồn tại hoặc đã bị xóa";
+        String tenLoaiGiay = "";
+        String tenMauSac = "";
+        String giaTriKichCo = "";
+        Integer giayChiTietId = null;
+
+        if (item.getGiayChiTiet() != null) {
+            giayChiTietId = item.getGiayChiTiet().getId();
+            if (item.getGiayChiTiet().getGiay() != null) {
+                tenGiay = item.getGiayChiTiet().getGiay().getTen();
+                tenLoaiGiay = item.getGiayChiTiet().getGiay().getLoaiGiay() != null ? item.getGiayChiTiet().getGiay().getLoaiGiay().getTen() : "";
+            }
+            tenMauSac = item.getGiayChiTiet().getMauSac() != null ? item.getGiayChiTiet().getMauSac().getTen() : "";
+            giaTriKichCo = item.getGiayChiTiet().getKichCo() != null ? item.getGiayChiTiet().getKichCo().getGiaTri() : "";
+        }
+
         return new HoaDonProductResponse(
                 item.getId(),
-                item.getGiayChiTiet().getGiay().getTen(),
-                item.getGiayChiTiet().getGiay().getLoaiGiay() != null ? item.getGiayChiTiet().getGiay().getLoaiGiay().getTen() : "",
-                item.getGiayChiTiet().getMauSac() != null ? item.getGiayChiTiet().getMauSac().getTen() : "",
-                item.getGiayChiTiet().getKichCo() != null ? item.getGiayChiTiet().getKichCo().getGiaTri() : "",
+                tenGiay,
+                tenLoaiGiay,
+                tenMauSac,
+                giaTriKichCo,
                 item.getSoLuong(),
                 defaultMoney(item.getGiaDonVi()),
                 defaultMoney(item.getThanhTien()),
-                hinhAnhMap.getOrDefault(item.getGiayChiTiet().getId(), "")
+                giayChiTietId != null ? hinhAnhMap.getOrDefault(giayChiTietId, "") : ""
         );
     }
 
