@@ -1,8 +1,9 @@
 <script setup>
 import { computed, ref, watch } from "vue";
-import { Package2, Save, Trash2, X } from "lucide-vue-next";
+import { Package2, Save } from "lucide-vue-next";
 import QuanLyAnhBienThe from "./QuanLyAnhBienThe.vue";
-import AdminFormattedNumberInput from "../../common/AdminFormattedNumberInput.vue";
+import PhanBienTheDaTaoNhapNhanh from "./PhanBienTheDaTaoNhapNhanh.vue";
+import PhanBienTheDaTaoDanhSachNhom from "./PhanBienTheDaTaoDanhSachNhom.vue";
 import {
   generateHexColorFromText,
   isValidHexColor,
@@ -179,16 +180,6 @@ const generatedVariantGroups = computed(() => {
   return Array.from(groupedVariants.values());
 });
 
-function isGroupAllSelected(group) {
-  return group.variants.length > 0 && group.variants.every((v) => v.selected !== false);
-}
-
-function toggleGroupAll(group, selected) {
-  group.variants.forEach((v) => {
-    v.selected = selected;
-  });
-}
-
 const isAllSelected = computed({
   get() {
     return props.generatedVariants.length > 0 && props.generatedVariants.every(v => v.selected !== false);
@@ -202,12 +193,6 @@ const isAllSelected = computed({
 
 const hasDefaultFieldErrors = computed(() =>
   Object.values(defaultFieldErrors.value).some(Boolean),
-);
-
-const hasGeneratedVariantFieldErrors = computed(() =>
-  Object.values(generatedVariantFieldErrors.value).some((fieldErrors) =>
-    Object.values(fieldErrors).some(Boolean),
-  ),
 );
 
 const saveConfirmationDetails = computed(() => {
@@ -233,20 +218,9 @@ const saveConfirmationDetails = computed(() => {
   };
 });
 
-function fieldErrorClass(errorMessage) {
-  return errorMessage
-    ? "border-rose-300 bg-rose-50"
-    : "border-slate-200 bg-slate-50";
-}
-
-function resolveFieldError(localError, parentError) {
-  return localError || parentError || "";
-}
-
 function getDetailedValidationMessages() {
   const messages = [];
 
-  // Default fields (always evaluate using build function directly for raw checking)
   const defaultErrorsRaw = {
     soLuong: buildNumberFieldError("Số lượng mặc định", props.variantBuilder.soLuong),
     giaGoc: (() => {
@@ -263,7 +237,6 @@ function getDetailedValidationMessages() {
   if (defaultErrorsRaw.giaGoc) messages.push(defaultErrorsRaw.giaGoc);
   if (defaultErrorsRaw.giaBan) messages.push(defaultErrorsRaw.giaBan);
 
-  // Variant fields
   props.generatedVariants.filter(item => item.selected !== false).forEach((item) => {
     const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, { allowZero: false });
     const giaBanError = buildNumberFieldError("Giá bán", item.giaBan, { allowZero: false });
@@ -271,6 +244,12 @@ function getDetailedValidationMessages() {
     const priceCompareError = parseNumericValue(item.giaGoc) > 0 && parseNumericValue(item.giaBan) > 0 && parseNumericValue(item.giaGoc) > parseNumericValue(item.giaBan)
       ? "Giá gốc không được lớn hơn giá bán"
       : "";
+
+    const formatColorName = (value) => {
+      const normalized = String(value || "").trim().toLocaleLowerCase("vi-VN");
+      if (!normalized) return "";
+      return normalized.charAt(0).toLocaleUpperCase("vi-VN") + normalized.slice(1);
+    };
 
     const variantName = `Biến thể Size ${item.kichCo} - ${formatColorName(item.mauSac)}`;
 
@@ -281,6 +260,12 @@ function getDetailedValidationMessages() {
   });
 
   return messages;
+}
+
+function formatColorName(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("vi-VN");
+  if (!normalized) return "";
+  return normalized.charAt(0).toLocaleUpperCase("vi-VN") + normalized.slice(1);
 }
 
 function relatedVariants(mauSacId) {
@@ -339,22 +324,6 @@ function handleApplyDefaults() {
   }
 
   emit("apply-defaults");
-}
-
-function resolveColorHex(group) {
-  const explicitHex =
-    group?.maMauHex || group?.variants?.find((item) => item?.maMauHex)?.maMauHex;
-  if (isValidHexColor(explicitHex)) {
-    return String(explicitHex).toUpperCase();
-  }
-
-  return generateHexColorFromText(group?.mauSac);
-}
-
-function formatColorName(value) {
-  const normalized = String(value || "").trim().toLocaleLowerCase("vi-VN");
-  if (!normalized) return "";
-  return normalized.charAt(0).toLocaleUpperCase("vi-VN") + normalized.slice(1);
 }
 
 async function handleSaveClick() {
@@ -428,210 +397,22 @@ async function handleSaveClick() {
       </label>
     </div>
 
-    <div
+    <PhanBienTheDaTaoNhapNhanh
       v-if="generatedVariants.length"
-      class="mb-4 grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto]"
-    >
-      <label class="block">
-        <span class="mb-1 block text-[13px] font-semibold text-slate-500">
-          Số lượng mặc định
-        </span>
-        <AdminFormattedNumberInput
-          v-model="variantBuilder.soLuong"
-          :min="0"
-          class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-          :class="
-            fieldErrorClass(
-              resolveFieldError(defaultFieldErrors.soLuong, variantErrors.soLuong),
-            )
-          "
-        />
-        <p
-          v-if="resolveFieldError(defaultFieldErrors.soLuong, variantErrors.soLuong)"
-          class="mt-1 text-xs text-rose-500"
-        >
-          {{ resolveFieldError(defaultFieldErrors.soLuong, variantErrors.soLuong) }}
-        </p>
-      </label>
-
-      <label class="block">
-        <span class="mb-1 block text-[13px] font-semibold text-slate-500">
-          Giá gốc mặc định
-        </span>
-        <AdminFormattedNumberInput
-          v-model="variantBuilder.giaGoc"
-          :min="0"
-          class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-          :class="
-            fieldErrorClass(
-              resolveFieldError(defaultFieldErrors.giaGoc, variantErrors.giaGoc),
-            )
-          "
-        />
-        <p
-          v-if="resolveFieldError(defaultFieldErrors.giaGoc, variantErrors.giaGoc)"
-          class="mt-1 text-xs text-rose-500"
-        >
-          {{ resolveFieldError(defaultFieldErrors.giaGoc, variantErrors.giaGoc) }}
-        </p>
-      </label>
-
-      <label class="block">
-        <span class="mb-1 block text-[13px] font-semibold text-slate-500">
-          Giá bán mặc định <span class="text-rose-500">*</span>
-        </span>
-        <AdminFormattedNumberInput
-          v-model="variantBuilder.giaBan"
-          :min="0"
-          class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-          :class="
-            fieldErrorClass(
-              resolveFieldError(defaultFieldErrors.giaBan, variantErrors.giaBan),
-            )
-          "
-        />
-        <p
-          v-if="resolveFieldError(defaultFieldErrors.giaBan, variantErrors.giaBan)"
-          class="mt-1 text-xs text-rose-500"
-        >
-          {{ resolveFieldError(defaultFieldErrors.giaBan, variantErrors.giaBan) }}
-        </p>
-      </label>
-
-      <div class="flex items-end">
-        <button
-          type="button"
-          class="admin-btn-soft h-11"
-          @click="handleApplyDefaults"
-        >
-          Áp dụng
-        </button>
-      </div>
-    </div>
+      :variant-builder="variantBuilder"
+      :default-field-errors="defaultFieldErrors"
+      :variant-errors="variantErrors"
+      @apply-defaults="handleApplyDefaults"
+    />
 
     <div v-if="generatedVariantGroups.length" class="space-y-4">
-      <section
+      <PhanBienTheDaTaoDanhSachNhom
         v-for="group in generatedVariantGroups"
         :key="`generated-group-${group.key}`"
-        class="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4"
-      >
-        <div
-          class="mb-4 flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div class="flex items-center gap-3">
-            <span
-              class="h-4 w-4 rounded-full border border-slate-200 shadow-sm"
-              :style="{ backgroundColor: resolveColorHex(group) }"
-            ></span>
-            <h3 class="text-sm font-medium text-slate-600">
-              {{ formatColorName(group.mauSac) }}
-            </h3>
-          </div>
-
-          <span
-            class="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm"
-          >
-            {{ group.variants.map((item) => `Size ${item.kichCo}`).join(" • ") }}
-          </span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full border-separate border-spacing-y-2 text-sm">
-            <thead>
-              <tr class="text-left text-sm font-bold text-slate-500">
-                <th class="rounded-l-md bg-slate-100 px-4 py-3 w-[50px] text-center">
-                  <input type="checkbox" :checked="isGroupAllSelected(group)" @change="toggleGroupAll(group, $event.target.checked)" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
-                </th>
-                <th class="bg-slate-100 px-4 py-3 w-[60px] text-center">STT</th>
-                <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
-                <th class="bg-slate-100 px-4 py-3">Số lượng</th>
-                <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
-                <th class="bg-slate-100 px-4 py-3">Giá bán</th>
-                <th class="rounded-r-md bg-slate-100 px-4 py-3 text-right">
-                  Xóa
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="(item, index) in group.variants"
-                :key="item.key"
-                class="bg-white shadow-sm"
-              >
-                <td class="rounded-l-md px-4 py-4 text-center">
-                  <input type="checkbox" v-model="item.selected" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer" />
-                </td>
-                <td class="px-4 py-4 text-center font-semibold text-slate-500">
-                  {{ index + 1 }}
-                </td>
-                <td class="px-4 py-4 font-semibold text-slate-700">
-                  Size {{ item.kichCo }}
-                </td>
-                <td class="px-4 py-4">
-                  <AdminFormattedNumberInput
-                    v-model="item.soLuong"
-                    :min="0"
-                    class="h-10 w-28 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                    :class="
-                      fieldErrorClass(generatedVariantFieldErrors[item.key]?.soLuong)
-                    "
-                  />
-                  <p
-                    v-if="generatedVariantFieldErrors[item.key]?.soLuong"
-                    class="mt-1 text-xs text-rose-500"
-                  >
-                    {{ generatedVariantFieldErrors[item.key].soLuong }}
-                  </p>
-                </td>
-                <td class="px-4 py-4">
-                  <AdminFormattedNumberInput
-                    v-model="item.giaGoc"
-                    :min="0"
-                    class="h-10 w-36 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                    :class="
-                      fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaGoc)
-                    "
-                  />
-                  <p
-                    v-if="generatedVariantFieldErrors[item.key]?.giaGoc"
-                    class="mt-1 text-xs text-rose-500"
-                  >
-                    {{ generatedVariantFieldErrors[item.key].giaGoc }}
-                  </p>
-                </td>
-                <td class="px-4 py-4">
-                  <AdminFormattedNumberInput
-                    v-model="item.giaBan"
-                    :min="0"
-                    class="h-10 w-36 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                    :class="
-                      fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaBan)
-                    "
-                  />
-                  <p
-                    v-if="generatedVariantFieldErrors[item.key]?.giaBan"
-                    class="mt-1 text-xs text-rose-500"
-                  >
-                    {{ generatedVariantFieldErrors[item.key].giaBan }}
-                  </p>
-                </td>
-                <td class="rounded-r-md px-4 py-4">
-                  <div class="flex justify-end">
-                    <button
-                      type="button"
-                      class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-rose-50 text-rose-600 transition hover:bg-rose-100"
-                      @click="emit('remove-generated-variant', item.key)"
-                    >
-                      <Trash2 :size="15" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+        :group="group"
+        :generated-variant-field-errors="generatedVariantFieldErrors"
+        @remove-generated-variant="emit('remove-generated-variant', $event)"
+      />
     </div>
 
     <div
@@ -694,7 +475,5 @@ async function handleSaveClick() {
         {{ saveButtonLabel }}
       </button>
     </div>
-
-
   </section>
 </template>

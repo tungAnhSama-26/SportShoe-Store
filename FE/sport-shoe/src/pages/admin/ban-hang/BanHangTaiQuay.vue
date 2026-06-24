@@ -145,51 +145,7 @@ subscribeTopic('/topic/admin/san-pham', async (message) => {
   taiSanPham();
 
   if (cartItems.value && cartItems.value.length > 0) {
-    try {
-      const ids = cartItems.value.map(it => Number(it.chiTietId)).filter(Boolean);
-      if (ids.length > 0) {
-        const { apiRequest } = await import("../../../services/api-client");
-        const ds = await apiRequest(`/client/san-pham/dong-bo-gia`, {
-          method: "POST",
-          authenticated: false,
-          body: JSON.stringify({ ids }),
-          fallbackMessage: "",
-        });
-        
-        if (ds && Array.isArray(ds)) {
-          const theoId = new Map(ds.map((x) => [Number(x.giayChiTietId), x]));
-          let daThayDoiGia = false;
-          let dsTenThayDoi = [];
-          
-          for (const item of cartItems.value) {
-            const moi = theoId.get(Number(item.chiTietId));
-            if (!moi) continue;
-            
-            const giaBanMoi = Number(moi.giaHienTai ?? moi.giaBan);
-            if (Number(item.giaBan) !== giaBanMoi) {
-              item.giaCu = Number(item.giaBan);
-              item.giaMoi = giaBanMoi;
-              item.giaBan = giaBanMoi;
-              item.isPriceChanged = true;
-              daThayDoiGia = true;
-              if (!dsTenThayDoi.includes(item.tenSanPham)) {
-                dsTenThayDoi.push(item.tenSanPham);
-              }
-            }
-          }
-          
-          if (daThayDoiGia) {
-            const { showToast } = await import("../../../utils/alert");
-            showToast(`Giá của ${dsTenThayDoi.join(', ')} vừa được cập nhật tự động.`, "warning");
-            cartItems.value = [...cartItems.value];
-            // Trigger recalculation if needed
-            if (typeof capNhatTienKhachThanhToan === 'function') capNhatTienKhachThanhToan();
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi đồng bộ giá giỏ hàng POS", err);
-    }
+    // Không tự động cập nhật giá trong giỏ hàng nữa theo yêu cầu của user
   }
 });
 

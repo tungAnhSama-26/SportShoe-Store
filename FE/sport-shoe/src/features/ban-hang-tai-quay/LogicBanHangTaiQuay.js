@@ -20,7 +20,7 @@ import { LogicInHoaDon } from "./LogicInHoaDon";
 import { LogicThanhToan } from "./LogicThanhToan";
 import { LogicSanPham } from "./LogicSanPham";
 import { LogicGiaoHang } from "./LogicGiaoHang";
-import { showConfirm, showToastSuccess, showError, toastSwal } from "../../utils/alert";
+import { showConfirm, showToastSuccess, showError, toastSwal, showPaymentConfirmWithCoupon } from "../../utils/alert";
 
 
 
@@ -183,7 +183,8 @@ function LogicBanHangTaiQuay() {
     soTienGiamCuaHangMucTiepTheo: soTienGiamMucTiepTheo,
     phieuTotHonDeXuat: loiNhomPhieuGiamGiaTotHon,
     tuChoiPhieuTotHon: tuChoiPhieuGiamGiaTotHon,
-    chapNhanPhieuTotHon: chapNhanPhieuGiamGiaTotHon
+    chapNhanPhieuTotHon: chapNhanPhieuGiamGiaTotHon,
+    kiemTraPhieuTotHonTruocThanhToan
   } = LogicPhieuGiamGia({
     cartItems,
     tongTien,
@@ -641,9 +642,27 @@ function LogicBanHangTaiQuay() {
       return;
     }
 
-    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn thanh toán đơn hàng này không?');
-    if (!isConfirmed) {
-      return;
+    const betterCouponInfo = await kiemTraPhieuTotHonTruocThanhToan();
+    if (betterCouponInfo) {
+      const choice = await showPaymentConfirmWithCoupon({
+        oldCouponCode: phieuGiamGiaDaApDung.value?.ma || null,
+        newCouponCode: betterCouponInfo.coupon.ma,
+        oldDiscount: betterCouponInfo.oldDiscount,
+        newDiscount: betterCouponInfo.newDiscount,
+        tongTienHang: tongTien.value
+      });
+
+      if (choice === 'use_new') {
+        maPhieuGiamGia.value = betterCouponInfo.coupon.ma;
+        await xuLyApDungPhieu(true);
+      } else if (choice === 'cancel') {
+        return;
+      }
+    } else {
+      const isConfirmed = await showConfirm('Bạn có chắc chắn muốn thanh toán đơn hàng này không?');
+      if (!isConfirmed) {
+        return;
+      }
     }
 
     dangThanhToan.value = true;
