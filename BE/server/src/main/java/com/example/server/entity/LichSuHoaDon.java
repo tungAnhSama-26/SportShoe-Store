@@ -43,4 +43,12 @@ public class LichSuHoaDon {
     @ColumnDefault("sysdatetime()")
     @Column(name = "ngay_tao", nullable = false)
     private Instant ngayTao;
+
+    public void setNgayTao(Instant ngayTao) {
+        this.ngayTao = ngayTao;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
+    }
 }

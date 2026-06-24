@@ -66,21 +66,15 @@ public class ChamCongServiceImpl implements ChamCongService {
         LocalTime thoiGianKetThuc = getThoiGianKetThucCa(ca);
         LocalTime openingTime = thoiGianChuan.minusMinutes(30);
 
-        long durationMinutes = java.time.temporal.ChronoUnit.MINUTES.between(thoiGianChuan, thoiGianKetThuc);
-        if (durationMinutes < 0) {
-            durationMinutes += 24 * 60;
-        }
-        LocalTime midpoint = thoiGianChuan.plusMinutes(durationMinutes / 2);
-
         // Mốc 1: Vùng Sớm
         if (timeNow.isBefore(openingTime)) {
             String openingTimeStr = openingTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
             throw new BusinessException("Chưa tới giờ điểm danh. Cổng Check-in ca " + getFriendlyCaName(ca) + " mở lúc " + openingTimeStr);
         }
 
-        // Mốc 4: Vùng Đỏ
-        if (timeNow.isAfter(midpoint)) {
-            throw new BusinessException("Đã quá 50% thời gian của ca làm việc, ca làm đã bị khóa.");
+        // Mốc 4: Vùng Đỏ (Hết ca)
+        if (timeNow.isAfter(thoiGianKetThuc)) {
+            throw new BusinessException("Ca làm việc đã kết thúc, bạn không thể chấm công vào (check-in) được nữa.");
         }
 
         // Mốc 2 & 3

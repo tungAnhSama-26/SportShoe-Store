@@ -14,6 +14,7 @@ public record GiaoCaResponse(
         String nhanVienNhanTen,
         String nhanVienNhanMa,
         Instant thoiGianVao,
+        Instant thoiGianChamCong,
         Instant thoiGianRa,
         BigDecimal tienDauCa,
         BigDecimal tienMatTrongCa,
