@@ -7,10 +7,12 @@ import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
 import com.example.server.core.admin.nhanVien.service.GiaoCaService;
 import com.example.server.entity.GiaoCa;
+import com.example.server.entity.ChamCong;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.GiaoCaRepository;
 import com.example.server.repository.NhanVienRepository;
+import com.example.server.repository.ChamCongRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,10 +28,12 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private final GiaoCaRepository giaoCaRepository;
     private final NhanVienRepository nhanVienRepository;
+    private final ChamCongRepository chamCongRepository;
 
-    public GiaoCaServiceImpl(GiaoCaRepository giaoCaRepository, NhanVienRepository nhanVienRepository) {
+    public GiaoCaServiceImpl(GiaoCaRepository giaoCaRepository, NhanVienRepository nhanVienRepository, ChamCongRepository chamCongRepository) {
         this.giaoCaRepository = giaoCaRepository;
         this.nhanVienRepository = nhanVienRepository;
+        this.chamCongRepository = chamCongRepository;
     }
 
     @Override
@@ -73,8 +77,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         GiaoCa gc = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA")
                 .orElseThrow(() -> new BusinessException("Nhân viên không có ca làm việc nào đang hoạt động."));
 
-        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(nhanVienId, gc.getThoiGianVao(), null);
-        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(nhanVienId, gc.getThoiGianVao(), null);
+        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(gc.getId());
+        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(gc.getId());
         BigDecimal tienHeThong = gc.getTienDauCa().add(tienMat);
 
         return new GiaoCaStatsResponse(tienMat, tienCK, tienHeThong);
@@ -93,8 +97,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         NhanVien nhanVienNhan = nhanVienRepository.findById(request.nhanVienNhanId())
                 .orElseThrow(() -> new BusinessException("Nhân viên nhận bàn giao không tồn tại."));
 
-        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(nhanVienId, gc.getThoiGianVao(), null);
-        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(nhanVienId, gc.getThoiGianVao(), null);
+        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(gc.getId());
+        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(gc.getId());
         BigDecimal tienHeThong = gc.getTienDauCa().add(tienMat);
         BigDecimal tienChenhLech = request.tienCuoiCaThucTe().subtract(tienHeThong);
 
@@ -179,6 +183,15 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private GiaoCaResponse mapToResponse(GiaoCa gc) {
         if (gc == null) return null;
+        
+        Instant thoiGianChamCong = null;
+        if (gc.getNhanVienTrongCa() != null) {
+            List<ChamCong> chamCongs = chamCongRepository.findByNhanVienIdAndThoiGianRaIsNull(gc.getNhanVienTrongCa().getId());
+            if (chamCongs != null && !chamCongs.isEmpty()) {
+                thoiGianChamCong = chamCongs.get(0).getThoiGianVao();
+            }
+        }
+        
         return new GiaoCaResponse(
                 gc.getId(),
                 gc.getMa(),
@@ -189,6 +202,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 gc.getNhanVienNhan() != null ? gc.getNhanVienNhan().getHoTen() : null,
                 gc.getNhanVienNhan() != null ? gc.getNhanVienNhan().getMa() : null,
                 gc.getThoiGianVao(),
+                thoiGianChamCong,
                 gc.getThoiGianRa(),
                 gc.getTienDauCa(),
                 gc.getTienMatTrongCa(),
