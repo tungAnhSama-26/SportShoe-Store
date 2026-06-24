@@ -24,7 +24,8 @@ public final class QuanLyHoaDonResponses {
             String emailKhachHang,
             Integer phieuTraHangId,
             Integer trangThaiPhieuTraHang,
-            String trangThaiPhieuTraHangText
+            String trangThaiPhieuTraHangText,
+            String phuongThucThanhToan
     ) {
     }
 

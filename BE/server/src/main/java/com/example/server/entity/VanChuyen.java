@@ -72,5 +72,15 @@ public class VanChuyen {
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
+    public void setNgayTao(Instant ngayTao) {
+        this.ngayTao = ngayTao;
+    }
 
+    public void setNgayCapNhat(Instant ngayCapNhat) {
+        this.ngayCapNhat = ngayCapNhat;
+    }
+
+    public void setTrangThai(Integer trangThai) {
+        this.trangThai = trangThai;
+    }
 }
