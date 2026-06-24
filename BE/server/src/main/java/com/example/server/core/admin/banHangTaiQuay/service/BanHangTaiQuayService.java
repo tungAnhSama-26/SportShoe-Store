@@ -66,6 +66,8 @@ import com.example.server.repository.PhieuGiamGiaRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.repository.DiaChiKhachHangRepository;
+import com.example.server.repository.GiaoCaRepository;
+import com.example.server.entity.GiaoCa;
 import com.example.server.entity.DiaChiKhachHang;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -132,6 +134,7 @@ public class BanHangTaiQuayService {
     private final BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+    private final GiaoCaRepository giaoCaRepository;
 
     public BanHangTaiQuayService(
             KhachHangRepository khachHangRepository,
@@ -153,7 +156,8 @@ public class BanHangTaiQuayService {
             BanHangTaiQuayShippingUseCase shippingUseCase,
             BanHangTaiQuayInvoiceStateUseCase invoiceStateUseCase,
             DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
-            DiaChiKhachHangRepository diaChiKhachHangRepository
+            DiaChiKhachHangRepository diaChiKhachHangRepository,
+            GiaoCaRepository giaoCaRepository
     ) {
         this.khachHangRepository = khachHangRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -175,6 +179,7 @@ public class BanHangTaiQuayService {
         this.invoiceStateUseCase = invoiceStateUseCase;
         this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
+        this.giaoCaRepository = giaoCaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -472,6 +477,13 @@ public class BanHangTaiQuayService {
         if (request.hoaDonId() == null && (request.items() == null || request.items().isEmpty())) {
             throw new BusinessException("Hóa đơn phải có ít nhất một sản phẩm để thanh toán");
         }
+        NhanVien currentEmp = resolveNhanVienDangDangNhap();
+        if (currentEmp == null) {
+            throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
+        }
+        GiaoCa activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
+                .orElseThrow(() -> new BusinessException("Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
+
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -508,6 +520,7 @@ public class BanHangTaiQuayService {
         hoaDon.setTrangThai(trangThaiSauThanhToan);
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setNgayCapNhat(Instant.now());
+        hoaDon.setGiaoCa(activeShift);
         hoaDonRepository.save(hoaDon);
         luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, request.ghiChu());
 

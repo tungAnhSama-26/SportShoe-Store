@@ -20,7 +20,8 @@ public interface QuanLyHoaDonService {
             String loaiDon,
             String trangThai,
             LocalDate tuNgay,
-            LocalDate denNgay
+            LocalDate denNgay,
+            UUID giaoCaId
     );
 
     HoaDonDetailResponse layChiTietHoaDon(Integer id);

@@ -134,9 +134,9 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         lichLamViecRepository.deleteByNgayBetween(tuNgay, denNgay);
         lichLamViecRepository.flush();
 
-        // Fetch active employees
+        // Fetch active employees (Only STAFF, VaiTro = 2)
         List<NhanVien> activeEmployees = nhanVienRepository.findAll().stream()
-                .filter(nv -> nv.getTrangThai() == 1)
+                .filter(nv -> nv.getTrangThai() == 1 && nv.getVaiTro() != null && nv.getVaiTro() == 2)
                 .toList();
 
         if (activeEmployees.isEmpty()) {

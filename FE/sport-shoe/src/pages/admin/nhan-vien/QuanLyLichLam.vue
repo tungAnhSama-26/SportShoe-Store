@@ -304,7 +304,7 @@ async function taiNhanVien() {
   loiTrang.value = "";
   try {
     await taiDanhSachCa();
-    const ds = await layDanhSachNhanVien({ trangThai: 1 });
+    const ds = await layDanhSachNhanVien({ trangThai: 1, vaiTro: 2 });
     danhSachNV.value = ds.map((nv) => ({
       id: String(nv.id),
       ma: nv.ma ?? "",
@@ -682,6 +682,7 @@ async function luuCa() {
   } finally {
     dangTai.value = false;
   }
+}
 
 async function xoaCa(nhanVien) {
   if (!currentChiTietCa.value) return;
@@ -737,9 +738,9 @@ async function xoaCaTuBang(nv, ngayStr, caInfo) {
     showSuccess("Xóa ca làm việc thành công!");
     await taiDuLieuLich();
     
-    const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
+    const updatedDay = lichBoard.value.find(d => d.ngayStr === ngayStr);
     if (updatedDay) {
-      const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+      const updatedCa = updatedDay.cas.find(c => c.id.toLowerCase() === caInfo.id.toLowerCase());
       if (updatedCa) {
         currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
       }
@@ -1273,9 +1274,6 @@ function layThongTinCa(id) {
             </div>
 
           </div>
-        </div>
-      </aside>
-    </div>
 
           <!-- Footer -->
           <div class="flex items-center gap-3 p-5 pt-0">
