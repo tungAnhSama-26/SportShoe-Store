@@ -1,4 +1,5 @@
 <script setup>
+import Button from "../../../components/ui/Button.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -313,7 +314,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="translate-y-3 opacity-0"
@@ -423,24 +424,24 @@ onMounted(() => {
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-3">
-          <button
+          <Button
+            variant="soft"
             @click="lamMoiBoLoc"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
           >
-            <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-          </button>
-          <button
+            <template #prefix><RotateCcw class="h-4 w-4" /></template> Đặt lại bộ lọc
+          </Button>
+          <Button
+            variant="soft"
             @click="xuatExcel"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
           >
-            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-          </button>
-          <button
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template> Xuất Excel
+          </Button>
+          <Button
+            variant="primary"
             @click="router.push({ name: 'admin-dot-giam-gia-them' })"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]"
           >
-            <Plus class="h-4 w-4" /> Tạo đợt giảm giá
-          </button>
+            <template #prefix><Plus class="h-4 w-4" /></template> Tạo đợt giảm giá
+          </Button>
         </div>
       </div>
     </section>

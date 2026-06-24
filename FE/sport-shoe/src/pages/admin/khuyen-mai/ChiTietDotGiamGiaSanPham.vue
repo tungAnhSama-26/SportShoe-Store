@@ -151,7 +151,7 @@ onMounted(taiDuLieu);
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
     <!-- Header -->
     <section class="flex items-center gap-4">
       <button
