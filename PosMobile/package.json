@@ -1,0 +1,34 @@
+{
+  "name": "posmobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo/metro-runtime": "~56.0.15",
+    "@expo/vector-icons": "^15.1.1",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@stomp/stompjs": "^7.3.0",
+    "axios": "^1.18.1",
+    "expo": "~56.0.12",
+    "expo-camera": "~56.0.8",
+    "expo-print": "~56.0.4",
+    "expo-status-bar": "~56.0.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-safe-area-context": "^5.8.0",
+    "react-native-toast-message": "^2.3.3",
+    "react-native-web": "^0.21.2",
+    "sockjs-client": "^1.6.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
+}

@@ -32,6 +32,8 @@ const ChiTietHoaDon = () => import("../pages/admin/hoa-don/ChiTietHoaDon.vue");
 const TraHang = () => import("../pages/admin/tra-hang/TraHang.vue");
 const ChiTietTraHang = () => import("../pages/admin/tra-hang/ChiTietTraHang.vue");
 const BanHangTaiQuay = () => import("../pages/admin/ban-hang/BanHangTaiQuay.vue");
+const PosLayout = () => import("../layouts/admin/PosLayout.vue");
+const PosIpadApp = () => import("../pages/admin/ban-hang/PosIpadApp.vue");
 const DanhSachSanPham = () => import("../pages/admin/san-pham/DanhSachSanPham.vue");
 const DanhSachChiTietSanPham = () => import("../pages/admin/san-pham/DanhSachChiTietSanPham.vue");
 const ChiTietSanPhamForm = () => import("../pages/admin/san-pham/ChiTietSanPhamForm.vue");
@@ -59,6 +61,7 @@ const ChatManagement = () => import("../pages/admin/chat/ChatManagement.vue");
 
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
+  "/pos",
   "/admin/hoa-don",
   "/admin/tra-hang",
   "/admin/khach-hang",
@@ -86,7 +89,7 @@ function isOwnEmployeeProfile(path) {
 }
 
 function isProtectedAdminArea(path) {
-  return path.startsWith("/admin") || path.startsWith("/nhanvien");
+  return path.startsWith("/admin") || path.startsWith("/nhanvien") || path.startsWith("/pos");
 }
 
 const router = createRouter({
@@ -213,6 +216,17 @@ const router = createRouter({
           path: "profile",
           name: "nhanvien-profile",
           component: Profile
+        }
+      ]
+    },
+    {
+      path: "/pos",
+      component: PosLayout,
+      children: [
+        {
+          path: "",
+          name: "admin-pos-ipad",
+          component: PosIpadApp
         }
       ]
     },
