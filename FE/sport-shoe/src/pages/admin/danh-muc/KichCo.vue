@@ -251,7 +251,7 @@ async function xuatExcel() {
             <td class="px-4 py-3 text-gray-500">{{ currentPage * pageSize + idx + 1 }}</td>
             <td class="px-4 py-3">
               <div class="flex justify-center">
-                <span class="inline-flex h-8 min-w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800">{{ item.giaTri }}</span>
+                <span class="inline-flex h-8 min-w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800">{{ item.giaTri }}</span>
               </div>
             </td>
             <td class="px-4 py-3 text-xs text-gray-500"><span class="table-text-wrap">{{ item.ghiChu || '—' }}</span></td>
@@ -286,12 +286,12 @@ async function xuatExcel() {
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
           @click.self="showModal = false"
         >
-          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+          <div class="bg-white rounded-md shadow-2xl w-full max-w-sm">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 class="text-lg font-semibold text-gray-800">
                 {{ modalMode === 'add' ? 'Thêm kích cỡ' : modalMode === 'edit' ? 'Cập nhật kích cỡ' : 'Chi tiết kích cỡ' }}
               </h2>
-              <button @click="showModal = false" class="p-1.5 rounded-lg hover:bg-gray-100">
+              <button @click="showModal = false" class="p-1.5 rounded-md hover:bg-gray-100">
                 <X :size="18" />
               </button>
             </div>
@@ -303,7 +303,7 @@ async function xuatExcel() {
                   v-model="form.giaTri"
                   :disabled="modalMode === 'view'"
                   maxlength="20"
-                  class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                   :class="errors.giaTri ? 'border-red-400' : 'border-gray-200'"
                   placeholder="VD: 40, 40.5, EU42"
                 />
@@ -317,7 +317,7 @@ async function xuatExcel() {
                   :disabled="modalMode === 'view'"
                   rows="3"
                   maxlength="200"
-                  class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
+                  class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
                   :class="errors.ghiChu ? 'border-red-400' : 'border-gray-200'"
                   placeholder="Ghi chú (US size, EU size...)"
                 ></textarea>
@@ -326,13 +326,13 @@ async function xuatExcel() {
             </div>
 
             <div v-if="modalMode !== 'view'" class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
-              <button @click="showModal = false" class="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+              <button @click="showModal = false" class="px-4 py-2 border border-gray-200 rounded-md text-sm hover:bg-gray-50">
                 Hủy
               </button>
               <button
                 @click="handleSave"
                 :disabled="saving"
-                class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium disabled:opacity-60"
+                class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-md text-sm font-medium disabled:opacity-60"
               >
                 {{ saving ? 'Đang lưu...' : 'Lưu' }}
               </button>

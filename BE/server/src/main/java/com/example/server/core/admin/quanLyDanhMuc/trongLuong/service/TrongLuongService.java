@@ -48,9 +48,7 @@ public class TrongLuongService {
             if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
                 throw new BusinessException("Trọng lượng '" + req.giaTri() + "g' đã tồn tại và đang hoạt động.");
             } else {
-                existing.setTrangThai(1);
-                existing.setNgayCapNhat(Instant.now());
-                return toTrongLuong(trongLuongRepository.save(existing));
+                throw new BusinessException("Trọng lượng '" + req.giaTri() + "g' đã tồn tại nhưng đang ngừng hoạt động. Vui lòng kích hoạt lại trong Quản lý thuộc tính.");
             }
         }
 

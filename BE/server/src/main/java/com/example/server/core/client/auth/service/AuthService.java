@@ -138,7 +138,6 @@ public class AuthService {
                 nhanVien.getTenDangNhap(),
                 nhanVien.getHoTen(),
                 nhanVien.getEmail(),
-                nhanVien.getCccd(),
                 vaiTro,
                 isAdmin(nhanVien) ? "Quản trị viên" : "Nhân viên",
                 nhanVien.getHinhAnh(),

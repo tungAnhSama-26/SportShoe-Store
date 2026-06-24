@@ -23,7 +23,6 @@ public record CapNhatNhanVienRequest(
         @NotBlank(message = "Số điện thoại không được để trống")
         @Pattern(regexp = ValidationPatterns.VN_PHONE, message = "Số điện thoại không đúng định dạng")
         String sdt,
-        @Pattern(regexp = "^\\d{12}$", message = "CCCD phai gom dung 12 chu so") String cccd,
         @Size(max = 10) String gioiTinh,
         @Past(message = "Ngày sinh không được là ngày trong tương lai") LocalDate ngaySinh,
         @Size(max = 200) String diaChi,

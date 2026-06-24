@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&subset=vietnamese&display=swap");
+
 @import "tailwindcss" source(none);
 @source "../**/*.{vue,js,ts}";
 
@@ -9,7 +10,8 @@
   --color-secondary: #ff6a00;
   --color-black: #080808;
   --color-background: #fff8f4;
-  --font-sans: "Be Vietnam Pro", "Segoe UI", sans-serif;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", "Arial Unicode MS", "Noto Sans", sans-serif;
+
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -34,10 +36,11 @@
       radial-gradient(circle at top center, rgba(207, 16, 24, 0.1), transparent 24%),
       linear-gradient(180deg, #fff8f4 0%, #ffffff 34%, #fff6ef 100%);
     color: #1f2937;
-    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+    font-family: "Be Vietnam Pro", "Segoe UI", "Arial Unicode MS", "Noto Sans", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1;
     transition: background 0.3s, color 0.3s;
   }
 
@@ -631,4 +634,52 @@ table td * {
   .admin-table--compact {
     min-width: 560px;
   }
+}
+
+/* Modifier to set 6px radius for specific screens */
+.radius-6px .admin-section-card,
+.radius-6px .admin-section-icon,
+.radius-6px .admin-btn-soft,
+.radius-6px .admin-btn-primary,
+.radius-6px .pvf-panel,
+.radius-6px .pvf-input,
+.radius-6px .pvf-select,
+.radius-6px .pvf-file-field,
+.radius-6px .pvf-btn,
+.radius-6px .pvf-pagination-button {
+  border-radius: 6px !important;
+}
+
+.radius-6px .danh-muc-table thead th:first-child,
+.radius-6px .admin-table thead th:first-child,
+.radius-6px .danh-muc-table tbody td:first-child,
+.radius-6px .admin-table tbody td:first-child {
+  border-top-left-radius: 6px !important;
+  border-bottom-left-radius: 6px !important;
+}
+
+.radius-6px .danh-muc-table thead th:last-child,
+.radius-6px .admin-table thead th:last-child,
+.radius-6px .danh-muc-table tbody td:last-child,
+.radius-6px .admin-table tbody td:last-child {
+  border-top-right-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+}
+
+.radius-6px .rounded-2xl,
+.radius-6px .rounded-xl,
+.radius-6px .rounded-lg,
+.radius-6px .rounded-md {
+  border-radius: 6px !important;
+}
+
+/* For modals that might be appended to body */
+.el-overlay.radius-6px-modal .el-dialog {
+  border-radius: 6px !important;
+}
+.el-overlay.radius-6px-modal .rounded-2xl,
+.el-overlay.radius-6px-modal .rounded-xl,
+.el-overlay.radius-6px-modal .rounded-lg,
+.el-overlay.radius-6px-modal .rounded-md {
+  border-radius: 6px !important;
 }

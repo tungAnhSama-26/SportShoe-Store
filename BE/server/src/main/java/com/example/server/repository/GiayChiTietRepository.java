@@ -37,8 +37,15 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             left join fetch gtt.congNgheDem cnd
             left join fetch gtt.trongLuong tl
             where gct.kichHoat = 1
-              and gct.soLuong > 0
               and g.trangThai = 1
+              and th.trangThai = 1
+              and lg.trangThai = 1
+              and ms.trangThai = 1
+              and kc.trangThai = 1
+              and (dg is null or dg.trangThai = 1)
+              and (cg is null or cg.trangThai = 1)
+              and (cnd is null or cnd.trangThai = 1)
+              and (tl is null or tl.trangThai = 1)
               and (
                 :keyword is null
                 or lower(g.ma) like lower(concat('%', :keyword, '%'))

@@ -10,13 +10,13 @@ async function request(path, init) {
 function timKhachHangTheoSoDienThoai(phone) {
   const params = new URLSearchParams();
   if (phone.trim()) {
-    params.set("phone", phone.trim());
+    params.set("q", phone.trim());
   }
   return request(`/admin/ban-hang-tai-quay/khach-hang?${params.toString()}`);
 }
 function timSanPhamTaiQuay(keyword) {
   const params = new URLSearchParams();
-  if (keyword.trim()) {
+  if (keyword && keyword.trim()) {
     params.set("keyword", keyword.trim());
   }
   return request(`/admin/ban-hang-tai-quay/san-pham?${params.toString()}`);

@@ -1,18 +1,18 @@
 package com.example.server.core.admin.quanLySanPham.aspect;
 
+import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
 public class SanPhamRealtimeAspect {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketNotificationService webSocketNotificationService;
 
-    public SanPhamRealtimeAspect(SimpMessagingTemplate messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
+    public SanPhamRealtimeAspect(WebSocketNotificationService webSocketNotificationService) {
+        this.webSocketNotificationService = webSocketNotificationService;
     }
 
     @AfterReturning("execution(* com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService.tao*(..)) || " +
@@ -20,6 +20,6 @@ public class SanPhamRealtimeAspect {
                     "execution(* com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService.doiTrangThai*(..)) || " +
                     "execution(* com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService.xoa*(..))")
     public void afterSanPhamModified() {
-        messagingTemplate.convertAndSend("/topic/admin/san-pham", "Cập nhật sản phẩm");
+        webSocketNotificationService.sendToTopic("/topic/admin/san-pham", "PRODUCT_UPDATED", "Cập nhật sản phẩm");
     }
 }

@@ -400,13 +400,6 @@ export function useChiTietDotGiamGia() {
   }
 
   let searchTimer;
-  watch([searchSP, filterMauSac, filterKichCo], () => {
-    clearTimeout(searchTimer);
-    trangBienThe.value = 1;
-    // We only need to fetch again if searchSP changes, but since searchSP is in the watch array,
-    // we just call taiDanhSachSP. However, color/size are filtered locally, so we only need to reset page.
-    // Let's refactor this:
-  });
 
   watch(searchSP, () => {
     clearTimeout(searchTimer);

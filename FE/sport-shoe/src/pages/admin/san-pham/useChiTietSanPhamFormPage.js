@@ -1,10 +1,10 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import FormHeader from '../../../components/admin/san-pham/FormHeader.vue'
-import ProductFormSection from '../../../components/admin/san-pham/ProductFormSection.vue'
-import VariantBuilderSection from '../../../components/admin/san-pham/VariantBuilderSection.vue'
-import ChiTietSanPhamGeneratedVariantsSection from '../../../components/admin/san-pham/ChiTietSanPhamGeneratedVariantsSection.vue'
-import SuccessSection from '../../../components/admin/san-pham/SuccessSection.vue'
-import QuickCreateModal from '../../../components/admin/san-pham/QuickCreateModal.vue'
+import TieuDeForm from '../../../components/admin/san-pham/TieuDeForm.vue'
+import PhanNhapThongTinSanPham from '../../../components/admin/san-pham/PhanNhapThongTinSanPham.vue'
+import PhanTaoBienThe from '../../../components/admin/san-pham/PhanTaoBienThe.vue'
+import PhanBienTheDaTao from '../../../components/admin/san-pham/PhanBienTheDaTao.vue'
+import PhanThanhCong from '../../../components/admin/san-pham/PhanThanhCong.vue'
+import ModalThemNhanh from '../../../components/admin/san-pham/ModalThemNhanh.vue'
 import { useProductForm } from '../../../composables/useProductForm.js'
 import { useVariantBuilder } from '../../../composables/useVariantBuilder.js'
 import { useToast } from '../../../composables/useToast.js'
@@ -300,8 +300,8 @@ export function useChiTietSanPhamFormPage() {
   }
   function syncQuickCreateColorFields() {
     quickCreateForm.ma = generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
-    if (!isValidHexColor(quickCreateForm.maMauHex)) {
-      quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
+    if (!quickCreateForm.maMauHex) {
+       quickCreateForm.maMauHex = '#94A3B8'
     }
     quickCreateForm.maMauHex = quickCreateForm.maMauHex.toUpperCase()
   }
@@ -314,7 +314,7 @@ export function useChiTietSanPhamFormPage() {
       Object.assign(quickCreateForm, {
         ma: '',
         ten: normalizeRequiredText(preset),
-        maMauHex: generateHexColorFromText(preset),
+        maMauHex: '#94A3B8',
         giaTri: '',
         ghiChu: ''
       })
@@ -426,20 +426,10 @@ export function useChiTietSanPhamFormPage() {
     }
   }
   function updateQuickCreateForm(nextForm) {
-    const previousTen = quickCreateForm.ten
-    const previousAutoHex = generateHexColorFromText(previousTen)
     Object.assign(quickCreateForm, nextForm)
     if (quickCreateType.value === 'mauSac') {
       quickCreateForm.ma = generateColorAttributeCode(quickCreateForm.ten, quickCreateColorSeed.value)
-      if (!isValidHexColor(quickCreateForm.maMauHex)) {
-        quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
-      } else if (
-        quickCreateForm.ten !== previousTen &&
-        String(nextForm.maMauHex || '').toUpperCase() === previousAutoHex.toUpperCase()
-      ) {
-        quickCreateForm.maMauHex = generateHexColorFromText(quickCreateForm.ten)
-      }
-      quickCreateForm.maMauHex = quickCreateForm.maMauHex.toUpperCase()
+      quickCreateForm.maMauHex = String(quickCreateForm.maMauHex || '').toUpperCase()
     }
   }
   async function handleQuickCreateSave() {
@@ -840,6 +830,5 @@ export function useChiTietSanPhamFormPage() {
   onBeforeUnmount(() => {
     document.removeEventListener('mousedown', handleDocumentClick)
   })
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, TieuDeForm, PhanNhapThongTinSanPham, PhanTaoBienThe, PhanBienTheDaTao, PhanThanhCong, ModalThemNhanh, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
 }
-
