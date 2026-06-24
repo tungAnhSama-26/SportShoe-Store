@@ -22,7 +22,7 @@ public class RealtimeUpdateInterceptor implements HandlerInterceptor {
             if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || 
                 "DELETE".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method)) {
                 String uri = request.getRequestURI();
-                if (uri.startsWith("/api/v1/admin/san-pham") || uri.startsWith("/api/v1/admin/san-pham-chi-tiet") || uri.startsWith("/api/v1/admin/ban-hang")) {
+                if (uri.startsWith("/api/v1/admin/san-pham") || uri.startsWith("/api/v1/admin/san-pham-chi-tiet") || uri.startsWith("/api/v1/admin/ban-hang") || uri.startsWith("/api/v1/admin/dot-giam-gia")) {
                     webSocketNotificationService.sendToTopic("/topic/admin/san-pham", "PRODUCT_CHANGED", "Product Update");
                 } else if (uri.startsWith("/api/v1/admin/danh-muc")) {
                     webSocketNotificationService.sendToTopic("/topic/admin/thuoc-tinh", "ATTRIBUTE_CHANGED", "Attribute Update");

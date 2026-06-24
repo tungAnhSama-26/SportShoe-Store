@@ -4,7 +4,8 @@ import java.math.BigDecimal;
 
 public record ThongKeTongQuanResponse(
         BigDecimal tongDoanhThu,
-        BigDecimal doanhThuThucTe,
+        BigDecimal tongTienMat,
+        BigDecimal tongChuyenKhoan,
         Long tongDonHang,
         Long sanPhamDaBan,
         Long khachMoi

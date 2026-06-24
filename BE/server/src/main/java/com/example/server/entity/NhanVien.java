@@ -55,10 +55,6 @@ public class NhanVien {
     @Column(name = "sdt", length = 20)
     private String sdt;
 
-    @Size(max = 12)
-    @Column(name = "cccd", length = 12)
-    private String cccd;
-
     @Size(max = 10)
     @Nationalized
     @Column(name = "gioi_tinh", length = 10)

@@ -48,12 +48,7 @@ public class CoGiayService {
             if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
                 throw new BusinessException("Cổ giày '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                existing.setTrangThai(1);
-                existing.setNgayCapNhat(Instant.now());
-                if (req.moTa() != null && !req.moTa().isBlank()) {
-                    existing.setMoTa(req.moTa().trim());
-                }
-                return toCoGiay(coGiayRepository.save(existing));
+                throw new BusinessException("Cổ giày '" + ten + "' đã tồn tại nhưng đang ngừng hoạt động. Vui lòng kích hoạt lại trong Quản lý thuộc tính.");
             }
         }
 
