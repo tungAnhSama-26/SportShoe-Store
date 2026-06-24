@@ -718,7 +718,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, C
             </tr>
 
             <tr v-if="filteredProducts.length === 0">
-              <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">
+              <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">
                 Không có sản phẩm phù hợp với bộ lọc hiện tại.
               </td>
             </tr>
