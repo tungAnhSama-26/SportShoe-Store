@@ -4,11 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { CircleCheckBig, Eye, FileSpreadsheet, Filter, Images, Layers3, Plus, RotateCcw, Search, Tag, TriangleAlert, X } from 'lucide-vue-next'
 import * as api from '../../../services/san-pham-api'
 import AdminQrCodeModal from '../../../components/common/AdminQrCodeModal.vue'
-import BanHangQrScannerModal from '../../../components/admin/ban-hang/BanHangQrScannerModal.vue'
+import ModalQuetQR from '../../../components/admin/ban-hang/ModalQuetQR.vue'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
-import ProductVariantFilters from '../../../components/admin/san-pham/ProductVariantFilters.vue'
-import ProductVariantTable from '../../../components/admin/san-pham/ProductVariantTable.vue'
+import BoLocBienThe from '../../../components/admin/san-pham/BoLocBienThe.vue'
+import BangBienThe from '../../../components/admin/san-pham/BangBienThe.vue'
 import QuanLySanPhamBienTheFormModal from '../../../components/admin/san-pham/QuanLySanPhamBienTheFormModal.vue'
 import QuanLySanPhamHinhAnhModal from '../../../components/admin/san-pham/QuanLySanPhamHinhAnhModal.vue'
 import { exportRowsToExcel } from '../../../utils/export-excel'
@@ -29,27 +29,27 @@ const currentPage = ref(0)
 const pageSize = ref(5)
 const totalItems = ref(0)
 const totalPages = ref(0)
-const selectedProduct = ref(null)
-const updatingStatusIds = reactive(new Set())
-const showQrModal = ref(false)
-const selectedQrItem = ref(null)
+const sanPhamDuocChon = ref(null)
+const danhSachIdDangCapNhat = reactive(new Set())
+const hienThiModalQr = ref(false)
+const chiTietQrDuocChon = ref(null)
 
-const showScannerModal = ref(false)
-const tableRef = ref(null)
-const hasSelectedVariants = ref(false)
+const hienThiModalQuetMa = ref(false)
+const bangBienTheRef = ref(null)
+const coBienTheDuocChon = ref(false)
 
-const filters = reactive({
+const boLoc = reactive({
   keyword: '',
   mauSacId: null,
   kichCoId: null,
   trangThai: null
 })
 
-const showImageModal = ref(false)
-const selectedVariant = ref(null)
-const showEditVariantModal = ref(false)
-const editingVariant = ref(null)
-const savingVariant = ref(false)
+const hienThiModalHinhAnh = ref(false)
+const bienTheDuocChon = ref(null)
+const hienThiModalSuaBienThe = ref(false)
+const bienTheDangSua = ref(null)
+const dangLuuBienThe = ref(false)
 const bienTheForm = reactive({
   soLuong: 0,
   giaGoc: 0,
@@ -67,7 +67,7 @@ const bulkBienTheForm = reactive({
 const bulkBienTheErrors = reactive({})
 const generatedBulkBienThes = ref([])
 
-const toast = reactive({
+const thongBao = reactive({
   show: false,
   message: '',
   type: 'success'
@@ -92,19 +92,19 @@ const focusedChiTietId = computed(() => {
 })
 
 const toastTitle = computed(() => {
-  if (toast.type === 'error') return 'Không thể hoàn tất thao tác'
-  if (toast.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
+  if (thongBao.type === 'error') return 'Không thể hoàn tất thao tác'
+  if (thongBao.message.startsWith('Đang xem CTSP')) return 'Xem CTSP thành công'
   return 'Thao tác thành công'
 })
 
 const editingSelectedGiay = computed(() => {
-  if (selectedProduct.value) return selectedProduct.value
-  if (!editingVariant.value) return null
+  if (sanPhamDuocChon.value) return sanPhamDuocChon.value
+  if (!bienTheDangSua.value) return null
 
   return {
-    id: editingVariant.value.giayId,
-    ten: editingVariant.value.tenSanPham,
-    ma: editingVariant.value.maSanPham
+    id: bienTheDangSua.value.giayId,
+    ten: bienTheDangSua.value.tenSanPham,
+    ma: bienTheDangSua.value.maSanPham
   }
 })
 
@@ -120,11 +120,11 @@ function showToast(message, type = 'success') {
   }
 
   if (toastTimer) clearTimeout(toastTimer)
-  toast.message = message
-  toast.type = type
-  toast.show = true
+  thongBao.message = message
+  thongBao.type = type
+  thongBao.show = true
   toastTimer = setTimeout(() => {
-    toast.show = false
+    thongBao.show = false
     toastTimer = null
   }, 3000)
 }
@@ -134,11 +134,11 @@ function closeToast() {
     clearTimeout(toastTimer)
     toastTimer = null
   }
-  toast.show = false
+  thongBao.show = false
 }
 
-function isUpdatingStatus(id) {
-  return updatingStatusIds.has(id)
+function dangCapNhatTrangThai(id) {
+  return danhSachIdDangCapNhat.has(id)
 }
 
 function formatCurrency(value) {
@@ -207,6 +207,15 @@ function openDiscountDetail(item) {
   })
 }
 
+function handleScannerResult(result) {
+  if (result) {
+    boLoc.keyword = result;
+    hienThiModalQuetMa.value = false;
+    showToast(`Đã quét mã: ${result}`);
+    loadData(0);
+  }
+}
+
 function bienTheTrangThaiLabel(item) {
   if (Number(item.kichHoat) === 0) return 'Ngừng bán'
   if (Number(item.soLuong || 0) <= 0) return 'Hết hàng'
@@ -256,13 +265,13 @@ async function loadDanhMuc() {
 
 async function syncSelectedProduct() {
   if (!selectedGiayId.value) {
-    selectedProduct.value = null
+    sanPhamDuocChon.value = null
     return
   }
 
   try {
-    selectedProduct.value = await api.chiTietGiay(selectedGiayId.value)
-    showToast(`Đang xem CTSP của ${selectedProduct.value.ten} (${selectedProduct.value.ma})`, 'info')
+    sanPhamDuocChon.value = await api.chiTietGiay(selectedGiayId.value)
+    showToast(`Đang xem CTSP của ${sanPhamDuocChon.value.ten} (${sanPhamDuocChon.value.ma})`, 'info')
   } catch (error) {
     showToast(getDisplayErrorMessage(error, 'Không tải được sản phẩm đang chọn'), 'error')
   }
@@ -273,10 +282,10 @@ async function loadData(page = 0) {
 
   // Khi có bộ lọc/tìm kiếm đang kích hoạt → bỏ giayId để tìm trên tất cả sản phẩm
   const hasActiveFilter =
-    filters.keyword.trim() ||
-    filters.mauSacId ||
-    filters.kichCoId ||
-    filters.trangThai != null
+    boLoc.keyword.trim() ||
+    boLoc.mauSacId ||
+    boLoc.kichCoId ||
+    boLoc.trangThai != null
 
   // Xác định giayId hiệu lực trước khi đổi route
   const effectiveGiayId = hasActiveFilter ? null : selectedGiayId.value
@@ -292,11 +301,11 @@ async function loadData(page = 0) {
   loading.value = true
   try {
     const response = await api.layDanhSachChiTietSanPham({
-      keyword: filters.keyword.trim() || undefined,
+      keyword: boLoc.keyword.trim() || undefined,
       giayId: effectiveGiayId,
-      mauSacId: filters.mauSacId,
-      kichCoId: filters.kichCoId,
-      trangThai: filters.trangThai,
+      mauSacId: boLoc.mauSacId,
+      kichCoId: boLoc.kichCoId,
+      trangThai: boLoc.trangThai,
       page: effectiveGiayId ? 0 : page,
       size: effectiveGiayId ? 1000 : pageSize.value
     })
@@ -316,15 +325,15 @@ async function loadData(page = 0) {
 }
 
 async function resetFilters() {
-  filters.keyword = ''
-  filters.mauSacId = null
-  filters.kichCoId = null
-  filters.trangThai = null
+  boLoc.keyword = ''
+  boLoc.mauSacId = null
+  boLoc.kichCoId = null
+  boLoc.trangThai = null
 
   // Reset hoàn toàn: xóa sản phẩm đang chọn và giayId khỏi route
   // để hiển thị toàn bộ biến thể của tất cả sản phẩm
-  if (selectedGiayId.value || selectedProduct.value) {
-    selectedProduct.value = null
+  if (selectedGiayId.value || sanPhamDuocChon.value) {
+    sanPhamDuocChon.value = null
     suppressGiayIdWatch = true
     await router.replace({ name: 'admin-bien-the-san-pham' })
     suppressGiayIdWatch = false
@@ -342,8 +351,8 @@ function scheduleKeywordSearch() {
 }
 
 function handleQrScan(code) {
-  filters.keyword = code
-  showScannerModal.value = false
+  boLoc.keyword = code
+  hienThiModalQuetMa.value = false
   loadData(0)
 }
 
@@ -367,24 +376,24 @@ function handlePageSizeChange(size) {
 }
 
 function openImageModal(item) {
-  selectedVariant.value = item
-  showImageModal.value = true
+  bienTheDuocChon.value = item
+  hienThiModalHinhAnh.value = true
 }
 
 function openEditVariantModal(item) {
-  editingVariant.value = item
+  bienTheDangSua.value = item
   bienTheForm.soLuong = Number(item.soLuong || 0)
   bienTheForm.giaGoc = Number(item.giaGoc || 0)
   bienTheForm.giaBan = Number(item.giaBan || 0)
   bienTheForm.kichHoat = Number(item.kichHoat) === 0 ? 0 : 1
   clearBienTheErrors()
-  showEditVariantModal.value = true
+  hienThiModalSuaBienThe.value = true
 }
 
 function closeEditVariantModal() {
-  showEditVariantModal.value = false
-  editingVariant.value = null
-  savingVariant.value = false
+  hienThiModalSuaBienThe.value = false
+  bienTheDangSua.value = null
+  dangLuuBienThe.value = false
   clearBienTheErrors()
 }
 
@@ -415,19 +424,19 @@ function validateEditVariantForm() {
 }
 
 async function saveEditingVariant() {
-  if (!editingVariant.value || savingVariant.value) return
+  if (!bienTheDangSua.value || dangLuuBienThe.value) return
   if (!validateEditVariantForm()) return
 
-  savingVariant.value = true
+  dangLuuBienThe.value = true
   try {
-    await api.capNhatBienThe(editingVariant.value.id, {
+    await api.capNhatBienThe(bienTheDangSua.value.id, {
       soLuong: Number(bienTheForm.soLuong),
       giaGoc: Number(bienTheForm.giaGoc),
       giaBan: Number(bienTheForm.giaBan),
       kichHoat: Number(bienTheForm.kichHoat)
     })
     showToast('Cập nhật biến thể thành công')
-    const editedGiayId = editingVariant.value.giayId
+    const editedGiayId = bienTheDangSua.value.giayId
     closeEditVariantModal()
     await Promise.all([
       loadData(currentPage.value),
@@ -437,20 +446,20 @@ async function saveEditingVariant() {
     Object.assign(bienTheErrors, getFieldErrors(error))
     showToast(getDisplayErrorMessage(error, 'Không thể cập nhật biến thể'), 'error')
   } finally {
-    savingVariant.value = false
+    dangLuuBienThe.value = false
   }
 }
 
 function closeImageModal() {
-  selectedVariant.value = null
-  showImageModal.value = false
+  bienTheDuocChon.value = null
+  hienThiModalHinhAnh.value = false
 }
 
 function openImageModalFromEdit(variant) {
   // Đóng modal form sửa rồi mở modal quản lý ảnh cho biến thể đó
   closeEditVariantModal()
-  selectedVariant.value = variant
-  showImageModal.value = true
+  bienTheDuocChon.value = variant
+  hienThiModalHinhAnh.value = true
 }
 
 function openVariantQr(item) {
@@ -460,7 +469,7 @@ function openVariantQr(item) {
     return
   }
 
-  selectedQrItem.value = {
+  chiTietQrDuocChon.value = {
     badge: 'QR chi tiết sản phẩm',
     title: item.tenSanPham || 'Chi tiết sản phẩm',
     subtitle: `${item.maChiTietSanPham || qrValue} • ${item.mauSac || 'Chưa có màu'} / ${item.kichCo || 'Chưa có kích cỡ'}`,
@@ -481,35 +490,28 @@ function openVariantQr(item) {
     actionType: 'manage-images',
     item
   }
-  showQrModal.value = true
+  hienThiModalQr.value = true
 }
 
 function closeQrModal() {
-  showQrModal.value = false
-  selectedQrItem.value = null
+  hienThiModalQr.value = false
+  chiTietQrDuocChon.value = null
 }
 
 function handleQrPrimaryAction() {
-  const actionType = selectedQrItem.value?.actionType
-  const targetItem = selectedQrItem.value?.item
+  const actionType = chiTietQrDuocChon.value?.actionType
+  const targetItem = chiTietQrDuocChon.value?.item
   if (actionType === 'manage-images' && targetItem) {
     closeQrModal()
-    selectedVariant.value = targetItem
-    showImageModal.value = true
+    bienTheDuocChon.value = targetItem
+    hienThiModalHinhAnh.value = true
   }
 }
 
-function handleScannerResult(result) {
-  if (result) {
-    filters.keyword = result
-    showScannerModal.value = false
-    loadData(0)
-    showToast('Đã tìm thấy mã: ' + result, 'success')
-  }
-}
+
 
 function triggerDownloadQr() {
-  const selectedIds = tableRef.value?.selectedVariantIds
+  const selectedIds = bangBienTheRef.value?.selectedVariantIds
   if (!selectedIds || selectedIds.size === 0) {
     showToast('Vui lòng chọn ít nhất 1 biến thể để tải mã QR', 'error')
     return
@@ -608,9 +610,9 @@ async function handleBulkQr(selectedItems) {
 }
 
 async function toggleBienTheStatus(item) {
-  if (updatingStatusIds.has(item.id)) return
+  if (danhSachIdDangCapNhat.has(item.id)) return
 
-  updatingStatusIds.add(item.id)
+  danhSachIdDangCapNhat.add(item.id)
   try {
     const newTrangThai = Number(item.kichHoat) === 1 ? 0 : 1
 
@@ -620,18 +622,18 @@ async function toggleBienTheStatus(item) {
   } catch (error) {
     showToast(getDisplayErrorMessage(error, 'Cập nhật trạng thái thất bại'), 'error')
   } finally {
-    updatingStatusIds.delete(item.id)
+    danhSachIdDangCapNhat.delete(item.id)
   }
 }
 
 async function xuatExcel() {
   try {
     const response = await api.layDanhSachChiTietSanPham({
-      keyword: filters.keyword.trim() || undefined,
+      keyword: boLoc.keyword.trim() || undefined,
       giayId: selectedGiayId.value,
-      mauSacId: filters.mauSacId,
-      kichCoId: filters.kichCoId,
-      trangThai: filters.trangThai,
+      mauSacId: boLoc.mauSacId,
+      kichCoId: boLoc.kichCoId,
+      trangThai: boLoc.trangThai,
       page: 0,
       size: Math.max(totalItems.value, pageSize.value)
     })
@@ -675,7 +677,7 @@ watch(
 )
 
 watch(
-  () => filters.keyword,
+  () => boLoc.keyword,
   () => {
     scheduleKeywordSearch()
   }
@@ -709,23 +711,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
 
-    <ProductVariantFilters
-      :filters="filters"
+    <BoLocBienThe
+      :filters="boLoc"
       :danh-muc="danhMuc"
-      :selected-product="selectedProduct"
-      :has-selected-variants="hasSelectedVariants"
+      :selected-product="sanPhamDuocChon"
+      :has-selected-variants="coBienTheDuocChon"
       @reset-filters="resetFilters"
       @export-excel="xuatExcel"
       @download-qr="triggerDownloadQr"
       @go-to-form="goToForm"
       @load-data="loadData"
-      @open-scanner="showScannerModal = true"
+      @open-scanner="hienThiModalQuetMa = true"
     />
 
-    <ProductVariantTable
-      ref="tableRef"
+    <BangBienThe
+      ref="bangBienTheRef"
       :items="items"
       :loading="loading"
       :current-page="currentPage"
@@ -733,7 +735,7 @@ onUnmounted(() => {
       :total-items="totalItems"
       :total-pages="totalPages"
       :page-size-options="pageSizeOptions"
-      :updating-status-ids="updatingStatusIds"
+      :updating-status-ids="danhSachIdDangCapNhat"
       :focused-chi-tiet-id="focusedChiTietId"
       :hide-pagination="!!selectedGiayId"
       @toggle-status="toggleBienTheStatus"
@@ -741,15 +743,15 @@ onUnmounted(() => {
       @open-qr="openVariantQr"
       @bulk-qr="handleBulkQr"
       @refresh="loadData"
-      @selection-changed="hasSelectedVariants = $event"
+      @selection-changed="coBienTheDuocChon = $event"
       @update:current-page="loadData"
       @update:page-size="handlePageSizeChange"
       @open-discount-detail="openDiscountDetail"
     />
 
     <QuanLySanPhamBienTheFormModal
-      :open="showEditVariantModal"
-      :editing-bien-the="editingVariant"
+      :open="hienThiModalSuaBienThe"
+      :editing-bien-the="bienTheDangSua"
       :selected-giay="editingSelectedGiay"
       :danh-muc="danhMuc"
       :bien-the-form="bienTheForm"
@@ -757,57 +759,53 @@ onUnmounted(() => {
       :bulk-bien-the-form="bulkBienTheForm"
       :bulk-bien-the-errors="bulkBienTheErrors"
       :generated-bulk-bien-thes="generatedBulkBienThes"
-      :saving-bien-the="savingVariant"
+      :saving-bien-the="dangLuuBienThe"
       @close="closeEditVariantModal"
       @save="saveEditingVariant"
       @open-images="openImageModalFromEdit"
     />
 
     <AdminQrCodeModal
-      :open="showQrModal"
-      v-bind="selectedQrItem"
+      :open="hienThiModalQr"
+      v-bind="chiTietQrDuocChon"
       @close="closeQrModal"
       @primary-action="handleQrPrimaryAction"
     />
 
     <QuanLySanPhamHinhAnhModal
-      :open="showImageModal"
-      :variant="selectedVariant"
+      :open="hienThiModalHinhAnh"
+      :variant="bienTheDuocChon"
       @close="closeImageModal"
       @updated="loadData(currentPage)"
       @error="showToast($event, 'error')"
     />
 
-    <BanHangQrScannerModal
-      :is-open="showScannerModal"
+    <ModalQuetQR
+      :is-open="hienThiModalQuetMa"
       :is-admin="true"
-      @close="showScannerModal = false"
+      @close="hienThiModalQuetMa = false"
       @scan="handleScannerResult"
     />
 
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="toast.show && toast.type !== 'success'"
-          class="fixed right-4 top-[88px] z-[100] w-[min(92vw,380px)] rounded-3xl border bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)]"
-          :class="toast.type === 'error' ? 'border-rose-100' : 'border-slate-100'"
+          v-if="thongBao.show && thongBao.type !== 'success'"
+          class="fixed right-4 top-[88px] z-[100] w-[min(92vw,380px)] rounded-md border bg-white px-4 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.12)]"
+          :class="thongBao.type === 'error' ? 'border-rose-100' : 'border-slate-100'"
         >
           <div class="flex items-start gap-3">
             <div
-              class="mt-0.5 rounded-2xl p-2"
-              :class="toast.type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'"
+              class="mt-0.5 rounded-md p-2"
+              :class="thongBao.type === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'"
             >
-              <TriangleAlert v-if="toast.type === 'error'" class="h-5 w-5" />
+              <TriangleAlert v-if="thongBao.type === 'error'" class="h-5 w-5" />
               <CircleCheckBig v-else class="h-5 w-5" />
             </div>
 
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-slate-800">
-                {{ toastTitle }}
-              </p>
-              <p class="mt-1 text-sm text-slate-500">
-                {{ toast.message }}
-              </p>
+            <div class="flex-1">
+              <h3 class="font-semibold text-slate-800">{{ toastTitle }}</h3>
+              <p class="mt-1 text-sm text-slate-500">{{ thongBao.message }}</p>
             </div>
 
             <button

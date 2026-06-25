@@ -159,42 +159,54 @@ public class ThongKeService {
             long khachMoi,
             Map<Integer, List<ThanhToan>> thanhToanMap
     ) {
-        BigDecimal tongDoanhThu = dongBanHang.stream()
-                .map(HoaDonChiTiet::getHoaDon)
-                .distinct()
-                .map(h -> h.getTongTienHang() != null ? h.getTongTienHang() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal tongTienMat = BigDecimal.ZERO;
+        BigDecimal tongChuyenKhoan = BigDecimal.ZERO;
 
-        BigDecimal doanhThuThucTe = dongBanHang.stream()
+        List<HoaDon> uniqueHoaDons = dongBanHang.stream()
                 .map(HoaDonChiTiet::getHoaDon)
                 .distinct()
-                .map(h -> {
-                    BigDecimal gross = h.getTongTienHang() != null ? h.getTongTienHang() : BigDecimal.ZERO;
-                    BigDecimal voucher = h.getTienGiam() != null ? h.getTienGiam() : BigDecimal.ZERO;
-                    BigDecimal refund = BigDecimal.ZERO;
-                    List<ThanhToan> payments = thanhToanMap.getOrDefault(h.getId(), List.of());
-                    for (ThanhToan tt : payments) {
-                        if (tt.getTrangThai() != null && tt.getTrangThai() == 5) { // Đã hoàn tiền
-                            refund = refund.add(tt.getSoTien() != null ? tt.getSoTien() : BigDecimal.ZERO);
+                .toList();
+
+        for (HoaDon h : uniqueHoaDons) {
+            List<ThanhToan> payments = thanhToanMap.getOrDefault(h.getId(), List.of());
+            for (ThanhToan tt : payments) {
+                BigDecimal soTien = tt.getSoTien() != null ? tt.getSoTien() : BigDecimal.ZERO;
+                if (tt.getLoaiGiaoDich() != null && tt.getLoaiGiaoDich() == 1) { // Thanh toán
+                    if (tt.getTrangThai() != null && tt.getTrangThai() == 1) { // Thành công
+                        if (tt.getHinhThuc() != null && tt.getHinhThuc() == 1) { // Tiền mặt
+                            tongTienMat = tongTienMat.add(soTien);
+                        } else if (tt.getHinhThuc() != null) { // Chuyển khoản (hinhThuc != 1)
+                            tongChuyenKhoan = tongChuyenKhoan.add(soTien);
                         }
                     }
-                    return gross.subtract(voucher).subtract(refund);
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .max(BigDecimal.ZERO);
+                } else if (tt.getLoaiGiaoDich() != null && tt.getLoaiGiaoDich() == 2) { // Hoàn tiền
+                    if (tt.getTrangThai() != null && tt.getTrangThai() == 5) { // Thành công
+                        if (tt.getHinhThuc() != null && tt.getHinhThuc() == 1) { // Tiền mặt
+                            tongTienMat = tongTienMat.subtract(soTien);
+                        } else if (tt.getHinhThuc() != null) { // Chuyển khoản (hinhThuc != 1)
+                            tongChuyenKhoan = tongChuyenKhoan.subtract(soTien);
+                        }
+                    }
+                }
+            }
+        }
 
-        long tongDonHang = dongBanHang.stream()
-                .map(HoaDonChiTiet::getHoaDon)
-                .map(HoaDon::getId)
-                .distinct()
-                .count();
+        BigDecimal tongDoanhThu = tongTienMat.add(tongChuyenKhoan).max(BigDecimal.ZERO);
+        long tongDonHang = uniqueHoaDons.size();
 
         long sanPhamDaBan = dongBanHang.stream()
                 .map(HoaDonChiTiet::getSoLuong)
                 .mapToLong(soLuong -> soLuong == null ? 0L : soLuong.longValue())
                 .sum();
 
-        return new ThongKeTongQuanResponse(tongDoanhThu, doanhThuThucTe, tongDonHang, sanPhamDaBan, khachMoi);
+        return new ThongKeTongQuanResponse(
+                tongDoanhThu,
+                tongTienMat.max(BigDecimal.ZERO),
+                tongChuyenKhoan.max(BigDecimal.ZERO),
+                tongDonHang,
+                sanPhamDaBan,
+                khachMoi
+        );
     }
 
     private List<ThuongHieuThongKeFilterResponse> layThuongHieuBoLoc() {
@@ -711,7 +723,7 @@ public class ThongKeService {
                     if (tradeDate == null || tradeDate.isBefore(start) || !tradeDate.isBefore(end)) {
                         return false;
                     }
-                    return khopBoLocSanPham(line.getGiayChiTiet().getGiay(), boLoc);
+                    return khopBoLocSanPham(line.getGiayChiTiet() != null ? line.getGiayChiTiet().getGiay() : null, boLoc);
                 })
                 .toList();
 
@@ -725,22 +737,26 @@ public class ThongKeService {
 
         for (HoaDon h : distinctInvoices) {
             BigDecimal gross = h.getTongTienHang() != null ? h.getTongTienHang() : BigDecimal.ZERO;
-            BigDecimal voucher = h.getTienGiam() != null ? h.getTienGiam() : BigDecimal.ZERO;
-            BigDecimal refund = BigDecimal.ZERO;
+            revenue = revenue.add(gross);
+
             List<ThanhToan> payments = thanhToanMap.getOrDefault(h.getId(), List.of());
             for (ThanhToan tt : payments) {
-                if (tt.getTrangThai() != null && tt.getTrangThai() == 5) { // Đã hoàn tiền
-                    refund = refund.add(tt.getSoTien() != null ? tt.getSoTien() : BigDecimal.ZERO);
+                BigDecimal soTien = tt.getSoTien() != null ? tt.getSoTien() : BigDecimal.ZERO;
+                if (tt.getLoaiGiaoDich() != null && tt.getLoaiGiaoDich() == 1) { // Thanh toán
+                    if (tt.getTrangThai() != null && tt.getTrangThai() == 1) { // Thành công
+                        actualRevenue = actualRevenue.add(soTien);
+                    }
+                } else if (tt.getLoaiGiaoDich() != null && tt.getLoaiGiaoDich() == 2) { // Hoàn tiền
+                    if (tt.getTrangThai() != null && tt.getTrangThai() == 5) { // Thành công
+                        actualRevenue = actualRevenue.subtract(soTien);
+                    }
                 }
             }
-            BigDecimal net = gross.subtract(voucher).subtract(refund);
-            revenue = revenue.add(gross);
-            actualRevenue = actualRevenue.add(net);
         }
         actualRevenue = actualRevenue.max(BigDecimal.ZERO);
 
         long orders = distinctInvoices.size();
-        double average = orders > 0 ? (revenue.doubleValue() / orders) : 0.0;
+        double average = orders > 0 ? (actualRevenue.doubleValue() / orders) : 0.0;
 
         return new PeriodStats(revenue, actualRevenue, orders, average);
     }
@@ -801,20 +817,19 @@ public class ThongKeService {
     }
 
     private ThongKeTheoThoiGianResponse createPeriodResponse(String periodName, PeriodStats current, PeriodStats previous) {
-        BigDecimal prevRevenue = previous.revenue();
+        BigDecimal prevRevenue = previous.actualRevenue();
         double growth = 0.0;
         if (prevRevenue.compareTo(BigDecimal.ZERO) > 0) {
-            growth = (current.revenue().subtract(prevRevenue))
+            growth = (current.actualRevenue().subtract(prevRevenue))
                     .multiply(BigDecimal.valueOf(100))
                     .divide(prevRevenue, 2, java.math.RoundingMode.HALF_UP)
                     .doubleValue();
-        } else if (current.revenue().compareTo(BigDecimal.ZERO) > 0) {
+        } else if (current.actualRevenue().compareTo(BigDecimal.ZERO) > 0) {
             growth = 100.0;
         }
 
         return new ThongKeTheoThoiGianResponse(
                 periodName,
-                current.revenue(),
                 current.actualRevenue(),
                 current.orders(),
                 BigDecimal.valueOf(current.average()),

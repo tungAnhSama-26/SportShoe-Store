@@ -12,6 +12,7 @@ const ChiTietDonHang = () => import("../pages/ChiTietDonHang.vue");
 const DanhGiaDonHang = () => import("../pages/DanhGiaDonHang.vue");
 const SanPhamNoiBat = () => import("../pages/SanPhamNoiBat.vue");
 const GioiThieu = () => import("../pages/GioiThieu.vue");
+const TraCuuDonHang = () => import("../pages/TraCuuDonHang.vue");
 const ClientProfile = () => import("../pages/Profile.vue");
 const Login = () => import("../pages/login/Login.vue");
 const AdminLogin = () => import("../pages/login/AdminLogin.vue");
@@ -53,6 +54,7 @@ const Profile = () => import("../pages/admin/profile/Profile.vue");
 const QuanLyKhachHang = () => import("../pages/admin/khach-hang/QuanLyKhachHang.vue");
 const ChiTietKhachHang = () => import("../pages/admin/khach-hang/ChiTietKhachHang.vue");
 const DonHangKhachHang = () => import("../pages/admin/khach-hang/DonHangKhachHang.vue");
+const ChatManagement = () => import("../pages/admin/chat/ChatManagement.vue");
 
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
@@ -185,6 +187,11 @@ const router = createRouter({
           path: "gioi-thieu",
           name: "gioi-thieu",
           component: GioiThieu
+        },
+        {
+          path: "tra-cuu-don",
+          name: "tra-cuu-don",
+          component: TraCuuDonHang
         },
         {
           path: "profile",
@@ -424,6 +431,10 @@ const router = createRouter({
           path: "lich-su-hoat-dong",
           name: "admin-lich-su-hoat-dong",
           component: LichSuHoatDong
+},{
+          path: "chat",
+          name: "admin-chat",
+          component: ChatManagement
         }
       ]
     },

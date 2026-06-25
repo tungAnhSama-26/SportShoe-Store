@@ -50,12 +50,7 @@ public class KichCoService {
             if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
                 throw new BusinessException("Kích cỡ '" + req.giaTri() + "' đã tồn tại và đang hoạt động.");
             } else {
-                existing.setTrangThai(1);
-                existing.setNgayCapNhat(Instant.now());
-                if (hasText(req.ghiChu())) {
-                    existing.setGhiChu(req.ghiChu().trim());
-                }
-                return toKichCo(kichCoRepository.save(existing));
+                throw new BusinessException("Kích cỡ '" + req.giaTri() + "' đã tồn tại nhưng đang ngừng hoạt động. Vui lòng kích hoạt lại trong Quản lý thuộc tính.");
             }
         }
 
