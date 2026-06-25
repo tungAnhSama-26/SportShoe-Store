@@ -152,6 +152,7 @@ export function showSuccess(text = '', title = 'Thành công!') {
     text: text || undefined,
     timer: 2000,
     iconColor: BRAND_RED,
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 }
 
@@ -170,6 +171,7 @@ export function showError(text = '', title = 'Thất bại!') {
     background: '#ffffff',
     color: '#334155',
     iconColor: BRAND_RED,
+    target: document.getElementById('pos-tablet-screen') || 'body',
     showClass: {
       popup: 'sportshoe-popup-show',
       backdrop: 'swal2-noanimation',
@@ -194,6 +196,7 @@ export function showToastSuccess(text = '', title = 'Thành công!') {
     text: text || undefined,
     timer: 2000,
     iconColor: BRAND_RED,
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 }
 
@@ -204,6 +207,7 @@ export function showWarning(text = '', title = 'Thông báo') {
     text: text || undefined,
     timer: 4000,
     iconColor: '#f59e0b',
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 }
 
@@ -222,6 +226,7 @@ export async function showConfirm(
     cancelButtonText: cancelText,
     reverseButtons: true,
     focusConfirm: false,
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 
   return result.isConfirmed;
@@ -296,6 +301,7 @@ export async function showPaymentConfirmWithCoupon({
       actions: 'gap-3 mt-6 justify-end w-full flex-nowrap',
       closeButton: 'focus:outline-none mt-2 mr-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700 transition'
     },
+    target: document.getElementById('pos-tablet-screen') || 'body',
     buttonsStyling: false
   });
 

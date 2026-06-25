@@ -30,6 +30,8 @@ public class BanHangTaiQuayService {
     private final SanPhamTaiQuayService productUseCase;
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
     private final HoaDonTaiQuayService invoiceUseCase;
+    private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
+    private final ThucThiThanhToanTaiQuayService paymentExecutorUseCase;
     private final GhnShippingService ghnShippingService;
     private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
     private final ThucThiThanhToanTaiQuayService paymentExecutionUseCase;
@@ -47,6 +49,8 @@ public class BanHangTaiQuayService {
         this.productUseCase = productUseCase;
         this.voucherUseCase = voucherUseCase;
         this.invoiceUseCase = invoiceUseCase;
+        this.pendingInvoiceUseCase = pendingInvoiceUseCase;
+        this.paymentExecutorUseCase = paymentExecutorUseCase;
         this.ghnShippingService = ghnShippingService;
         this.pendingInvoiceUseCase = pendingInvoiceUseCase;
         this.paymentExecutionUseCase = paymentExecutionUseCase;
@@ -77,7 +81,8 @@ public class BanHangTaiQuayService {
     @Transactional(readOnly = true)
     public PhieuGiamGiaTaiQuayResponse apDungPhieuGiamGia(ApDungPhieuGiamGiaRequest request) {
         HoaDon hoaDonHienTai = invoiceUseCase.layHoaDonTaiQuayNeuCo(request.hoaDonId());
-        BigDecimal tongTienHang = voucherUseCase.xacDinhTongTienHangKhiApPhieu(request, hoaDonHienTai, invoiceUseCase.taoDanhSachDongHoaDonTam(request.items()));
+        BigDecimal tongTienHang = voucherUseCase.xacDinhTongTienHangKhiApPhieu(
+                request, hoaDonHienTai, invoiceUseCase.taoDanhSachDongHoaDonTam(request.items()));
         KhachHang khachHang = invoiceUseCase.timKhachHang(request.khachHangId());
         PhieuGiamGiaTaiQuayService.PhieuGiamGiaDuocApDung phieuGiamGia = voucherUseCase.tinhPhieuGiamGiaHopLe(
                 request.maPhieuGiamGia(),

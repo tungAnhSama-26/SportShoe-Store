@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/giao-ca", "/api/v1/admin/giao-ca/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/nhan-vien", "/api/v1/admin/nhan-vien/*").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/admin/nhan-vien/*").hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers("/api/v1/admin/danh-gia", "/api/v1/admin/danh-gia/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().permitAll()
                 )

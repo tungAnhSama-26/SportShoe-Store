@@ -65,12 +65,14 @@ export async function capNhatSoLuongDonHang(donId, items) {
 }
 
 // Gửi đánh giá cho một sản phẩm trong đơn (theo dòng hóa đơn chi tiết).
-export async function guiDanhGiaSanPham(hoaDonChiTietId, soSao, noiDung) {
+// media: mảng [{url, loai}] ảnh/video -> gửi lên dưới dạng chuỗi JSON.
+export async function guiDanhGiaSanPham(hoaDonChiTietId, soSao, noiDung, media) {
   const id = layKhachId();
+  const mediaJson = Array.isArray(media) && media.length ? JSON.stringify(media) : null;
   return apiRequest(`/client/danh-gia`, {
     method: "POST",
     authenticated: false,
-    body: JSON.stringify({ khachHangId: id, hoaDonChiTietId, soSao, noiDung }),
+    body: JSON.stringify({ khachHangId: id, hoaDonChiTietId, soSao, noiDung, media: mediaJson }),
     fallbackMessage: "Không thể gửi đánh giá",
   });
 }
