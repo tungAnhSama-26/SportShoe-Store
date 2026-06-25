@@ -235,7 +235,7 @@ watch(() => props.showProductDropdown, (newVal) => {
       <!-- Nút quét QR -->
       <button
         type="button"
-        class="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white w-[46px] h-[46px] text-slate-500 transition hover:bg-slate-50 hover:text-red-500 shadow-sm"
+        class="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-[46px] h-[46px] text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-red-500 dark:hover:text-red-400 shadow-sm"
         @click="moQuetQr"
         title="Quét QR bằng Camera"
       >
@@ -245,7 +245,7 @@ watch(() => props.showProductDropdown, (newVal) => {
       <!-- Nút mở modal danh sách sản phẩm -->
       <button
         type="button"
-        class="inline-flex shrink-0 items-center gap-2 rounded-md border border-red-200 bg-red-50 px-5 py-[11px] text-sm font-bold text-red-600 transition hover:bg-red-100 shadow-sm"
+        class="inline-flex shrink-0 items-center gap-2 rounded-md border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-5 py-[11px] text-sm font-bold text-red-600 dark:text-red-400 transition hover:bg-red-100 dark:hover:bg-red-500/20 shadow-sm"
         @click="showProductModal = true; emit('refresh')"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -259,15 +259,15 @@ watch(() => props.showProductDropdown, (newVal) => {
     <Teleport to="body">
       <div
         v-if="showProductModal"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 py-6 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-slate-900/80 px-4 py-6 backdrop-blur-sm"
       >
-        <div class="flex h-[95vh] w-[1400px] max-w-[98vw] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div class="flex h-[95vh] w-[1400px] max-w-[98vw] flex-col overflow-hidden rounded-[24px] bg-white dark:bg-slate-900 shadow-2xl">
 
           <!-- Hàng 1: Tiêu đề + nút đóng -->
-          <div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
-            <h3 class="text-xl font-bold text-slate-800">Danh sách sản phẩm</h3>
+          <div class="flex shrink-0 items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Danh sách sản phẩm</h3>
             <button
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-400 dark:text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300"
               @click="dongModal"
             >
               <X class="h-5 w-5" />
@@ -275,7 +275,7 @@ watch(() => props.showProductDropdown, (newVal) => {
           </div>
 
           <!-- Hàng 2: Tìm kiếm + Bộ lọc -->
-          <div class="flex shrink-0 items-center gap-3 border-b border-slate-100 px-6 py-3">
+          <div class="flex shrink-0 items-center gap-3 border-b border-slate-100 dark:border-slate-800 px-6 py-3">
             <!-- Ô tìm kiếm -->
             <div class="relative flex-1">
               <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -285,7 +285,7 @@ watch(() => props.showProductDropdown, (newVal) => {
                 :value="productKeyword"
                 type="text"
                 placeholder="Tìm kiếm mã, tên sản phẩm..."
-                class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-sm font-medium text-slate-900 outline-none transition focus:border-red-300 focus:bg-white focus:ring-2 focus:ring-red-50 shadow-sm"
+                class="h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-10 pr-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-red-50 dark:focus:ring-red-900/20 shadow-sm"
                 @input="emit('update:productKeyword', $event.target.value)"
                 @keyup.enter="handleEnter"
                 @focus="emit('focus-product')"
@@ -303,7 +303,7 @@ watch(() => props.showProductDropdown, (newVal) => {
             <select
               :value="selectedBrandFilter"
               @change="emit('update:selectedBrandFilter', $event.target.value)"
-              class="h-10 rounded-md border border-slate-200 bg-slate-50 py-2 px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-red-300 shadow-sm"
+              class="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 px-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 shadow-sm"
             >
               <option value="">Tất cả thương hiệu</option>
               <option v-for="brand in availableBrands" :key="brand" :value="brand">{{ brand }}</option>
@@ -313,7 +313,7 @@ watch(() => props.showProductDropdown, (newVal) => {
             <select
               :value="selectedCategoryFilter"
               @change="emit('update:selectedCategoryFilter', $event.target.value)"
-              class="h-10 w-40 shrink-0 rounded-md border border-slate-200 bg-slate-50 py-2 px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-red-300 shadow-sm"
+              class="h-10 w-40 shrink-0 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 px-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 shadow-sm"
             >
               <option value="">Tất cả thể loại</option>
               <option v-for="category in availableCategories" :key="category" :value="category">{{ category }}</option>
@@ -323,7 +323,7 @@ watch(() => props.showProductDropdown, (newVal) => {
             <select
               :value="selectedColorFilter"
               @change="emit('update:selectedColorFilter', $event.target.value)"
-              class="h-10 w-32 shrink-0 rounded-md border border-slate-200 bg-slate-50 py-2 px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-red-300 shadow-sm"
+              class="h-10 w-32 shrink-0 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 px-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 shadow-sm"
             >
               <option value="">Tất cả màu</option>
               <option v-for="color in availableColors" :key="color" :value="color">{{ color }}</option>
@@ -333,7 +333,7 @@ watch(() => props.showProductDropdown, (newVal) => {
             <select
               :value="selectedSizeFilter"
               @change="emit('update:selectedSizeFilter', $event.target.value)"
-              class="h-10 w-32 shrink-0 rounded-md border border-slate-200 bg-slate-50 py-2 px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-red-300 shadow-sm"
+              class="h-10 w-32 shrink-0 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 px-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 shadow-sm"
             >
               <option value="">Tất cả size</option>
               <option v-for="size in availableSizes" :key="size" :value="size">{{ size }}</option>
@@ -343,7 +343,7 @@ watch(() => props.showProductDropdown, (newVal) => {
             <select
               :value="currentPriceRangeValue"
               @change="onPriceFilterChange"
-              class="h-10 w-40 shrink-0 rounded-md border border-slate-200 bg-slate-50 py-2 px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-red-300 shadow-sm"
+              class="h-10 w-40 shrink-0 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 px-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 shadow-sm"
             >
               <option value="">Tất cả mức giá</option>
               <option value="0-1000000">Dưới 1 triệu</option>
@@ -355,7 +355,7 @@ watch(() => props.showProductDropdown, (newVal) => {
             <!-- Nút Reset -->
             <button
               @click="resetFilters"
-              class="flex h-10 shrink-0 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100 shadow-sm"
+              class="flex h-10 shrink-0 items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-red-600 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 shadow-sm"
             >
               <RotateCcw class="h-4 w-4" />
               Làm mới
@@ -370,33 +370,33 @@ watch(() => props.showProductDropdown, (newVal) => {
             >
               Không tìm thấy sản phẩm nào.
             </div>
-            <div v-else class="overflow-x-auto w-full">
-              <table class="w-full text-left text-base text-slate-600">
+            <div v-else class="overflow-x-auto w-full custom-scrollbar">
+              <table class="w-full text-left text-base text-slate-600 dark:text-slate-400">
                 <thead class="sticky top-0 z-10 shadow-sm">
-                  <tr class="text-left text-base font-bold text-slate-950">
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4 text-center w-12">STT</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4">Mã Sản Phẩm</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4">Tên Sản Phẩm</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4">Biến Thể (Màu sắc)</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4 text-center">Size</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4 text-center w-20">Ảnh</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4">Số lượng</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4">Giá bán</th>
-                    <th class="whitespace-nowrap bg-slate-100 px-5 py-4">Giảm giá</th>
+                  <tr class="text-left text-base font-bold text-slate-950 dark:text-slate-200">
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center w-12">STT</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Mã Sản Phẩm</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Tên Sản Phẩm</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Biến Thể (Màu sắc)</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center">Size</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center w-20">Ảnh</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Số lượng</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Giá bán</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Giảm giá</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                   <tr
                     v-for="(product, index) in paginatedProducts"
                     :key="`panel-${product.chiTietId || product.sanPhamId || product.id}`"
-                    class="group cursor-pointer bg-white transition hover:bg-red-50/30"
+                    class="group cursor-pointer bg-white dark:bg-slate-900 transition hover:bg-red-50/30 dark:hover:bg-red-900/10"
                     @click="handleOpenProduct(product)"
                   >
-                    <td class="px-5 py-4 text-center text-slate-500 font-medium">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-                    <td class="px-5 py-4 font-bold text-slate-800 text-lg">{{ product.maBienThe || product.maSanPham }}</td>
+                    <td class="px-5 py-4 text-center text-slate-500 dark:text-slate-400 font-medium">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                    <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-200 text-lg">{{ product.maBienThe || product.maSanPham }}</td>
                     <td class="px-5 py-4">
                       <div
-                        class="line-clamp-2 font-bold text-slate-900 text-lg transition group-hover:text-red-600"
+                        class="line-clamp-2 font-bold text-slate-900 dark:text-slate-100 text-lg transition group-hover:text-red-600 dark:group-hover:text-red-400"
                         :title="product.tenSanPham"
                       >
                         {{ product.tenSanPham }}
@@ -409,15 +409,15 @@ watch(() => props.showProductDropdown, (newVal) => {
                       {{ product.kichCo || '-' }}
                     </td>
                     <td class="px-5 py-4">
-                      <div class="relative h-16 w-16 overflow-hidden rounded-md border border-slate-100 bg-white shadow-sm">
+                      <div class="relative h-16 w-16 overflow-hidden rounded-md border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
                         <img v-if="product.hinhAnh" :src="product.hinhAnh" alt="" class="h-full w-full object-contain" />
-                        <div v-else class="flex h-full w-full items-center justify-center bg-slate-50 text-base font-bold text-slate-400">
+                        <div v-else class="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-slate-800/50 text-base font-bold text-slate-400 dark:text-slate-500">
                           {{ product.tenSanPham ? product.tenSanPham.charAt(0).toUpperCase() : '?' }}
                         </div>
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4">
-                      <span class="font-bold text-slate-800 text-lg">{{ product.soLuongTon }}</span>
+                      <span class="font-bold text-slate-800 dark:text-slate-200 text-lg">{{ product.soLuongTon }}</span>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4">
                       <div class="flex flex-col">
@@ -435,10 +435,10 @@ watch(() => props.showProductDropdown, (newVal) => {
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-4 py-3">
-                      <span v-if="isDiscounted(product)" class="inline-flex rounded bg-rose-100 px-2 py-1 text-[11px] font-bold text-rose-600">
+                      <span v-if="isDiscounted(product)" class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
                         {{ formatDiscountPercent(product) }}
                       </span>
-                      <span v-else class="text-slate-400 text-xs">-</span>
+                      <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>
                     </td>
                   </tr>
                 </tbody>

@@ -19,9 +19,9 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-[28px] border border-slate-100">
+  <div class="overflow-x-auto rounded-[28px] border border-slate-100 dark:border-slate-700/60 custom-scrollbar">
     <table class="min-w-full border-collapse">
-      <thead class="bg-slate-100 text-left text-sm text-slate-950 font-bold">
+      <thead class="bg-slate-100 dark:bg-slate-800/80 text-left text-sm text-slate-950 dark:text-slate-200 font-bold">
         <tr>
           <th class="px-3 py-2 whitespace-nowrap w-[5%]">STT</th>
           <th class="px-3 py-2 whitespace-nowrap w-[15%]">Mã sản phẩm</th>
@@ -33,35 +33,35 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
           <th class="px-3 py-2 text-center whitespace-nowrap w-[5%]">Thao tác</th>
         </tr>
       </thead>
-      <tbody class="bg-white text-sm text-slate-700">
-        <tr v-for="(item, index) in cartItems" :key="item.cartItemId || item.chiTietId" class="border-t border-slate-100 text-xs font-medium">
-          <td class="px-3 py-2 text-slate-900">{{ index + 1 }}</td>
-          <td class="px-3 py-2 text-slate-600">{{ item.maSanPham }}</td>
+      <tbody class="bg-white dark:bg-slate-800/30 text-sm text-slate-700 dark:text-slate-300">
+        <tr v-for="(item, index) in cartItems" :key="item.cartItemId || item.chiTietId" class="border-t border-slate-100 dark:border-slate-700/50 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+          <td class="px-3 py-2 text-slate-900 dark:text-slate-100">{{ index + 1 }}</td>
+          <td class="px-3 py-2 text-slate-600 dark:text-slate-400">{{ item.maSanPham }}</td>
           <td class="px-3 py-2">
             <div class="flex items-center gap-2">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-xs font-bold text-red-400">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] dark:bg-[linear-gradient(135deg,#4a1c1c_0%,#2d1111_100%)] text-xs font-bold text-red-400 dark:text-red-300">
                 <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
                 <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
               </div>
               <div>
-                <p class="font-medium text-slate-900 line-clamp-2">{{ item.tenSanPham }}</p>
-                <p v-if="item.oldPrice && item.oldPrice !== item.giaBan" class="mt-1 text-[11px] font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded inline-block">
+                <p class="font-medium text-slate-900 dark:text-slate-100 line-clamp-2">{{ item.tenSanPham }}</p>
+                <p v-if="item.oldPrice && item.oldPrice !== item.giaBan" class="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded inline-block">
                   Giá đổi từ {{ dinhDangTien(item.oldPrice) }} thành {{ dinhDangTien(item.giaBan) }}
                 </p>
               </div>
             </div>
           </td>
-          <td class="px-3 py-2 text-slate-700 whitespace-nowrap">{{ item.mauSac || "--" }}</td>
-          <td class="px-3 py-2 text-slate-700 whitespace-nowrap">{{ item.kichCo || "--" }}</td>
-          <td class="px-3 py-2 text-center font-semibold text-slate-900">{{ item.soLuong }}</td>
-          <td class="px-3 py-2 font-medium text-slate-700">
+          <td class="px-3 py-2 text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ item.mauSac || "--" }}</td>
+          <td class="px-3 py-2 text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ item.kichCo || "--" }}</td>
+          <td class="px-3 py-2 text-center font-semibold text-slate-900 dark:text-slate-100">{{ item.soLuong }}</td>
+          <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
             <div>{{ dinhDangTien(item.giaBan) }}</div>
           </td>
           <td class="px-3 py-2">
             <div class="flex items-center justify-center">
               <button
                 type="button"
-                class="p-1.5 text-slate-400 transition hover:text-red-500 hover:bg-red-50 rounded-md flex items-center justify-center"
+                class="p-1.5 text-slate-400 dark:text-slate-500 transition hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md flex items-center justify-center"
                 @click="emit('remove-item', item.cartItemId || item.chiTietId)"
                 title="Xóa sản phẩm"
               >
@@ -71,7 +71,7 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
           </td>
         </tr>
         <tr v-if="!cartItems.length">
-          <td colspan="8" class="px-3 py-8 text-center text-xs text-slate-400">
+          <td colspan="8" class="px-3 py-8 text-center text-xs text-slate-400 dark:text-slate-500">
             Giỏ hàng trống.
           </td>
         </tr>

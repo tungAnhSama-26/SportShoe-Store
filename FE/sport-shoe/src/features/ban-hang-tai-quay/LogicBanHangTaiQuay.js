@@ -21,6 +21,7 @@ import { LogicThanhToan } from "./LogicThanhToan";
 import { LogicSanPham } from "./LogicSanPham";
 import { LogicGiaoHang } from "./LogicGiaoHang";
 import { showConfirm, showToastSuccess, showError, toastSwal, showPaymentConfirmWithCoupon } from "../../utils/alert";
+import { useRealtime } from "../../composables/useRealtime";
 
 
 
@@ -222,8 +223,97 @@ function LogicBanHangTaiQuay() {
   } = LogicInHoaDon();
 
   const {
+    chiTietIdThemMoi,
+    ketQuaBienTheSanPham
+  } = LogicSanPham({ thongBaoLoi });
+
+  const { subscribeTopic, publishMessage } = useRealtime();
+
+  const sessionId = Math.random().toString(36).substring(2, 15);
+  let isSyncingUI = false;
+
+  subscribeTopic('/topic/admin/pos-sync', async (msg) => {
+    if (msg.sender === sessionId) return;
+
+    if (msg.action === 'CHON_HOA_DON') {
+      isSyncingUI = true;
+      try {
+        await taiDanhSachHoaDonCho();
+        const invoice = danhSachHoaDonCho.value.find(hd => hd.id === msg.invoiceId);
+        if (invoice) {
+          await chonHoaDonCho(invoice);
+        }
+      } catch (e) {
+        console.error("Lỗi khi đồng bộ chọn hóa đơn:", e);
+      } finally {
+        isSyncingUI = false;
+      }
+    } else if (msg.action === 'SYNC_STATE') {
+      if (hoaDonChoDaChon.value?.id !== msg.invoiceId) return;
+      isSyncingUI = true;
+      dangLuuNoiBo = true;
+      skipNextAutosave = true;
+      
+      choPhepGiaoHang.value = msg.state.choPhepGiaoHang;
+      tenNguoiNhanGiaoHang.value = msg.state.tenNguoiNhanGiaoHang;
+      sdtNguoiNhanGiaoHang.value = msg.state.sdtNguoiNhanGiaoHang;
+      diaChiGiaoHang.value = msg.state.diaChiGiaoHang;
+      tienKhachDua.value = msg.state.tienKhachDua;
+      phuongThucThanhToan.value = msg.state.phuongThucThanhToan;
+      ghiChuThanhToan.value = msg.state.ghiChuThanhToan;
+      tuKhoaKhachHang.value = msg.state.tuKhoaKhachHang;
+      khachHangDuocChon.value = msg.state.khachHangDuocChon;
+      
+      setTimeout(() => { 
+        isSyncingUI = false; 
+        dangLuuNoiBo = false; 
+      }, 50);
+    }
+  });
+
+  subscribeTopic('/topic/admin/san-pham', async (message) => {
+    if (message.type === 'PRODUCT_CHANGED') {
+      if (dangLuuNoiBo || dangLuuHoaDonCho.value || dangThanhToan.value) return;
+
+      dangLuuNoiBo = true;
+      try {
+        await taiDanhSachHoaDonCho();
+        if (hoaDonChoDaChon.value) {
+          const stillExists = danhSachHoaDonCho.value.find(hd => hd.id === hoaDonChoDaChon.value.id);
+          if (stillExists) {
+            const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
+            chuyenHoaDonThanhBanNhap(detail);
+          } else {
+            // Hóa đơn đã bị xóa hoặc thanh toán bởi người khác
+            hoaDonChoDaChon.value = danhSachHoaDonCho.value.length > 0 ? danhSachHoaDonCho.value[0] : null;
+            if (hoaDonChoDaChon.value) {
+              const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
+              chuyenHoaDonThanhBanNhap(detail);
+            } else {
+              // Xóa trắng giỏ hàng và thông tin khách
+              cartItems.value = [];
+              khachHangDuocChon.value = null;
+              tuKhoaKhachHang.value = "";
+              choPhepGiaoHang.value = false;
+              phieuGiamGiaDaApDung.value = null;
+            }
+          }
+        } else if (danhSachHoaDonCho.value.length > 0) {
+          // Tự động chọn hóa đơn mới tạo nếu chưa có hóa đơn nào được chọn
+          hoaDonChoDaChon.value = danhSachHoaDonCho.value[0];
+          const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
+          chuyenHoaDonThanhBanNhap(detail);
+        }
+      } catch (e) {
+        console.error("Lỗi khi tải lại dữ liệu realtime:", e);
+      } finally {
+        setTimeout(() => { dangLuuNoiBo = false; }, 50);
+      }
+    }
+  });
+
+  const {
     tuKhoaSanPham,
-    ketQuaBienTheSanPham,
     chiTietSanPhamDaChon,
     mauSacDaChon,
     kichCoDaChon,
@@ -336,9 +426,16 @@ function LogicBanHangTaiQuay() {
     diaChiGiaoHang.value = "";
     donViVanChuyen.value = "GHN";
     phiVanChuyen.value = 0;
-    diaChiDaXacNhan.value = "";
     daTinhPhiVanChuyen.value = false;
     dangTinhPhiVanChuyen.value = false;
+
+    if (!isSyncingUI) {
+      publishMessage('/topic/admin/pos-sync', {
+        sender: sessionId,
+        action: 'CHON_HOA_DON',
+        invoiceId: null
+      });
+    }
     cauHinhGiaoHang.value = {
       serviceTypeId: 2,
       length: 30,
@@ -418,7 +515,8 @@ function LogicBanHangTaiQuay() {
           title: 'Cập nhật giá',
           text: `Sản phẩm ${result.tenSanPham} có giá thay đổi từ ${formatPrice(result.oldPrice)} đến ${formatPrice(result.newPrice)}`,
           timer: 3000,
-          iconColor: '#f59e0b'
+          iconColor: '#f59e0b',
+          target: document.getElementById('pos-tablet-screen') || 'body'
         });
       } else {
         showToastSuccess(`Đã thêm ${soLuongDaChon.value} sản phẩm vào hóa đơn`);
@@ -427,6 +525,7 @@ function LogicBanHangTaiQuay() {
   }
 
   function chuyenHoaDonThanhBanNhap(invoice) {
+    skipNextAutosave = true;
     const thongTinTheoChiTietId = new Map(
       ketQuaBienTheSanPham.value.map((product) => [product.chiTietId, product])
     );
@@ -554,6 +653,7 @@ function LogicBanHangTaiQuay() {
   }
   
   let dangLuuNoiBo = false;
+  let skipNextAutosave = false;
   let boDemTuDongLuu = null;
   watch(() => [
     cartItems.value,
@@ -565,6 +665,10 @@ function LogicBanHangTaiQuay() {
     khachHangDuocChon.value,
     phieuGiamGiaDaApDung.value
   ], () => {
+    if (skipNextAutosave) {
+      skipNextAutosave = false;
+      return;
+    }
     if (dangLuuNoiBo) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {
@@ -572,7 +676,46 @@ function LogicBanHangTaiQuay() {
     }, 1000);
   }, { deep: true });
 
+  watch(() => [
+    choPhepGiaoHang.value,
+    tenNguoiNhanGiaoHang.value,
+    sdtNguoiNhanGiaoHang.value,
+    diaChiGiaoHang.value,
+    tienKhachDua.value,
+    phuongThucThanhToan.value,
+    ghiChuThanhToan.value,
+    tuKhoaKhachHang.value
+  ], () => {
+    if (isSyncingUI || dangTaiChiTietHoaDon.value) return;
+    if (hoaDonChoDaChon.value) {
+      publishMessage('/topic/admin/pos-sync', {
+        sender: sessionId,
+        action: 'SYNC_STATE',
+        invoiceId: hoaDonChoDaChon.value.id,
+        state: {
+          choPhepGiaoHang: choPhepGiaoHang.value,
+          tenNguoiNhanGiaoHang: tenNguoiNhanGiaoHang.value,
+          sdtNguoiNhanGiaoHang: sdtNguoiNhanGiaoHang.value,
+          diaChiGiaoHang: diaChiGiaoHang.value,
+          tienKhachDua: tienKhachDua.value,
+          phuongThucThanhToan: phuongThucThanhToan.value,
+          ghiChuThanhToan: ghiChuThanhToan.value,
+          tuKhoaKhachHang: tuKhoaKhachHang.value,
+          khachHangDuocChon: khachHangDuocChon.value
+        }
+      });
+    }
+  }, { deep: true });
+
   async function chonHoaDonCho(invoice) {
+    if (!isSyncingUI) {
+      publishMessage('/topic/admin/pos-sync', {
+        sender: sessionId,
+        action: 'CHON_HOA_DON',
+        invoiceId: invoice.id
+      });
+    }
+
     if (hoaDonChoDaChon.value && hoaDonChoDaChon.value.id !== invoice.id) {
       try {
         await luuHoaDonHienTai();
@@ -623,6 +766,16 @@ function LogicBanHangTaiQuay() {
       const matchedInvoice = danhSachHoaDonCho.value.find((invoice) => invoice.id === createdInvoice.id) ?? null;
       hoaDonChoDaChon.value = matchedInvoice;
       chuyenHoaDonThanhBanNhap(createdInvoice);
+      
+      // Báo cho các thiết bị khác chuyển sang hóa đơn mới tạo
+      if (!isSyncingUI) {
+        publishMessage('/topic/admin/pos-sync', {
+          sender: sessionId,
+          action: 'CHON_HOA_DON',
+          invoiceId: createdInvoice.id
+        });
+      }
+      
     } catch (error) {
       thongBaoLoi.value = error instanceof Error ? error.message : "Không thể tạo hóa đơn chờ";
     } finally {
@@ -720,7 +873,8 @@ function LogicBanHangTaiQuay() {
         title: 'Thông báo',
         text: 'Vui lòng chọn hóa đơn cần hủy',
         timer: 3000,
-        iconColor: '#cf1018'
+        iconColor: '#cf1018',
+        target: document.getElementById('pos-tablet-screen') || 'body'
       });
       return;
     }
@@ -740,7 +894,8 @@ function LogicBanHangTaiQuay() {
         title: 'Thành công!',
         text: `Đã hủy hóa đơn chờ ${hoaDonChoDaChon.value.ma}`,
         timer: 3000,
-        iconColor: '#cf1018'
+        iconColor: '#cf1018',
+        target: document.getElementById('pos-tablet-screen') || 'body'
       });
 
       await taiDanhSachHoaDonCho();
