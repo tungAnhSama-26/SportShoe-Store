@@ -16,7 +16,8 @@ import {
   Check,
   X as CloseIcon,
   ChevronDown,
-  FileCheck
+  FileCheck,
+  Eye
 } from "lucide-vue-next";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { useAdminSession } from "../../../composable/useAdminSession";
@@ -24,6 +25,7 @@ import { useGiaoCa } from "../../../composable/useGiaoCa";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
 import { layThongTinGiaoCaCurrent } from "../../../services/giao-ca";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
+import ThuChiModal from "../../../components/admin/giao-ca/ThuChiModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -66,6 +68,15 @@ const ghiChuMoCaSángSớm = ref("");
 // Báo cáo sự cố
 const showsIncidentModal = ref(false);
 const lyDoSucos = ref("");
+
+// Thu Chi Modal states
+const showThuChiModal = ref(false);
+const thuChiModalType = ref("THU");
+
+function openThuChiModal(type) {
+  thuChiModalType.value = type;
+  showThuChiModal.value = true;
+}
 
 // Calculator popup states
 const showsCalculator = ref(false);
@@ -407,6 +418,36 @@ const chenhLech = computed(() => {
   return tienThucTe.value - tienTheoHeThong.value;
 });
 
+const currentChenhLechAmount = computed(() => {
+  return activeShift.value ? chenhLech.value : (pendingHandover.value?.tienChenhLech || 0);
+});
+
+const chenhLechDisplay = computed(() => {
+  const amount = currentChenhLechAmount.value;
+  if (amount === 0) {
+    return {
+      text: "0 đ",
+      note: "(Khớp)",
+      bgClass: "bg-slate-100/40 border border-slate-200 dark:bg-slate-900/20",
+      textClass: "text-slate-700 dark:text-slate-300"
+    };
+  }
+  if (amount > 0) {
+    return {
+      text: `+${formatVND(amount)}`,
+      note: "(Thừa)",
+      bgClass: "bg-blue-100/40 border border-blue-200 dark:bg-blue-950/20",
+      textClass: "text-blue-700 dark:text-blue-400"
+    };
+  }
+  return {
+    text: `${formatVND(amount)}`,
+    note: "(Thiếu)",
+    bgClass: "bg-rose-100/40 border border-rose-200 dark:bg-rose-950/20",
+    textClass: "text-rose-700 dark:text-rose-400"
+  };
+});
+
 function pheDuyetVaChotSo() {
   showConfirm(
     "Hành động này sẽ chốt số liệu ca làm việc này và không thể hoàn tác.",
@@ -479,9 +520,12 @@ function cuongCheKetThucCa() {
             <span class="text-slate-400">Giờ đóng ca:</span>
             <span class="font-medium text-slate-700 dark:text-slate-200">{{ new Date(pendingHandover.thoiGianRa).toLocaleString('vi-VN') }}</span>
           </div>
-          <div v-if="pendingHandover.tienChenhLech !== 0" class="flex justify-between">
-            <span class="text-amber-600 font-semibold">Chênh lệch:</span>
-            <span class="font-bold text-amber-600">{{ formatVND(pendingHandover.tienChenhLech) }}</span>
+          <div class="flex justify-between">
+            <span class="font-semibold" :class="chenhLechDisplay.textClass">Chênh lệch:</span>
+            <span class="font-bold flex gap-1" :class="chenhLechDisplay.textClass">
+              {{ chenhLechDisplay.text }}
+              <span class="text-[11px] opacity-80 mt-0.5">{{ chenhLechDisplay.note }}</span>
+            </span>
           </div>
           <div class="pt-2 border-t border-slate-200/60">
             <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ghi chú từ đồng nghiệp:</p>
@@ -1057,11 +1101,21 @@ function cuongCheKetThucCa() {
                 <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(currentStats?.tienChuyenKhoanTrongCa || pendingHandover?.tienChuyenKhoanTrongCa) }}</span>
               </div>
               <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-                <span class="text-slate-500">Tổng thu khác</span>
+                <span class="text-slate-500 flex items-center gap-1.5">
+                  Tổng thu khác
+                  <button @click="openThuChiModal('THU')" class="text-slate-400 hover:text-primary transition rounded-full hover:bg-primary/10 p-1" title="Xem chi tiết tổng thu">
+                    <Eye class="h-3.5 w-3.5" />
+                  </button>
+                </span>
                 <span class="font-bold text-slate-700 dark:text-slate-200">+{{ formatVND(tongThuKhac) }}</span>
               </div>
               <div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/60 text-sm">
-                <span class="text-slate-500">Tổng chi trong ca</span>
+                <span class="text-slate-500 flex items-center gap-1.5">
+                  Tổng chi trong ca
+                  <button @click="openThuChiModal('CHI')" class="text-slate-400 hover:text-rose-500 transition rounded-full hover:bg-rose-50 p-1" title="Xem chi tiết tổng chi">
+                    <Eye class="h-3.5 w-3.5" />
+                  </button>
+                </span>
                 <span class="font-bold text-rose-500">{{ formatVND(tongChiTrongCa) }}</span>
               </div>
             </div>
@@ -1081,17 +1135,17 @@ function cuongCheKetThucCa() {
               </div>
 
               <!-- Chênh lệch -->
-              <div class="rounded-2xl p-4 text-center flex flex-col justify-center items-center"
-                   :class="(activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'bg-emerald-100/40 border border-emerald-200 dark:bg-emerald-950/20' : 'bg-rose-100/40 border border-rose-200 dark:bg-rose-950/20'">
+              <div class="rounded-2xl p-4 text-center flex flex-col justify-center items-center transition-colors"
+                   :class="chenhLechDisplay.bgClass">
                 <span class="text-[10px] font-bold uppercase tracking-wider"
-                      :class="(activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
+                      :class="chenhLechDisplay.textClass">
                   Chênh lệch
                 </span>
-                <p class="text-lg font-bold mt-1" :class="(activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
-                  {{ (activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? '+' : '' }}{{ formatVND(activeShift ? chenhLech : pendingHandover?.tienChenhLech) }}
+                <p class="text-lg font-bold mt-1" :class="chenhLechDisplay.textClass">
+                  {{ chenhLechDisplay.text }}
                 </p>
-                <span class="text-[10px] font-semibold text-slate-500 mt-0.5">
-                  ({{ (activeShift ? chenhLech : (pendingHandover?.tienChenhLech || 0)) >= 0 ? 'Thừa' : 'Thiếu' }})
+                <span class="text-[10px] font-semibold opacity-80 mt-0.5" :class="chenhLechDisplay.textClass">
+                  {{ chenhLechDisplay.note }}
                 </span>
               </div>
             </div>
@@ -1226,9 +1280,12 @@ function cuongCheKetThucCa() {
                   <span class="text-slate-400">Người bàn giao:</span>
                   <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pendingHandover?.nhanVienTrongCaTen }}</span>
                 </div>
-                <div v-if="pendingHandover?.tienChenhLech !== 0" class="flex justify-between">
-                  <span class="text-amber-600 font-semibold">Chênh lệch:</span>
-                  <span class="font-bold text-amber-600">{{ formatVND(pendingHandover?.tienChenhLech) }}</span>
+                <div class="flex justify-between">
+                  <span class="font-semibold" :class="chenhLechDisplay.textClass">Chênh lệch:</span>
+                  <span class="font-bold flex gap-1" :class="chenhLechDisplay.textClass">
+                    {{ chenhLechDisplay.text }}
+                    <span class="text-[11px] opacity-80 mt-0.5">{{ chenhLechDisplay.note }}</span>
+                  </span>
                 </div>
                 <div v-if="pendingHandover?.lyDoChenhLech" class="flex flex-col gap-1 border-t border-slate-100 dark:border-slate-700/50 pt-2">
                   <span class="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Lý do chênh lệch:</span>
@@ -1568,6 +1625,13 @@ function cuongCheKetThucCa() {
       </div>
     </div>
   </div>
+  
+  <ThuChiModal 
+    :show="showThuChiModal" 
+    :type="thuChiModalType" 
+    :shiftInfo="displayShift || {}"
+    @close="showThuChiModal = false" 
+  />
   </div>
 </template>
 

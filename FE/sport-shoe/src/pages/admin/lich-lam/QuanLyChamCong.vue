@@ -105,7 +105,7 @@ const danhSachLoc = computed(() => {
   return [...result].sort((a, b) => {
     const dateComp = b.ngay.localeCompare(a.ngay);
     if (dateComp !== 0) return dateComp;
-    if (a.ca !== b.ca) return a.ca - b.ca;
+    if (a.ca !== b.ca) return b.ca - a.ca;
     return a.hoTen.localeCompare(b.hoTen);
   });
 });

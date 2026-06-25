@@ -93,6 +93,34 @@ const chenhLech = computed(() => {
   return (tienCuoiCaThucTe.value || 0) - currentStats.value.tienCuoiCaHeThong;
 });
 
+const getChenhLechDisplay = (amount) => {
+  if (!amount && amount !== 0) amount = 0;
+  if (amount === 0) {
+    return {
+      text: "0 đ",
+      note: "(Khớp)",
+      bgClass: "bg-slate-50 text-slate-800 dark:bg-slate-950/20 dark:text-slate-300",
+      textClass: "text-slate-700 dark:text-slate-300"
+    };
+  }
+  if (amount > 0) {
+    return {
+      text: `+${formatVND(amount)}`,
+      note: "(Thừa)",
+      bgClass: "bg-blue-50 text-blue-800 dark:bg-blue-950/20 dark:text-blue-400",
+      textClass: "text-blue-700 dark:text-blue-400"
+    };
+  }
+  return {
+    text: `${formatVND(amount)}`,
+    note: "(Thiếu)",
+    bgClass: "bg-rose-50 text-rose-800 dark:bg-rose-950/20 dark:text-rose-400",
+    textClass: "text-rose-700 dark:text-rose-400"
+  };
+};
+
+const currentChenhLechDisplay = computed(() => getChenhLechDisplay(chenhLech.value));
+
 // Trigger loaders on show
 watch(() => props.show, async (newVal) => {
   if (newVal) {
@@ -313,16 +341,16 @@ async function submitNhanBanGiao(id) {
 
               <!-- Discrepancy indicator -->
               <div 
-                v-if="chenhLech !== 0"
-                class="rounded-2xl p-4 text-sm font-semibold"
-                :class="chenhLech < 0 ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-400' : 'bg-blue-50 text-blue-800 dark:bg-blue-950/20 dark:text-blue-400'"
+                class="rounded-2xl p-4 text-sm font-semibold transition-colors"
+                :class="currentChenhLechDisplay.bgClass"
               >
                 <div class="flex items-center gap-2">
-                  <AlertTriangle class="h-5 w-5" />
+                  <AlertTriangle class="h-5 w-5" v-if="chenhLech !== 0" />
+                  <CheckCircle2 class="h-5 w-5" v-else />
                   <span>
                     Chênh lệch tiền mặt: 
-                    {{ chenhLech > 0 ? '+' : '' }}{{ formatVND(chenhLech) }}
-                    ({{ chenhLech > 0 ? 'Dư thừa' : 'Thiếu hụt' }})
+                    {{ currentChenhLechDisplay.text }}
+                    {{ currentChenhLechDisplay.note }}
                   </span>
                 </div>
                 
@@ -421,8 +449,10 @@ async function submitNhanBanGiao(id) {
                   {{ new Date(pc.thoiGianRa).toLocaleTimeString('vi-VN') }} {{ new Date(pc.thoiGianRa).toLocaleDateString('vi-VN') }}
                 </span>
                 
-                <span v-if="pc.tienChenhLech !== 0" class="text-amber-600 dark:text-amber-400 font-semibold">Chênh lệch:</span>
-                <span v-if="pc.tienChenhLech !== 0" class="font-bold text-amber-600 dark:text-amber-400 text-right">{{ formatVND(pc.tienChenhLech) }}</span>
+                <span class="font-semibold" :class="getChenhLechDisplay(pc.tienChenhLech).textClass">Chênh lệch:</span>
+                <span class="font-bold text-right" :class="getChenhLechDisplay(pc.tienChenhLech).textClass">
+                  {{ getChenhLechDisplay(pc.tienChenhLech).text }} {{ getChenhLechDisplay(pc.tienChenhLech).note }}
+                </span>
               </div>
 
               <!-- Note / Comment from previous shift -->
