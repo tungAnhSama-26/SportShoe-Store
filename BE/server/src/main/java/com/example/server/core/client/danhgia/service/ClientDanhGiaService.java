@@ -1,5 +1,7 @@
 package com.example.server.core.client.danhgia.service;
 
+import com.example.server.core.client.danhgia.dto.DanhGiaCongKhaiPage;
+import com.example.server.core.client.danhgia.dto.DanhGiaCongKhaiResponse;
 import com.example.server.core.client.danhgia.dto.DanhGiaResponse;
 import com.example.server.core.client.danhgia.dto.DanhGiaTongHopResponse;
 import com.example.server.core.client.danhgia.dto.TaoDanhGiaRequest;
@@ -17,6 +19,9 @@ import com.example.server.repository.KhachHangRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +56,9 @@ public class ClientDanhGiaService {
                         dg.getKhachHang().getHoTen(),
                         dg.getSoSao(),
                         dg.getNoiDung(),
+                        dg.getMedia(),
+                        dg.getPhanHoi(),
+                        dg.getNgayPhanHoi(),
                         dg.getNgayTao()))
                 .toList();
         double trungBinh = ds.isEmpty()
@@ -59,6 +67,28 @@ public class ClientDanhGiaService {
         // Làm tròn 1 chữ số thập phân.
         double diemTrungBinh = Math.round(trungBinh * 10.0) / 10.0;
         return new DanhGiaTongHopResponse(diemTrungBinh, ds.size(), danhSach);
+    }
+
+    /** Danh sách đánh giá công khai toàn shop (lọc số sao nếu có), mới nhất trước, phân trang. */
+    @Transactional(readOnly = true)
+    public DanhGiaCongKhaiPage layCongKhai(Integer soSao, int trang, int kichThuoc) {
+        Pageable pageable = PageRequest.of(Math.max(trang, 0), Math.min(Math.max(kichThuoc, 1), 50));
+        Page<DanhGia> page = danhGiaRepository.findCongKhai(soSao, pageable);
+        List<DanhGiaCongKhaiResponse> danhSach = page.getContent().stream()
+                .map(dg -> new DanhGiaCongKhaiResponse(
+                        dg.getId(),
+                        dg.getKhachHang().getHoTen(),
+                        dg.getSoSao(),
+                        dg.getNoiDung(),
+                        dg.getMedia(),
+                        dg.getNgayTao(),
+                        dg.getPhanHoi(),
+                        dg.getNgayPhanHoi(),
+                        dg.getGiay().getId(),
+                        dg.getGiay().getTen(),
+                        dg.getGiay().getHinhAnh()))
+                .toList();
+        return new DanhGiaCongKhaiPage(danhSach, page.getNumber(), page.getTotalPages(), page.getTotalElements());
     }
 
     @Transactional
@@ -75,6 +105,7 @@ public class ClientDanhGiaService {
         danhGia.setNoiDung(request.noiDung() != null && !request.noiDung().isBlank()
                 ? request.noiDung().trim() : null);
         danhGia.setTrangThai(1);
+        danhGia.setDaXem(false);
         danhGia.setNgayTao(Instant.now());
 
         DanhGia saved = danhGiaRepository.save(danhGia);
@@ -83,6 +114,9 @@ public class ClientDanhGiaService {
                 khachHang.getHoTen(),
                 saved.getSoSao(),
                 saved.getNoiDung(),
+                saved.getMedia(),
+                saved.getPhanHoi(),
+                saved.getNgayPhanHoi(),
                 saved.getNgayTao());
     }
 
@@ -91,7 +125,7 @@ public class ClientDanhGiaService {
      * và mỗi dòng hóa đơn chi tiết chỉ đánh giá 1 lần.
      */
     @Transactional
-    public DanhGiaResponse taoTheoHoaDonChiTiet(UUID khachHangId, Integer hoaDonChiTietId, Integer soSao, String noiDung) {
+    public DanhGiaResponse taoTheoHoaDonChiTiet(UUID khachHangId, Integer hoaDonChiTietId, Integer soSao, String noiDung, String media) {
         HoaDonChiTiet ct = hoaDonChiTietRepository.findById(hoaDonChiTietId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm trong đơn không tồn tại"));
         HoaDon hd = ct.getHoaDon();
@@ -119,11 +153,14 @@ public class ClientDanhGiaService {
         danhGia.setHoaDonChiTiet(ct);
         danhGia.setSoSao(soSao);
         danhGia.setNoiDung(noiDung != null && !noiDung.isBlank() ? noiDung.trim() : null);
+        danhGia.setMedia(media != null && !media.isBlank() ? media.trim() : null);
         danhGia.setTrangThai(1);
+        danhGia.setDaXem(false);
         danhGia.setNgayTao(Instant.now());
 
         DanhGia saved = danhGiaRepository.save(danhGia);
         return new DanhGiaResponse(
-                saved.getId(), khachHang.getHoTen(), saved.getSoSao(), saved.getNoiDung(), saved.getNgayTao());
+                saved.getId(), khachHang.getHoTen(), saved.getSoSao(), saved.getNoiDung(), saved.getMedia(),
+                saved.getPhanHoi(), saved.getNgayPhanHoi(), saved.getNgayTao());
     }
 }

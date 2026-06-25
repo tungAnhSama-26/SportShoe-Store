@@ -164,6 +164,14 @@ const tienHang = computed(() =>
 );
 const tongThanhToan = computed(() => tienHang.value + phiShipSo.value);
 
+// Tổng cân nặng đơn (gram) = tổng (cân nặng mỗi giày × số lượng).
+const tongCanNang = computed(() =>
+  (gio.value.items || []).reduce(
+    (tong, it) => tong + Number(it.canNang || 0) * Number(it.soLuong || 0),
+    0,
+  ),
+);
+
 let phiTimer = null;
 async function capNhatPhiShip() {
   const f = form.value;
@@ -668,6 +676,10 @@ function xuLyAnhLoi(event) {
             <div v-if="voucher" class="flex items-center justify-between text-sm font-medium text-emerald-600">
               <span>Giảm giá</span>
               <span>-{{ dinhDangTienViet(voucher.tienGiam) }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm text-slate-500">
+              <span>Cân nặng</span>
+              <span class="font-medium text-slate-700">{{ tongCanNang.toLocaleString('vi-VN') }} g</span>
             </div>
             <div class="flex items-center justify-between text-sm text-slate-500">
               <span class="flex items-center gap-1.5">

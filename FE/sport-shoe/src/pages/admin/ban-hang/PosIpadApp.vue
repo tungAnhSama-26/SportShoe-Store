@@ -141,7 +141,6 @@ const {
 } = LogicBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
-import { useRealtime } from "../../../composables/useRealtime";
 
 const router = useRouter();
 const currentTime = ref("");
@@ -160,8 +159,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
 });
-
-const { subscribeTopic } = useRealtime();
 
 subscribeTopic('/topic/admin/san-pham', async (message) => {
   console.log("Realtime update (iPad): Product changed", message);

@@ -8,5 +8,8 @@ public record DanhGiaResponse(
         String hoTenKhach,
         Integer soSao,
         String noiDung,
+        String media,
+        String phanHoi,
+        Instant ngayPhanHoi,
         Instant ngayTao
 ) {}
