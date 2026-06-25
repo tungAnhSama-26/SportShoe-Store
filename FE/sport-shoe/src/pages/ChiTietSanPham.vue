@@ -7,6 +7,7 @@ import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import DanhGiaMedia from '../components/DanhGiaMedia.vue';
 import anhMacDinh from '../assets/login-shoe.png';
 
 const route = useRoute();
@@ -422,6 +423,14 @@ function xuLyAnhLoi(event) {
                   <span v-for="i in 5" :key="i" class="text-xs" :class="i <= dg.soSao ? 'text-amber-400' : 'text-slate-300'">★</span>
                 </div>
                 <p v-if="dg.noiDung" class="mt-1.5 text-sm leading-6 text-slate-600">{{ dg.noiDung }}</p>
+                <DanhGiaMedia :media="dg.media" />
+                <div v-if="dg.phanHoi" class="mt-2 rounded-xl border-l-2 border-primary bg-slate-50 p-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-primary">Phản hồi từ cửa hàng</span>
+                    <span class="text-xs text-slate-400">{{ formatNgay(dg.ngayPhanHoi) }}</span>
+                  </div>
+                  <p class="mt-1 text-sm leading-6 text-slate-600">{{ dg.phanHoi }}</p>
+                </div>
               </div>
             </div>
           </div>
