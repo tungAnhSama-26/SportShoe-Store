@@ -13,7 +13,10 @@ import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
+import com.example.server.repository.GiaoCaRepository;
 import com.example.server.infrastructure.service.EmailService;
+import com.example.server.entity.GiaoCa;
+import com.example.server.entity.NhanVien;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +38,7 @@ public class ThucThiThanhToanTaiQuayService {
     private final TrangThaiHoaDonTaiQuayService invoiceStateUseCase;
     private final HoaDonTaiQuayService invoiceUseCase;
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
+    private final GiaoCaRepository giaoCaRepository;
 
     public ThucThiThanhToanTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -45,7 +49,8 @@ public class ThucThiThanhToanTaiQuayService {
             ThanhToanTaiQuayService paymentUseCase,
             TrangThaiHoaDonTaiQuayService invoiceStateUseCase,
             HoaDonTaiQuayService invoiceUseCase,
-            PhieuGiamGiaTaiQuayService voucherUseCase
+            PhieuGiamGiaTaiQuayService voucherUseCase,
+            GiaoCaRepository giaoCaRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -56,6 +61,7 @@ public class ThucThiThanhToanTaiQuayService {
         this.invoiceStateUseCase = invoiceStateUseCase;
         this.invoiceUseCase = invoiceUseCase;
         this.voucherUseCase = voucherUseCase;
+        this.giaoCaRepository = giaoCaRepository;
     }
 
     @Transactional
@@ -63,6 +69,14 @@ public class ThucThiThanhToanTaiQuayService {
         if (request.hoaDonId() == null && (request.items() == null || request.items().isEmpty())) {
             throw new BusinessException("Hóa đơn phải có ít nhất một sản phẩm để thanh toán");
         }
+
+        NhanVien currentEmp = invoiceUseCase.resolveNhanVienDangDangNhap();
+        if (currentEmp == null) {
+            throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
+        }
+        GiaoCa activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
+                .orElseThrow(() -> new BusinessException("Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
+
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -99,6 +113,7 @@ public class ThucThiThanhToanTaiQuayService {
         hoaDon.setTrangThai(trangThaiSauThanhToan);
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setNgayCapNhat(Instant.now());
+        hoaDon.setGiaoCa(activeShift);
         hoaDonRepository.save(hoaDon);
         invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, request.ghiChu());
 
