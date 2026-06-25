@@ -783,7 +783,7 @@ async function taiLichSuToanBo() {
       .sort((a, b) => {
         const dateComp = b.ngay.localeCompare(a.ngay);
         if (dateComp !== 0) return dateComp;
-        const caOrder: Record<string, number> = { 'toi': 3, 'chieu': 2, 'sang': 1 };
+        const caOrder = { 'toi': 3, 'chieu': 2, 'sang': 1 };
         return (caOrder[b.ca] || 0) - (caOrder[a.ca] || 0);
       });
   } catch (error) {
