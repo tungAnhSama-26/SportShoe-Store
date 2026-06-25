@@ -226,7 +226,9 @@ public class ClientXemDonHangService {
                     giaNiemYet, giaDonVi, sl, ct.getThanhTien(),
                     dg != null,
                     dg != null ? dg.getSoSao() : null,
-                    dg != null ? dg.getNoiDung() : null));
+                    dg != null ? dg.getNoiDung() : null,
+                    dg != null ? dg.getPhanHoi() : null,
+                    dg != null ? dg.getNgayPhanHoi() : null));
         }
 
         BigDecimal tongTienHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();

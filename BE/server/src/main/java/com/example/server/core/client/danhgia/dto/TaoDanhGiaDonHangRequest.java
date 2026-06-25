@@ -19,5 +19,8 @@ public record TaoDanhGiaDonHangRequest(
         Integer soSao,
 
         @Size(max = 1000, message = "Nội dung đánh giá không quá 1000 ký tự")
-        String noiDung
+        String noiDung,
+
+        /** Chuỗi JSON ảnh/video: [{"url":"..","loai":"image|video"}]. */
+        String media
 ) {}
