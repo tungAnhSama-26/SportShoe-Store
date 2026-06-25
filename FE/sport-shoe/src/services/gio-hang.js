@@ -92,6 +92,7 @@ export async function dongBoGiaGio() {
     item.giaBan = Number(moi.giaHienTai ?? item.giaBan); // giá hiện tại (sau đợt giảm)
     if (moi.tonKho != null) item.tonKho = Number(moi.tonKho);
     item.conBan = moi.conBan !== false; // false = admin đã ngừng bán
+    if (moi.canNang != null) item.canNang = Number(moi.canNang); // cân nặng 1 SP (gram)
   }
   luuGioHangLocal(gio.items);
   return taoGioHangResponse(gio.items);
