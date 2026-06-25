@@ -78,6 +78,8 @@ public record DonHangChiTietResponse(
             BigDecimal thanhTien,
             boolean daDanhGia,
             Integer soSao,
-            String noiDungDanhGia
+            String noiDungDanhGia,
+            String phanHoiDanhGia,
+            Instant ngayPhanHoiDanhGia
     ) {}
 }

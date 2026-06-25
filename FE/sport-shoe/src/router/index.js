@@ -13,6 +13,7 @@ const DanhGiaDonHang = () => import("../pages/DanhGiaDonHang.vue");
 const SanPhamNoiBat = () => import("../pages/SanPhamNoiBat.vue");
 const GioiThieu = () => import("../pages/GioiThieu.vue");
 const TraCuuDonHang = () => import("../pages/TraCuuDonHang.vue");
+const DanhGiaCongKhai = () => import("../pages/DanhGiaCongKhai.vue");
 const ClientProfile = () => import("../pages/Profile.vue");
 const Login = () => import("../pages/login/Login.vue");
 const AdminLogin = () => import("../pages/login/AdminLogin.vue");
@@ -29,6 +30,7 @@ const ChiTietDotGiamGia = () => import("../pages/admin/khuyen-mai/ChiTietDotGiam
 const HoaDon = () => import("../pages/admin/hoa-don/HoaDon.vue");
 const ChiTietHoaDon = () => import("../pages/admin/hoa-don/ChiTietHoaDon.vue");
 const TraHang = () => import("../pages/admin/tra-hang/TraHang.vue");
+const QuanLyDanhGia = () => import("../pages/admin/danh-gia/QuanLyDanhGia.vue");
 const ChiTietTraHang = () => import("../pages/admin/tra-hang/ChiTietTraHang.vue");
 const BanHangTaiQuay = () => import("../pages/admin/ban-hang/BanHangTaiQuay.vue");
 const PosLayout = () => import("../layouts/admin/PosLayout.vue");
@@ -197,6 +199,11 @@ const router = createRouter({
           component: TraCuuDonHang
         },
         {
+          path: "danh-gia",
+          name: "danh-gia-cong-khai",
+          component: DanhGiaCongKhai
+        },
+        {
           path: "profile",
           name: "client-profile",
           component: ClientProfile
@@ -291,6 +298,11 @@ const router = createRouter({
           path: "tra-hang/:id",
           name: "admin-tra-hang-chi-tiet",
           component: ChiTietTraHang
+        },
+        {
+          path: "danh-gia",
+          name: "admin-danh-gia",
+          component: QuanLyDanhGia
         },
         {
           path: "ban-hang",
