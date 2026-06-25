@@ -131,9 +131,11 @@ function thanhTien(item) {
                   <p class="mt-1 text-xs text-slate-400">Màu: {{ item.mauSac }} · Size: {{ item.kichCo }}</p>
                   <div class="mt-1 flex flex-wrap items-center gap-2">
                     <span class="text-sm font-bold text-primary">{{ dinhDangTienViet(item.giaBan) }}</span>
-                    <template v-if="Number(item.giaNiemYet) > Number(item.giaBan)">
-                      <span class="text-xs text-slate-400 line-through">{{ dinhDangTienViet(item.giaNiemYet) }}</span>
-                      <span class="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">Đã giảm giá</span>
+                    <!-- Giá ĐỔI sau lúc thêm vào giỏ (đợt giảm bật/tắt, admin đổi giá) -> gạch giá lúc thêm. -->
+                    <template v-if="Number(item.giaThem) !== Number(item.giaBan)">
+                      <span class="text-xs text-slate-400 line-through">{{ dinhDangTienViet(item.giaThem) }}</span>
+                      <span v-if="Number(item.giaBan) < Number(item.giaThem)" class="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">Giá vừa giảm</span>
+                      <span v-else class="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">Giá đã tăng</span>
                     </template>
                   </div>
                   <p v-if="item.conBan === false" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm này đã ngừng bán</p>

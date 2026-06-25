@@ -19,6 +19,14 @@ export async function layChiTietDonHang(donId) {
   });
 }
 
+// Tra cứu đơn hàng theo mã hóa đơn - công khai, không cần đăng nhập (cho khách vãng lai).
+export async function traCuuDonHangTheoMa(ma) {
+  return apiRequest(`/client/tra-cuu-don/${encodeURIComponent(String(ma).trim())}`, {
+    authenticated: false,
+    fallbackMessage: "Không tìm thấy đơn hàng",
+  });
+}
+
 // Khách xác nhận đã nhận hàng.
 export async function xacNhanDaNhanHang(donId) {
   return apiRequest(`/client/don-hang/${donId}/da-nhan-hang`, {

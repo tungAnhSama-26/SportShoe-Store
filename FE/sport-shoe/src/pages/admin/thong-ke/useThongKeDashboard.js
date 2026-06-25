@@ -20,17 +20,20 @@ import {
   Chart as ChartJS,
   Legend,
   LinearScale,
-  Tooltip
+  Tooltip,
+  LineElement,
+  PointElement
 } from "chart.js";
-import { Bar, Pie } from "vue-chartjs";
+import { Bar, Pie, Line } from "vue-chartjs";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { layDashboardThongKe } from "../../../services/thong-ke";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { exportRowsToExcel } from "../../../utils/export-excel";
 
 export function useThongKeDashboard() {
-  ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+  ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, LineElement, PointElement);
 
   const PERIOD_OPTIONS = [
     { value: "DAY", label: "Theo ngày" },
@@ -73,7 +76,7 @@ export function useThongKeDashboard() {
     { value: "NAME_ASC", label: "Tên A - Z" }
   ];
 
-  const PRODUCT_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+  const PRODUCT_PAGE_SIZE_OPTIONS = [5, 10, 20];
 
   const EMPTY_DASHBOARD = () => ({
     boLoc: {
@@ -85,7 +88,8 @@ export function useThongKeDashboard() {
     },
     tongQuan: {
       tongDoanhThu: 0,
-      doanhThuThucTe: 0,
+      tongTienMat: 0,
+      tongChuyenKhoan: 0,
       tongDonHang: 0,
       sanPhamDaBan: 0,
       khachMoi: 0
@@ -110,9 +114,88 @@ export function useThongKeDashboard() {
   const employeeFilters = reactive(createDefaultEmployeeFilters());
   const employeeCurrentPage = ref(1);
   const brandChartType = ref("REVENUE"); // REVENUE, VOLUME, STOCK
+  const salesChartType = ref("bar"); // bar, line
+  const brandChartTypeFormat = ref("pie"); // pie, line
   let dashboardFilterTimer;
   let dashboardRequestController;
   let latestDashboardRequestId = 0;
+
+  const brandSearchText = ref("");
+  const brandHints = ref([]);
+  const brandSearchContainerRef = ref(null);
+
+  watch([() => filters.brandId, () => dashboard.value.thuongHieus], ([newBrandId, brands]) => {
+    if (newBrandId == null) {
+      brandSearchText.value = "";
+    } else if (brands && brands.length > 0) {
+      const brand = brands.find(b => b.id === newBrandId);
+      if (brand) {
+        brandSearchText.value = brand.ten;
+      }
+    }
+  }, { immediate: true });
+
+  watch(brandSearchText, (val) => {
+    const currentBrand = dashboard.value.thuongHieus.find(b => b.id === filters.brandId);
+    if (currentBrand && currentBrand.ten === val) {
+      brandHints.value = [];
+      return;
+    }
+
+    if (!val || val.trim().length === 0) {
+      brandHints.value = [];
+      if (filters.brandId !== null) {
+        filters.brandId = null;
+        fetchDashboard();
+      }
+      return;
+    }
+
+    const keyword = val.trim().toLowerCase();
+    brandHints.value = dashboard.value.thuongHieus.filter(b => {
+      const tenLower = b.ten.toLowerCase();
+      const maLower = b.ma ? b.ma.toLowerCase() : "";
+      
+      if (tenLower.startsWith(keyword) || maLower.startsWith(keyword)) {
+        return true;
+      }
+      
+      const words = tenLower.split(/\s+/);
+      return words.some(word => word.startsWith(keyword));
+    });
+  });
+
+  function clickOutsideHandler(event) {
+    if (brandSearchContainerRef.value && !brandSearchContainerRef.value.contains(event.target)) {
+      brandHints.value = [];
+    }
+  }
+
+  function chonThuongHieuGoiY(brand) {
+    filters.brandId = brand.id;
+    brandSearchText.value = brand.ten;
+    brandHints.value = [];
+    fetchDashboard();
+  }
+
+  function onBrandSearchEnter() {
+    const keyword = brandSearchText.value.trim().toLowerCase();
+    if (!keyword) {
+      filters.brandId = null;
+      brandHints.value = [];
+      fetchDashboard();
+      return;
+    }
+    const matchedBrand = dashboard.value.thuongHieus.find(b => 
+      b.ten.toLowerCase() === keyword || (b.ma && b.ma.toLowerCase() === keyword)
+    );
+    if (matchedBrand) {
+      filters.brandId = matchedBrand.id;
+      brandSearchText.value = matchedBrand.ten;
+      brandHints.value = [];
+      fetchDashboard();
+    }
+  }
 
   const periodLabel = computed(() => {
     switch (filters.periodType) {
@@ -140,11 +223,18 @@ export function useThongKeDashboard() {
       badgeClass: "bg-emerald-50"
     },
     {
-      label: "Doanh thu thực tế",
-      value: formatCurrency(dashboard.value.tongQuan.doanhThuThucTe),
+      label: "Tổng tiền mặt",
+      value: formatCurrency(dashboard.value.tongQuan.tongTienMat),
       icon: TrendingUp,
       iconClass: "text-teal-600",
       badgeClass: "bg-teal-50"
+    },
+    {
+      label: "Tổng tiền chuyển khoản",
+      value: formatCurrency(dashboard.value.tongQuan.tongChuyenKhoan),
+      icon: CreditCard,
+      iconClass: "text-indigo-600",
+      badgeClass: "bg-indigo-50"
     },
     {
       label: "Tổng đơn hàng",
@@ -280,6 +370,72 @@ export function useThongKeDashboard() {
     }
   }));
 
+  const salesLineChartData = computed(() => ({
+    labels: salesLabels.value,
+    datasets: [
+      {
+        label: "Sản phẩm bán được",
+        data: dashboard.value.bieuDoBanHang.map((item) => item.soLuongBan ?? 0),
+        borderColor: "#cf1018",
+        backgroundColor: "rgba(207, 16, 24, 0.05)",
+        borderWidth: 2.5,
+        tension: 0.35,
+        fill: true,
+        pointBackgroundColor: "#cf1018",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }
+    ]
+  }));
+
+  const salesLineChartOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: "#111827",
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label(context) {
+            return `${formatNumber(context.raw)} sản phẩm`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "#f1f5f9"
+        },
+        ticks: {
+          color: "#64748b",
+          precision: 0
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: "#64748b",
+          maxRotation: 0,
+          autoSkip: false,
+          padding: 8,
+          callback(value, index) {
+            return shouldShowSalesTick(index, salesLabels.value.length) ? salesLabels.value[index] : "";
+          }
+        }
+      }
+    }
+  }));
+
   const brandSalesData = computed(() => {
     const map = new Map();
 
@@ -328,12 +484,45 @@ export function useThongKeDashboard() {
     }
   });
 
+  const partitionedBrandData = computed(() => {
+    const rawData = currentBrandData.value;
+    if (rawData.length <= 6) {
+      return rawData;
+    }
+
+    const top5 = rawData.slice(0, 5);
+    const others = rawData.slice(5);
+
+    const sumOthersValue = others.reduce((sum, item) => sum + item.value, 0);
+
+    let displayValue = "";
+    if (brandChartType.value === "REVENUE") {
+      displayValue = formatCurrency(sumOthersValue);
+    } else if (brandChartType.value === "VOLUME") {
+      displayValue = `${formatNumber(sumOthersValue)} sản phẩm đã bán`;
+    } else {
+      displayValue = `${formatNumber(sumOthersValue)} sản phẩm tồn`;
+    }
+
+    return [
+      ...top5,
+      {
+        label: "Thương hiệu khác",
+        value: sumOthersValue,
+        displayValue: displayValue
+      }
+    ];
+  });
+
   const brandChartData = computed(() => ({
-    labels: currentBrandData.value.map((item) => item.label),
+    labels: partitionedBrandData.value.map((item) => item.label),
     datasets: [
       {
-        data: currentBrandData.value.map((item) => item.value),
-        backgroundColor: currentBrandData.value.map((_, index) => PIE_COLORS[index % PIE_COLORS.length]),
+        data: partitionedBrandData.value.map((item) => item.value),
+        backgroundColor: partitionedBrandData.value.map((item, index) => {
+          if (item.label === "Thương hiệu khác") return "#94a3b8"; // Slate gray for other brands
+          return PIE_COLORS[index % PIE_COLORS.length];
+        }),
         borderWidth: 0
       }
     ]
@@ -360,7 +549,7 @@ export function useThongKeDashboard() {
         padding: 12,
         callbacks: {
           label(context) {
-            const item = currentBrandData.value[context.dataIndex];
+            const item = partitionedBrandData.value[context.dataIndex];
             return `${context.label}: ${item ? item.displayValue : formatNumber(context.raw)}`;
           }
         }
@@ -368,9 +557,77 @@ export function useThongKeDashboard() {
     }
   }));
 
-  const topBrands = computed(() => currentBrandData.value.slice(0, 5));
+  const brandLineChartData = computed(() => ({
+    labels: partitionedBrandData.value.map((item) => item.label),
+    datasets: [
+      {
+        label: brandChartType.value === "REVENUE" ? "Doanh thu" : brandChartType.value === "VOLUME" ? "Số lượng bán" : "Tồn kho",
+        data: partitionedBrandData.value.map((item) => item.value),
+        borderColor: "#f43f5e",
+        backgroundColor: "rgba(244, 63, 94, 0.05)",
+        borderWidth: 2.5,
+        tension: 0.35,
+        fill: true,
+        pointBackgroundColor: partitionedBrandData.value.map((item) => item.label === "Thương hiệu khác" ? "#94a3b8" : "#f43f5e"),
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }
+    ]
+  }));
+
+  const brandLineChartOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: "#111827",
+        padding: 12,
+        callbacks: {
+          label(context) {
+            const item = partitionedBrandData.value[context.dataIndex];
+            return `${context.label}: ${item ? item.displayValue : formatNumber(context.raw)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "#f1f5f9"
+        },
+        ticks: {
+          color: "#64748b",
+          callback(value) {
+            if (brandChartType.value === "REVENUE") {
+              return formatCurrency(value);
+            }
+            return formatNumber(value);
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: "#64748b",
+          maxRotation: 45,
+          autoSkip: false,
+          padding: 8
+        }
+      }
+    }
+  }));
+
+  const topBrands = computed(() => partitionedBrandData.value);
   const hasSalesData = computed(() => dashboard.value.bieuDoBanHang.some((item) => (item.soLuongBan ?? 0) > 0));
-  const hasBrandData = computed(() => currentBrandData.value.length > 0);
+  const hasBrandData = computed(() => partitionedBrandData.value.length > 0);
   const filteredProducts = computed(() => {
     const keyword = productFilters.keyword.trim().toLowerCase();
 
@@ -444,6 +701,7 @@ export function useThongKeDashboard() {
 
     return `${formatNumber(filteredEmployees.value.length)}/${formatNumber(dashboard.value.nhanViens.length)} nhân viên`;
   });
+
   async function fetchDashboard() {
     if (dashboardFilterTimer) {
       window.clearTimeout(dashboardFilterTimer);
@@ -461,7 +719,7 @@ export function useThongKeDashboard() {
         fromDate: filters.fromDate,
         toDate: filters.toDate,
         brandId: filters.brandId,
-        keyword: filters.keyword,
+        keyword: null,
         periodType: filters.periodType
       }, {
         signal: dashboardRequestController.signal
@@ -495,6 +753,7 @@ export function useThongKeDashboard() {
     Object.assign(filters, createDefaultFilters());
     resetProductFilters();
     resetEmployeeFilters();
+    brandSearchText.value = "";
     fetchDashboard();
   }
 
@@ -533,7 +792,7 @@ export function useThongKeDashboard() {
     filters.fromDate = serverFilters.tuNgay || filters.fromDate;
     filters.toDate = serverFilters.denNgay || filters.toDate;
     filters.brandId = serverFilters.thuongHieuId ?? null;
-    filters.keyword = serverFilters.keyword ?? filters.keyword;
+    // filters.keyword = serverFilters.keyword ?? filters.keyword;
   }
 
   function normalizeDashboard(data) {
@@ -541,7 +800,8 @@ export function useThongKeDashboard() {
       boLoc: data?.boLoc ?? EMPTY_DASHBOARD().boLoc,
       tongQuan: {
         tongDoanhThu: Number(data?.tongQuan?.tongDoanhThu ?? 0),
-        doanhThuThucTe: Number(data?.tongQuan?.doanhThuThucTe ?? 0),
+        tongTienMat: Number(data?.tongQuan?.tongTienMat ?? 0),
+        tongChuyenKhoan: Number(data?.tongQuan?.tongChuyenKhoan ?? 0),
         tongDonHang: Number(data?.tongQuan?.tongDonHang ?? 0),
         sanPhamDaBan: Number(data?.tongQuan?.sanPhamDaBan ?? 0),
         khachMoi: Number(data?.tongQuan?.khachMoi ?? 0)
@@ -575,7 +835,7 @@ export function useThongKeDashboard() {
       keyword: "",
       stockStatus: "ALL",
       sortBy: "BEST_SELLER",
-      pageSize: 10
+      pageSize: 5
     };
   }
 
@@ -583,7 +843,7 @@ export function useThongKeDashboard() {
     return {
       keyword: "",
       sortBy: "REVENUE_DESC",
-      pageSize: 10
+      pageSize: 5
     };
   }
 
@@ -815,8 +1075,68 @@ export function useThongKeDashboard() {
     fetchDashboard();
   }
 
+  function xuatExcelThoiGian() {
+    const rows = dashboard.value.thongKeTheoThoiGian || [];
+    if (!rows.length) return;
+    
+    exportRowsToExcel({
+      filename: `thong-ke-thoi-gian-${filters.fromDate}-den-${filters.toDate}`,
+      sheetName: "ChuKyThoiGian",
+      columns: [
+        { label: "STT", value: (_, index) => index + 1 },
+        { label: "Thời gian", key: "kyThongKe" },
+        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) },
+        { label: "Số đơn", value: (row) => formatNumber(row.soDon) },
+        { label: "AOV (Trung bình/đơn)", value: (row) => formatCurrency(row.giaTriTrungBinh) },
+        { label: "Tăng trưởng", value: (row) => `${row.tangTruong >= 0 ? "+" : ""}${row.tangTruong}%` }
+      ],
+      rows
+    });
+  }
+
+  function xuatExcelNhanVien() {
+    const rows = filteredEmployees.value || [];
+    if (!rows.length) return;
+    
+    exportRowsToExcel({
+      filename: `doanh-thu-nhan-vien-${filters.fromDate}-den-${filters.toDate}`,
+      sheetName: "DoanhThuNhanVien",
+      columns: [
+        { label: "STT", value: (_, index) => index + 1 },
+        { label: "Mã nhân viên", value: (row) => row.maNhanVien || "—" },
+        { label: "Tên nhân viên", key: "tenNhanVien" },
+        { label: "Số đơn hàng", value: (row) => formatNumber(row.tongDonHang) },
+        { label: "Sản phẩm đã bán", value: (row) => formatNumber(row.sanPhamDaBan) },
+        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) }
+      ],
+      rows
+    });
+  }
+
+  function xuatExcelSanPham() {
+    const rows = filteredProducts.value || [];
+    if (!rows.length) return;
+    
+    exportRowsToExcel({
+      filename: `thong-ke-san-pham-${filters.fromDate}-den-${filters.toDate}`,
+      sheetName: "ThongKeSanPham",
+      columns: [
+        { label: "STT", value: (_, index) => index + 1 },
+        { label: "Mã sản phẩm", key: "maSanPham" },
+        { label: "Tên sản phẩm", key: "tenSanPham" },
+        { label: "Thương hiệu", value: (row) => row.thuongHieu || "Chưa cập nhật" },
+        { label: "Đã bán", value: (row) => formatNumber(row.daBan) },
+        { label: "Số lượng trả", value: (row) => formatNumber(row.soLuongTra) },
+        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) },
+        { label: "Tồn kho", value: (row) => formatNumber(row.tonKho) }
+      ],
+      rows
+    });
+  }
+
   onMounted(() => {
     fetchDashboard();
+    window.addEventListener("click", clickOutsideHandler);
   });
 
   onBeforeUnmount(() => {
@@ -824,8 +1144,8 @@ export function useThongKeDashboard() {
       window.clearTimeout(dashboardFilterTimer);
     }
     dashboardRequestController?.abort();
+    window.removeEventListener("click", clickOutsideHandler);
   });
 
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, brandChartData, brandChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Line, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, salesLineChartData, salesLineChartOptions, brandChartData, brandChartOptions, brandLineChartData, brandLineChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter, salesChartType, brandChartTypeFormat, partitionedBrandData, xuatExcelThoiGian, xuatExcelNhanVien, xuatExcelSanPham };
 }
-

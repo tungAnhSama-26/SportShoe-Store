@@ -1,6 +1,6 @@
 package com.example.server.core.client.voucher.service;
 
-import com.example.server.core.admin.banHangTaiQuay.service.usecase.BanHangTaiQuayPricingUseCase;
+import com.example.server.core.admin.banHangTaiQuay.service.GiaCaTaiQuayService;
 import com.example.server.core.client.voucher.dto.VoucherKhaDungResponse;
 import com.example.server.core.client.voucher.dto.VoucherResponse;
 import com.example.server.entity.HoaDon;
@@ -40,25 +40,25 @@ public class ClientVoucherService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final KhachHangRepository khachHangRepository;
-    private final BanHangTaiQuayPricingUseCase pricingUseCase;
+    private final GiaCaTaiQuayService giaCaService;
 
     public ClientVoucherService(
             PhieuGiamGiaRepository phieuGiamGiaRepository,
             PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository,
             KhachHangRepository khachHangRepository,
-            BanHangTaiQuayPricingUseCase pricingUseCase
+            GiaCaTaiQuayService giaCaService
     ) {
         this.phieuGiamGiaRepository = phieuGiamGiaRepository;
         this.phieuGiamGiaKhachHangRepository = phieuGiamGiaKhachHangRepository;
         this.khachHangRepository = khachHangRepository;
-        this.pricingUseCase = pricingUseCase;
+        this.giaCaService = giaCaService;
     }
 
     /** Kiểm tra mã + tính tiền giảm trên tổng tiền hàng (không thay đổi dữ liệu). */
     @Transactional(readOnly = true)
     public VoucherResponse kiemTra(UUID khachHangId, String maPhieu, BigDecimal tongTienHang) {
         PhieuGiamGia phieu = timVaValidate(maPhieu, khachHangId, tongTienHang, false);
-        BigDecimal tienGiam = pricingUseCase.tinhSoTienGiam(phieu, tongTienHang);
+        BigDecimal tienGiam = giaCaService.tinhSoTienGiam(phieu, tongTienHang);
         BigDecimal sauGiam = tongTienHang.subtract(tienGiam).max(BigDecimal.ZERO);
         return new VoucherResponse(phieu.getId(), phieu.getMa(), phieu.getTen(), tienGiam, tongTienHang, sauGiam);
     }
@@ -102,7 +102,7 @@ public class ClientVoucherService {
         if (phieu == null || ketQua.containsKey(phieu.getId()) || !phieuConHieuLuc(phieu, now)) {
             return;
         }
-        BigDecimal tienGiam = tong.signum() > 0 ? pricingUseCase.tinhSoTienGiam(phieu, tong) : BigDecimal.ZERO;
+        BigDecimal tienGiam = tong.signum() > 0 ? giaCaService.tinhSoTienGiam(phieu, tong) : BigDecimal.ZERO;
         boolean apDung = phieu.getGiaTriToiThieu() == null || tong.compareTo(phieu.getGiaTriToiThieu()) >= 0;
         ketQua.put(phieu.getId(), new VoucherKhaDungResponse(
                 phieu.getId(), phieu.getMa(), phieu.getTen(),
@@ -137,7 +137,7 @@ public class ClientVoucherService {
     @Transactional
     public BigDecimal apDungVaoHoaDon(HoaDon hoaDon, String maPhieu, KhachHang khachHang, BigDecimal tongTienHang) {
         PhieuGiamGia phieu = timVaValidate(maPhieu, khachHang != null ? khachHang.getId() : null, tongTienHang, true);
-        BigDecimal tienGiam = pricingUseCase.tinhSoTienGiam(phieu, tongTienHang);
+        BigDecimal tienGiam = giaCaService.tinhSoTienGiam(phieu, tongTienHang);
 
         hoaDon.setPhieuGiamGia(phieu);
         phieu.setSoLuongDaDung((phieu.getSoLuongDaDung() == null ? 0 : phieu.getSoLuongDaDung()) + 1);
