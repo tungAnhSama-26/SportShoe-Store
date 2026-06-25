@@ -31,10 +31,8 @@ public class BanHangTaiQuayService {
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
     private final HoaDonTaiQuayService invoiceUseCase;
     private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
-    private final ThucThiThanhToanTaiQuayService paymentExecutorUseCase;
-    private final GhnShippingService ghnShippingService;
-    private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
     private final ThucThiThanhToanTaiQuayService paymentExecutionUseCase;
+    private final GhnShippingService ghnShippingService;
 
     public BanHangTaiQuayService(
             KhachHangTaiQuayService customerUseCase,
@@ -50,10 +48,8 @@ public class BanHangTaiQuayService {
         this.voucherUseCase = voucherUseCase;
         this.invoiceUseCase = invoiceUseCase;
         this.pendingInvoiceUseCase = pendingInvoiceUseCase;
-        this.paymentExecutorUseCase = paymentExecutorUseCase;
-        this.ghnShippingService = ghnShippingService;
-        this.pendingInvoiceUseCase = pendingInvoiceUseCase;
         this.paymentExecutionUseCase = paymentExecutionUseCase;
+        this.ghnShippingService = ghnShippingService;
     }
 
     @Transactional(readOnly = true)
