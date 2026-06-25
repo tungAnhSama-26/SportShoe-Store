@@ -33,15 +33,17 @@ public class BanHangTaiQuayService {
     private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
     private final ThucThiThanhToanTaiQuayService paymentExecutorUseCase;
     private final GhnShippingService ghnShippingService;
+    private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
+    private final ThucThiThanhToanTaiQuayService paymentExecutionUseCase;
 
     public BanHangTaiQuayService(
             KhachHangTaiQuayService customerUseCase,
             SanPhamTaiQuayService productUseCase,
             PhieuGiamGiaTaiQuayService voucherUseCase,
             HoaDonTaiQuayService invoiceUseCase,
+            GhnShippingService ghnShippingService,
             HoaDonChoTaiQuayService pendingInvoiceUseCase,
-            ThucThiThanhToanTaiQuayService paymentExecutorUseCase,
-            GhnShippingService ghnShippingService
+            ThucThiThanhToanTaiQuayService paymentExecutionUseCase
     ) {
         this.customerUseCase = customerUseCase;
         this.productUseCase = productUseCase;
@@ -50,6 +52,8 @@ public class BanHangTaiQuayService {
         this.pendingInvoiceUseCase = pendingInvoiceUseCase;
         this.paymentExecutorUseCase = paymentExecutorUseCase;
         this.ghnShippingService = ghnShippingService;
+        this.pendingInvoiceUseCase = pendingInvoiceUseCase;
+        this.paymentExecutionUseCase = paymentExecutionUseCase;
     }
 
     @Transactional(readOnly = true)
@@ -136,7 +140,7 @@ public class BanHangTaiQuayService {
 
     @Transactional
     public ThanhToanTaiQuayResponse thanhToanTaiQuay(ThanhToanTaiQuayRequest request) {
-        return paymentExecutorUseCase.thanhToanTaiQuay(request);
+        return paymentExecutionUseCase.thanhToanTaiQuay(request);
     }
 
     @Transactional(readOnly = true)
