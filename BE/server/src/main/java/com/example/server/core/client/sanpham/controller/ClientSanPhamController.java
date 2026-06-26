@@ -228,7 +228,7 @@ public class ClientSanPhamController {
                 tt != null ? tt.coGiay() : null,
                 tt != null ? tt.congNgheDem() : null,
                 tt != null ? tt.trongLuong() : null,
-                detail.gioiTinh(), hinhAnhSanPham, daBan, items);
+                detail.gioiTinh(), hinhAnhSanPham, daBan, items, detail.trangThai());
         return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết sản phẩm thành công", data));
     }
 

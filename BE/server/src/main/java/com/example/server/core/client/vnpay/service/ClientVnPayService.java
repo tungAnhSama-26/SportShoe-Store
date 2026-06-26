@@ -46,9 +46,7 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
     public static final String TRANG_THAI_HET_HAN = "HET_HAN";
 
-    /** Phiên QR sống tối đa 10 phút; quá hạn chưa thanh toán -> hủy + hoàn tồn đã giữ chỗ. */
-    private static final long PHIEN_TTL_MS = 600_000L;
-    /** Dọn hẳn phiên đã thanh toán / hết hạn khỏi bộ nhớ sau 15 phút. */
+    /** Dọn phiên ĐÃ THANH TOÁN khỏi bộ nhớ sau 15 phút (tránh rò rỉ). Phiên chờ KHÔNG hết hạn. */
     private static final long PHIEN_DON_SAU_MS = 900_000L;
 
     private final ClientDatHangService datHangService;
@@ -207,23 +205,16 @@ public class ClientVnPayService {
     }
 
     /**
-     * Dọn phiên QR: phiên quá 1 phút chưa thanh toán -> HOÀN tồn đã giữ chỗ + đánh dấu hết hạn.
-     * Phiên đã thanh toán/hết hạn quá 5 phút -> xóa khỏi bộ nhớ (tránh rò rỉ).
+     * Dọn bộ nhớ phiên QR: chỉ xóa phiên ĐÃ THANH TOÁN sau một thời gian (tránh rò rỉ).
+     * Phiên đang chờ KHÔNG còn bị hết hạn -> khách chuyển khoản lúc nào cũng được
+     * (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn).
      */
-    @Scheduled(fixedRate = 15_000L)
+    @Scheduled(fixedRate = 60_000L)
     public synchronized void donPhien() {
         long now = System.currentTimeMillis();
-        for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
-            Phien phien = entry.getValue();
-            if (TRANG_THAI_CHO.equals(phien.trangThai)
-                    && now - phien.thoiDiemTao > PHIEN_TTL_MS) {
-                // Quá hạn chưa thanh toán -> hết hạn phiên (không giữ chỗ tồn nên không cần hoàn gì).
-                phien.trangThai = TRANG_THAI_HET_HAN;
-            } else if (!TRANG_THAI_CHO.equals(phien.trangThai)
-                    && now - phien.thoiDiemTao > PHIEN_DON_SAU_MS) {
-                phienMap.remove(entry.getKey());
-            }
-        }
+        phienMap.entrySet().removeIf(e ->
+                !TRANG_THAI_CHO.equals(e.getValue().trangThai)
+                        && now - e.getValue().thoiDiemTao > PHIEN_DON_SAU_MS);
     }
 
     /**
