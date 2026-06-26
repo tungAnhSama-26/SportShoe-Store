@@ -668,8 +668,37 @@ export function useLogicBanHangTaiQuay() {
 
   // Handle effect bindings
   useEffect(() => {
-    const subPosSync = subscribeTopic('/topic/admin/pos-sync', async (msg) => {
+    const subPosSync = subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
+      const msg = rawMsg?.payload ?? rawMsg;
       if (msg.sender === sessionIdRef.current) return;
+
+      if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
+        try {
+          const response = await layDanhSachHoaDonCho();
+          const danhSachData = response?.data || response;
+          const newDanhSach = Array.isArray(danhSachData) ? danhSachData : [];
+          setDanhSachHoaDonCho(newDanhSach);
+
+          if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
+            setHoaDonChoDaChon((currentInvoice) => {
+              if (currentInvoice?.id === msg.invoiceId) {
+                xoaBanNhap();
+                return null;
+              }
+              return currentInvoice;
+            });
+            return;
+          }
+
+          const invoice = newDanhSach.find((hd) => hd.id === msg.invoiceId);
+          if (invoice) {
+            await chonHoaDonCho(invoice);
+          }
+        } catch (e) {
+          console.error("Lỗi tải lại realtime POS:", e);
+        }
+        return;
+      }
       
       taiDanhSachHoaDonCho();
 
