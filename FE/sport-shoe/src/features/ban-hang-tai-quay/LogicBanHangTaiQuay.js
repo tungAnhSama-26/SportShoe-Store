@@ -603,7 +603,7 @@ function LogicBanHangTaiQuay() {
         ghiChu: "",
         khachHangId: khachHangDuocChon.value?.id || null,
         maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma || null,
-        thongTinGiaoHang: choPhepGiaoHang.value ? taoPayloadGiaoHang() : null,
+        thongTinGiaoHang: (choPhepGiaoHang.value && coThongTinGiaoHangHopLe.value) ? taoPayloadGiaoHang() : null,
         items: cartItems.value.map(item => ({
           chiTietId: item.chiTietId,
           soLuong: item.soLuong,
