@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { Eye } from 'lucide-vue-next';
 import {
   laySanPhamCoDanhGia,
   layDanhGiaTheoSanPham,
@@ -205,7 +206,7 @@ function xuLyAnhLoi(e) {
       <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700">
         <table class="w-full text-sm">
           <thead>
-            <tr class="border-b border-slate-100 bg-slate-50/60 text-left text-xs font-semibold uppercase text-slate-400 dark:bg-slate-700/40 dark:border-slate-700">
+            <tr class="border-b border-slate-100 bg-slate-50/60 text-left text-[13px] font-semibold text-slate-500 dark:bg-slate-700/40 dark:border-slate-700">
               <th class="px-4 py-3">Sản phẩm</th>
               <th class="px-4 py-3 text-center">Số đánh giá</th>
               <th class="px-4 py-3 text-center">Điểm TB</th>
@@ -223,8 +224,7 @@ function xuLyAnhLoi(e) {
             <tr
               v-for="sp in dsSanPham"
               :key="sp.giayId"
-              @click="moSanPham(sp)"
-              class="cursor-pointer border-b border-slate-50 transition hover:bg-primary/5 dark:border-slate-700/50"
+              class="border-b border-slate-50 transition hover:bg-slate-50/60 dark:border-slate-700/50"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -246,7 +246,16 @@ function xuLyAnhLoi(e) {
                 <span class="inline-flex items-center gap-1 font-semibold text-amber-500">{{ sp.diemTrungBinh }} <span>★</span></span>
               </td>
               <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ formatNgay(sp.ngayMoiNhat) }}</td>
-              <td class="px-4 py-3 text-right"><span class="text-sm font-medium text-primary">Xem →</span></td>
+              <td class="px-4 py-3 text-right">
+                <button
+                  type="button"
+                  @click="moSanPham(sp)"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-700 dark:text-slate-300"
+                  title="Xem đánh giá"
+                >
+                  <Eye class="h-4 w-4" />
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
