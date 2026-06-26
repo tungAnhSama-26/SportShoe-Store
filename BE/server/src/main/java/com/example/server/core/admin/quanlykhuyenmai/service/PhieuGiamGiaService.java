@@ -62,8 +62,7 @@ public class PhieuGiamGiaService {
     }
 
     public void remove(Integer id) {
-        phieuGiamGiaRepository.deleteById(id);
-        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
+        throw new BusinessException("Không được phép xóa phiếu giảm giá. Vui lòng chuyển trạng thái sang ngưng hoạt động.");
     }
 
     public PhieuGiamGia add(PhieuGiamGiaRequest request) {
