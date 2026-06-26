@@ -75,16 +75,6 @@ async function layDanhGia(giayId) {
   });
 }
 
-// Gửi đánh giá: payload = { khachHangId, soSao, noiDung }.
-async function guiDanhGia(giayId, payload) {
-  return apiRequest(`/client/san-pham/${giayId}/danh-gia`, {
-    method: "POST",
-    authenticated: false,
-    body: JSON.stringify(payload),
-    fallbackMessage: "Không thể gửi đánh giá",
-  });
-}
-
 // Số liệu thật cho banner trang chủ: { soKhachHang, soSanPham, diemTrungBinh, soDanhGia }.
 async function layThongKeTrangChu() {
   return apiRequest(`/client/thong-ke`, {
@@ -127,7 +117,6 @@ export {
   layTatCaSanPham,
   layChiTietSanPham,
   layDanhGia,
-  guiDanhGia,
   layDanhGiaCongKhai,
   layThongKeTrangChu,
 };
