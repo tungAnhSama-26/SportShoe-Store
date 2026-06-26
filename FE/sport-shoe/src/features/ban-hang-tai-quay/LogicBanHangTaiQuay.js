@@ -232,8 +232,28 @@ function LogicBanHangTaiQuay() {
   const sessionId = Math.random().toString(36).substring(2, 15);
   let isSyncingUI = false;
 
-  subscribeTopic('/topic/admin/pos-sync', async (msg) => {
+  subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
+    const msg = rawMsg?.payload ?? rawMsg;
     if (msg.sender === sessionId) return;
+
+    if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
+      try {
+        await taiDanhSachHoaDonCho();
+        if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
+          if (hoaDonChoDaChon.value?.id === msg.invoiceId) {
+            xoaBanNhap();
+          }
+          return;
+        }
+        const invoice = danhSachHoaDonCho.value.find((hd) => hd.id === msg.invoiceId);
+        if (invoice) {
+          await chonHoaDonCho(invoice);
+        }
+      } catch (e) {
+        console.error("Lỗi khi đồng bộ realtime POS:", e);
+      }
+      return;
+    }
 
     if (msg.action === 'CHON_HOA_DON') {
       isSyncingUI = true;
@@ -253,7 +273,7 @@ function LogicBanHangTaiQuay() {
       isSyncingUI = true;
       dangLuuNoiBo = true;
       skipNextAutosave = true;
-      
+
       choPhepGiaoHang.value = msg.state.choPhepGiaoHang;
       tenNguoiNhanGiaoHang.value = msg.state.tenNguoiNhanGiaoHang;
       sdtNguoiNhanGiaoHang.value = msg.state.sdtNguoiNhanGiaoHang;
@@ -263,10 +283,10 @@ function LogicBanHangTaiQuay() {
       ghiChuThanhToan.value = msg.state.ghiChuThanhToan;
       tuKhoaKhachHang.value = msg.state.tuKhoaKhachHang;
       khachHangDuocChon.value = msg.state.khachHangDuocChon;
-      
-      setTimeout(() => { 
-        isSyncingUI = false; 
-        dangLuuNoiBo = false; 
+
+      setTimeout(() => {
+        isSyncingUI = false;
+        dangLuuNoiBo = false;
       }, 50);
     }
   });

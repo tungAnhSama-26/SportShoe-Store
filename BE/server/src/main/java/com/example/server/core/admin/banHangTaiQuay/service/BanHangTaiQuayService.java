@@ -16,15 +16,20 @@ import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
+import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class BanHangTaiQuayService {
+
+    private static final String POS_SYNC_TOPIC = "/topic/admin/pos-sync";
+
 
     private final KhachHangTaiQuayService customerUseCase;
     private final SanPhamTaiQuayService productUseCase;
@@ -33,6 +38,7 @@ public class BanHangTaiQuayService {
     private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
     private final ThucThiThanhToanTaiQuayService paymentExecutionUseCase;
     private final GhnShippingService ghnShippingService;
+    private final WebSocketNotificationService webSocketNotificationService;
 
     public BanHangTaiQuayService(
             KhachHangTaiQuayService customerUseCase,
@@ -40,6 +46,7 @@ public class BanHangTaiQuayService {
             PhieuGiamGiaTaiQuayService voucherUseCase,
             HoaDonTaiQuayService invoiceUseCase,
             GhnShippingService ghnShippingService,
+            WebSocketNotificationService webSocketNotificationService,
             HoaDonChoTaiQuayService pendingInvoiceUseCase,
             ThucThiThanhToanTaiQuayService paymentExecutionUseCase
     ) {
@@ -50,6 +57,7 @@ public class BanHangTaiQuayService {
         this.pendingInvoiceUseCase = pendingInvoiceUseCase;
         this.paymentExecutionUseCase = paymentExecutionUseCase;
         this.ghnShippingService = ghnShippingService;
+        this.webSocketNotificationService = webSocketNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -121,22 +129,40 @@ public class BanHangTaiQuayService {
 
     @Transactional
     public HoaDonChoChiTietResponse taoHoaDonCho(TaoHoaDonChoRequest request) {
-        return pendingInvoiceUseCase.taoHoaDonCho(request);
+        HoaDonChoChiTietResponse response = pendingInvoiceUseCase.taoHoaDonCho(request);
+        phatRealtimeHoaDonCho("CREATED", response.id());
+        return response;
     }
 
     @Transactional
     public HoaDonChoChiTietResponse capNhatHoaDonCho(Integer hoaDonId, TaoHoaDonChoRequest request) {
-        return pendingInvoiceUseCase.capNhatHoaDonCho(hoaDonId, request);
+        HoaDonChoChiTietResponse response = pendingInvoiceUseCase.capNhatHoaDonCho(hoaDonId, request);
+        phatRealtimeHoaDonCho("UPDATED", response.id());
+        return response;
     }
 
     @Transactional
     public void huyHoaDonCho(Integer hoaDonId) {
         pendingInvoiceUseCase.huyHoaDonCho(hoaDonId);
+        phatRealtimeHoaDonCho("CANCELLED", hoaDonId);
     }
 
     @Transactional
     public ThanhToanTaiQuayResponse thanhToanTaiQuay(ThanhToanTaiQuayRequest request) {
-        return paymentExecutionUseCase.thanhToanTaiQuay(request);
+        ThanhToanTaiQuayResponse response = paymentExecutionUseCase.thanhToanTaiQuay(request);
+        phatRealtimeHoaDonCho("PAID", response.hoaDonId());
+        return response;
+    }
+
+    private void phatRealtimeHoaDonCho(String action, Integer hoaDonId) {
+        webSocketNotificationService.sendToTopic(
+                POS_SYNC_TOPIC,
+                "POS_INVOICE_CHANGED",
+                Map.of(
+                        "action", action,
+                        "invoiceId", hoaDonId
+                )
+        );
     }
 
     @Transactional(readOnly = true)
