@@ -151,8 +151,6 @@ async function chonVoucher(v) {
 // VNPay (giả lập)
 const qrVnPay = ref(null); // { token, qrData, maGiaoDich }
 let pollTimer = null;
-let countdownTimer = null;
-const demNguoc = ref(60); // phiên QR sống tối đa 60 giây
 
 // Phí vận chuyển (GHN) - tính lại mỗi khi địa chỉ thay đổi.
 const phiShip = ref(null); // { phiVanChuyen, uocTinh, moTa }
@@ -429,12 +427,8 @@ const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
 function batDauPoll() {
   dungPoll();
-  demNguoc.value = 60;
-  // Đếm ngược 60s: hết giờ chưa thanh toán -> phiên hết hạn (BE đã hoàn tồn về).
-  countdownTimer = setInterval(() => {
-    demNguoc.value -= 1;
-    if (demNguoc.value <= 0) ngatHetHan();
-  }, 1000);
+  // Không còn đếm ngược: mã QR sống đến khi khách thanh toán hoặc tự hủy
+  // (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn nên không cần hết hạn).
   pollTimer = setInterval(async () => {
     if (!qrVnPay.value) return;
     try {
@@ -456,17 +450,13 @@ function batDauPoll() {
 function ngatHetHan() {
   dungPoll();
   qrVnPay.value = null;
-  showError('Phiên thanh toán đã hết hạn (quá 1 phút), vui lòng đặt lại đơn.');
+  showError('Phiên thanh toán không còn hiệu lực, vui lòng đặt lại đơn.');
 }
 
 function dungPoll() {
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
-  }
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
   }
 }
 
@@ -732,11 +722,7 @@ function xuLyAnhLoi(event) {
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
           </div>
-          <div class="mt-2 text-center text-sm">
-            <span class="text-slate-400">Phiên hết hạn sau </span>
-            <span :class="['font-bold', demNguoc <= 10 ? 'text-rose-600' : 'text-slate-700']">{{ demNguoc }}s</span>
-          </div>
-          <p class="mt-1 text-center text-[11px] text-slate-400">Quá 1 phút chưa thanh toán, mã QR sẽ hết hạn — vui lòng đặt lại.</p>
+          <p class="mt-2 text-center text-[11px] text-slate-400">Mã QR có hiệu lực đến khi bạn thanh toán hoặc nhấn Hủy.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>
