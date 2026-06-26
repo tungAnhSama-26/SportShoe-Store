@@ -48,6 +48,8 @@ const {
   isHetHan,
   mauTrangThai,
   statusText,
+  statusTextKh,
+  mauTrangThaiKh,
   loaiGiamText,
   loaiPhieuText,
   mauLoaiPhieu,
@@ -384,9 +386,9 @@ const {
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="mauTrangThai(item.trangThai)"
+                    :class="mauTrangThaiKh(item.trangThai)"
                   >
-                    {{ statusText(item.trangThai) }}
+                    {{ statusTextKh(item.trangThai) }}
                   </span>
                 </td>
                 <td class="px-4 py-3 text-center">

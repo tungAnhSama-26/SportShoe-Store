@@ -96,8 +96,8 @@ export function usePhieuGiamGiaList() {
     homNay.setHours(0, 0, 0, 0);
     const ngayKT = new Date(ngayKetThuc);
     ngayKT.setHours(0, 0, 0, 0);
-    // Hết hạn nếu ngayKetThuc <= homNay (bao gồm cả hôm nay)
-    return ngayKT <= homNay;
+    // Hết hạn nếu ngayKetThuc < homNay (hết hôm nay mới tính là hết hạn)
+    return ngayKT < homNay;
   }
 
   function mauTrangThai(trangThai, ngayKetThuc) {
@@ -118,6 +118,22 @@ export function usePhieuGiamGiaList() {
     if (status === 3) return "Hết số lượng";
     if (status === 4) return "Sắp diễn ra";
     return "Ngưng hoạt động";
+  }
+
+  function statusTextKh(trangThai) {
+    const status = Number(trangThai);
+    if (status === 1) return "Chưa sử dụng";
+    if (status === 0) return "Đã sử dụng";
+    if (status === 2) return "Hết hạn";
+    return "Không hoạt động";
+  }
+
+  function mauTrangThaiKh(trangThai) {
+    const status = Number(trangThai);
+    if (status === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
+    if (status === 0) return "bg-blue-50 text-blue-600 ring-1 ring-blue-100";
+    if (status === 2) return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
+    return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
   }
 
   function loaiGiamText(loai) {
@@ -539,7 +555,7 @@ export function usePhieuGiamGiaList() {
           },
           { label: "Ngày tặng", value: (row) => toDisplayDate(row.ngayTao) },
           { label: "Ngày dùng", value: (row) => toDisplayDate(row.ngaySuDung) },
-          { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+          { label: "Trạng thái", value: (row) => statusTextKh(row.trangThai) },
         ],
         rows,
       });
@@ -565,5 +581,5 @@ export function usePhieuGiamGiaList() {
     taiDanhSach();
   });
 
-  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
+  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, statusTextKh, mauTrangThaiKh, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
 }
