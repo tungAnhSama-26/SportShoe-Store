@@ -94,6 +94,7 @@ public interface PhieuGiamGiaKhachHangRepository extends JpaRepository<PhieuGiam
         WHERE (
             (SELECT pg.trangThai FROM PhieuGiamGia pg WHERE pg.id = pgk.phieuGiamGia.id) = 2
             AND pgk.trangThai != 2
+            AND pgk.ngaySuDung IS NULL
         ) OR (
             pgk.trangThai != 0 
             AND pgk.trangThai != (
