@@ -1,4 +1,5 @@
 import { registerRootComponent } from 'expo';
+import 'text-encoding';
 
 import App from './App';
 
