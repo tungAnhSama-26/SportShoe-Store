@@ -231,12 +231,16 @@ function LogicBanHangTaiQuay() {
 
   const sessionId = Math.random().toString(36).substring(2, 15);
   let isSyncingUI = false;
+  let lastLocalSaveTime = 0;
 
   subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
     const msg = rawMsg?.payload ?? rawMsg;
     if (msg.sender === sessionId) return;
 
     if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
+      if (Date.now() - lastLocalSaveTime < 2500 && (msg.action === 'UPDATED' || msg.action === 'CREATED')) {
+        return;
+      }
       try {
         await taiDanhSachHoaDonCho();
         if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
@@ -294,6 +298,7 @@ function LogicBanHangTaiQuay() {
   subscribeTopic('/topic/admin/san-pham', async (message) => {
     if (message.type === 'PRODUCT_CHANGED') {
       if (dangLuuNoiBo || dangLuuHoaDonCho.value || dangThanhToan.value) return;
+      if (Date.now() - lastLocalSaveTime < 2500) return;
 
       dangLuuNoiBo = true;
       try {
@@ -614,8 +619,10 @@ function LogicBanHangTaiQuay() {
     capNhatTienKhachThanhToan(true);
   }
 
-  async function luuHoaDonHienTai() {
+  async function luuHoaDonHienTai(force = false) {
     if (!hoaDonChoDaChon.value) return;
+    if (dangThanhToan.value && !force) return;
+    lastLocalSaveTime = Date.now();
     try {
       const payload = {
         tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
@@ -689,7 +696,7 @@ function LogicBanHangTaiQuay() {
       skipNextAutosave = false;
       return;
     }
-    if (dangLuuNoiBo) return;
+    if (dangLuuNoiBo || dangThanhToan.value) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {
       luuHoaDonHienTai().catch(() => {});
@@ -770,6 +777,7 @@ function LogicBanHangTaiQuay() {
       return;
     }
     dangLuuHoaDonCho.value = true;
+    lastLocalSaveTime = Date.now();
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
     try {
@@ -841,9 +849,13 @@ function LogicBanHangTaiQuay() {
     dangThanhToan.value = true;
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
+    if (boDemTuDongLuu) {
+      clearTimeout(boDemTuDongLuu);
+      boDemTuDongLuu = null;
+    }
     try {
       if (hoaDonChoDaChon.value) {
-        await luuHoaDonHienTai();
+        await luuHoaDonHienTai(true);
       }
 
       const response = await thanhToanTaiQuay({

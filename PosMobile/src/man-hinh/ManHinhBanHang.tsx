@@ -32,9 +32,9 @@ function ManHinhBanHangContent() {
         {/* Màn hình hiển thị bên trong */}
         <View style={styles.ipadScreen}>
 
-          {/* Content Area */}
+          {/* Khu vực nội dung */}
           <View style={styles.contentArea}>
-            {/* Top section: Hóa đơn chờ */}
+            {/* Phần trên: Hóa đơn chờ */}
             <View style={styles.topSection}>
               <PhanHoaDonCho 
                 danhSachHoaDonCho={danhSachHoaDonCho} 
@@ -46,7 +46,7 @@ function ManHinhBanHangContent() {
               />
             </View>
 
-            {/* Main Grid: Chia 2 cột */}
+            {/* Lưới chính: Chia 2 cột */}
             <View style={styles.mainGrid}>
               <View style={styles.leftColumn}>
                 <CotTrai />

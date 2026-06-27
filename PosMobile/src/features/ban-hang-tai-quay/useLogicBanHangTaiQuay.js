@@ -162,10 +162,10 @@ export function useLogicBanHangTaiQuay() {
   // IN HÓA ĐƠN
   const { xuLyInHoaDonTaiQuay } = useLogicInHoaDon();
 
-  // REALTIME
   const { subscribeTopic, publishMessage } = useRealtime();
   const sessionIdRef = useRef(Math.random().toString(36).substring(2, 15));
   const isSyncingUIRef = useRef(false);
+  const lastLocalSaveTime = useRef(0);
 
   // COMPOSED COMPUTEDS
   const coThongTinGiaoHangHopLe = giaoHangLogic.coThongTinGiaoHangHopLe;
@@ -327,8 +327,10 @@ export function useLogicBanHangTaiQuay() {
 
   const dangLuuNoiBoRef = useRef(false);
 
-  const luuHoaDonHienTai = useCallback(async () => {
+  const luuHoaDonHienTai = useCallback(async (force = false) => {
     if (!hoaDonChoDaChon) return;
+    if (dangThanhToan && !force) return;
+    lastLocalSaveTime.current = Date.now();
     try {
       const payload = {
         tenKhachHang: khachHangLogic.khachHangDuocChon?.hoTen || tenNguoiNhanGiaoHang || (khachHangLogic.laKhachVangLai ? KHACH_VANG_LAI : ""),
@@ -336,16 +338,23 @@ export function useLogicBanHangTaiQuay() {
         ghiChu: "",
         khachHangId: khachHangLogic.khachHangDuocChon?.id || null,
         maPhieuGiamGia: phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma || null,
-        thongTinGiaoHang: choPhepGiaoHang ? giaoHangLogic.taoPayloadGiaoHang() : null,
+        thongTinGiaoHang: (choPhepGiaoHang && giaoHangLogic.coThongTinGiaoHangHopLe) ? giaoHangLogic.taoPayloadGiaoHang() : null,
         items: gioHangLogic.cartItems.map(item => ({
           chiTietId: item.chiTietId,
           soLuong: item.soLuong,
           giaBan: item.giaBan
         })),
       };
-      await capNhatHoaDonCho(hoaDonChoDaChon.id, payload);
+      const response = await capNhatHoaDonCho(hoaDonChoDaChon.id, payload);
       
       dangLuuNoiBoRef.current = true;
+      const responseData = response?.data || response;
+      if (responseData) {
+        // Cập nhật lại danh sách hóa đơn chờ để có giá trị mới nhất
+        setDanhSachHoaDonCho(prev => prev.map(hd => hd.id === hoaDonChoDaChon.id ? responseData : hd));
+        setHoaDonChoDaChon(responseData);
+      }
+      
       gioHangLogic.setCartItems(prev => prev.map(item => ({
         ...item,
         soLuongBanDau: item.soLuong
@@ -380,7 +389,7 @@ export function useLogicBanHangTaiQuay() {
 
       throw error;
     }
-  }, [hoaDonChoDaChon, khachHangLogic, tenNguoiNhanGiaoHang, sdtNguoiNhanGiaoHang, phieuGiamGiaLogic, choPhepGiaoHang, giaoHangLogic, gioHangLogic, chuyenHoaDonThanhBanNhap]);
+  }, [hoaDonChoDaChon, khachHangLogic, tenNguoiNhanGiaoHang, sdtNguoiNhanGiaoHang, phieuGiamGiaLogic, choPhepGiaoHang, giaoHangLogic, gioHangLogic, chuyenHoaDonThanhBanNhap, dangThanhToan]);
 
   const skipNextAutosave = useRef(false);
   const boDemTuDongLuu = useRef(null);
@@ -390,7 +399,7 @@ export function useLogicBanHangTaiQuay() {
       skipNextAutosave.current = false;
       return;
     }
-    if (dangLuuNoiBoRef.current) return;
+    if (dangLuuNoiBoRef.current || dangThanhToan) return;
     if (boDemTuDongLuu.current) clearTimeout(boDemTuDongLuu.current);
     boDemTuDongLuu.current = setTimeout(() => {
       luuHoaDonHienTai().catch(() => {});
@@ -404,7 +413,8 @@ export function useLogicBanHangTaiQuay() {
     phiVanChuyen,
     khachHangLogic.khachHangDuocChon,
     phieuGiamGiaLogic.phieuGiamGiaDaApDung,
-    luuHoaDonHienTai
+    luuHoaDonHienTai,
+    dangThanhToan
   ]);
 
   useEffect(() => {
@@ -485,6 +495,7 @@ export function useLogicBanHangTaiQuay() {
       return;
     }
     setDangLuuHoaDonCho(true);
+    lastLocalSaveTime.current = Date.now();
     setThongBaoLoi("");
     setThongBaoThanhCong("");
     try {
@@ -559,9 +570,14 @@ export function useLogicBanHangTaiQuay() {
     setDangThanhToan(true);
     setThongBaoLoi("");
     setThongBaoThanhCong("");
+    if (boDemTuDongLuu.current) {
+      clearTimeout(boDemTuDongLuu.current);
+      boDemTuDongLuu.current = null;
+    }
+
     try {
       if (hoaDonChoDaChon) {
-        await luuHoaDonHienTai();
+        await luuHoaDonHienTai(true);
       }
 
       const payload = {
@@ -612,6 +628,7 @@ export function useLogicBanHangTaiQuay() {
     if (!isConfirmed) return;
 
     setDangHuyHoaDonCho(true);
+    lastLocalSaveTime.current = Date.now();
     setThongBaoLoi("");
     try {
       await huyHoaDonCho(invoiceId);
@@ -673,6 +690,9 @@ export function useLogicBanHangTaiQuay() {
       if (msg.sender === sessionIdRef.current) return;
 
       if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
+        if (Date.now() - lastLocalSaveTime.current < 2500 && (msg.action === 'UPDATED' || msg.action === 'CREATED')) {
+          return;
+        }
         try {
           const response = await layDanhSachHoaDonCho();
           const danhSachData = response?.data || response;
@@ -753,6 +773,7 @@ export function useLogicBanHangTaiQuay() {
     const subSanPham = subscribeTopic('/topic/admin/san-pham', async (msg) => {
       if (msg.type === 'PRODUCT_CHANGED' || msg.type === 'PRODUCT_UPDATED' || msg === 'PRODUCT_UPDATED') {
         if (dangLuuNoiBoRef.current || dangLuuHoaDonCho || dangThanhToan) return;
+        if (Date.now() - lastLocalSaveTime.current < 2500) return;
         
         dangLuuNoiBoRef.current = true;
         try {
