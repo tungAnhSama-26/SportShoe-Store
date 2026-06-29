@@ -1,10 +1,18 @@
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client/dist/sockjs';
 import { ref, onUnmounted } from 'vue';
 
+const getBrokerURL = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    // Nếu chạy local trực tiếp không qua proxy (ví dụ localhost:5173 kết nối tới localhost:8080)
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+        return `${protocol}//localhost:8080/ws`;
+    }
+    return `${protocol}//${host}/ws`;
+};
+
 const client = new Client({
-    // We use SockJS for fallback
-    webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+    brokerURL: getBrokerURL(),
     reconnectDelay: 5000,
     heartbeatIncoming: 4000,
     heartbeatOutgoing: 4000,

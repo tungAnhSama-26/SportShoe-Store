@@ -1,5 +1,9 @@
 import { registerRootComponent } from 'expo';
-import 'text-encoding';
+import { TextEncoder, TextDecoder } from 'text-encoding';
+
+// Polyfill TextEncoder/Decoder cho React Native (cần thiết cho @stomp/stompjs v7+)
+global.TextEncoder = TextEncoder as any;
+global.TextDecoder = TextDecoder as any;
 
 import App from './App';
 
