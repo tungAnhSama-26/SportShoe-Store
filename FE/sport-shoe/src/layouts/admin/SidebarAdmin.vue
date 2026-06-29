@@ -355,7 +355,7 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Hỗ trợ trực tuyến</span>
       </router-link>
 
-      <router-link to="/admin/danh-gia" :title="compactMode ? 'Quản lý đánh giá' : undefined" :class="navItemClass(isActive('/admin/danh-gia'))">
+      <router-link v-if="laAdmin" to="/admin/danh-gia" :title="compactMode ? 'Quản lý đánh giá' : undefined" :class="navItemClass(isActive('/admin/danh-gia'))">
         <div class="relative shrink-0" :class="compactMode ? '' : 'mr-3'">
           <Star
             class="h-5 w-5"
