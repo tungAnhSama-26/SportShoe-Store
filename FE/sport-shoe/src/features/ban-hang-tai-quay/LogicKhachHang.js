@@ -109,7 +109,7 @@ export function LogicKhachHang({
   function dongDanhSachKhachHang() {
     window.setTimeout(() => {
       hienThiDanhSachKhachHang.value = false;
-    }, 150);
+    }, 250);
   }
 
   function xoaBoDemThoiGianKhachHang() {
