@@ -424,7 +424,7 @@ function LogicBanHangTaiQuay() {
     mauSacDaChon.value = "";
     kichCoDaChon.value = "";
     soLuongDaChon.value = 1;
-    hienThiDanhSachSanPham.value = false;
+    // Không đóng hienThiDanhSachSanPham.value = false; để người dùng có thể tiếp tục chọn
   }
 
   function xoaBanNhap() {

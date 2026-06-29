@@ -148,9 +148,7 @@ function handleOpenProduct(product) {
     return;
   }
   emit("open-product", product);
-  showProductModal.value = false;
-  emit('update:showProductDropdown', false);
-  resetFilters();
+  // Không đóng modal và không làm mới bộ lọc khi bấm thêm sản phẩm
 }
 
 function dongModal() {
