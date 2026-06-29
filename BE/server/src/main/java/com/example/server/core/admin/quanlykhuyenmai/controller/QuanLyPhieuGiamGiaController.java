@@ -45,12 +45,13 @@ public class QuanLyPhieuGiamGiaController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "trangThai", required = false) Integer trangThai,
             @RequestParam(value = "loai", required = false) Integer loai,
+            @RequestParam(value = "loaiPhieu", required = false) Integer loaiPhieu,
             @RequestParam(value = "tuNgay", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate tuNgay,
             @RequestParam(value = "denNgay", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate denNgay,
             @RequestParam("pageNo") Integer pageNo,
             @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize
     ) {
-        return phieuGiamGiaService.phanTrang(keyword, trangThai, loai, tuNgay, denNgay, pageNo, pageSize);
+        return phieuGiamGiaService.phanTrang(keyword, trangThai, loai, loaiPhieu, tuNgay, denNgay, pageNo, pageSize);
     }
 
     @PostMapping("add")
