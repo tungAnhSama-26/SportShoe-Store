@@ -6,13 +6,19 @@ import { layKhachId, themVaoGio } from '../services/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import { resolveMediaUrl } from '../utils/media';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
+import anhMacDinh from '../assets/login-shoe.png';
 
 const router = useRouter();
 const danhSach = ref([]);
 const dangTai = ref(true);
 const daDangNhap = computed(() => Boolean(layKhachId()));
+
+function xuLyAnhLoi(e) {
+  if (e.target.src !== anhMacDinh) e.target.src = anhMacDinh;
+}
 
 const dangChonDeTra = ref(null);
 const laMoTraHangModal = ref(false);
@@ -285,9 +291,10 @@ async function guiYeuCauHuy(don) {
               >
                 <!-- Product Image -->
                 <img
-                  :src="sp.hinhAnh"
-                  alt="Product Image"
+                  :src="resolveMediaUrl(sp.hinhAnh) || anhMacDinh"
+                  :alt="sp.ten || 'Sản phẩm'"
                   class="w-16 h-16 object-cover rounded-xl border border-slate-100 bg-slate-50 flex-shrink-0"
+                  @error="xuLyAnhLoi"
                 />
 
                 <!-- Product Details -->

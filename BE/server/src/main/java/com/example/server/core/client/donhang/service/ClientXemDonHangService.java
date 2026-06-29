@@ -23,6 +23,7 @@ import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.GiayChiTietRepository;
+import com.example.server.repository.HinhAnhGiayRepository;
 import com.example.server.repository.HinhAnhTraHangRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
@@ -83,6 +84,7 @@ public class ClientXemDonHangService {
     private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final HinhAnhGiayRepository hinhAnhGiayRepository;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
@@ -96,7 +98,8 @@ public class ClientXemDonHangService {
             HinhAnhTraHangRepository hinhAnhTraHangRepository,
             PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             ThanhToanRepository thanhToanRepository,
-            GiayChiTietRepository giayChiTietRepository
+            GiayChiTietRepository giayChiTietRepository,
+            HinhAnhGiayRepository hinhAnhGiayRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -110,6 +113,7 @@ public class ClientXemDonHangService {
         this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
     }
 
     @Transactional(readOnly = true)
@@ -124,6 +128,7 @@ public class ClientXemDonHangService {
                     .mapToInt(ct -> ct.getSoLuong() == null ? 0 : ct.getSoLuong())
                     .sum();
 
+            Map<Integer, String> anhBienThe = mapAnhBienTheTheoDong(dong);
             List<DonHangTomTatResponse.DongSanPhamTomTat> sanPhams = new ArrayList<>();
             for (HoaDonChiTiet ct : dong) {
                 GiayChiTiet gct = ct.getGiayChiTiet();
@@ -133,7 +138,7 @@ public class ClientXemDonHangService {
                         gct.getGiay().getTen(),
                         gct.getMauSac().getTen(),
                         gct.getKichCo().getGiaTri(),
-                        gct.getGiay().getHinhAnh(),
+                        anhBienThe.getOrDefault(gct.getId(), gct.getGiay().getHinhAnh()),
                         gct.getGiaBan(),
                         ct.getGiaDonVi(),
                         ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
@@ -192,6 +197,20 @@ public class ClientXemDonHangService {
         return buildChiTiet(hd);
     }
 
+    /** Map biến thể -> URL ảnh chính của biến thể đó (ảnh đúng màu/loại khách đã mua). */
+    private Map<Integer, String> mapAnhBienTheTheoDong(List<HoaDonChiTiet> dong) {
+        List<Integer> bienTheIds = dong.stream()
+                .map(ct -> ct.getGiayChiTiet().getId())
+                .distinct().toList();
+        Map<Integer, String> anh = new HashMap<>();
+        if (!bienTheIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(bienTheIds)) {
+                anh.putIfAbsent((Integer) row[0], (String) row[1]);
+            }
+        }
+        return anh;
+    }
+
     /** Dựng chi tiết đơn từ HoaDon (dùng chung cho xem đơn của khách + tra cứu công khai). */
     private DonHangChiTietResponse buildChiTiet(HoaDon hd) {
         List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findGioItems(hd.getId());
@@ -206,6 +225,9 @@ public class ClientXemDonHangService {
                 }
             }
         }
+
+        // Ảnh chính của từng biến thể (ảnh đúng màu/loại khách đã mua, không phải ảnh gốc SP).
+        Map<Integer, String> anhBienThe = mapAnhBienTheTheoDong(dong);
 
         List<DongSanPham> sanPhams = new ArrayList<>();
         BigDecimal tamTinh = BigDecimal.ZERO;
@@ -222,7 +244,7 @@ public class ClientXemDonHangService {
                     gct.getGiay().getTen(),
                     gct.getMauSac().getTen(),
                     gct.getKichCo().getGiaTri(),
-                    gct.getGiay().getHinhAnh(),
+                    anhBienThe.getOrDefault(gct.getId(), gct.getGiay().getHinhAnh()),
                     giaNiemYet, giaDonVi, sl, ct.getThanhTien(),
                     dg != null,
                     dg != null ? dg.getSoSao() : null,

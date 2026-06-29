@@ -1,6 +1,8 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import ONhapMatKhau from "../../../components/common/ONhapMatKhau.vue";
+import ThanhDoManhMatKhau from "../../../components/common/ThanhDoManhMatKhau.vue";
 import {
   Camera,
   Save,
@@ -497,12 +499,15 @@ onMounted(taiChiTiet);
           <div class="mt-6">
             <template v-if="showDoiMatKhau">
               <div class="space-y-3">
-                <input
-                  v-model="matKhauMoi"
-                  type="password"
-                  placeholder="Mật khẩu mới (>= 6 ký tự)"
-                  class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
-                />
+                <div>
+                  <ONhapMatKhau
+                    v-model="matKhauMoi"
+                    placeholder="Mật khẩu mới (>= 6 ký tự)"
+                    autocomplete="new-password"
+                    input-class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
+                  />
+                  <ThanhDoManhMatKhau :mat-khau="matKhauMoi" />
+                </div>
                 <div class="flex gap-2">
                   <button
                     @click="doiMatKhau"

@@ -52,6 +52,7 @@ const emit = defineEmits([
   'edit-variant',
   'open-discount-detail',
   'open-qr',
+  'open-images',
   'refresh',
   'update:current-page',
   'update:page-size',
@@ -344,6 +345,14 @@ defineExpose({
                   @click="$emit('edit-variant', item)"
                 >
                   <Pencil class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="admin-table-action text-slate-600 hover:text-emerald-600"
+                  title="Quản lý ảnh / đổi ảnh đại diện"
+                  @click="$emit('open-images', item)"
+                >
+                  <Images class="h-4 w-4" />
                 </button>
                 <button
                   type="button"
