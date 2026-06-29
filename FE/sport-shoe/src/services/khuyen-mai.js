@@ -103,6 +103,7 @@ function getPhieuGiamGiaList(filters) {
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
   if (filters?.trangThai != null && filters?.trangThai !== "") params.set("trangThai", String(filters.trangThai));
   if (filters?.loai != null && filters?.loai !== "") params.set("loai", String(filters.loai));
+  if (filters?.loaiPhieu != null && filters?.loaiPhieu !== "") params.set("loaiPhieu", String(filters.loaiPhieu));
   if (filters?.tuNgay) params.set("tuNgay", filters.tuNgay);
   if (filters?.denNgay) params.set("denNgay", filters.denNgay);
   params.set("pageNo", String(filters?.pageNo ?? 0));
