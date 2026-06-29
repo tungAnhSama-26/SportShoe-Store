@@ -4,6 +4,9 @@ import com.example.server.infrastructure.exception.BusinessException;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 import static com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.*;
 
 @Component
@@ -11,12 +14,15 @@ public class ThanhToanTaiQuayService {
 
     public BigDecimal xacDinhTienKhachDua(Integer hinhThuc, BigDecimal tienKhachDua, BigDecimal tongTien) {
         if (hinhThuc == null) {
-            throw new BusinessException("Hinh thuc thanh toan khong hop le");
+            throw new BusinessException("Hình thức thanh toán không hợp lệ");
         }
 
         if (hinhThuc == HINH_THUC_TIEN_MAT) {
             if (tienKhachDua == null || tienKhachDua.compareTo(tongTien) < 0) {
-                throw new BusinessException("Tien khach dua phai lon hon hoac bang tong tien (khach dua: " + tienKhachDua + ", tong tien: " + tongTien + ")");
+                java.text.DecimalFormat formatter = new java.text.DecimalFormat("#,###");
+                String khachDuaStr = tienKhachDua != null ? formatter.format(tienKhachDua).replace(',', '.') : "0";
+                String tongTienStr = tongTien != null ? formatter.format(tongTien).replace(',', '.') : "0";
+                throw new BusinessException("Tiền khách đưa phải lớn hơn hoặc bằng tổng tiền (khách đưa: " + khachDuaStr + " ₫, tổng tiền: " + tongTienStr + " ₫)");
             }
             return tienKhachDua;
         }
@@ -39,13 +45,13 @@ public class ThanhToanTaiQuayService {
 
     public Integer mapHinhThucThanhToan(Integer hinhThucUi) {
         if (hinhThucUi == null) {
-            throw new BusinessException("Hinh thuc thanh toan khong hop le");
+            throw new BusinessException("Hình thức thanh toán không hợp lệ");
         }
         if (hinhThucUi == 4) {
             return HINH_THUC_CHUYEN_KHOAN;
         }
         if (hinhThucUi < HINH_THUC_TIEN_MAT || hinhThucUi > 4) {
-            throw new BusinessException("Hinh thuc thanh toan khong duoc ho tro");
+            throw new BusinessException("Hình thức thanh toán không được hỗ trợ");
         }
         return hinhThucUi == 3 ? HINH_THUC_VI : hinhThucUi;
     }

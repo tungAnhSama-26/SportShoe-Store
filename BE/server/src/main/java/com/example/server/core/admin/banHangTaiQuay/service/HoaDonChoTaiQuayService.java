@@ -92,7 +92,7 @@ public class HoaDonChoTaiQuayService {
         }
 
         if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
-            throw new BusinessException("Chỉ được cập nhật hóa đơn đang chờ");
+            throw new BusinessException("Hóa đơn này không còn ở trạng thái chờ (đã thanh toán hoặc hủy)");
         }
 
         List<HoaDonChiTiet> oldItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
