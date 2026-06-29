@@ -57,6 +57,7 @@ export function usePhieuGiamGiaList() {
     tuNgay: "",
     denNgay: "",
     loai: "",
+    loaiPhieu: "",
   });
   const boLocKh = ref({
     keyword: "",
@@ -88,6 +89,12 @@ export function usePhieuGiamGiaList() {
     { label: "Tất cả", value: "" },
     { label: "Phần trăm", value: "1" },
     { label: "Tiền mặt", value: "2" },
+  ];
+
+  const dsLoaiPhieu = [
+    { label: "Tất cả hình thức", value: "" },
+    { label: "Công khai", value: "1" },
+    { label: "Cá nhân", value: "2" },
   ];
 
   function isHetHan(ngayKetThuc) {
@@ -177,12 +184,14 @@ export function usePhieuGiamGiaList() {
   }
 
   function soLuongDaDung(item) {
-    return Number(item?.soLuongDaDung || 0);
+    return Number(item?.soLuongDaDung || 0).toLocaleString("vi-VN");
   }
 
   function soLuongConLai(item) {
     if (Number(item?.soLuong || 0) === 999999) return "Vô hạn";
-    return Math.max(Number(item?.soLuong || 0) - soLuongDaDung(item), 0);
+    const used = Number(item?.soLuongDaDung || 0);
+    const total = Number(item?.soLuong || 0);
+    return Math.max(total - used, 0).toLocaleString("vi-VN");
   }
 
   watch(activeTab, (newTab) => {
@@ -263,6 +272,7 @@ export function usePhieuGiamGiaList() {
           ? Number(boLoc.value.trangThai)
           : undefined,
         loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+        loaiPhieu: boLoc.value.loaiPhieu !== "" ? Number(boLoc.value.loaiPhieu) : undefined,
         tuNgay: boLoc.value.tuNgay || undefined,
         denNgay: boLoc.value.denNgay || undefined,
         pageNo: needFetchAll ? 0 : (trangHienTai.value - 1),
@@ -348,6 +358,7 @@ export function usePhieuGiamGiaList() {
         tuNgay: "",
         denNgay: "",
         loai: "",
+        loaiPhieu: "",
       };
       return;
     }
@@ -459,6 +470,7 @@ export function usePhieuGiamGiaList() {
               ? Number(boLoc.value.trangThai)
               : undefined,
           loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+          loaiPhieu: boLoc.value.loaiPhieu !== "" ? Number(boLoc.value.loaiPhieu) : undefined,
           tuNgay: boLoc.value.tuNgay || undefined,
           denNgay: boLoc.value.denNgay || undefined,
           pageNo: 0,
@@ -506,7 +518,7 @@ export function usePhieuGiamGiaList() {
               value: (row) =>
                 Number(row.soLuong || 0) === 999999
                   ? "Vô hạn"
-                  : Number(row.soLuong || 0),
+                  : Number(row.soLuong || 0).toLocaleString("vi-VN"),
             },
             { label: "Đã dùng", value: (row) => soLuongDaDung(row) },
             { label: "Còn lại", value: (row) => soLuongConLai(row) },
@@ -581,5 +593,5 @@ export function usePhieuGiamGiaList() {
     taiDanhSach();
   });
 
-  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, statusTextKh, mauTrangThaiKh, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
+  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, dsLoaiPhieu, isHetHan, mauTrangThai, statusText, statusTextKh, mauTrangThaiKh, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
 }
