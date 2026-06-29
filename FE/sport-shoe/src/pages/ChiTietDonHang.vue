@@ -631,7 +631,7 @@ function xuLyAnhLoi(event) {
               :key="sp.hoaDonChiTietId ?? i"
               class="flex gap-4"
             >
-              <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
+              <img :src="resolveHinhAnh(sp.hinhAnh) || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800">{{ sp.tenSanPham }}</p>
                 <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }} · x{{ sp.soLuong }}</p>
