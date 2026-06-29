@@ -740,6 +740,7 @@ onUnmounted(() => {
       :hide-pagination="!!selectedGiayId"
       @toggle-status="toggleBienTheStatus"
       @edit-variant="openEditVariantModal"
+      @open-images="openImageModal"
       @open-qr="openVariantQr"
       @bulk-qr="handleBulkQr"
       @refresh="loadData"

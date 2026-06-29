@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { traCuuDonHangTheoMa } from '../services/don-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import { resolveMediaUrl } from '../utils/media';
 import {
   CAC_BUOC_DON_HANG,
   layCauHinhTrangThaiDonHang,
@@ -229,7 +230,7 @@ onMounted(() => {
           <h2 class="mb-4 text-base font-bold text-slate-800">Sản phẩm</h2>
           <div class="space-y-4">
             <div v-for="(sp, i) in don.sanPhams" :key="sp.hoaDonChiTietId ?? i" class="flex gap-4">
-              <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
+              <img :src="resolveMediaUrl(sp.hinhAnh) || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800">{{ sp.tenSanPham }}</p>
                 <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }} · x{{ sp.soLuong }}</p>
