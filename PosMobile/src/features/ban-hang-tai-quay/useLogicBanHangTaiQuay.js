@@ -162,7 +162,7 @@ export function useLogicBanHangTaiQuay() {
   // IN HÓA ĐƠN
   const { xuLyInHoaDonTaiQuay } = useLogicInHoaDon();
 
-  const { subscribeTopic, publishMessage } = useRealtime();
+  const { subscribeTopic, unsubscribeTopic, publishMessage } = useRealtime();
   const sessionIdRef = useRef(Math.random().toString(36).substring(2, 15));
   const isSyncingUIRef = useRef(false);
   const lastLocalSaveTime = useRef(0);
@@ -687,6 +687,25 @@ export function useLogicBanHangTaiQuay() {
     }
   }, [sanPhamLogic, gioHangLogic]);
 
+  // Refs to keep track of the latest callbacks and states without triggering resubscriptions
+  const latestRef = useRef({});
+  latestRef.current = {
+    xoaBanNhap,
+    chonHoaDonCho,
+    taiDanhSachHoaDonCho,
+    chuyenHoaDonThanhBanNhap,
+    setChoPhepGiaoHang,
+    setTenNguoiNhanGiaoHang,
+    setSdtNguoiNhanGiaoHang,
+    setDiaChiGiaoHang,
+    thanhToanLogic,
+    khachHangLogic,
+    dangLuuHoaDonCho,
+    dangThanhToan,
+    dangTaiChiTietHoaDon,
+    hoaDonChoDaChon
+  };
+
   // Handle effect bindings
   useEffect(() => {
     const subPosSync = subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
@@ -704,19 +723,15 @@ export function useLogicBanHangTaiQuay() {
           setDanhSachHoaDonCho(newDanhSach);
 
           if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
-            setHoaDonChoDaChon((currentInvoice) => {
-              if (currentInvoice?.id === msg.invoiceId) {
-                xoaBanNhap();
-                return null;
-              }
-              return currentInvoice;
-            });
+            if (latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId) {
+              latestRef.current.xoaBanNhap();
+            }
             return;
           }
 
           const invoice = newDanhSach.find((hd) => hd.id === msg.invoiceId);
           if (invoice) {
-            await chonHoaDonCho(invoice);
+            await latestRef.current.chonHoaDonCho(invoice);
           }
         } catch (e) {
           console.error("Lỗi tải lại realtime POS:", e);
@@ -724,20 +739,20 @@ export function useLogicBanHangTaiQuay() {
         return;
       }
       
-      taiDanhSachHoaDonCho();
+      latestRef.current.taiDanhSachHoaDonCho();
 
       if (msg.action === 'CHON_HOA_DON') {
         isSyncingUIRef.current = true;
         
         if (msg.invoiceId === null) {
-          xoaBanNhap();
+          latestRef.current.xoaBanNhap();
           isSyncingUIRef.current = false;
         } else {
           setDanhSachHoaDonCho(currentList => {
             const invoice = currentList.find(hd => hd.id === msg.invoiceId);
             if (invoice) {
               setTimeout(() => {
-                chonHoaDonCho(invoice).finally(() => {
+                latestRef.current.chonHoaDonCho(invoice).finally(() => {
                   isSyncingUIRef.current = false;
                 });
               }, 0);
@@ -748,35 +763,32 @@ export function useLogicBanHangTaiQuay() {
           });
         }
       } else if (msg.action === 'SYNC_STATE') {
-        setHoaDonChoDaChon(currentInvoice => {
-           if (currentInvoice?.id === msg.invoiceId) {
-             isSyncingUIRef.current = true;
-             dangLuuNoiBoRef.current = true;
-             skipNextAutosave.current = true;
-             
-             setChoPhepGiaoHang(msg.state.choPhepGiaoHang);
-             setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);
-             setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang);
-             setDiaChiGiaoHang(msg.state.diaChiGiaoHang);
-             thanhToanLogic.setTienKhachDua(msg.state.tienKhachDua);
-             thanhToanLogic.setPhuongThucThanhToan(msg.state.phuongThucThanhToan);
-             thanhToanLogic.setGhiChuThanhToan(msg.state.ghiChuThanhToan);
-             khachHangLogic.setTuKhoaKhachHang(msg.state.tuKhoaKhachHang);
-             khachHangLogic.setKhachHangDuocChon(msg.state.khachHangDuocChon);
-             
-             setTimeout(() => { 
-               isSyncingUIRef.current = false; 
-               dangLuuNoiBoRef.current = false; 
-             }, 50);
-           }
-           return currentInvoice;
-        });
+        if (latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId) {
+          isSyncingUIRef.current = true;
+          dangLuuNoiBoRef.current = true;
+          skipNextAutosave.current = true;
+          
+          latestRef.current.setChoPhepGiaoHang(msg.state.choPhepGiaoHang);
+          latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);
+          latestRef.current.setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang);
+          latestRef.current.setDiaChiGiaoHang(msg.state.diaChiGiaoHang);
+          latestRef.current.thanhToanLogic.setTienKhachDua(msg.state.tienKhachDua);
+          latestRef.current.thanhToanLogic.setPhuongThucThanhToan(msg.state.phuongThucThanhToan);
+          latestRef.current.thanhToanLogic.setGhiChuThanhToan(msg.state.ghiChuThanhToan);
+          latestRef.current.khachHangLogic.setTuKhoaKhachHang(msg.state.tuKhoaKhachHang);
+          latestRef.current.khachHangLogic.setKhachHangDuocChon(msg.state.khachHangDuocChon);
+          
+          setTimeout(() => { 
+            isSyncingUIRef.current = false; 
+            dangLuuNoiBoRef.current = false; 
+          }, 50);
+        }
       }
     });
 
     const subSanPham = subscribeTopic('/topic/admin/san-pham', async (msg) => {
       if (msg.type === 'PRODUCT_CHANGED' || msg.type === 'PRODUCT_UPDATED' || msg === 'PRODUCT_UPDATED') {
-        if (dangLuuNoiBoRef.current || dangLuuHoaDonCho || dangThanhToan) return;
+        if (dangLuuNoiBoRef.current || latestRef.current.dangLuuHoaDonCho || latestRef.current.dangThanhToan) return;
         if (Date.now() - lastLocalSaveTime.current < 2500) return;
         
         dangLuuNoiBoRef.current = true;
@@ -787,35 +799,31 @@ export function useLogicBanHangTaiQuay() {
           const newDanhSach = Array.isArray(danhSachData) ? danhSachData : [];
           setDanhSachHoaDonCho(newDanhSach);
 
-          setHoaDonChoDaChon(currentInvoice => {
-            if (currentInvoice) {
-              const stillExists = newDanhSach.find(hd => hd.id === currentInvoice.id);
-              if (stillExists) {
-                layChiTietHoaDonCho(currentInvoice.id).then(detail => {
-                  chuyenHoaDonThanhBanNhap(detail?.data || detail);
+          const currentInvoice = latestRef.current.hoaDonChoDaChon;
+          if (currentInvoice) {
+            const stillExists = newDanhSach.find(hd => hd.id === currentInvoice.id);
+            if (stillExists) {
+              layChiTietHoaDonCho(currentInvoice.id).then(detail => {
+                latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
+              });
+            } else {
+              const fallbackInvoice = newDanhSach.length > 0 ? newDanhSach[0] : null;
+              if (fallbackInvoice) {
+                setHoaDonChoDaChon(fallbackInvoice);
+                layChiTietHoaDonCho(fallbackInvoice.id).then(detail => {
+                  latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
                 });
               } else {
-                const fallbackInvoice = newDanhSach.length > 0 ? newDanhSach[0] : null;
-                if (fallbackInvoice) {
-                  layChiTietHoaDonCho(fallbackInvoice.id).then(detail => {
-                    chuyenHoaDonThanhBanNhap(detail?.data || detail);
-                  });
-                  return fallbackInvoice;
-                } else {
-                  xoaBanNhap();
-                  return null;
-                }
+                latestRef.current.xoaBanNhap();
               }
-              return currentInvoice;
-            } else if (newDanhSach.length > 0) {
-              const fallbackInvoice = newDanhSach[0];
-              layChiTietHoaDonCho(fallbackInvoice.id).then(detail => {
-                chuyenHoaDonThanhBanNhap(detail?.data || detail);
-              });
-              return fallbackInvoice;
             }
-            return currentInvoice;
-          });
+          } else if (newDanhSach.length > 0) {
+            const fallbackInvoice = newDanhSach[0];
+            setHoaDonChoDaChon(fallbackInvoice);
+            layChiTietHoaDonCho(fallbackInvoice.id).then(detail => {
+              latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
+            });
+          }
 
         } catch (e) {
           console.error("Lỗi tải lại realtime:", e);
@@ -825,12 +833,11 @@ export function useLogicBanHangTaiQuay() {
       }
     });
 
-    return () => {};
-  }, [
-    subscribeTopic, taiDanhSachHoaDonCho, chonHoaDonCho, 
-    setChoPhepGiaoHang, setTenNguoiNhanGiaoHang, setSdtNguoiNhanGiaoHang, setDiaChiGiaoHang,
-    thanhToanLogic, khachHangLogic, chuyenHoaDonThanhBanNhap, xoaBanNhap, dangLuuHoaDonCho, dangThanhToan
-  ]);
+    return () => {
+      unsubscribeTopic(subPosSync);
+      unsubscribeTopic(subSanPham);
+    };
+  }, [subscribeTopic, unsubscribeTopic]);
 
   useEffect(() => {
     if (thongBaoLoi) {
