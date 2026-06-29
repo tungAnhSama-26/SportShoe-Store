@@ -550,6 +550,7 @@ function LogicBanHangTaiQuay() {
   }
 
   function chuyenHoaDonThanhBanNhap(invoice) {
+    isSyncingUI = true;
     skipNextAutosave = true;
     const thongTinTheoChiTietId = new Map(
       ketQuaBienTheSanPham.value.map((product) => [product.chiTietId, product])
@@ -583,7 +584,10 @@ function LogicBanHangTaiQuay() {
         soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
       };
     });
-    setTimeout(() => { dangLuuNoiBo = false; }, 50);
+    setTimeout(() => { 
+      dangLuuNoiBo = false; 
+      isSyncingUI = false;
+    }, 50);
     choPhepGiaoHang.value = Boolean(thongTinGiaoHang?.giaoHang);
     tenNguoiNhanGiaoHang.value = thongTinGiaoHang?.tenNguoiNhan || "";
     sdtNguoiNhanGiaoHang.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
