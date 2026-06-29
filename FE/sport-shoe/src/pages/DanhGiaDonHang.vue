@@ -119,7 +119,7 @@ function xuLyAnhLoi(event) {
             <!-- Thông tin sản phẩm -->
             <div class="flex gap-4">
               <router-link :to="`/khachhang/san-pham/${sp.giayId}`" class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-50">
-                <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
+                <img :src="resolveMediaUrl(sp.hinhAnh) || anhMacDinh" :alt="sp.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
               </router-link>
               <div class="flex-1">
                 <router-link :to="`/khachhang/san-pham/${sp.giayId}`" class="font-semibold text-slate-800 hover:text-primary">{{ sp.tenSanPham }}</router-link>

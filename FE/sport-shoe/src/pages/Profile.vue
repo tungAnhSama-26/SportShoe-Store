@@ -18,6 +18,8 @@ import {
   X,
 } from "lucide-vue-next";
 import { layKhachId } from "../services/gio-hang";
+import ONhapMatKhau from "../components/common/ONhapMatKhau.vue";
+import ThanhDoManhMatKhau from "../components/common/ThanhDoManhMatKhau.vue";
 import {
   layProfileKhachHang,
   capNhatProfileKhachHang,
@@ -836,23 +838,24 @@ onMounted(() => {
               <span class="text-[11px] font-bold text-slate-500 uppercase"
                 >Mật khẩu cũ</span
               >
-              <input
+              <ONhapMatKhau
                 v-model="matKhauCu"
-                type="password"
                 placeholder="Nhập mật khẩu cũ"
-                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
+                autocomplete="current-password"
+                input-class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
               />
             </div>
             <div class="space-y-1">
               <span class="text-[11px] font-bold text-slate-500 uppercase"
                 >Mật khẩu mới</span
               >
-              <input
+              <ONhapMatKhau
                 v-model="matKhauMoi"
-                type="password"
                 placeholder="Mật khẩu mới (>= 6 ký tự)"
-                class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
+                autocomplete="new-password"
+                input-class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-rose-300 focus:bg-white transition"
               />
+              <ThanhDoManhMatKhau :mat-khau="matKhauMoi" />
             </div>
             <p v-if="loiMatKhau" class="text-xs text-rose-500 leading-tight">
               {{ loiMatKhau }}
