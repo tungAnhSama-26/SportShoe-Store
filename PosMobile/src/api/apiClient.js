@@ -19,7 +19,8 @@ mayKhachApi.interceptors.response.use(
   },
   (error) => {
     const message = error.response?.data?.message || error.message || 'Lỗi kết nối';
-    return Promise.reject(new Error(message));
+    error.message = message;
+    return Promise.reject(error);
   }
 );
 

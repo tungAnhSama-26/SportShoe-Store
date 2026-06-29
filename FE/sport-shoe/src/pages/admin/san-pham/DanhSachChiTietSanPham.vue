@@ -750,7 +750,7 @@ onUnmounted(() => {
     />
 
     <QuanLySanPhamBienTheFormModal
-      :open="hienThiModalSuaBienThe"
+      :is-open="hienThiModalSuaBienThe"
       :editing-bien-the="bienTheDangSua"
       :selected-giay="editingSelectedGiay"
       :danh-muc="danhMuc"

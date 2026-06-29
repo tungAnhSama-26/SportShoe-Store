@@ -338,7 +338,7 @@ export function useLogicBanHangTaiQuay() {
         ghiChu: "",
         khachHangId: khachHangLogic.khachHangDuocChon?.id || null,
         maPhieuGiamGia: phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma || null,
-        thongTinGiaoHang: (choPhepGiaoHang && giaoHangLogic.coThongTinGiaoHangHopLe) ? giaoHangLogic.taoPayloadGiaoHang() : null,
+        thongTinGiaoHang: choPhepGiaoHang ? giaoHangLogic.taoPayloadGiaoHang() : null,
         items: gioHangLogic.cartItems.map(item => ({
           chiTietId: item.chiTietId,
           soLuong: item.soLuong,
@@ -402,6 +402,9 @@ export function useLogicBanHangTaiQuay() {
     if (dangLuuNoiBoRef.current || dangThanhToan) return;
     if (boDemTuDongLuu.current) clearTimeout(boDemTuDongLuu.current);
     boDemTuDongLuu.current = setTimeout(() => {
+      if (choPhepGiaoHang && !giaoHangLogic.coThongTinGiaoHangHopLe) {
+        return;
+      }
       luuHoaDonHienTai().catch(() => {});
     }, 1000);
   }, [
@@ -414,7 +417,8 @@ export function useLogicBanHangTaiQuay() {
     khachHangLogic.khachHangDuocChon,
     phieuGiamGiaLogic.phieuGiamGiaDaApDung,
     luuHoaDonHienTai,
-    dangThanhToan
+    dangThanhToan,
+    giaoHangLogic.coThongTinGiaoHangHopLe
   ]);
 
   useEffect(() => {
