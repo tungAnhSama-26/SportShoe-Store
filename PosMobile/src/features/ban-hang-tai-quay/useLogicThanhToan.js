@@ -13,7 +13,7 @@ export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     setPhuongThucThanhToan(PHUONG_THUC_THANH_TOAN.TIEN_MAT);
     setTienKhachDua("");
     setGhiChuThanhToan("");
-  }, [hoaDonChoDaChon]);
+  }, [hoaDonChoDaChon?.id]);
 
   const tienKhachThanhToan = useMemo(() => {
     const parsed = Number(layChuSoTien(tienKhachDua));

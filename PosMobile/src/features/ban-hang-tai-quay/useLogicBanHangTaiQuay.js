@@ -262,12 +262,14 @@ export function useLogicBanHangTaiQuay() {
 
     khachHangLogic.setTuKhoaKhachHang(invoice.tenKhachHang || invoice.soDienThoai || "");
     khachHangLogic.setKhachHangDuocChon(invoice.khachHangId
-      ? {
-        id: invoice.khachHangId,
-        hoTen: invoice.tenKhachHang,
-        sdt: invoice.soDienThoai,
-        email: null
-      }
+      ? (khachHangLogic.khachHangDuocChon?.id === invoice.khachHangId
+          ? { ...khachHangLogic.khachHangDuocChon, hoTen: invoice.tenKhachHang, sdt: invoice.soDienThoai }
+          : {
+            id: invoice.khachHangId,
+            hoTen: invoice.tenKhachHang,
+            sdt: invoice.soDienThoai,
+            email: null
+          })
       : null);
     
     dangLuuNoiBoRef.current = true;
@@ -293,7 +295,14 @@ export function useLogicBanHangTaiQuay() {
     setChoPhepGiaoHang(Boolean(thongTinGiaoHang?.giaoHang));
     setTenNguoiNhanGiaoHang(thongTinGiaoHang?.tenNguoiNhan || "");
     setSdtNguoiNhanGiaoHang(thongTinGiaoHang?.soDienThoaiNguoiNhan || "");
-    setDiaChiGiaoHang(thongTinGiaoHang?.diaChiGiaoHang || "");
+    
+    if (thongTinGiaoHang?.giaoHang) {
+      setDiaChiGiaoHang(thongTinGiaoHang.diaChiGiaoHang || "");
+    } else if (!diaChiGiaoHang && khachHangLogic.khachHangDuocChon?.diaChiMacDinh) {
+      setDiaChiGiaoHang(khachHangLogic.khachHangDuocChon.diaChiMacDinh);
+    } else if (!thongTinGiaoHang?.giaoHang && !khachHangLogic.khachHangDuocChon) {
+      setDiaChiGiaoHang("");
+    }
     setDonViVanChuyen(thongTinGiaoHang?.donViVanChuyen || "GHN");
     setPhiVanChuyen(Number(thongTinGiaoHang?.phiVanChuyen || 0));
     setDiaChiDaXacNhan("");
@@ -322,7 +331,7 @@ export function useLogicBanHangTaiQuay() {
       : null);
     // phieuGiamGiaLogic.setKetQuaTimKiemPhieu([]); // not exported
     phieuGiamGiaLogic.setHienThiDanhSachPhieu(false);
-    thanhToanLogic.capNhatTienKhachThanhToan(true);
+    thanhToanLogic.capNhatTienKhachThanhToan(false);
   }, [sanPhamLogic, khachHangLogic, gioHangLogic, phieuGiamGiaLogic, thanhToanLogic]);
 
   const dangLuuNoiBoRef = useRef(false);
@@ -363,6 +372,11 @@ export function useLogicBanHangTaiQuay() {
     } catch (error) {
       console.error("Lỗi khi lưu hóa đơn chờ:", error);
       const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
+
+      if (msg.includes("Chỉ được cập nhật") || msg.includes("trạng thái chờ")) {
+        return;
+      }
+      
       setThongBaoLoi(msg);
       
       if (msg.toLowerCase().includes("phiếu giảm giá")) {
@@ -421,24 +435,33 @@ export function useLogicBanHangTaiQuay() {
     giaoHangLogic.coThongTinGiaoHangHopLe
   ]);
 
+  const lastReceivedSyncState = useRef(null);
+
   useEffect(() => {
     if (isSyncingUIRef.current || dangTaiChiTietHoaDon) return;
     if (hoaDonChoDaChon) {
+      const payloadState = {
+        choPhepGiaoHang,
+        tenNguoiNhanGiaoHang,
+        sdtNguoiNhanGiaoHang,
+        diaChiGiaoHang,
+        tienKhachDua: thanhToanLogic.tienKhachDua,
+        phuongThucThanhToan: thanhToanLogic.phuongThucThanhToan,
+        ghiChuThanhToan: thanhToanLogic.ghiChuThanhToan,
+        tuKhoaKhachHang: khachHangLogic.tuKhoaKhachHang,
+        khachHangDuocChon: khachHangLogic.khachHangDuocChon
+      };
+
+      // Prevent echoing back the exact same state we just received
+      if (JSON.stringify(lastReceivedSyncState.current) === JSON.stringify(payloadState)) {
+        return;
+      }
+
       publishMessage('/topic/admin/pos-sync', {
         sender: sessionIdRef.current,
         action: 'SYNC_STATE',
         invoiceId: hoaDonChoDaChon.id,
-        state: {
-          choPhepGiaoHang,
-          tenNguoiNhanGiaoHang,
-          sdtNguoiNhanGiaoHang,
-          diaChiGiaoHang,
-          tienKhachDua: thanhToanLogic.tienKhachDua,
-          phuongThucThanhToan: thanhToanLogic.phuongThucThanhToan,
-          ghiChuThanhToan: thanhToanLogic.ghiChuThanhToan,
-          tuKhoaKhachHang: khachHangLogic.tuKhoaKhachHang,
-          khachHangDuocChon: khachHangLogic.khachHangDuocChon
-        }
+        state: payloadState
       });
     }
   }, [
@@ -768,6 +791,8 @@ export function useLogicBanHangTaiQuay() {
           dangLuuNoiBoRef.current = true;
           skipNextAutosave.current = true;
           
+          lastReceivedSyncState.current = msg.state;
+
           latestRef.current.setChoPhepGiaoHang(msg.state.choPhepGiaoHang);
           latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);
           latestRef.current.setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang);
