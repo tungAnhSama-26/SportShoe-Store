@@ -73,8 +73,9 @@ public class ClientCheckoutItemService {
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Biến thể sản phẩm không tồn tại: " + id));
             if (!boQuaKiemTon) {
-                // Chặn đặt sản phẩm đã ngừng bán (admin ẩn biến thể) dù còn tồn kho.
-                if (!Integer.valueOf(1).equals(bienThe.getKichHoat())) {
+                // Chặn đặt khi biến thể ngừng bán HOẶC sản phẩm cha không còn kinh doanh (trangThai != 1).
+                if (!Integer.valueOf(1).equals(bienThe.getKichHoat())
+                        || !Integer.valueOf(1).equals(bienThe.getGiay().getTrangThai())) {
                     throw new BusinessException(
                             "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng bán");
                 }
