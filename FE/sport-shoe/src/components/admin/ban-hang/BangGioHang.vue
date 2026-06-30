@@ -53,7 +53,33 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
           </td>
           <td class="px-3 py-2 text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ item.mauSac || "--" }}</td>
           <td class="px-3 py-2 text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ item.kichCo || "--" }}</td>
-          <td class="px-3 py-2 text-center font-semibold text-slate-900 dark:text-slate-100">{{ item.soLuong }}</td>
+          <td class="px-3 py-2 text-center">
+            <div class="flex items-center justify-center gap-1">
+              <button
+                type="button"
+                class="w-6 h-6 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 disabled:opacity-50 text-xs font-bold select-none"
+                :disabled="item.soLuong <= 1"
+                @click="emit('decrease-item', item.cartItemId || item.chiTietId)"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                :value="item.soLuong"
+                @change="emit('update-item', item.cartItemId || item.chiTietId, $event.target.value)"
+                min="1"
+                class="w-12 h-6 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-center text-xs font-semibold focus:border-rose-300 dark:focus:border-rose-500 focus:outline-none hide-spin-button"
+              />
+              <button
+                type="button"
+                class="w-6 h-6 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 disabled:opacity-50 text-xs font-bold select-none"
+                :disabled="soLuongConLai(item.chiTietId, item.soLuongTon) <= 0"
+                @click="emit('increase-item', item.cartItemId || item.chiTietId)"
+              >
+                +
+              </button>
+            </div>
+          </td>
           <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
             <div>{{ dinhDangTien(item.giaBan) }}</div>
           </td>

@@ -27,39 +27,22 @@ const pageTitle = computed(() => {
     'admin-tra-hang': 'Trả hàng',
     'admin-tra-hang-chi-tiet': 'Chi tiết trả hàng',
     'admin-thong-ke': 'Thống kê',
-    'admin-phieu-giam-gia': 'Phiếu giảm giá',
     'admin-phieu-giam-gia-khach-hang': 'Phiếu giảm giá khách hàng',
     'admin-phieu-giam-gia-them': 'Thêm phiếu giảm giá',
     'admin-phieu-giam-gia-chi-tiet': 'Chi tiết phiếu giảm giá',
     'admin-hoa-don': 'Hóa đơn',
     'admin-hoa-don-chi-tiet': 'Chi tiết đơn hàng',
     'admin-ban-hang': 'Bán hàng tại quầy',
-    'admin-san-pham': 'Sản phẩm',
     'admin-san-pham-them': 'Thêm sản phẩm',
     'admin-chi-tiet-san-pham': 'Chi tiết sản phẩm',
     'admin-chi-tiet-san-pham-new': 'Chi tiết sản phẩm',
-    'admin-bien-the-san-pham': 'Biến thể sản phẩm',
     'admin-bien-the-san-pham-them': 'Thêm biến thể sản phẩm',
-    'admin-loai-giay': 'Loại giày',
-    'admin-co-giay': 'Cổ giày',
-    'admin-de-giay': 'Đế giày',
-    'admin-chat-lieu-giay': 'Chất liệu giày',
-    'admin-thuong-hieu': 'Thương hiệu',
-    'admin-cong-nghe-dem': 'Công nghệ đệm',
-    'admin-mau-sac': 'Màu sắc',
-    'admin-kich-co': 'Kích cỡ',
-    'admin-trong-luong': 'Trọng lượng',
-    'admin-dot-giam-gia': 'Đợt giảm giá',
     'admin-dot-giam-gia-them': 'Thêm đợt giảm giá',
     'admin-dot-giam-gia-chi-tiet': 'Chi tiết đợt giảm giá',
     'admin-nhan-vien': 'Nhân viên',
     'admin-nhan-vien-them': 'Thêm nhân viên',
     'admin-nhan-vien-lich-lam': 'Lịch làm việc',
     'admin-nhan-vien-chi-tiet': 'Chi tiết nhân viên',
-    'admin-lich-lam-viec': 'Lịch làm việc',
-    'admin-lich-ca-lam': 'Lịch ca làm',
-    'admin-lich-su-hoat-dong': 'Lịch sử hoạt động',
-    'admin-cham-cong': 'Chấm công',
     'admin-profile': 'Hồ sơ cá nhân',
     'nhanvien-profile': 'Hồ sơ cá nhân',
     'admin-khach-hang': 'Khách hàng',
@@ -102,6 +85,11 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Hóa đơn',
     childTitle: 'Chi tiết hóa đơn'
   },
+  'admin-san-pham': {
+    parentPath: '',
+    parentTitle: 'Quản lý sản phẩm',
+    childTitle: 'Sản phẩm'
+  },
   'admin-san-pham-them': {
     parentPath: '/admin/san-pham',
     parentTitle: 'Sản phẩm',
@@ -118,14 +106,69 @@ const subRouteBreadcrumbs = {
     childTitle: 'Chi tiết sản phẩm'
   },
   'admin-bien-the-san-pham': {
-    parentPath: '/admin/san-pham',
-    parentTitle: 'Sản phẩm',
+    parentPath: '',
+    parentTitle: 'Quản lý sản phẩm',
     childTitle: 'Biến thể sản phẩm'
   },
   'admin-bien-the-san-pham-them': {
     parentPath: '/admin/bien-the-san-pham',
     parentTitle: 'Biến thể sản phẩm',
     childTitle: 'Thêm biến thể sản phẩm'
+  },
+  'admin-loai-giay': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Loại giày'
+  },
+  'admin-co-giay': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Cổ giày'
+  },
+  'admin-de-giay': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Đế giày'
+  },
+  'admin-chat-lieu-giay': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Chất liệu giày'
+  },
+  'admin-thuong-hieu': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Thương hiệu'
+  },
+  'admin-cong-nghe-dem': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Công nghệ đệm'
+  },
+  'admin-mau-sac': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Màu sắc'
+  },
+  'admin-kich-co': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Kích cỡ'
+  },
+  'admin-trong-luong': {
+    parentPath: '',
+    parentTitle: 'Thuộc tính',
+    childTitle: 'Trọng lượng'
+  },
+  'admin-phieu-giam-gia': {
+    parentPath: '',
+    parentTitle: 'Quản lý giảm giá',
+    childTitle: 'Phiếu giảm giá'
+  },
+  'admin-dot-giam-gia': {
+    parentPath: '',
+    parentTitle: 'Quản lý giảm giá',
+    childTitle: 'Đợt giảm giá'
   },
   'admin-dot-giam-gia-them': {
     parentPath: '/admin/dot-giam-gia',
@@ -167,9 +210,24 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Lịch làm việc',
     childTitle: 'Chi tiết lịch làm việc'
   },
+  'admin-lich-lam-viec': {
+    parentPath: '',
+    parentTitle: 'Quản lý lịch làm',
+    childTitle: 'Lịch làm việc'
+  },
+  'admin-lich-ca-lam': {
+    parentPath: '',
+    parentTitle: 'Quản lý lịch làm',
+    childTitle: 'Lịch ca làm'
+  },
+  'admin-cham-cong': {
+    parentPath: '',
+    parentTitle: 'Quản lý lịch làm',
+    childTitle: 'Chấm công'
+  },
   'admin-lich-su-hoat-dong': {
-    parentPath: '/admin/lich-lam-viec',
-    parentTitle: 'Lịch làm việc',
+    parentPath: '',
+    parentTitle: 'Quản lý lịch làm',
     childTitle: 'Lịch sử hoạt động'
   },
   'admin-khach-hang-them': {
@@ -228,7 +286,7 @@ function dangXuat() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
+  <header class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
     <div class="flex h-[74px] items-center justify-between gap-3 px-4 lg:px-6">
       <div class="flex items-center gap-4">
         <button
@@ -244,10 +302,12 @@ function dangXuat() {
         >
           <template v-if="currentSubRoute">
             <router-link
+              v-if="currentSubRoute.parentPath"
               :to="currentSubRoute.parentPath"
               class="text-slate-400 hover:text-[#B82220] transition dark:text-slate-500 dark:hover:text-red-400"
               >{{ currentSubRoute.parentTitle }}</router-link
             >
+            <span v-else class="text-slate-400 dark:text-slate-500">{{ currentSubRoute.parentTitle }}</span>
             <span class="mx-2 text-slate-300 dark:text-slate-600">/</span>
             <span>{{ currentSubRoute.childTitle }}</span>
           </template>

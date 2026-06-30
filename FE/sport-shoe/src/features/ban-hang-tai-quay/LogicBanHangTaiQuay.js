@@ -231,9 +231,37 @@ function LogicBanHangTaiQuay() {
 
   const sessionId = Math.random().toString(36).substring(2, 15);
   let isSyncingUI = false;
+  let lastLocalSaveTime = 0;
 
-  subscribeTopic('/topic/admin/pos-sync', async (msg) => {
+  subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
+    const msg = rawMsg?.payload ?? rawMsg;
     if (msg.sender === sessionId) return;
+
+    if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
+      if (Date.now() - lastLocalSaveTime < 2500 && (msg.action === 'UPDATED' || msg.action === 'CREATED')) {
+        return;
+      }
+      try {
+        await taiDanhSachHoaDonCho();
+        if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
+          if (hoaDonChoDaChon.value?.id === msg.invoiceId) {
+            xoaBanNhap();
+          }
+          return;
+        }
+        const invoice = danhSachHoaDonCho.value.find((hd) => hd.id === msg.invoiceId);
+        if (invoice) {
+          if (hoaDonChoDaChon.value?.id === msg.invoiceId) {
+            await chonHoaDonCho(invoice);
+          } else if (!hoaDonChoDaChon.value && msg.action === 'CREATED') {
+            await chonHoaDonCho(invoice);
+          }
+        }
+      } catch (e) {
+        console.error("Lỗi khi đồng bộ realtime POS:", e);
+      }
+      return;
+    }
 
     if (msg.action === 'CHON_HOA_DON') {
       isSyncingUI = true;
@@ -253,7 +281,9 @@ function LogicBanHangTaiQuay() {
       isSyncingUI = true;
       dangLuuNoiBo = true;
       skipNextAutosave = true;
-      
+
+      lastReceivedSyncState = msg.state;
+
       choPhepGiaoHang.value = msg.state.choPhepGiaoHang;
       tenNguoiNhanGiaoHang.value = msg.state.tenNguoiNhanGiaoHang;
       sdtNguoiNhanGiaoHang.value = msg.state.sdtNguoiNhanGiaoHang;
@@ -263,10 +293,10 @@ function LogicBanHangTaiQuay() {
       ghiChuThanhToan.value = msg.state.ghiChuThanhToan;
       tuKhoaKhachHang.value = msg.state.tuKhoaKhachHang;
       khachHangDuocChon.value = msg.state.khachHangDuocChon;
-      
-      setTimeout(() => { 
-        isSyncingUI = false; 
-        dangLuuNoiBo = false; 
+
+      setTimeout(() => {
+        isSyncingUI = false;
+        dangLuuNoiBo = false;
       }, 50);
     }
   });
@@ -274,6 +304,7 @@ function LogicBanHangTaiQuay() {
   subscribeTopic('/topic/admin/san-pham', async (message) => {
     if (message.type === 'PRODUCT_CHANGED') {
       if (dangLuuNoiBo || dangLuuHoaDonCho.value || dangThanhToan.value) return;
+      if (Date.now() - lastLocalSaveTime < 2500) return;
 
       dangLuuNoiBo = true;
       try {
@@ -399,7 +430,7 @@ function LogicBanHangTaiQuay() {
     mauSacDaChon.value = "";
     kichCoDaChon.value = "";
     soLuongDaChon.value = 1;
-    hienThiDanhSachSanPham.value = false;
+    // Không đóng hienThiDanhSachSanPham.value = false; để người dùng có thể tiếp tục chọn
   }
 
   function xoaBanNhap() {
@@ -525,6 +556,7 @@ function LogicBanHangTaiQuay() {
   }
 
   function chuyenHoaDonThanhBanNhap(invoice) {
+    isSyncingUI = true;
     skipNextAutosave = true;
     const thongTinTheoChiTietId = new Map(
       ketQuaBienTheSanPham.value.map((product) => [product.chiTietId, product])
@@ -533,12 +565,14 @@ function LogicBanHangTaiQuay() {
 
     tuKhoaKhachHang.value = invoice.tenKhachHang || invoice.soDienThoai || "";
     khachHangDuocChon.value = invoice.khachHangId
-      ? {
-        id: invoice.khachHangId,
-        hoTen: invoice.tenKhachHang,
-        sdt: invoice.soDienThoai,
-        email: null
-      }
+      ? (khachHangDuocChon.value?.id === invoice.khachHangId
+          ? { ...khachHangDuocChon.value, hoTen: invoice.tenKhachHang, sdt: invoice.soDienThoai }
+          : {
+            id: invoice.khachHangId,
+            hoTen: invoice.tenKhachHang,
+            sdt: invoice.soDienThoai,
+            email: null
+          })
       : null;
     dangLuuNoiBo = true;
     cartItems.value = invoice.items.map((item) => {
@@ -555,14 +589,23 @@ function LogicBanHangTaiQuay() {
         soLuong: item.soLuong,
         soLuongBanDau: item.soLuong,
         giaBan: item.giaBan,
-        soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
+        soLuongTon: item.soLuongTon
       };
     });
-    setTimeout(() => { dangLuuNoiBo = false; }, 50);
+    setTimeout(() => { 
+      dangLuuNoiBo = false; 
+      isSyncingUI = false;
+    }, 50);
     choPhepGiaoHang.value = Boolean(thongTinGiaoHang?.giaoHang);
     tenNguoiNhanGiaoHang.value = thongTinGiaoHang?.tenNguoiNhan || "";
     sdtNguoiNhanGiaoHang.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
-    diaChiGiaoHang.value = thongTinGiaoHang?.diaChiGiaoHang || "";
+    if (thongTinGiaoHang?.giaoHang) {
+      diaChiGiaoHang.value = thongTinGiaoHang.diaChiGiaoHang || "";
+    } else if (!diaChiGiaoHang.value && khachHangDuocChon.value?.diaChiMacDinh) {
+      diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
+    } else if (!thongTinGiaoHang?.giaoHang && !khachHangDuocChon.value) {
+      diaChiGiaoHang.value = "";
+    }
     donViVanChuyen.value = thongTinGiaoHang?.donViVanChuyen || "GHN";
     phiVanChuyen.value = Number(thongTinGiaoHang?.phiVanChuyen || 0);
     diaChiDaXacNhan.value = "";
@@ -591,11 +634,13 @@ function LogicBanHangTaiQuay() {
       : null;
     ketQuaTimKiemPhieu.value = [];
     hienThiDanhSachPhieu.value = false;
-    capNhatTienKhachThanhToan(true);
+    capNhatTienKhachThanhToan(false);
   }
 
-  async function luuHoaDonHienTai() {
+  async function luuHoaDonHienTai(force = false) {
     if (!hoaDonChoDaChon.value) return;
+    if (dangThanhToan.value && !force) return;
+    lastLocalSaveTime = Date.now();
     try {
       const payload = {
         tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
@@ -603,7 +648,7 @@ function LogicBanHangTaiQuay() {
         ghiChu: "",
         khachHangId: khachHangDuocChon.value?.id || null,
         maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma || null,
-        thongTinGiaoHang: choPhepGiaoHang.value ? taoPayloadGiaoHang() : null,
+        thongTinGiaoHang: (choPhepGiaoHang.value && coThongTinGiaoHangHopLe.value) ? taoPayloadGiaoHang() : null,
         items: cartItems.value.map(item => ({
           chiTietId: item.chiTietId,
           soLuong: item.soLuong,
@@ -619,8 +664,10 @@ function LogicBanHangTaiQuay() {
       }));
       setTimeout(() => { dangLuuNoiBo = false; }, 50);
     } catch (error) {
-      console.error("Lỗi khi lưu hóa đơn chờ:", error);
       const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
+      if (msg.includes("Chỉ được cập nhật") || msg.includes("trạng thái chờ")) {
+        return;
+      }
       thongBaoLoi.value = msg;
       
       // Nếu lỗi do phiếu giảm giá, gỡ bỏ phiếu giảm giá trên frontend để tránh lỗi liên tục
@@ -642,7 +689,33 @@ function LogicBanHangTaiQuay() {
       if (hoaDonChoDaChon.value) {
         try {
           const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-          chuyenHoaDonThanhBanNhap(detail);
+          
+          if (msg.includes("Số lượng tồn kho không đủ")) {
+            let hasAdjusted = false;
+            const currentCartItems = [...cartItems.value];
+            
+            detail.items = detail.items.map(dbItem => {
+              const matchedCartItem = currentCartItems.find(c => c.chiTietId === dbItem.chiTietId);
+              let desiredQty = matchedCartItem ? matchedCartItem.soLuong : dbItem.soLuong;
+              
+              if (desiredQty > dbItem.soLuongTon) {
+                 desiredQty = dbItem.soLuongTon > 0 ? 1 : 0;
+                 hasAdjusted = true;
+              }
+              return { ...dbItem, soLuong: desiredQty };
+            }).filter(item => item.soLuong > 0);
+            
+            chuyenHoaDonThanhBanNhap(detail);
+            
+            if (hasAdjusted) {
+              thongBaoLoi.value = "Kho không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về 1.";
+              setTimeout(() => {
+                luuHoaDonHienTai(true).catch(() => {});
+              }, 500);
+            }
+          } else {
+            chuyenHoaDonThanhBanNhap(detail);
+          }
         } catch (e) {
           console.error("Không thể tải lại hóa đơn để rollback:", e);
         }
@@ -669,12 +742,14 @@ function LogicBanHangTaiQuay() {
       skipNextAutosave = false;
       return;
     }
-    if (dangLuuNoiBo) return;
+    if (dangLuuNoiBo || dangThanhToan.value) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {
       luuHoaDonHienTai().catch(() => {});
     }, 1000);
   }, { deep: true });
+
+  let lastReceivedSyncState = null;
 
   watch(() => [
     choPhepGiaoHang.value,
@@ -688,21 +763,27 @@ function LogicBanHangTaiQuay() {
   ], () => {
     if (isSyncingUI || dangTaiChiTietHoaDon.value) return;
     if (hoaDonChoDaChon.value) {
+      const payloadState = {
+        choPhepGiaoHang: choPhepGiaoHang.value,
+        tenNguoiNhanGiaoHang: tenNguoiNhanGiaoHang.value,
+        sdtNguoiNhanGiaoHang: sdtNguoiNhanGiaoHang.value,
+        diaChiGiaoHang: diaChiGiaoHang.value,
+        tienKhachDua: tienKhachDua.value,
+        phuongThucThanhToan: phuongThucThanhToan.value,
+        ghiChuThanhToan: ghiChuThanhToan.value,
+        tuKhoaKhachHang: tuKhoaKhachHang.value,
+        khachHangDuocChon: khachHangDuocChon.value
+      };
+
+      if (JSON.stringify(lastReceivedSyncState) === JSON.stringify(payloadState)) {
+        return;
+      }
+
       publishMessage('/topic/admin/pos-sync', {
         sender: sessionId,
         action: 'SYNC_STATE',
         invoiceId: hoaDonChoDaChon.value.id,
-        state: {
-          choPhepGiaoHang: choPhepGiaoHang.value,
-          tenNguoiNhanGiaoHang: tenNguoiNhanGiaoHang.value,
-          sdtNguoiNhanGiaoHang: sdtNguoiNhanGiaoHang.value,
-          diaChiGiaoHang: diaChiGiaoHang.value,
-          tienKhachDua: tienKhachDua.value,
-          phuongThucThanhToan: phuongThucThanhToan.value,
-          ghiChuThanhToan: ghiChuThanhToan.value,
-          tuKhoaKhachHang: tuKhoaKhachHang.value,
-          khachHangDuocChon: khachHangDuocChon.value
-        }
+        state: payloadState
       });
     }
   }, { deep: true });
@@ -750,6 +831,7 @@ function LogicBanHangTaiQuay() {
       return;
     }
     dangLuuHoaDonCho.value = true;
+    lastLocalSaveTime = Date.now();
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
     try {
@@ -821,9 +903,13 @@ function LogicBanHangTaiQuay() {
     dangThanhToan.value = true;
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
+    if (boDemTuDongLuu) {
+      clearTimeout(boDemTuDongLuu);
+      boDemTuDongLuu = null;
+    }
     try {
       if (hoaDonChoDaChon.value) {
-        await luuHoaDonHienTai();
+        await luuHoaDonHienTai(true);
       }
 
       const response = await thanhToanTaiQuay({

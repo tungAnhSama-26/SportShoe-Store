@@ -17,24 +17,8 @@ export function LogicGiaoHang({
   hoaDonChoDaChon,
   cartItems
 }) {
-  const tenNguoiNhanGiaoHangHienThi = computed(() => {
-    if (tenNguoiNhanGiaoHang.value.trim()) {
-      return tenNguoiNhanGiaoHang.value.trim();
-    }
-    if (khachHangDuocChon.value?.hoTen) {
-      return khachHangDuocChon.value.hoTen;
-    }
-    return hoaDonChoDaChon.value?.thongTinGiaoHang?.tenNguoiNhan || "";
-  });
-  const soDienThoaiNguoiNhanGiaoHangHienThi = computed(() => {
-    if (sdtNguoiNhanGiaoHang.value.trim()) {
-      return sdtNguoiNhanGiaoHang.value.trim();
-    }
-    if (khachHangDuocChon.value?.sdt) {
-      return khachHangDuocChon.value.sdt;
-    }
-    return hoaDonChoDaChon.value?.thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
-  });
+  const tenNguoiNhanGiaoHangHienThi = computed(() => tenNguoiNhanGiaoHang.value ?? "");
+  const soDienThoaiNguoiNhanGiaoHangHienThi = computed(() => sdtNguoiNhanGiaoHang.value ?? "");
   const phiVanChuyenHienThi = computed(() => choPhepGiaoHang.value ? phiVanChuyen.value : 0);
   const diaChiGiaoHangHienThi = computed(() => {
     if (diaChiGiaoHang.value && typeof diaChiGiaoHang.value === 'string' && diaChiGiaoHang.value.trim()) {
@@ -121,6 +105,9 @@ export function LogicGiaoHang({
 
     if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       choPhepGiaoHang.value = Boolean(patch.giaoHang);
+      if (choPhepGiaoHang.value && (!diaChiGiaoHang.value || !diaChiGiaoHang.value.trim()) && khachHangDuocChon.value?.diaChiMacDinh) {
+        diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "tenNguoiNhan")) {
       tenNguoiNhanGiaoHang.value = patch.tenNguoiNhan ?? "";

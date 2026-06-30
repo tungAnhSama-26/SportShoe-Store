@@ -837,12 +837,13 @@ export function useChiTietHoaDon() {
       return;
     }
     danhSachSanPhamUpdate.value = (hoaDon.value.sanPham || []).map((sp) => ({
-      chiTietId: sp.id,
+      chiTietId: sp.giayChiTietId,
       tenSanPham: sp.tenSanPham,
       soLuong: sp.soLuong,
       giaBan: sp.donGia,
       maBienThe: sp.phanLoai || "",
     }));
+
   });
 
   async function timKiemSanPham() {

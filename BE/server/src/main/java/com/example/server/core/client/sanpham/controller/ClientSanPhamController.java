@@ -228,7 +228,7 @@ public class ClientSanPhamController {
                 tt != null ? tt.coGiay() : null,
                 tt != null ? tt.congNgheDem() : null,
                 tt != null ? tt.trongLuong() : null,
-                detail.gioiTinh(), hinhAnhSanPham, daBan, items);
+                detail.gioiTinh(), hinhAnhSanPham, daBan, items, detail.trangThai());
         return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết sản phẩm thành công", data));
     }
 
@@ -253,10 +253,17 @@ public class ClientSanPhamController {
                         gct.getGiaBan(),
                         giaSauGiamMap.getOrDefault(gct.getId(), gct.getGiaBan()),
                         gct.getSoLuong(),
-                        Integer.valueOf(1).equals(gct.getKichHoat()),
+                        coTheBan(gct),
                         layCanNangSanPham(gct)))
                 .toList();
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ giá thành công", data));
+    }
+
+    /** Biến thể còn bán được: biến thể đang bán (kichHoat=1) VÀ sản phẩm cha đang kinh doanh (trangThai=1). */
+    private boolean coTheBan(GiayChiTiet gct) {
+        return Integer.valueOf(1).equals(gct.getKichHoat())
+                && gct.getGiay() != null
+                && Integer.valueOf(1).equals(gct.getGiay().getTrangThai());
     }
 
     /** Cân nặng 1 sản phẩm (gram) từ thuộc tính trọng lượng; mặc định 500g khi chưa set (khớp GHN). */

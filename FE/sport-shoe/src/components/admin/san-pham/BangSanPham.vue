@@ -118,8 +118,9 @@ function hasOriginalPrice(item) {
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
-  return 'Ngừng bán'
+  return 'Ngừng kinh doanh'
 }
+
 
 function trangThaiClass(value) {
   if (value === 1) return 'bg-emerald-50 text-emerald-600'
@@ -132,6 +133,8 @@ function nextProductStatus(item) {
 }
 
 function canQuickToggleProduct(item) {
+  // Hết hàng (2): trạng thái theo tồn kho -> không cho bật/tắt kinh doanh thủ công.
+  if (Number(item.trangThai) === 2) return false
   return Number(item.trangThai) !== 0 || Number(item.tongSoLuong || 0) > 0
 }
 
@@ -144,6 +147,9 @@ function productQuickToggleIntent(item) {
 }
 
 function productQuickToggleDisabledTitle(item) {
+  if (Number(item.trangThai) === 2) {
+    return 'Sản phẩm đang hết hàng — trạng thái tự theo tồn kho, không thể đổi thủ công'
+  }
   return canQuickToggleProduct(item)
     ? productQuickToggleLabel(item)
     : 'Hết hàng chưa thể chuyển sang kinh doanh'
@@ -175,18 +181,18 @@ function handlePageSizeChange(size) {
       <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
           <col class="w-[5%]" />
+          <col class="w-[9%]" />
+          <col class="w-[24%]" />
           <col class="w-[10%]" />
-          <col class="w-[18%]" />
-          <col class="w-[12%]" />
-          <col class="w-[12%]" />
+          <col class="w-[10%]" />
           <col class="w-[8%]" />
+          <col class="w-[14%]" />
           <col class="w-[11%]" />
-          <col class="w-[12%]" />
-          <col class="w-[12%]" />
+          <col class="w-[9%]" />
         </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
-            <th class="rounded-tl-md bg-slate-100">STT</th>
+            <th class="rounded-tl-md bg-slate-100 text-center">STT</th>
             <th class="bg-slate-100">Mã SP</th>
             <th class="bg-slate-100">Tên SP</th>
             <th class="bg-slate-100">Thương hiệu</th>
@@ -207,9 +213,9 @@ function handlePageSizeChange(size) {
           <tr
             v-for="(item, index) in items"
             :key="item.id"
-            class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
+            class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50 transition"
           >
-            <td class="rounded-l-md px-3 py-4 align-middle font-semibold text-slate-500">
+            <td class="rounded-l-md px-3 py-4 align-middle text-center font-semibold text-slate-500">
               {{ currentPage * pageSize + index + 1 }}
             </td>
             <td class="px-3 py-4 align-middle font-semibold text-slate-800 break-words">{{ item.ma }}</td>
@@ -245,7 +251,7 @@ function handlePageSizeChange(size) {
                 </div>
               </div>
             </td>
-            <td class="px-2 py-4 align-middle">
+            <td class="px-2 py-4 align-middle text-center">
               <span
                 class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
                 :class="trangThaiClass(item.trangThai)"
@@ -254,6 +260,7 @@ function handlePageSizeChange(size) {
                 {{ trangThaiLabel(item.trangThai) }}
               </span>
             </td>
+
             <td class="rounded-r-md px-3 py-4 align-middle text-center">
               <div class="flex items-center justify-center gap-1">
                 <AdminQuickStatusAction

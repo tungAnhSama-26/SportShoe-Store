@@ -246,7 +246,7 @@ watch(
       <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-md bg-white shadow-2xl">
         <header class="sticky top-0 z-10 flex items-center justify-between bg-white px-6 py-4">
           <div class="flex items-center gap-3">
-            <span class="flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white">
+            <span class="flex size-7 items-center justify-center rounded-full bg-[#B82220] text-white">
               <Info class="size-4" />
             </span>
             <h2 class="text-lg font-bold text-slate-800">Thông tin người nhận</h2>
@@ -261,19 +261,19 @@ watch(
           <div class="grid grid-cols-2 gap-4">
             <label class="space-y-1.5">
               <span class="text-[13px] text-slate-600">Tên người nhận <b class="text-red-500">*</b></span>
-              <input v-model="form.tenNguoiNhan" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+              <input v-model="form.tenNguoiNhan" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" />
               <p v-if="errors.tenNguoiNhan" class="text-xs text-red-500">{{ errors.tenNguoiNhan }}</p>
             </label>
             <label class="space-y-1.5">
               <span class="text-[13px] text-slate-600">Số điện thoại <b class="text-red-500">*</b></span>
-              <input v-model="form.sdtNguoiNhan" type="tel" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+              <input v-model="form.sdtNguoiNhan" type="tel" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" />
               <p v-if="errors.sdtNguoiNhan" class="text-xs text-red-500">{{ errors.sdtNguoiNhan }}</p>
             </label>
           </div>
 
           <label class="block space-y-1.5">
-            <span class="text-[13px] text-slate-600">Email (Tùy chọn)</span>
-            <input v-model="form.email" type="email" placeholder="example@gmail.com" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+            <span class="text-[13px] text-slate-600">Email</span>
+            <input v-model="form.email" type="email" placeholder="example@gmail.com" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" />
           </label>
 
           <!-- Address selection box -->
@@ -289,12 +289,12 @@ watch(
                   type="radio" 
                   v-model="form.diaChiId" 
                   :value="diaChi.id" 
-                  class="mt-1 size-4 accent-emerald-600" 
+                  class="mt-1 size-4 accent-[#B82220]" 
                 />
                 <div>
                   <p class="text-[14px] font-bold text-slate-800">{{ diaChi.diaChiCuThe }}</p>
                   <p class="text-[13px] text-slate-500 mt-0.5">Phường/Xã: {{ diaChi.phuongXa }}, Tỉnh/TP: {{ diaChi.tinhThanh }}</p>
-                  <span v-if="diaChi.laMacDinh" class="mt-1.5 inline-block rounded bg-emerald-100/80 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                  <span v-if="diaChi.laMacDinh" class="mt-1.5 inline-block rounded bg-red-100/80 px-2 py-0.5 text-[11px] font-medium text-red-700">
                     Mặc định
                   </span>
                 </div>
@@ -306,9 +306,9 @@ watch(
                     type="radio" 
                     v-model="form.diaChiId" 
                     value="new" 
-                    class="size-4 accent-emerald-600" 
+                    class="size-4 accent-[#B82220]" 
                   />
-                  <span class="text-[14px] font-semibold text-emerald-600">+ Giao đến một địa chỉ khác (Nhập mới)</span>
+                  <span class="text-[14px] font-semibold text-[#B82220]">+ Giao đến một địa chỉ khác (Nhập mới)</span>
                 </label>
               </div>
             </div>
@@ -317,7 +317,7 @@ watch(
             <div v-if="form.diaChiId === 'new'" class="mt-5 grid gap-4 border-t border-slate-200/60 pt-5 md:grid-cols-2">
               <label class="space-y-1.5">
                 <span class="text-[13px] text-slate-600">Tỉnh/Thành phố <b class="text-red-500">*</b></span>
-                <select :value="maTinhChon" :disabled="dangTaiDiaPhuong" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" @change="chonTinh">
+                <select :value="maTinhChon" :disabled="dangTaiDiaPhuong" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" @change="chonTinh">
                   <option value="">-- Chọn tỉnh/thành --</option>
                   <option v-for="tinh in dsTinh" :key="tinh.code" :value="tinh.code">{{ tinh.name }}</option>
                 </select>
@@ -325,7 +325,7 @@ watch(
               </label>
               <label class="space-y-1.5">
                 <span class="text-[13px] text-slate-600">Quận/Huyện <b class="text-red-500">*</b></span>
-                <select :value="maHuyenChon" :disabled="!maTinhChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500 disabled:bg-slate-50 disabled:opacity-70" @change="chonHuyen">
+                <select :value="maHuyenChon" :disabled="!maTinhChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220] disabled:bg-slate-50 disabled:opacity-70" @change="chonHuyen">
                   <option value="">-- Chọn quận/huyện --</option>
                   <option v-for="huyen in dsHuyen" :key="huyen.code" :value="huyen.code">{{ huyen.name }}</option>
                 </select>
@@ -333,7 +333,7 @@ watch(
               </label>
               <label class="space-y-1.5">
                 <span class="text-[13px] text-slate-600">Phường/Xã <b class="text-red-500">*</b></span>
-                <select v-model="form.phuongXa" :disabled="!maHuyenChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500 disabled:bg-slate-50 disabled:opacity-70">
+                <select v-model="form.phuongXa" :disabled="!maHuyenChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220] disabled:bg-slate-50 disabled:opacity-70">
                   <option value="">-- Chọn phường/xã --</option>
                   <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">{{ xa.name }}</option>
                 </select>
@@ -341,7 +341,7 @@ watch(
               </label>
               <label class="space-y-1.5 md:col-span-2">
                 <span class="text-[13px] text-slate-600">Địa chỉ cụ thể <b class="text-red-500">*</b></span>
-                <input v-model="form.diaChiCuThe" placeholder="Số nhà, tên đường..." class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-emerald-500" />
+                <input v-model="form.diaChiCuThe" placeholder="Số nhà, tên đường..." class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" />
                 <p v-if="errors.diaChiCuThe" class="text-xs text-red-500">{{ errors.diaChiCuThe }}</p>
               </label>
               <p v-if="errors.diaPhuong" class="text-xs text-amber-600 md:col-span-2">{{ errors.diaPhuong }}</p>
@@ -350,13 +350,13 @@ watch(
 
           <label class="block space-y-1.5">
             <span class="text-[13px] text-slate-600">Ghi chú đơn hàng</span>
-            <textarea v-model="form.ghiChu" rows="2" placeholder="Nhập ghi chú giao hàng (nếu có)" class="w-full rounded border border-slate-200 px-3 py-2 text-[14px] text-slate-800 outline-none focus:border-emerald-500 custom-scrollbar"></textarea>
+            <textarea v-model="form.ghiChu" rows="2" placeholder="Nhập ghi chú giao hàng (nếu có)" class="w-full rounded border border-slate-200 px-3 py-2 text-[14px] text-slate-800 outline-none focus:border-[#B82220] custom-scrollbar"></textarea>
           </label>
         </div>
 
         <footer class="sticky bottom-0 flex justify-end gap-3 bg-white px-6 py-5">
           <button type="button" class="h-[42px] rounded border border-slate-200 px-6 text-[14px] font-semibold text-slate-600 transition hover:bg-slate-50" @click="dongModal">Hủy</button>
-          <button type="button" :disabled="saving" class="h-[42px] rounded bg-[#00a36c] px-6 text-[14px] font-semibold text-white transition hover:bg-[#008f5d] disabled:opacity-50" @click="luu">
+          <button type="button" :disabled="saving" class="h-[42px] rounded bg-[#B82220] px-6 text-[14px] font-semibold text-white transition hover:bg-[#9b1c1c] disabled:opacity-50" @click="luu">
             {{ saving ? "Đang lưu..." : "Lưu thông tin" }}
           </button>
         </footer>

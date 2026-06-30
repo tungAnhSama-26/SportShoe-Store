@@ -53,17 +53,16 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.DetailPhieuGiamGia(id);
     }
 
-    public Page<QuanLyPhieuGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loai, LocalDate tuNgay,
+    public Page<QuanLyPhieuGiamGiaResponse> phanTrang(String keyword, Integer trangThai, Integer loai, Integer loaiPhieu, LocalDate tuNgay,
             LocalDate denNgay, Integer pageNo, Integer pageSize) {
         Pageable pageable = PageRequest.of(pageNo, pageSize);
         Instant start = tuNgay == null ? null : tuNgay.atStartOfDay(BUSINESS_ZONE).toInstant();
         Instant end = denNgay == null ? null : denNgay.atTime(LocalTime.MAX).atZone(BUSINESS_ZONE).toInstant();
-        return phieuGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loai, start, end, pageable);
+        return phieuGiamGiaRepository.timKiemVaPhanTrang(keyword, trangThai, loai, loaiPhieu, start, end, pageable);
     }
 
     public void remove(Integer id) {
-        phieuGiamGiaRepository.deleteById(id);
-        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
+        throw new BusinessException("Không được phép xóa phiếu giảm giá. Vui lòng chuyển trạng thái sang ngưng hoạt động.");
     }
 
     public PhieuGiamGia add(PhieuGiamGiaRequest request) {
@@ -81,6 +80,14 @@ public class PhieuGiamGiaService {
     public PhieuGiamGia update(Integer id, PhieuGiamGiaRequest request) {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu giảm giá"));
+
+        if (Integer.valueOf(2).equals(phieuGiamGia.getLoaiPhieu())) {
+            Instant now = Instant.now();
+            if (phieuGiamGia.getNgayKetThuc() != null && phieuGiamGia.getNgayKetThuc().isBefore(now)) {
+                throw new BusinessException("Không thể chỉnh sửa phiếu giảm giá cá nhân đã hết hạn.");
+            }
+        }
+
         normalize(request);
         validateBusinessRules(request, id, phieuGiamGia.getSoLuongDaDung());
 

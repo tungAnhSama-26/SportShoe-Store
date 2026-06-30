@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client/dist/sockjs';
 import { Platform } from 'react-native';
 
-const WS_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8080/ws' : 'http://localhost:8080/ws';
+// Giao thức ws:// cho WebSocket thuần thay vì http:// của SockJS
+// Lưu ý: Nếu chạy trên thiết bị thật, hãy thay '10.0.2.2' hoặc 'localhost' thành IP mạng LAN của máy tính chạy backend (ví dụ: '192.168.1.5:8080')
+const WS_BROKER_URL = Platform.OS === 'android' ? 'ws://10.0.2.2:8080/ws' : 'ws://localhost:8080/ws';
 
 // Global variables for singleton client
 let stompClient = null;
@@ -13,7 +14,7 @@ let globalSubscriptions = [];
 function getClient() {
   if (!stompClient) {
     stompClient = new Client({
-      webSocketFactory: () => new SockJS(WS_BASE_URL),
+      brokerURL: WS_BROKER_URL,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

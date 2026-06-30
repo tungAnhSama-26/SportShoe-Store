@@ -49,23 +49,52 @@ export function useChiTietPhieuGiamGia() {
   const soLuongVoHan = ref(false);
   const isLoadingData = ref(false);
 
+  function parseQuantityNumber(value) {
+    const rawValue = String(value ?? "").replace(/[^\d]/g, "");
+    return rawValue ? Number(rawValue) : 0;
+  }
+
+  function formatQuantityNumber(value) {
+    if (value === "" || value == null) return "";
+    const numberValue = parseQuantityNumber(value);
+    return numberValue ? numberValue.toLocaleString("vi-VN") : "";
+  }
+
   const soLuongDisplay = computed({
     get() {
       if (soLuongVoHan.value) {
         return "Vô hạn";
       }
-      return form.soLuong;
+      return formatQuantityNumber(form.soLuong);
     },
     set(val) {
       if (!soLuongVoHan.value) {
-        form.soLuong = val;
+        form.soLuong = formatQuantityNumber(val);
       }
     }
   });
 
+  function handleSoLuongEnter() {
+    if (soLuongVoHan.value || form.loaiPhieu === "2") return;
+    const numeric = parseQuantityNumber(form.soLuong);
+    if (numeric > 999999) {
+      soLuongVoHan.value = true;
+    }
+  }
+
+  function isHetHan(ngayKetThuc) {
+    if (!ngayKetThuc) return false;
+    const homNay = new Date();
+    homNay.setHours(0, 0, 0, 0);
+    const ngayKT = new Date(ngayKetThuc);
+    ngayKT.setHours(0, 0, 0, 0);
+    return ngayKT < homNay;
+  }
+
   const isReadOnly = computed(() => {
-    // Nếu voucher kết thúc/ngừng hoạt động có thể coi là readonly,
-    // ở đây giữ nguyên logic computed trả về false để merchant có thể cập nhật.
+    if (!laMoi && Number(form.loaiPhieu) === 2 && (isHetHan(form.ngayKetThuc) || Number(form.trangThai) === 2)) {
+      return true;
+    }
     return false;
   });
 
@@ -162,7 +191,7 @@ export function useChiTietPhieuGiamGia() {
 
   function dongBoSoLuongPhieuCaNhan() {
     if (form.loaiPhieu === "2") {
-      form.soLuong = String(dsEmailChon.value.length);
+      form.soLuong = formatQuantityNumber(dsEmailChon.value.length);
     }
   }
 
@@ -208,7 +237,7 @@ export function useChiTietPhieuGiamGia() {
   }
 
   function toggleEmail(email) {
-    if (!email) return;
+    if (!email || isReadOnly.value) return;
 
     if (laKhachHangDaDung(email)) {
       showError("Không thể bỏ chọn khách hàng đã sử dụng phiếu giảm giá này.", "Không thể thực hiện");
@@ -225,6 +254,7 @@ export function useChiTietPhieuGiamGia() {
   }
 
   function xoaKhachHang(email) {
+    if (isReadOnly.value) return;
     if (laKhachHangDaDung(email)) {
       showError("Không thể xóa khách hàng đã sử dụng phiếu giảm giá này.", "Không thể thực hiện");
       return;
@@ -236,6 +266,7 @@ export function useChiTietPhieuGiamGia() {
   }
 
   function chonTatCa() {
+    if (isReadOnly.value) return;
     const emailsTrang = danhSachKh.value.map((kh) => kh.email).filter(Boolean);
     const daChonHet =
       emailsTrang.length > 0 &&
@@ -466,7 +497,7 @@ export function useChiTietPhieuGiamGia() {
         giamToiDa: formatVndNumber(detail.giamToiDa ?? 0),
         ngayBatDau: detail.ngayBatDau ?? "",
         ngayKetThuc: detail.ngayKetThuc ?? "",
-        soLuong,
+        soLuong: formatQuantityNumber(soLuong),
         soLuongDaDung: Number(detail.soLuongDaDung ?? 0),
         trangThai: String(detail.trangThai ?? 1),
       });
@@ -589,12 +620,13 @@ export function useChiTietPhieuGiamGia() {
     }
 
     if (!soLuongVoHan.value) {
-      if (!form.soLuong || Number(form.soLuong) <= 0) {
+      const numericSoLuong = parseQuantityNumber(form.soLuong);
+      if (!form.soLuong || numericSoLuong <= 0) {
         formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0";
         isValid = false;
       } else if (
         !laMoi &&
-        Number(form.soLuong) < Number(form.soLuongDaDung || 0)
+        numericSoLuong < Number(form.soLuongDaDung || 0)
       ) {
         formErrors.soLuong =
           "Số lượng phiếu không được nhỏ hơn số lượng đã sử dụng";
@@ -659,7 +691,7 @@ export function useChiTietPhieuGiamGia() {
         giamToiDa,
         ngayBatDau: form.ngayBatDau,
         ngayKetThuc: form.ngayKetThuc,
-        soLuong: Number(form.soLuong),
+        soLuong: parseQuantityNumber(form.soLuong),
         trangThai: laMoi ? undefined : form.trangThai,
       };
 
@@ -828,7 +860,9 @@ export function useChiTietPhieuGiamGia() {
     form,
     soLuongVoHan,
     soLuongDisplay,
+    handleSoLuongEnter,
     isReadOnly,
+    isHetHan,
     giaTriDisplay,
     giaTriToiThieuVnd,
     giamToiDaVnd,

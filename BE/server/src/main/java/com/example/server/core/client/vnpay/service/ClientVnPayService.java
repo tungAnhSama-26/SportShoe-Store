@@ -44,11 +44,8 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_CHO = "CHO";
     public static final String TRANG_THAI_DA_THANH_TOAN = "DA_THANH_TOAN";
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
-    public static final String TRANG_THAI_HET_HAN = "HET_HAN";
 
-    /** Phiên QR sống tối đa 10 phút; quá hạn chưa thanh toán -> hủy + hoàn tồn đã giữ chỗ. */
-    private static final long PHIEN_TTL_MS = 600_000L;
-    /** Dọn hẳn phiên đã thanh toán / hết hạn khỏi bộ nhớ sau 15 phút. */
+    /** Dọn phiên ĐÃ THANH TOÁN khỏi bộ nhớ sau 15 phút (tránh rò rỉ). Phiên chờ KHÔNG hết hạn. */
     private static final long PHIEN_DON_SAU_MS = 900_000L;
 
     private final ClientDatHangService datHangService;
@@ -116,6 +113,9 @@ public class ClientVnPayService {
 
     /** Tạo phiên thanh toán + ảnh QR VietQR (SePay) hoặc link VNPAY Sandbox. Chưa tạo đơn. */
     public TaoMaVnPayResponse taoMa(DatHangRequest request) {
+        // Mỗi khách chỉ giữ 1 phiên QR đang CHỜ: huỷ phiên chờ cũ của cùng khách trước khi tạo phiên mới
+        // (tránh khoá cùng 1 voucher ở nhiều QR rồi thanh toán nhiều lần -> dùng voucher quá số lượt).
+        huyPhienChoCu(request);
         String token = UUID.randomUUID().toString().replace("-", "");
         String maThanhToan = sepayPrefix + token.substring(0, 10).toUpperCase(Locale.ROOT);
         // Khóa giá sản phẩm tại thời điểm tạo mã QR: đợt giảm/giá đổi sau đó không ảnh hưởng đơn.
@@ -147,6 +147,28 @@ public class ClientVnPayService {
                     + "&template=compact";
         }
         return new TaoMaVnPayResponse(token, qrData, maThanhToan);
+    }
+
+    /** Huỷ các phiên QR đang CHỜ của cùng khách (theo khachHangId; khách vãng lai dùng SĐT người nhận). */
+    private void huyPhienChoCu(DatHangRequest request) {
+        String key = khoaChuSoHuu(request);
+        if (key == null) {
+            return;
+        }
+        phienMap.values().removeIf(p ->
+                TRANG_THAI_CHO.equals(p.trangThai) && key.equals(khoaChuSoHuu(p.request)));
+    }
+
+    /** Khoá định danh chủ phiên: ưu tiên khachHangId; khách vãng lai dùng SĐT người nhận. */
+    private String khoaChuSoHuu(DatHangRequest req) {
+        if (req == null) {
+            return null;
+        }
+        if (req.khachHangId() != null) {
+            return "kh:" + req.khachHangId();
+        }
+        String sdt = req.sdtNguoiNhan();
+        return (sdt != null && !sdt.isBlank()) ? "sdt:" + sdt.trim() : null;
     }
 
     /** Tiền giảm voucher đã khóa lúc tạo QR: mã còn hợp lệ -> chốt tiền giảm; không hợp lệ -> 0. */
@@ -193,9 +215,6 @@ public class ClientVnPayService {
         if (phien == null) {
             throw new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn");
         }
-        if (TRANG_THAI_HET_HAN.equals(phien.trangThai)) {
-            throw new BusinessException("Phiên thanh toán đã hết hạn (quá 1 phút), vui lòng đặt lại");
-        }
         if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
             // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA. KHÔNG trừ kho ở đây -> nhân viên xác nhận mới trừ.
             DatHangResponse ketQua = datHangService.datHang(
@@ -207,23 +226,16 @@ public class ClientVnPayService {
     }
 
     /**
-     * Dọn phiên QR: phiên quá 1 phút chưa thanh toán -> HOÀN tồn đã giữ chỗ + đánh dấu hết hạn.
-     * Phiên đã thanh toán/hết hạn quá 5 phút -> xóa khỏi bộ nhớ (tránh rò rỉ).
+     * Dọn bộ nhớ phiên QR: chỉ xóa phiên ĐÃ THANH TOÁN sau một thời gian (tránh rò rỉ).
+     * Phiên đang chờ KHÔNG còn bị hết hạn -> khách chuyển khoản lúc nào cũng được
+     * (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn).
      */
-    @Scheduled(fixedRate = 15_000L)
+    @Scheduled(fixedRate = 60_000L)
     public synchronized void donPhien() {
         long now = System.currentTimeMillis();
-        for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
-            Phien phien = entry.getValue();
-            if (TRANG_THAI_CHO.equals(phien.trangThai)
-                    && now - phien.thoiDiemTao > PHIEN_TTL_MS) {
-                // Quá hạn chưa thanh toán -> hết hạn phiên (không giữ chỗ tồn nên không cần hoàn gì).
-                phien.trangThai = TRANG_THAI_HET_HAN;
-            } else if (!TRANG_THAI_CHO.equals(phien.trangThai)
-                    && now - phien.thoiDiemTao > PHIEN_DON_SAU_MS) {
-                phienMap.remove(entry.getKey());
-            }
-        }
+        phienMap.entrySet().removeIf(e ->
+                !TRANG_THAI_CHO.equals(e.getValue().trangThai)
+                        && now - e.getValue().thoiDiemTao > PHIEN_DON_SAU_MS);
     }
 
     /**
@@ -238,9 +250,6 @@ public class ClientVnPayService {
         for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
             Phien phien = entry.getValue();
             if (content.contains(phien.maThanhToan)) {
-                if (TRANG_THAI_HET_HAN.equals(phien.trangThai)) {
-                    return null; // phiên đã hết hạn (quá 1 phút) -> tiền tới trễ, không tạo đơn
-                }
                 if (phien.soTienKyVong > 0 && soTien < phien.soTienKyVong) {
                     return null; // chuyển thiếu tiền -> không tạo đơn
                 }
