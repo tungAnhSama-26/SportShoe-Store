@@ -392,7 +392,7 @@ const sepayQrUrl = computed(() => {
           <label class="mb-1.5 block text-sm text-slate-500 dark:text-slate-400">Khách thanh toán</label>
           <input
             :value="amountPaid"
-            type="text"
+            type="number"
             inputmode="numeric"
             autocomplete="off"
             :disabled="paymentMethod !== 1"

@@ -284,7 +284,7 @@ function dangXuat() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
+  <header class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
     <div class="flex h-[74px] items-center justify-between gap-3 px-4 lg:px-6">
       <div class="flex items-center gap-4">
         <button
