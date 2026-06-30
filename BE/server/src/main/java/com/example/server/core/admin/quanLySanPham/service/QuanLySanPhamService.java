@@ -706,6 +706,7 @@ public class QuanLySanPhamService {
             for (GiayChiTiet ct : giayChiTietRepository.findByGiayIdEager(id)) {
                 xoaKhoiGioHangCuaKhachHang(ct.getId());
             }
+            sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
             return;
         }
 
@@ -717,6 +718,7 @@ public class QuanLySanPhamService {
         giay.setNgayCapNhat(Instant.now());
         // Tự đặt Kinh doanh / Hết hàng theo tồn của các biến thể đang bán.
         updateTrangThaiTuSoLuong(giay);
+        sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
     }
 
     @Transactional
