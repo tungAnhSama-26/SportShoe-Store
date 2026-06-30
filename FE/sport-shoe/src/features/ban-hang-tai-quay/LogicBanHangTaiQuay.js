@@ -589,7 +589,7 @@ function LogicBanHangTaiQuay() {
         soLuong: item.soLuong,
         soLuongBanDau: item.soLuong,
         giaBan: item.giaBan,
-        soLuongTon: laySoLuongTonHienTai(item.chiTietId, item.soLuong)
+        soLuongTon: item.soLuongTon
       };
     });
     setTimeout(() => { 
