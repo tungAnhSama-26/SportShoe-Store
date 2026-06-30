@@ -23,6 +23,9 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
 
     boolean existsByGiayIdAndMauSacIdAndKichCoId(Integer giayId, Integer mauSacId, Integer kichCoId);
 
+    /** Sản phẩm còn ít nhất 1 biến thể đang bán (kichHoat=1) hay không. */
+    boolean existsByGiayIdAndKichHoat(Integer giayId, Integer kichHoat);
+
     @Query("""
             select gct
             from GiayChiTiet gct
