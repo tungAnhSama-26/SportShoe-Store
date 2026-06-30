@@ -26,6 +26,9 @@ import java.util.UUID;
 @Service
 public class GiaoCaServiceImpl implements GiaoCaService {
 
+    private static final List<String> CHUA_KET_THUC_TRANG_THAI = List.of("MO_CA", "CHO_BAN_GIAO");
+    private static final String KHONG_CO_QUYEN_MO_CA = "T\u1ea1m th\u1eddi kh\u00f4ng c\u00f3 quy\u1ec1n truy c\u1eadp.";
+
     private final GiaoCaRepository giaoCaRepository;
     private final NhanVienRepository nhanVienRepository;
     private final ChamCongRepository chamCongRepository;
@@ -45,8 +48,16 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public void kiemTraQuyenMoCa(UUID nhanVienId) {
+        checkCaChuaKetThucCuaNhanVienKhac(nhanVienId);
+    }
+
+    @Override
     @Transactional
     public GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request) {
+        checkCaChuaKetThucCuaNhanVienKhac(nhanVienId);
+
         if (giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA").isPresent()) {
             throw new BusinessException("Nhân viên đã có ca làm việc đang hoạt động.");
         }
@@ -179,6 +190,14 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     public Page<GiaoCaResponse> layLichSuGiaoCa(UUID nhanVienId, String trangThai, Instant tuNgay, Instant denNgay, Pageable pageable) {
         return giaoCaRepository.searchHistory(nhanVienId, trangThai, tuNgay, denNgay, pageable)
                 .map(this::mapToResponse);
+    }
+
+    private void checkCaChuaKetThucCuaNhanVienKhac(UUID nhanVienId) {
+        giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(CHUA_KET_THUC_TRANG_THAI)
+                .filter(giaoCa -> !giaoCa.getNhanVienTrongCa().getId().equals(nhanVienId))
+                .ifPresent(giaoCa -> {
+                    throw new BusinessException(KHONG_CO_QUYEN_MO_CA);
+                });
     }
 
     private GiaoCaResponse mapToResponse(GiaoCa gc) {
