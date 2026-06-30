@@ -118,8 +118,9 @@ function hasOriginalPrice(item) {
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
-  return 'Ngừng bán'
+  return 'Ngừng kinh doanh'
 }
+
 
 function trangThaiClass(value) {
   if (value === 1) return 'bg-emerald-50 text-emerald-600'
@@ -250,7 +251,7 @@ function handlePageSizeChange(size) {
                 </div>
               </div>
             </td>
-            <td class="px-2 py-4 align-middle">
+            <td class="px-2 py-4 align-middle text-center">
               <span
                 class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
                 :class="trangThaiClass(item.trangThai)"
@@ -259,6 +260,7 @@ function handlePageSizeChange(size) {
                 {{ trangThaiLabel(item.trangThai) }}
               </span>
             </td>
+
             <td class="rounded-r-md px-3 py-4 align-middle text-center">
               <div class="flex items-center justify-center gap-1">
                 <AdminQuickStatusAction
