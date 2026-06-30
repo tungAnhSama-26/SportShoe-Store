@@ -181,18 +181,18 @@ function handlePageSizeChange(size) {
       <table class="w-full table-fixed border-separate border-spacing-0 text-sm">
         <colgroup>
           <col class="w-[5%]" />
+          <col class="w-[9%]" />
+          <col class="w-[24%]" />
           <col class="w-[10%]" />
-          <col class="w-[18%]" />
-          <col class="w-[12%]" />
-          <col class="w-[12%]" />
+          <col class="w-[10%]" />
           <col class="w-[8%]" />
+          <col class="w-[14%]" />
           <col class="w-[11%]" />
-          <col class="w-[12%]" />
-          <col class="w-[12%]" />
+          <col class="w-[9%]" />
         </colgroup>
         <thead>
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
-            <th class="rounded-tl-md bg-slate-100">STT</th>
+            <th class="rounded-tl-md bg-slate-100 text-center">STT</th>
             <th class="bg-slate-100">Mã SP</th>
             <th class="bg-slate-100">Tên SP</th>
             <th class="bg-slate-100">Thương hiệu</th>
@@ -213,9 +213,9 @@ function handlePageSizeChange(size) {
           <tr
             v-for="(item, index) in items"
             :key="item.id"
-            class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
+            class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50 transition"
           >
-            <td class="rounded-l-md px-3 py-4 align-middle font-semibold text-slate-500">
+            <td class="rounded-l-md px-3 py-4 align-middle text-center font-semibold text-slate-500">
               {{ currentPage * pageSize + index + 1 }}
             </td>
             <td class="px-3 py-4 align-middle font-semibold text-slate-800 break-words">{{ item.ma }}</td>

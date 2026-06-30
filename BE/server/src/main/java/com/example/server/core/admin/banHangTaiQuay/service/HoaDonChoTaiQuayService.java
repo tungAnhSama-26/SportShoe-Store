@@ -137,15 +137,9 @@ public class HoaDonChoTaiQuayService {
                 if (diff != 0) {
                     boolean bypassActiveCheck = bypassActiveCheckIds.contains(chiTietId);
                     if (diff > 0) {
-                        // Validate and deduct stock for the additional quantity
-                        inventoryUseCase.validateAvailable(giayChiTiet, diff, bypassActiveCheck);
-                        giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() - diff);
-                    } else {
-                        // Revert stock for the decreased quantity
-                        giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() + Math.abs(diff));
+                        // Validate total quantity, do not deduct stock for pending invoice
+                        inventoryUseCase.validateAvailable(giayChiTiet, newQty, bypassActiveCheck);
                     }
-                    giayChiTiet.setNgayCapNhat(Instant.now());
-                    giayChiTietRepository.save(giayChiTiet);
 
                     oldItem.setSoLuong(newQty);
                     BigDecimal giaDonVi = (reqItem.giaBan() != null) ? reqItem.giaBan() : oldItem.getGiaDonVi();
@@ -163,10 +157,7 @@ public class HoaDonChoTaiQuayService {
                 chiTietCanLuu.add(hoaDonChiTietRepository.save(oldItem));
                 processedChiTietIds.add(chiTietId);
             } else {
-                // Item was removed from cart, revert stock and delete
-                giayChiTiet.setSoLuong((giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong()) + oldItem.getSoLuong());
-                giayChiTiet.setNgayCapNhat(Instant.now());
-                giayChiTietRepository.save(giayChiTiet);
+                // Item was removed from cart, just delete
                 hoaDonChiTietRepository.delete(oldItem);
             }
         }
@@ -229,10 +220,6 @@ public class HoaDonChoTaiQuayService {
 
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
         for (HoaDonChiTiet item : items) {
-            GiayChiTiet giayChiTiet = item.getGiayChiTiet();
-            giayChiTiet.setSoLuong((giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong()) + item.getSoLuong());
-            giayChiTiet.setNgayCapNhat(Instant.now());
-            giayChiTietRepository.save(giayChiTiet);
             item.setTrangThai(0);
             hoaDonChiTietRepository.save(item);
         }

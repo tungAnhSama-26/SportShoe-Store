@@ -59,14 +59,14 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
                 type="button"
                 class="w-6 h-6 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 disabled:opacity-50 text-xs font-bold select-none"
                 :disabled="item.soLuong <= 1"
-                @click="emit('decrease-item', item.cartItemId)"
+                @click="emit('decrease-item', item.cartItemId || item.chiTietId)"
               >
                 -
               </button>
               <input
                 type="number"
                 :value="item.soLuong"
-                @change="emit('update-item', item.cartItemId, $event.target.value)"
+                @change="emit('update-item', item.cartItemId || item.chiTietId, $event.target.value)"
                 min="1"
                 class="w-12 h-6 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-center text-xs font-semibold focus:border-rose-300 dark:focus:border-rose-500 focus:outline-none hide-spin-button"
               />
@@ -74,7 +74,7 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
                 type="button"
                 class="w-6 h-6 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 disabled:opacity-50 text-xs font-bold select-none"
                 :disabled="soLuongConLai(item.chiTietId, item.soLuongTon) <= 0"
-                @click="emit('increase-item', item.cartItemId)"
+                @click="emit('increase-item', item.cartItemId || item.chiTietId)"
               >
                 +
               </button>

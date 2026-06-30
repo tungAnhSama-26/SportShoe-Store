@@ -14,6 +14,7 @@ import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.repository.GiaoCaRepository;
+import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.entity.GiaoCa;
 import com.example.server.entity.NhanVien;
@@ -39,6 +40,8 @@ public class ThucThiThanhToanTaiQuayService {
     private final HoaDonTaiQuayService invoiceUseCase;
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
     private final GiaoCaRepository giaoCaRepository;
+    private final TonKhoTaiQuayService inventoryUseCase;
+    private final GiayChiTietRepository giayChiTietRepository;
 
     public ThucThiThanhToanTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -50,7 +53,9 @@ public class ThucThiThanhToanTaiQuayService {
             TrangThaiHoaDonTaiQuayService invoiceStateUseCase,
             HoaDonTaiQuayService invoiceUseCase,
             PhieuGiamGiaTaiQuayService voucherUseCase,
-            GiaoCaRepository giaoCaRepository
+            GiaoCaRepository giaoCaRepository,
+            TonKhoTaiQuayService inventoryUseCase,
+            GiayChiTietRepository giayChiTietRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -62,6 +67,8 @@ public class ThucThiThanhToanTaiQuayService {
         this.invoiceUseCase = invoiceUseCase;
         this.voucherUseCase = voucherUseCase;
         this.giaoCaRepository = giaoCaRepository;
+        this.inventoryUseCase = inventoryUseCase;
+        this.giayChiTietRepository = giayChiTietRepository;
     }
 
     @Transactional
@@ -91,6 +98,13 @@ public class ThucThiThanhToanTaiQuayService {
                 request.ghiChu()
         )
                 : thanhToanHoaDonCho(request);
+
+        // Deduct stock for all items in the invoice at checkout
+        List<HoaDonChiTiet> finalItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+        for (HoaDonChiTiet item : finalItems) {
+            inventoryUseCase.deductStock(item.getGiayChiTiet(), item.getSoLuong(), false);
+            giayChiTietRepository.save(item.getGiayChiTiet());
+        }
 
         BigDecimal tongTien = hoaDon.getTongTienThanhToan();
         BigDecimal tienKhachDua = paymentUseCase.xacDinhTienKhachDua(request.hinhThucThanhToan(), request.tienKhachDua(), tongTien);

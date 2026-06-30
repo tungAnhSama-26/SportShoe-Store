@@ -9,7 +9,7 @@ import {
   phanHoiDanhGia,
 } from '../../../services/admin-danh-gia';
 import DanhGiaMedia from '../../../components/DanhGiaMedia.vue';
-import { resolveMediaUrl } from '../../../utils/media';
+import { resolveMediaUrl, parseMedia } from '../../../utils/media';
 import { showSuccess, showError, showConfirm } from '../../../utils/alert';
 import { getDisplayErrorMessage } from '../../../utils/error-message';
 import anhMacDinh from '../../../assets/login-shoe.png';
@@ -166,6 +166,17 @@ function formatNgay(v) {
   });
 }
 function anhSP(u) {
+  if (!u) return anhMacDinh;
+  const mediaArr = parseMedia(u);
+  if (mediaArr && mediaArr.length > 0) {
+    return resolveMediaUrl(mediaArr[0].url) || anhMacDinh;
+  }
+  if (typeof u === 'string') {
+    const parts = u.split(',');
+    if (parts.length > 0 && parts[0].trim()) {
+      return resolveMediaUrl(parts[0].trim()) || anhMacDinh;
+    }
+  }
   return resolveMediaUrl(u) || anhMacDinh;
 }
 function xuLyAnhLoi(e) {
