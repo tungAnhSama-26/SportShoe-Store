@@ -124,7 +124,8 @@ function quickToggleLabel(item) {
 }
 
 function canToggleStatus(item) {
-  return true
+  // Hết hàng (không còn tồn): trạng thái bán theo tồn kho -> không bật/tắt thủ công.
+  return Number(item.soLuong || 0) > 0
 }
 
 function quickToggleIntent(item) {
@@ -132,7 +133,9 @@ function quickToggleIntent(item) {
 }
 
 function quickToggleDisabledTitle(item) {
-  return quickToggleLabel(item)
+  return canToggleStatus(item)
+    ? quickToggleLabel(item)
+    : 'Biến thể đang hết hàng — không thể đổi trạng thái thủ công'
 }
 
 function quickToggleConfirmMessage(item) {

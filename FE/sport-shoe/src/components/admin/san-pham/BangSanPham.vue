@@ -132,6 +132,8 @@ function nextProductStatus(item) {
 }
 
 function canQuickToggleProduct(item) {
+  // Hết hàng (2): trạng thái theo tồn kho -> không cho bật/tắt kinh doanh thủ công.
+  if (Number(item.trangThai) === 2) return false
   return Number(item.trangThai) !== 0 || Number(item.tongSoLuong || 0) > 0
 }
 
@@ -144,6 +146,9 @@ function productQuickToggleIntent(item) {
 }
 
 function productQuickToggleDisabledTitle(item) {
+  if (Number(item.trangThai) === 2) {
+    return 'Sản phẩm đang hết hàng — trạng thái tự theo tồn kho, không thể đổi thủ công'
+  }
   return canQuickToggleProduct(item)
     ? productQuickToggleLabel(item)
     : 'Hết hàng chưa thể chuyển sang kinh doanh'

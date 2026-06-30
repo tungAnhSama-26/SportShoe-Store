@@ -130,14 +130,25 @@ function moTaGiamVoucher(v) {
 
 async function moDanhSachVoucher() {
   hienDsVoucher.value = true;
-  if (dsVoucher.value.length || dangTaiVoucher.value) return;
+  if (dangTaiVoucher.value) return;
   dangTaiVoucher.value = true;
   try {
+    // Luôn tải mới: BE chỉ trả phiếu đang hoạt động -> phiếu đã bị ngừng tự không hiện.
     dsVoucher.value = await layVoucherKhaDung();
   } catch {
     dsVoucher.value = [];
   } finally {
     dangTaiVoucher.value = false;
+  }
+}
+
+// Đồng bộ lại danh sách voucher (vd admin vừa ngừng 1 phiếu -> phiếu đó tự ẩn khỏi danh sách).
+async function taiLaiDsVoucherNeuMo() {
+  if (!hienDsVoucher.value && !dsVoucher.value.length) return;
+  try {
+    dsVoucher.value = await layVoucherKhaDung();
+  } catch {
+    // lỗi mạng -> giữ danh sách hiện tại
   }
 }
 
@@ -232,6 +243,8 @@ async function reSyncGio() {
   }
   // Phiếu đang áp vừa bị ngừng -> gỡ + báo ngay (không đợi tới lúc bấm thanh toán).
   await kiemTraLaiVoucher();
+  // Danh sách voucher: phiếu vừa bị ad ngừng tự ẩn khỏi danh sách (không hiện disabled nữa).
+  await taiLaiDsVoucherNeuMo();
 }
 
 onUnmounted(() => {
