@@ -692,35 +692,33 @@ public class QuanLySanPhamService {
 
     @Transactional
     public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
-        System.out.println(">>> DOI TRANG THAI GIAY #" + id + " -> " + req.trangThai());
         if (!isTrangThaiGiayHopLe(req.trangThai())) {
             throw new BusinessException("Trạng thái sản phẩm không hợp lệ");
         }
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
-        if (req.trangThai() == TRANG_THAI_KINH_DOANH && !coTonKho(id)) {
-            throw new BusinessException("Sản phẩm hết hàng, chưa thể chuyển sang kinh doanh");
-        }
-        if (req.trangThai() == TRANG_THAI_HET_HANG && coTonKho(id)) {
-            throw new BusinessException("Sản phẩm vẫn còn tồn kho, không thể chuyển sang hết hàng");
-        }
-        giay.setTrangThai(req.trangThai());
-        giay.setNgayCapNhat(Instant.now());
-        
-        List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
-        int kichHoatValue = (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) ? 1 : 0;
-        for (GiayChiTiet ct : chiTiets) {
-            ct.setKichHoat(kichHoatValue);
-            ct.setNgayCapNhat(Instant.now());
-            if (kichHoatValue == 0) {
+
+        if (req.trangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+            // Ngừng kinh doanh: tắt toàn bộ biến thể + gỡ khỏi giỏ khách.
+            giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
+            giay.setNgayCapNhat(Instant.now());
+            for (GiayChiTiet ct : giayChiTietRepository.findByGiayIdEager(id)) {
+                ct.setKichHoat(0);
+                ct.setNgayCapNhat(Instant.now());
                 xoaKhoiGioHangCuaKhachHang(ct.getId());
+                giayChiTietRepository.save(ct);
             }
-            giayChiTietRepository.save(ct);
+            return;
         }
 
-        if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
-            updateTrangThaiTuSoLuong(giay);
+        // Bật kinh doanh: phải còn ít nhất 1 biến thể đang bán (không tự bật biến thể nữa).
+        if (!giayChiTietRepository.existsByGiayIdAndKichHoat(id, 1)) {
+            throw new BusinessException(
+                    "Tất cả biến thể đang ngừng bán. Hãy bật ít nhất 1 biến thể trước khi kinh doanh sản phẩm.");
         }
+        giay.setNgayCapNhat(Instant.now());
+        // Tự đặt Kinh doanh / Hết hàng theo tồn của các biến thể đang bán.
+        updateTrangThaiTuSoLuong(giay);
     }
 
     @Transactional
@@ -1318,12 +1316,32 @@ public class QuanLySanPhamService {
         updateTrangThaiTuSoLuong(giay);
     }
 
-    private void updateTrangThaiTuSoLuong(Giay giay) {
-        if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+    /**
+     * Đồng bộ trạng thái sản phẩm theo tồn kho: hết tồn -> "Hết hàng", còn tồn -> "Kinh doanh"
+     * (giữ nguyên nếu admin đã đặt "Ngừng kinh doanh"). Gọi sau khi trừ/hoàn kho ở đơn online.
+     */
+    @Transactional
+    public void dongBoTrangThaiTheoTonKho(Integer giayId) {
+        if (giayId == null) {
             return;
         }
+        giayRepository.findById(giayId).ifPresent(giay -> {
+            updateTrangThaiTuSoLuong(giay);
+            giayRepository.save(giay);
+        });
+    }
 
-        int newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
+    private void updateTrangThaiTuSoLuong(Giay giay) {
+        // Trạng thái sản phẩm suy ra từ biến thể:
+        //  - Không còn biến thể nào đang bán -> Ngừng kinh doanh.
+        //  - Còn biến thể đang bán + còn tồn   -> Kinh doanh.
+        //  - Còn biến thể đang bán + hết tồn   -> Hết hàng.
+        int newStatus;
+        if (!giayChiTietRepository.existsByGiayIdAndKichHoat(giay.getId(), 1)) {
+            newStatus = TRANG_THAI_NGUNG_KINH_DOANH;
+        } else {
+            newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
+        }
 
         if (giay.getTrangThai() != newStatus) {
             giay.setTrangThai(newStatus);

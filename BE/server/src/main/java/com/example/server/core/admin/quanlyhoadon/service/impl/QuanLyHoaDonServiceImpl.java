@@ -14,8 +14,10 @@ import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResp
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonProductResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.QuanLyHoaDonResponses.HoaDonSummaryResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
+import com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService;
 import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
+import org.springframework.context.annotation.Lazy;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.GiayChiTiet;
@@ -114,6 +116,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final RefundBankAccountResolver refundBankAccountResolver;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
+    private final QuanLySanPhamService quanLySanPhamService;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -128,9 +131,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             PhieuTraHangRepository phieuTraHangRepository,
             RefundBankAccountResolver refundBankAccountResolver,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
-            EmailService emailService
+            EmailService emailService,
+            @Lazy QuanLySanPhamService quanLySanPhamService
     ) {
         this.emailService = emailService;
+        this.quanLySanPhamService = quanLySanPhamService;
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
@@ -1124,6 +1129,7 @@ private boolean isTaiQuay(Integer kenhBan) {
                         "Số lượng tồn không đủ cho sản phẩm: " + giayChiTiet.getGiay().getTen());
             }
         }
+        java.util.Set<Integer> giayIds = new java.util.HashSet<>();
         for (HoaDonChiTiet ct : dong) {
             GiayChiTiet giayChiTiet = giayChiTietRepository.findByIdForUpdate(ct.getGiayChiTiet().getId())
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -1131,8 +1137,13 @@ private boolean isTaiQuay(Integer kenhBan) {
                     ));
             giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() - ct.getSoLuong());
             giayChiTietRepository.save(giayChiTiet);
+            if (giayChiTiet.getGiay() != null) {
+                giayIds.add(giayChiTiet.getGiay().getId());
+            }
         }
         hoaDon.setDaTruKho(true);
+        // Hết tồn -> chuyển sản phẩm sang "Hết hàng" (còn tồn thì giữ "Kinh doanh").
+        giayIds.forEach(quanLySanPhamService::dongBoTrangThaiTheoTonKho);
     }
 
     /** Đơn online bị hủy sau khi đã trừ kho: cộng trả lại tồn (không hoàn trùng). */
@@ -1140,6 +1151,7 @@ private boolean isTaiQuay(Integer kenhBan) {
         if (isTaiQuay(hoaDon) || !Boolean.TRUE.equals(hoaDon.getDaTruKho())) {
             return;
         }
+        java.util.Set<Integer> giayIds = new java.util.HashSet<>();
         for (HoaDonChiTiet ct : hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId())) {
             GiayChiTiet giayChiTiet = giayChiTietRepository.findByIdForUpdate(ct.getGiayChiTiet().getId())
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -1148,8 +1160,13 @@ private boolean isTaiQuay(Integer kenhBan) {
             int ton = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
             giayChiTiet.setSoLuong(ton + ct.getSoLuong());
             giayChiTietRepository.save(giayChiTiet);
+            if (giayChiTiet.getGiay() != null) {
+                giayIds.add(giayChiTiet.getGiay().getId());
+            }
         }
         hoaDon.setDaTruKho(false);
+        // Có tồn trở lại -> chuyển sản phẩm về "Kinh doanh".
+        giayIds.forEach(quanLySanPhamService::dongBoTrangThaiTheoTonKho);
     }
 
 private boolean isDonGiaoHang(HoaDon hoaDon) {
