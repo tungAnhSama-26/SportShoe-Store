@@ -112,7 +112,9 @@ const isMoCaSángSớmMode = computed(() => route.path === "/admin/mo-ca");
 
 const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
 const forceStaffViewForAdmin = ref(false);
-const showAdminView = computed(() => isAdmin.value && !forceStaffViewForAdmin.value);
+// Admin cũng dùng giao diện mở ca/bàn giao ca bình thường như nhân viên.
+// showAdminView chỉ true khi admin muốn xem màn chi tiết ca của người khác (không phải ca của họ)
+const showAdminView = computed(() => false);
 
 const adminRejectionReason = ref("");
 const selectedHachToan = ref("tru-luong");
