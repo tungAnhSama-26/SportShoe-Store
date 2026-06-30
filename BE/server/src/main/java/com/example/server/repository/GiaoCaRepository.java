@@ -19,6 +19,8 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     Optional<GiaoCa> findByNhanVienTrongCaIdAndTrangThai(UUID nhanVienId, String trangThai);
 
+    Optional<GiaoCa> findFirstByTrangThaiInOrderByThoiGianVaoDesc(List<String> trangThai);
+
     List<GiaoCa> findByNhanVienNhanIdAndTrangThaiOrderByThoiGianVaoDesc(UUID nhanVienId, String trangThai);
 
     @Query("SELECT g FROM GiaoCa g WHERE " +

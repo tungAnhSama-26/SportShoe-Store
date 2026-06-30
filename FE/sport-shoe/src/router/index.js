@@ -503,9 +503,6 @@ router.beforeEach((to) => {
   }
 
   if (isAdminRole()) {
-    if (to.path === "/admin/ban-giao-ca" || to.path === "/admin/mo-ca") {
-      return "/admin/lich-su-hoat-dong";
-    }
     return true;
   }
 
