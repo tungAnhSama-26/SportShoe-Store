@@ -4,10 +4,12 @@ import { useRouter } from "vue-router";
 import logoChinh from "../../assets/logo/delete-background-logo.png";
 import { gioHangStore } from "../../stores/gio-hang";
 import { layKhachId, layThongTinKhach } from "../../services/gio-hang";
-import { logoutCustomer } from "../../services/auth";
+import { logout } from "../../services/auth";
 import { layTatCaSanPham } from "../../services/san-pham";
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
 import { API_BASE_URL } from "../../services/api-client";
+import { useAdminSession } from "../../composable/useAdminSession";
+import { LayoutDashboard } from "lucide-vue-next";
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -25,13 +27,19 @@ const menuTaiKhoanMo = ref(false);
 const daDangNhap = ref(Boolean(layKhachId()));
 const thongTinKhach = ref(layThongTinKhach());
 
+const { adminSession, avatarUrl: adminAvatarUrl } = useAdminSession();
+const laAdminHayNhanVien = computed(() => !!adminSession.value.id);
+
 function avatarTuTen(ten) {
   return "https://ui-avatars.com/api/?name=" + encodeURIComponent(ten || "KH")
     + "&background=B82220&color=ffffff&size=128";
 }
 
-// URL avatar của khách đang đăng nhập: ưu tiên ảnh đã tải lên, fallback avatar chữ cái.
-const avatarUrl = computed(() => {
+// URL avatar ưu tiên admin/staff, sau đó đến khách hàng.
+const finalAvatarUrl = computed(() => {
+  if (laAdminHayNhanVien.value) {
+    return adminAvatarUrl.value;
+  }
   if (!daDangNhap.value) return null;
   const anh = (thongTinKhach.value?.hinhAnh || "").trim();
   if (anh) {
@@ -108,7 +116,7 @@ function toggleTaiKhoan() {
 }
 
 function dangXuat() {
-  logoutCustomer();
+  logout();
   daDangNhap.value = false;
   thongTinKhach.value = null;
   gioHangStore.datSoLuong(0);
@@ -116,6 +124,7 @@ function dangXuat() {
   menuMo.value = false;
   document.body.style.overflow = "";
   router.replace("/login");
+  setTimeout(() => window.location.reload(), 100);
 }
 
 function capNhatTrangThaiCuon() {
@@ -236,8 +245,8 @@ onUnmounted(() => {
         <div class="relative">
           <button @click="toggleTaiKhoan" class="inline-flex shrink-0 items-center justify-center text-slate-900 transition hover:text-primary" aria-label="Tài khoản">
             <img
-              v-if="avatarUrl"
-              :src="avatarUrl"
+              v-if="finalAvatarUrl"
+              :src="finalAvatarUrl"
               @error="loiAvatar"
               alt="Avatar"
               class="h-7 w-7 rounded-full object-cover ring-1 ring-slate-200"
@@ -248,19 +257,28 @@ onUnmounted(() => {
             </svg>
           </button>
           <div v-if="menuTaiKhoanMo" @click="menuTaiKhoanMo = false" class="fixed inset-0 z-40"></div>
-          <div v-if="menuTaiKhoanMo" class="absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-2 shadow-xl">
-            <template v-if="daDangNhap">
-              <router-link to="/khachhang/profile" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21a8 8 0 1 0-16 0" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                Hồ sơ của bạn
+          <div v-if="menuTaiKhoanMo" class="absolute right-0 z-50 mt-3 w-max min-w-[220px] overflow-hidden rounded-2xl border border-slate-100 bg-white py-2 shadow-xl">
+            <template v-if="laAdminHayNhanVien">
+              <router-link :to="adminSession.vaiTro === 'Quản trị viên' ? '/admin/thong-ke' : '/admin/ban-hang'" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-slate-50 whitespace-nowrap">
+                <LayoutDashboard class="h-4 w-4 shrink-0" />
+                Chuyển sang giao diện quản lý
               </router-link>
-              <router-link to="/khachhang/don-hang" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
-                Đơn hàng của bạn
-              </router-link>
+              <div class="my-1 border-t border-slate-100"></div>
+            </template>
+            <template v-if="daDangNhap || laAdminHayNhanVien">
+              <template v-if="daDangNhap">
+                <router-link to="/khachhang/profile" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21a8 8 0 1 0-16 0" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  Hồ sơ của bạn
+                </router-link>
+                <router-link to="/khachhang/don-hang" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>
+                  Đơn hàng của bạn
+                </router-link>
+              </template>
               <button @click="dangXuat" class="flex w-full items-center gap-2 border-t border-slate-50 px-4 py-2.5 text-left text-sm font-medium text-rose-500 transition hover:bg-rose-50">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                 Đăng xuất
@@ -299,10 +317,16 @@ onUnmounted(() => {
         <router-link to="/khachhang/tra-cuu-don" @click="toggleMenu" class="transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link to="/khachhang/danh-gia" @click="toggleMenu" class="transition hover:text-primary">Đánh giá</router-link>
         <router-link to="/khachhang/gio-hang" @click="toggleMenu" class="transition hover:text-primary">Giỏ hàng</router-link>
-        <router-link v-if="daDangNhap" to="/khachhang/profile" @click="toggleMenu" class="transition hover:text-primary">Hồ sơ của bạn</router-link>
-        <router-link v-if="daDangNhap" to="/khachhang/don-hang" @click="toggleMenu" class="transition hover:text-primary">Đơn hàng của bạn</router-link>
-        <button v-if="daDangNhap" @click="dangXuat" class="text-left text-rose-500 transition hover:text-rose-600">Đăng xuất</button>
-        <router-link v-else to="/login" @click="toggleMenu" class="transition hover:text-primary">Đăng nhập</router-link>
+        <router-link v-if="laAdminHayNhanVien" :to="adminSession.vaiTro === 'Quản trị viên' ? '/admin/thong-ke' : '/admin/ban-hang'" @click="toggleMenu" class="transition text-primary hover:text-primary-hover">Chuyển sang giao diện quản lý</router-link>
+        <template v-if="daDangNhap">
+          <router-link to="/khachhang/profile" @click="toggleMenu" class="transition hover:text-primary">Hồ sơ của bạn</router-link>
+          <router-link to="/khachhang/don-hang" @click="toggleMenu" class="transition hover:text-primary">Đơn hàng của bạn</router-link>
+        </template>
+        <button v-if="daDangNhap || laAdminHayNhanVien" @click="dangXuat" class="text-left text-rose-500 transition hover:text-rose-600">Đăng xuất</button>
+        <template v-else>
+          <router-link to="/login" @click="toggleMenu" class="transition hover:text-primary">Đăng nhập</router-link>
+          <router-link to="/register" @click="toggleMenu" class="transition hover:text-primary">Đăng ký</router-link>
+        </template>
       </nav>
       <div class="mb-8 flex items-center gap-6 border-t border-slate-100 px-6 pt-6">
         <button class="flex items-center gap-2 text-slate-900 transition hover:text-primary" aria-label="Tìm kiếm">
