@@ -9,10 +9,12 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
   const tienKhachDua = ref("");
   const ghiChuThanhToan = ref("");
 
-  watch(() => hoaDonChoDaChon.value, () => {
-    phuongThucThanhToan.value = PHUONG_THUC_THANH_TOAN.TIEN_MAT;
-    tienKhachDua.value = "";
-    ghiChuThanhToan.value = "";
+  watch(() => hoaDonChoDaChon.value?.id, (newId, oldId) => {
+    if (newId !== oldId) {
+      phuongThucThanhToan.value = PHUONG_THUC_THANH_TOAN.TIEN_MAT;
+      tienKhachDua.value = "";
+      ghiChuThanhToan.value = "";
+    }
   });
 
   const tienKhachThanhToan = computed(() => {

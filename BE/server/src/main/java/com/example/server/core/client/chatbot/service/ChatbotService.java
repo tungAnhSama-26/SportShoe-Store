@@ -84,29 +84,29 @@ public class ChatbotService {
         String botReply;
         if (session.getTrangThai() == 1) {
             // Kiểm tra xem tin nhắn khách gửi có phải là yêu cầu gặp nhân viên không
-            if ("Tôi muốn gặp nhân viên trực tiếp hỗ trợ".equals(request.message()) || 
+            if ("Tôi muốn gặp nhân viên trực tiếp hỗ trợ".equals(request.message()) ||
                 "Liên hệ trực tiếp với nhân viên".equals(request.message())) {
-                
+
                 session.setTrangThai(2); // Yêu cầu trợ giúp từ nhân viên
                 session.setNgayCapNhat(Instant.now());
                 session = cuocHoiThoaiRepository.save(session);
-                
+
                 botReply = "Đã gửi yêu cầu kết nối với nhân viên tư vấn. Nhân viên trực sẽ phản hồi bạn trong giây lát!";
-                
+
                 TinNhan aiMsg = new TinNhan();
                 aiMsg.setCuocHoiThoai(session);
                 aiMsg.setNguoiGui("AI");
                 aiMsg.setNoiDung(botReply);
                 aiMsg.setNgayTao(Instant.now());
                 tinNhanRepository.save(aiMsg);
-                
+
                 // Phát WebSocket phản hồi từ AI/Hệ thống
                 webSocketNotificationService.sendToTopic(
                         "/topic/chatbot/session/" + session.getId(),
                         "NEW_MESSAGE",
                         new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
                 );
-                
+
                 webSocketNotificationService.sendToTopic(
                         "/topic/chatbot/session/" + session.getId(),
                         "STATE_CHANGED",
@@ -122,14 +122,14 @@ public class ChatbotService {
             } else {
                 // Chat với AI thông thường
                 botReply = generateAiResponse(request.message());
-                
+
                 TinNhan aiMsg = new TinNhan();
                 aiMsg.setCuocHoiThoai(session);
                 aiMsg.setNguoiGui("AI");
                 aiMsg.setNoiDung(botReply);
                 aiMsg.setNgayTao(Instant.now());
                 tinNhanRepository.save(aiMsg);
-                
+
                 // Phát WebSocket phản hồi từ AI
                 webSocketNotificationService.sendToTopic(
                         "/topic/chatbot/session/" + session.getId(),
@@ -194,7 +194,7 @@ public class ChatbotService {
 
         session.setTrangThai(3); // Đang chat với nhân viên
         session.setNgayCapNhat(Instant.now());
-        
+
         NhanVien currentStaff = null;
         if (staffId != null) {
             currentStaff = nhanVienRepository.findById(staffId).orElse(null);
@@ -317,15 +317,15 @@ public class ChatbotService {
     private String generateAiResponse(String userMessage) {
         String systemPrompt = """
                 Bạn là một trợ lý ảo hỗ trợ khách hàng mua sắm tại cửa hàng SportShoe.
-                
+
                 # PHẠM VI HỖ TRỢ
                 - Bạn CHỈ được phép trả lời và truy vấn cơ sở dữ liệu cho các câu hỏi liên quan đến:
-                  1. Giày và các sản phẩm giày dép (Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`).
+                  1. Giày và các sản phẩm giày (Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`).
                   2. Phiếu giảm giá / Vouchers / Coupons (Sử dụng công cụ `search_coupons_tool`).
                   3. Chương trình / Đợt giảm giá / Sales / Promotions (Sử dụng công cụ `search_promotions_tool`).
                   4. Hóa đơn / Tra cứu đơn hàng / Đơn mua (Sử dụng công cụ `search_invoice_tool`).
                 - Đối với bất kỳ câu hỏi nào KHÔNG liên quan đến 4 phạm vi trên, hãy lịch sự từ chối trả lời và khuyên khách hàng chỉ hỏi các thông tin liên quan đến sản phẩm, khuyến mãi hoặc hóa đơn của cửa hàng.
-                
+
                 # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM & HÓA ĐƠN (QUAN TRỌNG)
                 - Khi hiển thị thông tin sản phẩm tìm thấy từ cơ sở dữ liệu, hãy luôn đính kèm một liên kết Markdown dẫn đến chi tiết sản phẩm đó theo định dạng chuẩn:
                   [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
@@ -336,7 +336,7 @@ public class ChatbotService {
                   (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm hệ thống).
                   Ví dụ: "Tôi tìm thấy hóa đơn **[HD0001]** của bạn. Hãy click vào đây để xem chi tiết: [Xem chi tiết hóa đơn](/khachhang/don-hang/10)".
                 - Hệ thống giao diện sẽ tự động chuyển đổi liên kết này thành một nút bấm đẹp mắt để khách hàng click xem chi tiết.
-                
+
                 # NGUYÊN TẮC HOẠT ĐỘNG
                 - Khách hàng hỏi gì thì tự động gọi các công cụ (tools) tương ứng để truy vấn cơ sở dữ liệu lấy thông tin thực tế. Không tự bịa thông tin.
                 - Trả lời bằng Tiếng Việt thân thiện, tự nhiên, ngắn gọn, súc tích (Tối đa 150 từ).

@@ -17,6 +17,9 @@ const sanPham = ref(null);
 const dangTai = ref(true);
 const loi = ref('');
 
+// Sản phẩm chỉ có "đang bán" (1) hoặc "ngừng bán" (khác 1).
+const daNgungBan = computed(() => !!sanPham.value && sanPham.value.trangThai !== 1);
+
 const mauChon = ref('');
 const sizeChon = ref('');
 const soLuongMua = ref(1);
@@ -272,6 +275,19 @@ function xuLyAnhLoi(event) {
 
       <div v-if="dangTai" class="py-32 text-center text-sm text-slate-400">Đang tải sản phẩm...</div>
       <div v-else-if="loi || !sanPham" class="py-32 text-center text-sm text-rose-500">{{ loi || 'Không tìm thấy sản phẩm.' }}</div>
+
+      <!-- Sản phẩm đã ngừng bán -->
+      <div v-else-if="daNgungBan" class="py-24 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+          <svg class="h-8 w-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><path d="m4.9 4.9 14.2 14.2" /></svg>
+        </div>
+        <h2 class="mt-4 text-xl font-bold text-slate-800">Sản phẩm đã ngừng bán</h2>
+        <p class="mt-1.5 text-sm text-slate-400">"{{ sanPham.ten }}" hiện không còn được bán.</p>
+        <button @click="router.back()" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
+          Quay lại
+        </button>
+      </div>
 
       <template v-else>
         <!-- Khối trên: ảnh + chọn mua -->

@@ -45,9 +45,12 @@ const {
   totalItemsKh,
   dsTrangThai,
   dsLoai,
+  dsLoaiPhieu,
   isHetHan,
   mauTrangThai,
   statusText,
+  statusTextKh,
+  mauTrangThaiKh,
   loaiGiamText,
   loaiPhieuText,
   mauLoaiPhieu,
@@ -92,7 +95,7 @@ const {
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div class="space-y-2">
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
@@ -109,6 +112,22 @@ const {
           </div>
 
           <template v-if="activeTab === 'phieu'">
+            <div class="space-y-2">
+              <label class="admin-filter-label">Hình thức</label>
+              <select
+                v-model="boLoc.loaiPhieu"
+                class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              >
+                <option
+                  v-for="item in dsLoaiPhieu"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </option>
+              </select>
+            </div>
+
             <div class="space-y-2">
               <label class="admin-filter-label">Ngày bắt đầu</label>
               <input
@@ -384,9 +403,9 @@ const {
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="mauTrangThai(item.trangThai)"
+                    :class="mauTrangThaiKh(item.trangThai)"
                   >
-                    {{ statusText(item.trangThai) }}
+                    {{ statusTextKh(item.trangThai) }}
                   </span>
                 </td>
                 <td class="px-4 py-3 text-center">

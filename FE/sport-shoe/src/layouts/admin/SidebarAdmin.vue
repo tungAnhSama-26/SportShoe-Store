@@ -190,10 +190,14 @@ function subItemClass(active) {
 
     <nav class="mt-6 flex-1 space-y-1 overflow-x-hidden overflow-y-auto" :class="compactMode ? 'px-2' : 'px-4'">
 
+      <router-link to="/" :title="compactMode ? 'Trang chủ' : undefined" :class="navItemClass(route.path === '/')">
+        <Home :class="navIconClass(route.path === '/')" />
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Trang chủ</span>
+      </router-link>
 
-      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'T\u1ed5ng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
+      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'Tổng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
         <LayoutDashboard :class="navIconClass(isActive('/admin/thong-ke'))" />
-        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">T&#7893;ng quan</span>
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Tổng quan</span>
       </router-link>
 
       <router-link to="/admin/ban-hang" :title="compactMode ? 'B\u00e1n h\u00e0ng t\u1ea1i qu\u1ea7y' : undefined" :class="navItemClass(isActive('/admin/ban-hang'))">
@@ -355,7 +359,7 @@ function subItemClass(active) {
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Hỗ trợ trực tuyến</span>
       </router-link>
 
-      <router-link to="/admin/danh-gia" :title="compactMode ? 'Quản lý đánh giá' : undefined" :class="navItemClass(isActive('/admin/danh-gia'))">
+      <router-link v-if="laAdmin" to="/admin/danh-gia" :title="compactMode ? 'Quản lý đánh giá' : undefined" :class="navItemClass(isActive('/admin/danh-gia'))">
         <div class="relative shrink-0" :class="compactMode ? '' : 'mr-3'">
           <Star
             class="h-5 w-5"

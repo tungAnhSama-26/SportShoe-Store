@@ -1,5 +1,5 @@
 <script setup>
-defineProps({
+const props = defineProps({
   customerKeyword: {
     type: String,
     default: ""
@@ -42,6 +42,13 @@ const emit = defineEmits([
   "select-guest",
   "clear-customer"
 ]);
+
+import { computed } from 'vue';
+
+const keyword = computed({
+  get: () => props.customerKeyword,
+  set: (val) => emit('update:customerKeyword', val)
+});
 </script>
 
 <template>
@@ -50,11 +57,10 @@ const emit = defineEmits([
 
       <div class="flex gap-3">
         <input
-          :value="customerKeyword"
+          v-model="keyword"
           type="text"
           placeholder="Nhập tên hoặc số điện thoại khách hàng"
           class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900"
-          @input="emit('update:customerKeyword', $event.target.value)"
           @focus="emit('focus-customer')"
           @blur="emit('blur-customer')"
         />
@@ -75,6 +81,7 @@ const emit = defineEmits([
           :key="customer.id"
           type="button"
           class="w-full rounded-md px-3 py-3 text-left transition hover:bg-red-50 dark:hover:bg-red-900/20"
+          @mousedown.prevent="emit('select-customer', customer)"
           @click="emit('select-customer', customer)"
         >
           <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ customer.hoTen }}</p>

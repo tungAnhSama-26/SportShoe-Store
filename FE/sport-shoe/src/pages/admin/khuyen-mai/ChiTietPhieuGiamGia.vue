@@ -26,7 +26,9 @@ const {
   form,
   soLuongVoHan,
   soLuongDisplay,
+  handleSoLuongEnter,
   isReadOnly,
+  isHetHan,
   giaTriDisplay,
   giaTriToiThieuVnd,
   giamToiDaVnd,
@@ -82,8 +84,7 @@ const {
       v-if="isReadOnly"
       class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700"
     >
-      Phiếu giảm giá này đã hết hạn hoặc ngừng hoạt động nên chỉ có thể xem chi
-      tiết.
+      Phiếu giảm giá cá nhân này đã hết hạn nên không thể chỉnh sửa thông tin.
     </div>
 
     <section
@@ -277,8 +278,9 @@ const {
             <div class="space-y-3">
               <input
                 v-model="soLuongDisplay"
-                :type="soLuongVoHan ? 'text' : 'number'"
-                min="1"
+                type="text"
+                inputmode="numeric"
+                @keydown.enter.prevent="handleSoLuongEnter"
                 :readonly="form.loaiPhieu === '2' || soLuongVoHan"
                 :disabled="soLuongVoHan"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
@@ -340,7 +342,13 @@ const {
             <input
               v-model="form.ngayKetThuc"
               type="date"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+              :readonly="isReadOnly"
+              class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+              :class="
+                isReadOnly
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-500'
+                  : 'bg-slate-50'
+              "
             />
             <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">
               {{ formErrors.ngayKetThuc }}
@@ -436,10 +444,10 @@ const {
                   v-for="(kh, index) in danhSachKhTrang"
                   v-else
                   :key="kh.id"
-                  @click="!laKhachHangDaDung(kh.email) && toggleEmail(kh.email)"
+                  @click="!isReadOnly && !laKhachHangDaDung(kh.email) && toggleEmail(kh.email)"
                   class="transition-colors"
                   :class="[
-                    laKhachHangDaDung(kh.email) ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer hover:bg-rose-50/50',
+                    isReadOnly || laKhachHangDaDung(kh.email) ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer hover:bg-rose-50/50',
                     dsEmailChon.includes(kh.email) && !laKhachHangDaDung(kh.email) ? 'bg-rose-50/30' : ''
                   ]"
                 >
@@ -447,7 +455,7 @@ const {
                     <CheckSquare
                       v-if="dsEmailChon.includes(kh.email)"
                       class="mx-auto h-5 w-5"
-                      :class="laKhachHangDaDung(kh.email) ? 'text-slate-400' : 'text-rose-500'"
+                      :class="isReadOnly || laKhachHangDaDung(kh.email) ? 'text-slate-400' : 'text-rose-500'"
                     />
                     <div
                       v-else

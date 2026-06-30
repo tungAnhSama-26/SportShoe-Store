@@ -122,6 +122,11 @@ const emit = defineEmits([
   "update:showProductDropdown"
 ]);
 
+const keyword = computed({
+  get: () => props.productKeyword,
+  set: (val) => emit('update:productKeyword', val)
+});
+
 const showProductModal = ref(false);
 
 function isDiscounted(product) {
@@ -148,9 +153,7 @@ function handleOpenProduct(product) {
     return;
   }
   emit("open-product", product);
-  showProductModal.value = false;
-  emit('update:showProductDropdown', false);
-  resetFilters();
+  // Không đóng modal và không làm mới bộ lọc khi bấm thêm sản phẩm
 }
 
 function dongModal() {
@@ -282,11 +285,10 @@ watch(() => props.showProductDropdown, (newVal) => {
                 <Search class="h-4 w-4 text-slate-400" />
               </div>
               <input
-                :value="productKeyword"
+                v-model="keyword"
                 type="text"
                 placeholder="Tìm kiếm mã, tên sản phẩm..."
                 class="h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-10 pr-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-red-50 dark:focus:ring-red-900/20 shadow-sm"
-                @input="emit('update:productKeyword', $event.target.value)"
                 @keyup.enter="handleEnter"
                 @focus="emit('focus-product')"
                 @blur="handleBlur"

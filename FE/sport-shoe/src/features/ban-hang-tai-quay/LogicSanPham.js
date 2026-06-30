@@ -301,8 +301,8 @@ export function LogicSanPham({
     mauSacDaChon.value = "";
     kichCoDaChon.value = "";
     soLuongDaChon.value = 1;
-    lamMoiBoLoc();
-    hienThiDanhSachSanPham.value = false;
+    // Không đóng hienThiDanhSachSanPham và không gọi lamMoiBoLoc ở đây
+    // để người dùng có thể tiếp tục chọn sản phẩm khác
   }
 
   async function xuLyQuetQrSanPham(rawValue) {
@@ -454,13 +454,11 @@ export function LogicSanPham({
   function themTrucTiepBienThe(product) {
     if (!product) return;
     const result = themSanPham(product, 1, {
-      preserveProductSearch: true,
-      scannedKeyword: product.maBienThe,
-      scannedProducts: [product]
+      preserveProductSearch: false // Không ghi đè danh sách sản phẩm bằng 1 sản phẩm này
     });
     
-    hienThiDanhSachSanPham.value = false;
-    lamMoiBoLoc();
+    // Không đóng hienThiDanhSachSanPham.value = false;
+    // Không làm mới bộ lọc: lamMoiBoLoc();
     if (!result) {
       showError(`Không thể thêm sản phẩm vào giỏ hàng.`);
       return;

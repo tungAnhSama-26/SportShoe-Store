@@ -19,7 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class HoaDonChoTaiQuayService {
@@ -38,6 +42,7 @@ public class HoaDonChoTaiQuayService {
     private final TrangThaiHoaDonTaiQuayService invoiceStateUseCase;
     private final HoaDonTaiQuayService invoiceUseCase;
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
+    private final TonKhoTaiQuayService inventoryUseCase;
 
     public HoaDonChoTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -47,7 +52,8 @@ public class HoaDonChoTaiQuayService {
             XacThucTaiQuayService validationUseCase,
             TrangThaiHoaDonTaiQuayService invoiceStateUseCase,
             HoaDonTaiQuayService invoiceUseCase,
-            PhieuGiamGiaTaiQuayService voucherUseCase
+            PhieuGiamGiaTaiQuayService voucherUseCase,
+            TonKhoTaiQuayService inventoryUseCase
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -57,6 +63,7 @@ public class HoaDonChoTaiQuayService {
         this.invoiceStateUseCase = invoiceStateUseCase;
         this.invoiceUseCase = invoiceUseCase;
         this.voucherUseCase = voucherUseCase;
+        this.inventoryUseCase = inventoryUseCase;
     }
 
     @Transactional
@@ -66,6 +73,7 @@ public class HoaDonChoTaiQuayService {
             throw new BusinessException("Đã đạt giới hạn tối đa 5 hóa đơn chờ");
         }
 
+        @SuppressWarnings("unused")
         HoaDon savedHoaDon = invoiceUseCase.taoHoaDon(
                 request.khachHangId(),
                 request.tenKhachHang(),
@@ -92,25 +100,86 @@ public class HoaDonChoTaiQuayService {
         }
 
         if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
-            throw new BusinessException("Chỉ được cập nhật hóa đơn đang chờ");
+            throw new BusinessException("Hóa đơn này không còn ở trạng thái chờ (đã thanh toán hoặc hủy)");
         }
+
+        // 1. Validate duplicate items in request
+        validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new ArrayList<>());
 
         List<HoaDonChiTiet> oldItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
+        Set<Integer> bypassActiveCheckIds = new HashSet<>();
         for (HoaDonChiTiet item : oldItems) {
-            GiayChiTiet giayChiTiet = item.getGiayChiTiet();
-            giayChiTiet.setSoLuong((giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong()) + item.getSoLuong());
-            giayChiTiet.setNgayCapNhat(Instant.now());
-            giayChiTietRepository.save(giayChiTiet);
-            hoaDonChiTietRepository.delete(item);
+            bypassActiveCheckIds.add(item.getGiayChiTiet().getId());
         }
+
+        // Map request items by chiTietId for easy lookup
+        Map<Integer, com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest> requestedItemsMap = new HashMap<>();
+        if (request.items() != null) {
+            for (var itemReq : request.items()) {
+                requestedItemsMap.put(itemReq.chiTietId(), itemReq);
+            }
+        }
+
+        List<HoaDonChiTiet> chiTietCanLuu = new ArrayList<>();
+        Set<Integer> processedChiTietIds = new HashSet<>();
+
+        // 2. Process existing items (update quantity and stock, or delete)
+        for (HoaDonChiTiet oldItem : oldItems) {
+            Integer chiTietId = oldItem.getGiayChiTiet().getId();
+            GiayChiTiet giayChiTiet = oldItem.getGiayChiTiet();
+
+            if (requestedItemsMap.containsKey(chiTietId)) {
+                var reqItem = requestedItemsMap.get(chiTietId);
+                int newQty = reqItem.soLuong();
+                int oldQty = oldItem.getSoLuong();
+                int diff = newQty - oldQty;
+
+                if (diff != 0) {
+                    boolean bypassActiveCheck = bypassActiveCheckIds.contains(chiTietId);
+                    if (diff > 0) {
+                        // Validate total quantity, do not deduct stock for pending invoice
+                        inventoryUseCase.validateAvailable(giayChiTiet, newQty, bypassActiveCheck);
+                    }
+
+                    oldItem.setSoLuong(newQty);
+                    BigDecimal giaDonVi = (reqItem.giaBan() != null) ? reqItem.giaBan() : oldItem.getGiaDonVi();
+                    oldItem.setGiaDonVi(giaDonVi);
+                    oldItem.setThanhTien(giaDonVi.multiply(BigDecimal.valueOf(newQty)));
+                } else {
+                    // Update price if it has changed
+                    BigDecimal giaDonVi = (reqItem.giaBan() != null) ? reqItem.giaBan() : oldItem.getGiaDonVi();
+                    if (giaDonVi.compareTo(oldItem.getGiaDonVi()) != 0) {
+                        oldItem.setGiaDonVi(giaDonVi);
+                        oldItem.setThanhTien(giaDonVi.multiply(BigDecimal.valueOf(oldQty)));
+                    }
+                }
+
+                chiTietCanLuu.add(hoaDonChiTietRepository.save(oldItem));
+                processedChiTietIds.add(chiTietId);
+            } else {
+                // Item was removed from cart, just delete
+                hoaDonChiTietRepository.delete(oldItem);
+            }
+        }
+
+        // 3. Add new items
+        if (request.items() != null) {
+            for (var reqItem : request.items()) {
+                if (!processedChiTietIds.contains(reqItem.chiTietId())) {
+                    HoaDonChiTiet newItem = invoiceUseCase.taoDongHoaDon(reqItem, null);
+                    newItem.setHoaDon(hoaDon);
+                    chiTietCanLuu.add(hoaDonChiTietRepository.save(newItem));
+                }
+            }
+        }
+
+        // Flush changes to database
+        giayChiTietRepository.flush();
         hoaDonChiTietRepository.flush();
 
-        validationUseCase.validateDuplicateItems(request.items() != null ? request.items() : new ArrayList<>());
-        List<HoaDonChiTiet> chiTietTam = request.items() != null && !request.items().isEmpty() ? request.items().stream()
-                .map(item -> invoiceUseCase.taoDongHoaDon(item))
-                .toList() : new ArrayList<>();
 
-        BigDecimal tongTienHang = chiTietTam.stream()
+
+        BigDecimal tongTienHang = chiTietCanLuu.stream()
                 .map(HoaDonChiTiet::getThanhTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -133,12 +202,6 @@ public class HoaDonChoTaiQuayService {
         HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
         invoiceUseCase.dongBoVanChuyen(savedHoaDon, request.thongTinGiaoHang());
 
-        List<HoaDonChiTiet> chiTietCanLuu = new ArrayList<>();
-        for (HoaDonChiTiet item : chiTietTam) {
-            item.setHoaDon(savedHoaDon);
-            chiTietCanLuu.add(hoaDonChiTietRepository.save(item));
-        }
-
         return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, chiTietCanLuu, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
     }
 
@@ -157,10 +220,6 @@ public class HoaDonChoTaiQuayService {
 
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
         for (HoaDonChiTiet item : items) {
-            GiayChiTiet giayChiTiet = item.getGiayChiTiet();
-            giayChiTiet.setSoLuong((giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong()) + item.getSoLuong());
-            giayChiTiet.setNgayCapNhat(Instant.now());
-            giayChiTietRepository.save(giayChiTiet);
             item.setTrangThai(0);
             hoaDonChiTietRepository.save(item);
         }

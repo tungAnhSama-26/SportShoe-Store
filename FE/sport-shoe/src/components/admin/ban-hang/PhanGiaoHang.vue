@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import ChinhSuaGiaoHangModal from "../../common/ChinhSuaGiaoHangModal.vue";
 import { layDanhSachDiaChi } from "../../../services/khach-hang";
 
@@ -49,6 +49,21 @@ function handleSaveModal(data) {
   emit("calculate-shipping");
   hienModalGiaoHang.value = false;
 }
+
+const localTenNguoiNhan = computed({
+  get: () => props.shippingInfo.tenNguoiNhan || '',
+  set: (val) => emit('update-shipping', { tenNguoiNhan: val })
+});
+
+const localSoDienThoai = computed({
+  get: () => props.shippingInfo.soDienThoaiNguoiNhan || '',
+  set: (val) => emit('update-shipping', { soDienThoaiNguoiNhan: val })
+});
+
+const localDiaChi = computed({
+  get: () => props.shippingInfo.diaChiGiaoHang || '',
+  set: (val) => emit('update-shipping', { diaChiGiaoHang: val })
+});
 </script>
 
 <template>
@@ -72,23 +87,21 @@ function handleSaveModal(data) {
           <label class="space-y-1.5">
             <span class="block text-xs font-medium text-slate-500 dark:text-slate-400">Người nhận</span>
             <input
-              :value="shippingInfo.tenNguoiNhan || ''"
+              v-model="localTenNguoiNhan"
               type="text"
               placeholder="Tên người nhận"
               class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-[13px] text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900"
-              @input="emit('update-shipping', { tenNguoiNhan: $event.target.value })"
               @blur="emit('calculate-shipping')"
             />
           </label>
           <label class="space-y-1.5">
             <span class="block text-xs font-medium text-slate-500 dark:text-slate-400">Số điện thoại</span>
             <input
-              :value="shippingInfo.soDienThoaiNguoiNhan || ''"
+              v-model="localSoDienThoai"
               type="text"
               inputmode="numeric"
               placeholder="Số điện thoại"
               class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-[13px] text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900"
-              @input="emit('update-shipping', { soDienThoaiNguoiNhan: $event.target.value })"
               @blur="emit('calculate-shipping')"
             />
           </label>
@@ -97,11 +110,10 @@ function handleSaveModal(data) {
         <label class="space-y-1.5">
           <span class="block text-xs font-medium text-slate-500 dark:text-slate-400">Địa chỉ giao hàng</span>
           <textarea
-            :value="shippingInfo.diaChiGiaoHang || ''"
+            v-model="localDiaChi"
             rows="2"
             placeholder="Địa chỉ giao hàng đầy đủ"
             class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-[13px] text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900 custom-scrollbar"
-            @input="emit('update-shipping', { diaChiGiaoHang: $event.target.value })"
             @blur="emit('calculate-shipping')"
           />
         </label>

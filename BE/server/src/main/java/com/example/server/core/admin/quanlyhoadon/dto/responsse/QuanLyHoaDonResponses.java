@@ -53,6 +53,7 @@ public final class QuanLyHoaDonResponses {
 
     public record HoaDonProductResponse(
             Integer id,
+            Integer giayChiTietId,
             String tenSanPham,
             String phanLoai,
             String mauSac,
@@ -63,6 +64,7 @@ public final class QuanLyHoaDonResponses {
             String hinhAnh
     ) {
     }
+
 
     public record HoaDonDetailResponse(
             Integer id,

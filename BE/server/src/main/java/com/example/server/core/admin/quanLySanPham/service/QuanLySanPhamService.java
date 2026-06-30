@@ -692,35 +692,36 @@ public class QuanLySanPhamService {
 
     @Transactional
     public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
-        System.out.println(">>> DOI TRANG THAI GIAY #" + id + " -> " + req.trangThai());
         if (!isTrangThaiGiayHopLe(req.trangThai())) {
             throw new BusinessException("Trạng thái sản phẩm không hợp lệ");
         }
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
-        if (req.trangThai() == TRANG_THAI_KINH_DOANH && !coTonKho(id)) {
-            throw new BusinessException("Sản phẩm hết hàng, chưa thể chuyển sang kinh doanh");
-        }
-        if (req.trangThai() == TRANG_THAI_HET_HANG && coTonKho(id)) {
-            throw new BusinessException("Sản phẩm vẫn còn tồn kho, không thể chuyển sang hết hàng");
-        }
-        giay.setTrangThai(req.trangThai());
-        giay.setNgayCapNhat(Instant.now());
-        
-        List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
-        int kichHoatValue = (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) ? 1 : 0;
-        for (GiayChiTiet ct : chiTiets) {
-            ct.setKichHoat(kichHoatValue);
-            ct.setNgayCapNhat(Instant.now());
-            if (kichHoatValue == 0) {
+
+        if (req.trangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+            // Ngừng kinh doanh: đổi trạng thái sản phẩm + gỡ khỏi giỏ khách + chuyển tất cả biến thể sang ngừng bán (kichHoat = 0).
+            giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
+            giay.setNgayCapNhat(Instant.now());
+            for (GiayChiTiet ct : giayChiTietRepository.findByGiayIdEager(id)) {
+                ct.setKichHoat(0);
+                ct.setNgayCapNhat(Instant.now());
+                giayChiTietRepository.save(ct);
                 xoaKhoiGioHangCuaKhachHang(ct.getId());
             }
-            giayChiTietRepository.save(ct);
+            sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
+            return;
         }
 
-        if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
-            updateTrangThaiTuSoLuong(giay);
+
+        // Bật kinh doanh: phải còn ít nhất 1 biến thể đang bán (không tự bật biến thể nữa).
+        if (!giayChiTietRepository.existsByGiayIdAndKichHoat(id, 1)) {
+            throw new BusinessException(
+                    "Tất cả biến thể đang ngừng bán. Hãy bật ít nhất 1 biến thể trước khi kinh doanh sản phẩm.");
         }
+        giay.setNgayCapNhat(Instant.now());
+        // Tự đặt Kinh doanh / Hết hàng theo tồn của các biến thể đang bán.
+        updateTrangThaiTuSoLuong(giay);
+        sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
     }
 
     @Transactional
@@ -865,7 +866,9 @@ public class QuanLySanPhamService {
     }
 
     private void xoaKhoiGioHangCuaKhachHang(Integer giayChiTietId) {
-        List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0, 1));
+        // CHỈ gỡ khỏi giỏ hàng (hóa đơn trạng thái 0). KHÔNG đụng đơn thật (chờ xác nhận = 1...)
+        // vì xóa dòng đơn thật vừa sai nghiệp vụ vừa dính khóa ngoại (vd phiếu trả hàng tham chiếu).
+        List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0));
         for (HoaDonChiTiet hdct : toDelete) {
             HoaDon hd = hdct.getHoaDon();
             
@@ -1316,14 +1319,35 @@ public class QuanLySanPhamService {
             return;
         }
         updateTrangThaiTuSoLuong(giay);
+        giayRepository.save(giay);
+    }
+
+    /**
+     * Đồng bộ trạng thái sản phẩm theo tồn kho: hết tồn -> "Hết hàng", còn tồn -> "Kinh doanh"
+     * (giữ nguyên nếu admin đã đặt "Ngừng kinh doanh"). Gọi sau khi trừ/hoàn kho ở đơn online.
+     */
+    @Transactional
+    public void dongBoTrangThaiTheoTonKho(Integer giayId) {
+        if (giayId == null) {
+            return;
+        }
+        giayRepository.findById(giayId).ifPresent(giay -> {
+            updateTrangThaiTuSoLuong(giay);
+            giayRepository.save(giay);
+        });
     }
 
     private void updateTrangThaiTuSoLuong(Giay giay) {
-        if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
-            return;
+        // Trạng thái sản phẩm suy ra từ biến thể:
+        //  - Không còn biến thể nào đang bán -> Ngừng kinh doanh.
+        //  - Còn biến thể đang bán + còn tồn   -> Kinh doanh.
+        //  - Còn biến thể đang bán + hết tồn   -> Hết hàng.
+        int newStatus;
+        if (!giayChiTietRepository.existsByGiayIdAndKichHoat(giay.getId(), 1)) {
+            newStatus = TRANG_THAI_NGUNG_KINH_DOANH;
+        } else {
+            newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
         }
-
-        int newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
 
         if (giay.getTrangThai() != newStatus) {
             giay.setTrangThai(newStatus);

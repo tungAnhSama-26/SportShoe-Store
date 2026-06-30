@@ -68,11 +68,6 @@ function handleFilterChange() {
             Đặt lại
           </button>
           
-          <button type="button" class="admin-btn-soft" @click="$emit('open-scanner')">
-            <QrCode class="h-4 w-4" />
-            Quét QR
-          </button>
-          
           <button 
             type="button" 
             class="admin-btn-soft" 
@@ -86,11 +81,6 @@ function handleFilterChange() {
           <button type="button" class="admin-btn-soft" @click="$emit('export-excel')">
             <FileSpreadsheet class="h-4 w-4" />
             Xuất Excel
-          </button>
-
-          <button type="button" class="admin-btn-primary" @click="$emit('go-to-form')">
-            <Plus class="h-4 w-4" />
-            Thêm biến thể
           </button>
         </div>
       </div>
