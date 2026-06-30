@@ -699,14 +699,12 @@ public class QuanLySanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
 
         if (req.trangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
-            // Ngừng kinh doanh: tắt toàn bộ biến thể + gỡ khỏi giỏ khách.
+            // Ngừng kinh doanh: CHỈ đổi trạng thái sản phẩm + gỡ khỏi giỏ khách.
+            // KHÔNG đổi trạng thái biến thể (giữ nguyên đang bán/ngừng bán của từng biến thể).
             giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
             giay.setNgayCapNhat(Instant.now());
             for (GiayChiTiet ct : giayChiTietRepository.findByGiayIdEager(id)) {
-                ct.setKichHoat(0);
-                ct.setNgayCapNhat(Instant.now());
                 xoaKhoiGioHangCuaKhachHang(ct.getId());
-                giayChiTietRepository.save(ct);
             }
             return;
         }
@@ -863,7 +861,9 @@ public class QuanLySanPhamService {
     }
 
     private void xoaKhoiGioHangCuaKhachHang(Integer giayChiTietId) {
-        List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0, 1));
+        // CHỈ gỡ khỏi giỏ hàng (hóa đơn trạng thái 0). KHÔNG đụng đơn thật (chờ xác nhận = 1...)
+        // vì xóa dòng đơn thật vừa sai nghiệp vụ vừa dính khóa ngoại (vd phiếu trả hàng tham chiếu).
+        List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0));
         for (HoaDonChiTiet hdct : toDelete) {
             HoaDon hd = hdct.getHoaDon();
             
