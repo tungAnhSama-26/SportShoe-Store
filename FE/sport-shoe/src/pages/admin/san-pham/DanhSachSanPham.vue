@@ -152,7 +152,7 @@ function hasOriginalPrice(item) {
 function trangThaiLabel(value) {
   if (value === 1) return "Kinh doanh";
   if (value === 2) return "Hết hàng";
-  return "Ngừng bán";
+  return "Ngừng kinh doanh";
 }
 
 function trangThaiClass(value) {

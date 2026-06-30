@@ -699,16 +699,19 @@ public class QuanLySanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
 
         if (req.trangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
-            // Ngừng kinh doanh: CHỈ đổi trạng thái sản phẩm + gỡ khỏi giỏ khách.
-            // KHÔNG đổi trạng thái biến thể (giữ nguyên đang bán/ngừng bán của từng biến thể).
+            // Ngừng kinh doanh: đổi trạng thái sản phẩm + gỡ khỏi giỏ khách + chuyển tất cả biến thể sang ngừng bán (kichHoat = 0).
             giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
             giay.setNgayCapNhat(Instant.now());
             for (GiayChiTiet ct : giayChiTietRepository.findByGiayIdEager(id)) {
+                ct.setKichHoat(0);
+                ct.setNgayCapNhat(Instant.now());
+                giayChiTietRepository.save(ct);
                 xoaKhoiGioHangCuaKhachHang(ct.getId());
             }
             sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
             return;
         }
+
 
         // Bật kinh doanh: phải còn ít nhất 1 biến thể đang bán (không tự bật biến thể nữa).
         if (!giayChiTietRepository.existsByGiayIdAndKichHoat(id, 1)) {
@@ -1316,6 +1319,7 @@ public class QuanLySanPhamService {
             return;
         }
         updateTrangThaiTuSoLuong(giay);
+        giayRepository.save(giay);
     }
 
     /**
