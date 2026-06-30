@@ -49,7 +49,8 @@ export function LogicGioHang({
   }
 
   function soLuongConLai(chiTietId, soLuongTon) {
-    return Math.max(Number(soLuongTon) - soLuongDaChon(chiTietId), 0);
+    const totalStock = Number(soLuongTon) + soLuongDaLuu(chiTietId);
+    return Math.max(totalStock - soLuongDaChon(chiTietId), 0);
   }
 
   function themSanPham(product, quantity = 1, options = {}) {
