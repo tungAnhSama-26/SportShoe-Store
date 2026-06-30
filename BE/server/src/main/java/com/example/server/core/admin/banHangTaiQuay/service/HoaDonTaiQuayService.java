@@ -277,8 +277,7 @@ public class HoaDonTaiQuayService {
         GiayChiTiet giayChiTiet = layGiayChiTietHopLe(itemRequest.chiTietId(), itemRequest.soLuong(), bypassActiveCheckIds);
 
         boolean bypassActiveCheck = bypassActiveCheckIds != null && bypassActiveCheckIds.contains(itemRequest.chiTietId());
-        inventoryUseCase.deductStock(giayChiTiet, itemRequest.soLuong(), bypassActiveCheck);
-        giayChiTietRepository.save(giayChiTiet);
+        inventoryUseCase.validateAvailable(giayChiTiet, itemRequest.soLuong(), bypassActiveCheck);
 
         // Use the price sent from the frontend (may be the locked old price if variant's price changed)
         BigDecimal giaThucTe = productUseCase.layGiaBanThucTe(giayChiTiet);

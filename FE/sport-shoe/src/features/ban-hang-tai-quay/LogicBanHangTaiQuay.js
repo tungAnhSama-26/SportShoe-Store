@@ -689,7 +689,33 @@ function LogicBanHangTaiQuay() {
       if (hoaDonChoDaChon.value) {
         try {
           const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-          chuyenHoaDonThanhBanNhap(detail);
+          
+          if (msg.includes("Số lượng tồn kho không đủ")) {
+            let hasAdjusted = false;
+            const currentCartItems = [...cartItems.value];
+            
+            detail.items = detail.items.map(dbItem => {
+              const matchedCartItem = currentCartItems.find(c => c.chiTietId === dbItem.chiTietId);
+              let desiredQty = matchedCartItem ? matchedCartItem.soLuong : dbItem.soLuong;
+              
+              if (desiredQty > dbItem.soLuongTon) {
+                 desiredQty = dbItem.soLuongTon > 0 ? 1 : 0;
+                 hasAdjusted = true;
+              }
+              return { ...dbItem, soLuong: desiredQty };
+            }).filter(item => item.soLuong > 0);
+            
+            chuyenHoaDonThanhBanNhap(detail);
+            
+            if (hasAdjusted) {
+              thongBaoLoi.value = "Kho không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về 1.";
+              setTimeout(() => {
+                luuHoaDonHienTai(true).catch(() => {});
+              }, 500);
+            }
+          } else {
+            chuyenHoaDonThanhBanNhap(detail);
+          }
         } catch (e) {
           console.error("Không thể tải lại hóa đơn để rollback:", e);
         }
