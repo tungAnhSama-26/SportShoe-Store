@@ -93,7 +93,12 @@ const {
       class="mt-5 flex items-center justify-center gap-2 rounded-[6px] border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700"
     >
       <CircleX class="h-4 w-4" />
-      Đơn hàng đã bị hủy
+      <span>
+        Đơn hàng đã bị hủy
+        <template v-if="hoaDon.ghiChu">
+          do: <span class="font-normal">{{ hoaDon.ghiChu }}</span>
+        </template>
+      </span>
     </div>
     <div class="mt-5 flex justify-end">
       <Button variant="primary" @click="hienModalLichSu = true">
