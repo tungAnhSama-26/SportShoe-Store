@@ -45,6 +45,9 @@ import com.example.server.repository.NhanVienRepository;
 import com.example.server.repository.PhieuTraHangRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
+import com.example.server.repository.DotGiamGiaSanPhamRepository;
+import com.example.server.entity.DotGiamGia;
+import com.example.server.entity.DotGiamGiaSanPham;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -118,6 +121,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
     private final QuanLySanPhamService quanLySanPhamService;
+    private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -133,7 +137,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             RefundBankAccountResolver refundBankAccountResolver,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
-            @Lazy QuanLySanPhamService quanLySanPhamService
+            @Lazy QuanLySanPhamService quanLySanPhamService,
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository
     ) {
         this.emailService = emailService;
         this.quanLySanPhamService = quanLySanPhamService;
@@ -149,6 +154,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.phieuTraHangRepository = phieuTraHangRepository;
         this.refundBankAccountResolver = refundBankAccountResolver;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
+        this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
     }
 
     @Override
@@ -942,9 +948,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         String tenMauSac = "";
         String giaTriKichCo = "";
         Integer giayChiTietId = null;
+        String maBienThe = "";
 
         if (item.getGiayChiTiet() != null) {
             giayChiTietId = item.getGiayChiTiet().getId();
+            maBienThe = item.getGiayChiTiet().getMaBienThe();
             if (item.getGiayChiTiet().getGiay() != null) {
                 tenGiay = item.getGiayChiTiet().getGiay().getTen();
                 tenLoaiGiay = item.getGiayChiTiet().getGiay().getLoaiGiay() != null ? item.getGiayChiTiet().getGiay().getLoaiGiay().getTen() : "";
@@ -953,19 +961,48 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             giaTriKichCo = item.getGiayChiTiet().getKichCo() != null ? item.getGiayChiTiet().getKichCo().getGiaTri() : "";
         }
 
+        String tenDotGiamGia = null;
+        BigDecimal giaTriGiamDotGiamGia = null;
+
+        if (giayChiTietId != null && item.getGiayChiTiet().getGiaBan() != null && item.getGiayChiTiet().getGiaBan().compareTo(item.getGiaDonVi()) > 0) {
+            LocalDate ngayTaoHD = LocalDate.ofInstant(item.getHoaDon().getNgayTao(), MUI_GIO_HOA_DON);
+            List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findAllByGiayChiTietId(giayChiTietId);
+            if (activeDiscounts != null) {
+                for (DotGiamGiaSanPham link : activeDiscounts) {
+                    DotGiamGia dgg = link.getDotGiamGia();
+                    if (dgg != null) {
+                        LocalDate start = dgg.getNgayBatDau();
+                        LocalDate end = dgg.getNgayKetThuc();
+                        boolean fitDate = (start == null || !ngayTaoHD.isBefore(start))
+                                && (end == null || !ngayTaoHD.isAfter(end));
+                        if (fitDate) {
+                            tenDotGiamGia = dgg.getTen();
+                            giaTriGiamDotGiamGia = dgg.getGiaTriGiam();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        BigDecimal giaBanChiTiet = item.getGiayChiTiet() != null ? defaultMoney(item.getGiayChiTiet().getGiaBan()) : defaultMoney(item.getGiaDonVi());
+
         return new HoaDonProductResponse(
                 item.getId(),
                 giayChiTietId,
+                maBienThe,
                 tenGiay,
                 tenLoaiGiay,
                 tenMauSac,
                 giaTriKichCo,
                 item.getSoLuong(),
                 defaultMoney(item.getGiaDonVi()),
+                giaBanChiTiet,
                 defaultMoney(item.getThanhTien()),
-                giayChiTietId != null ? hinhAnhMap.getOrDefault(giayChiTietId, "") : ""
+                giayChiTietId != null ? hinhAnhMap.getOrDefault(giayChiTietId, "") : "",
+                tenDotGiamGia,
+                giaTriGiamDotGiamGia
         );
-
     }
 
     private VanChuyen upsertVanChuyen(

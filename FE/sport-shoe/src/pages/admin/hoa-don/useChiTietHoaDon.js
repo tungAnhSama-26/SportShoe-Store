@@ -82,6 +82,7 @@ export function useChiTietHoaDon() {
     email: "",
     diaChi: "",
     loaiDon: "",
+    ghiChu: "",
   });
   const formGhn = ref({
     serviceTypeId: 2,
@@ -1066,6 +1067,7 @@ export function useChiTietHoaDon() {
       email: hoaDon.value.email || "",
       diaChi: hoaDon.value.diaChi || "",
       loaiDon: hoaDon.value.loaiDon || "",
+      ghiChu: "",
     };
     tabHienTai.value = "donHang";
   });
@@ -1132,7 +1134,7 @@ export function useChiTietHoaDon() {
         ganHoaDonSauThaoTac(
           await capNhatTrangThaiHoaDon(hoaDon.value.id, {
             trangThai: formThongTin.value.trangThai,
-            ghiChu: "",
+            ghiChu: formThongTin.value.ghiChu || "",
           }),
         );
       }
@@ -1377,22 +1379,16 @@ export function useChiTietHoaDon() {
     }
   }
 
-  async function handleHuyDonTuModal() {
+  async function handleHuyDonTuModal(lyDoHuy) {
     if (!hoaDon.value || dangCapNhat.value) return;
-    const daXacNhan = await showConfirm(
-      "Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác.",
-      "Hủy đơn hàng",
-      "Đồng ý",
-      "Quay lại"
-    );
-    if (!daXacNhan) return;
+    if (!lyDoHuy || !lyDoHuy.trim()) return;
 
     dangCapNhat.value = true;
     try {
       ganHoaDonSauThaoTac(
         await capNhatTrangThaiHoaDon(hoaDon.value.id, {
           trangThai: "Hủy",
-          ghiChu: "Hủy đơn hàng từ màn hình chỉnh sửa bởi Admin",
+          ghiChu: lyDoHuy.trim(),
         }),
       );
       hienThiThongBao(
