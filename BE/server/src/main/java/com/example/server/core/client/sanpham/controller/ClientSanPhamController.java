@@ -254,7 +254,8 @@ public class ClientSanPhamController {
                         giaSauGiamMap.getOrDefault(gct.getId(), gct.getGiaBan()),
                         gct.getSoLuong(),
                         coTheBan(gct),
-                        layCanNangSanPham(gct)))
+                        layCanNangSanPham(gct),
+                        gct.getGiay().getMa()))
                 .toList();
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ giá thành công", data));
     }
