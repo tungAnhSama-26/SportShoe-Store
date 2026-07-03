@@ -461,6 +461,7 @@ function xuLyMaQuet(keyword) {
       :selected-quantity="soLuongDaChon"
       :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
       :dinh-dang-tien="dinhDangTien"
+      :so-luong-con-lai="soLuongConLai"
       @close="dongChiTietSanPham"
       @select-color="chonMauSac"
       @select-size="chonKichCo"

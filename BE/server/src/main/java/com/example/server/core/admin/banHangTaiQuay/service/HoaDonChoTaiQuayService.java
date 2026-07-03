@@ -137,9 +137,11 @@ public class HoaDonChoTaiQuayService {
                 if (diff != 0) {
                     boolean bypassActiveCheck = bypassActiveCheckIds.contains(chiTietId);
                     if (diff > 0) {
-                        // Validate total quantity, do not deduct stock for pending invoice
-                        inventoryUseCase.validateAvailable(giayChiTiet, newQty, bypassActiveCheck);
+                        inventoryUseCase.deductStock(giayChiTiet, diff, bypassActiveCheck);
+                    } else {
+                        inventoryUseCase.restoreStock(giayChiTiet, -diff);
                     }
+                    giayChiTietRepository.save(giayChiTiet);
 
                     oldItem.setSoLuong(newQty);
                     BigDecimal giaDonVi = (reqItem.giaBan() != null) ? reqItem.giaBan() : oldItem.getGiaDonVi();
@@ -157,7 +159,9 @@ public class HoaDonChoTaiQuayService {
                 chiTietCanLuu.add(hoaDonChiTietRepository.save(oldItem));
                 processedChiTietIds.add(chiTietId);
             } else {
-                // Item was removed from cart, just delete
+                // Item was removed from cart, restore stock and delete
+                inventoryUseCase.restoreStock(giayChiTiet, oldItem.getSoLuong());
+                giayChiTietRepository.save(giayChiTiet);
                 hoaDonChiTietRepository.delete(oldItem);
             }
         }
@@ -221,6 +225,8 @@ public class HoaDonChoTaiQuayService {
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDonId);
         for (HoaDonChiTiet item : items) {
             item.setTrangThai(0);
+            inventoryUseCase.restoreStock(item.getGiayChiTiet(), item.getSoLuong());
+            giayChiTietRepository.save(item.getGiayChiTiet());
             hoaDonChiTietRepository.save(item);
         }
 

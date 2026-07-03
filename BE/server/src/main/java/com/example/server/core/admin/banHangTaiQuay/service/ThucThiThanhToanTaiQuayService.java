@@ -99,12 +99,7 @@ public class ThucThiThanhToanTaiQuayService {
         )
                 : thanhToanHoaDonCho(request);
 
-        // Deduct stock for all items in the invoice at checkout
-        List<HoaDonChiTiet> finalItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
-        for (HoaDonChiTiet item : finalItems) {
-            inventoryUseCase.deductStock(item.getGiayChiTiet(), item.getSoLuong(), false);
-            giayChiTietRepository.save(item.getGiayChiTiet());
-        }
+        // Stock has already been deducted when items were added to HoaDonCho or during taoHoaDon
 
         BigDecimal tongTien = hoaDon.getTongTienThanhToan();
         BigDecimal tienKhachDua = paymentUseCase.xacDinhTienKhachDua(request.hinhThucThanhToan(), request.tienKhachDua(), tongTien);

@@ -35,5 +35,13 @@ public class TonKhoTaiQuayService {
         giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() - soLuong);
         giayChiTiet.setNgayCapNhat(Instant.now());
     }
+
+    public void restoreStock(GiayChiTiet giayChiTiet, Integer soLuong) {
+        if (giayChiTiet.getSoLuong() == null) {
+            giayChiTiet.setSoLuong(0);
+        }
+        giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() + soLuong);
+        giayChiTiet.setNgayCapNhat(Instant.now());
+    }
 }
 

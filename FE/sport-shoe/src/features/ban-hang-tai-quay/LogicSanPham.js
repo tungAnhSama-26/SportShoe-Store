@@ -115,7 +115,8 @@ export function LogicSanPham({
       ...p,
       minPrice: Number(p.giaBan || 0),
       maxPrice: Number(p.giaBan || 0),
-      coGiamGia: Number(p.giaBan || 0) < Number(p.giaGoc || 0)
+      coGiamGia: Number(p.giaBan || 0) < Number(p.giaGoc || 0),
+      _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
     }));
   });
 
@@ -138,7 +139,10 @@ export function LogicSanPham({
     return ketQuaBienTheSanPham.value.filter(
       (product) => product.maSanPham === chiTietSanPhamDaChon.value?.maSanPham &&
         product.tenSanPham === chiTietSanPhamDaChon.value?.tenSanPham
-    );
+    ).map(p => ({
+      ...p,
+      _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
+    }));
   });
   const luaChonMauSac = computed(() => {
     const grouped = new Map();
