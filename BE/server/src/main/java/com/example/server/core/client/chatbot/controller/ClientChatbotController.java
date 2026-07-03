@@ -32,6 +32,12 @@ public class ClientChatbotController {
         return ResponseEntity.ok(ApiResponse.success("Yêu cầu hỗ trợ từ nhân viên thành công", null));
     }
 
+    @PostMapping("/session/{id}/close-due-to-inactivity")
+    public ResponseEntity<ApiResponse<Void>> closeDueToInactivity(@PathVariable Integer id) {
+        chatbotService.closeSessionDueToInactivity(id);
+        return ResponseEntity.ok(ApiResponse.success("Đóng phiên chat do khách không hoạt động thành công", null));
+    }
+
     @GetMapping("/session/{id}/messages")
     public ResponseEntity<ApiResponse<List<ChatbotMessageDto>>> getMessages(@PathVariable Integer id) {
         List<ChatbotMessageDto> messages = chatbotService.getMessagesBySession(id);

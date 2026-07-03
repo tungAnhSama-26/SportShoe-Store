@@ -273,6 +273,43 @@ public class ChatbotService {
         );
     }
 
+    @Transactional
+    public void closeSessionDueToInactivity(Integer sessionId) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
+                .orElse(null);
+        if (session == null || Integer.valueOf(4).equals(session.getTrangThai())) {
+            return;
+        }
+        session.setTrangThai(4);
+        session.setNgayCapNhat(Instant.now());
+        cuocHoiThoaiRepository.save(session);
+
+        TinNhan sysMsg = new TinNhan();
+        sysMsg.setCuocHoiThoai(session);
+        sysMsg.setNguoiGui("AI");
+        sysMsg.setNoiDung("Phiên trò chuyện đã tự động đóng do bạn đã quá thời gian không hoạt động. Cảm ơn bạn!");
+        sysMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(sysMsg);
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/session/" + sessionId,
+                "NEW_MESSAGE",
+                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao(), null)
+        );
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/session/" + sessionId,
+                "STATE_CHANGED",
+                4
+        );
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/sessions",
+                "SESSION_UPDATED",
+                convertToDto(session)
+        );
+    }
+
     @Transactional(readOnly = true)
     public List<ChatbotSessionDto> getActiveSessions() {
         return cuocHoiThoaiRepository.findByTrangThaiInOrderByNgayTaoDesc(List.of(2, 3))
