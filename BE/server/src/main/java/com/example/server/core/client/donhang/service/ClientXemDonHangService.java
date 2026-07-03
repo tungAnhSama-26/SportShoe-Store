@@ -57,6 +57,7 @@ public class ClientXemDonHangService {
 
     /** Trạng thái đơn đã hoàn thành (giao xong) - mới được xác nhận nhận hàng / đánh giá. */
     private static final int TRANG_THAI_HOAN_THANH = 5;
+    private static final int TRANG_THAI_DA_GIAO_HANG = 4;
     private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
     private static final int TRANG_THAI_DA_XAC_NHAN = 9;
     private static final int TRANG_THAI_CHO_LAY_HANG = 2;
@@ -165,12 +166,25 @@ public class ClientXemDonHangService {
                 virtualStatusText = "Cần hoàn tiền";
             }
 
+            Instant ngayGiaoThat = vanChuyenRepository.findByHoaDonId(hd.getId())
+                    .map(com.example.server.entity.VanChuyen::getNgayGiaoThat)
+                    .orElse(null);
+            Instant ngayThanhToan = hd.getNgayThanhToan();
+            Instant ngayGiao = ngayGiaoThat;
+            if (ngayGiao != null && ngayThanhToan != null) {
+                if (ngayThanhToan.isAfter(ngayGiao)) {
+                    ngayGiao = ngayThanhToan;
+                }
+            } else if (ngayGiao == null) {
+                ngayGiao = ngayThanhToan;
+            }
+
             result.add(new DonHangTomTatResponse(
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
                     virtualStatus, virtualStatusText,
                     soLuong, hd.getTongTienThanhToan(), sanPhams,
                     phieuTraHangId, trangThaiTraHang, trangThaiTraHangText,
-                    hd.getNgayCapNhat()));
+                    hd.getNgayCapNhat(), ngayGiao));
         }
         return result;
     }
@@ -330,6 +344,19 @@ public class ClientXemDonHangService {
             virtualStatusText = "Cần hoàn tiền";
         }
 
+        Instant ngayGiaoThat = vanChuyenRepository.findByHoaDonId(hd.getId())
+                .map(com.example.server.entity.VanChuyen::getNgayGiaoThat)
+                .orElse(null);
+        Instant ngayThanhToan = hd.getNgayThanhToan();
+        Instant ngayGiao = ngayGiaoThat;
+        if (ngayGiao != null && ngayThanhToan != null) {
+            if (ngayThanhToan.isAfter(ngayGiao)) {
+                ngayGiao = ngayThanhToan;
+            }
+        } else if (ngayGiao == null) {
+            ngayGiao = ngayThanhToan;
+        }
+
         return new DonHangChiTietResponse(
                 hd.getId(), hd.getMa(), hd.getNgayLap(),
                 virtualStatus, virtualStatusText,
@@ -343,10 +370,21 @@ public class ClientXemDonHangService {
                 hinhAnhTraHang, chiTietTraHang,
                 laCK ? "CHUYEN_KHOAN" : "COD",
                 // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
-                dangChoXacNhan, coTheSua, false);
+                dangChoXacNhan, coTheSua, false, ngayGiao);
     }
 
-    /** Khách xác nhận đã nhận hàng (đơn phải đã hoàn thành). */
+    private boolean coThanhToanThanhCong(HoaDon hoaDon) {
+        return thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId()).stream()
+                .anyMatch(thanhToan ->
+                        Objects.equals(thanhToan.getLoaiGiaoDich(), LOAI_GIAO_DICH_THANH_TOAN)
+                                && Objects.equals(
+                                thanhToan.getTrangThai(),
+                                TT_THANH_TOAN_THANH_CONG
+                        )
+                );
+    }
+
+    /** Khách xác nhận đã nhận hàng (đơn phải ở trạng thái Đã giao hàng). */
     @Transactional
     public void xacNhanDaNhanHang(UUID khachHangId, Integer id) {
         HoaDon hd = hoaDonRepository.findById(id)
@@ -354,12 +392,44 @@ public class ClientXemDonHangService {
         if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
         }
-        if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_HOAN_THANH) {
-            throw new BusinessException("Đơn hàng chưa hoàn thành, chưa thể xác nhận đã nhận hàng");
+        if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_DA_GIAO_HANG) {
+            throw new BusinessException("Đơn hàng chưa ở trạng thái đã giao hàng, chưa thể xác nhận đã nhận hàng");
         }
+        
+        Instant now = Instant.now();
         hd.setDaNhanHang(true);
-        hd.setNgayCapNhat(Instant.now());
-        hoaDonRepository.save(hd);
+        
+        // Kiểm tra xem đơn đã có giao dịch thanh toán thành công hay chưa
+        boolean daThanhToan = coThanhToanThanhCong(hd);
+        if (daThanhToan) {
+            hd.setTrangThai(TRANG_THAI_HOAN_THANH);
+            hd.setNgayCapNhat(now);
+            hoaDonRepository.save(hd);
+            
+            // Ghi lịch sử hóa đơn: Hoàn thành
+            LichSuHoaDon lichSu = new LichSuHoaDon();
+            lichSu.setHoaDon(hd);
+            lichSu.setNhanVien(null);
+            lichSu.setTrangThai("Hoàn thành");
+            lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng và đơn đã được thanh toán");
+            lichSu.setNgayTao(now);
+            lichSuHoaDonRepository.save(lichSu);
+            
+            hoaDonRealtimePublisher.publishAfterCommit(hd, "TRANG_THAI");
+        } else {
+            hd.setNgayCapNhat(now);
+            hoaDonRepository.save(hd);
+            
+            // Ghi lịch sử hóa đơn: Khách hàng xác nhận nhận hàng, chờ thanh toán
+            LichSuHoaDon lichSu = new LichSuHoaDon();
+            lichSu.setHoaDon(hd);
+            lichSu.setNhanVien(null);
+            lichSu.setTrangThai("Đã giao hàng");
+            lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng (Đang chờ xác nhận thanh toán)");
+            lichSu.setNgayTao(now);
+            lichSuHoaDonRepository.save(lichSu);
+        }
+        
         hoaDonRealtimePublisher.publishAfterCommit(hd, "DA_NHAN_HANG");
     }
 

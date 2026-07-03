@@ -68,11 +68,11 @@ const diaChiDaLuu = ref([]);
 const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
 
 const daQuaHanTraHang = computed(() => {
-  if (!don.value || !don.value.ngayCapNhat) return true;
-  const thoiGianHoanThanh = new Date(don.value.ngayCapNhat).getTime();
+  if (!don.value) return true;
+  const mocTime = don.value.ngayGiao ? new Date(don.value.ngayGiao).getTime() : (don.value.ngayCapNhat ? new Date(don.value.ngayCapNhat).getTime() : new Date().getTime());
   const bayGio = new Date().getTime();
   const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
-  return (bayGio - thoiGianHoanThanh) > thoiHanTraHangMs;
+  return (bayGio - mocTime) > thoiHanTraHangMs;
 });
 
 function lopBadgeTraHang(tt) {
@@ -556,7 +556,10 @@ function xuLyAnhLoi(event) {
                   {{ buoc.ten }}
                 </p>
                 <div class="mt-1 min-h-[36px] text-[11px] leading-4 text-slate-400">
-                  <p v-if="buoc.thoiGian">{{ formatGioBuoc(buoc.thoiGian) }} {{ formatNgayBuoc(buoc.thoiGian) }}</p>
+                  <p v-if="buoc.thoiGian">
+                    <span class="block">{{ formatGioBuoc(buoc.thoiGian) }}</span>
+                    <span class="block">{{ formatNgayBuoc(buoc.thoiGian) }}</span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -573,19 +576,19 @@ function xuLyAnhLoi(event) {
           </button>
         </section>
 
-        <!-- Hành động khi đơn hoàn thành -->
-        <section v-if="daHoanThanh" class="mt-6 flex flex-wrap gap-3 items-center">
-          <button v-if="!don.daNhanHang" @click="xacNhanNhan" :disabled="dangXuLy" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60">
+        <!-- Hành động khi đơn hoàn thành hoặc đã giao hàng -->
+        <section v-if="don && [4, 5].includes(don.trangThai)" class="mt-6 flex flex-wrap gap-3 items-center">
+          <button v-if="don.trangThai === 4" @click="xacNhanNhan" :disabled="dangXuLy" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60">
             {{ dangXuLy ? 'Đang xử lý...' : 'Đã nhận hàng' }}
           </button>
-          <button v-else @click="diDanhGia" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5">
+          <button v-if="don.trangThai === 5" @click="diDanhGia" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.3 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
             Đánh giá sản phẩm
           </button>
 
-          <!-- Yêu cầu trả hàng: chỉ hiện khi CHƯA bấm "Đã nhận hàng" và còn trong thời hạn chính sách. -->
+          <!-- Yêu cầu trả hàng: chỉ hiện khi còn trong thời hạn chính sách 3 ngày. -->
           <button
-            v-if="!don.daNhanHang && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !daQuaHanTraHang"
+            v-if="(don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !daQuaHanTraHang"
             @click="hienModalTraHang = true"
             class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3 text-sm font-bold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100"
           >
