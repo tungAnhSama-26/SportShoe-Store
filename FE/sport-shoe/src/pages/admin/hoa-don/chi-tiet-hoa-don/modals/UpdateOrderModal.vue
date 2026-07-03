@@ -236,7 +236,7 @@ const xacNhanHuy = async () => {
             v-if="!coTheSuaThongTinGiaoHang"
             class="rounded-[6px] bg-amber-50 px-3 py-2 text-xs text-amber-700"
           >
-            Thông tin giao hàng đã khóa vì đơn đã bắt đầu giao.
+            Thông tin giao hàng đã khóa vì đơn đã được xác nhận.
           </p>
         </div>
       </div>

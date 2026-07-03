@@ -207,7 +207,10 @@ onMounted(() => {
                     {{ buoc.ten }}
                   </p>
                   <div class="mt-1 min-h-[32px] text-[11px] leading-4 text-slate-400">
-                    <p v-if="buoc.thoiGian">{{ formatGioBuoc(buoc.thoiGian) }} {{ formatNgayBuoc(buoc.thoiGian) }}</p>
+                    <p v-if="buoc.thoiGian">
+                      <span class="block">{{ formatGioBuoc(buoc.thoiGian) }}</span>
+                      <span class="block">{{ formatNgayBuoc(buoc.thoiGian) }}</span>
+                    </p>
                   </div>
                 </div>
               </div>
