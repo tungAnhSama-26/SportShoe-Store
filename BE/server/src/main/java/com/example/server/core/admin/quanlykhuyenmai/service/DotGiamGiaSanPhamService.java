@@ -72,11 +72,6 @@ public class DotGiamGiaSanPhamService {
             throw new BusinessException("Biến thể sản phẩm đã có trong đợt giảm giá này");
         }
 
-        // List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
-        // if (!actives.isEmpty() && request.getTrangThai() == 1) {
-        //     throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
-        // }
-
         DotGiamGiaSanPham dotGiamGiaSanPham = new DotGiamGiaSanPham();
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
         dotGiamGiaSanPham.setGiayChiTiet(gct);
@@ -106,15 +101,6 @@ public class DotGiamGiaSanPhamService {
         )) {
             throw new BusinessException("Biến thể sản phẩm đã có trong đợt giảm giá này");
         }
-
-        // if (request.getTrangThai() == 1) {
-        //     List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
-        //     for (DotGiamGiaSanPham active : actives) {
-        //         if (!active.getId().equals(id)) {
-        //             throw new BusinessException("Biến thể sản phẩm này đang được áp dụng trong một đợt giảm giá khác.");
-        //         }
-        //     }
-        // }
 
         dotGiamGiaSanPham.setDotGiamGia(dotGiamGia);
         dotGiamGiaSanPham.setGiayChiTiet(gct);
@@ -175,12 +161,6 @@ public class DotGiamGiaSanPhamService {
             if (!currentVariantIds.contains(vId)) {
                 GiayChiTiet gct = giayChiTietRepository.findById(vId)
                         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể #" + vId));
-
-                // Kiểm tra xem biến thể này có đang trong đợt khác không
-                // List<DotGiamGiaSanPham> actives = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(vId);
-                // if (!actives.isEmpty()) {
-                //     throw new BusinessException("Biến thể " + gct.getMaBienThe() + " đang tham gia đợt giảm giá khác.");
-                // }
 
                 DotGiamGiaSanPham dgs = new DotGiamGiaSanPham();
                 dgs.setDotGiamGia(dotGiamGia);

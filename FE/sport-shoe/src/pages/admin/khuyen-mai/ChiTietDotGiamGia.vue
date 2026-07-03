@@ -796,10 +796,10 @@ const filteredSelectedVariants = computed(() => {
                   {{ bt.kichCo || "—" }}
                 </td>
                 <td class="px-4 py-3 text-center font-semibold text-slate-500">
-                  {{ formatCurrency(bt.giaBan) }}
+                  {{ formatCurrency(bt.giaGoc) }}
                 </td>
                 <td class="px-4 py-3 text-center font-bold text-rose-600">
-                  {{ formatCurrency(tinhGiaGiam(bt.giaBan)) }}
+                  {{ formatCurrency(tinhGiaGiam(bt.giaGoc)) }}
                 </td>
                 <td class="px-4 py-3 text-center font-medium text-slate-600">
                   {{ bt.soLuong || 0 }}
