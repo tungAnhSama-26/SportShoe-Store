@@ -4,9 +4,12 @@ import { useRouter } from "vue-router";
 import { 
   guiTinNhanClient, 
   yeuCauNhanVien, 
-  layTinNhanClient 
+  layTinNhanClient,
+  dongPhienChatClientInactivity
 } from "../../services/chatbot";
 import { useRealtime } from "../../composables/useRealtime";
+import { layChiTietSanPham } from "../../services/san-pham";
+import { dinhDangTienViet } from "../../utils/dinhDangTien";
 import { 
   MessageCircle, 
   X, 
@@ -144,6 +147,11 @@ async function GuiTinNhan(textToSend) {
 
   if (!textToSend) {
     inputText.value = "";
+    nextTick(() => {
+      if (inputRef.value) {
+        inputRef.value.style.height = "auto";
+      }
+    });
   }
 
   // Nếu người dùng chọn nút Kết nối nhân viên tư vấn
@@ -335,11 +343,185 @@ function ToggleChat() {
   }
 }
 
+const showCountdownPrompt = ref(false);
+const countdownSeconds = ref(60);
+
+let inactivityTimer = null;
+let countdownInterval = null;
+
+function ClearTimers() {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+}
+
+function ResetInactivityTimer() {
+  ClearTimers();
+  showCountdownPrompt.value = false;
+
+  if (isOpen.value && sessionId.value && messages.value.length > 0 && sessionState.value !== 4) {
+    inactivityTimer = setTimeout(() => {
+      KichHoatDemNguoc();
+    }, 60000);
+  }
+}
+
+function KichHoatDemNguoc() {
+  ClearTimers();
+  showCountdownPrompt.value = true;
+  countdownSeconds.value = 60;
+
+  countdownInterval = setInterval(() => {
+    countdownSeconds.value--;
+    if (countdownSeconds.value <= 0) {
+      ClearTimers();
+      TuDongDongPhienChat();
+    }
+  }, 1000);
+}
+
+async function TuDongDongPhienChat() {
+  if (sessionId.value) {
+    try {
+      await dongPhienChatClientInactivity(sessionId.value);
+      sessionState.value = 4;
+      showCountdownPrompt.value = false;
+    } catch (e) {
+      console.error("Lỗi khi tự động đóng phiên chat:", e);
+    }
+  }
+}
+
+function XacNhanConHoatDong() {
+  showCountdownPrompt.value = false;
+  ResetInactivityTimer();
+}
+
+const inputRef = ref(null);
+
+function autoGrowInput() {
+  const el = inputRef.value;
+  if (!el) return;
+  el.style.height = "auto";
+  const newHeight = Math.min(el.scrollHeight, 120);
+  el.style.height = `${newHeight}px`;
+}
+
+function handleEnterKey(event) {
+  if (event.shiftKey) {
+    return;
+  }
+  if (inputText.value.trim() && sessionState.value !== 2) {
+    GuiTinNhan();
+  }
+}
+
+const productDetailsMap = ref({});
+
+async function FetchProductDetail(id) {
+  if (productDetailsMap.value[id]) return;
+  try {
+    const rawSp = await layChiTietSanPham(id);
+    if (!rawSp) return;
+
+    const bienThe = rawSp.bienThe ?? [];
+    let minVariant = null;
+    for (const b of bienThe) {
+      const gia = Number(b.giaBan);
+      if (!Number.isFinite(gia)) continue;
+      if (!minVariant || gia < Number(minVariant.giaBan)) minVariant = b;
+    }
+
+    const hinhAnh = minVariant?.hinhAnh || rawSp.hinhAnh || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80";
+    const giaBan = minVariant ? Number(minVariant.giaBan) : 0;
+    const giaGoc = minVariant ? Number(minVariant.giaGoc) : 0;
+    const coGiam = minVariant && giaGoc > giaBan;
+    const phanTramGiam = coGiam ? Math.round(((giaGoc - giaBan) / giaGoc) * 100) : 0;
+
+    productDetailsMap.value[id] = {
+      id: rawSp.id,
+      ten: rawSp.ten,
+      hinhAnh,
+      giaBan,
+      giaGoc,
+      coGiam,
+      phanTramGiam
+    };
+  } catch (e) {
+    console.error("Lỗi khi tải chi tiết sản phẩm cho chatbot:", e);
+  }
+}
+
+function getProductDetail(url) {
+  const parts = url.split("/");
+  const id = parseInt(parts[parts.length - 1]);
+  return Number.isInteger(id) ? productDetailsMap.value[id] : null;
+}
+
+watch(
+  () => messages.value,
+  async (newMsgs) => {
+    ResetInactivityTimer();
+
+    const productIds = [];
+    for (const msg of newMsgs) {
+      if (msg.noiDung) {
+        const segments = parseMessage(msg.noiDung);
+        for (const seg of segments) {
+          if (seg.type === "link" && (seg.url.includes("/san-pham/") || seg.url.includes("/product/"))) {
+            const parts = seg.url.split("/");
+            const id = parseInt(parts[parts.length - 1]);
+            if (Number.isInteger(id)) {
+              productIds.push(id);
+            }
+          }
+        }
+      }
+    }
+
+    const uniqueIds = [...new Set(productIds)];
+    for (const id of uniqueIds) {
+      await FetchProductDetail(id);
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+watch(
+  () => isOpen.value,
+  (val) => {
+    if (val) {
+      ResetInactivityTimer();
+      CuonXuongCuoi();
+    } else {
+      ClearTimers();
+    }
+  }
+);
+
+watch(
+  () => sessionState.value,
+  (val) => {
+    if (val === 4) {
+      ClearTimers();
+      showCountdownPrompt.value = false;
+    } else {
+      ResetInactivityTimer();
+    }
+  }
+);
+
 onMounted(() => {
   KhoiTaoChatbox();
 });
 
 onUnmounted(() => {
+  ClearTimers();
   if (sessionSubscription) {
     unsubscribeTopic(sessionSubscription);
   }
@@ -462,6 +644,64 @@ onUnmounted(() => {
               <div class="space-y-1.5 whitespace-pre-wrap">
                 <template v-for="(seg, idx) in parseMessage(msg.noiDung)" :key="idx">
                   <span v-if="seg.type === 'text'" v-html="renderText(seg.content)"></span>
+                  
+                  <div 
+                    v-else-if="seg.type === 'link' && (seg.url.includes('/san-pham/') || seg.url.includes('/product/'))"
+                    class="mt-2 w-full max-w-full"
+                  >
+                    <!-- Product Card -->
+                    <div 
+                      v-if="getProductDetail(seg.url)"
+                      @click="handleNavigate(seg.url)"
+                      class="flex gap-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-2.5 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-md cursor-pointer transition-all relative overflow-hidden group w-full"
+                    >
+                      <!-- Product Image & Badge -->
+                      <div class="h-16 w-16 rounded-xl overflow-hidden shrink-0 bg-slate-50 relative">
+                        <img 
+                          :src="getProductDetail(seg.url).hinhAnh" 
+                          alt="Product"
+                          class="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                        <span 
+                          v-if="getProductDetail(seg.url).coGiam"
+                          class="absolute top-1 left-1 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm"
+                        >
+                          {{ getProductDetail(seg.url).phanTramGiam }}%
+                        </span>
+                      </div>
+                      
+                      <!-- Product Info -->
+                      <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <h6 class="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
+                          {{ getProductDetail(seg.url).ten }}
+                        </h6>
+                        <div class="mt-1 flex items-baseline gap-1.5 flex-wrap">
+                          <span class="text-xs font-extrabold text-primary">
+                            {{ dinhDangTienViet(getProductDetail(seg.url).giaBan) }}
+                          </span>
+                          <span 
+                            v-if="getProductDetail(seg.url).coGiam"
+                            class="text-[10px] text-slate-400 dark:text-slate-500 line-through"
+                          >
+                            {{ dinhDangTienViet(getProductDetail(seg.url).giaGoc) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Skeleton Loader -->
+                    <div 
+                      v-else 
+                      class="flex gap-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-2.5 w-full animate-pulse"
+                    >
+                      <div class="h-16 w-16 rounded-xl bg-slate-100 dark:bg-slate-700 shrink-0"></div>
+                      <div class="flex-1 flex flex-col justify-center space-y-2">
+                        <div class="h-3 bg-slate-100 dark:bg-slate-700 rounded w-3/4"></div>
+                        <div class="h-3.5 bg-slate-100 dark:bg-slate-700 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Original Button Style for Non-Product Links (e.g. Invoice, Coupon) -->
                   <button 
                     v-else-if="seg.type === 'link'" 
                     @click="handleNavigate(seg.url)"
@@ -519,19 +759,23 @@ onUnmounted(() => {
         </span>
       </div>
 
+
       <!-- Message Input field -->
       <div 
         v-if="sessionState !== 4"
         class="px-4 py-3 border-t border-slate-100 dark:border-slate-700/50 bg-white dark:bg-slate-800 shrink-0"
       >
         <form @submit.prevent="GuiTinNhan()" class="flex items-center gap-2">
-          <input
+          <textarea
+            ref="inputRef"
             v-model="inputText"
-            type="text"
+            rows="1"
             :disabled="sessionState === 2"
             placeholder="Nhập câu hỏi của bạn tại đây..."
-            class="flex-1 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-2xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
-          />
+            @input="autoGrowInput"
+            @keydown.enter.prevent="handleEnterKey"
+            class="flex-1 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded-2xl px-4 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50 resize-none max-h-[120px] overflow-y-auto leading-normal align-middle"
+          ></textarea>
           <button 
             type="submit"
             :disabled="!inputText.trim() || sessionState === 2"
@@ -551,6 +795,36 @@ onUnmounted(() => {
       <X v-if="isOpen" class="h-6 w-6" />
       <MessageCircle v-else class="h-6 w-6" />
     </button>
+
+    <!-- Inactivity Overlay Modal in the Middle of Screen -->
+    <div 
+      v-if="showCountdownPrompt"
+      class="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+    >
+      <div 
+        class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm w-full mx-4 flex flex-col items-center text-center space-y-4 animate-scale-up"
+      >
+        <div class="h-14 w-14 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 animate-bounce">
+          <AlertCircle class="h-7 w-7" />
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-900 dark:text-white text-base">Bạn còn ở đó không?</h4>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 px-2">
+            Phiên chat của bạn với trợ lý ảo SportShoe sẽ tự động đóng sau
+          </p>
+        </div>
+        <!-- Circular countdown display -->
+        <div class="h-20 w-20 rounded-full border-4 border-amber-500 flex items-center justify-center">
+          <span class="text-2xl font-black text-amber-600 dark:text-amber-400">{{ countdownSeconds }}</span>
+        </div>
+        <button 
+          @click="XacNhanConHoatDong"
+          class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-2xl text-xs font-bold transition shadow-lg shadow-amber-500/20 active:scale-95 cursor-pointer"
+        >
+          Tôi còn ở đây
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -568,5 +842,29 @@ onUnmounted(() => {
     opacity: .5;
     transform: scale(1.1);
   }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-scale-up {
+  animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+textarea::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+textarea {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
