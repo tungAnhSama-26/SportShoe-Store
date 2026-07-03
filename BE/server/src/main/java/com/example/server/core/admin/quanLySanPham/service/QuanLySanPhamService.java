@@ -415,7 +415,7 @@ public class QuanLySanPhamService {
                 gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getId() : null,
                 gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getTen() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getId() : null,
-                gtt.getTrongLuong() != null ? gtt.getTrongLuong().getMa() : null
+                gtt.getTrongLuong() != null ? gtt.getTrongLuong().getGiaTri() + "g" : null
         );
 
         List<Integer> chiTietIds = giayChiTietRepository.findByGiayIdEager(id).stream()
