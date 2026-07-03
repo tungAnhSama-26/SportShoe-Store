@@ -5,7 +5,7 @@ import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
-import { showWarning, showSuccess, showError } from '../utils/alert';
+import { showWarning, showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
@@ -120,6 +120,11 @@ const dangApVoucher = ref(false);
 const dsVoucher = ref([]);
 const hienDsVoucher = ref(false);
 const dangTaiVoucher = ref(false);
+
+// Voucher tốt nhất = phiếu đủ điều kiện, giảm nhiều nhất (BE đã sắp xếp -> lấy cái đủ điều kiện đầu tiên).
+const voucherTotNhat = computed(() =>
+  dsVoucher.value.find((v) => v.apDung && Number(v.tienGiam) > 0) || null,
+);
 
 function moTaGiamVoucher(v) {
   if (Number(v.loai) === 1) {
@@ -407,6 +412,14 @@ async function datHangMoi() {
   }
   // Phiếu đang áp có thể vừa bị admin ngừng -> kiểm tra lại trước khi thanh toán.
   if (!(await kiemTraLaiVoucher())) return;
+  // Hộp xác nhận trước khi đặt/thanh toán.
+  const xacNhan = await showConfirm(
+    `Đặt hàng với tổng cộng <b>${dinhDangTienViet(tongThanhToan.value)}</b>?`,
+    'Xác nhận đặt hàng',
+    hinhThucThanhToan.value !== 'COD' ? 'Thanh toán' : 'Đặt hàng',
+    'Hủy',
+  );
+  if (!xacNhan) return;
   if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
     return moThanhToanVnPay();
   }
@@ -624,19 +637,16 @@ function xuLyAnhLoi(event) {
           <!-- Mã giảm giá (khách vãng lai dùng được voucher toàn sàn) -->
           <div class="mt-4 border-t border-slate-100 pt-4">
             <div v-if="!voucher">
-              <div class="flex gap-2">
-                <input
-                  v-model="maVoucher"
-                  type="text"
-                  placeholder="Nhập hoặc chọn mã giảm giá"
-                  class="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  @focus="moDanhSachVoucher"
-                  @keyup.enter="apVoucher"
-                />
-                <button @click="apVoucher" :disabled="dangApVoucher" class="rounded-xl bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60">
-                  {{ dangApVoucher ? '...' : 'Áp dụng' }}
-                </button>
-              </div>
+              <button
+                @click="moDanhSachVoucher"
+                class="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-primary hover:text-primary"
+              >
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H5a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V7a2 2 0 0 0-2-2h-4" /><path d="M9 3v18" /></svg>
+                  Chọn voucher
+                </span>
+                <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
 
               <!-- Danh sách voucher khả dụng -->
               <div v-if="hienDsVoucher" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
@@ -656,6 +666,7 @@ function xuLyAnhLoi(event) {
                       <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-1.5">
                           <span class="text-sm font-semibold text-slate-800">{{ moTaGiamVoucher(v) }}</span>
+                          <span v-if="voucherTotNhat && v.phieuId === voucherTotNhat.phieuId" class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">⭐ Tốt nhất</span>
                           <span v-if="v.rieng" class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Của bạn</span>
                         </div>
                         <p class="mt-0.5 text-xs text-slate-500">Mã: <span class="font-medium text-slate-700">{{ v.ma }}</span></p>
@@ -684,10 +695,6 @@ function xuLyAnhLoi(event) {
             <div v-if="voucher" class="flex items-center justify-between text-sm font-medium text-emerald-600">
               <span>Giảm giá</span>
               <span>-{{ dinhDangTienViet(voucher.tienGiam) }}</span>
-            </div>
-            <div class="flex items-center justify-between text-sm text-slate-500">
-              <span>Cân nặng</span>
-              <span class="font-medium text-slate-700">{{ tongCanNang.toLocaleString('vi-VN') }} g</span>
             </div>
             <div class="flex items-center justify-between text-sm text-slate-500">
               <span class="flex items-center gap-1.5">

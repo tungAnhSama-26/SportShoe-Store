@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { traCuuDonHangTheoMa } from '../services/don-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -81,6 +81,27 @@ function xuLyAnhLoi(event) {
   if (event.target.src !== anhMacDinh) event.target.src = anhMacDinh;
 }
 
+let pollTimer = null;
+
+function dungPoll() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+function batDauPoll() {
+  dungPoll();
+  pollTimer = setInterval(lamMoiNgam, 10000); // tự cập nhật trạng thái đơn mỗi 10s
+}
+// Làm mới trạng thái đơn ngầm (không hiện loading) để theo dõi realtime.
+async function lamMoiNgam() {
+  const ma = String(maTimKiem.value || '').trim();
+  if (!ma) return;
+  try {
+    const moi = await traCuuDonHangTheoMa(ma);
+    if (moi) don.value = moi;
+  } catch {
+    // lỗi mạng -> giữ nguyên đơn hiện tại
+  }
+}
+
 async function traCuu(maInput) {
   const ma = String(maInput ?? maTimKiem.value).trim();
   if (!ma) {
@@ -92,8 +113,10 @@ async function traCuu(maInput) {
   try {
     don.value = await traCuuDonHangTheoMa(ma);
     maTimKiem.value = ma;
+    batDauPoll(); // bắt đầu tự cập nhật trạng thái
   } catch (e) {
     don.value = null;
+    dungPoll();
     loi.value = getDisplayErrorMessage(e, 'Không tìm thấy đơn hàng với mã này.');
   } finally {
     dangTai.value = false;
@@ -107,6 +130,8 @@ onMounted(() => {
     traCuu(ma);
   }
 });
+
+onUnmounted(dungPoll);
 </script>
 
 <template>
