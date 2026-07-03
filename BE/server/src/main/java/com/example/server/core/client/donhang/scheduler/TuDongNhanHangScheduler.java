@@ -2,7 +2,9 @@ package com.example.server.core.client.donhang.scheduler;
 
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.HoaDon;
+import com.example.server.entity.LichSuHoaDon;
 import com.example.server.repository.HoaDonRepository;
+import com.example.server.repository.LichSuHoaDonRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -11,8 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Tự động xác nhận "Đã nhận hàng" cho đơn online đã Hoàn thành quá 3 ngày mà khách chưa bấm nhận.
- * Sau khi tự nhận, đơn coi như đã nhận hàng (khách không còn yêu cầu trả hàng được nữa).
+ * Tự động chuyển trạng thái sang "Hoàn thành" cho đơn đã giao + thanh toán thành công quá 3 ngày.
  */
 @Component
 public class TuDongNhanHangScheduler {
@@ -22,26 +23,44 @@ public class TuDongNhanHangScheduler {
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    private final LichSuHoaDonRepository lichSuHoaDonRepository;
 
     public TuDongNhanHangScheduler(
             HoaDonRepository hoaDonRepository,
-            HoaDonRealtimePublisher hoaDonRealtimePublisher
+            HoaDonRealtimePublisher hoaDonRealtimePublisher,
+            LichSuHoaDonRepository lichSuHoaDonRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
+        this.lichSuHoaDonRepository = lichSuHoaDonRepository;
     }
 
-    /** Chạy mỗi giờ: đơn Hoàn thành quá 3 ngày chưa bấm nhận -> tự đánh dấu "Đã nhận hàng". */
+    /** Chạy mỗi giờ: đơn Đã giao + Đã thanh toán quá 3 ngày -> tự động chuyển Hoàn thành. */
     @Scheduled(fixedRate = 3_600_000L)
     @Transactional
     public void tuDongXacNhanNhanHang() {
         Instant moc = Instant.now().minus(SO_NGAY_TU_DONG_NHAN, ChronoUnit.DAYS);
         List<HoaDon> dsHoaDon =
-                hoaDonRepository.findDonHoanThanhChuaNhanQuaHan(TRANG_THAI_HOAN_THANH, moc);
+                hoaDonRepository.findDonDaGiaoDaThanhToanQuaHan(moc);
         for (HoaDon hd : dsHoaDon) {
+            Instant now = Instant.now();
             hd.setDaNhanHang(true);
+            hd.setTrangThai(TRANG_THAI_HOAN_THANH);
+            hd.setNgayCapNhat(now);
             hoaDonRepository.save(hd);
+
+            // Ghi lịch sử hóa đơn
+            LichSuHoaDon lichSu = new LichSuHoaDon();
+            lichSu.setHoaDon(hd);
+            lichSu.setNhanVien(null);
+            lichSu.setTrangThai("Hoàn thành");
+            lichSu.setGhiChu("Tự động hoàn thành sau 3 ngày giao hàng thành công");
+            lichSu.setNgayTao(now);
+            lichSuHoaDonRepository.save(lichSu);
+
             hoaDonRealtimePublisher.publishAfterCommit(hd, "TU_DONG_NHAN_HANG");
+            hoaDonRealtimePublisher.publishAfterCommit(hd, "TRANG_THAI");
         }
     }
 }
+

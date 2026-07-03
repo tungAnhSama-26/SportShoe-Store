@@ -151,7 +151,11 @@ public class ClientDatHangService {
         hoaDon.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hoaDon.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
         hoaDon.setDiaChiGiaoHang(diaChi);
-        hoaDon.setGhiChu(request.ghiChu());
+        String rawGhiChu = request.ghiChu() != null ? request.ghiChu().trim() : "";
+        if (khachHang == null && request.emailNguoiNhan() != null && !request.emailNguoiNhan().isBlank()) {
+            rawGhiChu = "[GuestEmail:" + request.emailNguoiNhan().trim() + "] " + rawGhiChu;
+        }
+        hoaDon.setGhiChu(rawGhiChu.trim().isEmpty() ? null : rawGhiChu.trim());
 
         BigDecimal tongTienHang = checkout.tongTienHang();
         BigDecimal tienGiam = BigDecimal.ZERO;

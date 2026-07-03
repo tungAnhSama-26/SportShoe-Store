@@ -384,7 +384,7 @@ export function useChiTietHoaDon() {
     () => donDaHoanThanh.value || donDaHuy.value || donDangChoHoanTien.value,
   );
   const coTheSuaThongTinGiaoHang = computed(() =>
-    [1, 2, 3].includes(buocHienTai.value),
+    buocHienTai.value === 1,
   );
 
   function hienThiThongBao(loai, tieuDe, noiDung = "") {

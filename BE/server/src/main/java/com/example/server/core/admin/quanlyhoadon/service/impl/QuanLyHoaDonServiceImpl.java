@@ -233,7 +233,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         mapLoaiDon(hoaDon),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
-                        resolveEmail(hoaDon.getKhachHang()),
+                        resolveEmail(hoaDon),
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null,
@@ -271,7 +271,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         mapLoaiDon(hoaDon),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
-                        resolveEmail(hoaDon.getKhachHang()),
+                        resolveEmail(hoaDon),
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
                         phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null,
@@ -397,7 +397,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private void guiEmailCapNhatTrangThai(HoaDon hoaDon, String trangThaiMoi, VanChuyen vanChuyen) {
-        String emailNhan = resolveEmail(hoaDon.getKhachHang());
+        String emailNhan = resolveEmail(hoaDon);
         if (emailNhan == null || emailNhan.isBlank()) {
             return;
         }
@@ -594,7 +594,17 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDon.setNgayCapNhat(now);
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Xác nhận thanh toán COD", thanhToan.getGhiChu());
+
+        if (Boolean.TRUE.equals(hoaDon.getDaNhanHang())) {
+            hoaDon.setTrangThai(TRANG_THAI_HOAN_THANH);
+            hoaDon.setNgayCapNhat(now);
+            hoaDonRepository.save(hoaDon);
+            ghiLichSuHoaDon(hoaDon, "Hoàn thành", "Tự động hoàn thành đơn hàng khi thanh toán COD thành công và khách đã nhận hàng");
+            hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRANG_THAI");
+        }
+
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "THANH_TOAN");
+
 
         return mapHoaDonDetail(findHoaDon(id));
     }
@@ -768,9 +778,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             mapLoaiDon(hoaDon),
             resolveTrangThaiHoaDon(hoaDon, vanChuyen),
                 safeValue(hoaDon.getSdtNguoiNhan()),
-                resolveEmail(hoaDon.getKhachHang()),
+                resolveEmail(hoaDon),
                 safeValue(hoaDon.getDiaChiGiaoHang()),
-                safeValue(hoaDon.getGhiChu()),
+                resolveGhiChu(hoaDon),
                 vanChuyen != null ? defaultMoney(vanChuyen.getPhiVanChuyen()) : BigDecimal.ZERO,
                 hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                 defaultMoney(hoaDon.getTienGiam()),
@@ -1233,11 +1243,38 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
         return KHACH_VANG_LAI;
     }
 
-    private String resolveEmail(KhachHang khachHang) {
-        if (khachHang == null || khachHang.getEmail() == null || khachHang.getEmail().isBlank()) {
-            return KHONG_CO;
+    private String resolveEmail(HoaDon hoaDon) {
+        if (hoaDon.getKhachHang() != null) {
+            KhachHang khachHang = hoaDon.getKhachHang();
+            if (khachHang.getEmail() != null && !khachHang.getEmail().isBlank()) {
+                return khachHang.getEmail();
+            }
         }
-        return khachHang.getEmail();
+        String ghiChu = hoaDon.getGhiChu();
+        if (ghiChu != null && ghiChu.contains("[GuestEmail:")) {
+            int start = ghiChu.indexOf("[GuestEmail:") + 12;
+            int end = ghiChu.indexOf("]", start);
+            if (end > start) {
+                return ghiChu.substring(start, end);
+            }
+        }
+        return KHONG_CO;
+    }
+
+    private String resolveGhiChu(HoaDon hoaDon) {
+        String ghiChu = hoaDon.getGhiChu();
+        if (ghiChu == null) {
+            return "";
+        }
+        if (ghiChu.contains("[GuestEmail:")) {
+            int start = ghiChu.indexOf("[GuestEmail:");
+            int end = ghiChu.indexOf("]", start);
+            if (end != -1) {
+                String clean = ghiChu.substring(0, start) + ghiChu.substring(end + 1);
+                return clean.trim();
+            }
+        }
+        return ghiChu.trim();
     }
 
     private String resolveSoDienThoai(HoaDon hoaDon) {
@@ -1254,12 +1291,9 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
 
     private void ensureCoTheCapNhatThongTinGiaoHang(HoaDon hoaDon) {
         Integer trangThai = hoaDon.getTrangThai();
-        if (!Objects.equals(trangThai, TRANG_THAI_CHO_XAC_NHAN)
-                && !Objects.equals(trangThai, TRANG_THAI_DA_XAC_NHAN)
-                && !Objects.equals(trangThai, TRANG_THAI_CHO_GIAO_HANG)) {
+        if (!Objects.equals(trangThai, TRANG_THAI_CHO_XAC_NHAN)) {
             throw new BusinessException(
-                    "Chỉ có thể cập nhật thông tin giao hàng khi hóa đơn đang chờ xác nhận, "
-                            + "đã xác nhận hoặc chờ lấy hàng"
+                    "Chỉ có thể cập nhật thông tin giao hàng khi hóa đơn đang chờ xác nhận"
             );
         }
     }
