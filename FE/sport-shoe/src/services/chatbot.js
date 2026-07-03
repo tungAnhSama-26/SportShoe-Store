@@ -19,6 +19,13 @@ export async function yeuCauNhanVien(sessionId) {
   });
 }
 
+export async function dongPhienChatClientInactivity(sessionId) {
+  return apiRequest(`/client/chatbot/session/${sessionId}/close-due-to-inactivity`, {
+    method: "POST",
+    authenticated: false,
+  });
+}
+
 export async function layTinNhanClient(sessionId) {
   return apiRequest(`/client/chatbot/session/${sessionId}/messages`, {
     method: "GET",
