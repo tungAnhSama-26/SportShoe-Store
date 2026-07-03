@@ -54,14 +54,18 @@ public final class QuanLyHoaDonResponses {
     public record HoaDonProductResponse(
             Integer id,
             Integer giayChiTietId,
+            String maBienThe,
             String tenSanPham,
             String phanLoai,
             String mauSac,
             String kichCo,
             Integer soLuong,
             BigDecimal donGia,
+            BigDecimal giaBanChiTiet,
             BigDecimal thanhTien,
-            String hinhAnh
+            String hinhAnh,
+            String tenDotGiamGia,
+            BigDecimal giaTriGiamDotGiamGia
     ) {
     }
 
