@@ -419,7 +419,9 @@ watch(() => props.showProductDropdown, (newVal) => {
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4">
-                      <span class="font-bold text-slate-800 dark:text-slate-200 text-lg">{{ product.soLuongTon }}</span>
+                      <span class="font-bold text-slate-800 dark:text-slate-200 text-lg">
+                        {{ product.chiTietId ? soLuongConLai(product.chiTietId, product.soLuongTon) : product.soLuongTon }}
+                      </span>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4">
                       <div class="flex flex-col">

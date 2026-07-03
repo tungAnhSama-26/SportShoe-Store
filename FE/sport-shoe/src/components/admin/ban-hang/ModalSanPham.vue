@@ -47,6 +47,10 @@ defineProps({
   dinhDangTien: {
     type: Function,
     required: true
+  },
+  soLuongConLai: {
+    type: Function,
+    default: (id, qty) => qty
   }
 });
 
@@ -157,10 +161,10 @@ function isDiscounted(product) {
                       :key="variant.chiTietId"
                       class="transition-colors"
                       :class="[
-                        variant.soLuongTon > 0 ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-50 cursor-not-allowed bg-slate-50',
+                        soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-50 cursor-not-allowed bg-slate-50',
                         chiTietDangChon && chiTietDangChon.chiTietId === variant.chiTietId ? '!bg-red-50 !border-red-200' : ''
                       ]"
-                      @click="variant.soLuongTon > 0 && emit('select-variant', variant)"
+                      @click="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 && emit('select-variant', variant)"
                     >
                       <td class="px-4 py-3">
                         <img v-if="variant.hinhAnh" :src="variant.hinhAnh" class="w-10 h-10 rounded-md object-cover border border-slate-200" />
@@ -178,8 +182,8 @@ function isDiscounted(product) {
                         </div>
                       </td>
                       <td class="px-4 py-3 text-right">
-                        <span :class="variant.soLuongTon > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
-                          {{ variant.soLuongTon > 0 ? variant.soLuongTon : 'Hết hàng' }}
+                        <span :class="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
+                          {{ soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? soLuongConLai(variant.chiTietId, variant.soLuongTon) : 'Hết hàng' }}
                         </span>
                       </td>
                     </tr>

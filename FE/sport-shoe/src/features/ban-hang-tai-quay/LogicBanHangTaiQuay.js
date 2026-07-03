@@ -746,7 +746,7 @@ function LogicBanHangTaiQuay() {
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {
       luuHoaDonHienTai().catch(() => {});
-    }, 1000);
+    }, 300);
   }, { deep: true });
 
   let lastReceivedSyncState = null;
