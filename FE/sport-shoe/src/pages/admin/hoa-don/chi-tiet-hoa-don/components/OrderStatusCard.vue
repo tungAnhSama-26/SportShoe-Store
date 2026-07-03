@@ -71,8 +71,8 @@ const {
           </p>
           <div class="mt-1 min-h-[32px]">
             <p v-if="buoc.thoiGian" class="text-[11px] leading-4 text-slate-400">
-              {{ dinhDangGio(buoc.thoiGian) }}
-              {{ dinhDangNgay(buoc.thoiGian) }}
+              <span class="block">{{ dinhDangGio(buoc.thoiGian) }}</span>
+              <span class="block">{{ dinhDangNgay(buoc.thoiGian) }}</span>
             </p>
             <p v-if="buoc.nhanVien" class="text-[11px] text-slate-400">
               {{ buoc.nhanVien }}

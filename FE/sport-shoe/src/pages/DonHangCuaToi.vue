@@ -166,11 +166,11 @@ async function muaLai(don) {
 const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
 
 function laQuaHanTraHang(don) {
-  if (!don || !don.ngayCapNhat) return true;
-  const thoiGianHoanThanh = new Date(don.ngayCapNhat).getTime();
+  if (!don) return true;
+  const mocTime = don.ngayGiao ? new Date(don.ngayGiao).getTime() : (don.ngayCapNhat ? new Date(don.ngayCapNhat).getTime() : new Date().getTime());
   const bayGio = new Date().getTime();
   const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
-  return (bayGio - thoiGianHoanThanh) > thoiHanTraHangMs;
+  return (bayGio - mocTime) > thoiHanTraHangMs;
 }
 
 function moYeuCauTraHang(don) {
@@ -339,7 +339,7 @@ async function guiYeuCauHuy(don) {
                 </button>
                 <!-- Cho phép gửi lại sau khi phiếu trước bị từ chối/hủy và vẫn còn trong thời hạn trả hàng. -->
                 <button
-                  v-if="don.trangThai === 5 && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
+                  v-if="[4, 5].includes(don.trangThai) && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
                   @click="moYeuCauTraHang(don)"
                   class="px-5 py-2 text-xs md:text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition shadow-sm"
                 >

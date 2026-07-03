@@ -44,7 +44,8 @@ public record DonHangChiTietResponse(
         /** Khách được sửa thông tin giao hàng (COD + chờ xác nhận). */
         boolean coTheCapNhatGiaoHang,
         /** Khách được sửa số lượng sản phẩm (COD + chờ xác nhận). */
-        boolean coTheCapNhatSoLuong
+        boolean coTheCapNhatSoLuong,
+        Instant ngayGiao
 ) {
     public record ChiTietTraHangItem(
             Integer hoaDonChiTietId,

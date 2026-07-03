@@ -60,6 +60,7 @@ public class HoaDon {
     @Column(name = "sdt_nguoi_nhan", nullable = false, length = 20)
     private String sdtNguoiNhan;
 
+
     @Size(max = 300)
     @NotNull
     @Nationalized
