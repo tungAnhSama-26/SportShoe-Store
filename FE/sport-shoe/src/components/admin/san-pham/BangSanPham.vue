@@ -275,7 +275,7 @@ function handlePageSizeChange(size) {
                 <button
                   type="button"
                   class="admin-table-action text-slate-600 hover:text-rose-500"
-                  title="Xem QR và thông tin sản phẩm"
+                  title="Xem danh sách biến thể"
                   @click="$emit('open-qr', item)"
                 >
                   <Eye class="h-4 w-4" />

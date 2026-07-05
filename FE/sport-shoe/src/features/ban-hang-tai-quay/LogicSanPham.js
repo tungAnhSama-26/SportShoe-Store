@@ -117,7 +117,7 @@ export function LogicSanPham({
       maxPrice: Number(p.giaBan || 0),
       coGiamGia: Number(p.giaBan || 0) < Number(p.giaGoc || 0),
       _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
-    }));
+    })).filter(p => p._soLuongHienTai > 0);
   });
 
   const tongSoMuc = computed(() => ketQuaSanPham.value.length);
@@ -142,7 +142,7 @@ export function LogicSanPham({
     ).map(p => ({
       ...p,
       _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
-    }));
+    })).filter(p => p._soLuongHienTai > 0);
   });
   const luaChonMauSac = computed(() => {
     const grouped = new Map();

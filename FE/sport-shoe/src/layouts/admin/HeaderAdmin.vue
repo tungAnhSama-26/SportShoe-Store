@@ -380,14 +380,6 @@ function dangXuat() {
             </button>
             <button
               type="button"
-              class="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-700"
-              @click="chuyenDenTrangChu"
-            >
-              <Home class="h-4 w-4 text-slate-500 dark:text-slate-300" />
-              Trang chủ
-            </button>
-            <button
-              type="button"
               class="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary transition hover:bg-primary/10 dark:text-primary dark:hover:bg-primary/20"
               @click="dangXuat"
             >
