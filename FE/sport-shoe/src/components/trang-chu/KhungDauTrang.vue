@@ -9,7 +9,6 @@ import { layTatCaSanPham } from "../../services/san-pham";
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
 import { API_BASE_URL } from "../../services/api-client";
 import { useAdminSession } from "../../composable/useAdminSession";
-import { LayoutDashboard } from "lucide-vue-next";
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -258,13 +257,6 @@ onUnmounted(() => {
           </button>
           <div v-if="menuTaiKhoanMo" @click="menuTaiKhoanMo = false" class="fixed inset-0 z-40"></div>
           <div v-if="menuTaiKhoanMo" class="absolute right-0 z-50 mt-3 w-max min-w-[220px] overflow-hidden rounded-2xl border border-slate-100 bg-white py-2 shadow-xl">
-            <template v-if="laAdminHayNhanVien">
-              <router-link :to="adminSession.vaiTro === 'Quản trị viên' ? '/admin/thong-ke' : '/admin/ban-hang'" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-slate-50 whitespace-nowrap">
-                <LayoutDashboard class="h-4 w-4 shrink-0" />
-                Chuyển sang giao diện quản lý
-              </router-link>
-              <div class="my-1 border-t border-slate-100"></div>
-            </template>
             <template v-if="daDangNhap || laAdminHayNhanVien">
               <template v-if="daDangNhap">
                 <router-link to="/khachhang/profile" @click="menuTaiKhoanMo = false" class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
@@ -317,7 +309,6 @@ onUnmounted(() => {
         <router-link to="/khachhang/tra-cuu-don" @click="toggleMenu" class="transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link to="/khachhang/danh-gia" @click="toggleMenu" class="transition hover:text-primary">Đánh giá</router-link>
         <router-link to="/khachhang/gio-hang" @click="toggleMenu" class="transition hover:text-primary">Giỏ hàng</router-link>
-        <router-link v-if="laAdminHayNhanVien" :to="adminSession.vaiTro === 'Quản trị viên' ? '/admin/thong-ke' : '/admin/ban-hang'" @click="toggleMenu" class="transition text-primary hover:text-primary-hover">Chuyển sang giao diện quản lý</router-link>
         <template v-if="daDangNhap">
           <router-link to="/khachhang/profile" @click="toggleMenu" class="transition hover:text-primary">Hồ sơ của bạn</router-link>
           <router-link to="/khachhang/don-hang" @click="toggleMenu" class="transition hover:text-primary">Đơn hàng của bạn</router-link>

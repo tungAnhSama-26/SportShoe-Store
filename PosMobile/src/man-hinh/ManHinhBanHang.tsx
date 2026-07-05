@@ -5,8 +5,12 @@ import CotTrai from '../thanh-phan/CotTrai';
 import CotPhai from '../thanh-phan/CotPhai';
 import PhanHoaDonCho from '../thanh-phan/PhanHoaDonCho';
 import { ProviderBanHang, suDungBanHang } from '../ngu-canh/NguCanhBanHang';
+import { useWindowDimensions, ScrollView } from 'react-native';
 
 function ManHinhBanHangContent() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
   const {
     danhSachHoaDonCho,
     hoaDonChoDaChon,
@@ -16,24 +20,30 @@ function ManHinhBanHangContent() {
   } = suDungBanHang();
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={[styles.container, isMobile && { padding: 0 }]}>
       {/* Khung iPad */}
-      <View style={styles.ipadFrame}>
-        {/* Nút cứng của iPad */}
-        <View style={[styles.hardwareButton, styles.volumeUp]} />
-        <View style={[styles.hardwareButton, styles.volumeDown]} />
-        <View style={[styles.hardwareButton, styles.powerButton]} />
-        
-        {/* Camera trước */}
-        <View style={styles.cameraContainer}>
-          <View style={styles.camera} />
-        </View>
+      <View style={[styles.ipadFrame, isMobile && styles.mobileFrame]}>
+        {/* Nút cứng của iPad (ẩn trên mobile) */}
+        {!isMobile && (
+          <>
+            <View style={[styles.hardwareButton, styles.volumeUp]} />
+            <View style={[styles.hardwareButton, styles.volumeDown]} />
+            <View style={[styles.hardwareButton, styles.powerButton]} />
+            <View style={styles.cameraContainer}>
+              <View style={styles.camera} />
+            </View>
+          </>
+        )}
 
         {/* Màn hình hiển thị bên trong */}
-        <View style={styles.ipadScreen}>
+        <View style={[styles.ipadScreen, isMobile && { borderRadius: 0 }]}>
 
           {/* Khu vực nội dung */}
-          <View style={styles.contentArea}>
+          <ScrollView 
+            style={styles.contentArea} 
+            contentContainerStyle={[styles.contentAreaContainer, isMobile && { padding: 12 }]}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Phần trên: Hóa đơn chờ */}
             <View style={styles.topSection}>
               <PhanHoaDonCho 
@@ -47,21 +57,21 @@ function ManHinhBanHangContent() {
             </View>
 
             {/* Lưới chính: Chia 2 cột */}
-            <View style={styles.mainGrid}>
-              <View style={styles.leftColumn}>
+            <View style={[styles.mainGrid, isMobile && { flexDirection: 'column' }]}>
+              <View style={[styles.leftColumn, isMobile && { flex: undefined, minHeight: 400 }]}>
                 <CotTrai />
               </View>
-              <View style={styles.rightColumn}>
+              <View style={[styles.rightColumn, isMobile && { flex: undefined, minHeight: 400 }]}>
                 <CotPhai />
               </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
 
         {/* Thanh Home Indicator dưới đáy */}
-        <View style={styles.homeIndicator} />
+        {!isMobile && <View style={styles.homeIndicator} />}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -76,7 +86,7 @@ export default function ManHinhBanHang() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -98,6 +108,13 @@ const styles = StyleSheet.create({
     elevation: 20,
     borderWidth: 2,
     borderColor: '#1e293b',
+  },
+  mobileFrame: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    borderRadius: 0,
+    padding: 0,
+    borderWidth: 0,
   },
   hardwareButton: {
     position: 'absolute',
@@ -213,9 +230,12 @@ const styles = StyleSheet.create({
   },
   contentArea: {
     flex: 1,
-    padding: 24,
     display: 'flex',
     flexDirection: 'column',
+  },
+  contentAreaContainer: {
+    padding: 24,
+    flexGrow: 1,
   },
   topSection: {
     marginBottom: 16,

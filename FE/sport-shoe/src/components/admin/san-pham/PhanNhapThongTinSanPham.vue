@@ -110,7 +110,7 @@ function toNullableNumber(value) {
     return toNullableNumber(value.id ?? value.value)
   }
   const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
 }
 
 function updateProductField(field, value, numeric = false) {

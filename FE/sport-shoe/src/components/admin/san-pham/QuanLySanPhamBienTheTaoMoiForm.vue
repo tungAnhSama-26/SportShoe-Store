@@ -434,10 +434,10 @@ onBeforeUnmount(() => {
                 <p v-if="resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.giaBan, bulkBienTheErrors.giaBan) }}</p>
               </div>
 
-              <div class="flex items-end">
+              <div class="flex flex-col justify-end pt-2 md:pt-0">
                 <button
                   type="button"
-                  class="w-full rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  class="w-full rounded-md border border-slate-200 bg-white px-4 py-[9px] text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   @click="applyGeneratedDefaults"
                 >
                   Áp dụng

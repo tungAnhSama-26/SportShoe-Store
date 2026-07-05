@@ -57,23 +57,42 @@ const pageItems = computed(() => {
   const current = Math.min(Math.max(displayPage.value, 1), Math.max(total, 1));
 
   if (!total) return [];
-  if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-
-  const items = [];
-
-  // Luôn hiện 5 trang xung quanh current
-  let start = Math.max(1, current - 2);
-  let end = Math.min(total, start + 4);
-  if (end - start < 4) start = Math.max(1, end - 4);
-
-  if (start > 1) {
-    items.push(1);
-    if (start > 2) items.push('ellipsis-left');
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
   }
 
-  for (let p = start; p <= end; p++) items.push(p);
+  const items = [];
+  
+  // Show first page
+  items.push(1);
 
-  if (end < total) items.push('ellipsis-right');
+  // Calculate start and end for middle pages
+  // We want to show at most 3 middle pages
+  let start = current - 1;
+  let end = current + 1;
+
+  if (start <= 2) {
+    start = 2;
+    end = 4;
+  } else if (end >= total - 1) {
+    start = total - 3;
+    end = total - 1;
+  }
+
+  if (start > 2) {
+    items.push('ellipsis-left');
+  }
+
+  for (let i = start; i <= end; i++) {
+    items.push(i);
+  }
+
+  if (end < total - 1) {
+    items.push('ellipsis-right');
+  }
+
+  // Show last page
+  items.push(total);
 
   return items;
 });

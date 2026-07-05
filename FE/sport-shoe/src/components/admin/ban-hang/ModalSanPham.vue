@@ -68,6 +68,14 @@ const emit = defineEmits([
 function isDiscounted(product) {
   return Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
 }
+
+function formatDiscountPercent(product) {
+  const giaGoc = Number(product?.giaGoc || 0);
+  const giaBan = Number(product?.giaBan || 0);
+  if (giaGoc <= 0 || giaBan >= giaGoc) return "";
+  const pct = ((giaGoc - giaBan) / giaGoc) * 100;
+  return pct % 1 === 0 ? `-${pct.toFixed(0)}%` : `-${pct.toFixed(1)}%`;
+}
 </script>
 
 <template>
@@ -152,6 +160,7 @@ function isDiscounted(product) {
                       <th class="px-4 py-3">Màu sắc</th>
                       <th class="px-4 py-3">Kích cỡ</th>
                       <th class="px-4 py-3 text-right">Giá bán</th>
+                      <th class="px-4 py-3 text-center">Giảm giá</th>
                       <th class="px-4 py-3 text-right">Tồn kho</th>
                     </tr>
                   </thead>
@@ -181,6 +190,17 @@ function isDiscounted(product) {
                           <span v-if="isDiscounted(variant)" class="text-xs text-slate-400 line-through">{{ dinhDangTien(variant.giaGoc || 0) }}</span>
                         </div>
                       </td>
+                      <td class="px-4 py-3 text-center">
+                        <div v-if="isDiscounted(variant)" class="flex flex-col gap-1 items-center justify-center">
+                          <span class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                            {{ formatDiscountPercent(variant) }}
+                          </span>
+                          <span v-if="variant.tenDotGiamGia" class="inline-flex rounded bg-amber-100 dark:bg-amber-900/30 px-2 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 max-w-[120px] truncate" :title="variant.tenDotGiamGia">
+                            {{ variant.tenDotGiamGia }}
+                          </span>
+                        </div>
+                        <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>
+                      </td>
                       <td class="px-4 py-3 text-right">
                         <span :class="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
                           {{ soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? soLuongConLai(variant.chiTietId, variant.soLuongTon) : 'Hết hàng' }}
@@ -188,7 +208,7 @@ function isDiscounted(product) {
                       </td>
                     </tr>
                     <tr v-if="!bienTheLienQuan || bienTheLienQuan.length === 0">
-                      <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                      <td colspan="7" class="px-4 py-8 text-center text-slate-500">
                         Không có biến thể nào
                       </td>
                     </tr>

@@ -40,7 +40,8 @@ const emit = defineEmits([
   "blur-customer",
   "select-customer",
   "select-guest",
-  "clear-customer"
+  "clear-customer",
+  "open-add-customer"
 ]);
 
 import { computed } from 'vue';
@@ -55,7 +56,7 @@ const keyword = computed({
   <div class="flex flex-col gap-2 w-full">
     <div v-if="!selectedCustomer" class="relative">
 
-      <div class="flex gap-3">
+      <div class="flex gap-3 items-center">
         <input
           v-model="keyword"
           type="text"
@@ -64,8 +65,17 @@ const keyword = computed({
           @focus="emit('focus-customer')"
           @blur="emit('blur-customer')"
         />
+        <button 
+          type="button"
+          class="shrink-0 flex items-center justify-center w-11 h-11 bg-red-50 text-red-500 rounded-md border border-red-100 hover:bg-red-500 hover:text-white transition group"
+          title="Thêm nhanh khách hàng"
+          @mousedown.prevent="emit('open-add-customer', keyword)"
+          @click="emit('open-add-customer', keyword)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </button>
       </div>
-      <div v-if="loadingCustomers" class="absolute right-4 top-[46px] text-xs font-semibold text-slate-400 dark:text-slate-500">
+      <div v-if="loadingCustomers" class="absolute right-16 top-[13px] text-xs font-semibold text-slate-400 dark:text-slate-500">
         Đang tìm...
       </div>
 

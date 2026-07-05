@@ -50,7 +50,7 @@ public class SanPhamTaiQuayService {
                         chiTiet.getSku(),
                         chiTiet.getMaBienThe(),
                         chiTiet.getSoLuong(),
-                        chiTiet.getGiaGoc(),
+                        chiTiet.getGiaBan(),
                         layGiaBanThucTe(chiTiet),
                         hinhAnhMap.get(chiTiet.getId()),
                         chiTiet.getGiay().getLoaiGiay() != null ? chiTiet.getGiay().getLoaiGiay().getTen() : null,
@@ -64,7 +64,8 @@ public class SanPhamTaiQuayService {
                         chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTen() : null,
                         chiTiet.getKichCo() != null ? chiTiet.getKichCo().getGiaTri() : null,
                         chiTiet.getGiay().getGiayThuocTinh() != null && chiTiet.getGiay().getGiayThuocTinh().getTrongLuong() != null
-                                ? chiTiet.getGiay().getGiayThuocTinh().getTrongLuong().getGiaTri() + " gram" : null
+                                ? chiTiet.getGiay().getGiayThuocTinh().getTrongLuong().getGiaTri() + " gram" : null,
+                        layTenDotGiamGiaHienTai(chiTiet)
                 ))
                 .toList();
     }
@@ -132,6 +133,54 @@ public class SanPhamTaiQuayService {
         }
 
         return giaThapNhat;
+    }
+
+    public String layTenDotGiamGiaHienTai(GiayChiTiet gct) {
+        if (gct == null) {
+            return null;
+        }
+
+        List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findActiveByGiayChiTietId(gct.getId());
+        if (activeDiscounts == null || activeDiscounts.isEmpty()) {
+            return null;
+        }
+
+        LocalDate now = LocalDate.now();
+        BigDecimal giaThapNhat = gct.getGiaBan();
+        String tenDotGiamGia = null;
+
+        for (DotGiamGiaSanPham link : activeDiscounts) {
+            DotGiamGia dgg = link.getDotGiamGia();
+            if (dgg == null || dgg.getKichHoat() == null || dgg.getKichHoat() == 0) {
+                continue;
+            }
+            if (dgg.getNgayBatDau() != null && now.isBefore(dgg.getNgayBatDau())) {
+                continue;
+            }
+            if (dgg.getNgayKetThuc() != null && now.isAfter(dgg.getNgayKetThuc())) {
+                continue;
+            }
+
+            BigDecimal giaSauGiam = gct.getGiaBan();
+            if (dgg.getLoaiGiam() != null && dgg.getLoaiGiam() == 1) { // %
+                BigDecimal discountAmount = gct.getGiaBan().multiply(dgg.getGiaTriGiam())
+                        .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                giaSauGiam = gct.getGiaBan().subtract(discountAmount);
+            } else if (dgg.getLoaiGiam() != null && dgg.getLoaiGiam() == 2) { // fixed
+                giaSauGiam = gct.getGiaBan().subtract(dgg.getGiaTriGiam());
+            }
+
+            if (giaSauGiam.compareTo(BigDecimal.ZERO) < 0) {
+                giaSauGiam = BigDecimal.ZERO;
+            }
+
+            if (giaSauGiam.compareTo(giaThapNhat) < 0) {
+                giaThapNhat = giaSauGiam;
+                tenDotGiamGia = dgg.getTen();
+            }
+        }
+
+        return tenDotGiamGia;
     }
 
     private String chuanHoaTuKhoa(String value) {
