@@ -280,23 +280,7 @@ async function syncSelectedProduct() {
 async function loadData(page = 0) {
   const requestId = ++latestLoadRequestId
 
-  // Khi có bộ lọc/tìm kiếm đang kích hoạt → bỏ giayId để tìm trên tất cả sản phẩm
-  const hasActiveFilter =
-    boLoc.keyword.trim() ||
-    boLoc.mauSacId ||
-    boLoc.kichCoId ||
-    boLoc.trangThai != null
-
-  // Xác định giayId hiệu lực trước khi đổi route
-  const effectiveGiayId = hasActiveFilter ? null : selectedGiayId.value
-
-  if (selectedGiayId.value && hasActiveFilter) {
-    if (requestId !== latestLoadRequestId) return
-    // Dùng flag để watcher không gọi lại loadData khi ta chủ động replace route
-    suppressGiayIdWatch = true
-    await router.replace({ name: 'admin-bien-the-san-pham' })
-    suppressGiayIdWatch = false
-  }
+  const effectiveGiayId = selectedGiayId.value
 
   loading.value = true
   try {

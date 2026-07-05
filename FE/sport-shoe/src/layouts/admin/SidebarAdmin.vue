@@ -190,10 +190,6 @@ function subItemClass(active) {
 
     <nav class="mt-6 flex-1 space-y-1 overflow-x-hidden overflow-y-auto" :class="compactMode ? 'px-2' : 'px-4'">
 
-      <router-link to="/" :title="compactMode ? 'Trang chủ' : undefined" :class="navItemClass(route.path === '/')">
-        <Home :class="navIconClass(route.path === '/')" />
-        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Trang chủ</span>
-      </router-link>
 
       <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'Tổng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
         <LayoutDashboard :class="navIconClass(isActive('/admin/thong-ke'))" />
