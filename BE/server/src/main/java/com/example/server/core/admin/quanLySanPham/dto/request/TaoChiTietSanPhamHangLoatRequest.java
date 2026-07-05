@@ -9,18 +9,18 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record TaoChiTietSanPhamHangLoatRequest(
-        @Positive Integer giayId,
+        @Min(0) Integer giayId,
         @Size(max = 100) String ma,
         @Size(min = 3, max = 300) String ten,
-        @Positive Integer thuongHieuId,
-        @Positive Integer loaiGiayId,
+        @Min(0) Integer thuongHieuId,
+        @Min(0) Integer loaiGiayId,
         @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        @Positive Integer chatLieuGiayId,
+        @Min(0) Integer chatLieuGiayId,
         @Size(max = 2000) String moTa,
-        @Positive Integer deGiayId,
-        @Positive Integer coGiayId,
-        @Positive Integer congNgheDemId,
-        @Positive Integer trongLuongId,
+        @Min(0) Integer deGiayId,
+        @Min(0) Integer coGiayId,
+        @Min(0) Integer congNgheDemId,
+        @Min(0) Integer trongLuongId,
         @NotEmpty List<@Valid TaoChiTietSanPhamHangLoatItemRequest> bienThes
 ) {}

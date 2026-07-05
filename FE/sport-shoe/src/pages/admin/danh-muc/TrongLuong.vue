@@ -135,6 +135,8 @@ function validate() {
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã trọng lượng'
   if (!Number.isInteger(giaTri) || giaTri < 1) {
     errors.giaTri = 'Trọng lượng phải là số nguyên từ 1 gram trở lên'
+  } else if (giaTri > 10000) {
+    errors.giaTri = 'Trọng lượng tối đa không vượt quá 10,000 gram'
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {

@@ -68,7 +68,9 @@ const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
         @click="emit('select-invoice', invoice)"
       >
         <div class="flex items-center justify-between gap-3">
-          <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ invoice.ma }}</p>
+          <p class="text-sm font-bold text-slate-900 dark:text-slate-100">
+            {{ invoice.ma }} <span class="text-slate-500 font-normal">({{ invoice.tongSanPham || 0 }}SP)</span>
+          </p>
         </div>
       </button>
 

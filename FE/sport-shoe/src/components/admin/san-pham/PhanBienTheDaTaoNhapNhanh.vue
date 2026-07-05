@@ -97,10 +97,10 @@ function resolveFieldError(localError, parentError) {
       </p>
     </label>
 
-    <div class="flex items-end">
+    <div class="flex flex-col justify-end pt-2 md:pt-0">
       <button
         type="button"
-        class="admin-btn-soft h-11"
+        class="admin-btn-soft h-11 w-full"
         @click="emit('apply-defaults')"
       >
         Áp dụng

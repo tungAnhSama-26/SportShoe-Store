@@ -379,7 +379,7 @@ watch(() => props.showProductDropdown, (newVal) => {
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center w-12">STT</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Mã Sản Phẩm</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Tên Sản Phẩm</th>
-                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Biến Thể (Màu sắc)</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Màu sắc</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center">Size</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center w-20">Ảnh</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Số lượng</th>
@@ -439,9 +439,14 @@ watch(() => props.showProductDropdown, (newVal) => {
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-4 py-3">
-                      <span v-if="isDiscounted(product)" class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                        {{ formatDiscountPercent(product) }}
-                      </span>
+                      <div v-if="isDiscounted(product)" class="flex flex-col gap-1 items-start">
+                        <span class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                          {{ formatDiscountPercent(product) }}
+                        </span>
+                        <span v-if="product.tenDotGiamGia" class="inline-flex rounded bg-amber-100 dark:bg-amber-900/30 px-2 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 max-w-[120px] truncate" :title="product.tenDotGiamGia">
+                          {{ product.tenDotGiamGia }}
+                        </span>
+                      </div>
                       <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>
                     </td>
                   </tr>

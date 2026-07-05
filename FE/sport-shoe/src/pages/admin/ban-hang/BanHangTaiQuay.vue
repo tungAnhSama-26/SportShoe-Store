@@ -7,6 +7,7 @@ import PhanKhachHang from "../../../components/admin/ban-hang/PhanKhachHang.vue"
 import PhanThanhToan from "../../../components/admin/ban-hang/PhanThanhToan.vue";
 import ModalSanPham from "../../../components/admin/ban-hang/ModalSanPham.vue";
 import ModalQuetQR from "../../../components/admin/ban-hang/ModalQuetQR.vue";
+import ModalThemNhanhKhachHang from "../../../components/admin/ban-hang/ModalThemNhanhKhachHang.vue";
 import { LogicBanHangTaiQuay } from "../../../composable/LogicBanHangTaiQuay";
 import { ref } from "vue";
 
@@ -195,13 +196,32 @@ function xuLyMaQuet(keyword) {
     xuLyQuetQrSanPham(keyword);
   }
 }
+
+const showAddCustomerModal = ref(false);
+const sdtGoiY = ref("");
+
+function moThemNhanhKhachHang(keyword) {
+  sdtGoiY.value = keyword && !isNaN(keyword.replace(/\s/g, '')) ? keyword : "";
+  showAddCustomerModal.value = true;
+}
+
+function dongThemNhanhKhachHang() {
+  showAddCustomerModal.value = false;
+}
+
+function xuLyThemKhachHang(khachHangMoi) {
+  // Khi thêm thành công, ta tự động gán keyword bằng sdt khách và gọi selectKhachHang hoặc tương tự
+  tuKhoaKhachHang.value = khachHangMoi.sdt || khachHangMoi.hoTen;
+  // Cố gắng chọn khách hàng đó luôn
+  chonKhachHang(khachHangMoi);
+}
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 p-2 h-full overflow-hidden radius-6px">
+  <div class="flex flex-col gap-2 p-2 h-full lg:overflow-hidden overflow-y-auto custom-scrollbar radius-6px">
     <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
       <!-- Left Column: Pending Invoices, Cart -->
-      <div class="flex flex-col gap-4 min-h-0">
+      <div class="flex flex-col gap-4 min-h-0 lg:h-auto h-[600px] lg:flex-1 shrink-0">
 
         <!-- Pending Invoices Section -->
         <PhanHoaDonCho
@@ -295,7 +315,7 @@ function xuLyMaQuet(keyword) {
         </section>
       </div>
 
-      <div class="flex flex-col gap-3 h-full overflow-y-auto pr-1 custom-scrollbar">
+      <div class="flex flex-col gap-3 lg:h-full lg:overflow-y-auto pr-1 custom-scrollbar shrink-0">
 
         <!-- Customer Section -->
         <section class="shrink-0 flex flex-col rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
@@ -315,6 +335,7 @@ function xuLyMaQuet(keyword) {
             @select-customer="chonKhachHang"
             @select-guest="chonKhachVangLai"
             @clear-customer="boChonKhachHang"
+            @open-add-customer="moThemNhanhKhachHang"
           />
         </section>
 
@@ -419,6 +440,13 @@ function xuLyMaQuet(keyword) {
       :show-retry-button="false"
       @close="dongQuetQr"
       @scan="xuLyMaQuet"
+    />
+
+    <ModalThemNhanhKhachHang
+      :open="showAddCustomerModal"
+      :sdt-goi-y="sdtGoiY"
+      @close="dongThemNhanhKhachHang"
+      @created="xuLyThemKhachHang"
     />
 
   </div>

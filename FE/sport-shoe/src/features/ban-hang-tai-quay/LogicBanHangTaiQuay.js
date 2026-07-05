@@ -742,6 +742,18 @@ function LogicBanHangTaiQuay() {
       skipNextAutosave = false;
       return;
     }
+
+    // Cập nhật số lượng sản phẩm trên hóa đơn chờ ngay lập tức để giao diện không bị giật
+    if (hoaDonChoDaChon.value) {
+      const index = danhSachHoaDonCho.value.findIndex(hd => hd.id === hoaDonChoDaChon.value.id);
+      if (index !== -1) {
+        danhSachHoaDonCho.value[index] = {
+          ...danhSachHoaDonCho.value[index],
+          tongSanPham: cartItems.value.reduce((total, item) => total + item.soLuong, 0)
+        };
+      }
+    }
+
     if (dangLuuNoiBo || dangThanhToan.value) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {

@@ -81,7 +81,12 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
             </div>
           </td>
           <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
-            <div>{{ dinhDangTien(item.giaBan) }}</div>
+            <div class="flex flex-col">
+              <span :class="item.giaGoc && item.giaGoc > item.giaBan ? 'text-rose-600 font-bold dark:text-rose-400' : ''">{{ dinhDangTien(item.giaBan) }}</span>
+              <span v-if="item.giaGoc && item.giaGoc > item.giaBan" class="text-[11px] text-slate-400 line-through mt-0.5">
+                {{ dinhDangTien(item.giaGoc) }}
+              </span>
+            </div>
           </td>
           <td class="px-3 py-2">
             <div class="flex items-center justify-center">

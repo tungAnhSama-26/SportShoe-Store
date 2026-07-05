@@ -277,7 +277,9 @@ const sepayQrUrl = computed(() => {
         </div>
 
         <div class="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-2">
-          <span class="text-sm text-slate-500 dark:text-slate-400">Tổng tiền hàng:</span>
+          <span class="text-sm text-slate-500 dark:text-slate-400">
+            Tổng tiền hàng <span class="text-xs">({{ tongSoLuong }} sản phẩm)</span>:
+          </span>
           <span class="max-w-[65%] break-all text-right text-[15px] font-bold text-slate-900 dark:text-slate-100">{{ dinhDangTien(tongTien) }}</span>
         </div>
         <div v-if="tienGiam > 0" class="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-2">

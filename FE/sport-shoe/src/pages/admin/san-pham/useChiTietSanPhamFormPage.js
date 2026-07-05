@@ -271,12 +271,12 @@ export function useChiTietSanPhamFormPage() {
     )
   }
   function normalizeWeightValue(value) {
-    const matched = String(value ?? '').trim().match(/^(\d{1,4})(?:\s*(?:g|gram))?$/i)
+    const matched = String(value ?? '').trim().match(/^(\d{1,5})(?:\s*(?:g|gram))?$/i)
     if (!matched) {
       return null
     }
     const parsed = Number(matched[1])
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+    return Number.isInteger(parsed) && parsed > 0 && parsed <= 10000 ? parsed : null
   }
   function clearQuickCreateErrors() {
     Object.keys(quickCreateErrors).forEach((key) => delete quickCreateErrors[key])
@@ -402,7 +402,7 @@ export function useChiTietSanPhamFormPage() {
     if (type === 'trongLuong') {
       const giaTri = normalizeWeightValue(rawValue)
       if (!giaTri) {
-        throw new Error('Trọng lượng phải là số nguyên từ 1 g trở lên')
+        throw new Error('Trọng lượng phải là số nguyên từ 1 đến 10,000 g')
       }
       return {
         create: config.create,
@@ -566,7 +566,7 @@ export function useChiTietSanPhamFormPage() {
       const mauSacId = Number(mauSacIdStr)
       if (isNaN(mauSacId)) continue
       const relatedVariants = variants.filter(
-        (variant) => Number(variant?.id) > 0 && Number(variant?.mauSacId) === mauSacId
+        (variant) => Number(variant?.id) >= 0 && Number(variant?.mauSacId) === mauSacId
       )
       if (!relatedVariants.length) {
         continue

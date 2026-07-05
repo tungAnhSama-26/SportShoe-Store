@@ -63,7 +63,7 @@ const targetVariants = computed(() => {
 })
 
 const persistedTargetVariants = computed(() =>
-  targetVariants.value.filter((item) => Number(item?.id) > 0)
+  targetVariants.value.filter((item) => Number(item?.id) >= 0)
 )
 
 const displayedImages = computed(() =>
