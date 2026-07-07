@@ -589,6 +589,7 @@ function LogicBanHangTaiQuay() {
         soLuong: item.soLuong,
         soLuongBanDau: item.soLuong,
         giaBan: item.giaBan,
+        giaGoc: item.giaGoc || thongTinSanPham?.giaGoc || null,
         soLuongTon: item.soLuongTon
       };
     });
