@@ -4,7 +4,6 @@ import com.example.server.core.admin.quanlydanhgia.dto.AdminDanhGiaResponse;
 import com.example.server.core.admin.quanlydanhgia.dto.PhanHoiRequest;
 import com.example.server.core.admin.quanlydanhgia.dto.SanPhamCoDanhGiaResponse;
 import com.example.server.core.admin.quanlydanhgia.service.AdminDanhGiaService;
-import com.example.server.core.client.danhgia.dto.DanhGiaCongKhaiResponse;
 import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -18,7 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Quản lý đánh giá phía admin: bảng sản phẩm, xem đánh giá, xóa mềm, phản hồi. */
+/**
+ * Quản lý đánh giá phía admin: bảng sản phẩm, xem/lọc đánh giá (thời gian, ẩn/hiện),
+ * xóa mềm, khôi phục, phản hồi và AI tổng hợp.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/danh-gia")
 public class AdminDanhGiaController {
@@ -37,11 +39,28 @@ public class AdminDanhGiaController {
                 service.laySanPhamCoDanhGia(keyword)));
     }
 
-    /** Toàn bộ đánh giá của một sản phẩm (mới nhất trước). Đồng thời đánh dấu đã xem. */
+    /**
+     * Đánh giá của một sản phẩm, lọc theo trạng thái (1=hiển thị, 0=đã ẩn, bỏ trống=tất cả)
+     * và khoảng ngày tạo (yyyy-MM-dd). Đồng thời đánh dấu đã xem.
+     */
     @GetMapping("/san-pham/{giayId}")
-    public ResponseEntity<ApiResponse<List<AdminDanhGiaResponse>>> theoSanPham(@PathVariable Integer giayId) {
+    public ResponseEntity<ApiResponse<List<AdminDanhGiaResponse>>> theoSanPham(
+            @PathVariable Integer giayId,
+            @RequestParam(required = false) Integer trangThai,
+            @RequestParam(required = false) String tuNgay,
+            @RequestParam(required = false) String denNgay) {
         return ResponseEntity.ok(ApiResponse.success("Lấy đánh giá thành công",
-                service.layTheoSanPham(giayId)));
+                service.layTheoSanPham(giayId, trangThai, tuNgay, denNgay)));
+    }
+
+    /** Toàn bộ đánh giá của shop (kèm thông tin sản phẩm), cùng bộ lọc như trên. */
+    @GetMapping("/tat-ca")
+    public ResponseEntity<ApiResponse<List<AdminDanhGiaResponse>>> tatCa(
+            @RequestParam(required = false) Integer trangThai,
+            @RequestParam(required = false) String tuNgay,
+            @RequestParam(required = false) String denNgay) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy tất cả đánh giá thành công",
+                service.layTatCa(trangThai, tuNgay, denNgay)));
     }
 
     /** Tổng số đánh giá chưa xem (cho chuông thông báo). */
@@ -50,10 +69,10 @@ public class AdminDanhGiaController {
         return ResponseEntity.ok(ApiResponse.success("OK", service.demChuaXem()));
     }
 
-    /** Toàn bộ đánh giá của shop (màn "Tất cả đánh giá", kèm thông tin sản phẩm). */
-    @GetMapping("/tat-ca")
-    public ResponseEntity<ApiResponse<List<DanhGiaCongKhaiResponse>>> tatCa() {
-        return ResponseEntity.ok(ApiResponse.success("Lấy tất cả đánh giá thành công", service.layTatCa()));
+    /** AI tổng hợp đánh giá: giayId != null -> 1 sản phẩm; bỏ trống -> toàn shop. */
+    @GetMapping("/ai/tong-hop")
+    public ResponseEntity<ApiResponse<String>> tongHopAi(@RequestParam(required = false) Integer giayId) {
+        return ResponseEntity.ok(ApiResponse.success("Tổng hợp thành công", service.tongHopAi(giayId)));
     }
 
     /** Xóa mềm một đánh giá. */
@@ -61,6 +80,12 @@ public class AdminDanhGiaController {
     public ResponseEntity<ApiResponse<Void>> xoa(@PathVariable Integer id) {
         service.xoaMem(id);
         return ResponseEntity.ok(ApiResponse.success("Đã xóa đánh giá", null));
+    }
+
+    /** Khôi phục đánh giá đã ẩn (kể cả do AI ẩn nhầm). */
+    @PostMapping("/{id}/khoi-phuc")
+    public ResponseEntity<ApiResponse<AdminDanhGiaResponse>> khoiPhuc(@PathVariable Integer id) {
+        return ResponseEntity.ok(ApiResponse.success("Đã khôi phục đánh giá", service.khoiPhuc(id)));
     }
 
     /** Phản hồi một đánh giá (1 lần/đánh giá). */
