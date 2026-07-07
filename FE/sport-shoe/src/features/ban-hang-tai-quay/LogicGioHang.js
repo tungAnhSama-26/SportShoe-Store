@@ -97,6 +97,7 @@ export function LogicGioHang({
           soLuong: quantity,
           soLuongBanDau: 0,
           giaBan: product.giaBan,
+          giaGoc: product.giaGoc,
           oldPrice: oldPrice,
           soLuongTon: product.soLuongTon
         }
