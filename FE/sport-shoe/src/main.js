@@ -3,7 +3,7 @@ import App from "./App.vue";
 import router from "./router";
 import "./index.css";
 
-// Điều hướng về trang đăng nhập khi phát hiện tài khoản khác đăng nhập hoặc đăng xuất ở tab khác
+// Kịch bản đồng bộ trạng thái đăng nhập
 window.addEventListener("storage", (event) => {
   if (!event.key) {
     window.location.assign("/login");
@@ -20,7 +20,7 @@ window.addEventListener("storage", (event) => {
       newVal = event.newValue ? JSON.parse(event.newValue) : null;
     } catch (e) {}
 
-    // Nếu trước đó đang đăng nhập và giờ đăng xuất hoặc đổi tài khoản khác
+    // Kịch bản người dùng thay đổi trạng thái đăng nhập
     if (oldVal && (!newVal || oldVal.id !== newVal.id)) {
       window.location.assign("/login?notice=session_terminated");
     }
@@ -36,7 +36,7 @@ window.addEventListener("storage", (event) => {
       newVal = event.newValue ? JSON.parse(event.newValue) : null;
     } catch (e) {}
 
-    // Nếu admin/nhân viên trước đó đang đăng nhập và giờ đăng xuất hoặc đổi tài khoản khác
+    // Kịch bản nhân viên thay đổi trạng thái đăng nhập
     if (oldVal && (!newVal || oldVal.id !== newVal.id)) {
       window.location.assign("/admin/login?notice=session_terminated");
     }
