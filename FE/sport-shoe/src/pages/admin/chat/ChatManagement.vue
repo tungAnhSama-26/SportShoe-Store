@@ -209,7 +209,11 @@ marked.setOptions({
 
 function renderMarkdown(text) {
   if (!text) return "";
-  return marked.parse(text);
+  let escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return marked.parse(escaped);
 }
 
 // Theo dõi thay đổi từ khóa để lọc danh sách

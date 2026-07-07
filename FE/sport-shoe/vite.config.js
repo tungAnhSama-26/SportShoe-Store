@@ -39,6 +39,13 @@ var stdin_default = defineConfig({
     port: 3e3,
     open: false,
     allowedHosts: [".trycloudflare.com"],
+    headers: {
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss: http://localhost:8080 http://127.0.0.1:8080;",
+      "X-Frame-Options": "SAMEORIGIN",
+      "X-Content-Type-Options": "nosniff",
+      "X-XSS-Protection": "1; mode=block",
+      "Referrer-Policy": "strict-origin-when-cross-origin"
+    },
     proxy: {
       "/api": createBackendProxy(),
       "/uploads": createBackendProxy(),
