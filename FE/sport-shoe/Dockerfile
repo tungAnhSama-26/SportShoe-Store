@@ -4,11 +4,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # Stage 2: Dùng Nginx để serve file tĩnh
 FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/build /usr/share/nginx/html
 # Copy cấu hình nginx tùy chỉnh (hỗ trợ Vue Router history mode)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
