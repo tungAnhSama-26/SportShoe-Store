@@ -9,18 +9,36 @@ export async function laySanPhamCoDanhGia(keyword) {
 }
 
 // Toàn bộ đánh giá của shop kèm thông tin sản phẩm (màn "Tất cả đánh giá").
-export async function layTatCaDanhGia() {
-  return apiRequest(`/admin/danh-gia/tat-ca`, {
+// boLoc: { trangThai: 1|0|null, tuNgay: 'yyyy-MM-dd', denNgay: 'yyyy-MM-dd' }
+export async function layTatCaDanhGia(boLoc = {}) {
+  return apiRequest(`/admin/danh-gia/tat-ca${buildQuery(boLoc)}`, {
     authScope: "admin",
     fallbackMessage: "Không thể tải tất cả đánh giá",
   });
 }
 
-// Toàn bộ đánh giá của 1 sản phẩm (mới nhất trước).
-export async function layDanhGiaTheoSanPham(giayId) {
-  return apiRequest(`/admin/danh-gia/san-pham/${giayId}`, {
+// Đánh giá của 1 sản phẩm (mới nhất trước), cùng bộ lọc như trên.
+export async function layDanhGiaTheoSanPham(giayId, boLoc = {}) {
+  return apiRequest(`/admin/danh-gia/san-pham/${giayId}${buildQuery(boLoc)}`, {
     authScope: "admin",
     fallbackMessage: "Không thể tải đánh giá sản phẩm",
+  });
+}
+
+// Khôi phục đánh giá đã ẩn (kể cả do AI ẩn nhầm).
+export async function khoiPhucDanhGia(id) {
+  return apiRequest(`/admin/danh-gia/${id}/khoi-phuc`, {
+    method: "POST",
+    authScope: "admin",
+    fallbackMessage: "Không thể khôi phục đánh giá",
+  });
+}
+
+// AI tổng hợp đánh giá: giayId null -> toàn shop.
+export async function tongHopDanhGiaAI(giayId) {
+  return apiRequest(`/admin/danh-gia/ai/tong-hop${buildQuery({ giayId })}`, {
+    authScope: "admin",
+    fallbackMessage: "AI không tổng hợp được, thử lại sau",
   });
 }
 
