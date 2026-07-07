@@ -2,11 +2,16 @@ import { API_BASE_URL } from "../services/api-client";
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
-// Chuyển URL ảnh/video (có thể tương đối "/uploads/..") sang URL đầy đủ.
+// Chuyển URL ảnh/video sang dạng tải được.
 export function resolveMediaUrl(url) {
   const value = String(url || "").trim();
   if (!value) return "";
-  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+  if (/^(data:|blob:)/i.test(value)) return value; // ảnh xem trước cục bộ -> giữ nguyên
+  // Ảnh/video lưu ở /uploads: luôn tải qua CÙNG ORIGIN (dev: proxy Vite /uploads -> 8080;
+  // prod: cùng BE) để tránh CSP chặn ảnh cross-origin. Cắt lấy phần "/uploads/...".
+  const idx = value.indexOf("/uploads/");
+  if (idx >= 0) return value.slice(idx);
+  if (/^https?:/i.test(value)) return value; // URL ngoài khác (avatar...) -> giữ nguyên
   if (value.startsWith("/")) return `${apiOrigin}${value}`;
   return `${apiOrigin}/${value}`;
 }

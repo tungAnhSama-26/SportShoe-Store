@@ -81,6 +81,25 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
             """)
     List<DanhGia> findTatCaCongKhai();
 
+    /**
+     * Lọc đánh giá cho màn quản lý admin: theo sản phẩm (-1 = mọi SP), trạng thái
+     * (-1 = cả hiển thị lẫn đã ẩn) và khoảng thời gian tạo. Mới nhất trước.
+     */
+    @Query("""
+            select dg from DanhGia dg
+            join fetch dg.khachHang kh
+            join fetch dg.giay g
+            where (:giayId = -1 or g.id = :giayId)
+              and (:trangThai = -1 or dg.trangThai = :trangThai)
+              and dg.ngayTao >= :tuNgay and dg.ngayTao < :denNgay
+            order by dg.ngayTao desc
+            """)
+    List<DanhGia> locChoAdmin(
+            @Param("giayId") int giayId,
+            @Param("trangThai") int trangThai,
+            @Param("tuNgay") java.time.Instant tuNgay,
+            @Param("denNgay") java.time.Instant denNgay);
+
     /** Đánh dấu đã xem cho toàn bộ đánh giá đang hiển thị (khi admin mở màn Tất cả đánh giá). */
     @org.springframework.data.jpa.repository.Modifying
     @Query("update DanhGia dg set dg.daXem = true where dg.trangThai = 1 and dg.daXem = false")

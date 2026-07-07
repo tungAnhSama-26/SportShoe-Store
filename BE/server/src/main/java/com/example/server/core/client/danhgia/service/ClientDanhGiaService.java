@@ -29,13 +29,16 @@ public class ClientDanhGiaService {
 
     private final DanhGiaRepository danhGiaRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final com.example.server.core.admin.quanlydanhgia.service.DanhGiaAiService danhGiaAiService;
 
     public ClientDanhGiaService(
             DanhGiaRepository danhGiaRepository,
-            HoaDonChiTietRepository hoaDonChiTietRepository
+            HoaDonChiTietRepository hoaDonChiTietRepository,
+            com.example.server.core.admin.quanlydanhgia.service.DanhGiaAiService danhGiaAiService
     ) {
         this.danhGiaRepository = danhGiaRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.danhGiaAiService = danhGiaAiService;
     }
 
     @Transactional(readOnly = true)
@@ -95,9 +98,10 @@ public class ClientDanhGiaService {
         if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Bạn chỉ có thể đánh giá sản phẩm mình đã mua");
         }
-        if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_HOAN_THANH
-                || !Boolean.TRUE.equals(hd.getDaNhanHang())) {
-            throw new BusinessException("Bạn cần xác nhận đã nhận hàng trước khi đánh giá");
+        // Chỉ cần đơn đã HOÀN THÀNH là được đánh giá (dù do khách bấm nhận hàng, admin chuyển,
+        // hay tự động hoàn thành sau 3 ngày) - không bắt buộc cờ daNhanHang nữa.
+        if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_HOAN_THANH) {
+            throw new BusinessException("Chỉ có thể đánh giá đơn hàng đã hoàn thành");
         }
         if (danhGiaRepository.existsByHoaDonChiTietId(hoaDonChiTietId)) {
             throw new BusinessException("Sản phẩm này trong đơn đã được đánh giá");
@@ -121,6 +125,8 @@ public class ClientDanhGiaService {
         danhGia.setNgayTao(Instant.now());
 
         DanhGia saved = danhGiaRepository.save(danhGia);
+        // AI kiểm duyệt chạy nền sau commit: đánh giá độc hại/spam/không liên quan sẽ tự bị ẩn.
+        danhGiaAiService.kiemDuyetSauCommit(saved.getId(), saved.getSoSao(), saved.getNoiDung());
         return new DanhGiaResponse(
                 saved.getId(), khachHang.getHoTen(), saved.getSoSao(), saved.getNoiDung(), saved.getMedia(),
                 saved.getPhanHoi(), saved.getNgayPhanHoi(), saved.getNgayTao());

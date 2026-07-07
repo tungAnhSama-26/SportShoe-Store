@@ -1,12 +1,14 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { Eye } from 'lucide-vue-next';
+import { Eye, Sparkles } from 'lucide-vue-next';
 import {
   laySanPhamCoDanhGia,
   layDanhGiaTheoSanPham,
   layTatCaDanhGia,
   xoaDanhGia,
   phanHoiDanhGia,
+  khoiPhucDanhGia,
+  tongHopDanhGiaAI,
 } from '../../../services/admin-danh-gia';
 import DanhGiaMedia from '../../../components/DanhGiaMedia.vue';
 import { resolveMediaUrl, parseMedia } from '../../../utils/media';
@@ -30,8 +32,59 @@ const saoLoc = ref(null); // null = tất cả, 1..5
 const formPhanHoi = ref({});
 const dangGuiPH = ref(null);
 const dangXoa = ref(null);
+const dangKhoiPhuc = ref(null);
+
+// Bộ lọc: trạng thái ('' = tất cả, 1 = đang hiển thị, 0 = đã ẩn) + khoảng ngày tạo.
+const locTrangThai = ref(1);
+const locTuNgay = ref('');
+const locDenNgay = ref('');
+
+// AI tổng hợp đánh giá.
+const dangTongHop = ref(false);
+const aiKetQua = ref('');
 
 let timer = null;
+
+function boLocHienTai() {
+  return {
+    trangThai: locTrangThai.value === '' ? undefined : locTrangThai.value,
+    tuNgay: locTuNgay.value || undefined,
+    denNgay: locDenNgay.value || undefined,
+  };
+}
+
+// Đổi bộ lọc -> tải lại danh sách đánh giá đang xem.
+function apDungLoc() {
+  if (cheDo.value === 'tat-ca') taiTatCa();
+  else if (spDangChon.value) moSanPham(spDangChon.value);
+}
+
+async function khoiPhuc(dg) {
+  dangKhoiPhuc.value = dg.id;
+  try {
+    const res = await khoiPhucDanhGia(dg.id);
+    dg.trangThai = res.trangThai;
+    dg.lyDoAn = res.lyDoAn;
+    showSuccess('Đã khôi phục đánh giá');
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, 'Không thể khôi phục đánh giá'));
+  } finally {
+    dangKhoiPhuc.value = null;
+  }
+}
+
+async function tongHopAI() {
+  if (dangTongHop.value) return;
+  dangTongHop.value = true;
+  aiKetQua.value = '';
+  try {
+    aiKetQua.value = await tongHopDanhGiaAI(cheDo.value === 'tat-ca' ? null : spDangChon.value?.giayId);
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, 'AI không tổng hợp được, thử lại sau'));
+  } finally {
+    dangTongHop.value = false;
+  }
+}
 
 onMounted(taiSanPham);
 
@@ -80,7 +133,7 @@ async function moSanPham(sp) {
   dsDanhGia.value = [];
   dangTaiDG.value = true;
   try {
-    dsDanhGia.value = (await layDanhGiaTheoSanPham(sp.giayId)) || [];
+    dsDanhGia.value = (await layDanhGiaTheoSanPham(sp.giayId, boLocHienTai())) || [];
     const found = dsSanPham.value.find((x) => x.giayId === sp.giayId);
     if (found) found.soChuaXem = 0;
     window.dispatchEvent(new CustomEvent('danh-gia-da-xem'));
@@ -95,6 +148,7 @@ function quayLai() {
   spDangChon.value = null;
   dsDanhGia.value = [];
   saoLoc.value = null;
+  aiKetQua.value = '';
   taiSanPham();
 }
 
@@ -103,7 +157,7 @@ async function taiTatCa() {
   saoLoc.value = null;
   dsDanhGia.value = [];
   try {
-    dsDanhGia.value = (await layTatCaDanhGia()) || [];
+    dsDanhGia.value = (await layTatCaDanhGia(boLocHienTai())) || [];
     window.dispatchEvent(new CustomEvent('danh-gia-da-xem')); // mở tất cả = đã xem hết
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không tải được đánh giá'));
@@ -117,6 +171,7 @@ function doiCheDo() {
   spDangChon.value = null;
   saoLoc.value = null;
   dsDanhGia.value = [];
+  aiKetQua.value = '';
   if (cheDo.value === 'tat-ca') taiTatCa();
   else taiSanPham();
 }
@@ -127,7 +182,12 @@ async function xoa(dg) {
   dangXoa.value = dg.id;
   try {
     await xoaDanhGia(dg.id);
-    dsDanhGia.value = dsDanhGia.value.filter((x) => x.id !== dg.id);
+    if (locTrangThai.value === 1) {
+      dsDanhGia.value = dsDanhGia.value.filter((x) => x.id !== dg.id);
+    } else {
+      dg.trangThai = 0;
+      dg.lyDoAn = 'Quản trị viên xóa';
+    }
     showSuccess('Đã xóa đánh giá');
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể xóa đánh giá'));
@@ -329,6 +389,48 @@ function xuLyAnhLoi(e) {
         </div>
       </div>
 
+      <!-- Bộ lọc thời gian + trạng thái + AI tổng hợp -->
+      <div class="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+        <div>
+          <label class="mb-1 block text-xs font-semibold text-slate-400">Từ ngày</label>
+          <input v-model="locTuNgay" type="date" @change="apDungLoc"
+                 class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-semibold text-slate-400">Đến ngày</label>
+          <input v-model="locDenNgay" type="date" @change="apDungLoc"
+                 class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-semibold text-slate-400">Trạng thái</label>
+          <select v-model="locTrangThai" @change="apDungLoc"
+                  class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+            <option :value="1">Đang hiển thị</option>
+            <option :value="0">Đã ẩn / xóa</option>
+            <option value="">Tất cả</option>
+          </select>
+        </div>
+        <button
+          @click="tongHopAI"
+          :disabled="dangTongHop"
+          class="ml-auto inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700 disabled:opacity-60"
+        >
+          <Sparkles class="h-4 w-4" />
+          {{ dangTongHop ? 'AI đang phân tích...' : (cheDo === 'tat-ca' ? 'AI tổng hợp cả shop' : 'AI tổng hợp sản phẩm') }}
+        </button>
+      </div>
+
+      <!-- Kết quả AI tổng hợp -->
+      <div v-if="aiKetQua" class="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-5 dark:bg-violet-500/10 dark:border-violet-500/30">
+        <div class="mb-2 flex items-center justify-between">
+          <span class="inline-flex items-center gap-2 text-sm font-bold text-violet-700 dark:text-violet-300">
+            <Sparkles class="h-4 w-4" /> Nhận xét của AI
+          </span>
+          <button @click="aiKetQua = ''" class="text-xs font-medium text-slate-400 hover:text-slate-600">Đóng</button>
+        </div>
+        <p class="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ aiKetQua }}</p>
+      </div>
+
       <!-- Danh sách đánh giá -->
       <div v-if="dangTaiDG" class="py-16 text-center text-sm text-slate-400">Đang tải đánh giá...</div>
       <div v-else-if="!dsDanhGia.length" class="py-16 text-center text-sm text-slate-400">Chưa có đánh giá nào.</div>
@@ -348,11 +450,23 @@ function xuLyAnhLoi(e) {
             </div>
             <div class="flex-1">
               <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2">
                   <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ dg.hoTenKhach }}</p>
                   <span class="text-xs text-slate-400">{{ formatNgay(dg.ngayTao) }}</span>
+                  <span v-if="dg.trangThai === 0" class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-600" :title="dg.lyDoAn || ''">
+                    Đã ẩn{{ dg.lyDoAn ? ' · ' + dg.lyDoAn : '' }}
+                  </span>
                 </div>
                 <button
+                  v-if="dg.trangThai === 0"
+                  @click="khoiPhuc(dg)"
+                  :disabled="dangKhoiPhuc === dg.id"
+                  class="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50 dark:hover:bg-emerald-500/10"
+                >
+                  {{ dangKhoiPhuc === dg.id ? 'Đang khôi phục...' : 'Khôi phục' }}
+                </button>
+                <button
+                  v-else
                   @click="xoa(dg)"
                   :disabled="dangXoa === dg.id"
                   class="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-500 transition hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-500/10"
@@ -375,8 +489,8 @@ function xuLyAnhLoi(e) {
                 <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ dg.phanHoi }}</p>
               </div>
 
-              <!-- Form phản hồi -->
-              <div v-else class="mt-3">
+              <!-- Form phản hồi (không cho phản hồi đánh giá đã ẩn) -->
+              <div v-else-if="dg.trangThai !== 0" class="mt-3">
                 <textarea
                   v-model="formPhanHoi[dg.id]"
                   rows="2"
