@@ -75,4 +75,10 @@ public class DanhGia {
     @ColumnDefault("0")
     @Column(name = "da_xem")
     private Boolean daXem;
+
+    /** Lý do đánh giá bị ẩn (AI tự ẩn / quản trị viên xóa) - null nếu đang hiển thị. */
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "ly_do_an", length = 500)
+    private String lyDoAn;
 }
