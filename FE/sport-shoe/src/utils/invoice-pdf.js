@@ -140,26 +140,8 @@ export function printInvoiceToPdf({
   const printedAt = formatDate(new Date().toISOString());
   const invoiceCode = invoice.maHoaDon || filename || "SPORTSHOE";
   const status = invoice.trangThai || "Chưa cập nhật";
-  const barcodeText = buildBarcodeText(invoiceCode);
   const invoiceQrUrl = buildInvoiceQrUrl(invoiceCode);
   const isStoreOrder = isStoreInvoice(invoice);
-
-  const itemRows = items
-    .map(
-      (item, index) => `
-        <tr>
-          <td class="cell-center">${index + 1}</td>
-          <td>
-            <span class="product-name">${escapeHtml(item.tenSanPham || "-")}</span>
-            <span class="product-meta">${escapeHtml([item.mauSac, item.kichCo].filter(Boolean).join(" / ") || item.phanLoai || "-")}</span>
-          </td>
-          <td class="cell-center tabular">${escapeHtml(item.soLuong || 0)}</td>
-          <td class="cell-money tabular">${escapeHtml(formatCurrency(item.donGia || 0))}</td>
-          <td class="cell-money tabular">${escapeHtml(formatCurrency(item.thanhTien || 0))}</td>
-        </tr>
-      `,
-    )
-    .join("");
 
   popup.document.open();
   popup.document.write(`
@@ -170,13 +152,13 @@ export function printInvoiceToPdf({
         <title>${escapeHtml(filename)}</title>
         <style>
           :root {
-            --brand: #c52220;
-            --brand-dark: #991b1b;
-            --brand-soft: #fff1f2;
+            --brand: #000000;
+            --brand-dark: #000000;
+            --brand-soft: #f8fafc;
             --ink: #0f172a;
             --muted: #64748b;
-            --line: #dbe3ef;
-            --line-strong: #f2b8b8;
+            --line: #cbd5e1;
+            --line-strong: #000000;
             --soft: #f8fafc;
             --radius: 6px;
           }
@@ -189,19 +171,20 @@ export function printInvoiceToPdf({
 
           body {
             margin: 0;
-            background: #f1f5f9;
+            background: #ffffff;
             color: var(--ink);
-            font-family: "Inter", "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 12px;
             line-height: 1.4;
+            padding: 0;
           }
 
           .invoice-page {
-            width: 210mm;
-            min-height: 297mm;
+            width: 100%;
+            max-width: 480px;
             margin: 0 auto;
             background: #ffffff;
-            padding: 12mm;
+            padding: 0;
           }
 
           .shipping-invoice {
@@ -209,13 +192,13 @@ export function printInvoiceToPdf({
             border: 1px solid var(--line-strong);
             border-radius: var(--radius);
             background: #ffffff;
-            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            box-shadow: none;
           }
 
           .top-band {
             display: grid;
             grid-template-columns: 1fr 245px;
-            background: var(--brand);
+            background: #000000;
             color: #ffffff;
           }
 
@@ -232,7 +215,7 @@ export function printInvoiceToPdf({
 
           .brand-subtitle {
             margin: 6px 0 0;
-            color: #fee2e2;
+            color: #cbd5e1;
             font-size: 11px;
           }
 
@@ -243,7 +226,7 @@ export function printInvoiceToPdf({
 
           .code-label {
             display: block;
-            color: #fee2e2;
+            color: #cbd5e1;
             font-size: 10px;
             font-weight: 800;
             text-transform: uppercase;
@@ -256,31 +239,13 @@ export function printInvoiceToPdf({
             font-weight: 800;
           }
 
-          .fake-barcode {
-            width: 196px;
-            height: 38px;
-            margin: 9px 0 0 auto;
-            border-radius: 3px;
-            background:
-              repeating-linear-gradient(
-                90deg,
-                #ffffff 0 2px,
-                transparent 2px 4px,
-                #ffffff 4px 5px,
-                transparent 5px 8px,
-                #ffffff 8px 11px,
-                transparent 11px 13px
-              );
-            opacity: 0.95;
-          }
-
           .invoice-heading {
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 16px;
             align-items: start;
-            background: #fff7f7;
-            border-bottom: 1px solid #fecaca;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--line);
             padding: 14px 18px;
           }
 
@@ -298,25 +263,6 @@ export function printInvoiceToPdf({
             font-size: 11px;
           }
 
-          .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            border: 1px solid #fecaca;
-            border-radius: 999px;
-            background: #ffffff;
-            color: var(--brand);
-            padding: 7px 12px;
-            font-weight: 700;
-          }
-
-          .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            background: var(--brand);
-          }
-
           .route-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -330,7 +276,7 @@ export function printInvoiceToPdf({
           }
 
           .store-info-grid .address-line {
-            grid-template-columns: 110px minmax(0, 1fr);
+            grid-template-columns: 80px minmax(0, 1fr);
           }
 
           .store-info-grid .address-line-wide {
@@ -338,7 +284,7 @@ export function printInvoiceToPdf({
           }
 
           .route-panel {
-            min-height: 138px;
+            min-height: 110px;
             padding: 14px 16px;
           }
 
@@ -355,8 +301,8 @@ export function printInvoiceToPdf({
 
           .address-line {
             display: grid;
-            grid-template-columns: 92px minmax(0, 1fr);
-            gap: 10px;
+            grid-template-columns: 50px minmax(0, 1fr);
+            gap: 6px;
             margin-top: 7px;
           }
 
@@ -425,38 +371,19 @@ export function printInvoiceToPdf({
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 5px;
+            align-items: center;
             padding: 12px;
-            text-align: center;
           }
 
           .invoice-qr {
-            width: 82px;
-            height: 82px;
-            margin: 2px auto 6px;
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            background: #ffffff;
+            width: 90px;
+            height: 90px;
             object-fit: contain;
-            padding: 5px;
-          }
-
-          .order-meta span {
-            color: var(--muted);
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-          }
-
-          .order-meta strong {
-            color: var(--ink);
-            font-size: 13px;
           }
 
           .section {
             padding: 16px 18px;
             border-bottom: 1px solid var(--line);
-            break-inside: avoid;
           }
 
           .section-header {
@@ -480,81 +407,15 @@ export function printInvoiceToPdf({
             font-weight: 700;
           }
 
-          table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 0;
-            overflow: hidden;
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            font-size: 11px;
-          }
-
-          th,
-          td {
-            padding: 10px 11px;
-            text-align: left;
-            vertical-align: top;
-            border-bottom: 1px solid var(--line);
-          }
-
-          th {
-            background: var(--brand-soft);
-            color: var(--brand-dark);
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-          }
-
-          th:nth-child(1),
-          th:nth-child(3) {
-            text-align: center;
-          }
-
-          th:nth-child(4),
-          th:nth-child(5) {
-            text-align: right;
-          }
-
-          tbody tr:nth-child(even) td {
-            background: var(--soft);
-          }
-
-          tbody tr:last-child td {
-            border-bottom: 0;
-          }
-
-          .product-name {
-            display: block;
-            color: var(--ink);
-            font-weight: 750;
-          }
-
-          .product-meta {
-            display: block;
-            margin-top: 3px;
-            color: var(--muted);
-            font-size: 10px;
-          }
-
-          .cell-center {
-            text-align: center;
-          }
-
-          .cell-money {
-            text-align: right;
-            white-space: nowrap;
-          }
-
-          .tabular {
-            font-variant-numeric: tabular-nums;
+          .shopee-content-list {
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 8px;
           }
 
           .payment-section {
             padding: 16px 18px;
             border-bottom: 1px solid var(--line);
-            break-inside: avoid;
           }
 
           .money-row {
@@ -585,13 +446,13 @@ export function printInvoiceToPdf({
           }
 
           .money-value-discount {
-            color: #059669;
+            color: #000000;
           }
 
           .money-row-total {
             margin-top: 8px;
             padding-top: 13px;
-            border-top: 1px solid #fecaca;
+            border-top: 1px solid #000000;
             color: var(--brand);
             font-size: 16px;
             font-weight: 900;
@@ -617,6 +478,7 @@ export function printInvoiceToPdf({
           @media print {
             body {
               background: #ffffff;
+              font-size: 11px;
             }
 
             .invoice-page {
@@ -629,11 +491,77 @@ export function printInvoiceToPdf({
             .shipping-invoice {
               box-shadow: none;
             }
+
+            .route-panel {
+              min-height: auto !important;
+              padding: 8px 12px !important;
+            }
+
+            .store-info-grid {
+              gap: 4px 16px !important;
+            }
+
+            .address-line {
+              margin-top: 4px !important;
+            }
+
+            .order-strip {
+              grid-template-columns: 1fr 120px !important;
+            }
+
+            .shipping-brand-block {
+              padding: 8px !important;
+              min-height: auto !important;
+            }
+
+            .shipping-brand-name {
+              font-size: 28px !important;
+            }
+
+            .shipping-brand-logo {
+              width: 60px !important;
+              height: 48px !important;
+            }
+
+            .order-meta {
+              padding: 4px !important;
+            }
+
+            .invoice-qr {
+              width: 72px !important;
+              height: 72px !important;
+              margin: 0 auto !important;
+            }
+
+            .section {
+              padding: 8px 12px !important;
+            }
+
+            .section-header {
+              margin-bottom: 6px !important;
+            }
+
+            .payment-section {
+              padding: 8px 12px !important;
+            }
+
+            .money-row {
+              padding: 4px 0 !important;
+            }
+
+            .money-row-total {
+              margin-top: 4px !important;
+              padding-top: 8px !important;
+            }
+
+            .thanks {
+              padding: 6px 12px !important;
+            }
           }
 
           @page {
             size: A4;
-            margin: 12mm;
+            margin: 6mm;
           }
         </style>
       </head>
@@ -648,7 +576,6 @@ export function printInvoiceToPdf({
               <div class="code-box">
                 <span class="code-label">Mã hóa đơn</span>
                 <span class="code-value">${escapeHtml(invoiceCode)}</span>
-                ${isStoreOrder ? "" : '<div class="fake-barcode" aria-hidden="true"></div>'}
               </div>
             </header>
 
@@ -657,20 +584,14 @@ export function printInvoiceToPdf({
                 <h1 class="invoice-title">Hóa đơn bán hàng</h1>
                 <p class="printed-at">Ngày tạo: ${escapeHtml(createdAt)} · In lúc: ${escapeHtml(printedAt)}</p>
               </div>
-              <div class="status-pill">
-                <span class="status-dot"></span>
-                ${escapeHtml(status)}
-              </div>
             </section>
 
             ${isStoreOrder ? `
               <section class="section">
                 <div class="section-header">
                   <h2 class="section-title">Thông tin hóa đơn</h2>
-                  <span class="section-note">${escapeHtml(invoice.loaiDon || "Cửa hàng")}</span>
                 </div>
                 <div class="store-info-grid">
-                  ${buildAddressLine("Nhân viên", invoice.maNhanVien || invoice.tenNhanVien || "Chưa gán")}
                   ${buildAddressLine("Khách hàng", getCustomerName(invoice), { hideIfEmpty: true })}
                   ${buildAddressLine("Số điện thoại", getCustomerPhone(invoice), { hideIfEmpty: true })}
                   ${buildAddressLine("Email", invoice.email, { hideIfEmpty: true })}
@@ -686,14 +607,11 @@ export function printInvoiceToPdf({
                 <div class="route-panel">
                   <h2 class="route-title">Từ: SportShoe Store</h2>
                   ${buildAddressLine("Địa chỉ", SHOP_ADDRESS)}
-                  ${buildAddressLine("Nhân viên", invoice.maNhanVien || invoice.tenNhanVien || "Chưa gán")}
-                  ${buildAddressLine("Loại đơn", invoice.loaiDon || "Chưa cập nhật")}
                   ${buildAddressLine("Ghi chú", invoice.ghiChu, { hideIfEmpty: true })}
                 </div>
                 <div class="route-panel">
                   <h2 class="route-title">Đến: ${escapeHtml(getCustomerName(invoice))}</h2>
                   ${buildAddressLine("SĐT", getCustomerPhone(invoice), { hideIfEmpty: true })}
-                  ${buildAddressLine("Email", invoice.email, { hideIfEmpty: true })}
                   ${buildAddressLine("Địa chỉ", invoice.diaChi, { fallback: "Mua tại quầy" })}
                 </div>
               </section>
@@ -709,11 +627,7 @@ export function printInvoiceToPdf({
                   </div>
                 </div>
                 <div class="order-meta">
-                  <img class="invoice-qr" src="${escapeHtml(invoiceQrUrl)}" alt="QR hóa đơn ${escapeHtml(invoiceCode)}" crossorigin="anonymous" />
-                  <span>QR hóa đơn</span>
-                  <strong>${escapeHtml(invoiceCode)}</strong>
-                  <span>Ngày đặt hàng</span>
-                  <strong>${escapeHtml(createdAt)}</strong>
+                  <img class="invoice-qr" src="${escapeHtml(invoiceQrUrl)}" alt="QR" />
                 </div>
               </section>
             `}
@@ -723,27 +637,20 @@ export function printInvoiceToPdf({
                 <h2 class="section-title">${isStoreOrder ? "Danh sách sản phẩm" : "Nội dung hàng"}</h2>
                 <span class="section-note">Tổng số sản phẩm: ${items.length}</span>
               </div>
-              <table>
-                <colgroup>
-                  <col style="width: 48px" />
-                  <col />
-                  <col style="width: 92px" />
-                  <col style="width: 130px" />
-                  <col style="width: 138px" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>STT</th>
-                    <th>Sản phẩm</th>
-                    <th>Số lượng</th>
-                    <th>Đơn giá</th>
-                    <th>Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemRows || '<tr><td colspan="5" class="cell-center">Không có sản phẩm</td></tr>'}
-                </tbody>
-              </table>
+              <div class="shopee-content-list">
+                ${items.map((item, idx) => `
+                  <div style="margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px;">
+                    <span>${idx + 1}.</span>
+                    <div>
+                      <strong>${escapeHtml(item.tenSanPham || "-")}</strong>
+                      <span style="color: #475569; font-size: 11px;">
+                        ${escapeHtml([item.mauSac, item.kichCo].filter(Boolean).join(" / ") ? `(${[item.mauSac, item.kichCo].filter(Boolean).join(" / ")})` : "")}
+                      </span>
+                      - Đơn giá: <strong>${escapeHtml(formatCurrency(item.donGia || 0))}</strong> - SL: <strong>${escapeHtml(item.soLuong || 0)}</strong>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
             </section>
 
             <section class="payment-section">
@@ -774,7 +681,7 @@ export function printInvoiceToPdf({
             }, 200);
           };
           window.onafterprint = () => window.close();
-        <\/script>
+        </script>
       </body>
     </html>
   `);
