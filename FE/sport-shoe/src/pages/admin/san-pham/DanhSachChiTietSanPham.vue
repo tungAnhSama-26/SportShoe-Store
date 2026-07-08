@@ -667,7 +667,20 @@ watch(
   }
 )
 
+watch(
+  () => route.query.variant,
+  async (newVariant) => {
+    if (newVariant) {
+      boLoc.keyword = String(newVariant);
+      await loadData(0);
+    }
+  }
+)
+
 onMounted(async () => {
+  if (route.query.variant) {
+    boLoc.keyword = String(route.query.variant);
+  }
   await loadDanhMuc()
   await syncSelectedProduct()
   await loadData(0)

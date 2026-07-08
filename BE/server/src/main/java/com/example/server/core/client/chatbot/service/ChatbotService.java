@@ -13,6 +13,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.util.UUID;
 
@@ -28,6 +29,7 @@ public class ChatbotService {
     private final TinNhanRepository tinNhanRepository;
     private final NhanVienRepository nhanVienRepository;
     private final WebSocketNotificationService webSocketNotificationService;
+    private final ThongBaoService thongBaoService;
 
     @Value("${app.debug-errors:false}")
     private boolean debugErrors;
@@ -37,12 +39,14 @@ public class ChatbotService {
             CuocHoiThoaiRepository cuocHoiThoaiRepository,
             TinNhanRepository tinNhanRepository,
             NhanVienRepository nhanVienRepository,
-            WebSocketNotificationService webSocketNotificationService) {
+            WebSocketNotificationService webSocketNotificationService,
+            ThongBaoService thongBaoService) {
         this.chatClientBuilder = chatClientBuilder;
         this.cuocHoiThoaiRepository = cuocHoiThoaiRepository;
         this.tinNhanRepository = tinNhanRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.webSocketNotificationService = webSocketNotificationService;
+        this.thongBaoService = thongBaoService;
     }
 
     @Transactional
@@ -119,6 +123,9 @@ public class ChatbotService {
                         "SESSION_UPDATED",
                         convertToDto(session)
                 );
+
+                // Trigger chat notification
+                guiThongBaoChatMoi(session, request.message());
             } else {
                 // Chat với AI thông thường
                 botReply = generateAiResponse(request.message());
@@ -146,6 +153,9 @@ public class ChatbotService {
                     "SESSION_UPDATED",
                     convertToDto(session)
             );
+
+            // Trigger chat notification
+            guiThongBaoChatMoi(session, request.message());
         }
 
         return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
@@ -180,6 +190,8 @@ public class ChatbotService {
                 2
         );
 
+        // Trigger chat notification
+        guiThongBaoChatMoi(session, null);
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/sessions",
                 "SESSION_UPDATED",
@@ -396,6 +408,24 @@ public class ChatbotService {
                 return "Lỗi AI Chatbot (Debug): " + e.getMessage() + " | Nguyên nhân chi tiết: " + (e.getCause() != null ? e.getCause().getMessage() : "không có");
             }
             return "Hệ thống tư vấn tự động hiện đang bận hoặc đang được bảo trì. Bạn vui lòng liên hệ hotline hỗ trợ trực tiếp của cửa hàng để được hỗ trợ nhanh nhất nhé!";
+        }
+    }
+
+    private void guiThongBaoChatMoi(CuocHoiThoai session, String message) {
+        try {
+            String name = session.getTenKhachHang() != null ? session.getTenKhachHang() : "Khách hàng";
+            String nd = message != null ? message : "Yêu cầu hỗ trợ trực tiếp từ nhân viên tư vấn.";
+            if (nd.length() > 80) {
+                nd = nd.substring(0, 77) + "...";
+            }
+            thongBaoService.taoThongBao(
+                    "Tin nhắn hỗ trợ mới",
+                    "Khách \"" + name + "\": " + nd,
+                    "CHAT",
+                    "/admin/chat"
+            );
+        } catch (Exception e) {
+            System.err.println("[ChatbotService] Lỗi tạo thông báo chat: " + e.getMessage());
         }
     }
 }

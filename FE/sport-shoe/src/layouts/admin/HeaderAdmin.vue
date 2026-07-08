@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, onMounted } from "vue";
-import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound, ArrowRightLeft } from "lucide-vue-next";
+import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound, ArrowRightLeft, Bell, BellOff, Gift, AlertTriangle, Star, MessageSquare, Calendar, XCircle, RefreshCw, X } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
@@ -8,6 +8,8 @@ import { useAdminSession } from "../../composable/useAdminSession";
 import { isAdminRole, logoutAdmin } from "../../services/auth";
 
 import { useGiaoCa } from "../../composable/useGiaoCa";
+import { useRealtime } from "../../composables/useRealtime";
+import { layDanhSachThongBao, demThongBaoChuaDoc, docThongBao, docTatCaThongBao, xoaThongBao } from "../../services/thong-bao";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,8 +20,174 @@ const hienMenuTaiKhoan = ref(false);
 
 const { activeShift, loadActiveShift } = useGiaoCa();
 
+// States for Notification System
+const dropdownThongBaoMo = ref(false);
+const dsThongBao = ref([]);
+const chuaDocCount = ref(0);
+const loadingThongBao = ref(false);
+
+const { subscribeTopic } = useRealtime();
+
+async function taiThongBao() {
+  loadingThongBao.value = true;
+  try {
+    const [count, pageData] = await Promise.all([
+      demThongBaoChuaDoc(),
+      layDanhSachThongBao(0, 15)
+    ]);
+    chuaDocCount.value = typeof count === 'number' ? count : 0;
+    dsThongBao.value = pageData?.content || [];
+  } catch (error) {
+    console.error("Lỗi khi tải thông báo:", error);
+  } finally {
+    loadingThongBao.value = false;
+  }
+}
+
+function toggleDropdownThongBao() {
+  dropdownThongBaoMo.value = !dropdownThongBaoMo.value;
+  if (dropdownThongBaoMo.value) {
+    taiThongBao();
+  }
+}
+
+async function markAllAsRead() {
+  try {
+    await docTatCaThongBao();
+    dsThongBao.value.forEach(tb => tb.daDoc = true);
+    chuaDocCount.value = 0;
+  } catch (error) {
+    console.error("Lỗi khi đánh dấu đọc tất cả:", error);
+  }
+}
+
+async function handleNotificationClick(tb) {
+  try {
+    if (!tb.daDoc) {
+      const res = await docThongBao(tb.id);
+      if (res) {
+        tb.daDoc = true;
+        if (chuaDocCount.value > 0) chuaDocCount.value--;
+      }
+    }
+  } catch (error) {
+    console.error("Lỗi khi đọc thông báo:", error);
+  }
+  dropdownThongBaoMo.value = false;
+  if (tb.link) {
+    router.push(tb.link);
+  }
+}
+
+async function deleteNotification(id, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  try {
+    const item = dsThongBao.value.find(tb => tb.id === id);
+    const wasUnread = item && !item.daDoc;
+
+    await xoaThongBao(id);
+    dsThongBao.value = dsThongBao.value.filter(tb => tb.id !== id);
+
+    if (wasUnread && chuaDocCount.value > 0) {
+      chuaDocCount.value--;
+    }
+  } catch (error) {
+    console.error("Lỗi khi xóa thông báo:", error);
+  }
+}
+
+function getIconComponent(loai) {
+  switch (loai) {
+    case "ORDER": return Gift;
+    case "REVIEW": return Star;
+    case "CHAT": return MessageSquare;
+    case "STOCK": return AlertTriangle;
+    case "SHIFT": return Calendar;
+    case "REFUND": return RefreshCw;
+    case "CANCEL": return XCircle;
+    default: return Bell;
+  }
+}
+
+function getIconBgClass(loai) {
+  switch (loai) {
+    case "ORDER": return "bg-emerald-50 dark:bg-emerald-500/10";
+    case "REVIEW": return "bg-amber-50 dark:bg-amber-500/10";
+    case "CHAT": return "bg-blue-50 dark:bg-blue-500/10";
+    case "STOCK": return "bg-rose-50 dark:bg-rose-500/10";
+    case "SHIFT": return "bg-indigo-50 dark:bg-indigo-500/10";
+    case "REFUND":
+    case "CANCEL": return "bg-rose-50 dark:bg-rose-500/10";
+    default: return "bg-slate-50 dark:bg-slate-700/50";
+  }
+}
+
+function getIconColorClass(loai) {
+  switch (loai) {
+    case "ORDER": return "text-emerald-600 dark:text-emerald-400";
+    case "REVIEW": return "text-amber-600 dark:text-amber-400";
+    case "CHAT": return "text-blue-600 dark:text-blue-400";
+    case "STOCK": return "text-rose-600 dark:text-rose-400";
+    case "SHIFT": return "text-indigo-600 dark:text-indigo-400";
+    case "REFUND":
+    case "CANCEL": return "text-rose-600 dark:text-rose-400";
+    default: return "text-slate-500 dark:text-slate-400";
+  }
+}
+
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return "";
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "Vừa xong";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} giờ trước`;
+  const diffDays = Math.floor(diffHr / 24);
+  return `${diffDays} ngày trước`;
+}
+
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch (e) {
+    console.error("Lỗi phát âm thanh thông báo", e);
+  }
+}
+
 onMounted(() => {
   loadActiveShift();
+  taiThongBao();
+
+  // Subscribe to real-time notification topic
+  subscribeTopic("/topic/admin/notifications", (msg) => {
+    if (msg.type === "NEW_NOTIFICATION") {
+      dsThongBao.value.unshift(msg.payload);
+      if (dsThongBao.value.length > 20) {
+        dsThongBao.value.pop();
+      }
+      chuaDocCount.value++;
+      playNotificationSound();
+    } else if (msg.type === "ALL_READ") {
+      dsThongBao.value.forEach(tb => tb.daDoc = true);
+      chuaDocCount.value = 0;
+    }
+  });
 });
 
 const pageTitle = computed(() => {
@@ -339,6 +507,89 @@ function dangXuat() {
           <Sun v-if="!isDark" class="h-5 w-5" />
           <Moon v-else class="h-5 w-5" />
         </button>
+
+        <!-- Notifications Dropdown -->
+        <div class="relative">
+          <button
+            type="button"
+            @click="toggleDropdownThongBao"
+            class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+          >
+            <Bell class="h-5 w-5" />
+            <span
+              v-if="chuaDocCount > 0"
+              class="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#B82220] px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-800 animate-pulse"
+            >
+              {{ chuaDocCount > 99 ? '99+' : chuaDocCount }}
+            </span>
+          </button>
+
+          <div
+            v-if="dropdownThongBaoMo"
+            class="absolute right-0 top-[calc(100%+10px)] z-50 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.16)] dark:border-slate-700 dark:bg-slate-800"
+          >
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 px-3 py-2">
+              <span class="text-sm font-bold text-slate-800 dark:text-slate-100">Thông báo</span>
+              <button
+                v-if="chuaDocCount > 0"
+                @click="markAllAsRead"
+                class="text-xs font-semibold text-[#B82220] hover:underline dark:text-rose-400"
+              >
+                Đọc tất cả
+              </button>
+            </div>
+
+            <div class="max-h-80 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-700/50 py-1">
+              <div v-if="loadingThongBao" class="flex items-center justify-center py-6 text-xs text-slate-400">
+                Đang tải...
+              </div>
+              <div v-else-if="dsThongBao.length === 0" class="flex flex-col items-center justify-center py-8 text-center">
+                <BellOff class="h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
+                <span class="text-xs text-slate-400 dark:text-slate-500">Chưa có thông báo nào</span>
+              </div>
+              <template v-else>
+                <div
+                  v-for="tb in dsThongBao"
+                  :key="tb.id"
+                  @click="handleNotificationClick(tb)"
+                  class="flex gap-3 items-start p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition rounded-xl relative group"
+                  :class="!tb.daDoc ? 'bg-slate-50/50 dark:bg-slate-700/20' : ''"
+                >
+                  <div
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+                    :class="getIconBgClass(tb.loai)"
+                  >
+                    <component :is="getIconComponent(tb.loai)" class="h-4.5 w-4.5" :class="getIconColorClass(tb.loai)" />
+                  </div>
+                  <div class="space-y-1 flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-1">
+                      <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                        {{ tb.tieuDe }}
+                      </p>
+                      <span v-if="!tb.daDoc" class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#B82220] mt-1.5"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {{ tb.noiDung }}
+                    </p>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500">
+                      {{ formatTimeAgo(tb.ngayTao) }}
+                    </p>
+                  </div>
+
+                  <!-- Delete button (visible on hover) -->
+                  <button
+                    type="button"
+                    @click.stop="deleteNotification(tb.id, $event)"
+                    class="absolute top-2 right-2 p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition duration-200"
+                    title="Xóa thông báo"
+                  >
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
 
         <div class="hidden h-8 w-px bg-slate-200 dark:bg-slate-700 sm:block"></div>
 

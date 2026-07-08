@@ -10,6 +10,7 @@ import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuT
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HinhAnhTraHang;
@@ -86,6 +87,7 @@ public class ClientXemDonHangService {
     private final ThanhToanRepository thanhToanRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
+    private final ThongBaoService thongBaoService;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
@@ -100,7 +102,8 @@ public class ClientXemDonHangService {
             PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             ThanhToanRepository thanhToanRepository,
             GiayChiTietRepository giayChiTietRepository,
-            HinhAnhGiayRepository hinhAnhGiayRepository
+            HinhAnhGiayRepository hinhAnhGiayRepository,
+            ThongBaoService thongBaoService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -115,6 +118,7 @@ public class ClientXemDonHangService {
         this.thanhToanRepository = thanhToanRepository;
         this.giayChiTietRepository = giayChiTietRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
+        this.thongBaoService = thongBaoService;
     }
 
     @Transactional(readOnly = true)
@@ -466,6 +470,18 @@ public class ClientXemDonHangService {
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
         hoaDonRealtimePublisher.publishAfterCommit(hd, "HUY");
+
+        // Trigger cancel order notification
+        try {
+            String title = canHoanTien ? "Yêu cầu hoàn tiền đơn hủy" : "Đơn hàng online đã hủy";
+            String text = canHoanTien 
+                    ? "Khách hàng \"" + hd.getTenNguoiNhan() + "\" đã hủy đơn hàng #" + hd.getMa() + " (đã thanh toán). Cần hoàn tiền!"
+                    : "Khách hàng \"" + hd.getTenNguoiNhan() + "\" đã hủy đơn hàng #" + hd.getMa() + ".";
+            String type = canHoanTien ? "REFUND" : "CANCEL";
+            thongBaoService.taoThongBao(title, text, type, "/admin/hoa-don/" + hd.getId());
+        } catch (Exception e) {
+            System.err.println("[ClientXemDonHangService] Lỗi tạo thông báo hủy đơn: " + e.getMessage());
+        }
     }
 
     @Transactional
