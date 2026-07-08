@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,11 +33,18 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     private final GiaoCaRepository giaoCaRepository;
     private final NhanVienRepository nhanVienRepository;
     private final ChamCongRepository chamCongRepository;
+    private final ThongBaoService thongBaoService;
 
-    public GiaoCaServiceImpl(GiaoCaRepository giaoCaRepository, NhanVienRepository nhanVienRepository, ChamCongRepository chamCongRepository) {
+    public GiaoCaServiceImpl(
+            GiaoCaRepository giaoCaRepository,
+            NhanVienRepository nhanVienRepository,
+            ChamCongRepository chamCongRepository,
+            ThongBaoService thongBaoService
+    ) {
         this.giaoCaRepository = giaoCaRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.chamCongRepository = chamCongRepository;
+        this.thongBaoService = thongBaoService;
     }
 
     @Override
@@ -128,7 +136,22 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         gc.setTrangThai("CHO_BAN_GIAO");
         gc.setGhiChu(request.ghiChu());
 
-        return mapToResponse(giaoCaRepository.save(gc));
+        GiaoCa saved = giaoCaRepository.save(gc);
+
+        // Trigger shift handover notification
+        try {
+            String tenNV = saved.getNhanVienTrongCa() != null ? saved.getNhanVienTrongCa().getHoTen() : "Nhân viên";
+            thongBaoService.taoThongBao(
+                    "Yêu cầu bàn giao ca chờ duyệt",
+                    "Nhân viên \"" + tenNV + "\" đã gửi yêu cầu bàn giao ca (Mã ca: " + saved.getMa() + ").",
+                    "SHIFT",
+                    "/admin/ban-giao-ca"
+            );
+        } catch (Exception e) {
+            System.err.println("[GiaoCa] Lỗi gửi thông báo bàn giao ca: " + e.getMessage());
+        }
+
+        return mapToResponse(saved);
     }
 
     @Override
