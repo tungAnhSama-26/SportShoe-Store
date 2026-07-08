@@ -1,5 +1,6 @@
 package com.example.server.core.admin.quanlydanhgia.service;
 
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.DanhGia;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.DanhGiaRepository;
@@ -27,12 +28,15 @@ public class DanhGiaAiService {
     // (tránh vòng phụ thuộc + chỉ khởi tạo AI khi thật sự gọi).
     private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
     private final DanhGiaRepository danhGiaRepository;
+    private final ThongBaoService thongBaoService;
 
     public DanhGiaAiService(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
-            DanhGiaRepository danhGiaRepository) {
+            DanhGiaRepository danhGiaRepository,
+            ThongBaoService thongBaoService) {
         this.chatClientBuilderProvider = chatClientBuilderProvider;
         this.danhGiaRepository = danhGiaRepository;
+        this.thongBaoService = thongBaoService;
     }
 
     /** ChatClient dựng mới mỗi lần gọi (builder được lấy lười lúc dùng, không lúc khởi động). */
@@ -89,6 +93,7 @@ public class DanhGiaAiService {
             String kq = traLoi == null ? "" : traLoi.trim();
             System.out.println("[AI DANH GIA] Kiểm duyệt #" + danhGiaId + " -> " + kq);
             if (!kq.toUpperCase(java.util.Locale.ROOT).startsWith("AN")) {
+                guiThongBaoDanhGiaMoi(danhGiaId);
                 return; // OK -> giữ nguyên
             }
             String lyDo = kq.contains("|") ? kq.substring(kq.indexOf('|') + 1).trim() : "Nội dung không phù hợp";
@@ -101,6 +106,26 @@ public class DanhGiaAiService {
         } catch (Exception e) {
             // AI lỗi/hết hạn mức -> bỏ qua, đánh giá vẫn hiển thị bình thường.
             System.err.println("[AI DANH GIA] Lỗi kiểm duyệt #" + danhGiaId + ": " + e.getMessage());
+            guiThongBaoDanhGiaMoi(danhGiaId);
+        }
+    }
+
+    private void guiThongBaoDanhGiaMoi(Integer danhGiaId) {
+        try {
+            danhGiaRepository.findById(danhGiaId).ifPresent(dg -> {
+                String noiDung = dg.getNoiDung() != null ? dg.getNoiDung() : "(Chỉ chấm sao)";
+                if (noiDung.length() > 80) {
+                    noiDung = noiDung.substring(0, 77) + "...";
+                }
+                thongBaoService.taoThongBao(
+                        "Đánh giá sản phẩm mới",
+                        "Khách " + dg.getKhachHang().getHoTen() + " đánh giá " + dg.getSoSao() + " sao: " + noiDung,
+                        "REVIEW",
+                        "/admin/danh-gia"
+                );
+            });
+        } catch (Exception ex) {
+            System.err.println("[AI DANH GIA] Lỗi gửi thông báo đánh giá: " + ex.getMessage());
         }
     }
 
