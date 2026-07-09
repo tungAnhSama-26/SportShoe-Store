@@ -128,14 +128,12 @@ export function useChiTietDotGiamGia() {
     });
   });
 
-  // Tính toán giá sau giảm cho các biến thể hiển thị trong bảng
+  // Tinh gia sau giam theo gia ban cua bien the.
   const bienTheHienThi = computed(() => {
     const mucGiam = Number(form.giaTriGiam) || 0;
     return tatCaBienThe.value.map(bt => ({
       ...bt,
-      giaSauGiam: bt.giaGoc
-        ? bt.giaGoc * (1 - mucGiam / 100)
-        : bt.giaBan * (1 - mucGiam / 100)
+      giaSauGiam: Number(bt.giaBan || 0) * (1 - mucGiam / 100)
     }));
   });
 
@@ -189,6 +187,9 @@ export function useChiTietDotGiamGia() {
       variant?.chiTietId ??
       variant?.id ??
       null;
+
+    const giaBan = Number(variant?.giaBan ?? variant?.gia ?? 0);
+
     return {
       ...variant,
       linkId:
@@ -205,8 +206,7 @@ export function useChiTietDotGiamGia() {
         variant?.sku ||
         variant?.ma ||
         "",
-      giaBan: Number(variant?.giaBan ?? variant?.gia ?? 0),
-      giaGoc: Number(variant?.giaGoc ?? variant?.giaBan ?? variant?.gia ?? 0),
+      giaBan,
       mauSac: variant?.mauSac || variant?.tenMauSac || "",
       kichCo: variant?.kichCo || variant?.tenKichCo || "",
       thuongHieu: variant?.thuongHieu || product?.thuongHieu || "",
@@ -239,13 +239,6 @@ export function useChiTietDotGiamGia() {
       tenSanPham: incoming?.tenSanPham || existing?.tenSanPham || "",
       maBienThe: incoming?.maBienThe || existing?.maBienThe || "",
       giaBan: Number(incoming?.giaBan ?? existing?.giaBan ?? 0),
-      giaGoc: Number(
-        incoming?.giaGoc ??
-        existing?.giaGoc ??
-        incoming?.giaBan ??
-        existing?.giaBan ??
-        0,
-      ),
       mauSac: incoming?.mauSac || existing?.mauSac || "",
       kichCo: incoming?.kichCo || existing?.kichCo || "",
       thuongHieu: incoming?.thuongHieu || existing?.thuongHieu || "",
@@ -357,9 +350,9 @@ export function useChiTietDotGiamGia() {
     return [...extraProducts, ...items];
   }
 
-  function tinhGiaGiam(giaGoc) {
+  function tinhGiaGiam(giaBan) {
     const giam = Number(form.giaTriGiam) || 0;
-    return giaGoc * (1 - giam / 100);
+    return Number(giaBan || 0) * (1 - giam / 100);
   }
 
   function taoMaNgauNhien() {

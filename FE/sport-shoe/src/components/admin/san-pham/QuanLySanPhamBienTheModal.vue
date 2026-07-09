@@ -104,6 +104,31 @@ function formatPercentValue(value) {
   return normalizedValue % 1 === 0 ? `${normalizedValue.toFixed(0)}%` : `${normalizedValue.toFixed(1)}%`
 }
 
+function giaSauDotGiam(item) {
+  const giaBan = Number(item?.giaBan || 0)
+  const giaTriGiam = Number(item?.giaTriGiam || 0)
+  const loaiGiam = Number(item?.loaiGiam || 0)
+
+  if (!item?.dotGiamGiaId || giaBan <= 0 || giaTriGiam <= 0) return giaBan
+  if (loaiGiam === 1) return Math.max(0, giaBan * (1 - Math.min(giaTriGiam, 100) / 100))
+  if (loaiGiam === 2) return Math.max(0, giaBan - giaTriGiam)
+  return giaBan
+}
+
+function giaHienThi(item) {
+  return giaSauDotGiam(item)
+}
+
+function giaGachNgang(item) {
+  if (item?.dotGiamGiaId && giaSauDotGiam(item) < Number(item?.giaBan || 0)) {
+    return Number(item?.giaBan || 0)
+  }
+  if (Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)) {
+    return Number(item?.giaGoc || 0)
+  }
+  return null
+}
+
 function formatDiscountPercent(item) {
   const loaiGiam = Number(item?.loaiGiam || 0)
   const giaTriGiam = Number(item?.giaTriGiam || 0)
@@ -115,8 +140,8 @@ function formatDiscountPercent(item) {
       return formatPercentValue(giaTriGiam)
     }
 
-    if (loaiGiam === 2 && giaGoc > 0) {
-      return formatPercentValue((giaTriGiam / giaGoc) * 100)
+    if (loaiGiam === 2 && giaBan > 0) {
+      return formatPercentValue((giaTriGiam / giaBan) * 100)
     }
   }
 
@@ -277,7 +302,10 @@ function formatDiscountPercent(item) {
                     <td class="px-4 py-4 align-top">
                       <div class="font-semibold text-slate-700">{{ formatCount(item.soLuong) }} sản phẩm</div>
                       <div class="mt-1 text-xs text-slate-400">Giá gốc: {{ formatCurrency(item.giaGoc) }}đ</div>
-                      <div class="text-xs text-slate-400">Giá bán: {{ formatCurrency(item.giaBan) }}đ</div>
+                      <div class="text-xs text-slate-400">
+                        Giá bán: <span class="font-semibold text-rose-600">{{ formatCurrency(giaHienThi(item)) }}đ</span>
+                        <span v-if="giaGachNgang(item)" class="ml-1 line-through">{{ formatCurrency(giaGachNgang(item)) }}đ</span>
+                      </div>
                     </td>
                     <td class="px-4 py-4 align-top">
                       <span
