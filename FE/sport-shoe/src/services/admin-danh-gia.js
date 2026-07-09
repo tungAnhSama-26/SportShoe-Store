@@ -34,11 +34,12 @@ export async function khoiPhucDanhGia(id) {
   });
 }
 
-// AI tổng hợp đánh giá: giayId null -> toàn shop.
-export async function tongHopDanhGiaAI(giayId) {
-  return apiRequest(`/admin/danh-gia/ai/tong-hop${buildQuery({ giayId })}`, {
+// AI phân tích đánh giá: giayId null -> toàn shop.
+// loai: 'tot' | 'khong-tot' | 'tong-the'; thoiGian: 'hom-nay' | 'tuan-nay' | 'thang-nay' | 'nam-nay'.
+export async function phanTichDanhGiaAI({ giayId, loai, thoiGian } = {}) {
+  return apiRequest(`/admin/danh-gia/ai/phan-tich${buildQuery({ giayId, loai, thoiGian })}`, {
     authScope: "admin",
-    fallbackMessage: "AI không tổng hợp được, thử lại sau",
+    fallbackMessage: "AI không phân tích được, thử lại sau",
   });
 }
 
