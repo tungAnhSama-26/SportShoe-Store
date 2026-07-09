@@ -145,6 +145,31 @@ function formatCurrency(value) {
   return Number(value || 0).toLocaleString('vi-VN')
 }
 
+function giaSauDotGiam(item) {
+  const giaBan = Number(item?.giaBan || 0)
+  const giaTriGiam = Number(item?.giaTriGiam || 0)
+  const loaiGiam = Number(item?.loaiGiam || 0)
+
+  if (!item?.dotGiamGiaId || giaBan <= 0 || giaTriGiam <= 0) return giaBan
+  if (loaiGiam === 1) return Math.max(0, giaBan * (1 - Math.min(giaTriGiam, 100) / 100))
+  if (loaiGiam === 2) return Math.max(0, giaBan - giaTriGiam)
+  return giaBan
+}
+
+function giaHienThi(item) {
+  return giaSauDotGiam(item)
+}
+
+function giaGachNgang(item) {
+  if (item?.dotGiamGiaId && giaSauDotGiam(item) < Number(item?.giaBan || 0)) {
+    return Number(item?.giaBan || 0)
+  }
+  if (Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)) {
+    return Number(item?.giaGoc || 0)
+  }
+  return null
+}
+
 function clearBienTheErrors() {
   Object.keys(bienTheErrors).forEach((key) => delete bienTheErrors[key])
 }
@@ -160,7 +185,7 @@ function parseStock(value) {
 }
 
 function isDiscounted(item) {
-  return Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)
+  return giaGachNgang(item) != null
 }
 
 function formatPercentValue(value) {
@@ -182,8 +207,8 @@ function formatDiscountPercent(item) {
       return formatPercentValue(giaTriGiam)
     }
 
-    if (loaiGiam === 2 && giaGoc > 0) {
-      return formatPercentValue((giaTriGiam / giaGoc) * 100)
+    if (loaiGiam === 2 && giaBan > 0) {
+      return formatPercentValue((giaTriGiam / giaBan) * 100)
     }
   }
   if (giaGoc <= 0 || giaBan >= giaGoc) return '—'
@@ -466,7 +491,7 @@ function openVariantQr(item) {
       { label: 'Màu sắc', value: item.mauSac || '—' },
       { label: 'Kích cỡ', value: item.kichCo || '—' },
       { label: 'Số lượng', value: Number(item.soLuong || 0).toLocaleString('vi-VN') },
-      { label: 'Giá bán', value: `${formatCurrency(item.giaBan)} đ` },
+      { label: 'Giá bán', value: `${formatCurrency(giaHienThi(item))} đ` },
       { label: 'Trạng thái', value: bienTheTrangThaiLabel(item) },
       { label: 'SKU', value: item.sku || '—' }
     ],
@@ -635,7 +660,7 @@ async function xuatExcel() {
         { label: 'Màu sắc', key: 'mauSac' },
         { label: 'Kích cỡ', key: 'kichCo' },
         { label: 'Số lượng', value: (row) => row.soLuong || 0 },
-        { label: 'Giá bán', value: (row) => formatCurrency(row.giaBan) },
+        { label: 'Giá bán', value: (row) => formatCurrency(giaHienThi(row)) },
         { label: 'Trạng thái', value: (row) => bienTheTrangThaiLabel(row) }
       ],
       rows: response.items || []

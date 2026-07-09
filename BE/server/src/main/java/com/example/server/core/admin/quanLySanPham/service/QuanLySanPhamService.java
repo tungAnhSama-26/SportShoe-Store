@@ -384,7 +384,7 @@ public class QuanLySanPhamService {
                 gct.getKichCo().getGiaTri(),
                 gct.getSoLuong(),
                 gct.getGiaGoc(),
-                activeDiscount != null ? activeDiscount.giaSauGiam() : gct.getGiaBan(),
+                gct.getGiaBan(),
                 gct.getKichHoat(),
                 imageMap.get(gct.getId()),
                 gct.getNgayTao(),
@@ -903,7 +903,7 @@ public class QuanLySanPhamService {
         return new BienTheResponse(
                 gct.getId(), gct.getMaBienThe(), gct.getSku(),
                 gct.getSoLuong(), gct.getGiaGoc(),
-                activeDiscount != null ? activeDiscount.giaSauGiam() : gct.getGiaBan(),
+                gct.getGiaBan(),
                 gct.getKichHoat(),
                 gct.getMauSac().getId(), gct.getMauSac().getTen(), gct.getMauSac().getMaMauHex(),
                 gct.getKichCo().getId(), gct.getKichCo().getGiaTri(),
