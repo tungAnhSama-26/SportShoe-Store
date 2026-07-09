@@ -23,6 +23,7 @@ import {
   Feather,
   History,
   Footprints,
+  CircleDollarSign,
   Home,
   LayoutDashboard,
   Layers,
