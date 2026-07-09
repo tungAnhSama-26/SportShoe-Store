@@ -102,6 +102,8 @@ async function taiDanhSachCa() {
         return tA.localeCompare(tB);
       });
       DS_CA.value = mapped;
+    } else {
+      DS_CA.value = [];
     }
   } catch (e) {
     console.error("Không thể tải danh sách ca làm việc", e);
