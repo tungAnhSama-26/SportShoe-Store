@@ -747,7 +747,7 @@ const filteredSelectedVariants = computed(() => {
                 <th class="px-4 py-3 text-center">Mã biến thể</th>
                 <th class="px-4 py-3 text-center">Màu sắc</th>
                 <th class="px-4 py-3 text-center">Kích cỡ</th>
-                <th class="px-4 py-3 text-center">Giá gốc</th>
+                <th class="px-4 py-3 text-center">Giá bán</th>
                 <th class="px-4 py-3 text-center">Giá sau giảm</th>
                 <th class="px-4 py-3 text-center">Số lượng</th>
                 <th class="px-4 py-3 text-center rounded-r-xl">
@@ -796,10 +796,10 @@ const filteredSelectedVariants = computed(() => {
                   {{ bt.kichCo || "—" }}
                 </td>
                 <td class="px-4 py-3 text-center font-semibold text-slate-500">
-                  {{ formatCurrency(bt.giaGoc) }}
+                  {{ formatCurrency(bt.giaBan) }}
                 </td>
                 <td class="px-4 py-3 text-center font-bold text-rose-600">
-                  {{ formatCurrency(tinhGiaGiam(bt.giaGoc)) }}
+                  {{ formatCurrency(tinhGiaGiam(bt.giaBan)) }}
                 </td>
                 <td class="px-4 py-3 text-center font-medium text-slate-600">
                   {{ bt.soLuong || 0 }}
