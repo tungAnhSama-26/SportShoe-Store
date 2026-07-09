@@ -69,10 +69,17 @@ public class AdminDanhGiaController {
         return ResponseEntity.ok(ApiResponse.success("OK", service.demChuaXem()));
     }
 
-    /** AI tổng hợp đánh giá: giayId != null -> 1 sản phẩm; bỏ trống -> toàn shop. */
-    @GetMapping("/ai/tong-hop")
-    public ResponseEntity<ApiResponse<String>> tongHopAi(@RequestParam(required = false) Integer giayId) {
-        return ResponseEntity.ok(ApiResponse.success("Tổng hợp thành công", service.tongHopAi(giayId)));
+    /**
+     * AI phân tích đánh giá: giayId != null -> 1 sản phẩm; bỏ trống -> toàn shop.
+     * loai = tot | khong-tot | tong-the; thoiGian = hom-nay | tuan-nay | thang-nay | nam-nay.
+     */
+    @GetMapping("/ai/phan-tich")
+    public ResponseEntity<ApiResponse<String>> phanTichAi(
+            @RequestParam(required = false) Integer giayId,
+            @RequestParam(defaultValue = "tong-the") String loai,
+            @RequestParam(defaultValue = "hom-nay") String thoiGian) {
+        return ResponseEntity.ok(ApiResponse.success("Phân tích thành công",
+                service.phanTichAi(giayId, loai, thoiGian)));
     }
 
     /** Xóa mềm một đánh giá. */

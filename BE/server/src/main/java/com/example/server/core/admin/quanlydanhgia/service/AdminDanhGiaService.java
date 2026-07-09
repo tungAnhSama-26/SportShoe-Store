@@ -142,12 +142,52 @@ public class AdminDanhGiaService {
         return toResponse(danhGiaRepository.save(dg));
     }
 
-    /** AI tổng hợp đánh giá của 1 sản phẩm (giayId != null) hoặc toàn shop (giayId = null). */
+    /**
+     * AI phân tích đánh giá của 1 sản phẩm (giayId != null) hoặc toàn shop (giayId = null).
+     *
+     * @param loai     "tot" (4-5 sao) | "khong-tot" (1-3 sao) | "tong-the" (tất cả).
+     * @param thoiGian "hom-nay" | "tuan-nay" | "thang-nay" | "nam-nay" (mặc định hôm nay).
+     */
     @Transactional(readOnly = true)
-    public String tongHopAi(Integer giayId) {
+    public String phanTichAi(Integer giayId, String loai, String thoiGian) {
+        Instant tu = tinhMocThoiGian(thoiGian);
+        Instant den = Instant.now().plusSeconds(60);
+        // Chỉ phân tích đánh giá đang hiển thị (trangThai=1) trong khoảng thời gian đã chọn.
+        List<DanhGia> ds = danhGiaRepository.locChoAdmin(giayId == null ? -1 : giayId, 1, tu, den);
+
+        String loaiChuan = loai == null || loai.isBlank() ? "tong-the" : loai;
+        if ("tot".equals(loaiChuan)) {
+            ds = ds.stream().filter(dg -> dg.getSoSao() != null && dg.getSoSao() >= 4).toList();
+        } else if ("khong-tot".equals(loaiChuan)) {
+            ds = ds.stream().filter(dg -> dg.getSoSao() != null && dg.getSoSao() <= 3).toList();
+        }
+
         String tenSanPham = giayId == null ? null
-                : giayRepository.findById(giayId).map(g -> g.getTen()).orElse(null);
-        return danhGiaAiService.tongHop(giayId, tenSanPham);
+                : giayRepository.findById(giayId).map(g -> g.getTen()).orElse("#" + giayId);
+        String boiCanh = (giayId == null ? "toàn bộ cửa hàng" : "sản phẩm \"" + tenSanPham + "\"")
+                + ", " + nhanThoiGian(thoiGian);
+        return danhGiaAiService.phanTich(ds, loaiChuan, boiCanh);
+    }
+
+    /** Mốc bắt đầu của khoảng thời gian phân tích (theo giờ VN). */
+    private Instant tinhMocThoiGian(String thoiGian) {
+        LocalDate homNay = LocalDate.now(ZONE_VN);
+        LocalDate moc = switch (thoiGian == null ? "hom-nay" : thoiGian) {
+            case "tuan-nay" -> homNay.with(java.time.DayOfWeek.MONDAY);
+            case "thang-nay" -> homNay.withDayOfMonth(1);
+            case "nam-nay" -> homNay.withDayOfYear(1);
+            default -> homNay; // hom-nay
+        };
+        return moc.atStartOfDay(ZONE_VN).toInstant();
+    }
+
+    private String nhanThoiGian(String thoiGian) {
+        return switch (thoiGian == null ? "hom-nay" : thoiGian) {
+            case "tuan-nay" -> "trong tuần này";
+            case "thang-nay" -> "trong tháng này";
+            case "nam-nay" -> "trong năm nay";
+            default -> "trong hôm nay";
+        };
     }
 
     private AdminDanhGiaResponse toResponse(DanhGia dg) {
