@@ -217,6 +217,7 @@ const pageTitle = computed(() => {
     'admin-khach-hang-them': 'Thêm khách hàng',
     'admin-khach-hang-chi-tiet': 'Chi tiết khách hàng',
     'admin-ban-giao-ca': 'Bàn giao ca',
+    'admin-thu-chi': 'Quản lý thu / chi',
     'admin-mo-ca': 'Mở ca làm việc'
   };
   return titles[route.name] || 'Hệ thống Quản trị';
