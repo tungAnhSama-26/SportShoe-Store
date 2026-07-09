@@ -70,8 +70,33 @@ function formatCurrency(value) {
   return Number(value || 0).toLocaleString('vi-VN')
 }
 
+function giaSauDotGiam(item) {
+  const giaBan = Number(item?.giaBan || 0)
+  const giaTriGiam = Number(item?.giaTriGiam || 0)
+  const loaiGiam = Number(item?.loaiGiam || 0)
+
+  if (!item?.dotGiamGiaId || giaBan <= 0 || giaTriGiam <= 0) return giaBan
+  if (loaiGiam === 1) return Math.max(0, giaBan * (1 - Math.min(giaTriGiam, 100) / 100))
+  if (loaiGiam === 2) return Math.max(0, giaBan - giaTriGiam)
+  return giaBan
+}
+
+function giaHienThi(item) {
+  return giaSauDotGiam(item)
+}
+
+function giaGachNgang(item) {
+  if (item?.dotGiamGiaId && giaSauDotGiam(item) < Number(item?.giaBan || 0)) {
+    return Number(item?.giaBan || 0)
+  }
+  if (Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)) {
+    return Number(item?.giaGoc || 0)
+  }
+  return null
+}
+
 function isDiscounted(item) {
-  return Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)
+  return giaGachNgang(item) != null
 }
 
 function formatPercentValue(value) {
@@ -92,8 +117,8 @@ function formatDiscountPercent(item) {
       return formatPercentValue(giaTriGiam)
     }
 
-    if (loaiGiam === 2 && giaGoc > 0) {
-      return formatPercentValue((giaTriGiam / giaGoc) * 100)
+    if (loaiGiam === 2 && giaBan > 0) {
+      return formatPercentValue((giaTriGiam / giaBan) * 100)
     }
   }
 
@@ -290,10 +315,10 @@ defineExpose({
             <td class="px-2 py-4 align-middle">
               <div class="flex min-h-[56px] flex-col justify-center leading-6">
                 <p class="font-semibold" :class="isDiscounted(item) ? 'text-rose-600' : 'text-slate-800'">
-                  {{ formatCurrency(item.giaBan) }} đ
+                  {{ formatCurrency(giaHienThi(item)) }} đ
                 </p>
                 <p v-if="isDiscounted(item)" class="mt-1 text-xs text-slate-400 line-through">
-                  {{ formatCurrency(item.giaGoc) }} đ
+                  {{ formatCurrency(giaGachNgang(item)) }} đ
                 </p>
               </div>
             </td>
