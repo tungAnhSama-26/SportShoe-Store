@@ -129,20 +129,18 @@ public class DanhGiaAiService {
         }
     }
 
-    // ─── 2. Tổng hợp đánh giá ───────────────────────────────────────────────
+    // ─── 2. Phân tích đánh giá ──────────────────────────────────────────────
 
     /**
-     * Tổng hợp đánh giá bằng AI: nhận xét tổng thể + điểm khách khen/chê + lời khuyên cải thiện.
+     * Phân tích đánh giá bằng AI theo 3 kiểu.
      *
-     * @param giayId       null = tổng hợp toàn shop; khác null = tổng hợp 1 sản phẩm.
-     * @param tenSanPham   tên sản phẩm (chỉ để đưa vào prompt khi tổng hợp 1 sản phẩm).
+     * @param ds      danh sách đánh giá ĐÃ được lọc sẵn (theo loại + khoảng thời gian).
+     * @param loai    "tot" (đánh giá tốt) | "khong-tot" (đánh giá không tốt) | "tong-the".
+     * @param boiCanh mô tả phạm vi cho AI, vd: sản phẩm "X", trong hôm nay.
      */
-    public String tongHop(Integer giayId, String tenSanPham) {
-        List<DanhGia> ds = giayId == null
-                ? danhGiaRepository.findTatCaCongKhai()
-                : danhGiaRepository.findByGiayId(giayId);
+    public String phanTich(List<DanhGia> ds, String loai, String boiCanh) {
         if (ds.isEmpty()) {
-            throw new BusinessException("Chưa có đánh giá nào để tổng hợp");
+            throw new BusinessException("Không có đánh giá nào trong phạm vi này để phân tích");
         }
 
         StringBuilder duLieu = new StringBuilder();
@@ -155,26 +153,38 @@ public class DanhGiaAiService {
         });
         double diemTb = ds.stream().mapToInt(DanhGia::getSoSao).average().orElse(0);
 
-        String doiTuong = giayId == null
-                ? "toàn bộ cửa hàng giày thể thao"
-                : "sản phẩm \"" + (tenSanPham == null ? ("#" + giayId) : tenSanPham) + "\"";
+        String yeuCau = switch (loai == null ? "tong-the" : loai) {
+            case "tot" -> """
+                    Đây là các đánh giá TỐT (4-5 sao). Trả lời đúng cấu trúc:
+                    ĐIỂM KHÁCH HÀI LÒNG: 2-4 gạch đầu dòng khách khen gì nhất.
+                    THẾ MẠNH NÊN PHÁT HUY: 2-3 gạch đầu dòng thế mạnh shop nên giữ vững.
+                    GỢI Ý TẬN DỤNG: 2-3 gạch đầu dòng cách tận dụng điểm mạnh (marketing, nhân rộng...).
+                    """;
+            case "khong-tot" -> """
+                    Đây là các đánh giá KHÔNG TỐT (1-3 sao). Trả lời đúng cấu trúc:
+                    VẤN ĐỀ KHÁCH GẶP PHẢI: 2-4 gạch đầu dòng vấn đề khách phàn nàn nhiều nhất.
+                    NGUYÊN NHÂN CÓ THỂ: 1-3 gạch đầu dòng suy đoán hợp lý từ dữ liệu.
+                    GIẢI PHÁP KHẮC PHỤC: 2-4 gạch đầu dòng hành động cụ thể shop nên làm ngay.
+                    """;
+            default -> """
+                    Phân tích TỔNG THỂ. Trả lời đúng cấu trúc:
+                    NHẬN XÉT TỔNG THỂ: 2-3 câu về cảm nhận chung của khách.
+                    ĐIỂM KHÁCH KHEN: 2-4 gạch đầu dòng.
+                    ĐIỂM KHÁCH CHÊ: 2-4 gạch đầu dòng (không có thì ghi "Chưa ghi nhận").
+                    KHUYẾN NGHỊ CẢI THIỆN: 2-4 gạch đầu dòng hành động cụ thể shop nên làm.
+                    """;
+        };
         try {
             return chatClient().build().prompt()
-                    .system("""
-                            Bạn là trợ lý phân tích đánh giá khách hàng cho cửa hàng giày thể thao online.
-                            Trả lời bằng tiếng Việt, ngắn gọn, đúng cấu trúc sau (dùng đúng các tiêu đề này):
-                            NHẬN XÉT TỔNG THỂ: 2-3 câu về cảm nhận chung của khách.
-                            ĐIỂM KHÁCH KHEN: liệt kê 2-4 gạch đầu dòng.
-                            ĐIỂM KHÁCH CHÊ: liệt kê 2-4 gạch đầu dòng (nếu không có thì ghi "Chưa ghi nhận").
-                            KHUYẾN NGHỊ CẢI THIỆN: 2-4 gạch đầu dòng hành động cụ thể shop nên làm.
-                            Chỉ dựa trên dữ liệu được cung cấp, không bịa thêm.
-                            """)
-                    .user("Tổng hợp " + ds.size() + " đánh giá (điểm trung bình "
-                            + Math.round(diemTb * 10.0) / 10.0 + "/5) của " + doiTuong + ":\n" + duLieu)
+                    .system("Bạn là trợ lý phân tích đánh giá khách hàng cho cửa hàng giày thể thao online. "
+                            + "Trả lời bằng tiếng Việt, ngắn gọn, chỉ dựa trên dữ liệu được cung cấp, không bịa thêm.\n"
+                            + yeuCau)
+                    .user("Phân tích " + ds.size() + " đánh giá (điểm trung bình "
+                            + Math.round(diemTb * 10.0) / 10.0 + "/5) của " + boiCanh + ":\n" + duLieu)
                     .call()
                     .content();
         } catch (Exception e) {
-            System.err.println("[AI DANH GIA] Lỗi tổng hợp: " + e.getMessage());
+            System.err.println("[AI DANH GIA] Lỗi phân tích: " + e.getMessage());
             throw new BusinessException("AI đang bận hoặc chưa cấu hình API key, vui lòng thử lại sau");
         }
     }

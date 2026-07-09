@@ -8,7 +8,7 @@ import {
   xoaDanhGia,
   phanHoiDanhGia,
   khoiPhucDanhGia,
-  tongHopDanhGiaAI,
+  phanTichDanhGiaAI,
 } from '../../../services/admin-danh-gia';
 import DanhGiaMedia from '../../../components/DanhGiaMedia.vue';
 import { resolveMediaUrl, parseMedia } from '../../../utils/media';
@@ -39,9 +39,52 @@ const locTrangThai = ref(1);
 const locTuNgay = ref('');
 const locDenNgay = ref('');
 
-// AI tổng hợp đánh giá.
-const dangTongHop = ref(false);
-const aiKetQua = ref('');
+// ===== Modal AI phân tích đánh giá =====
+const hienPhanTich = ref(false);
+const ptThoiGian = ref('hom-nay'); // mặc định: hôm nay
+const ptDangChay = ref('');        // loại phân tích đang chạy ('' = không chạy)
+const ptKetQua = ref('');
+const ptLoaiDaChay = ref('');
+
+const CAC_MOC_THOI_GIAN = [
+  { gt: 'hom-nay', nhan: 'Hôm nay' },
+  { gt: 'tuan-nay', nhan: 'Tuần này' },
+  { gt: 'thang-nay', nhan: 'Tháng này' },
+  { gt: 'nam-nay', nhan: 'Năm nay' },
+];
+const CAC_LOAI_PHAN_TICH = [
+  { gt: 'tot', nhan: 'Phân tích đánh giá tốt', mo_ta: '4-5 sao', mau: 'bg-emerald-600 hover:bg-emerald-700' },
+  { gt: 'khong-tot', nhan: 'Phân tích đánh giá không tốt', mo_ta: '1-3 sao', mau: 'bg-rose-600 hover:bg-rose-700' },
+  { gt: 'tong-the', nhan: 'Phân tích tổng thể', mo_ta: 'tất cả', mau: 'bg-violet-600 hover:bg-violet-700' },
+];
+
+function nhanLoaiPhanTich(gt) {
+  return CAC_LOAI_PHAN_TICH.find((l) => l.gt === gt)?.nhan || '';
+}
+
+function moPhanTich() {
+  hienPhanTich.value = true;
+  ptKetQua.value = '';
+  ptLoaiDaChay.value = '';
+}
+
+async function chayPhanTich(loai) {
+  if (ptDangChay.value) return;
+  ptDangChay.value = loai;
+  ptKetQua.value = '';
+  try {
+    ptKetQua.value = await phanTichDanhGiaAI({
+      giayId: cheDo.value === 'tat-ca' ? undefined : spDangChon.value?.giayId,
+      loai,
+      thoiGian: ptThoiGian.value,
+    });
+    ptLoaiDaChay.value = loai;
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, 'AI không phân tích được, thử lại sau'));
+  } finally {
+    ptDangChay.value = '';
+  }
+}
 
 let timer = null;
 
@@ -70,19 +113,6 @@ async function khoiPhuc(dg) {
     showError(getDisplayErrorMessage(e, 'Không thể khôi phục đánh giá'));
   } finally {
     dangKhoiPhuc.value = null;
-  }
-}
-
-async function tongHopAI() {
-  if (dangTongHop.value) return;
-  dangTongHop.value = true;
-  aiKetQua.value = '';
-  try {
-    aiKetQua.value = await tongHopDanhGiaAI(cheDo.value === 'tat-ca' ? null : spDangChon.value?.giayId);
-  } catch (e) {
-    showError(getDisplayErrorMessage(e, 'AI không tổng hợp được, thử lại sau'));
-  } finally {
-    dangTongHop.value = false;
   }
 }
 
@@ -148,7 +178,7 @@ function quayLai() {
   spDangChon.value = null;
   dsDanhGia.value = [];
   saoLoc.value = null;
-  aiKetQua.value = '';
+  hienPhanTich.value = false;
   taiSanPham();
 }
 
@@ -171,7 +201,7 @@ function doiCheDo() {
   spDangChon.value = null;
   saoLoc.value = null;
   dsDanhGia.value = [];
-  aiKetQua.value = '';
+  hienPhanTich.value = false;
   if (cheDo.value === 'tat-ca') taiTatCa();
   else taiSanPham();
 }
@@ -411,25 +441,79 @@ function xuLyAnhLoi(e) {
           </select>
         </div>
         <button
-          @click="tongHopAI"
-          :disabled="dangTongHop"
-          class="ml-auto inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700 disabled:opacity-60"
+          @click="moPhanTich"
+          class="ml-auto inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
         >
           <Sparkles class="h-4 w-4" />
-          {{ dangTongHop ? 'AI đang phân tích...' : (cheDo === 'tat-ca' ? 'AI tổng hợp cả shop' : 'AI tổng hợp sản phẩm') }}
+          Phân tích
         </button>
       </div>
 
-      <!-- Kết quả AI tổng hợp -->
-      <div v-if="aiKetQua" class="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-5 dark:bg-violet-500/10 dark:border-violet-500/30">
-        <div class="mb-2 flex items-center justify-between">
-          <span class="inline-flex items-center gap-2 text-sm font-bold text-violet-700 dark:text-violet-300">
-            <Sparkles class="h-4 w-4" /> Nhận xét của AI
-          </span>
-          <button @click="aiKetQua = ''" class="text-xs font-medium text-slate-400 hover:text-slate-600">Đóng</button>
+      <!-- Modal AI phân tích đánh giá -->
+      <Teleport to="body">
+        <div v-if="hienPhanTich" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 p-4" @click.self="hienPhanTich = false">
+          <div class="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl dark:bg-slate-800">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-700">
+              <div class="inline-flex items-center gap-2">
+                <Sparkles class="h-5 w-5 text-violet-600" />
+                <h3 class="font-bold text-slate-800 dark:text-white">
+                  Phân tích đánh giá {{ cheDo === 'tat-ca' ? 'toàn shop' : `— ${spDangChon?.ten || ''}` }}
+                </h3>
+              </div>
+              <button @click="hienPhanTich = false" class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700">✕</button>
+            </div>
+
+            <div class="overflow-y-auto px-6 py-5">
+              <!-- Chọn khoảng thời gian -->
+              <p class="mb-2 text-xs font-semibold uppercase text-slate-400">Khoảng thời gian</p>
+              <div class="mb-5 flex flex-wrap gap-2">
+                <button
+                  v-for="m in CAC_MOC_THOI_GIAN"
+                  :key="m.gt"
+                  type="button"
+                  @click="ptThoiGian = m.gt"
+                  class="rounded-full border px-4 py-1.5 text-sm font-medium transition"
+                  :class="ptThoiGian === m.gt
+                    ? 'border-violet-600 bg-violet-600 text-white'
+                    : 'border-slate-200 text-slate-500 hover:border-violet-400 hover:text-violet-600 dark:border-slate-600'"
+                >
+                  {{ m.nhan }}
+                </button>
+              </div>
+
+              <!-- Chọn loại phân tích -->
+              <p class="mb-2 text-xs font-semibold uppercase text-slate-400">Loại phân tích</p>
+              <div class="grid gap-2 sm:grid-cols-3">
+                <button
+                  v-for="l in CAC_LOAI_PHAN_TICH"
+                  :key="l.gt"
+                  type="button"
+                  @click="chayPhanTich(l.gt)"
+                  :disabled="!!ptDangChay"
+                  class="rounded-xl px-4 py-3 text-sm font-bold text-white transition disabled:opacity-60"
+                  :class="l.mau"
+                >
+                  {{ ptDangChay === l.gt ? 'AI đang phân tích...' : l.nhan }}
+                  <span class="mt-0.5 block text-[11px] font-medium opacity-80">({{ l.mo_ta }})</span>
+                </button>
+              </div>
+
+              <!-- Kết quả -->
+              <div v-if="ptDangChay" class="mt-5 flex items-center gap-2 rounded-2xl bg-violet-50 px-4 py-4 text-sm text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-violet-500"></span>
+                AI đang đọc và phân tích các đánh giá, chờ chút nhé...
+              </div>
+              <div v-else-if="ptKetQua" class="mt-5 rounded-2xl border border-violet-200 bg-violet-50/60 p-5 dark:bg-violet-500/10 dark:border-violet-500/30">
+                <p class="mb-2 text-sm font-bold text-violet-700 dark:text-violet-300">
+                  {{ nhanLoaiPhanTich(ptLoaiDaChay) }} · {{ CAC_MOC_THOI_GIAN.find(m => m.gt === ptThoiGian)?.nhan }}
+                </p>
+                <p class="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ ptKetQua }}</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <p class="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ aiKetQua }}</p>
-      </div>
+      </Teleport>
 
       <!-- Danh sách đánh giá -->
       <div v-if="dangTaiDG" class="py-16 text-center text-sm text-slate-400">Đang tải đánh giá...</div>
