@@ -36,7 +36,7 @@ public class AuthService {
     private final PasswordService passwordService;
 
     private static final int MAX_LOGIN_FAILED_ATTEMPTS = 5;
-    private static final Duration LOGIN_ATTEMPT_TTL = Duration.ofMinutes(15);
+    private static final Duration LOGIN_ATTEMPT_TTL = Duration.ofMinutes(5);
     private static final Duration TEMP_PASSWORD_CHANGE_DEADLINE = Duration.ofMinutes(5);
     private static final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
 
@@ -61,7 +61,7 @@ public class AuthService {
         assertLoginAllowed(attemptKey);
 
         Optional<KhachHang> khOptional = khachHangRepository.findAll().stream()
-                .filter(kh -> kh.getTenDangNhap().equals(username))
+                .filter(kh -> username.equals(kh.getTenDangNhap()))
                 .findFirst();
 
         if (khOptional.isEmpty()) {
@@ -75,9 +75,9 @@ public class AuthService {
             throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
         }
 
-        if (kh.getTrangThai() != 1) {
+        if (kh.getTrangThai() == null || kh.getTrangThai() != 1) {
             recordFailedLogin(attemptKey);
-            throw new BusinessException("Tài khoản đã bị khóa");
+            throw new BusinessException("Tài khoản đã bị khóa hoặc không hoạt động");
         }
 
         clearFailedLogin(attemptKey);
@@ -166,7 +166,7 @@ public class AuthService {
                 tenGioiTinh(kh.getGioiTinh()),
                 kh.getHinhAnh(),
                 kh.getTrangThai(),
-                kh.getTrangThai() == 1 ? "Đang hoạt động" : "Ngừng hoạt động",
+                (kh.getTrangThai() != null && kh.getTrangThai() == 1) ? "Đang hoạt động" : "Ngừng hoạt động",
                 kh.getNgayTao(),
                 diaChiMacDinh,
                 sdtMacDinh,
@@ -273,7 +273,7 @@ public class AuthService {
     private ResponseStatusException tooManyLoginAttempts() {
         return new ResponseStatusException(
                 HttpStatus.TOO_MANY_REQUESTS,
-                "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng chờ 15 phút rồi thử lại."
+                "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng chờ " + LOGIN_ATTEMPT_TTL.toMinutes() + " phút rồi thử lại."
         );
     }
 
