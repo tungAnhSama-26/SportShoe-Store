@@ -222,7 +222,7 @@ async function GuiTinNhan(textToSend) {
     messages.value.push({
       id: Date.now(),
       nguoiGui: "AI",
-      noiDung: "Không thể kết nối đến máy chủ AI. Bạn vui lòng thử lại sau.",
+      noiDung: error?.message || "Không thể kết nối đến máy chủ AI. Bạn vui lòng thử lại sau.",
       ngayTao: new Date().toISOString()
     });
   } finally {

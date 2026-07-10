@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.example.server.infrastructure.security.ratelimit.RateLimit;
 
 @RestController
 @RequestMapping("/api/v1/client/chatbot")
@@ -21,6 +22,7 @@ public class ClientChatbotController {
     }
 
     @PostMapping("/chat")
+    @RateLimit(limit = 6, durationInSeconds = 10)
     public ResponseEntity<ApiResponse<ClientChatResponse>> chat(@RequestBody ClientChatRequest request) {
         ClientChatResponse response = chatbotService.handleClientMessage(request);
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
