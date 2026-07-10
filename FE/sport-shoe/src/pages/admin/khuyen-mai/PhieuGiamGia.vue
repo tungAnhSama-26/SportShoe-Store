@@ -74,7 +74,7 @@ const {
 </script>
 
 <template>
-  <div class="space-y-5 radius-6px">
+  <div class="w-full min-w-0 space-y-5 radius-6px">
 
 
     <!-- Header removed -->
