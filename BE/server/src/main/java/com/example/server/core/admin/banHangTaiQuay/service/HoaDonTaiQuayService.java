@@ -352,6 +352,7 @@ public class HoaDonTaiQuayService {
                                     item.getSoLuong(),
                                     item.getGiayChiTiet().getSoLuong(),
                                     item.getGiaDonVi(),
+                                    item.getGiayChiTiet().getGiaGoc(),
                                     item.getThanhTien()
                             );
                         })

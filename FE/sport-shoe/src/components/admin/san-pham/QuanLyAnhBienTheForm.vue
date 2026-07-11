@@ -1,5 +1,6 @@
 <script setup>
 import { Upload } from 'lucide-vue-next'
+import { resolveHinhAnh } from '../../../utils/resolve-image'
 
 const props = defineProps({
   form: {
@@ -36,7 +37,7 @@ function handleUploadFile(event) {
     <div class="flex flex-col gap-3 sm:flex-row">
       <div class="flex-shrink-0 w-32 space-y-2">
         <div v-if="form.url" class="overflow-hidden rounded-md border border-slate-200 bg-white aspect-square">
-          <img :src="form.url" alt="" class="h-full w-full object-cover" />
+          <img :src="resolveHinhAnh(form.url)" alt="" class="h-full w-full object-cover" />
         </div>
         <label class="flex cursor-pointer items-center justify-center gap-1 rounded-md border border-dashed border-rose-200 bg-white px-2 py-2 text-xs font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-100/50 text-center">
           <Upload :size="12" />

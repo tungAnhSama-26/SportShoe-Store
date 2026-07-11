@@ -9,6 +9,7 @@ import { showWarning, showSuccess, showError } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import DanhGiaMedia from '../components/DanhGiaMedia.vue';
 import anhMacDinh from '../assets/login-shoe.png';
+import { resolveHinhAnh } from '../utils/resolve-image';
 
 const route = useRoute();
 const router = useRouter();
@@ -101,13 +102,13 @@ const anhTheoMau = computed(() => {
 });
 
 // Ưu tiên: biến thể đã chọn -> màu đang chọn -> biến thể rẻ nhất -> ảnh gốc -> ảnh mặc định.
-const anhHienThi = computed(
-  () =>
+const anhHienThi = computed(() =>
+  resolveHinhAnh(
     bienTheChon.value?.hinhAnh ||
     anhTheoMau.value ||
     bienTheReNhat.value?.hinhAnh ||
-    sanPham.value?.hinhAnh ||
-    anhMacDinh
+    sanPham.value?.hinhAnh
+  ) || anhMacDinh
 );
 
 const giaHienThi = computed(() => {

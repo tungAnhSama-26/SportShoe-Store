@@ -37,7 +37,6 @@ function handleInput(field, value) {
       <div
         v-if="show && definition"
         class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-4"
-        @click.self="$emit('close')"
       >
         <div class="w-full max-w-xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
           <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">

@@ -1,5 +1,6 @@
 <script setup>
 import { Pencil, Star, Trash2 } from 'lucide-vue-next'
+import { resolveHinhAnh } from '../../../utils/resolve-image'
 
 const props = defineProps({
   displayedImages: {
@@ -27,7 +28,7 @@ const emit = defineEmits(['edit', 'set-main', 'delete'])
       class="group overflow-hidden rounded-md border border-slate-200 bg-slate-50"
     >
       <div class="relative aspect-square">
-        <img :src="item.url" :alt="item.moTa || ''" class="h-full w-full object-cover" />
+        <img :src="resolveHinhAnh(item.url)" :alt="item.moTa || ''" class="h-full w-full object-cover" />
         <div
           v-if="item.laHinhChinh"
           class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-rose-200 px-2.5 py-1 text-[11px] font-semibold text-rose-800"

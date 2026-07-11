@@ -754,7 +754,6 @@ onBeforeUnmount(() => {
     <div
       v-if="hienModalLichSu"
       class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-      @click.self="hienModalLichSu = false"
     >
       <div class="w-full max-w-2xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
@@ -808,7 +807,6 @@ onBeforeUnmount(() => {
     <div
       v-if="modal"
       class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm overflow-y-auto"
-      @click.self="modal = ''"
     >
       <div class="flex flex-col md:flex-row gap-6 max-w-[1000px] w-full max-h-[92vh] items-center md:items-stretch justify-center">
         <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[6px] border border-rose-100 bg-white shadow-2xl">

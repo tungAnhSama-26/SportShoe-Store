@@ -1,5 +1,6 @@
 <script setup>
 import anhMacDinh from "../../assets/login-shoe.png";
+import { resolveHinhAnh } from "../../utils/resolve-image";
 
 // Prop "danhMuc" giờ chứa danh sách HÃNG (thương hiệu) nổi bật.
 defineProps({
@@ -38,7 +39,7 @@ function xuLyAnhLoi(event) {
         >
           <div class="relative h-72 overflow-hidden">
             <img
-              :src="muc.hinhAnh"
+              :src="resolveHinhAnh(muc.hinhAnh)"
               :alt="muc.ten"
               class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               @error="xuLyAnhLoi"

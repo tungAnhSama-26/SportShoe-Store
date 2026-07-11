@@ -1,4 +1,5 @@
 <script setup>
+import { resolveHinhAnh } from "../../../utils/resolve-image";
 defineProps({
   selectedProductDetail: {
     type: Object,
@@ -84,7 +85,6 @@ function formatDiscountPercent(product) {
       <div
         v-if="selectedProductDetail"
         class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-        @click.self="emit('close')"
       >
         <div class="modal-content relative w-full max-w-6xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
           <!-- Close Button -->
@@ -176,7 +176,7 @@ function formatDiscountPercent(product) {
                       @click="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 && emit('select-variant', variant)"
                     >
                       <td class="px-4 py-3">
-                        <img v-if="variant.hinhAnh" :src="variant.hinhAnh" class="w-10 h-10 rounded-md object-cover border border-slate-200" />
+                        <img v-if="variant.hinhAnh" :src="resolveHinhAnh(variant.hinhAnh)" class="w-10 h-10 rounded-md object-cover border border-slate-200" />
                         <div v-else class="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400">
                           {{ (variant.mauSac || "?").slice(0, 2) }}
                         </div>
@@ -194,9 +194,6 @@ function formatDiscountPercent(product) {
                         <div v-if="isDiscounted(variant)" class="flex flex-col gap-1 items-center justify-center">
                           <span class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
                             {{ formatDiscountPercent(variant) }}
-                          </span>
-                          <span v-if="variant.tenDotGiamGia" class="inline-flex rounded bg-amber-100 dark:bg-amber-900/30 px-2 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 max-w-[120px] truncate" :title="variant.tenDotGiamGia">
-                            {{ variant.tenDotGiamGia }}
                           </span>
                         </div>
                         <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>

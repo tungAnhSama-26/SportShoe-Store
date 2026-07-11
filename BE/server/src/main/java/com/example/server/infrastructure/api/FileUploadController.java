@@ -66,10 +66,7 @@ public class FileUploadController {
 
             file.transferTo(destinationFile);
 
-            String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/uploads/")
-                    .path(newFilename)
-                    .toUriString();
+            String fileDownloadUri = "/uploads/" + newFilename;
 
             return ResponseEntity.ok(ApiResponse.success("File uploaded successfully", Map.of("url", fileDownloadUri)));
         } catch (Exception e) {

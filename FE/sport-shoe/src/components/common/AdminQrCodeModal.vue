@@ -151,7 +151,6 @@ function downloadImage() {
       <div
         v-if="open"
         class="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/55 p-4"
-        @click.self="closeModal"
       >
         <div
           class="w-full max-w-4xl overflow-hidden rounded-[30px] border border-white/70 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.24)]"
