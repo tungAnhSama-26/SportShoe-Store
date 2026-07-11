@@ -45,7 +45,7 @@ function handleFilterChange() {
               type="text"
               placeholder="Tìm theo mã SP / tên sản phẩm..."
               class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              @keyup.enter="handleKeywordEnter"
+              
             />
           </div>
         </label>

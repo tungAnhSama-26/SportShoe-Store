@@ -351,9 +351,25 @@ async function resetFilters() {
   loadData(0)
 }
 
+async function handleFilterChange() {
+  if (selectedGiayId.value || sanPhamDuocChon.value) {
+    sanPhamDuocChon.value = null
+    suppressGiayIdWatch = true
+    await router.replace({ name: 'admin-bien-the-san-pham' })
+    suppressGiayIdWatch = false
+  }
+  loadData(0)
+}
+
 function scheduleKeywordSearch() {
   if (keywordSearchTimer) clearTimeout(keywordSearchTimer)
-  keywordSearchTimer = setTimeout(() => {
+  keywordSearchTimer = setTimeout(async () => {
+    if (selectedGiayId.value || sanPhamDuocChon.value) {
+      sanPhamDuocChon.value = null
+      suppressGiayIdWatch = true
+      await router.replace({ name: 'admin-bien-the-san-pham' })
+      suppressGiayIdWatch = false
+    }
     loadData(0)
     keywordSearchTimer = null
   }, 300)
@@ -744,7 +760,7 @@ onUnmounted(() => {
       @export-excel="xuatExcel"
       @download-qr="triggerDownloadQr"
       @go-to-form="goToForm"
-      @load-data="loadData"
+      @load-data="handleFilterChange"
       @open-scanner="hienThiModalQuetMa = true"
     />
 
