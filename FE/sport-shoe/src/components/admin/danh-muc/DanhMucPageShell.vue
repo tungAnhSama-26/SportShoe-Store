@@ -56,8 +56,13 @@ defineProps({
 
 const emit = defineEmits(["add", "change-page-size", "export", "go-page", "search", "update:keyword"]);
 
+let timeout = null;
 function onKeywordInput(event) {
   emit("update:keyword", event.target.value);
+  if (timeout) clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    emit("search");
+  }, 300);
 }
 </script>
 

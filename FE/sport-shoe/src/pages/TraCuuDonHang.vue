@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { traCuuDonHangTheoMa } from '../services/don-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -122,6 +122,15 @@ async function traCuu(maInput) {
     dangTai.value = false;
   }
 }
+
+let traCuuTimer = null;
+watch(maTimKiem, (newVal) => {
+  if (traCuuTimer) clearTimeout(traCuuTimer);
+  if (!newVal.trim()) return;
+  traCuuTimer = setTimeout(() => {
+    traCuu(newVal);
+  }, 500);
+});
 
 onMounted(() => {
   const ma = route.query.ma;

@@ -357,7 +357,6 @@ const filteredSelectedVariants = computed(() => {
               <input
                 v-model="searchSP"
                 :disabled="isReadOnly"
-                @keyup.enter="taiDanhSachSP"
                 type="text"
                 placeholder="Tìm theo tên hoặc mã sản phẩm..."
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 disabled:opacity-70 disabled:bg-slate-100"
