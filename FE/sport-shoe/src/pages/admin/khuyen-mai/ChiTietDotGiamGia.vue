@@ -1,5 +1,6 @@
 <script setup>
 import { Plus, Minus } from "lucide-vue-next";
+import { resolveHinhAnh } from "../../../utils/resolve-image";
 import { useChiTietDotGiamGia } from "./useChiTietDotGiamGia";
 const {
   computed,
@@ -572,7 +573,7 @@ const filteredSelectedVariants = computed(() => {
                                     >
                                       <img
                                         v-if="bt.hinhAnh || sp.hinhAnh"
-                                        :src="bt.hinhAnh || sp.hinhAnh"
+                                        :src="resolveHinhAnh(bt.hinhAnh || sp.hinhAnh)"
                                         class="h-full w-full object-cover"
                                       />
                                     </div>
@@ -772,7 +773,7 @@ const filteredSelectedVariants = computed(() => {
                   >
                     <img
                       v-if="bt.hinhAnh"
-                      :src="bt.hinhAnh"
+                      :src="resolveHinhAnh(bt.hinhAnh)"
                       class="h-full w-full object-cover"
                     />
                     <Tag v-else class="h-4 w-4 text-slate-300" />

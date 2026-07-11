@@ -1,6 +1,7 @@
 <script setup>
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
 import anhMacDinh from "../../assets/login-shoe.png";
+import { resolveHinhAnh } from "../../utils/resolve-image";
 
 defineProps({
   sanPham: {
@@ -46,7 +47,7 @@ function xuLyAnhLoi(event) {
           class="group block overflow-hidden rounded-2xl border border-primary/15 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
         >
           <div class="relative h-60 overflow-hidden bg-slate-50">
-            <img :src="muc.hinhAnh" :alt="muc.ten" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
+            <img :src="resolveHinhAnh(muc.hinhAnh)" :alt="muc.ten" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
             <span
               v-if="muc.nhan"
               class="absolute left-3 top-3 rounded-md bg-red-600 px-2.5 py-1 text-xs font-extrabold text-white shadow-md"

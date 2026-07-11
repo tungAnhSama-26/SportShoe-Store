@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { Eye, Images, Layers3, Pencil, Tag, RefreshCw } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
+import { resolveHinhAnh } from '../../../utils/resolve-image'
 
 const props = defineProps({
   items: {
@@ -282,12 +283,12 @@ defineExpose({
             </td>
             <td class="px-2.5 py-4 align-middle">
               <div class="relative mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-md bg-slate-100">
-                <img v-if="item.hinhAnh" :src="item.hinhAnh" alt="" class="h-full w-full object-cover" />
+                <img v-if="item.hinhAnh" :src="resolveHinhAnh(item.hinhAnh)" alt="" class="h-full w-full object-cover" />
                 <Images class="h-4 w-4 text-slate-300" v-else />
-                <!-- Badge giảm giá khi có đợt giảm giá đang áp dụng -->
+                <!-- Badge giảm giá -->
                 <div
-                  v-if="item.dotGiamGiaId && formatDiscountPercent(item) !== '—'"
-                  class="absolute left-0 top-0 origin-top-left scale-[0.65] rounded-br-md rounded-tl-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                  v-if="isDiscounted(item) && formatDiscountPercent(item) !== '—'"
+                  class="absolute left-0 top-0 origin-top-left scale-[0.45] rounded-br-lg rounded-tl-md bg-rose-500 px-1.5 py-1 text-[10px] font-bold leading-none text-white shadow-sm"
                   :title="item.tenDotGiamGia || item.maDotGiamGia || 'Đang giảm giá'"
                 >
                   -{{ formatDiscountPercent(item) }}

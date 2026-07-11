@@ -21,7 +21,6 @@ const emit = defineEmits(['close', 'updated', 'error'])
     <div
       v-if="open && variant"
       class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
-      @click.self="emit('close')"
     >
       <div class="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-md bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">

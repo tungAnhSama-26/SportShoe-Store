@@ -13,6 +13,7 @@ public record HoaDonChoDongSanPhamResponse(
         Integer soLuong,
         Integer soLuongTon,
         BigDecimal giaBan,
+        BigDecimal giaGoc,
         BigDecimal thanhTien
 ) {
 }

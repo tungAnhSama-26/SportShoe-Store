@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from "vue";
 import { QrCode, Search, X, RotateCcw } from "lucide-vue-next";
 import AdminTableFooter from "../../common/AdminTableFooter.vue";
 import { toastSwal } from "../../../utils/alert";
+import { resolveHinhAnh } from "../../../utils/resolve-image";
 
 const props = defineProps({
   activePendingInvoice: {
@@ -285,7 +286,8 @@ watch(() => props.showProductDropdown, (newVal) => {
                 <Search class="h-4 w-4 text-slate-400" />
               </div>
               <input
-                v-model="keyword"
+                :value="keyword"
+                @input="keyword = $event.target.value"
                 type="text"
                 placeholder="Tìm kiếm mã, tên sản phẩm..."
                 class="h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-10 pr-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-red-50 dark:focus:ring-red-900/20 shadow-sm"
@@ -412,9 +414,12 @@ watch(() => props.showProductDropdown, (newVal) => {
                     </td>
                     <td class="px-5 py-4">
                       <div class="relative h-16 w-16 overflow-hidden rounded-md border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm">
-                        <img v-if="product.hinhAnh" :src="product.hinhAnh" alt="" class="h-full w-full object-contain" />
+                        <img v-if="product.hinhAnh" :src="resolveHinhAnh(product.hinhAnh)" alt="" class="h-full w-full object-contain" />
                         <div v-else class="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-slate-800/50 text-base font-bold text-slate-400 dark:text-slate-500">
                           {{ product.tenSanPham ? product.tenSanPham.charAt(0).toUpperCase() : '?' }}
+                        </div>
+                        <div v-if="isDiscounted(product)" class="absolute top-0 left-0 origin-top-left scale-[0.55] rounded-br-lg bg-rose-500 px-1.5 py-1 text-[10px] leading-none font-bold text-white shadow-sm">
+                          {{ formatDiscountPercent(product) }}
                         </div>
                       </div>
                     </td>
@@ -443,9 +448,7 @@ watch(() => props.showProductDropdown, (newVal) => {
                         <span class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
                           {{ formatDiscountPercent(product) }}
                         </span>
-                        <span v-if="product.tenDotGiamGia" class="inline-flex rounded bg-amber-100 dark:bg-amber-900/30 px-2 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 max-w-[120px] truncate" :title="product.tenDotGiamGia">
-                          {{ product.tenDotGiamGia }}
-                        </span>
+
                       </div>
                       <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>
                     </td>

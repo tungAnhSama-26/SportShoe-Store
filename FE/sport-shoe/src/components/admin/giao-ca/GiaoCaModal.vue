@@ -223,7 +223,6 @@ async function submitNhanBanGiao(id) {
     <!-- Overlay -->
     <div 
       class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-      @click="emit('close')"
     ></div>
 
     <!-- Modal Content -->

@@ -1,6 +1,7 @@
 <script setup>
 import { Info, X } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
+import { layTinhGhn, layHuyenGhn, layXaGhn } from "../../services/gio-hang";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -38,14 +39,24 @@ const diaChiDayDu = computed(() => {
   if (form.value.diaChiId !== "new") {
     const selected = props.savedAddresses.find(a => a.id === form.value.diaChiId);
     if (selected) {
-      return [selected.diaChiCuThe, selected.phuongXa, selected.quanHuyen, selected.tinhThanh].filter(Boolean).join(", ");
+      return [
+        selected.diaChiCuThe,
+        selected.phuongXa,
+        selected.quanHuyen,
+        selected.tinhThanh
+      ].filter(Boolean).join(", ");
     }
   }
+  
+  const phuongXaRaw = form.value.phuongXa;
+  const quanHuyenRaw = dsHuyen.value.find((h) => String(h.id) === String(maHuyenChon.value))?.ten || "";
+  const tinhThanhRaw = dsTinh.value.find((t) => String(t.id) === String(maTinhChon.value))?.ten || "";
+
   return [
     form.value.diaChiCuThe,
-    form.value.phuongXa,
-    form.value.quanHuyen,
-    form.value.tinhThanh,
+    phuongXaRaw,
+    quanHuyenRaw,
+    tinhThanhRaw,
   ].filter(Boolean).join(", ");
 });
 
@@ -73,17 +84,29 @@ function tachDiaChiDayDu(value) {
     tinhThanh: parts.at(-1),
   };
 }
+function chuanHoaTen(s) {
+  return String(s || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/\b(tinh|thanh pho|tp|quan|huyen|thi xa|phuong|xa|thi tran)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
 
 function timTheoTen(danhSach, ten) {
-  const normalized = String(ten || "").trim().toLocaleLowerCase("vi");
-  return danhSach.find((item) => String(item.name || "").trim().toLocaleLowerCase("vi") === normalized);
+  const muc = chuanHoaTen(ten);
+  if (!muc) return undefined;
+  return danhSach.find((o) => chuanHoaTen(o.ten) === muc)
+    || danhSach.find((o) => {
+      const t = chuanHoaTen(o.ten);
+      return t && (t.includes(muc) || muc.includes(t));
+    });
 }
 
 async function taiDanhSachTinh() {
   if (dsTinh.value.length) return;
-  const response = await fetch("https://provinces.open-api.vn/api/p/");
-  if (!response.ok) throw new Error("Không thể tải danh sách tỉnh/thành phố");
-  dsTinh.value = await response.json();
+  dsTinh.value = await layTinhGhn();
 }
 
 async function taiHuyenTheoTinh(code) {
@@ -91,10 +114,7 @@ async function taiHuyenTheoTinh(code) {
     dsHuyen.value = [];
     return;
   }
-  const response = await fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`);
-  if (!response.ok) throw new Error("Không thể tải danh sách quận/huyện");
-  const data = await response.json();
-  dsHuyen.value = data.districts || [];
+  dsHuyen.value = await layHuyenGhn(code);
 }
 
 async function taiXaTheoHuyen(code) {
@@ -102,10 +122,7 @@ async function taiXaTheoHuyen(code) {
     dsXa.value = [];
     return;
   }
-  const response = await fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`);
-  if (!response.ok) throw new Error("Không thể tải danh sách phường/xã");
-  const data = await response.json();
-  dsXa.value = data.wards || [];
+  dsXa.value = await layXaGhn(code);
 }
 
 async function dienDuLieuDiaPhuong() {
@@ -113,14 +130,20 @@ async function dienDuLieuDiaPhuong() {
   try {
     await taiDanhSachTinh();
     const tinh = timTheoTen(dsTinh.value, form.value.tinhThanh);
-    maTinhChon.value = tinh?.code ? String(tinh.code) : "";
+    maTinhChon.value = tinh?.id ? String(tinh.id) : "";
     if (!tinh) return;
 
-    await taiHuyenTheoTinh(tinh.code);
+    await taiHuyenTheoTinh(tinh.id);
     const huyen = timTheoTen(dsHuyen.value, form.value.quanHuyen);
-    maHuyenChon.value = huyen?.code ? String(huyen.code) : "";
+    maHuyenChon.value = huyen?.id ? String(huyen.id) : "";
     if (!huyen) return;
-    await taiXaTheoHuyen(huyen.code);
+    await taiXaTheoHuyen(huyen.id);
+    const xa = timTheoTen(dsXa.value, form.value.phuongXa);
+    if (xa) {
+      form.value.phuongXa = xa.ten;
+    } else if (form.value.phuongXa) {
+      form.value.phuongXa = "";
+    }
   } finally {
     dangTaiDiaPhuong.value = false;
   }
@@ -153,9 +176,21 @@ async function khoiTaoForm() {
   
   try {
     await dienDuLieuDiaPhuong();
-  } catch {
-    errors.value.diaPhuong = "Không thể tải dữ liệu địa phương. Bạn có thể thử mở lại form.";
+  } catch (err) {
+    errors.value.diaPhuong = "Lỗi: " + (err.message || "Không xác định") + " (Vui lòng chụp màn hình lỗi này)";
   }
+}
+
+async function luuThongTin() {
+  if (!validate()) return;
+  
+  emit("save", {
+    tenNguoiNhan: form.value.tenNguoiNhan.trim(),
+    sdtNguoiNhan: form.value.sdtNguoiNhan.trim(),
+    email: form.value.email.trim(),
+    diaChiGiaoHang: diaChiDayDu.value,
+    ghiChu: form.value.ghiChu.trim()
+  });
 }
 
 async function chonTinh(event) {
@@ -163,7 +198,7 @@ async function chonTinh(event) {
   maTinhChon.value = code;
   maHuyenChon.value = "";
   dsXa.value = [];
-  form.value.tinhThanh = dsTinh.value.find((item) => String(item.code) === code)?.name || "";
+  form.value.tinhThanh = dsTinh.value.find((item) => String(item.id) === code)?.ten || "";
   form.value.quanHuyen = "";
   form.value.phuongXa = "";
   try {
@@ -176,7 +211,7 @@ async function chonTinh(event) {
 async function chonHuyen(event) {
   const code = event.target.value;
   maHuyenChon.value = code;
-  form.value.quanHuyen = dsHuyen.value.find((item) => String(item.code) === code)?.name || "";
+  form.value.quanHuyen = dsHuyen.value.find((item) => String(item.id) === code)?.ten || "";
   form.value.phuongXa = "";
   try {
     await taiXaTheoHuyen(code);
@@ -241,7 +276,6 @@ watch(
     <div
       v-if="modelValue"
       class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
-      @click.self="dongModal"
     >
       <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-md bg-white shadow-2xl">
         <header class="sticky top-0 z-10 flex items-center justify-between bg-white px-6 py-4">
@@ -308,7 +342,7 @@ watch(
                     value="new" 
                     class="size-4 accent-[#B82220]" 
                   />
-                  <span class="text-[14px] font-semibold text-[#B82220]">+ Giao đến một địa chỉ khác (Nhập mới)</span>
+                  <span class="text-[14px] font-semibold text-[#B82220]">+ Giao đến một địa chỉ khác</span>
                 </label>
               </div>
             </div>
@@ -319,7 +353,7 @@ watch(
                 <span class="text-[13px] text-slate-600">Tỉnh/Thành phố <b class="text-red-500">*</b></span>
                 <select :value="maTinhChon" :disabled="dangTaiDiaPhuong" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" @change="chonTinh">
                   <option value="">-- Chọn tỉnh/thành --</option>
-                  <option v-for="tinh in dsTinh" :key="tinh.code" :value="tinh.code">{{ tinh.name }}</option>
+                  <option v-for="tinh in dsTinh" :key="tinh.id" :value="tinh.id">{{ tinh.ten }}</option>
                 </select>
                 <p v-if="errors.tinhThanh" class="text-xs text-red-500">{{ errors.tinhThanh }}</p>
               </label>
@@ -327,7 +361,7 @@ watch(
                 <span class="text-[13px] text-slate-600">Quận/Huyện <b class="text-red-500">*</b></span>
                 <select :value="maHuyenChon" :disabled="!maTinhChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220] disabled:bg-slate-50 disabled:opacity-70" @change="chonHuyen">
                   <option value="">-- Chọn quận/huyện --</option>
-                  <option v-for="huyen in dsHuyen" :key="huyen.code" :value="huyen.code">{{ huyen.name }}</option>
+                  <option v-for="huyen in dsHuyen" :key="huyen.id" :value="huyen.id">{{ huyen.ten }}</option>
                 </select>
                 <p v-if="errors.quanHuyen" class="text-xs text-red-500">{{ errors.quanHuyen }}</p>
               </label>
@@ -335,7 +369,7 @@ watch(
                 <span class="text-[13px] text-slate-600">Phường/Xã <b class="text-red-500">*</b></span>
                 <select v-model="form.phuongXa" :disabled="!maHuyenChon" class="h-[42px] w-full rounded border border-slate-200 bg-white px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220] disabled:bg-slate-50 disabled:opacity-70">
                   <option value="">-- Chọn phường/xã --</option>
-                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">{{ xa.name }}</option>
+                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.ten">{{ xa.ten }}</option>
                 </select>
                 <p v-if="errors.phuongXa" class="text-xs text-red-500">{{ errors.phuongXa }}</p>
               </label>

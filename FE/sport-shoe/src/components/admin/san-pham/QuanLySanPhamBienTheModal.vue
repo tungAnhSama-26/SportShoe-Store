@@ -156,7 +156,6 @@ function formatDiscountPercent(item) {
     <div
       v-if="open"
       class="fixed inset-0 z-[52] flex items-center justify-center bg-black/55 p-4"
-      @click.self="emit('close')"
     >
       <div class="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
         <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">

@@ -9,6 +9,7 @@ import { layTatCaSanPham } from "../../services/san-pham";
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
 import { API_BASE_URL } from "../../services/api-client";
 import { useAdminSession } from "../../composable/useAdminSession";
+import { resolveHinhAnh } from "../../utils/resolve-image";
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -215,7 +216,7 @@ onUnmounted(() => {
           <div v-if="hienTimKiem" @click="dongTimKiem" class="fixed inset-0 z-40"></div>
           <div v-if="hienTimKiem" class="absolute right-0 z-50 mt-3 w-80 rounded-2xl border border-slate-100 bg-white p-3 shadow-xl">
             <div class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:border-primary">
-              <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <svg @click="timKiem" class="h-4 w-4 text-slate-400 cursor-pointer hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
               <input ref="oTim" v-model="tuKhoa" @keyup.enter="timKiem" type="text" placeholder="Tìm sản phẩm theo tên..." class="h-10 flex-1 bg-transparent text-sm text-slate-800 outline-none" />
             </div>
             <div v-if="tuKhoa.trim()" class="mt-2 max-h-80 overflow-y-auto">
@@ -228,7 +229,7 @@ onUnmounted(() => {
                   @click="chonSanPham(sp.id)"
                   class="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-slate-50"
                 >
-                  <img :src="sp.hinhAnh" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover bg-slate-100" />
+                  <img :src="resolveHinhAnh(sp.hinhAnh)" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover bg-slate-100" />
                   <span class="min-w-0 flex-1">
                     <span class="block truncate text-sm font-medium text-slate-800">{{ sp.ten }}</span>
                     <span class="text-xs font-bold text-primary">{{ dinhDangTienViet(sp.gia) }}</span>
@@ -320,14 +321,14 @@ onUnmounted(() => {
         </template>
       </nav>
       <div class="mb-8 flex items-center gap-6 border-t border-slate-100 px-6 pt-6">
-        <button class="flex items-center gap-2 text-slate-900 transition hover:text-primary" aria-label="Tìm kiếm">
+        <button @click="toggleMenu(); moTimKiem()" class="flex items-center gap-2 text-slate-900 transition hover:text-primary" aria-label="Tìm kiếm">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
           <span class="text-sm font-semibold">Tìm kiếm</span>
         </button>
-        <button class="flex items-center gap-2 text-slate-900 transition hover:text-primary" aria-label="Tài khoản">
+        <button @click="toggleMenu(); toggleTaiKhoan()" class="flex items-center gap-2 text-slate-900 transition hover:text-primary" aria-label="Tài khoản">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21a8 8 0 1 0-16 0" />
             <circle cx="12" cy="7" r="4" />

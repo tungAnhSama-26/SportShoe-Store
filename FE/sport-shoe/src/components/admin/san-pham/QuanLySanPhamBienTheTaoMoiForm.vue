@@ -228,7 +228,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="space-y-4">
-              <div ref="mauSacDropdownRef" class="relative" @click.stop>
+              <div ref="mauSacDropdownRef" class="relative" @click.stop @mousedown.stop>
                 <label class="mb-1 block text-xs font-medium text-gray-700">Màu sắc *</label>
                 <button
                   type="button"
@@ -242,7 +242,7 @@ onBeforeUnmount(() => {
 
                 <div
                   v-if="openSelectionDropdown === 'mauSac'"
-                  class="absolute left-0 top-full z-30 mt-1 w-full min-w-[260px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
+                  class="absolute left-0 top-full z-[200] mt-1 w-full min-w-[260px] rounded-md border border-gray-200 bg-white shadow-lg"
                 >
                   <div class="border-b border-slate-100 p-3">
                     <div class="relative">
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
                 <p v-if="bulkBienTheErrors.mauSacIds" class="mt-1 text-xs text-red-500">{{ bulkBienTheErrors.mauSacIds }}</p>
               </div>
 
-              <div ref="kichCoDropdownRef" class="relative" @click.stop>
+              <div ref="kichCoDropdownRef" class="relative" @click.stop @mousedown.stop>
                 <label class="mb-1 block text-xs font-medium text-gray-700">Kích cỡ *</label>
                 <button
                   type="button"
@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
 
                 <div
                   v-if="openSelectionDropdown === 'kichCo'"
-                  class="absolute left-0 top-full z-30 mt-1 w-full min-w-[260px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
+                  class="absolute left-0 top-full z-[200] mt-1 w-full min-w-[260px] rounded-md border border-gray-200 bg-white shadow-lg"
                 >
                   <div class="border-b border-slate-100 p-3">
                     <div class="relative">

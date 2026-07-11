@@ -41,7 +41,7 @@ function handleFilterChange() {
           <div class="relative w-full">
             <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              v-model="filters.keyword"
+              v-model="filters.tuKhoa"
               type="text"
               placeholder="Tìm theo mã SP / tên sản phẩm..."
               class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"

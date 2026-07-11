@@ -58,7 +58,8 @@ const keyword = computed({
 
       <div class="flex gap-3 items-center">
         <input
-          v-model="keyword"
+          :value="keyword"
+          @input="keyword = $event.target.value"
           type="text"
           placeholder="Nhập tên hoặc số điện thoại khách hàng"
           class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900"

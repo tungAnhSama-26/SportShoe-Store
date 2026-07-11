@@ -105,8 +105,17 @@ export function LogicGiaoHang({
 
     if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       choPhepGiaoHang.value = Boolean(patch.giaoHang);
-      if (choPhepGiaoHang.value && (!diaChiGiaoHang.value || !diaChiGiaoHang.value.trim()) && khachHangDuocChon.value?.diaChiMacDinh) {
-        diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
+      if (choPhepGiaoHang.value) {
+        if ((!diaChiGiaoHang.value || !diaChiGiaoHang.value.trim()) && khachHangDuocChon.value?.diaChiMacDinh) {
+          diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
+        }
+        // Tự điền tên và SDT người nhận từ khách hàng đã chọn nếu đang trống
+        if (!tenNguoiNhanGiaoHang.value.trim() && khachHangDuocChon.value?.hoTen) {
+          tenNguoiNhanGiaoHang.value = khachHangDuocChon.value.hoTen;
+        }
+        if (!sdtNguoiNhanGiaoHang.value.trim() && khachHangDuocChon.value?.sdt) {
+          sdtNguoiNhanGiaoHang.value = khachHangDuocChon.value.sdt;
+        }
       }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "tenNguoiNhan")) {

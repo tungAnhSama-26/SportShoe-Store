@@ -104,7 +104,6 @@ async function taoPhieu() {
   <div
     v-if="hienModal"
     class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
-    @click.self="hienModal = false"
   >
     <div class="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">

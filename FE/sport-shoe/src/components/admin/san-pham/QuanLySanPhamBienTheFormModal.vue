@@ -61,7 +61,7 @@ const isUpdateMode = computed(() => !!props.editingBienThe)
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm transition-opacity">
     <div
-      class="relative w-full max-w-5xl overflow-hidden rounded-[24px] bg-white shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1),0_16px_32px_-8px_rgba(0,0,0,0.05)] transition-all ring-1 ring-slate-200"
+      class="relative w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1),0_16px_32px_-8px_rgba(0,0,0,0.05)] transition-all ring-1 ring-slate-200"
       @click.stop
     >
       <QuanLySanPhamBienTheCapNhatForm

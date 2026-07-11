@@ -391,7 +391,6 @@ onBeforeUnmount(() => {
       <div
         v-if="open"
         class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4"
-        @click.self="dongModal"
       >
         <div
           class="w-full overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)] max-w-3xl"
