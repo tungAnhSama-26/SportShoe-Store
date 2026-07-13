@@ -21,6 +21,7 @@ const {
   moModalSuaDiaChi,
   handleHuyDonTuModal,
   handleLuuThongTin,
+  khongHoanKho,
 } = useInvoiceDetailContext();
 
 const hienModalLyDoHuy = ref(false);
@@ -146,6 +147,20 @@ const xacNhanHuy = async () => {
               placeholder="Nhập lý do giao hàng thất bại..."
               class="w-full rounded-[8px] border border-slate-200 bg-slate-50 p-3 text-[14px] text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white resize-none"
             ></textarea>
+            <div class="mt-3 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="khongHoanKhoCheckbox"
+                v-model="khongHoanKho"
+                class="h-4 w-4 cursor-pointer rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+              />
+              <label
+                for="khongHoanKhoCheckbox"
+                class="cursor-pointer select-none text-[13px] font-medium text-slate-600 hover:text-slate-800 transition"
+              >
+                Hàng bị mất / thất lạc (Không hoàn trả vào kho)
+              </label>
+            </div>
           </div>
         </div>
 
