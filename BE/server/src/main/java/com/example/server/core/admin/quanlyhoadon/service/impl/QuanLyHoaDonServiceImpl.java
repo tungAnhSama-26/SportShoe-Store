@@ -83,6 +83,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private static final int TRANG_THAI_YEU_CAU_HUY = 7;
     private static final int TRANG_THAI_CAN_HOAN_TIEN = 8;
     private static final int TRANG_THAI_GIAO_HANG_THAT_BAI = 10;
+    private static final int TRANG_THAI_HOA_DON_CHO = 11;
     
     private static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
     private static final int TRANG_THAI_VAN_CHUYEN_DANG_GIAO = 2;
@@ -1087,6 +1088,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 case TRANG_THAI_HUY: return "Hủy";
                 case TRANG_THAI_YEU_CAU_HUY: return "Yêu cầu hủy";
                 case TRANG_THAI_CAN_HOAN_TIEN: return "Cần hoàn tiền";
+                case TRANG_THAI_HOA_DON_CHO: return "Hóa đơn chờ";
                 default: return "Chờ xác nhận";
             }
         }
@@ -1153,6 +1155,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             case "Hoàn thành" -> TRANG_THAI_HOAN_THANH;
             case "Hủy", "Cần hoàn tiền" -> TRANG_THAI_HUY;
             case "Yêu cầu hủy" -> TRANG_THAI_YEU_CAU_HUY;
+            case "Hóa đơn chờ" -> TRANG_THAI_HOA_DON_CHO;
             default -> null;
         };
     }

@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/client/don-hang/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/v1/client/tra-hang/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/v1/nhanvien/profile", "/api/v1/nhanvien/profile/**").hasAnyRole("ADMIN", "STAFF")
-                        .requestMatchers("/api/v1/admin/ban-hang-tai-quay", "/api/v1/admin/ban-hang-tai-quay/**").hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers("/api/v1/admin/ban-hang-tai-quay", "/api/v1/admin/ban-hang-tai-quay/**").permitAll()
                         .requestMatchers("/api/v1/admin/hoa-don", "/api/v1/admin/hoa-don/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/tra-hang", "/api/v1/admin/tra-hang/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/admin/khach-hang", "/api/v1/admin/khach-hang/**").hasAnyRole("ADMIN", "STAFF")

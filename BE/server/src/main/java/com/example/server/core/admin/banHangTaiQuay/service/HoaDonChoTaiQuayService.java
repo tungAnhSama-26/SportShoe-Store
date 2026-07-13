@@ -29,7 +29,7 @@ import java.util.Set;
 public class HoaDonChoTaiQuayService {
 
     private static final int KENH_BAN_TAI_QUAY = 1;
-    private static final int TRANG_THAI_HOA_DON_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_HOA_DON_CHO_TAI_QUAY = 11;
     private static final int TRANG_THAI_HOA_DON_HUY = 6;
     private static final String GHI_CHU_TAO_HOA_DON_TAI_QUAY = "Hóa đơn chờ tạo từ màn hình bán hàng tại quầy";
 
@@ -68,7 +68,7 @@ public class HoaDonChoTaiQuayService {
 
     @Transactional
     public HoaDonChoChiTietResponse taoHoaDonCho(TaoHoaDonChoRequest request) {
-        long soLuongHoaDonCho = hoaDonRepository.countByKenhBanAndTrangThai(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_XAC_NHAN);
+        long soLuongHoaDonCho = hoaDonRepository.countByKenhBanAndTrangThai(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_TAI_QUAY);
         if (soLuongHoaDonCho >= 5) {
             throw new BusinessException("Đã đạt giới hạn tối đa 5 hóa đơn chờ");
         }
@@ -81,10 +81,10 @@ public class HoaDonChoTaiQuayService {
                 request.maPhieuGiamGia(),
                 request.thongTinGiaoHang(),
                 request.items(),
-                TRANG_THAI_HOA_DON_CHO_XAC_NHAN,
+                TRANG_THAI_HOA_DON_CHO_TAI_QUAY,
                 GHI_CHU_TAO_HOA_DON_TAI_QUAY
         );
-        invoiceUseCase.luuLichSuHoaDon(savedHoaDon, TRANG_THAI_HOA_DON_CHO_XAC_NHAN, savedHoaDon.getGhiChu());
+        invoiceUseCase.luuLichSuHoaDon(savedHoaDon, TRANG_THAI_HOA_DON_CHO_TAI_QUAY, savedHoaDon.getGhiChu());
         List<HoaDonChiTiet> savedItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(savedHoaDon.getId());
 
         return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, savedItems, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
@@ -248,9 +248,8 @@ public class HoaDonChoTaiQuayService {
     @Scheduled(cron = "0 0 * * * *") // Chạy mỗi giờ 1 lần để dọn dẹp
     @Transactional
     public void cleanupExpiredPendingInvoices() {
-        // Hóa đơn chờ tạo quá 1 ngày (24 giờ) sẽ tự động bị hủy và hoàn lại số lượng
         Instant moc = Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS);
-        List<HoaDon> expiredInvoices = hoaDonRepository.findExpiredPendingInvoices(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_XAC_NHAN, moc);
+        List<HoaDon> expiredInvoices = hoaDonRepository.findExpiredPendingInvoices(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_TAI_QUAY, moc);
         for (HoaDon hd : expiredInvoices) {
             huyHoaDonCho(hd.getId());
         }

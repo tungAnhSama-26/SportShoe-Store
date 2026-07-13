@@ -13,17 +13,18 @@ public class TrangThaiHoaDonTaiQuayService {
     }
 
     public boolean trangThaiHoaDonCho(Integer trangThai) {
-        return trangThai != null && trangThai == TRANG_THAI_HOA_DON_CHO_XAC_NHAN;
+        return trangThai != null && trangThai == TRANG_THAI_HOA_DON_CHO_TAI_QUAY;
     }
 
     public String labelTrangThaiHoaDon(Integer trangThai) {
         return switch (trangThai) {
             case TRANG_THAI_HOA_DON_CHO_XAC_NHAN -> "Chờ xác nhận";
+            case TRANG_THAI_HOA_DON_CHO_TAI_QUAY -> "Hóa đơn chờ";
             case TRANG_THAI_HOA_DON_CHO_GIAO_HANG -> "Chờ lấy hàng";
             case TRANG_THAI_HOA_DON_HOAN_THANH -> "Hoàn thành";
             case TRANG_THAI_HOA_DON_HUY -> "Hủy";
             case TRANG_THAI_HOA_DON_DA_XAC_NHAN -> "Đã xác nhận";
-            default -> "Chờ xác nhận";
+            default -> "Hóa đơn chờ";
         };
     }
 

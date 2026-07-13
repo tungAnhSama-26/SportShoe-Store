@@ -30,6 +30,7 @@ const loiTrang = ref("");
 const trangThaiDangChon = ref("Tất cả");
 const dsTrangThai = [
   "Tất cả",
+  "Hóa đơn chờ",
   "Chờ xác nhận",
   "Đã xác nhận",
   "Chờ lấy hàng",
@@ -45,6 +46,7 @@ const tuNgayPicker = ref(null);
 const denNgayPicker = ref(null);
 
 const mauTrangThai = {
+  "Hóa đơn chờ": "bg-yellow-50 text-yellow-600",
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
   "Đã xác nhận": "bg-orange-50 text-orange-600",
   "Chờ lấy hàng": "bg-blue-50 text-blue-600",

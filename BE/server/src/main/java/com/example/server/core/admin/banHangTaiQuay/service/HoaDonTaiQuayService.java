@@ -96,7 +96,7 @@ public class HoaDonTaiQuayService {
     public List<HoaDonChoTomTatResponse> layDanhSachHoaDonCho() {
         List<HoaDon> hoaDons = hoaDonRepository.findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(
                         KENH_BAN_TAI_QUAY,
-                        TRANG_THAI_HOA_DON_CHO_XAC_NHAN
+                        TRANG_THAI_HOA_DON_CHO_TAI_QUAY
                 )
                 .stream()
                 .toList();

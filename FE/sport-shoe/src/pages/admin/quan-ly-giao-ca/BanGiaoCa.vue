@@ -49,13 +49,13 @@ const isPaidInvoicesCollapsed = ref(true);
 
 const pendingInvoices = computed(() => {
   return shiftTransactions.value.filter(tx => 
-    tx.trangThai === 'Chờ xác nhận' || tx.phuongThucThanhToan === 'Chưa thanh toán'
+    tx.trangThai === 'Chờ xác nhận' || tx.trangThai === 'Hóa đơn chờ' || tx.phuongThucThanhToan === 'Chưa thanh toán'
   );
 });
 
 const paidInvoices = computed(() => {
   return shiftTransactions.value.filter(tx => 
-    tx.trangThai === 'Hoàn thành' || (tx.trangThai !== 'Chờ xác nhận' && tx.phuongThucThanhToan !== 'Chưa thanh toán')
+    tx.trangThai === 'Hoàn thành' || (tx.trangThai !== 'Chờ xác nhận' && tx.trangThai !== 'Hóa đơn chờ' && tx.phuongThucThanhToan !== 'Chưa thanh toán')
   );
 });
 

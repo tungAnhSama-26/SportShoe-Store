@@ -26,6 +26,7 @@ export const CAC_BUOC_DON_HANG = Object.freeze([
 ]);
 
 const VI_TRI_TIEN_TRINH = Object.freeze({
+  11: 1,
   1: 1,
   9: 2,
   2: 3,
