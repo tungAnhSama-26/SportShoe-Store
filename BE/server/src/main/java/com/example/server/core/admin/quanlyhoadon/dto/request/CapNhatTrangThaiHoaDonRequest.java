@@ -7,6 +7,7 @@ public record CapNhatTrangThaiHoaDonRequest(
         String trangThai,
         String ghiChu,
         String donViVanChuyen,
-        String maVanDon
+        String maVanDon,
+        Boolean hoanKho
 ) {
 }
