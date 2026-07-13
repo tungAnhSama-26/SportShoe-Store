@@ -216,11 +216,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     private void checkCaChuaKetThucCuaNhanVienKhac(UUID nhanVienId) {
-        giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(CHUA_KET_THUC_TRANG_THAI)
-                .filter(giaoCa -> !giaoCa.getNhanVienTrongCa().getId().equals(nhanVienId))
-                .ifPresent(giaoCa -> {
-                    throw new BusinessException(KHONG_CO_QUYEN_MO_CA);
-                });
+        // Cho phép nhiều nhân viên cùng mở ca để xử lý bán hàng song song
+        // hoặc không cản trở nhân viên mới khi ca trước quên đóng.
     }
 
     private GiaoCaResponse mapToResponse(GiaoCa gc) {
