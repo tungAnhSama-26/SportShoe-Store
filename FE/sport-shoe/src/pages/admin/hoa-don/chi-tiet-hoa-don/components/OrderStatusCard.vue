@@ -17,6 +17,7 @@ const {
   donYeuCauHuy,
   donDaHuy,
   hienModalLichSu,
+  lyDoHuyDon,
 } = useInvoiceDetailContext();
 </script>
 
@@ -95,8 +96,8 @@ const {
       <CircleX class="h-4 w-4" />
       <span>
         Đơn hàng đã bị hủy
-        <template v-if="hoaDon.ghiChu">
-          do: <span class="font-normal">{{ hoaDon.ghiChu }}</span>
+        <template v-if="lyDoHuyDon">
+          do: <span class="font-normal">{{ lyDoHuyDon }}</span>
         </template>
       </span>
     </div>

@@ -343,7 +343,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 if (vanChuyen.getNgayGui() == null) {
                     vanChuyen.setNgayGui(Instant.now());
                 }
+                if (request.ghiChu() != null && !request.ghiChu().isBlank()) {
+                    vanChuyen.setLyDoGiaoHangThatBai(request.ghiChu().trim());
+                }
                 xuLyThanhToanKhiGiaoThatBai(hoaDon);
+                if (request.hoanKho() == null || request.hoanKho()) {
+                    hoanKhoDonOnlineNeuDaTru(hoaDon);
+                }
             }
             case "Hoàn thành" -> {
                 if (coThanhToanCodDangCho(hoaDon)) {
@@ -367,7 +373,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             case "Hủy" -> {
                 capNhatThanhToanKhiHuyDon(hoaDon);
                 // Đơn online đã trừ kho (đã xác nhận trước đó) -> cộng trả lại tồn.
-                hoanKhoDonOnlineNeuDaTru(hoaDon);
+                if (request.hoanKho() == null || request.hoanKho()) {
+                    hoanKhoDonOnlineNeuDaTru(hoaDon);
+                }
                 hoaDon.setTrangThai(TRANG_THAI_HUY);
             }
             case "Yêu cầu hủy" -> {
@@ -381,7 +389,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             hoaDon.setTrangThaiTruocYeuCauHuy(null);
         }
 
-        if (request.ghiChu() != null && !request.ghiChu().isBlank()) {
+        if (request.ghiChu() != null && !request.ghiChu().isBlank() 
+                && hoaDon.getTrangThai() != null 
+                && hoaDon.getTrangThai() != TRANG_THAI_GIAO_HANG_THAT_BAI
+                && hoaDon.getTrangThai() != TRANG_THAI_HUY) {
             hoaDon.setGhiChu(request.ghiChu().trim());
         }
         hoaDon.setNgayCapNhat(Instant.now());
@@ -789,6 +800,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getGiaTri() : null,
                 vanChuyen != null ? safeValue(vanChuyen.getDonViVanChuyen()) : "",
                 vanChuyen != null ? safeValue(vanChuyen.getMaVanDon()) : "",
+                vanChuyen != null ? vanChuyen.getLyDoGiaoHangThatBai() : null,
                 thanhToans.stream().map(this::mapThanhToan).toList(),
                 hoaDonChiTiets.stream().map(item -> mapSanPham(item, hinhAnhMap)).toList(),
                 lichSuHoaDons.stream()
