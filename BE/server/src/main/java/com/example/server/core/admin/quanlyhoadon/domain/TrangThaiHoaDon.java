@@ -16,7 +16,8 @@ public enum TrangThaiHoaDon {
     YEU_CAU_HUY(7, "Yêu cầu hủy"),
     CAN_HOAN_TIEN_LEGACY(8, "Cần hoàn tiền"),
     DA_XAC_NHAN(9, "Đã xác nhận"),
-    GIAO_HANG_THAT_BAI(10, "Giao hàng thất bại");
+    GIAO_HANG_THAT_BAI(10, "Giao hàng thất bại"),
+    HOA_DON_CHO(11, "Hóa đơn chờ");
 
     private final int ma;
     private final String ten;
@@ -70,6 +71,9 @@ public enum TrangThaiHoaDon {
         if (donTaiQuay && this == CHO_XAC_NHAN && trangThaiMoi == HOAN_THANH) {
             return;
         }
+        if (donTaiQuay && this == HOA_DON_CHO && trangThaiMoi == HOAN_THANH) {
+            return;
+        }
         if (!cacTrangThaiKeTiep().contains(trangThaiMoi)) {
             throw new BusinessException(
                     "Không thể chuyển hóa đơn từ " + ten + " sang " + trangThaiMoi.ten
@@ -86,6 +90,7 @@ public enum TrangThaiHoaDon {
             case DA_GIAO_HANG -> EnumSet.of(HOAN_THANH, GIAO_HANG_THAT_BAI);
             case GIAO_HANG_THAT_BAI -> EnumSet.of(DANG_GIAO_HANG, HUY);
             case YEU_CAU_HUY -> EnumSet.of(HUY, CHO_XAC_NHAN, DA_XAC_NHAN, CHO_LAY_HANG);
+            case HOA_DON_CHO -> EnumSet.of(HOAN_THANH, CHO_XAC_NHAN, DA_XAC_NHAN, CHO_LAY_HANG, HUY);
             case HOAN_THANH, HUY, CAN_HOAN_TIEN_LEGACY -> EnumSet.noneOf(TrangThaiHoaDon.class);
         };
     }

@@ -27,7 +27,7 @@ export function LogicGiaoHang({
     if (khachHangDuocChon.value?.diaChiMacDinh) {
       return khachHangDuocChon.value.diaChiMacDinh;
     }
-    return hoaDonChoDaChon.value?.thongTinGiaoHang?.diaChiGiaoHang || "";
+    return "";
   });
   const coTheTinhPhiVanChuyen = computed(
     () => choPhepGiaoHang.value &&

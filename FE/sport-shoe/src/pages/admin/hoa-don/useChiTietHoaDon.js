@@ -223,8 +223,8 @@ export function useChiTietHoaDon() {
       return [
         {
           id: 1,
-          key: "Chờ xác nhận",
-          ten: "Chờ Xác Nhận",
+          key: "Hóa đơn chờ",
+          ten: "Hóa đơn chờ",
           icon: markRaw(Hourglass),
         },
         { id: 6, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
@@ -291,7 +291,7 @@ export function useChiTietHoaDon() {
   const buocHienTai = computed(() => {
     if (!hoaDon.value) return 0;
     const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
-    if (stt === "chờ xác nhận" || stt === "cho_xac_nhan") return 1;
+    if (stt === "chờ xác nhận" || stt === "cho_xac_nhan" || stt === "hóa đơn chờ" || stt === "hoa_don_cho") return 1;
     if (stt === "đã xác nhận" || stt === "da_xac_nhan") return 2;
     if (
       stt === "chờ lấy hàng" ||

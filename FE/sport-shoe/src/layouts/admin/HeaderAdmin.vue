@@ -602,12 +602,10 @@ function dangXuat() {
           >
             <div class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-200">
               <img
-                v-if="hasAvatar"
                 :src="avatarUrl"
                 :alt="profileName"
                 class="h-full w-full object-cover"
               />
-              <UserRound v-else class="h-[18px] w-[18px]" />
             </div>
             <span class="hidden max-w-[180px] truncate text-sm font-semibold text-slate-700 sm:block dark:text-slate-100">
               {{ profileName }}

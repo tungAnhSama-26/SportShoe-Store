@@ -77,6 +77,9 @@ export function LogicKhachHang({
   function boChonKhachHang() {
     khachHangDuocChon.value = null;
     tuKhoaKhachHang.value = "";
+    if (tenNguoiNhanGiaoHang) tenNguoiNhanGiaoHang.value = "";
+    if (sdtNguoiNhanGiaoHang) sdtNguoiNhanGiaoHang.value = "";
+    if (diaChiGiaoHang) diaChiGiaoHang.value = "";
     ketQuaTimKiemKhachHang.value = [];
     hienThiDanhSachKhachHang.value = false;
     danhDauCanApDungLaiPhieu();

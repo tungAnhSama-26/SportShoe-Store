@@ -276,7 +276,8 @@ public class ClientVnPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString());
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.US_ASCII.toString())
+                    .replaceAll("\\+", "%20");
         } catch (Exception ex) {
             return "";
         }
