@@ -21,42 +21,20 @@ const {
   moModalSuaDiaChi,
   handleHuyDonTuModal,
   handleLuuThongTin,
+  khongHoanKho,
 } = useInvoiceDetailContext();
-
-const hienModalLyDo = ref(false);
-const lyDo = ref("");
-const trangThaiTruocDo = ref("");
 
 const hienModalLyDoHuy = ref(false);
 const lyDoHuy = ref("");
 
-watch(hienModalThongTin, (newVal) => {
-  if (newVal) {
-    trangThaiTruocDo.value = formThongTin.value.trangThai;
-  }
-});
-
 watch(
   () => formThongTin.value.trangThai,
-  (newVal, oldVal) => {
-    if (newVal === "Giao hàng thất bại") {
-      trangThaiTruocDo.value = oldVal || hoaDon.value.trangThai;
-      lyDo.value = "";
-      hienModalLyDo.value = true;
+  (newVal) => {
+    if (newVal !== "Giao hàng thất bại") {
+      formThongTin.value.ghiChu = "";
     }
   }
 );
-
-const xacNhanLyDo = () => {
-  if (!lyDo.value.trim()) return;
-  formThongTin.value.ghiChu = lyDo.value.trim();
-  hienModalLyDo.value = false;
-};
-
-const huyLyDo = () => {
-  formThongTin.value.trangThai = trangThaiTruocDo.value;
-  hienModalLyDo.value = false;
-};
 
 const moModalHuy = () => {
   lyDoHuy.value = "";
@@ -158,6 +136,31 @@ const xacNhanHuy = async () => {
                 </option>
               </template>
             </select>
+          </div>
+          <div v-if="formThongTin.trangThai === 'Giao hàng thất bại'">
+            <label class="mb-1.5 block text-[13px] font-medium text-slate-600">
+              Lý do giao hàng thất bại <span class="text-rose-500">*</span>
+            </label>
+            <textarea
+              v-model="formThongTin.ghiChu"
+              rows="3"
+              placeholder="Nhập lý do giao hàng thất bại..."
+              class="w-full rounded-[8px] border border-slate-200 bg-slate-50 p-3 text-[14px] text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white resize-none"
+            ></textarea>
+            <div class="mt-3 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="khongHoanKhoCheckbox"
+                v-model="khongHoanKho"
+                class="h-4 w-4 cursor-pointer rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+              />
+              <label
+                for="khongHoanKhoCheckbox"
+                class="cursor-pointer select-none text-[13px] font-medium text-slate-600 hover:text-slate-800 transition"
+              >
+                Hàng bị mất / thất lạc (Không hoàn trả vào kho)
+              </label>
+            </div>
           </div>
         </div>
 
@@ -269,51 +272,6 @@ const xacNhanHuy = async () => {
       </div>
     </div>
 
-    <!-- Small modal for delivery failure reason -->
-    <div
-      v-if="hienModalLyDo"
-      class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-    >
-      <div class="w-full max-w-sm overflow-hidden rounded-[16px] bg-white p-6 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h4 class="text-base font-bold text-slate-800">Lý do giao hàng thất bại</h4>
-          <button
-            @click="huyLyDo"
-            class="text-slate-400 transition hover:text-slate-600"
-          >
-            <CircleX class="h-5 w-5" />
-          </button>
-        </div>
-        <div class="mt-4">
-          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Chi tiết lý do
-          </label>
-          <textarea
-            v-model="lyDo"
-            rows="3"
-            placeholder="Nhập lý do giao hàng thất bại..."
-            class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white resize-none"
-          ></textarea>
-        </div>
-        <div class="mt-6 flex gap-3">
-          <button
-            @click="huyLyDo"
-            type="button"
-            class="flex-1 inline-flex h-9 items-center justify-center rounded-[6px] bg-slate-100 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition"
-          >
-            Hủy
-          </button>
-          <button
-            @click="xacNhanLyDo"
-            :disabled="!lyDo.trim()"
-            type="button"
-            class="flex-1 inline-flex h-9 items-center justify-center rounded-[6px] bg-[#B82220] text-sm font-semibold text-white hover:bg-[#9f1d1b] transition disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            Xác nhận
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Small modal for cancellation reason -->
     <div
