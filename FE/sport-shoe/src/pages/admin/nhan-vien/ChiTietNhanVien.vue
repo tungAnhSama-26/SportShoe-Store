@@ -288,7 +288,12 @@ async function handleSaveFaceId(descriptorString) {
               <span class="text-[13px] font-semibold text-slate-500">Vai trò <span class="text-rose-500">*</span></span>
               <select
                 v-model="form.vaiTro"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
+                :disabled="laChinhMinh"
+                :title="laChinhMinh ? 'Bạn không thể tự đổi vai trò của chính mình' : ''"
+                :class="[
+                  'h-11 w-full rounded-2xl border px-4 text-sm outline-none transition duration-200',
+                  laChinhMinh ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10'
+                ]"
               >
                 <option v-for="item in dsVaiTro" :key="item.value" :value="item.value">{{ item.label }}</option>
               </select>
