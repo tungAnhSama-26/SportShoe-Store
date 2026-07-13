@@ -71,6 +71,7 @@ export function useChiTietHoaDon() {
   });
 
   const hienModalThongTin = ref(false);
+  const khongHoanKho = ref(false);
   const hienModalGiaoHang = ref(false);
   const dangLuuGiaoHang = ref(false);
   const diaChiDaLuu = ref([]);
@@ -1060,6 +1061,7 @@ export function useChiTietHoaDon() {
       defaultStt = "Cần hoàn tiền";
     else if (stt === "hủy" || stt === "huy") defaultStt = "Hủy";
 
+    khongHoanKho.value = false;
     formThongTin.value = {
       trangThai: defaultStt,
       tenKhachHang: hoaDon.value.tenKhachHang || "",
@@ -1067,7 +1069,9 @@ export function useChiTietHoaDon() {
       email: hoaDon.value.email || "",
       diaChi: hoaDon.value.diaChi || "",
       loaiDon: hoaDon.value.loaiDon || "",
-      ghiChu: "",
+      ghiChu: (hoaDon.value.trangThai === "GIAO_HANG_THAT_BAI" || hoaDon.value.trangThai === "Giao hàng thất bại")
+        ? (hoaDon.value.lyDoGiaoHangThatBai || "")
+        : "",
     };
     tabHienTai.value = "donHang";
   });
@@ -1137,11 +1141,16 @@ export function useChiTietHoaDon() {
         );
       }
 
-      if (formThongTin.value.trangThai !== hoaDon.value.trangThai) {
+      const trangThaiThayDoi = formThongTin.value.trangThai !== hoaDon.value.trangThai;
+      const lyDoThatBaiThayDoi = formThongTin.value.trangThai === "Giao hàng thất bại" &&
+        (formThongTin.value.ghiChu || "").trim() !== (hoaDon.value.lyDoGiaoHangThatBai || "").trim();
+
+      if (trangThaiThayDoi || lyDoThatBaiThayDoi) {
         ganHoaDonSauThaoTac(
           await capNhatTrangThaiHoaDon(hoaDon.value.id, {
             trangThai: formThongTin.value.trangThai,
             ghiChu: (formThongTin.value.ghiChu || "").trim(),
+            hoanKho: !khongHoanKho.value,
           }),
         );
       }
@@ -1591,5 +1600,6 @@ export function useChiTietHoaDon() {
     dangTaiNganHangKhach,
     taiKhoanNganHangChon,
     qrHoanTienUrl,
+    khongHoanKho,
   };
 }

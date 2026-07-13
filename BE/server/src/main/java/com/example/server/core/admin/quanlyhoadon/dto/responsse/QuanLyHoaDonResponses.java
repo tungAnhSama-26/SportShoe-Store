@@ -93,6 +93,7 @@ public final class QuanLyHoaDonResponses {
             BigDecimal giaTriGiamGia,
             String donViVanChuyen,
             String maVanDon,
+            String lyDoGiaoHangThatBai,
             List<HoaDonPaymentHistoryResponse> lichSuThanhToan,
             List<HoaDonProductResponse> sanPham,
             List<HoaDonHistoryResponse> lichSuHoaDon,
