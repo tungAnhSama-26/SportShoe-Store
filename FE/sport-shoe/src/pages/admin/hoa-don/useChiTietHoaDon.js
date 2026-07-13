@@ -1105,6 +1105,13 @@ export function useChiTietHoaDon() {
       thongBaoDonDaHoanThanh();
       return;
     }
+    if (
+      formThongTin.value.trangThai === "Giao hàng thất bại" &&
+      (!formThongTin.value.ghiChu || !formThongTin.value.ghiChu.trim())
+    ) {
+      showError("Vui lòng nhập lý do giao hàng thất bại.");
+      return;
+    }
     dangCapNhat.value = true;
     try {
       const thongTinGiaoHangThayDoi =
@@ -1134,7 +1141,7 @@ export function useChiTietHoaDon() {
         ganHoaDonSauThaoTac(
           await capNhatTrangThaiHoaDon(hoaDon.value.id, {
             trangThai: formThongTin.value.trangThai,
-            ghiChu: formThongTin.value.ghiChu || "",
+            ghiChu: (formThongTin.value.ghiChu || "").trim(),
           }),
         );
       }
