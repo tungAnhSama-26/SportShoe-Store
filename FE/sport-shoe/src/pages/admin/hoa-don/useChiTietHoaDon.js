@@ -374,6 +374,18 @@ export function useChiTietHoaDon() {
     );
   });
 
+  const lyDoHuyDon = computed(() => {
+    const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
+    const banGhiHuy = [...lichSu].reverse().find(
+      (item) =>
+        (item.trangThai || "").toLowerCase() === "hủy" ||
+        (item.trangThai || "").toLowerCase() === "đã hủy" ||
+        (item.trangThai || "").toLowerCase() === "huy" ||
+        (item.trangThai || "").toLowerCase() === "da_huy"
+    );
+    return banGhiHuy?.ghiChu || "";
+  });
+
   const donDangChoHoanTien = computed(() => {
     const coThanhToanCanHoan = (hoaDon.value?.lichSuThanhToan ?? []).some(
       (item) => laTrangThaiCanHoanTien(item.trangThaiThanhToan),
@@ -1601,5 +1613,6 @@ export function useChiTietHoaDon() {
     taiKhoanNganHangChon,
     qrHoanTienUrl,
     khongHoanKho,
+    lyDoHuyDon,
   };
 }

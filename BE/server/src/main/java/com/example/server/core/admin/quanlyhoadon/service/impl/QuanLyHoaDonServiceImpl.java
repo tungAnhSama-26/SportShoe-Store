@@ -388,7 +388,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             hoaDon.setTrangThaiTruocYeuCauHuy(null);
         }
 
-        if (request.ghiChu() != null && !request.ghiChu().isBlank() && (hoaDon.getTrangThai() == null || hoaDon.getTrangThai() != TRANG_THAI_GIAO_HANG_THAT_BAI)) {
+        if (request.ghiChu() != null && !request.ghiChu().isBlank() 
+                && hoaDon.getTrangThai() != null 
+                && hoaDon.getTrangThai() != TRANG_THAI_GIAO_HANG_THAT_BAI
+                && hoaDon.getTrangThai() != TRANG_THAI_HUY) {
             hoaDon.setGhiChu(request.ghiChu().trim());
         }
         hoaDon.setNgayCapNhat(Instant.now());
