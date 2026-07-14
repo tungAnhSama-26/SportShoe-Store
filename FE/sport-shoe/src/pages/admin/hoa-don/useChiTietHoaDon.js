@@ -193,6 +193,16 @@ export function useChiTietHoaDon() {
     { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
   ];
 
+  const cacBuocDaHuyTaiQuay = [
+    {
+      id: 1,
+      key: "Hóa đơn chờ",
+      ten: "Hóa đơn chờ",
+      icon: markRaw(Hourglass),
+    },
+    { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
+  ];
+
   const donGiaoThatBai = computed(() => {
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     return stt === "giao hàng thất bại" || stt === "giao_hang_that_bai";
@@ -663,7 +673,7 @@ export function useChiTietHoaDon() {
   const thongTinBuoc = computed(() => {
     const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
     const nguonBuoc = donDaHuy.value
-      ? cacBuocDaHuy
+      ? (laDonTaiQuay.value ? cacBuocDaHuyTaiQuay : cacBuocDaHuy)
       : donYeuCauHuy.value
         ? cacBuocYeuCauHuy
         : cacBuoc.value;
@@ -930,6 +940,7 @@ export function useChiTietHoaDon() {
   }
 
   const danhSachTrangThaiHienThi = [
+    { key: "Hóa đơn chờ", label: "Hóa đơn chờ" },
     { key: "Chờ xác nhận", label: "Chờ xác nhận" },
     { key: "Đã xác nhận", label: "Đã xác nhận" },
     { key: "Chờ lấy hàng", label: "Chờ lấy hàng" },
@@ -945,7 +956,9 @@ export function useChiTietHoaDon() {
     if (!hoaDon.value) return -1;
     const currentStt = (hoaDon.value.trangThai || "").toLowerCase().trim();
     let normalizedStt = hoaDon.value.trangThai;
-    if (currentStt === "chờ xác nhận" || currentStt === "cho_xac_nhan")
+    if (currentStt === "hóa đơn chờ" || currentStt === "hoa_don_cho")
+      normalizedStt = "Hóa đơn chờ";
+    else if (currentStt === "chờ xác nhận" || currentStt === "cho_xac_nhan")
       normalizedStt = "Chờ xác nhận";
     else if (currentStt === "đã xác nhận" || currentStt === "da_xac_nhan")
       normalizedStt = "Đã xác nhận";
@@ -1020,7 +1033,7 @@ export function useChiTietHoaDon() {
       return true;
     }
     return laDonTaiQuay.value
-      ? index === 0 || key === "Hoàn thành"
+      ? key === "Hóa đơn chờ" || key === "Hoàn thành"
       : key !== "Giao hàng thất bại" &&
           (index === indexTrangThaiHienTai.value ||
             index === indexTrangThaiHienTai.value + 1);
@@ -1035,7 +1048,9 @@ export function useChiTietHoaDon() {
     }
     const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
     let defaultStt = hoaDon.value.trangThai;
-    if (stt === "chờ xác nhận" || stt === "cho_xac_nhan")
+    if (stt === "hóa đơn chờ" || stt === "hoa_don_cho")
+      defaultStt = "Hóa đơn chờ";
+    else if (stt === "chờ xác nhận" || stt === "cho_xac_nhan")
       defaultStt = "Chờ xác nhận";
     else if (stt === "đã xác nhận" || stt === "da_xac_nhan")
       defaultStt = "Đã xác nhận";
