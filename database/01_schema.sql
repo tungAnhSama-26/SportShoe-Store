@@ -499,6 +499,7 @@ CREATE TABLE van_chuyen (
     ngay_giao_that     DATETIME2     NULL,
     trang_thai         INT           NOT NULL CONSTRAINT df_vc_trang_thai DEFAULT 1,
     ghi_chu            NVARCHAR(500) NULL,
+    ly_do_giao_hang_that_bai NVARCHAR(500) NULL,
     ngay_tao           DATETIME2     NOT NULL CONSTRAINT df_vc_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat      DATETIME2     NULL,
     CONSTRAINT uq_vc_hoa_don UNIQUE (hoa_don_id),

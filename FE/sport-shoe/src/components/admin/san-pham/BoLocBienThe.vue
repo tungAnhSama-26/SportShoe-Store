@@ -64,7 +64,7 @@ function handleFilterChange() {
         <div class="flex flex-wrap items-center gap-3 xl:justify-end">
           <button type="button" class="admin-btn-soft" @click="$emit('reset-filters')">
             <RotateCcw class="h-4 w-4" />
-            Đặt lại
+            Đặt lại bộ lọc
           </button>
           
           <button 
