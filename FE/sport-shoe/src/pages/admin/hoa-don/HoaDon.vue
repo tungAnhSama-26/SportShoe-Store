@@ -172,12 +172,22 @@ const thongKeTrangThai = computed(() => {
   return thongKe;
 });
 
-const tongTheoTrangThai = computed(() =>
-  dsTrangThai.map((trangThai) => ({
+const tongTheoTrangThai = computed(() => {
+  const filteredDs = dsTrangThai.filter((trangThai) => {
+    if (boLoc.value.loaiDon === "Cửa hàng") {
+      return ["Tất cả", "Hóa đơn chờ", "Hoàn thành", "Hủy"].includes(trangThai);
+    }
+    if (boLoc.value.loaiDon === "Trực tuyến") {
+      return trangThai !== "Hóa đơn chờ";
+    }
+    return true;
+  });
+
+  return filteredDs.map((trangThai) => ({
     ten: trangThai,
     tong: thongKeTrangThai.value.get(trangThai) || 0,
-  })),
-);
+  }));
+});
 
 const danhSachHienThi = computed(() => {
   if (trangThaiDangChon.value === "Tất cả") return danhSach.value;
@@ -206,6 +216,22 @@ watch(danhSachHienThi, () => {
 watch(soPhanTuMotTrang, () => {
   trangHienTai.value = 1;
 });
+
+watch(
+  () => boLoc.value.loaiDon,
+  (newLoaiDon) => {
+    if (newLoaiDon === "Cửa hàng") {
+      const validStatuses = ["Tất cả", "Hóa đơn chờ", "Hoàn thành", "Hủy"];
+      if (!validStatuses.includes(trangThaiDangChon.value)) {
+        trangThaiDangChon.value = "Tất cả";
+      }
+    } else if (newLoaiDon === "Trực tuyến") {
+      if (trangThaiDangChon.value === "Hóa đơn chờ") {
+        trangThaiDangChon.value = "Tất cả";
+      }
+    }
+  },
+);
 
 async function taiDanhSach() {
   dangTai.value = true;
