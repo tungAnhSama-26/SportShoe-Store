@@ -457,7 +457,7 @@ onBeforeUnmount(() => {
         <div class="flex shrink-0 items-center gap-3">
           <Button variant="soft" @click="lamMoiBoLoc">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
-            Đặt lại
+            Đặt lại bộ lọc
           </Button>
           <Button variant="soft" @click="xuatExcel">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>

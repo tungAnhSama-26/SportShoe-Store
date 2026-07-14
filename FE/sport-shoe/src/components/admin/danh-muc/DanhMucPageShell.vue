@@ -106,7 +106,7 @@ function onKeywordInput(event) {
         <div class="flex flex-wrap items-center gap-3 xl:justify-end">
           <Button variant="soft" @click="emit('update:keyword', ''); emit('search')">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
-            Đặt lại
+            Đặt lại bộ lọc
           </Button>
           <Button v-if="showExport" variant="soft" @click="emit('export')">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
