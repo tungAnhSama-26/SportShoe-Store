@@ -246,7 +246,11 @@ const xacNhanHuy = async () => {
 
       <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
         <button
-          v-if="hoaDon && (hoaDon.trangThai || '').toLowerCase().trim() === 'chờ xác nhận'"
+          v-if="
+            hoaDon &&
+            ((hoaDon.trangThai || '').toLowerCase().trim() === 'chờ xác nhận' ||
+              (hoaDon.trangThai || '').toLowerCase().trim() === 'hóa đơn chờ')
+          "
           @click="moModalHuy"
           :disabled="dangCapNhat"
           type="button"
