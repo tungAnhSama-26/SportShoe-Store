@@ -28,7 +28,7 @@ const ChiTietPhieuGiamGiaKhachHang = () => import("../pages/admin/khuyen-mai/Chi
 const DotGiamGia = () => import("../pages/admin/khuyen-mai/DotGiamGia.vue");
 const ChiTietDotGiamGia = () => import("../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue");
 const HoaDon = () => import("../pages/admin/hoa-don/HoaDon.vue");
-const ChiTietHoaDon = () => import("../pages/admin/hoa-don/ChiTietHoaDon.vue");
+const ChiTietHoaDon = () => import("../pages/admin/hoa-don/chi-tiet-hoa-don/ChiTietHoaDon.vue");
 const TraHang = () => import("../pages/admin/tra-hang/TraHang.vue");
 const QuanLyDanhGia = () => import("../pages/admin/danh-gia/QuanLyDanhGia.vue");
 const ChiTietTraHang = () => import("../pages/admin/tra-hang/ChiTietTraHang.vue");
