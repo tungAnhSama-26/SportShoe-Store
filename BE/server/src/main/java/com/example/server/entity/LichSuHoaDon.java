@@ -39,6 +39,11 @@ public class LichSuHoaDon {
     @Column(name = "ghi_chu", length = 1000)
     private String ghiChu;
 
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "nguoi_thao_tac", length = 100)
+    private String nguoiThaoTac;
+
     @NotNull
     @ColumnDefault("sysdatetime()")
     @Column(name = "ngay_tao", nullable = false)

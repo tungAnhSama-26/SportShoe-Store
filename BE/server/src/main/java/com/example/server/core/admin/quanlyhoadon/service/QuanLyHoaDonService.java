@@ -39,4 +39,6 @@ public interface QuanLyHoaDonService {
     HoaDonDetailResponse xacNhanHoanTien(Integer id, XacNhanHoanTienRequest request);
 
     List<HoaDonSummaryResponse> layDanhSachHoaDonTheoKhachHang(UUID khachHangId);
+
+    com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse checkMuaLai(Integer id);
 }

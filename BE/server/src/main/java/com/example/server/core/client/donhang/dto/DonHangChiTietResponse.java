@@ -45,7 +45,8 @@ public record DonHangChiTietResponse(
         boolean coTheCapNhatGiaoHang,
         /** Khách được sửa số lượng sản phẩm (COD + chờ xác nhận). */
         boolean coTheCapNhatSoLuong,
-        Instant ngayGiao
+        Instant ngayGiao,
+        Integer soLanSuaDiaChi
 ) {
     public record ChiTietTraHangItem(
             Integer hoaDonChiTietId,
@@ -58,7 +59,8 @@ public record DonHangChiTietResponse(
     public record LichSuTrangThai(
             String trangThai,
             Instant ngayTao,
-            String maNhanVien
+            String maNhanVien,
+            String ghiChu
     ) {}
 
     public record LichSuTraHang(

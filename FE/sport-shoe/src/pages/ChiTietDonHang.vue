@@ -394,6 +394,13 @@ const daHoanThanh = computed(() => don.value?.trangThai === 5);
 const coTheYeuCauHuy = computed(() => don.value?.coTheHuy === true);
 const coTheSuaThongTinGiaoHang = computed(() => don.value?.coTheCapNhatGiaoHang === true);
 
+const lichSuCapNhatGiaoHang = computed(() => {
+  if (!don.value || !Array.isArray(don.value.lichSuTrangThai)) return [];
+  return don.value.lichSuTrangThai.filter(item => 
+    item.trangThai === "Cập nhật thông tin giao hàng"
+  );
+});
+
 async function moModalSuaThongTinGiaoHang() {
   const khachHangId = layKhachId();
   diaChiDaLuu.value = [];
@@ -620,6 +627,34 @@ function xuLyAnhLoi(event) {
           <div class="rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
             <p class="font-semibold text-slate-800">{{ don.tenNguoiNhan }} · {{ don.sdtNguoiNhan }}</p>
             <p class="mt-1">{{ don.diaChiGiaoHang }}</p>
+          </div>
+          
+          <p v-if="don && don.soLanSuaDiaChi >= 1 && don.trangThai === 1 && don.hinhThucThanhToan === 'COD'" class="text-xs text-rose-500 font-medium mt-3 flex items-center gap-1.5 bg-rose-50 border border-rose-100 px-3 py-2.5 rounded-xl">
+            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Bạn đã chỉnh sửa thông tin giao hàng 1 lần. Theo quy định, thông tin giao hàng chỉ được thay đổi tối đa 1 lần.
+          </p>
+
+          <!-- Lịch sử thay đổi thông tin giao hàng -->
+          <div v-if="lichSuCapNhatGiaoHang.length > 0" class="mt-4 border-t border-slate-100 pt-4">
+            <h3 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2">
+              <svg class="h-4.5 w-4.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Lịch sử thay đổi thông tin giao hàng
+            </h3>
+            <div class="space-y-3">
+              <div v-for="(log, idx) in lichSuCapNhatGiaoHang" :key="idx" class="rounded-xl border border-slate-100 bg-white p-3.5 text-xs shadow-sm">
+                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100">
+                  <span class="font-semibold text-slate-700">Người thực hiện: {{ log.maNhanVien || 'Khách hàng' }}</span>
+                  <span class="text-slate-400 text-[10px]">{{ formatNgay(log.ngayTao) }}</span>
+                </div>
+                <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[11px]">
+                  {{ log.ghiChu }}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
