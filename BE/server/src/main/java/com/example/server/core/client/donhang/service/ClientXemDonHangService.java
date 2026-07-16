@@ -49,6 +49,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
+import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 
 @Service
 public class ClientXemDonHangService {
@@ -88,6 +91,7 @@ public class ClientXemDonHangService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final ThongBaoService thongBaoService;
+    private final GhnShippingService ghnShippingService;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
@@ -103,7 +107,8 @@ public class ClientXemDonHangService {
             ThanhToanRepository thanhToanRepository,
             GiayChiTietRepository giayChiTietRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
-            ThongBaoService thongBaoService
+            ThongBaoService thongBaoService,
+            GhnShippingService ghnShippingService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -119,6 +124,7 @@ public class ClientXemDonHangService {
         this.giayChiTietRepository = giayChiTietRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.thongBaoService = thongBaoService;
+        this.ghnShippingService = ghnShippingService;
     }
 
     @Transactional(readOnly = true)
@@ -333,13 +339,14 @@ public class ClientXemDonHangService {
                 .map(lichSu -> new LichSuTrangThai(
                         lichSu.getTrangThai(),
                         lichSu.getNgayTao(),
-                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : "Khách hàng"))
+                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : (lichSu.getNguoiThaoTac() != null ? lichSu.getNguoiThaoTac() : "Khách hàng"),
+                        lichSu.getGhiChu()))
                 .toList();
 
         boolean laCK = laChuyenKhoan(hd.getId());
         boolean dangChoXacNhan = hd.getTrangThai() != null
                 && hd.getTrangThai() == TRANG_THAI_CHO_XAC_NHAN;
-        boolean coTheSua = dangChoXacNhan && !laCK;
+        boolean coTheSua = dangChoXacNhan && !laCK && (hd.getSoLanSuaDiaChi() == null || hd.getSoLanSuaDiaChi() < 1);
 
         int virtualStatus = hd.getTrangThai();
         String virtualStatusText = nhanTrangThai(hd.getTrangThai());
@@ -374,7 +381,8 @@ public class ClientXemDonHangService {
                 hinhAnhTraHang, chiTietTraHang,
                 laCK ? "CHUYEN_KHOAN" : "COD",
                 // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
-                dangChoXacNhan, coTheSua, false, ngayGiao);
+                dangChoXacNhan, coTheSua, false, ngayGiao,
+                hd.getSoLanSuaDiaChi() != null ? hd.getSoLanSuaDiaChi() : 0);
     }
 
     private boolean coThanhToanThanhCong(HoaDon hoaDon) {
@@ -504,18 +512,90 @@ public class ClientXemDonHangService {
             throw new BusinessException(
                     "Chỉ có thể cập nhật thông tin giao hàng khi đơn đang chờ xác nhận");
         }
+        if (hd.getSoLanSuaDiaChi() != null && hd.getSoLanSuaDiaChi() >= 1) {
+            throw new BusinessException("Bạn chỉ được phép chỉnh sửa thông tin giao hàng tối đa 1 lần.");
+        }
+
+        BigDecimal phiShipCu = BigDecimal.ZERO;
+        var vcOpt = vanChuyenRepository.findByHoaDonId(id);
+        if (vcOpt.isPresent()) {
+            phiShipCu = vcOpt.get().getPhiVanChuyen() == null ? BigDecimal.ZERO : vcOpt.get().getPhiVanChuyen();
+        }
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
+        BigDecimal phiShipMoi = phiShipCu;
+        if (!items.isEmpty()) {
+            try {
+                TinhPhiVanChuyenGhnRequest ghnReq = new TinhPhiVanChuyenGhnRequest(
+                        null, null, request.diaChiGiaoHang().trim(), null, null, null, null, null, null, null, null
+                );
+                TinhPhiVanChuyenGhnResponse phiGhn = ghnShippingService.tinhPhi(hd, items, ghnReq);
+                phiShipMoi = phiGhn.phiVanChuyen();
+            } catch (Exception e) {
+                System.err.println("[ClientXemDonHangService] Lỗi tính phí vận chuyển GHN mới: " + e.getMessage());
+            }
+        }
+
+        com.example.server.entity.VanChuyen vanChuyen = vcOpt.orElseGet(() -> {
+            com.example.server.entity.VanChuyen created = new com.example.server.entity.VanChuyen();
+            created.setHoaDon(hd);
+            created.setDonViVanChuyen("GHN");
+            created.setTrangThai(0); // Cho_XU_LY
+            created.setNgayTao(Instant.now());
+            return created;
+        });
+        vanChuyen.setPhiVanChuyen(phiShipMoi);
+        vanChuyen.setNgayCapNhat(Instant.now());
+        vanChuyenRepository.save(vanChuyen);
+
+        StringBuilder ghiChuHistory = new StringBuilder("Khách hàng cập nhật thông tin giao hàng:\n");
+        String tenCu = hd.getTenNguoiNhan() == null ? "" : hd.getTenNguoiNhan();
+        String tenMoi = request.tenNguoiNhan().trim();
+        if (!tenCu.equals(tenMoi)) {
+            ghiChuHistory.append("- Tên người nhận: '").append(tenCu).append("' -> '").append(tenMoi).append("'\n");
+        }
+
+        String sdtCu = hd.getSdtNguoiNhan() == null ? "" : hd.getSdtNguoiNhan();
+        String sdtMoi = request.sdtNguoiNhan().trim();
+        if (!sdtCu.equals(sdtMoi)) {
+            ghiChuHistory.append("- SĐT: '").append(sdtCu).append("' -> '").append(sdtMoi).append("'\n");
+        }
+
+        String dcCu = hd.getDiaChiGiaoHang() == null ? "" : hd.getDiaChiGiaoHang();
+        String dcMoi = request.diaChiGiaoHang().trim();
+        if (!dcCu.equals(dcMoi)) {
+            ghiChuHistory.append("- Địa chỉ: '").append(dcCu).append("' -> '").append(dcMoi).append("'\n");
+        }
+
+        if (phiShipCu.compareTo(phiShipMoi) != 0) {
+            ghiChuHistory.append("- Phí ship: '").append(phiShipCu.intValue()).append("đ' -> '").append(phiShipMoi.intValue()).append("đ'\n");
+        }
+
+        String finalGhiChu = ghiChuHistory.toString();
+        if (finalGhiChu.equals("Khách hàng cập nhật thông tin giao hàng:\n")) {
+            finalGhiChu = "Khách hàng cập nhật người nhận và địa chỉ giao hàng";
+        } else if (finalGhiChu.length() > 1000) {
+            finalGhiChu = finalGhiChu.substring(0, 995) + "...";
+        }
 
         hd.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hd.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
         hd.setDiaChiGiaoHang(request.diaChiGiaoHang().trim());
+        hd.setSoLanSuaDiaChi((hd.getSoLanSuaDiaChi() == null ? 0 : hd.getSoLanSuaDiaChi()) + 1);
+
+        BigDecimal tongHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();
+        BigDecimal tienGiam = hd.getTienGiam() == null ? BigDecimal.ZERO : hd.getTienGiam();
+        hd.setTongTienThanhToan(tongHang.add(phiShipMoi).subtract(tienGiam).max(BigDecimal.ZERO));
+
         hd.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hd);
 
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hd);
         lichSu.setNhanVien(null);
+        lichSu.setNguoiThaoTac("Khách hàng");
         lichSu.setTrangThai("Cập nhật thông tin giao hàng");
-        lichSu.setGhiChu("Khách hàng cập nhật người nhận và địa chỉ giao hàng");
+        lichSu.setGhiChu(finalGhiChu);
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
 

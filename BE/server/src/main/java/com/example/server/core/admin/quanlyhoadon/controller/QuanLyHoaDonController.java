@@ -125,4 +125,12 @@ public class QuanLyHoaDonController {
                 quanLyHoaDonService.xacNhanHoanTien(id, request)
         ));
     }
+
+    @GetMapping("/{id}/check-mua-lai")
+    public ResponseEntity<ApiResponse<com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse>> checkMuaLai(@PathVariable Integer id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Kiểm tra mua lại thành công",
+                quanLyHoaDonService.checkMuaLai(id)
+        ));
+    }
 }

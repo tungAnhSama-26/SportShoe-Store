@@ -106,3 +106,7 @@ export function xacNhanHoanTien(id, payload) {
     return hoaDon;
   });
 }
+
+export function checkMuaLai(id) {
+  return request(`/admin/hoa-don/${id}/check-mua-lai`);
+}
