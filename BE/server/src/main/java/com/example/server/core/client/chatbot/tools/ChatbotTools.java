@@ -49,6 +49,10 @@ public class ChatbotTools {
             String ngayLap
     ) {}
 
+    public record AdminRevenueRequest(String period) {}
+    public record AdminLowStockRequest(Integer threshold) {}
+    public record AdminInvoiceSearchRequest(String query, String status) {}
+
     private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
         try {
             List<com.example.server.entity.GiayChiTiet> gcts = entityManager.createQuery(
@@ -484,5 +488,180 @@ public class ChatbotTools {
                 }
             }
         };
+    }
+
+    @Bean("get_admin_revenue_stats_tool")
+    @Description("Lấy thống kê doanh thu của cửa hàng theo chu kỳ (period: 'today', 'month', 'year')")
+    public FunctionCallback getAdminRevenueStatsTool() {
+        Function<AdminRevenueRequest, String> func = new Function<AdminRevenueRequest, String>() {
+            @Override
+            public String apply(AdminRevenueRequest request) {
+                try {
+                    String timeQuery = "";
+                    java.time.LocalDate today = java.time.LocalDate.now();
+                    java.time.Instant startInstant = java.time.Instant.MIN;
+                    java.time.Instant endInstant = java.time.Instant.MAX;
+                    
+                    if ("today".equalsIgnoreCase(request.period())) {
+                        startInstant = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Hôm nay (" + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ")";
+                    } else if ("month".equalsIgnoreCase(request.period())) {
+                        java.time.LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+                        startInstant = firstDayOfMonth.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = firstDayOfMonth.plusMonths(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Tháng này (" + today.getMonthValue() + "/" + today.getYear() + ")";
+                    } else if ("year".equalsIgnoreCase(request.period())) {
+                        java.time.LocalDate firstDayOfYear = today.withDayOfYear(1);
+                        startInstant = firstDayOfYear.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = firstDayOfYear.plusYears(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Năm nay (" + today.getYear() + ")";
+                    } else {
+                        startInstant = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Hôm nay (" + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ")";
+                    }
+
+                    List<com.example.server.entity.HoaDon> invoices = entityManager.createQuery(
+                            "SELECT h FROM HoaDon h WHERE h.ngayLap >= :start AND h.ngayLap < :end AND h.trangThai = 5", com.example.server.entity.HoaDon.class)
+                            .setParameter("start", startInstant)
+                            .setParameter("end", endInstant)
+                            .getResultList();
+
+                    if (invoices.isEmpty()) {
+                        return "Thống kê doanh thu cho " + timeQuery + ": Chưa có đơn hàng nào hoàn thành. Doanh thu: 0đ.";
+                    }
+
+                    BigDecimal tongDoanhThu = BigDecimal.ZERO;
+                    int count = 0;
+                    for (com.example.server.entity.HoaDon h : invoices) {
+                        tongDoanhThu = tongDoanhThu.add(h.getTongTienThanhToan() != null ? h.getTongTienThanhToan() : BigDecimal.ZERO);
+                        count++;
+                    }
+
+                    java.text.NumberFormat nf = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("vi", "VN"));
+                    return String.format("Thống kê doanh thu cho %s:\n- Số đơn hoàn thành: %d\n- Tổng doanh thu: %s", 
+                            timeQuery, count, nf.format(tongDoanhThu));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi thống kê doanh thu: " + e.getMessage();
+                }
+            }
+        };
+        return FunctionCallbackWrapper.builder(func)
+                .withName("get_admin_revenue_stats_tool")
+                .withDescription("Lấy thống kê doanh thu của cửa hàng theo chu kỳ (period: 'today', 'month', 'year')")
+                .build();
+    }
+
+    @Bean("get_admin_low_stock_tool")
+    @Description("Lấy danh sách sản phẩm sắp hết hàng (số lượng tồn kho dưới ngưỡng threshold, mặc định là 5)")
+    public FunctionCallback getAdminLowStockTool() {
+        Function<AdminLowStockRequest, String> func = new Function<AdminLowStockRequest, String>() {
+            @Override
+            public String apply(AdminLowStockRequest request) {
+                try {
+                    int limit = request.threshold() != null ? request.threshold() : 5;
+                    List<com.example.server.entity.GiayChiTiet> lowStockList = entityManager.createQuery(
+                            "SELECT gct FROM GiayChiTiet gct WHERE gct.soLuong < :limit AND gct.kichHoat = 1 ORDER BY gct.soLuong ASC", com.example.server.entity.GiayChiTiet.class)
+                            .setParameter("limit", limit)
+                            .setMaxResults(10)
+                            .getResultList();
+
+                    if (lowStockList.isEmpty()) {
+                        return "Hiện tại không có sản phẩm nào có số lượng tồn kho dưới " + limit + " chiếc.";
+                    }
+
+                    StringBuilder sb = new StringBuilder("Danh sách sản phẩm sắp hết hàng (Tồn kho < " + limit + "):\n");
+                    for (com.example.server.entity.GiayChiTiet gct : lowStockList) {
+                        sb.append(String.format("- **%s** | Màu: %s | Size: %s | **Số lượng tồn: %d**\n",
+                                gct.getGiay() != null ? gct.getGiay().getTen() : "Giày",
+                                gct.getMauSac() != null ? gct.getMauSac().getTen() : "N/A",
+                                gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "N/A",
+                                gct.getSoLuong()));
+                    }
+                    return sb.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi lấy danh sách sản phẩm hết hàng: " + e.getMessage();
+                }
+            }
+        };
+        return FunctionCallbackWrapper.builder(func)
+                .withName("get_admin_low_stock_tool")
+                .withDescription("Lấy danh sách sản phẩm sắp hết hàng (số lượng tồn kho dưới ngưỡng threshold, mặc định là 5)")
+                .build();
+    }
+
+    @Bean("search_admin_invoices_tool")
+    @Description("Tìm kiếm danh sách hóa đơn của hệ thống theo mã hóa đơn, tên người nhận hoặc số điện thoại, trạng thái")
+    public FunctionCallback searchAdminInvoicesTool() {
+        Function<AdminInvoiceSearchRequest, List<InvoiceDto>> func = new Function<AdminInvoiceSearchRequest, List<InvoiceDto>>() {
+            @Override
+            public List<InvoiceDto> apply(AdminInvoiceSearchRequest request) {
+                try {
+                    String jpql = "SELECT h FROM HoaDon h WHERE 1=1";
+                    Map<String, Object> params = new HashMap<>();
+
+                    if (request.query() != null && !request.query().isBlank()) {
+                        String q = "%" + request.query().trim().toLowerCase() + "%";
+                        jpql += " AND (LOWER(h.ma) LIKE :query OR LOWER(h.tenNguoiNhan) LIKE :query OR LOWER(h.sdtNguoiNhan) LIKE :query)";
+                        params.put("query", q);
+                    }
+
+                    if (request.status() != null && !request.status().isBlank()) {
+                        try {
+                            Integer statusInt = Integer.parseInt(request.status().trim());
+                            jpql += " AND h.trangThai = :status";
+                            params.put("status", statusInt);
+                        } catch (NumberFormatException e) {
+                            // ignore
+                        }
+                    }
+
+                    jpql += " ORDER BY h.ngayLap DESC";
+
+                    var typedQuery = entityManager.createQuery(jpql, com.example.server.entity.HoaDon.class);
+                    for (Map.Entry<String, Object> entry : params.entrySet()) {
+                        typedQuery.setParameter(entry.getKey(), entry.getValue());
+                    }
+
+                    List<com.example.server.entity.HoaDon> results = typedQuery.setMaxResults(10).getResultList();
+                    List<InvoiceDto> dtoList = new ArrayList<>();
+
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault());
+
+                    for (com.example.server.entity.HoaDon h : results) {
+                        String trangThaiText = "Không xác định";
+                        if (h.getTrangThai() != null) {
+                            try {
+                                trangThaiText = TrangThaiHoaDon.tuMa(h.getTrangThai()).getTen();
+                            } catch (Exception ex) {
+                                trangThaiText = "Mã: " + h.getTrangThai();
+                            }
+                        }
+                        String ngayLapStr = h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "";
+
+                        dtoList.add(new InvoiceDto(
+                                h.getId(),
+                                h.getMa(),
+                                h.getTenNguoiNhan(),
+                                h.getSdtNguoiNhan(),
+                                h.getTongTienThanhToan(),
+                                trangThaiText,
+                                ngayLapStr
+                        ));
+                    }
+                    return dtoList;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return List.of();
+                }
+            }
+        };
+        return FunctionCallbackWrapper.builder(func)
+                .withName("search_admin_invoices_tool")
+                .withDescription("Tìm kiếm danh sách hóa đơn của hệ thống theo mã hóa đơn, tên người nhận hoặc số điện thoại, trạng thái")
+                .build();
     }
 }
