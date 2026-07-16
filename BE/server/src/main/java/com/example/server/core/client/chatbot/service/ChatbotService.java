@@ -411,6 +411,49 @@ public class ChatbotService {
         }
     }
 
+    public String generateAdminAiResponse(String userMessage) {
+        String systemPrompt = """
+                Bạn là một trợ lý ảo hỗ trợ quản trị và vận hành cửa hàng SportShoe dành riêng cho Admin/Quản lý.
+
+                # PHẠM VI HỖ TRỢ
+                - Bạn được phép truy cập và tra cứu thông tin quản trị hệ thống:
+                  1. Doanh thu cửa hàng: Sử dụng công cụ `get_admin_revenue_stats_tool` để thống kê theo ngày (today), tháng (month) hoặc năm (year).
+                  2. Hàng tồn kho và cảnh báo hết hàng: Sử dụng công cụ `get_admin_low_stock_tool` để tra cứu sản phẩm sắp hết hàng.
+                  3. Tra cứu nhanh danh sách hóa đơn admin: Sử dụng công cụ `search_admin_invoices_tool` để tìm kiếm hóa đơn theo từ khóa hoặc trạng thái.
+                  4. Tra cứu thông tin sản phẩm công khai: Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`.
+                - Bạn CHỈ hỗ trợ các câu hỏi liên quan đến quản lý cửa hàng, thống kê, kiểm kho và tra cứu vận hành. Từ chối trả lời lịch sự cho các câu hỏi cá nhân hoặc ngoài phạm vi.
+
+                # HƯỚNG DẪN HIỂN THỊ LINK ADMIN (QUAN TRỌNG)
+                - Khi hiển thị sản phẩm, hãy đính kèm link dạng:
+                  [Xem chi tiết sản phẩm](/admin/san-pham)
+                - Khi hiển thị hóa đơn, hãy đính kèm link dạng:
+                  [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
+                  (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm).
+                  Ví dụ: "Hóa đơn **[HD0001]** của khách hàng đã hoàn thành: [Xem chi tiết hóa đơn](/admin/hoa-don/10)".
+                - Hệ thống giao diện admin sẽ tự động nhận diện link này để hiển thị nút liên kết.
+
+                # NGUYÊN TẮC HOẠT ĐỘNG
+                - Luôn sử dụng thông tin thực tế từ công cụ, không tự bịa số liệu tài chính hoặc số lượng tồn kho.
+                - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
+                """;
+
+        try {
+            ChatClient chatClient = chatClientBuilder
+                    .defaultSystem(systemPrompt)
+                    .build();
+
+            return chatClient.prompt()
+                    .user(userMessage)
+                    .functions("get_admin_revenue_stats_tool", "get_admin_low_stock_tool", "search_admin_invoices_tool", "search_products_tool", "get_best_selling_shoes_tool")
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI:");
+            e.printStackTrace();
+            return "Trợ lý AI Admin hiện tại không thể xử lý yêu cầu. Lỗi: " + e.getMessage();
+        }
+    }
+
     private void guiThongBaoChatMoi(CuocHoiThoai session, String message) {
         try {
             String name = session.getTenKhachHang() != null ? session.getTenKhachHang() : "Khách hàng";
