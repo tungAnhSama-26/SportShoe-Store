@@ -17,6 +17,7 @@ services:
 
   # 2. Container Spring Boot Backend
   backend:
+    image: ${DOCKER_USERNAME:-tunganhsama}/sportshoe-backend:latest
     build:
       context: ./BE/server
       dockerfile: Dockerfile
@@ -33,6 +34,7 @@ services:
 
   # 3. Container Vue.js Frontend
   frontend:
+    image: ${DOCKER_USERNAME:-tunganhsama}/sportshoe-frontend:latest
     build:
       context: ./FE/sport-shoe
       dockerfile: Dockerfile
