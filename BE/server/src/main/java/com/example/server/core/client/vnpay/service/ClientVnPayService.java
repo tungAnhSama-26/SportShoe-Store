@@ -341,7 +341,7 @@ public class ClientVnPayService {
             if (fieldValue != null && !fieldValue.isEmpty()) {
                 String encodedKey = urlEncode(fieldName);
                 String encodedValue = urlEncode(fieldValue);
-                hashParts.add(fieldName + "=" + encodedValue);
+                hashParts.add(fieldName + "=" + fieldValue);
                 queryParts.add(encodedKey + "=" + encodedValue);
             }
         }
@@ -378,7 +378,7 @@ public class ClientVnPayService {
             if (fieldName != null && fieldName.startsWith("vnp_")) {
                 String fieldValue = signParams.get(fieldName);
                 if (fieldValue != null && !fieldValue.isEmpty()) {
-                    hashParts.add(fieldName + "=" + urlEncode(fieldValue));
+                    hashParts.add(fieldName + "=" + fieldValue);
                 }
             }
         }
