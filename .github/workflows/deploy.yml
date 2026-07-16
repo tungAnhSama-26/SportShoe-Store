@@ -67,6 +67,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/SportShoe-Store
+            git pull origin main
+            export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
             # Pull ảnh mới nhất từ Docker Hub
             docker compose pull
             # Khởi động lại các container bằng ảnh mới
