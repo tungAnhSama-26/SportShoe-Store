@@ -123,6 +123,10 @@ public class HoaDon {
     @Column(name = "da_tru_kho", nullable = false)
     private Boolean daTruKho = false;
 
+    @ColumnDefault("0")
+    @Column(name = "so_lan_sua_dia_chi", nullable = false)
+    private Integer soLanSuaDiaChi = 0;
+
     public void setNgayTao(Instant ngayTao) {
         this.ngayTao = ngayTao;
     }

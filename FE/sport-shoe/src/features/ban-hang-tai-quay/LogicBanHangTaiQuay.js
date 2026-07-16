@@ -1066,6 +1066,44 @@ function LogicBanHangTaiQuay() {
   onMounted(async () => {
     await taiSanPham("");
     await taiDanhSachHoaDonCho();
+
+    const reorderStr = localStorage.getItem("reorder_items");
+    if (reorderStr) {
+      try {
+        const reorderItems = JSON.parse(reorderStr);
+        localStorage.removeItem("reorder_items");
+
+        if (!hoaDonChoDaChon.value) {
+          if (danhSachHoaDonCho.value.length > 0) {
+            await chonHoaDonCho(danhSachHoaDonCho.value[0]);
+          } else {
+            await xuLyTaoHoaDonChoMoi();
+          }
+        }
+
+        if (hoaDonChoDaChon.value) {
+          const mappedItems = reorderItems.map(item => ({
+            cartItemId: Date.now().toString() + Math.random().toString(),
+            chiTietId: item.giayChiTietId,
+            maSanPham: item.maSanPham,
+            tenSanPham: item.tenSanPham,
+            sku: item.sku || "",
+            mauSac: item.mauSac || "",
+            kichCo: item.kichCo || "",
+            hinhAnh: item.hinhAnh || "",
+            soLuong: item.soLuong,
+            soLuongBanDau: 0,
+            giaBan: item.giaBan,
+            giaGoc: item.giaBan,
+            soLuongTon: item.soLuongTon != null ? item.soLuongTon : 9999
+          }));
+
+          cartItems.value = mappedItems;
+        }
+      } catch (err) {
+        console.error("Lỗi khi khôi phục sản phẩm mua lại:", err);
+      }
+    }
   });
 
   onBeforeUnmount(() => {
