@@ -1,12 +1,14 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { CircleCheckBig, X } from "lucide-vue-next";
 import SidebarAdmin from "./SidebarAdmin.vue";
 import HeaderAdmin from "./HeaderAdmin.vue";
+import AdminChatBox from "../../components/common/AdminChatBox.vue";
 import { isDesktopSidebar, isSidebarOpen, syncSidebarWithViewport } from "../../composable/useSidebar";
 import { useAdminSession } from "../../composable/useAdminSession";
 
 const { adminSession, refreshAdminSession, shouldShowRoleNotice } = useAdminSession();
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 const hienThongBaoDangNhap = ref(false);
 let thongBaoTimeout;
 
@@ -91,6 +93,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </div>
+    
+    <!-- Admin AI Chatbot Widget -->
+    <AdminChatBox v-if="laAdmin" />
   </div>
 </template>
 
