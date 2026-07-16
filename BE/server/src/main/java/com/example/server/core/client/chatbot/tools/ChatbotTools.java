@@ -492,8 +492,8 @@ public class ChatbotTools {
 
     @Bean("get_admin_revenue_stats_tool")
     @Description("Lấy thống kê doanh thu của cửa hàng theo chu kỳ (period: 'today', 'month', 'year')")
-    public FunctionCallback getAdminRevenueStatsTool() {
-        Function<AdminRevenueRequest, String> func = new Function<AdminRevenueRequest, String>() {
+    public Function<AdminRevenueRequest, String> getAdminRevenueStatsTool() {
+        return new Function<AdminRevenueRequest, String>() {
             @Override
             public String apply(AdminRevenueRequest request) {
                 try {
@@ -548,16 +548,12 @@ public class ChatbotTools {
                 }
             }
         };
-        return FunctionCallbackWrapper.builder(func)
-                .withName("get_admin_revenue_stats_tool")
-                .withDescription("Lấy thống kê doanh thu của cửa hàng theo chu kỳ (period: 'today', 'month', 'year')")
-                .build();
     }
 
     @Bean("get_admin_low_stock_tool")
     @Description("Lấy danh sách sản phẩm sắp hết hàng (số lượng tồn kho dưới ngưỡng threshold, mặc định là 5)")
-    public FunctionCallback getAdminLowStockTool() {
-        Function<AdminLowStockRequest, String> func = new Function<AdminLowStockRequest, String>() {
+    public Function<AdminLowStockRequest, String> getAdminLowStockTool() {
+        return new Function<AdminLowStockRequest, String>() {
             @Override
             public String apply(AdminLowStockRequest request) {
                 try {
@@ -587,16 +583,12 @@ public class ChatbotTools {
                 }
             }
         };
-        return FunctionCallbackWrapper.builder(func)
-                .withName("get_admin_low_stock_tool")
-                .withDescription("Lấy danh sách sản phẩm sắp hết hàng (số lượng tồn kho dưới ngưỡng threshold, mặc định là 5)")
-                .build();
     }
 
     @Bean("search_admin_invoices_tool")
     @Description("Tìm kiếm danh sách hóa đơn của hệ thống theo mã hóa đơn, tên người nhận hoặc số điện thoại, trạng thái")
-    public FunctionCallback searchAdminInvoicesTool() {
-        Function<AdminInvoiceSearchRequest, List<InvoiceDto>> func = new Function<AdminInvoiceSearchRequest, List<InvoiceDto>>() {
+    public Function<AdminInvoiceSearchRequest, List<InvoiceDto>> searchAdminInvoicesTool() {
+        return new Function<AdminInvoiceSearchRequest, List<InvoiceDto>>() {
             @Override
             public List<InvoiceDto> apply(AdminInvoiceSearchRequest request) {
                 try {
@@ -659,9 +651,5 @@ public class ChatbotTools {
                 }
             }
         };
-        return FunctionCallbackWrapper.builder(func)
-                .withName("search_admin_invoices_tool")
-                .withDescription("Tìm kiếm danh sách hóa đơn của hệ thống theo mã hóa đơn, tên người nhận hoặc số điện thoại, trạng thái")
-                .build();
     }
 }
