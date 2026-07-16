@@ -548,6 +548,32 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         ensureCoTheCapNhatThongTinGiaoHang(hoaDon);
         ganNhanVienXuLyNeuChuaCo(hoaDon);
 
+        StringBuilder ghiChuHistory = new StringBuilder("Nhân viên cập nhật thông tin giao hàng:\n");
+        String tenCu = hoaDon.getTenNguoiNhan() == null ? "" : hoaDon.getTenNguoiNhan();
+        String tenMoi = request.tenNguoiNhan().trim();
+        if (!tenCu.equals(tenMoi)) {
+            ghiChuHistory.append("- Tên người nhận: '").append(tenCu).append("' -> '").append(tenMoi).append("'\n");
+        }
+
+        String sdtCu = hoaDon.getSdtNguoiNhan() == null ? "" : hoaDon.getSdtNguoiNhan();
+        String sdtMoi = request.sdtNguoiNhan().trim();
+        if (!sdtCu.equals(sdtMoi)) {
+            ghiChuHistory.append("- SĐT: '").append(sdtCu).append("' -> '").append(sdtMoi).append("'\n");
+        }
+
+        String dcCu = hoaDon.getDiaChiGiaoHang() == null ? "" : hoaDon.getDiaChiGiaoHang();
+        String dcMoi = request.diaChiGiaoHang().trim();
+        if (!dcCu.equals(dcMoi)) {
+            ghiChuHistory.append("- Địa chỉ: '").append(dcCu).append("' -> '").append(dcMoi).append("'\n");
+        }
+
+        String finalGhiChu = ghiChuHistory.toString();
+        if (finalGhiChu.equals("Nhân viên cập nhật thông tin giao hàng:\n")) {
+            finalGhiChu = "Nhân viên cập nhật người nhận và địa chỉ giao hàng";
+        } else if (finalGhiChu.length() > 1000) {
+            finalGhiChu = finalGhiChu.substring(0, 995) + "...";
+        }
+
         hoaDon.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hoaDon.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
         hoaDon.setDiaChiGiaoHang(request.diaChiGiaoHang().trim());
@@ -557,7 +583,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         ghiLichSuHoaDon(
                 hoaDon,
                 "Cập nhật thông tin giao hàng",
-                "Nhân viên cập nhật người nhận và địa chỉ giao hàng"
+                finalGhiChu
         );
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "THONG_TIN_GIAO_HANG");
         return mapHoaDonDetail(findHoaDon(id));
@@ -813,10 +839,19 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private HoaDonHistoryResponse mapLichSu(LichSuHoaDon lichSu) {
+        String actorCode = "Hệ thống";
+        String actorName = "Hệ thống";
+        if (lichSu.getNhanVien() != null) {
+            actorCode = lichSu.getNhanVien().getMa();
+            actorName = lichSu.getNhanVien().getHoTen();
+        } else if (lichSu.getNguoiThaoTac() != null) {
+            actorCode = lichSu.getNguoiThaoTac();
+            actorName = lichSu.getNguoiThaoTac();
+        }
         return new HoaDonHistoryResponse(
                 lichSu.getId(),
-                lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : "Hệ thống",
-                lichSu.getNhanVien() != null ? lichSu.getNhanVien().getHoTen() : "Hệ thống",
+                actorCode,
+                actorName,
                 normalizeLegacyDisplayValue(lichSu.getTrangThai()),
                 lichSu.getNgayTao(),
                 normalizeLegacyDisplayValue(lichSu.getGhiChu())
@@ -826,7 +861,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private void ghiLichSuHoaDon(HoaDon hoaDon, String trangThai, String ghiChu) {
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
-        lichSu.setNhanVien(resolveNhanVienDangDangNhap(hoaDon));
+        NhanVien nv = resolveNhanVienDangDangNhap(hoaDon);
+        lichSu.setNhanVien(nv);
+        if (nv != null) {
+            lichSu.setNguoiThaoTac("Nhân viên");
+        } else {
+            lichSu.setNguoiThaoTac("Hệ thống");
+        }
         lichSu.setTrangThai(trangThai);
         lichSu.setGhiChu(ghiChu);
         lichSu.setNgayTao(Instant.now());
@@ -1522,5 +1563,65 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
                 }
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse checkMuaLai(Integer id) {
+        HoaDon hoaDon = findHoaDon(id);
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
+        List<String> warnings = new java.util.ArrayList<>();
+        List<com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse.MuaLaiItem> mappedItems = new java.util.ArrayList<>();
+
+        for (HoaDonChiTiet item : items) {
+            GiayChiTiet giayChiTiet = item.getGiayChiTiet();
+            if (giayChiTiet == null) {
+                warnings.add("Sản phẩm đã bị xóa khỏi hệ thống.");
+                continue;
+            }
+
+            Giay giay = giayChiTiet.getGiay();
+            String name = (giay != null ? giay.getTen() : "Sản phẩm") + " [" + 
+                          (giayChiTiet.getMauSac() != null ? giayChiTiet.getMauSac().getTen() : "") + " - " + 
+                          (giayChiTiet.getKichCo() != null ? giayChiTiet.getKichCo().getGiaTri() : "") + "]";
+
+            boolean isDiscontinued = false;
+            if (giay == null || giay.getTrangThai() == null || giay.getTrangThai() == 0) {
+                isDiscontinued = true;
+            }
+            if (giayChiTiet.getKichHoat() == null || giayChiTiet.getKichHoat() == 0) {
+                isDiscontinued = true;
+            }
+
+            if (isDiscontinued) {
+                warnings.add("Sản phẩm '" + name + "' đã ngừng bán.");
+            } else {
+                int ton = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
+                int soLuongYeuCau = item.getSoLuong() == null ? 0 : item.getSoLuong();
+                if (ton < soLuongYeuCau) {
+                    warnings.add("Sản phẩm '" + name + "' không đủ số lượng tồn kho (Tồn: " + ton + ", Cần: " + soLuongYeuCau + ").");
+                }
+                
+                String variantImage = hinhAnhGiayRepository.findByGiayChiTietIdInAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(
+                        List.of(giayChiTiet.getId()), 1).stream().findFirst().map(h -> h.getUrl()).orElse(giay.getHinhAnh());
+
+                mappedItems.add(new com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse.MuaLaiItem(
+                        giayChiTiet.getId(),
+                        giay.getTen(),
+                        giay.getLoaiGiay() != null ? giay.getLoaiGiay().getTen() : "",
+                        giayChiTiet.getMauSac() != null ? giayChiTiet.getMauSac().getTen() : "",
+                        giayChiTiet.getKichCo() != null ? giayChiTiet.getKichCo().getGiaTri() : "",
+                        soLuongYeuCau,
+                        giayChiTiet.getGiaBan(),
+                        variantImage,
+                        giayChiTiet.getSku(),
+                        giay.getMa(),
+                        ton
+                ));
+            }
+        }
+
+        boolean coTheMuaLai = warnings.isEmpty() && !mappedItems.isEmpty();
+        return new com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse(coTheMuaLai, warnings, mappedItems);
     }
 }
