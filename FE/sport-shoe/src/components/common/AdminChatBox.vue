@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
 import { chatWithAdminAi, getAdminChatHistory } from "../../services/admin-chatbot";
+import { showConfirm } from "../../utils/alert";
 import { 
   Bot, 
   Send, 
@@ -72,8 +73,73 @@ function renderText(text) {
   return escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
 
+async function handleChatbotAction(url) {
+  // Pattern 1: /action/confirm-order/HDxxx
+  if (url.startsWith("/action/confirm-order/")) {
+    const code = url.substring("/action/confirm-order/".length);
+    const confirmed = await showConfirm(`Bạn có chắc chắn muốn **Xác nhận** đơn hàng **${code}** không?`, 'Xác nhận đơn hàng', 'Đồng ý', 'Hủy');
+    if (confirmed) {
+      guiTinNhan(`/execute-confirm-order ${code}`);
+    }
+  }
+  // Pattern 2: /action/cancel-order/HDxxx
+  else if (url.startsWith("/action/cancel-order/")) {
+    const code = url.substring("/action/cancel-order/".length);
+    const confirmed = await showConfirm(`Bạn có chắc chắn muốn **Hủy** đơn hàng **${code}** không?`, 'Hủy đơn hàng', 'Đồng ý hủy', 'Không');
+    if (confirmed) {
+      guiTinNhan(`/execute-cancel-order ${code}`);
+    }
+  }
+  // Pattern 3: /action/update-stock/PRODUCT_NAME/SIZE/COLOR/NEW_STOCK
+  else if (url.startsWith("/action/update-stock/")) {
+    const parts = url.substring("/action/update-stock/".length).split("/");
+    if (parts.length >= 4) {
+      const productName = decodeURIComponent(parts[0]);
+      const size = parts[1];
+      const color = decodeURIComponent(parts[2]);
+      const qty = parts[3];
+      const confirmed = await showConfirm(
+        `Bạn có chắc chắn muốn cập nhật tồn kho sản phẩm **${productName}** (Size **${size}**, Màu **${color}**) thành **${qty}** không?`, 
+        'Cập nhật tồn kho', 
+        'Đồng ý', 
+        'Hủy'
+      );
+      if (confirmed) {
+        guiTinNhan(`/execute-update-stock ${productName}|${size}|${color}|${qty}`);
+      }
+    }
+  }
+  // Pattern 4: /action/create-voucher/CODE/NAME/TYPE/VALUE/MIN_ORDER/MAX_DISCOUNT/QTY/DURATION
+  else if (url.startsWith("/action/create-voucher/")) {
+    const parts = url.substring("/action/create-voucher/".length).split("/");
+    if (parts.length >= 8) {
+      const code = parts[0];
+      const name = decodeURIComponent(parts[1]);
+      const type = parts[2];
+      const value = parts[3];
+      const minOrder = parts[4];
+      const maxDiscount = parts[5];
+      const qty = parts[6];
+      const duration = parts[7];
+      
+      const typeText = type === "1" ? `${value}%` : `${Number(value).toLocaleString()}đ`;
+      const confirmed = await showConfirm(
+        `Bạn có muốn tạo mã giảm giá **${code}** (${name}) giảm **${typeText}**, áp dụng cho đơn từ **${Number(minOrder).toLocaleString()}đ** không?`,
+        'Tạo mã giảm giá',
+        'Đồng ý tạo',
+        'Hủy'
+      );
+      if (confirmed) {
+        guiTinNhan(`/execute-create-voucher ${code}|${name}|${type}|${value}|${minOrder}|${maxDiscount}|${qty}|${duration}`);
+      }
+    }
+  }
+}
+
 function handleNavigate(url) {
-  if (url.startsWith("/")) {
+  if (url.startsWith("/action/")) {
+    handleChatbotAction(url);
+  } else if (url.startsWith("/")) {
     router.push(url);
   } else {
     window.open(url, "_blank");

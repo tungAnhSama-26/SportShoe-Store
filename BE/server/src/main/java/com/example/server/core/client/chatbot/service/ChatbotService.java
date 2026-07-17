@@ -424,7 +424,21 @@ public class ChatbotService {
                   4. Tra cứu thông tin sản phẩm công khai: Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`.
                   5. Tra cứu đánh giá khách hàng: Sử dụng công cụ `get_admin_product_reviews_tool` (đánh giá của sản phẩm cụ thể) hoặc `get_admin_top_reviews_tool` (sản phẩm đánh giá tốt nhất / tệ nhất).
                   6. Cập nhật trạng thái đơn hàng (xác nhận hoặc hủy): Sử dụng công cụ `update_admin_order_status_tool`.
+                  7. Cập nhật tồn kho sản phẩm: Sử dụng công cụ `update_admin_product_stock_tool`.
+                  8. Tạo mã giảm giá nhanh: Sử dụng công cụ `create_admin_voucher_tool`.
                 - Bạn CHỈ hỗ trợ các câu hỏi liên quan đến quản lý cửa hàng, thống kê, kiểm kho và tra cứu vận hành. Từ chối trả lời lịch sự cho các câu hỏi cá nhân hoặc ngoài phạm vi.
+
+                # HƯỚNG DẪN SINH HÀNH ĐỘNG CẦN XÁC NHẬN (QUAN TRỌNG)
+                Khi người dùng yêu cầu thực hiện hành động thay đổi dữ liệu nhạy cảm (như xác nhận đơn hàng, hủy đơn hàng, cập nhật tồn kho, tạo mã giảm giá), bạn TUYỆT ĐỐI không được gọi các tool thay đổi trực tiếp ngay. Thay vào đó, hãy phân tích tham số và sinh ra liên kết hành động dưới dạng Markdown như sau để yêu cầu xác nhận từ Admin:
+                - Xác nhận đơn hàng: [Đồng ý xác nhận](/action/confirm-order/MÃ_HĐ)
+                - Hủy đơn hàng: [Đồng ý hủy](/action/cancel-order/MÃ_HĐ)
+                - Cập nhật tồn kho: [Đồng ý cập nhật tồn kho](/action/update-stock/TÊN_SẢN_PHẨM/SIZE/MÀU/SỐ_LƯỢNG)
+                - Tạo mã giảm giá: [Đồng ý tạo mã](/action/create-voucher/MÃ/TÊN/LOẠI/GIÁ_TRỊ/ĐƠN_TỐI_THIỂU/GIẢM_TỐI_ĐA/SỐ_LƯỢNG/SỐ_NGÀY)
+                  (Trong đó: LOẠI = 1 cho %, 2 cho tiền mặt. ĐƠN_TỐI_THIỂU và GIẢM_TỐI_ĐA mặc định là 0 nếu không yêu cầu. SỐ_LƯỢNG mặc định là 100. SỐ_NGÀY mặc định là 30).
+
+                Ví dụ: "Tôi có thể giúp bạn xác nhận hóa đơn HD0001. Bạn có muốn thực hiện không? [Đồng ý xác nhận](/action/confirm-order/HD0001)".
+
+                *Chú ý:* Chỉ khi người dùng gửi tin nhắn bắt đầu bằng lệnh "/execute-..." (Ví dụ: "/execute-confirm-order HD0001", "/execute-update-stock Ananas|41|đen|20", "/execute-create-voucher GIAMGIA|Tên|1|10|0|0|100|30"), bạn mới được phép gọi ngay lập tức tool tương ứng để thực hiện thao tác trực tiếp vào DB và trả về kết quả thành công cho họ.
 
                 # HƯỚNG DẪN HIỂN THỊ LINK ADMIN (QUAN TRỌNG)
                 - Khi hiển thị sản phẩm, hãy đính kèm link dạng:
@@ -494,7 +508,9 @@ public class ChatbotService {
                             "get_best_selling_shoes_tool",
                             "get_admin_product_reviews_tool",
                             "get_admin_top_reviews_tool",
-                            "update_admin_order_status_tool"
+                            "update_admin_order_status_tool",
+                            "update_admin_product_stock_tool",
+                            "create_admin_voucher_tool"
                     )
                     .call()
                     .content();
