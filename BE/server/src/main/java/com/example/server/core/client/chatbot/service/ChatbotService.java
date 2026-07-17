@@ -411,7 +411,8 @@ public class ChatbotService {
         }
     }
 
-    public String generateAdminAiResponse(String userMessage) {
+    @Transactional
+    public String generateAdminAiResponse(java.util.UUID nhanVienId, String userMessage) {
         String systemPrompt = """
                 Bạn là một trợ lý ảo hỗ trợ quản trị và vận hành cửa hàng SportShoe dành riêng cho Admin/Quản lý.
 
@@ -421,6 +422,8 @@ public class ChatbotService {
                   2. Hàng tồn kho và cảnh báo hết hàng: Sử dụng công cụ `get_admin_low_stock_tool` để tra cứu sản phẩm sắp hết hàng.
                   3. Tra cứu nhanh danh sách hóa đơn admin: Sử dụng công cụ `search_admin_invoices_tool` để tìm kiếm hóa đơn theo từ khóa hoặc trạng thái.
                   4. Tra cứu thông tin sản phẩm công khai: Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`.
+                  5. Tra cứu đánh giá khách hàng: Sử dụng công cụ `get_admin_product_reviews_tool` (đánh giá của sản phẩm cụ thể) hoặc `get_admin_top_reviews_tool` (sản phẩm đánh giá tốt nhất / tệ nhất).
+                  6. Cập nhật trạng thái đơn hàng (xác nhận hoặc hủy): Sử dụng công cụ `update_admin_order_status_tool`.
                 - Bạn CHỈ hỗ trợ các câu hỏi liên quan đến quản lý cửa hàng, thống kê, kiểm kho và tra cứu vận hành. Từ chối trả lời lịch sự cho các câu hỏi cá nhân hoặc ngoài phạm vi.
 
                 # HƯỚNG DẪN HIỂN THỊ LINK ADMIN (QUAN TRỌNG)
@@ -438,20 +441,96 @@ public class ChatbotService {
                 """;
 
         try {
+            NhanVien nv = nhanVienRepository.findById(nhanVienId)
+                    .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại"));
+
+            CuocHoiThoai session = null;
+            List<CuocHoiThoai> sessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
+            if (!sessions.isEmpty()) {
+                session = sessions.get(0);
+            } else {
+                session = new CuocHoiThoai();
+                session.setNhanVien(nv);
+                session.setTrangThai(1);
+                session.setNgayTao(java.time.Instant.now());
+                session = cuocHoiThoaiRepository.save(session);
+            }
+
+            // Lưu tin nhắn Admin
+            TinNhan adminMsg = new TinNhan();
+            adminMsg.setCuocHoiThoai(session);
+            adminMsg.setNhanVien(nv);
+            adminMsg.setNguoiGui("STAFF");
+            adminMsg.setNoiDung(userMessage);
+            adminMsg.setNgayTao(java.time.Instant.now());
+            tinNhanRepository.save(adminMsg);
+
+            // Load lịch sử hội thoại (15 tin nhắn gần nhất)
+            List<TinNhan> historyMsgs = tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(session.getId());
+            if (historyMsgs.size() > 15) {
+                historyMsgs = historyMsgs.subList(historyMsgs.size() - 15, historyMsgs.size());
+            }
+
+            List<org.springframework.ai.chat.messages.Message> springAiMsgs = new java.util.ArrayList<>();
+            for (TinNhan m : historyMsgs) {
+                if ("STAFF".equals(m.getNguoiGui())) {
+                    springAiMsgs.add(new org.springframework.ai.chat.messages.UserMessage(m.getNoiDung()));
+                } else if ("AI".equals(m.getNguoiGui())) {
+                    springAiMsgs.add(new org.springframework.ai.chat.messages.AssistantMessage(m.getNoiDung()));
+                }
+            }
+
             ChatClient chatClient = chatClientBuilder
                     .defaultSystem(systemPrompt)
                     .build();
 
-            return chatClient.prompt()
-                    .user(userMessage)
-                    .functions("get_admin_revenue_stats_tool", "get_admin_low_stock_tool", "search_admin_invoices_tool", "search_products_tool", "get_best_selling_shoes_tool")
+            String reply = chatClient.prompt()
+                    .messages(springAiMsgs)
+                    .functions(
+                            "get_admin_revenue_stats_tool", 
+                            "get_admin_low_stock_tool", 
+                            "search_admin_invoices_tool", 
+                            "search_products_tool", 
+                            "get_best_selling_shoes_tool",
+                            "get_admin_product_reviews_tool",
+                            "get_admin_top_reviews_tool",
+                            "update_admin_order_status_tool"
+                    )
                     .call()
                     .content();
+
+            // Lưu tin nhắn AI
+            TinNhan aiMsg = new TinNhan();
+            aiMsg.setCuocHoiThoai(session);
+            aiMsg.setNguoiGui("AI");
+            aiMsg.setNoiDung(reply);
+            aiMsg.setNgayTao(java.time.Instant.now());
+            tinNhanRepository.save(aiMsg);
+
+            return reply;
         } catch (Exception e) {
             System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI:");
             e.printStackTrace();
             return "Trợ lý AI Admin hiện tại không thể xử lý yêu cầu. Lỗi: " + e.getMessage();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotMessageDto> getAdminChatHistory(java.util.UUID nhanVienId) {
+        List<CuocHoiThoai> sessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
+        if (sessions.isEmpty()) {
+            return List.of();
+        }
+        return tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessions.get(0).getId())
+                .stream()
+                .map(m -> new ChatbotMessageDto(
+                        m.getId(),
+                        m.getNguoiGui(),
+                        m.getNoiDung(),
+                        m.getNgayTao(),
+                        m.getNhanVien() != null ? m.getNhanVien().getMa() : null
+                ))
+                .collect(Collectors.toList());
     }
 
     private void guiThongBaoChatMoi(CuocHoiThoai session, String message) {

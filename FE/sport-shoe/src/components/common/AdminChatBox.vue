@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
-import { chatWithAdminAi } from "../../services/admin-chatbot";
+import { chatWithAdminAi, getAdminChatHistory } from "../../services/admin-chatbot";
 import { 
   Bot, 
   Send, 
@@ -24,9 +24,9 @@ const chatContainer = ref(null);
 
 const promptSuggestions = [
   { label: "Doanh thu hôm nay", text: "Thống kê doanh thu hôm nay", icon: TrendingUp },
-  { label: "Doanh thu tháng này", text: "Thống kê doanh thu tháng này", icon: TrendingUp },
   { label: "Sản phẩm sắp hết hàng", text: "Sản phẩm sắp hết hàng", icon: AlertTriangle },
-  { label: "Sản phẩm bán chạy", text: "Sản phẩm bán chạy nhất", icon: Zap }
+  { label: "Sản phẩm bán chạy", text: "Sản phẩm bán chạy nhất", icon: Zap },
+  { label: "Đánh giá tốt nhất", text: "Thống kê những sản phẩm được đánh giá tốt nhất và tệ nhất", icon: Sparkles }
 ];
 
 function parseMessage(text) {
@@ -88,11 +88,16 @@ function cuonXuongCuoi() {
   });
 }
 
-function layLichSuChat() {
+async function layLichSuChat() {
   try {
-    const saved = localStorage.getItem("admin_chatbot_history");
-    if (saved) {
-      messages.value = JSON.parse(saved);
+    const data = await getAdminChatHistory();
+    if (data && data.length > 0) {
+      messages.value = data.map(m => ({
+        id: m.id.toString(),
+        sender: m.nguoiGui === "STAFF" ? "USER" : "AI",
+        content: m.noiDung,
+        time: m.ngayTao
+      }));
     } else {
       messages.value = [
         {
@@ -104,15 +109,12 @@ function layLichSuChat() {
       ];
     }
   } catch (e) {
-    console.error("Lỗi đọc lịch sử chat admin:", e);
-  }
-}
-
-function luuLichSuChat() {
-  try {
-    localStorage.setItem("admin_chatbot_history", JSON.stringify(messages.value));
-  } catch (e) {
-    console.error("Lỗi lưu lịch sử chat admin:", e);
+    console.error("Lỗi đọc lịch sử chat admin từ database:", e);
+    // Fallback sang localStorage nếu API lỗi
+    const saved = localStorage.getItem("admin_chatbot_history");
+    if (saved) {
+      messages.value = JSON.parse(saved);
+    }
   }
 }
 
@@ -121,11 +123,10 @@ function xoaLichSu() {
     {
       id: "welcome",
       sender: "AI",
-      content: "Đã xóa lịch sử chat. Tôi có thể giúp gì thêm cho bạn?",
+      content: "Đã xóa lịch sử chat trên màn hình. Tôi có thể giúp gì thêm cho bạn?",
       time: new Date().toISOString()
     }
   ];
-  luuLichSuChat();
 }
 
 async function guiTinNhan(contentStr) {
@@ -144,7 +145,6 @@ async function guiTinNhan(contentStr) {
     time: new Date().toISOString()
   };
   messages.value.push(userMsg);
-  luuLichSuChat();
   cuonXuongCuoi();
 
   isSending.value = true;
@@ -157,13 +157,20 @@ async function guiTinNhan(contentStr) {
       time: new Date().toISOString()
     };
     messages.value.push(aiMsg);
-    luuLichSuChat();
   } catch (e) {
     console.error("Lỗi chat chatbot admin:", e);
     const errMsg = {
       id: (Date.now() + 1).toString(),
       sender: "AI",
       content: "Hệ thống AI hiện đang bận hoặc có lỗi xảy ra. Vui lòng thử lại sau.",
+      time: new Date().toISOString()
+    };
+    messages.value.push(errMsg);
+  } finally {
+    isSending.value = false;
+    cuonXuongCuoi();
+  }
+}g thử lại sau.",
       time: new Date().toISOString()
     };
     messages.value.push(errMsg);

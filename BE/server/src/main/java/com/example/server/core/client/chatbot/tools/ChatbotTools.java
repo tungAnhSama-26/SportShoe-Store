@@ -20,9 +20,14 @@ import java.util.function.Function;
 public class ChatbotTools {
 
     private final EntityManager entityManager;
+    private final com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService;
 
-    public ChatbotTools(EntityManager entityManager) {
+    public ChatbotTools(
+            EntityManager entityManager,
+            com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService
+    ) {
         this.entityManager = entityManager;
+        this.quanLyHoaDonService = quanLyHoaDonService;
     }
 
     public record SearchRequest(
@@ -52,6 +57,10 @@ public class ChatbotTools {
     public record AdminRevenueRequest(String period) {}
     public record AdminLowStockRequest(Integer threshold) {}
     public record AdminInvoiceSearchRequest(String query, String status) {}
+
+    public record AdminProductReviewRequest(Integer productId, String productName) {}
+    public record AdminTopReviewsRequest() {}
+    public record AdminOrderUpdateRequest(String invoiceCode, String action) {}
 
     private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
         try {
@@ -648,6 +657,172 @@ public class ChatbotTools {
                 } catch (Exception e) {
                     e.printStackTrace();
                     return List.of();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_product_reviews_tool")
+    @Description("Lấy thống kê đánh giá của khách hàng đối với một sản phẩm cụ thể theo ID hoặc Tên sản phẩm")
+    public Function<AdminProductReviewRequest, String> getAdminProductReviewsTool() {
+        return new Function<AdminProductReviewRequest, String>() {
+            @Override
+            public String apply(AdminProductReviewRequest request) {
+                try {
+                    List<com.example.server.entity.Giay> list = new ArrayList<>();
+                    if (request.productId() != null) {
+                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, request.productId());
+                        if (g != null) list.add(g);
+                    } else if (request.productName() != null && !request.productName().isBlank()) {
+                        list = entityManager.createQuery(
+                                "SELECT g FROM Giay g WHERE LOWER(g.ten) LIKE :name", com.example.server.entity.Giay.class)
+                                .setParameter("name", "%" + request.productName().toLowerCase().trim() + "%")
+                                .setMaxResults(1)
+                                .getResultList();
+                    }
+                    
+                    if (list.isEmpty()) {
+                        return "Không tìm thấy sản phẩm phù hợp.";
+                    }
+                    com.example.server.entity.Giay g = list.get(0);
+                    
+                    List<com.example.server.entity.DanhGia> reviews = entityManager.createQuery(
+                            "SELECT d FROM DanhGia d WHERE d.giay.id = :giayId AND d.trangThai = 1 ORDER BY d.ngayTao DESC", com.example.server.entity.DanhGia.class)
+                            .setParameter("giayId", g.getId())
+                            .getResultList();
+                    
+                    if (reviews.isEmpty()) {
+                        return "Sản phẩm **" + g.getTen() + "** chưa có lượt đánh giá nào.";
+                    }
+                    
+                    int total = reviews.size();
+                    double sum = 0;
+                    int positive = 0;
+                    int negative = 0;
+                    
+                    for (com.example.server.entity.DanhGia d : reviews) {
+                        sum += d.getSoSao();
+                        if (d.getSoSao() >= 4) positive++;
+                        if (d.getSoSao() <= 2) negative++;
+                    }
+                    
+                    double avg = sum / total;
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(String.format("Thống kê đánh giá cho sản phẩm **%s**:\n", g.getTen()));
+                    sb.append(String.format("- Điểm đánh giá trung bình: **%.1f/5.0** ⭐\n", avg));
+                    sb.append(String.format("- Tổng số lượt đánh giá: %d\n", total));
+                    sb.append(String.format("- Số đánh giá tích cực (4-5 sao): %d (%.1f%%)\n", positive, (positive * 100.0 / total)));
+                    sb.append(String.format("- Số đánh giá tiêu cực (1-2 sao): %d (%.1f%%)\n", negative, (negative * 100.0 / total)));
+                    
+                    sb.append("\n5 đánh giá gần nhất:\n");
+                    int showCount = Math.min(5, reviews.size());
+                    for (int i = 0; i < showCount; i++) {
+                        com.example.server.entity.DanhGia d = reviews.get(i);
+                        sb.append(String.format("%d. **%d sao** | %s: \"%s\"\n", 
+                                i + 1, 
+                                d.getSoSao(), 
+                                d.getKhachHang() != null ? d.getKhachHang().getHoTen() : "Khách hàng",
+                                d.getNoiDung() != null ? d.getNoiDung() : "(Không có nội dung)"));
+                    }
+                    return sb.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi truy vấn đánh giá sản phẩm: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_top_reviews_tool")
+    @Description("Lấy danh sách các sản phẩm có đánh giá tích cực nhiều nhất (điểm trung bình cao nhất) và sản phẩm có nhiều đánh giá tiêu cực nhất")
+    public Function<AdminTopReviewsRequest, String> getAdminTopReviewsTool() {
+        return new Function<AdminTopReviewsRequest, String>() {
+            @Override
+            public String apply(AdminTopReviewsRequest request) {
+                try {
+                    List<Object[]> stats = entityManager.createQuery(
+                            "SELECT d.giay.id, d.giay.ten, AVG(CAST(d.soSao as double)), COUNT(d.id) " +
+                            "FROM DanhGia d WHERE d.trangThai = 1 " +
+                            "GROUP BY d.giay.id, d.giay.ten", Object[].class)
+                            .getResultList();
+                    
+                    if (stats.isEmpty()) {
+                        return "Chưa có sản phẩm nào nhận được đánh giá trong hệ thống.";
+                    }
+                    
+                    List<Object[]> topPositive = new ArrayList<>(stats);
+                    topPositive.sort((a, b) -> Double.compare((Double) b[2], (Double) a[2]));
+                    
+                    List<Object[]> topNegative = new ArrayList<>(stats);
+                    topNegative.sort((a, b) -> Double.compare((Double) a[2], (Double) b[2]));
+                    
+                    StringBuilder sb = new StringBuilder("### THỐNG KÊ ĐÁNH GIÁ HỆ THỐNG\n\n");
+                    
+                    sb.append("🏆 **Top 5 sản phẩm đánh giá cao nhất:**\n");
+                    int limitPos = Math.min(5, topPositive.size());
+                    for (int i = 0; i < limitPos; i++) {
+                        Object[] row = topPositive.get(i);
+                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
+                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                    }
+                    
+                    sb.append("\n⚠️ **Top 5 sản phẩm điểm đánh giá thấp nhất:**\n");
+                    int limitNeg = Math.min(5, topNegative.size());
+                    for (int i = 0; i < limitNeg; i++) {
+                        Object[] row = topNegative.get(i);
+                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
+                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                    }
+                    
+                    return sb.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi lấy thống kê đánh giá hệ thống: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("update_admin_order_status_tool")
+    @Description("Cập nhật trạng thái đơn hàng (xác nhận đơn hàng hoặc hủy đơn hàng) theo mã hóa đơn và hành động (action: 'confirm' hoặc 'cancel')")
+    public Function<AdminOrderUpdateRequest, String> updateAdminOrderStatusTool() {
+        return new Function<AdminOrderUpdateRequest, String>() {
+            @Override
+            public String apply(AdminOrderUpdateRequest request) {
+                try {
+                    if (request.invoiceCode() == null || request.invoiceCode().isBlank()) {
+                        return "Vui lòng cung cấp mã hóa đơn hợp lệ.";
+                    }
+                    List<com.example.server.entity.HoaDon> list = entityManager.createQuery(
+                            "SELECT h FROM HoaDon h WHERE h.ma = :ma", com.example.server.entity.HoaDon.class)
+                            .setParameter("ma", request.invoiceCode().trim())
+                            .getResultList();
+                    if (list.isEmpty()) {
+                        return "Không tìm thấy hóa đơn có mã: " + request.invoiceCode();
+                    }
+                    com.example.server.entity.HoaDon hoaDon = list.get(0);
+                    String action = request.action() != null ? request.action().toLowerCase().trim() : "";
+                    
+                    String targetStatus;
+                    String actionText;
+                    if ("confirm".equals(action)) {
+                        targetStatus = "Đã xác nhận";
+                        actionText = "xác nhận";
+                    } else if ("cancel".equals(action)) {
+                        targetStatus = "Hủy";
+                        actionText = "hủy";
+                    } else {
+                        return "Hành động không hợp lệ. Chỉ chấp nhận 'confirm' (xác nhận) hoặc 'cancel' (hủy).";
+                    }
+                    
+                    var updateRequest = new com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest(
+                            targetStatus, "Cập nhật qua Trợ lý AI Admin", null, null, true);
+                    
+                    quanLyHoaDonService.capNhatTrangThaiHoaDon(hoaDon.getId(), updateRequest);
+                    return "Đã thực hiện " + actionText + " thành công đơn hàng " + request.invoiceCode() + ".";
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi cập nhật trạng thái đơn hàng: " + e.getMessage();
                 }
             }
         };
