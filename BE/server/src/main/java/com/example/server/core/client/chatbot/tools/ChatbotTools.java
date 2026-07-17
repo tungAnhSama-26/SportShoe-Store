@@ -21,13 +21,19 @@ public class ChatbotTools {
 
     private final EntityManager entityManager;
     private final com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService;
+    private final com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService quanLySanPhamService;
+    private final com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService;
 
     public ChatbotTools(
             EntityManager entityManager,
-            com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService
+            com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService,
+            com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService quanLySanPhamService,
+            com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService
     ) {
         this.entityManager = entityManager;
         this.quanLyHoaDonService = quanLyHoaDonService;
+        this.quanLySanPhamService = quanLySanPhamService;
+        this.phieuGiamGiaService = phieuGiamGiaService;
     }
 
     public record SearchRequest(
@@ -61,6 +67,24 @@ public class ChatbotTools {
     public record AdminProductReviewRequest(Integer productId, String productName) {}
     public record AdminTopReviewsRequest() {}
     public record AdminOrderUpdateRequest(String invoiceCode, String action) {}
+
+    public record AdminProductStockUpdateRequest(
+            String productName,
+            Integer sizeValue,
+            String colorName,
+            Integer newStock
+    ) {}
+
+    public record AdminVoucherCreateRequest(
+            String code,
+            String name,
+            Integer type,
+            BigDecimal value,
+            BigDecimal minOrder,
+            BigDecimal maxDiscount,
+            Integer quantity,
+            Integer durationDays
+    ) {}
 
     private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
         try {
@@ -823,6 +847,113 @@ public class ChatbotTools {
                 } catch (Exception e) {
                     e.printStackTrace();
                     return "Lỗi khi cập nhật trạng thái đơn hàng: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("update_admin_product_stock_tool")
+    @Description("Cập nhật số lượng tồn kho cho một biến thể sản phẩm cụ thể theo tên sản phẩm, size (kích cỡ), tên màu sắc và số lượng tồn kho mới")
+    public Function<AdminProductStockUpdateRequest, String> updateAdminProductStockTool() {
+        return new Function<AdminProductStockUpdateRequest, String>() {
+            @Override
+            public String apply(AdminProductStockUpdateRequest request) {
+                try {
+                    if (request.productName() == null || request.productName().isBlank()) {
+                        return "Vui lòng cung cấp tên sản phẩm.";
+                    }
+                    if (request.sizeValue() == null) {
+                        return "Vui lòng cung cấp kích cỡ (size).";
+                    }
+                    if (request.colorName() == null || request.colorName().isBlank()) {
+                        return "Vui lòng cung cấp tên màu sắc.";
+                    }
+                    if (request.newStock() == null || request.newStock() < 0) {
+                        return "Số lượng tồn kho mới không hợp lệ.";
+                    }
+
+                    List<com.example.server.entity.GiayChiTiet> list = entityManager.createQuery(
+                            "SELECT gct FROM GiayChiTiet gct WHERE " +
+                            "LOWER(gct.giay.ten) LIKE :productName AND " +
+                            "gct.kichCo.giaTri = :sizeValue AND " +
+                            "LOWER(gct.mauSac.ten) = :colorName", com.example.server.entity.GiayChiTiet.class)
+                            .setParameter("productName", "%" + request.productName().toLowerCase().trim() + "%")
+                            .setParameter("sizeValue", request.sizeValue())
+                            .setParameter("colorName", request.colorName().toLowerCase().trim())
+                            .getResultList();
+
+                    if (list.isEmpty()) {
+                        return String.format("Không tìm thấy biến thể sản phẩm cho: %s (Size %d, Màu %s)", 
+                                request.productName(), request.sizeValue(), request.colorName());
+                    }
+
+                    com.example.server.entity.GiayChiTiet variant = list.get(0);
+                    var updateRequest = new com.example.server.core.admin.quanLySanPham.dto.request.CapNhatBienTheRequest(
+                            request.newStock(),
+                            variant.getGiaGoc(),
+                            variant.getGiaBan(),
+                            request.newStock() > 0 ? 1 : 0
+                    );
+
+                    quanLySanPhamService.capNhatBienThe(variant.getId(), updateRequest);
+                    return String.format("Đã cập nhật số lượng tồn kho của biến thể **%s (Màu %s, Size %d)** thành **%d** thành công.", 
+                            variant.getGiay().getTen(), variant.getMauSac().getTen(), variant.getKichCo().getGiaTri(), request.newStock());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi cập nhật số lượng tồn kho: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("create_admin_voucher_tool")
+    @Description("Tạo nhanh mã giảm giá mới (voucher) trong hệ thống với các tham số tương ứng")
+    public Function<AdminVoucherCreateRequest, String> createAdminVoucherTool() {
+        return new Function<AdminVoucherCreateRequest, String>() {
+            @Override
+            public String apply(AdminVoucherCreateRequest request) {
+                try {
+                    if (request.code() == null || request.code().isBlank()) {
+                        return "Vui lòng cung cấp mã giảm giá.";
+                    }
+                    if (request.name() == null || request.name().isBlank()) {
+                        return "Vui lòng cung cấp tên hiển thị của mã giảm giá.";
+                    }
+                    if (request.value() == null || request.value().doubleValue() <= 0) {
+                        return "Giá trị giảm giá không hợp lệ.";
+                    }
+                    if (request.quantity() == null || request.quantity() <= 0) {
+                        return "Số lượng mã giảm giá phát hành phải lớn hơn 0.";
+                    }
+
+                    var voucherRequest = new com.example.server.core.admin.quanlykhuyenmai.dto.request.PhieuGiamGiaRequest();
+                    voucherRequest.setMa(request.code().trim().toUpperCase());
+                    voucherRequest.setTen(request.name().trim());
+                    // loai: 1 là phần trăm (%), 2 là tiền mặt (VND)
+                    voucherRequest.setLoai(request.type() != null ? request.type() : 1);
+                    voucherRequest.setLoaiPhieu(1); // 1: Công khai (public)
+                    voucherRequest.setGiaTri(request.value());
+                    voucherRequest.setGiaTriToiThieu(request.minOrder() != null ? request.minOrder() : BigDecimal.ZERO);
+                    voucherRequest.setGiamToiDa(request.maxDiscount() != null ? request.maxDiscount() : BigDecimal.ZERO);
+                    voucherRequest.setNgayBatDau(java.time.LocalDate.now());
+                    
+                    int duration = request.durationDays() != null ? request.durationDays() : 30;
+                    voucherRequest.setNgayKetThuc(java.time.LocalDate.now().plusDays(duration));
+                    voucherRequest.setSoLuong(request.quantity());
+                    voucherRequest.setTrangThai(1); // 1: Hoạt động
+
+                    phieuGiamGiaService.add(voucherRequest);
+                    
+                    String typeStr = voucherRequest.getLoai() == 1 ? "%" : " VNĐ";
+                    return String.format("Đã tạo thành công mã giảm giá **%s** (%s) giảm %s%s, áp dụng từ hôm nay đến hết ngày %s.",
+                            voucherRequest.getMa(), 
+                            voucherRequest.getTen(), 
+                            voucherRequest.getGiaTri().toPlainString(), 
+                            typeStr,
+                            voucherRequest.getNgayKetThuc().toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi tạo mã giảm giá: " + e.getMessage();
                 }
             }
         };
