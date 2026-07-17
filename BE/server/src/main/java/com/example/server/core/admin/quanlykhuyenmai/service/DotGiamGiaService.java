@@ -27,6 +27,7 @@ public class DotGiamGiaService {
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final DotGiamGiaSanPhamService dotGiamGiaSanPhamService;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
 
     public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
@@ -71,7 +72,14 @@ public class DotGiamGiaService {
         DotGiamGia dotGiamGia = new DotGiamGia();
         mapRequestToEntity(request, dotGiamGia);
         dotGiamGia.setNgayTao(LocalDate.now());
-        return dotGiamGiaRepository.save(dotGiamGia);
+        DotGiamGia saved = dotGiamGiaRepository.save(dotGiamGia);
+        // Báo vào chuông thông báo của mọi khách về đợt giảm giá mới.
+        clientThongBaoService.guiChoTatCaKhach(
+                "GIAM_GIA",
+                "Đợt giảm giá mới: " + saved.getTen(),
+                com.example.server.core.client.thongbao.service.ClientThongBaoService.moTaDotGiamGia(saved),
+                "/khachhang/san-pham");
+        return saved;
     }
 
     public DotGiamGia update(Integer id, DotGiamGiaRequest request) {

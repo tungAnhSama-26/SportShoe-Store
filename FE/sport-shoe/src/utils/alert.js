@@ -189,6 +189,40 @@ export function showError(text = '', title = 'Thất bại!') {
   });
 }
 
+/** Popup thành công TO giữa màn hình (giống showError nhưng icon xanh) - dùng cho các mốc lớn như đặt hàng. */
+export function showBigSuccess(text = '', title = 'Thành công!') {
+  ensureAlertStyles();
+
+  return Swal.fire({
+    icon: 'success',
+    title: normalizeSuccessTitle(title),
+    html: text || undefined,
+    toast: false,
+    position: 'center',
+    showConfirmButton: false,
+    timer: 2600,
+    timerProgressBar: true,
+    background: '#ffffff',
+    color: '#334155',
+    iconColor: '#16a34a',
+    target: document.getElementById('pos-tablet-screen') || 'body',
+    showClass: {
+      popup: 'sportshoe-popup-show',
+      backdrop: 'swal2-noanimation',
+    },
+    hideClass: {
+      popup: 'sportshoe-popup-hide',
+      backdrop: 'swal2-noanimation',
+    },
+    customClass: {
+      popup: 'sportshoe-success-popup',
+      title: 'sportshoe-success-title',
+      htmlContainer: 'sportshoe-success-text',
+      timerProgressBar: 'sportshoe-success-progress',
+    },
+  });
+}
+
 export function showToastSuccess(text = '', title = 'Thành công!') {
   return toastSwal.fire({
     icon: 'success',

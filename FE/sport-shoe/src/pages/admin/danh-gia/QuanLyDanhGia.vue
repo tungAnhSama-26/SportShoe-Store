@@ -537,8 +537,8 @@ function xuLyAnhLoi(e) {
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ dg.hoTenKhach }}</p>
                   <span class="text-xs text-slate-400">{{ formatNgay(dg.ngayTao) }}</span>
-                  <span v-if="dg.trangThai === 0" class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-600" :title="dg.lyDoAn || ''">
-                    Đã ẩn{{ dg.lyDoAn ? ' · ' + dg.lyDoAn : '' }}
+                  <span v-if="dg.trangThai === 0" class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-600">
+                    Bị ẩn vì chứa nội dung không phù hợp
                   </span>
                 </div>
                 <button
