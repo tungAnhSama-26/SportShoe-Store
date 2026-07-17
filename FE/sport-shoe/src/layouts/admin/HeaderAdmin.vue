@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, onMounted } from "vue";
-import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound, ArrowRightLeft, Bell, BellOff, Gift, AlertTriangle, Star, MessageSquare, Calendar, XCircle, RefreshCw, X } from "lucide-vue-next";
+import { ChevronDown, Home, LogOut, Menu, Moon, Sun, UserCog, UserRound, ArrowRightLeft, Bell, BellOff, Gift, AlertTriangle, Star, MessageSquare, Calendar, XCircle, RefreshCw, X, Settings2 } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { toggleSidebar } from "../../composable/useSidebar";
 import { useDarkMode } from "../../composable/useDarkMode";
@@ -438,6 +438,11 @@ function chuyenDenCapNhatThongTin() {
   router.push(isAdminRole() ? "/admin/profile" : "/nhanvien/profile");
 }
 
+function chuyenDenTrangConfigChatbot() {
+  hienMenuTaiKhoan.value = false;
+  router.push("/admin/chatbot-config");
+}
+
 function chuyenDenTrangChu() {
   hienMenuTaiKhoan.value = false;
   router.push("/");
@@ -627,6 +632,15 @@ function dangXuat() {
             >
               <UserCog class="h-4 w-4 text-slate-500 dark:text-slate-300" />
               Cập nhật thông tin
+            </button>
+            <button
+              v-if="isAdminRole()"
+              type="button"
+              class="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-700"
+              @click="chuyenDenTrangConfigChatbot"
+            >
+              <Settings2 class="h-4 w-4 text-slate-500 dark:text-slate-300" />
+              Cấu hình Chatbot AI
             </button>
             <button
               type="button"
