@@ -6,3 +6,9 @@ export function chatWithAdminAi(message) {
     body: JSON.stringify({ message }),
   });
 }
+
+export function getAdminChatHistory() {
+  return apiRequest("/admin/chatbot/history", {
+    method: "GET",
+  });
+}
