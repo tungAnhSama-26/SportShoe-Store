@@ -29,14 +29,17 @@ public class DanhGiaAiService {
     private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
     private final DanhGiaRepository danhGiaRepository;
     private final ThongBaoService thongBaoService;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
 
     public DanhGiaAiService(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
             DanhGiaRepository danhGiaRepository,
-            ThongBaoService thongBaoService) {
+            ThongBaoService thongBaoService,
+            com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService) {
         this.chatClientBuilderProvider = chatClientBuilderProvider;
         this.danhGiaRepository = danhGiaRepository;
         this.thongBaoService = thongBaoService;
+        this.clientThongBaoService = clientThongBaoService;
     }
 
     /** ChatClient dựng mới mỗi lần gọi (builder được lấy lười lúc dùng, không lúc khởi động). */
@@ -102,6 +105,13 @@ public class DanhGiaAiService {
                 dg.setLyDoAn("AI tự ẩn: " + (lyDo.length() > 400 ? lyDo.substring(0, 400) : lyDo));
                 dg.setNgayCapNhat(Instant.now());
                 danhGiaRepository.save(dg);
+                // Báo vào chuông thông báo của khách (getId trên proxy lazy không cần load DB).
+                clientThongBaoService.guiChoKhach(
+                        dg.getKhachHang().getId(),
+                        "DANH_GIA",
+                        "Đánh giá bị ẩn",
+                        "Đánh giá của bạn đã bị ẩn vì chứa nội dung không phù hợp",
+                        null);
             });
         } catch (Exception e) {
             // AI lỗi/hết hạn mức -> bỏ qua, đánh giá vẫn hiển thị bình thường.

@@ -216,6 +216,8 @@ public class ChatbotModelConfig {
         }
         if (isValidKey(geminiKey)) {
             models.add(createModel(geminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-3.5-flash", "Gemini", functionCallbackContext));
+            // Dự phòng khi gemini-3.5-flash quá tải (503 high demand) -> tự chuyển sang 2.5-flash.
+            models.add(createModel(geminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.5-flash", "Gemini-2.5-DuPhong", functionCallbackContext));
         }
         if (isValidKey(deepseekKey)) {
             models.add(createModel(deepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", functionCallbackContext));

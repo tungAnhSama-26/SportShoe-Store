@@ -32,6 +32,7 @@ public class PhieuGiamGiaKhachHangService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final KhachHangRepository khachHangRepository;
     private final EmailService emailService;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
 
     public List<QuanLyPhieuGiamGiaKhachHangResponse> getAll() {
         return phieuGiamGiaKhachHangRepository.hienThiPhieuGiamGiaKhachHang();
@@ -63,6 +64,14 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setNgayTao(Instant.now());
 
         PhieuGiamGiaKhachHang saved = phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+
+        // Báo vào chuông thông báo của khách được tặng.
+        clientThongBaoService.guiChoKhach(
+                khachHang.getId(),
+                "VOUCHER",
+                "Bạn được tặng voucher: " + phieuGiamGia.getTen(),
+                com.example.server.core.client.thongbao.service.ClientThongBaoService.moTaPhieuGiamGia(phieuGiamGia),
+                "/khachhang/san-pham");
 
         // Gửi email tặng phiếu giảm giá cho khách hàng ở luồng nền.
         if (khachHang.getEmail() != null && !khachHang.getEmail().isBlank()) {
