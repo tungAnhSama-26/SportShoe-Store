@@ -437,16 +437,7 @@ public class ChatbotService {
                 - Bạn CHỈ hỗ trợ các câu hỏi liên quan đến quản lý cửa hàng, thống kê, kiểm kho và tra cứu vận hành. Từ chối trả lời lịch sự cho các câu hỏi cá nhân hoặc ngoài phạm vi.
 
                 # HƯỚNG DẪN HIỂN THỊ BIỂU ĐỒ (QUAN TRỌNG)
-                Khi người dùng yêu cầu vẽ hoặc xem biểu đồ, hãy gọi công cụ `get_admin_chart_data_tool` để nhận chuỗi JSON dữ liệu thô. Sau đó, hiển thị nội dung đó nguyên bản bên trong khối code Markdown có tag là `chart` như sau:
-                ```chart
-                {
-                  "chartType": "line",
-                  "title": "Doanh thu 7 ngày gần nhất",
-                  "labels": ["11/07", "12/07"],
-                  "data": [1200000.00, 1900000.00]
-                }
-                ```
-                (Lưu ý: Không được thay đổi cấu trúc JSON bên trong tag chart này).
+                Khi người dùng yêu cầu vẽ hoặc xem biểu đồ, hãy gọi công cụ `get_admin_chart_data_tool` để nhận chuỗi JSON dữ liệu thô. Sau đó, hiển thị nội dung đó nguyên bản bên trong khối code Markdown có tag là `chart` (ví dụ: bọc toàn bộ chuỗi JSON nhận được từ tool trong cặp dấu nháy ```chart và ```). Không thay đổi cấu trúc JSON bên trong tag chart này, và không chèn thêm ký tự lạ ngoài khối chart.
 
                 # HƯỚNG DẪN SINH HÀNH ĐỘNG CẦN XÁC NHẬN (QUAN TRỌNG)
                 Khi người dùng yêu cầu thực hiện hành động thay đổi dữ liệu nhạy cảm (như xác nhận đơn hàng, hủy đơn hàng, cập nhật tồn kho, tạo mã giảm giá), bạn TUYỆT ĐỐI không được gọi các tool thay đổi trực tiếp ngay. Thay vào đó, hãy phân tích tham số và sinh ra liên kết hành động dưới dạng Markdown như sau để yêu cầu xác nhận từ Admin:
