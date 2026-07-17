@@ -464,10 +464,16 @@ const router = createRouter({
           path: "lich-su-hoat-dong",
           name: "admin-lich-su-hoat-dong",
           component: LichSuHoatDong
-},{
+        },
+        {
           path: "chat",
           name: "admin-chat",
           component: ChatManagement
+        },
+        {
+          path: "chatbot-config",
+          name: "admin-chatbot-config",
+          component: () => import("../pages/admin/chatbot-config/ChatbotConfig.vue")
         }
       ]
     },
