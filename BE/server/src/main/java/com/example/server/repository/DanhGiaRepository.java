@@ -89,6 +89,8 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
             select dg from DanhGia dg
             join fetch dg.khachHang kh
             join fetch dg.giay g
+            left join fetch dg.hoaDonChiTiet hdct
+            left join fetch hdct.giayChiTiet gct
             where (:giayId = -1 or g.id = :giayId)
               and (:trangThai = -1 or dg.trangThai = :trangThai)
               and dg.ngayTao >= :tuNgay and dg.ngayTao < :denNgay

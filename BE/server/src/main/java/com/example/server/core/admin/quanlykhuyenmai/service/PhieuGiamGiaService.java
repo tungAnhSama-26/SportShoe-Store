@@ -34,6 +34,7 @@ public class PhieuGiamGiaService {
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final EmailService emailService;
     private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
 
     public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
@@ -74,6 +75,14 @@ public class PhieuGiamGiaService {
         phieuGiamGia.setNgayTao(Instant.now());
         PhieuGiamGia saved = phieuGiamGiaRepository.save(phieuGiamGia);
         sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
+        // Voucher công khai (không phải phiếu tặng riêng) -> báo vào chuông của mọi khách.
+        if (saved.getLoaiPhieu() == null || saved.getLoaiPhieu() != 2) {
+            clientThongBaoService.guiChoTatCaKhach(
+                    "VOUCHER",
+                    "Voucher mới: " + saved.getTen(),
+                    com.example.server.core.client.thongbao.service.ClientThongBaoService.moTaPhieuGiamGia(saved),
+                    "/khachhang/san-pham");
+        }
         return saved;
     }
 

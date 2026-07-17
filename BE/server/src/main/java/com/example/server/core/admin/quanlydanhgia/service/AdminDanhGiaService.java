@@ -7,10 +7,14 @@ import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.GiayRepository;
+import com.example.server.repository.HinhAnhGiayRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,32 +25,45 @@ public class AdminDanhGiaService {
 
     private final DanhGiaRepository danhGiaRepository;
     private final GiayRepository giayRepository;
+    private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final DanhGiaAiService danhGiaAiService;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
 
     public AdminDanhGiaService(
             DanhGiaRepository danhGiaRepository,
             GiayRepository giayRepository,
-            DanhGiaAiService danhGiaAiService
+            HinhAnhGiayRepository hinhAnhGiayRepository,
+            DanhGiaAiService danhGiaAiService,
+            com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService
     ) {
         this.danhGiaRepository = danhGiaRepository;
         this.giayRepository = giayRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.danhGiaAiService = danhGiaAiService;
+        this.clientThongBaoService = clientThongBaoService;
     }
 
     /** Bảng sản phẩm có đánh giá + thống kê (số đánh giá, điểm TB, chưa xem), tìm theo tên/mã. */
     @Transactional(readOnly = true)
     public List<SanPhamCoDanhGiaResponse> laySanPhamCoDanhGia(String keyword) {
         String kw = keyword == null ? "" : keyword.trim();
-        return danhGiaRepository.thongKeSanPhamCoDanhGia(kw.isEmpty() ? null : kw).stream()
-                .map(r -> new SanPhamCoDanhGiaResponse(
-                        (Integer) r[0],
-                        (String) r[1],
-                        (String) r[2],
-                        (String) r[3],
-                        ((Number) r[4]).longValue(),
-                        r[5] == null ? 0 : Math.round(((Number) r[5]).doubleValue() * 10.0) / 10.0,
-                        (Instant) r[6],
-                        r[7] == null ? 0 : ((Number) r[7]).longValue()))
+        List<Object[]> rows = danhGiaRepository.thongKeSanPhamCoDanhGia(kw.isEmpty() ? null : kw);
+        // Ảnh chính lấy từ biến thể của sản phẩm (giay.hinhAnh thường null), fallback về giay.hinhAnh.
+        Map<Integer, String> anhChinh = mapAnhChinhTheoGiay(
+                rows.stream().map(r -> (Integer) r[0]).toList());
+        return rows.stream()
+                .map(r -> {
+                    Integer giayId = (Integer) r[0];
+                    return new SanPhamCoDanhGiaResponse(
+                            giayId,
+                            (String) r[1],
+                            (String) r[2],
+                            anhChinh.getOrDefault(giayId, (String) r[3]),
+                            ((Number) r[4]).longValue(),
+                            r[5] == null ? 0 : Math.round(((Number) r[5]).doubleValue() * 10.0) / 10.0,
+                            (Instant) r[6],
+                            r[7] == null ? 0 : ((Number) r[7]).longValue());
+                })
                 .toList();
     }
 
@@ -73,12 +90,74 @@ public class AdminDanhGiaService {
     private List<AdminDanhGiaResponse> locDanhGia(Integer giayId, Integer trangThai, String tuNgay, String denNgay) {
         Instant tu = parseNgay(tuNgay, false);
         Instant den = parseNgay(denNgay, true);
-        return danhGiaRepository.locChoAdmin(
-                        giayId == null ? -1 : giayId,
-                        trangThai == null ? -1 : trangThai,
-                        tu, den).stream()
-                .map(this::toResponse)
+        List<DanhGia> ds = danhGiaRepository.locChoAdmin(
+                giayId == null ? -1 : giayId,
+                trangThai == null ? -1 : trangThai,
+                tu, den);
+        // Ảnh ưu tiên biến thể khách đã mua (đúng màu/loại), fallback ảnh chính SP -> giay.hinhAnh.
+        Map<Integer, String> anhBienThe = mapAnhChinhTheoBienThe(
+                ds.stream().map(this::bienTheIdCuaDanhGia).filter(Objects::nonNull).distinct().toList());
+        Map<Integer, String> anhGiay = mapAnhChinhTheoGiay(
+                ds.stream().map(dg -> dg.getGiay().getId()).distinct().toList());
+        return ds.stream()
+                .map(dg -> toResponse(dg, layAnhDanhGia(dg, anhBienThe, anhGiay)))
                 .toList();
+    }
+
+    /** Id biến thể (giay_chi_tiet) mà đánh giá này gắn vào, null nếu đánh giá không có dòng hóa đơn. */
+    private Integer bienTheIdCuaDanhGia(DanhGia dg) {
+        return dg.getHoaDonChiTiet() != null && dg.getHoaDonChiTiet().getGiayChiTiet() != null
+                ? dg.getHoaDonChiTiet().getGiayChiTiet().getId()
+                : null;
+    }
+
+    /** Chọn ảnh cho 1 đánh giá: ảnh biến thể đã mua -> ảnh chính sản phẩm -> giay.hinhAnh. */
+    private String layAnhDanhGia(DanhGia dg, Map<Integer, String> anhBienThe, Map<Integer, String> anhGiay) {
+        Integer btId = bienTheIdCuaDanhGia(dg);
+        if (btId != null && anhBienThe.get(btId) != null) {
+            return anhBienThe.get(btId);
+        }
+        String anhSp = anhGiay.get(dg.getGiay().getId());
+        return anhSp != null ? anhSp : dg.getGiay().getHinhAnh();
+    }
+
+    /** Map giayId -> URL ảnh chính (ưu tiên laHinhChinh, lấy dòng đầu). */
+    private Map<Integer, String> mapAnhChinhTheoGiay(List<Integer> giayIds) {
+        Map<Integer, String> map = new HashMap<>();
+        if (!giayIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayIds(giayIds)) {
+                map.putIfAbsent((Integer) row[0], (String) row[1]);
+            }
+        }
+        return map;
+    }
+
+    /** Map biến thể (giayChiTietId) -> URL ảnh chính của biến thể đó. */
+    private Map<Integer, String> mapAnhChinhTheoBienThe(List<Integer> bienTheIds) {
+        Map<Integer, String> map = new HashMap<>();
+        if (!bienTheIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(bienTheIds)) {
+                map.putIfAbsent((Integer) row[0], (String) row[1]);
+            }
+        }
+        return map;
+    }
+
+    /** Ảnh sản phẩm cho 1 đánh giá lẻ (dùng khi phản hồi/khôi phục, không batch). */
+    private String layAnhDanhGiaDon(DanhGia dg) {
+        Integer btId = bienTheIdCuaDanhGia(dg);
+        if (btId != null) {
+            String url = firstUrl(hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(List.of(btId)));
+            if (url != null) {
+                return url;
+            }
+        }
+        String url = firstUrl(hinhAnhGiayRepository.findMainImageUrlsByGiayIds(List.of(dg.getGiay().getId())));
+        return url != null ? url : dg.getGiay().getHinhAnh();
+    }
+
+    private static String firstUrl(List<Object[]> rows) {
+        return rows.isEmpty() ? null : (String) rows.get(0)[1];
     }
 
     /** Ngày yyyy-MM-dd theo giờ VN; cuoiNgay=true -> mốc ĐẦU ngày hôm sau (chặn trên exclusive). */
@@ -109,6 +188,13 @@ public class AdminDanhGiaService {
         dg.setLyDoAn("Quản trị viên xóa");
         dg.setNgayCapNhat(Instant.now());
         danhGiaRepository.save(dg);
+        // Báo vào chuông thông báo của khách.
+        clientThongBaoService.guiChoKhach(
+                dg.getKhachHang().getId(),
+                "DANH_GIA",
+                "Đánh giá bị ẩn",
+                "Đánh giá của bạn đã bị ẩn vì chứa nội dung không phù hợp",
+                null);
     }
 
     /** Khôi phục đánh giá đã ẩn (kể cả do AI ẩn nhầm) -> hiển thị lại. */
@@ -191,6 +277,10 @@ public class AdminDanhGiaService {
     }
 
     private AdminDanhGiaResponse toResponse(DanhGia dg) {
+        return toResponse(dg, layAnhDanhGiaDon(dg));
+    }
+
+    private AdminDanhGiaResponse toResponse(DanhGia dg, String hinhAnhSanPham) {
         return new AdminDanhGiaResponse(
                 dg.getId(),
                 dg.getKhachHang().getHoTen(),
@@ -204,6 +294,6 @@ public class AdminDanhGiaService {
                 dg.getLyDoAn(),
                 dg.getGiay().getId(),
                 dg.getGiay().getTen(),
-                dg.getGiay().getHinhAnh());
+                hinhAnhSanPham);
     }
 }

@@ -123,6 +123,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final EmailService emailService;
     private final QuanLySanPhamService quanLySanPhamService;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
 
     public QuanLyHoaDonServiceImpl(
             HoaDonRepository hoaDonRepository,
@@ -139,8 +140,10 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
             @Lazy QuanLySanPhamService quanLySanPhamService,
-            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
+            com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService
     ) {
+        this.clientThongBaoService = clientThongBaoService;
         this.emailService = emailService;
         this.quanLySanPhamService = quanLySanPhamService;
         this.hoaDonRepository = hoaDonRepository;
@@ -404,6 +407,15 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         ghiLichSuHoaDon(hoaDon, resolveTrangThaiHoaDon(hoaDon, vanChuyen), request.ghiChu());
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRANG_THAI");
         guiEmailCapNhatTrangThai(hoaDon, trangThaiMoi.getTen(), vanChuyen);
+        // Báo vào chuông thông báo của khách (đơn online có tài khoản).
+        if (hoaDon.getKhachHang() != null) {
+            clientThongBaoService.guiChoKhach(
+                    hoaDon.getKhachHang().getId(),
+                    "DON_HANG",
+                    "Cập nhật đơn hàng",
+                    "Đơn hàng " + hoaDon.getMa() + " chuyển sang trạng thái \"" + trangThaiMoi.getTen() + "\"",
+                    "/khachhang/don-hang/" + hoaDon.getId());
+        }
 
         return mapHoaDonDetail(findHoaDon(id));
     }
