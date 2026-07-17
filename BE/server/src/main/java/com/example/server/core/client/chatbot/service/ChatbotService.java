@@ -24,6 +24,12 @@ import java.util.stream.Collectors;
 @Service
 public class ChatbotService {
 
+    public static final java.util.Map<String, byte[]> EXPORT_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public byte[] getExportedFile(String token) {
+        return EXPORT_CACHE.get(token);
+    }
+
     private final ChatClient.Builder chatClientBuilder;
     private final CuocHoiThoaiRepository cuocHoiThoaiRepository;
     private final TinNhanRepository tinNhanRepository;
@@ -426,7 +432,21 @@ public class ChatbotService {
                   6. Cập nhật trạng thái đơn hàng (xác nhận hoặc hủy): Sử dụng công cụ `update_admin_order_status_tool`.
                   7. Cập nhật tồn kho sản phẩm: Sử dụng công cụ `update_admin_product_stock_tool`.
                   8. Tạo mã giảm giá nhanh: Sử dụng công cụ `create_admin_voucher_tool`.
+                  9. Vẽ biểu đồ thống kê (doanh thu, giày bán chạy, trạng thái đơn): Sử dụng công cụ `get_admin_chart_data_tool`.
+                  10. Xuất báo cáo Excel (CSV): Sử dụng công cụ `export_admin_data_csv_tool`.
                 - Bạn CHỈ hỗ trợ các câu hỏi liên quan đến quản lý cửa hàng, thống kê, kiểm kho và tra cứu vận hành. Từ chối trả lời lịch sự cho các câu hỏi cá nhân hoặc ngoài phạm vi.
+
+                # HƯỚNG DẪN HIỂN THỊ BIỂU ĐỒ (QUAN TRỌNG)
+                Khi người dùng yêu cầu vẽ hoặc xem biểu đồ, hãy gọi công cụ `get_admin_chart_data_tool` để nhận chuỗi JSON dữ liệu thô. Sau đó, hiển thị nội dung đó nguyên bản bên trong khối code Markdown có tag là `chart` như sau:
+                ```chart
+                {
+                  "chartType": "line",
+                  "title": "Doanh thu 7 ngày gần nhất",
+                  "labels": ["11/07", "12/07"],
+                  "data": [1200000.00, 1900000.00]
+                }
+                ```
+                (Lưu ý: Không được thay đổi cấu trúc JSON bên trong tag chart này).
 
                 # HƯỚNG DẪN SINH HÀNH ĐỘNG CẦN XÁC NHẬN (QUAN TRỌNG)
                 Khi người dùng yêu cầu thực hiện hành động thay đổi dữ liệu nhạy cảm (như xác nhận đơn hàng, hủy đơn hàng, cập nhật tồn kho, tạo mã giảm giá), bạn TUYỆT ĐỐI không được gọi các tool thay đổi trực tiếp ngay. Thay vào đó, hãy phân tích tham số và sinh ra liên kết hành động dưới dạng Markdown như sau để yêu cầu xác nhận từ Admin:
@@ -510,7 +530,9 @@ public class ChatbotService {
                             "get_admin_top_reviews_tool",
                             "update_admin_order_status_tool",
                             "update_admin_product_stock_tool",
-                            "create_admin_voucher_tool"
+                            "create_admin_voucher_tool",
+                            "get_admin_chart_data_tool",
+                            "export_admin_data_csv_tool"
                     )
                     .call()
                     .content();

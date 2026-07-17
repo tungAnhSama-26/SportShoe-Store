@@ -86,6 +86,14 @@ public class ChatbotTools {
             Integer durationDays
     ) {}
 
+    public record AdminChartDataRequest(
+            String chartType
+    ) {}
+
+    public record AdminCsvExportRequest(
+            String dataType
+    ) {}
+
     private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
         try {
             List<com.example.server.entity.GiayChiTiet> gcts = entityManager.createQuery(
@@ -954,6 +962,200 @@ public class ChatbotTools {
                 } catch (Exception e) {
                     e.printStackTrace();
                     return "Lỗi khi tạo mã giảm giá: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_chart_data_tool")
+    @Description("Cung cấp dữ liệu thô dạng JSON để vẽ biểu đồ thống kê (chartType: 'revenue_7_days' - doanh thu 7 ngày qua, 'top_selling_shoes' - top 5 giày bán chạy nhất, 'order_statuses' - tỷ lệ các trạng thái hóa đơn)")
+    public Function<AdminChartDataRequest, String> getAdminChartDataTool() {
+        return new Function<AdminChartDataRequest, String>() {
+            @Override
+            public String apply(AdminChartDataRequest request) {
+                try {
+                    if ("revenue_7_days".equalsIgnoreCase(request.chartType())) {
+                        java.time.LocalDate today = java.time.LocalDate.now();
+                        List<String> labelsList = new ArrayList<>();
+                        List<BigDecimal> dataList = new ArrayList<>();
+                        java.time.format.DateTimeFormatter labelFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+
+                        for (int i = 6; i >= 0; i--) {
+                            java.time.LocalDate date = today.minusDays(i);
+                            labelsList.add(date.format(labelFormatter));
+                            
+                            java.time.Instant start = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                            java.time.Instant end = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+
+                            List<BigDecimal> amounts = entityManager.createQuery(
+                                    "SELECT SUM(h.tongTienThanhToan) FROM HoaDon h WHERE h.trangThai = 5 AND h.ngayLap >= :start AND h.ngayLap < :end", BigDecimal.class)
+                                    .setParameter("start", start)
+                                    .setParameter("end", end)
+                                    .getResultList();
+
+                            BigDecimal dayTotal = (amounts.isEmpty() || amounts.get(0) == null) ? BigDecimal.ZERO : amounts.get(0);
+                            dataList.add(dayTotal);
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{\"chartType\":\"line\",\"title\":\"Doanh thu 7 ngày gần nhất\",\"labels\":[");
+                        for (int i = 0; i < labelsList.size(); i++) {
+                            sb.append("\"").append(labelsList.get(i)).append("\"");
+                            if (i < labelsList.size() - 1) sb.append(",");
+                        }
+                        sb.append("],\"data\":[");
+                        for (int i = 0; i < dataList.size(); i++) {
+                            sb.append(dataList.get(i).toPlainString());
+                            if (i < dataList.size() - 1) sb.append(",");
+                        }
+                        sb.append("]}");
+                        return sb.toString();
+                    }
+                    else if ("top_selling_shoes".equalsIgnoreCase(request.chartType())) {
+                        List<Object[]> results = entityManager.createQuery(
+                                "SELECT hdct.chiTietGiay.giay.ten, SUM(hdct.soLuong) FROM HoaDonChiTiet hdct " +
+                                "WHERE hdct.hoaDon.trangThai = 5 GROUP BY hdct.chiTietGiay.giay.ten ORDER BY SUM(hdct.soLuong) DESC", Object[].class)
+                                .setMaxResults(5)
+                                .getResultList();
+
+                        List<String> labelsList = new ArrayList<>();
+                        List<Long> dataList = new ArrayList<>();
+                        for (Object[] row : results) {
+                            labelsList.add((String) row[0]);
+                            dataList.add((Long) row[1]);
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{\"chartType\":\"bar\",\"title\":\"Top 5 sản phẩm bán chạy nhất\",\"labels\":[");
+                        for (int i = 0; i < labelsList.size(); i++) {
+                            sb.append("\"").append(labelsList.get(i).replace("\"", "\\\"")).append("\"");
+                            if (i < labelsList.size() - 1) sb.append(",");
+                        }
+                        sb.append("],\"data\":[");
+                        for (int i = 0; i < dataList.size(); i++) {
+                            sb.append(dataList.get(i));
+                            if (i < dataList.size() - 1) sb.append(",");
+                        }
+                        sb.append("]}");
+                        return sb.toString();
+                    }
+                    else if ("order_statuses".equalsIgnoreCase(request.chartType())) {
+                        List<Object[]> results = entityManager.createQuery(
+                                "SELECT h.trangThai, COUNT(h.id) FROM HoaDon h GROUP BY h.trangThai", Object[].class)
+                                .getResultList();
+
+                        List<String> labelsList = new ArrayList<>();
+                        List<Long> dataList = new ArrayList<>();
+                        for (Object[] row : results) {
+                            Integer statusInt = (Integer) row[0];
+                            Long count = (Long) row[1];
+                            String name = "Mã: " + statusInt;
+                            try {
+                                name = TrangThaiHoaDon.tuMa(statusInt).getTen();
+                            } catch (Exception e) {}
+                            labelsList.add(name);
+                            dataList.add(count);
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{\"chartType\":\"doughnut\",\"title\":\"Tỷ lệ trạng thái đơn hàng\",\"labels\":[");
+                        for (int i = 0; i < labelsList.size(); i++) {
+                            sb.append("\"").append(labelsList.get(i)).append("\"");
+                            if (i < labelsList.size() - 1) sb.append(",");
+                        }
+                        sb.append("],\"data\":[");
+                        for (int i = 0; i < dataList.size(); i++) {
+                            sb.append(dataList.get(i));
+                            if (i < dataList.size() - 1) sb.append(",");
+                        }
+                        sb.append("]}");
+                        return sb.toString();
+                    }
+                    else {
+                        return "Loại biểu đồ không hợp lệ.";
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi lấy dữ liệu biểu đồ: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("export_admin_data_csv_tool")
+    @Description("Xuất file báo cáo Excel dạng CSV trực tiếp từ cơ sở dữ liệu (dataType: 'revenue' - doanh thu, 'cancelled_invoices' - đơn hàng bị hủy, 'low_stock' - sản phẩm tồn kho thấp)")
+    public Function<AdminCsvExportRequest, String> exportAdminDataCsvTool() {
+        return new Function<AdminCsvExportRequest, String>() {
+            @Override
+            public String apply(AdminCsvExportRequest request) {
+                try {
+                    String csvContent = "";
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault());
+
+                    if ("revenue".equalsIgnoreCase(request.dataType())) {
+                        List<com.example.server.entity.HoaDon> results = entityManager.createQuery(
+                                "SELECT h FROM HoaDon h WHERE h.trangThai = 5 ORDER BY h.ngayLap DESC", com.example.server.entity.HoaDon.class)
+                                .getResultList();
+
+                        StringBuilder sb = new StringBuilder("Mã hóa đơn,Khách hàng,Số điện thoại,Tổng thanh toán,Ngày lập\n");
+                        for (com.example.server.entity.HoaDon h : results) {
+                            sb.append(h.getMa()).append(",")
+                              .append(h.getTenNguoiNhan() != null ? h.getTenNguoiNhan().replace(",", " ") : "").append(",")
+                              .append(h.getSdtNguoiNhan() != null ? h.getSdtNguoiNhan() : "").append(",")
+                              .append(h.getTongTienThanhToan() != null ? h.getTongTienThanhToan().toPlainString() : "0").append(",")
+                              .append(h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "").append("\n");
+                        }
+                        csvContent = sb.toString();
+                    }
+                    else if ("cancelled_invoices".equalsIgnoreCase(request.dataType())) {
+                        List<com.example.server.entity.HoaDon> results = entityManager.createQuery(
+                                "SELECT h FROM HoaDon h WHERE h.trangThai = 6 ORDER BY h.ngayLap DESC", com.example.server.entity.HoaDon.class)
+                                .getResultList();
+
+                        StringBuilder sb = new StringBuilder("Mã hóa đơn,Khách hàng,Số điện thoại,Tổng tiền hàng,Tiền giảm,Tổng thanh toán,Ngày lập\n");
+                        for (com.example.server.entity.HoaDon h : results) {
+                            sb.append(h.getMa()).append(",")
+                              .append(h.getTenNguoiNhan() != null ? h.getTenNguoiNhan().replace(",", " ") : "").append(",")
+                              .append(h.getSdtNguoiNhan() != null ? h.getSdtNguoiNhan() : "").append(",")
+                              .append(h.getTongTienHang() != null ? h.getTongTienHang().toPlainString() : "0").append(",")
+                              .append(h.getTienGiam() != null ? h.getTienGiam().toPlainString() : "0").append(",")
+                              .append(h.getTongTienThanhToan() != null ? h.getTongTienThanhToan().toPlainString() : "0").append(",")
+                              .append(h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "").append("\n");
+                        }
+                        csvContent = sb.toString();
+                    }
+                    else if ("low_stock".equalsIgnoreCase(request.dataType())) {
+                        List<com.example.server.entity.GiayChiTiet> results = entityManager.createQuery(
+                                "SELECT gct FROM GiayChiTiet gct WHERE gct.soLuong < 10 AND gct.kichHoat = 1 ORDER BY gct.soLuong ASC", com.example.server.entity.GiayChiTiet.class)
+                                .getResultList();
+
+                        StringBuilder sb = new StringBuilder("Tên sản phẩm,Màu sắc,Kích cỡ,Số lượng tồn\n");
+                        for (com.example.server.entity.GiayChiTiet gct : results) {
+                            sb.append(gct.getGiay() != null ? gct.getGiay().getTen().replace(",", " ") : "Giày").append(",")
+                              .append(gct.getMauSac() != null ? gct.getMauSac().getTen() : "").append(",")
+                              .append(gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "").append(",")
+                              .append(gct.getSoLuong()).append("\n");
+                        }
+                        csvContent = sb.toString();
+                    }
+                    else {
+                        return "Loại dữ liệu xuất báo cáo không hợp lệ.";
+                    }
+
+                    // Convert to UTF-8 bytes with BOM
+                    byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+                    byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    byte[] fileBytes = new byte[bom.length + csvBytes.length];
+                    System.arraycopy(bom, 0, fileBytes, 0, bom.length);
+                    System.arraycopy(csvBytes, 0, fileBytes, bom.length, csvBytes.length);
+
+                    String token = java.util.UUID.randomUUID().toString();
+                    com.example.server.core.client.chatbot.service.ChatbotService.EXPORT_CACHE.put(token, fileBytes);
+
+                    return "[Tải file Excel báo cáo](/api/v1/admin/chatbot/download-csv?token=" + token + ")";
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi xuất file báo cáo: " + e.getMessage();
                 }
             }
         };

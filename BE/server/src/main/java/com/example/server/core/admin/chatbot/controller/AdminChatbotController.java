@@ -41,4 +41,19 @@ public class AdminChatbotController {
         List<ChatbotMessageDto> history = chatbotService.getAdminChatHistory(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Thành công", history));
     }
+
+    @GetMapping("/download-csv")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> downloadCsv(
+            @org.springframework.web.bind.annotation.RequestParam("token") String token
+    ) {
+        byte[] fileBytes = chatbotService.getExportedFile(token);
+        if (fileBytes == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"report-admin.csv\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .body(fileBytes);
+    }
 }

@@ -3,6 +3,21 @@ import { ref, onMounted, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
 import { chatWithAdminAi, getAdminChatHistory } from "../../services/admin-chatbot";
 import { showConfirm } from "../../utils/alert";
+import { Bar, Line, Doughnut } from "vue-chartjs";
+import { 
+  Chart as ChartJS, 
+  Title, 
+  Tooltip, 
+  Legend, 
+  BarElement, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  ArcElement 
+} from "chart.js";
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement);
 import { 
   Bot, 
   Send, 
@@ -32,6 +47,40 @@ const promptSuggestions = [
 
 function parseMessage(text) {
   if (!text) return [];
+  const segments = [];
+  const chartRegex = /```chart([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = chartRegex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    if (matchIndex > lastIndex) {
+      segments.push(...parseLinks(text.substring(lastIndex, matchIndex)));
+    }
+    try {
+      const chartJson = JSON.parse(match[1].trim());
+      segments.push({
+        type: "chart",
+        chartData: chartJson
+      });
+    } catch (e) {
+      console.error("Lỗi parse JSON chart:", e);
+      segments.push({
+        type: "text",
+        content: "[Lỗi hiển thị biểu đồ: Dữ liệu JSON không hợp lệ]"
+      });
+    }
+    lastIndex = chartRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push(...parseLinks(text.substring(lastIndex)));
+  }
+
+  return segments;
+}
+
+function parseLinks(text) {
   const segments = [];
   const linkRegex = /\[([^]]+)\]\(([^)]+)\)/g;
   let lastIndex = 0;
@@ -139,11 +188,97 @@ async function handleChatbotAction(url) {
 function handleNavigate(url) {
   if (url.startsWith("/action/")) {
     handleChatbotAction(url);
+  } else if (url.startsWith("/api/v1/admin/chatbot/download-csv")) {
+    const host = window.location.origin;
+    const token = localStorage.getItem("adminToken") || "";
+    const downloadUrl = `${host}${url}`;
+
+    fetch(downloadUrl, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Unauthorized");
+      return response.blob();
+    })
+    .then(blob => {
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "bao-cao-admin.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    })
+    .catch(err => {
+      console.error("Lỗi tải báo cáo:", err);
+      showConfirm("Không thể tải xuống file báo cáo. Phiên làm việc có thể đã hết hạn hoặc không có quyền.", "Lỗi tải báo cáo", "Đóng", "");
+    });
   } else if (url.startsWith("/")) {
     router.push(url);
   } else {
     window.open(url, "_blank");
   }
+}
+
+function getChartDataset(chartData) {
+  const isDoughnut = chartData.chartType === 'doughnut' || chartData.chartType === 'pie';
+  const colors = [
+    '#F43F5E', // Rose
+    '#3B82F6', // Blue
+    '#10B981', // Emerald
+    '#F59E0B', // Amber
+    '#8B5CF6', // Violet
+    '#EC4899', // Pink
+    '#14B8A6'  // Teal
+  ];
+
+  return {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: chartData.title || "Số liệu",
+        data: chartData.data,
+        backgroundColor: isDoughnut ? colors.slice(0, chartData.labels.length) : 'rgba(244, 63, 94, 0.2)',
+        borderColor: isDoughnut ? colors.slice(0, chartData.labels.length) : '#F43F5E',
+        borderWidth: 1.5,
+        tension: 0.3,
+        fill: chartData.chartType === 'line' ? false : true
+      }
+    ]
+  };
+}
+
+function getChartOptions(chartType) {
+  const isDoughnut = chartType === 'doughnut' || chartType === 'pie';
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          boxWidth: 12,
+          font: { size: 10 }
+        }
+      }
+    },
+    ...(isDoughnut ? {} : {
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 9 } }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { font: { size: 9 } }
+        }
+      }
+    })
+  };
 }
 
 function cuonXuongCuoi() {
@@ -229,14 +364,6 @@ async function guiTinNhan(contentStr) {
       id: (Date.now() + 1).toString(),
       sender: "AI",
       content: "Hệ thống AI hiện đang bận hoặc có lỗi xảy ra. Vui lòng thử lại sau.",
-      time: new Date().toISOString()
-    };
-    messages.value.push(errMsg);
-  } finally {
-    isSending.value = false;
-    cuonXuongCuoi();
-  }
-}g thử lại sau.",
       time: new Date().toISOString()
     };
     messages.value.push(errMsg);
@@ -334,6 +461,28 @@ watch(isOpen, (newVal) => {
                 >
                   {{ seg.text }}
                 </button>
+                <div v-else-if="seg.type === 'chart'" class="my-3 p-3 bg-slate-50 border border-slate-100 rounded-xl dark:bg-slate-900/80 dark:border-slate-800">
+                  <div class="text-xs font-bold text-slate-700 mb-2 dark:text-slate-200">
+                    {{ seg.chartData.title }}
+                  </div>
+                  <div class="h-[180px] relative w-full flex justify-center items-center">
+                    <Bar
+                      v-if="seg.chartData.chartType === 'bar'"
+                      :data="getChartDataset(seg.chartData)"
+                      :options="getChartOptions(seg.chartData.chartType)"
+                    />
+                    <Line
+                      v-else-if="seg.chartData.chartType === 'line'"
+                      :data="getChartDataset(seg.chartData)"
+                      :options="getChartOptions(seg.chartData.chartType)"
+                    />
+                    <Doughnut
+                      v-else-if="seg.chartData.chartType === 'doughnut' || seg.chartData.chartType === 'pie'"
+                      :data="getChartDataset(seg.chartData)"
+                      :options="getChartOptions(seg.chartData.chartType)"
+                    />
+                  </div>
+                </div>
               </span>
             </div>
           </div>
