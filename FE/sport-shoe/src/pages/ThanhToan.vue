@@ -5,7 +5,7 @@ import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
-import { showWarning, showSuccess, showError, showConfirm } from '../utils/alert';
+import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
@@ -390,6 +390,8 @@ async function hoanTatDatHang(maHoaDon) {
   daDatHang.value = true;
   xoaGioHang();
   gioHangStore.datSoLuong(0);
+  // Popup to giữa màn báo đặt hàng thành công (giống các màn khác), popup sống qua điều hướng.
+  showBigSuccess(`Mã đơn hàng của bạn: <b>${maHoaDon}</b>`, 'Đặt hàng thành công!');
   // Thay vì về trang sản phẩm -> sang màn cảm ơn + tra cứu đơn (hiện mã đơn + chi tiết hóa đơn).
   router.push({ path: '/khachhang/tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
 }

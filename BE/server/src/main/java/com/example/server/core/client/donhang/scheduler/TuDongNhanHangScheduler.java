@@ -1,5 +1,6 @@
 package com.example.server.core.client.donhang.scheduler;
 
+import com.example.server.core.client.thongbao.service.ClientThongBaoService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.LichSuHoaDon;
@@ -24,15 +25,18 @@ public class TuDongNhanHangScheduler {
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
+    private final ClientThongBaoService clientThongBaoService;
 
     public TuDongNhanHangScheduler(
             HoaDonRepository hoaDonRepository,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
-            LichSuHoaDonRepository lichSuHoaDonRepository
+            LichSuHoaDonRepository lichSuHoaDonRepository,
+            ClientThongBaoService clientThongBaoService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
+        this.clientThongBaoService = clientThongBaoService;
     }
 
     /** Chạy mỗi giờ: đơn Đã giao + Đã thanh toán quá 3 ngày -> tự động chuyển Hoàn thành. */
@@ -60,6 +64,16 @@ public class TuDongNhanHangScheduler {
 
             hoaDonRealtimePublisher.publishAfterCommit(hd, "TU_DONG_NHAN_HANG");
             hoaDonRealtimePublisher.publishAfterCommit(hd, "TRANG_THAI");
+
+            // Báo vào chuông thông báo của khách.
+            if (hd.getKhachHang() != null) {
+                clientThongBaoService.guiChoKhach(
+                        hd.getKhachHang().getId(),
+                        "DON_HANG",
+                        "Cập nhật đơn hàng",
+                        "Đơn hàng " + hd.getMa() + " đã tự động chuyển sang \"Hoàn thành\"",
+                        "/khachhang/don-hang/" + hd.getId());
+            }
         }
     }
 }
