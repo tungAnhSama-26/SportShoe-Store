@@ -39,6 +39,7 @@ import {
 import { API_BASE_URL } from "../services/api-client";
 import { getDisplayErrorMessage, getFieldErrors } from "../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../utils/alert";
+import { resolveHinhAnh } from "../utils/resolve-image";
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -77,15 +78,8 @@ const loiForm = ref({
 const fileAnh = ref(null);
 const dangTaiAnh = ref(false);
 
-function resolveAnh(url) {
-  const v = String(url || "").trim();
-  if (!v) return "";
-  if (/^(https?:|data:|blob:)/i.test(v)) return v;
-  return v.startsWith("/") ? apiOrigin + v : apiOrigin + "/" + v;
-}
-
 const avatarSrc = computed(() => {
-  const v = resolveAnh(form.value.hinhAnh);
+  const v = resolveHinhAnh(form.value.hinhAnh);
   return v || ("https://ui-avatars.com/api/?name="
     + encodeURIComponent(form.value.hoTen || "KH")
     + "&background=B82220&color=ffffff&size=256");
@@ -216,6 +210,14 @@ async function taiProfile() {
   dangTai.value = true;
   try {
     const data = await layProfileKhachHang(khachHangId);
+    
+    // Đọc từ LocalStorage làm fallback phòng khi Backend chưa trả về hinhAnh
+    let localHinhAnh = "";
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) localHinhAnh = JSON.parse(userRaw).hinhAnh || "";
+    } catch (e) {}
+
     form.value = {
       hoTen: data.hoTen ?? "",
       tenDangNhap: data.tenDangNhap ?? "",
@@ -223,7 +225,7 @@ async function taiProfile() {
       sdt: data.sdt ?? "",
       gioiTinh: data.gioiTinh ?? 1,
       ngaySinh: data.ngaySinh ?? "",
-      hinhAnh: data.hinhAnh ?? "",
+      hinhAnh: data.hinhAnh || localHinhAnh,
     };
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(
@@ -740,10 +742,6 @@ onMounted(() => {
         <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">
           Thông tin cá nhân
         </h1>
-        <p class="text-sm text-slate-500 mt-1">
-          Cập nhật thông tin cá nhân, bảo mật và tài khoản ngân hàng liên kết
-          thụ hưởng.
-        </p>
       </div>
       <button
         v-if="tabHienTai === 'thongTin'"

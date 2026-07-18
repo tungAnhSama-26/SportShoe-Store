@@ -526,17 +526,89 @@ onUnmounted(() => {
     unsubscribeTopic(sessionSubscription);
   }
 });
+// --- Dragging Logic ---
+const position = ref({ x: 0, y: 0 });
+const isDragging = ref(false);
+const isPressed = ref(false);
+let wasDragging = false;
+let startMousePos = { x: 0, y: 0 };
+let startPos = { x: 0, y: 0 };
+
+function onMouseDown(e) {
+  if (e.button !== 0) return;
+  isDragging.value = false;
+  wasDragging = false;
+  isPressed.value = true;
+  startMousePos = { x: e.clientX, y: e.clientY };
+  startPos = { ...position.value };
+  
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
+
+function onMouseMove(e) {
+  const dx = e.clientX - startMousePos.x;
+  const dy = e.clientY - startMousePos.y;
+  
+  if (!isDragging.value && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+    isDragging.value = true;
+    wasDragging = true;
+  }
+  
+  if (isDragging.value) {
+    // Only allow vertical dragging along the right edge
+    position.value.x = 0;
+    position.value.y = startPos.y + dy;
+  }
+}
+
+function onMouseUp() {
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', onMouseUp);
+  isDragging.value = false;
+  isPressed.value = false;
+  
+  if (wasDragging) {
+    // Ensure it stays on the right edge
+    position.value.x = 0;
+
+    const bottomOffset = 24; 
+    const buttonHeight = 56;
+    const absoluteY = window.innerHeight - bottomOffset - buttonHeight + position.value.y;
+    
+    if (absoluteY < 24) {
+      position.value.y -= (absoluteY - 24);
+    } else if (absoluteY > window.innerHeight - 24 - buttonHeight) {
+      position.value.y -= (absoluteY - (window.innerHeight - 24 - buttonHeight));
+    }
+  }
+}
+
+function toggleChatWithDragCheck() {
+  if (wasDragging) {
+    wasDragging = false;
+    return;
+  }
+  ToggleChat();
+}
 </script>
 
 <template>
-  <div class="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
+  <div 
+    class="fixed bottom-6 right-6 z-[9999] flex flex-col items-end"
+    :style="{ transform: `translate3d(0px, ${position.y}px, 0)`, transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }"
+  >
     <!-- Chat Widget Window -->
-    <div 
-      v-show="isOpen"
-      class="mb-4 w-96 h-[500px] bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden flex flex-col transition-all duration-300"
-    >
+    <Transition name="chat-window">
+      <div 
+        v-show="isOpen"
+        class="mb-4 w-96 h-[500px] bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden flex flex-col origin-bottom-right"
+      >
       <!-- Chat Header -->
-      <div class="px-5 py-4 bg-primary text-white flex items-center justify-between shrink-0">
+      <div 
+        class="px-5 py-4 bg-primary text-white flex items-center justify-between shrink-0 cursor-grab active:cursor-grabbing"
+        @mousedown="onMouseDown"
+      >
         <div class="flex items-center space-x-2.5">
           <div class="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center">
             <Bot class="h-4.5 w-4.5 text-white" />
@@ -785,16 +857,31 @@ onUnmounted(() => {
           </button>
         </form>
       </div>
-    </div>
+      </div>
+    </Transition>
 
     <!-- Floating Chat Widget Button -->
-    <button
-      @click="ToggleChat"
-      class="h-14 w-14 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all focus:outline-none"
-    >
-      <X v-if="isOpen" class="h-6 w-6" />
-      <MessageCircle v-else class="h-6 w-6" />
-    </button>
+    <div class="relative flex flex-col items-end">
+      <button
+        @mousedown="onMouseDown"
+        @mouseup="isPressed = false"
+        @mouseleave="isPressed = false"
+        @click="toggleChatWithDragCheck"
+        class="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-xl focus:outline-none cursor-grab active:cursor-grabbing z-10 transition-transform duration-100 ease-out"
+        :class="isPressed ? 'scale-90' : 'hover:scale-105 scale-100'"
+      >
+        <X v-if="isOpen" class="h-6 w-6" />
+        <MessageCircle v-else class="h-6 w-6" />
+      </button>
+      
+      <!-- Notification Badge (Messenger-like) -->
+      <span 
+        v-show="!isOpen"
+        class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm z-20 animate-bounce"
+      >
+        1
+      </span>
+    </div>
 
     <!-- Inactivity Overlay Modal in the Middle of Screen -->
     <div 
@@ -844,6 +931,7 @@ onUnmounted(() => {
   }
 }
 
+
 @keyframes scaleUp {
   from {
     opacity: 0;
@@ -856,6 +944,13 @@ onUnmounted(() => {
 }
 .animate-scale-up {
   animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.chat-btn-bounce {
+  transition: transform 0.15s ease-in-out;
+}
+.chat-btn-bounce:hover {
+  transform: scale(1.05);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

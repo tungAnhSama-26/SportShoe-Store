@@ -339,7 +339,7 @@ public class ClientXemDonHangService {
                 .map(lichSu -> new LichSuTrangThai(
                         lichSu.getTrangThai(),
                         lichSu.getNgayTao(),
-                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : (lichSu.getNguoiThaoTac() != null ? lichSu.getNguoiThaoTac() : "Khách hàng"),
+                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() + " - " + lichSu.getNhanVien().getHoTen() : (lichSu.getNguoiThaoTac() != null ? lichSu.getNguoiThaoTac() : "Khách hàng"),
                         lichSu.getGhiChu()))
                 .toList();
 

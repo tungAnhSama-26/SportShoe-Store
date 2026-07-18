@@ -49,7 +49,7 @@ const props = defineProps({
   },
   createLabel: {
     type: String,
-    default: 'Thêm mới'
+    default: 'Thêm nhanh'
   }
 })
 
@@ -81,6 +81,8 @@ function isSameOptionValue(left, right) {
   if (left == null || right == null) return false
   if (left === right) return true
 
+  if (left === '' || right === '') return String(left) === String(right)
+  
   const leftNumber = Number(left)
   const rightNumber = Number(right)
   if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {

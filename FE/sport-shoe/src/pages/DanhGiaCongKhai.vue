@@ -71,8 +71,7 @@ function xuLyAnhLoi(e) {
 <template>
   <main class="bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-3xl px-6 lg:px-10 pt-8">
-      <h1 class="text-2xl font-bold text-slate-900">Đánh giá từ khách hàng</h1>
-      <p class="mt-1 text-sm text-slate-400">Tất cả đánh giá thực tế về sản phẩm trong cửa hàng.</p>
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Đánh giá từ khách hàng</h1>
 
       <!-- Bộ lọc số sao -->
       <div class="mt-5 flex flex-wrap gap-2">
