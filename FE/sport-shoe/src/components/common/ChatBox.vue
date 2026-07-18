@@ -946,6 +946,17 @@ function toggleChatWithDragCheck() {
   animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* Messenger-like Chat Window Animation */
+.chat-window-enter-active,
+.chat-window-leave-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chat-window-enter-from,
+.chat-window-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(20px);
+}
+
 .chat-btn-bounce {
   transition: transform 0.15s ease-in-out;
 }
