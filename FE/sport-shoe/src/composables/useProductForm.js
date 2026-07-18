@@ -140,7 +140,7 @@ export function useProductForm() {
 
   function normalizeCategoryItems(value, idKeys, labelKeys) {
     return extractList(value)
-      .filter(Boolean)
+      .filter(item => item != null)
       .map((item) => {
         const id = readPositiveId(item, idKeys)
         const label = readLabel(item, labelKeys)
@@ -343,20 +343,20 @@ export function useProductForm() {
     const normalized = String(name).trim().toLowerCase()
     return danhMuc.value.chatLieuGiay.find(
       (item) => item.ten?.trim().toLowerCase() === normalized
-    )?.id || null
+    )?.id ?? null
   }
 
   function hydrateProductForm(detail) {
     productForm.ten = detail.ten || ''
-    productForm.thuongHieuId = detail.thuongHieuId || null
-    productForm.loaiGiayId = detail.loaiGiayId || null
+    productForm.thuongHieuId = detail.thuongHieuId ?? null
+    productForm.loaiGiayId = detail.loaiGiayId ?? null
     productForm.gioiTinh = detail.gioiTinh ?? null
-    productForm.chatLieuGiayId = detail.thuocTinh?.chatLieuGiayId || findChatLieuGiayIdByName(detail.chatLieu)
+    productForm.chatLieuGiayId = detail.thuocTinh?.chatLieuGiayId ?? findChatLieuGiayIdByName(detail.chatLieu)
     productForm.moTa = detail.moTa || ''
-    productForm.deGiayId = detail.thuocTinh?.deGiayId || null
-    productForm.coGiayId = detail.thuocTinh?.coGiayId || null
-    productForm.congNgheDemId = detail.thuocTinh?.congNgheDemId || null
-    productForm.trongLuongId = detail.thuocTinh?.trongLuongId || null
+    productForm.deGiayId = detail.thuocTinh?.deGiayId ?? null
+    productForm.coGiayId = detail.thuocTinh?.coGiayId ?? null
+    productForm.congNgheDemId = detail.thuocTinh?.congNgheDemId ?? null
+    productForm.trongLuongId = detail.thuocTinh?.trongLuongId ?? null
   }
 
   async function loadInitialData() {

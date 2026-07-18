@@ -153,20 +153,36 @@ async function khoiTaoForm() {
   const diaChi = tachDiaChiDayDu(props.initialData?.diaChiGiaoHang);
   let defaultDiaChiId = "new";
   
-  let defaultAddr = null;
   if (props.savedAddresses?.length > 0) {
-    defaultAddr = props.savedAddresses.find(a => a.laMacDinh) || props.savedAddresses[0];
+    let matched = null;
+    if (props.initialData?.diaChiGiaoHang) {
+      matched = props.savedAddresses.find(a => {
+        const full = [a.diaChiCuThe, a.phuongXa, a.quanHuyen, a.tinhThanh].filter(Boolean).join(", ");
+        return full === props.initialData.diaChiGiaoHang;
+      });
+    }
+    const defaultAddr = matched || props.savedAddresses.find(a => a.laMacDinh) || props.savedAddresses[0];
     defaultDiaChiId = defaultAddr.id;
   }
 
   form.value = {
-    tenNguoiNhan: defaultAddr?.hoTen || props.initialData?.tenNguoiNhan || "",
-    sdtNguoiNhan: defaultAddr?.sdt || props.initialData?.soDienThoaiNguoiNhan || props.initialData?.sdtNguoiNhan || "",
-    email: defaultAddr?.email || props.initialData?.email || "",
+    tenNguoiNhan: props.initialData?.tenNguoiNhan || "",
+    sdtNguoiNhan: props.initialData?.soDienThoaiNguoiNhan || props.initialData?.sdtNguoiNhan || "",
+    email: props.initialData?.email || "",
     diaChiId: defaultDiaChiId,
     ghiChu: props.initialData?.ghiChu || "",
     ...diaChi,
   };
+  
+  // Update name/phone/email if a saved address is selected and we don't have initial data
+  if (defaultDiaChiId !== "new" && !props.initialData?.tenNguoiNhan) {
+    const selected = props.savedAddresses.find(a => a.id === defaultDiaChiId);
+    if (selected) {
+      if (selected.hoTen) form.value.tenNguoiNhan = selected.hoTen;
+      if (selected.sdt) form.value.sdtNguoiNhan = selected.sdt;
+      if (selected.email) form.value.email = selected.email;
+    }
+  }
   
   errors.value = {};
   maTinhChon.value = "";
@@ -180,6 +196,28 @@ async function khoiTaoForm() {
     errors.value.diaPhuong = "Lỗi: " + (err.message || "Không xác định") + " (Vui lòng chụp màn hình lỗi này)";
   }
 }
+
+watch(
+  () => props.savedAddresses,
+  (newVal) => {
+    if (props.modelValue && newVal?.length > 0 && form.value.diaChiId === "new" && !props.initialData?.diaChiGiaoHang) {
+      const defaultAddr = newVal.find(a => a.laMacDinh) || newVal[0];
+      form.value.diaChiId = defaultAddr.id;
+      if (!form.value.tenNguoiNhan) form.value.tenNguoiNhan = defaultAddr.hoTen || "";
+      if (!form.value.sdtNguoiNhan) form.value.sdtNguoiNhan = defaultAddr.sdt || "";
+      if (!form.value.email) form.value.email = defaultAddr.email || "";
+    } else if (props.modelValue && newVal?.length > 0 && props.initialData?.diaChiGiaoHang) {
+      const matched = newVal.find(a => {
+        const full = [a.diaChiCuThe, a.phuongXa, a.quanHuyen, a.tinhThanh].filter(Boolean).join(", ");
+        return full === props.initialData.diaChiGiaoHang;
+      });
+      if (matched) {
+        form.value.diaChiId = matched.id;
+      }
+    }
+  },
+  { immediate: true, deep: true }
+);
 
 async function luuThongTin() {
   if (!validate()) return;
@@ -258,7 +296,7 @@ watch(
 
 watch(
   () => form.value.diaChiId,
-  (newId) => {
+  (newId, oldId) => {
     if (newId !== "new") {
       const selected = props.savedAddresses.find(a => a.id === newId);
       if (selected) {
@@ -266,6 +304,16 @@ watch(
         if (selected.sdt) form.value.sdtNguoiNhan = selected.sdt;
         if (selected.email) form.value.email = selected.email;
       }
+    } else if (oldId && oldId !== "new") {
+      // Khi chuyển từ địa chỉ cũ sang địa chỉ khác, làm sạch các ô chọn để họ nhập mới
+      form.value.tinhThanh = "";
+      form.value.quanHuyen = "";
+      form.value.phuongXa = "";
+      form.value.diaChiCuThe = "";
+      maTinhChon.value = "";
+      maHuyenChon.value = "";
+      dsHuyen.value = [];
+      dsXa.value = [];
     }
   }
 );

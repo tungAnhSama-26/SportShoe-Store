@@ -55,34 +55,34 @@ const kichCoDropdownRef = ref(null)
 
 const selectedMauSacItems = computed(() => {
   const colorMap = new Map(
-    (props.danhMuc?.mauSac || []).filter(Boolean).map((item) => [Number(item.id), item])
+    (props.danhMuc?.mauSac || []).filter(item => item != null).map((item) => [Number(item.id), item])
   )
 
   return props.variantBuilder.mauSacIds
     .map((id) => colorMap.get(Number(id)))
-    .filter(Boolean)
+    .filter(item => item != null)
 })
 
 const selectedKichCoItems = computed(() => {
   const sizeMap = new Map(
-    (props.danhMuc?.kichCo || []).filter(Boolean).map((item) => [Number(item.id), item])
+    (props.danhMuc?.kichCo || []).filter(item => item != null).map((item) => [Number(item.id), item])
   )
 
   return props.variantBuilder.kichCoIds
     .map((id) => sizeMap.get(Number(id)))
-    .filter(Boolean)
+    .filter(item => item != null)
 })
 
 const filteredMauSacItems = computed(() => {
   const search = props.mauSacSearch.toLowerCase()
-  return (props.danhMuc?.mauSac || []).filter(Boolean).filter((item) =>
+  return (props.danhMuc?.mauSac || []).filter(item => item != null).filter((item) =>
     item.ten.toLowerCase().includes(search)
   )
 })
 
 const filteredKichCoItems = computed(() => {
   const search = props.kichCoSearch.toLowerCase()
-  return (props.danhMuc?.kichCo || []).filter(Boolean).filter((item) =>
+  return (props.danhMuc?.kichCo || []).filter(item => item != null).filter((item) =>
     item.giaTri.toString().toLowerCase().includes(search)
   )
 })
@@ -128,7 +128,7 @@ const showCreateKichCoOption = computed(() => {
 })
 
 function isSelected(field, id) {
-  return props.variantBuilder[field].includes(id)
+  return props.variantBuilder[field].includes(Number(id))
 }
 
 function toggleVariantDropdown(type) {
@@ -215,6 +215,7 @@ function generateVariants() {
                     class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
                     @input="$emit('update:mau-sac-search', $event.target.value)"
                     @keydown.stop="handleMauSacKeydown"
+                    @keyup.enter.stop="handleMauSacKeydown"
                   />
                 </div>
               </div>
@@ -228,7 +229,7 @@ function generateVariants() {
                   @click="handleInlineCreateAttribute('mauSac')"
                 >
                   <span class="truncate">
-                    {{ inlineCreatingType === 'mauSac' ? 'Đang thêm...' : `Thêm màu "${trimmedMauSacSearch}"` }}
+                    {{ inlineCreatingType === 'mauSac' ? 'Đang thêm...' : `Thêm nhanh "${trimmedMauSacSearch}"` }}
                   </span>
                   <Plus :size="15" class="shrink-0" />
                 </button>
@@ -341,6 +342,7 @@ function generateVariants() {
                     class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
                     @input="$emit('update:kich-co-search', $event.target.value)"
                     @keydown.stop="handleKichCoKeydown"
+                    @keyup.enter.stop="handleKichCoKeydown"
                   />
                 </div>
               </div>
@@ -354,7 +356,7 @@ function generateVariants() {
                   @click="handleInlineCreateAttribute('kichCo')"
                 >
                   <span class="truncate">
-                    {{ inlineCreatingType === 'kichCo' ? 'Đang thêm...' : `Thêm size "${normalizedKichCoSearch}"` }}
+                    {{ inlineCreatingType === 'kichCo' ? 'Đang thêm...' : `Thêm nhanh "${normalizedKichCoSearch}"` }}
                   </span>
                   <Plus :size="15" class="shrink-0" />
                 </button>

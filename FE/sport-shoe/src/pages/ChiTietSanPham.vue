@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { layChiTietSanPham, layDanhGia } from '../services/san-pham';
+import { layChiTietSanPham, layDanhGia, layTatCaSanPham } from '../services/san-pham';
 import { themVaoGio as apiThemGio } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -32,7 +32,29 @@ onMounted(taiTatCa);
 watch(() => route.params.id, taiTatCa);
 
 async function taiTatCa() {
-  await Promise.all([taiChiTiet(), taiDanhGia()]);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  await taiChiTiet();
+  if (sanPham.value) {
+    Promise.all([taiDanhGia(), taiSanPhamTuongTu()]);
+  }
+}
+
+const sanPhamTuongTu = ref([]);
+
+async function taiSanPhamTuongTu() {
+  try {
+    const all = await layTatCaSanPham();
+    // Filter similar products: same brand or same category, exclude current
+    let similar = all.filter(p => p.id !== sanPham.value.id && (p.thuongHieu === sanPham.value.thuongHieu || p.loaiGiay === sanPham.value.loaiGiay));
+    // If not enough similar products, pad with other products
+    if (similar.length < 4) {
+       const others = all.filter(p => p.id !== sanPham.value.id && !similar.find(s => s.id === p.id));
+       similar.push(...others.slice(0, 4 - similar.length));
+    }
+    sanPhamTuongTu.value = similar.slice(0, 4);
+  } catch(e) {
+    sanPhamTuongTu.value = [];
+  }
 }
 
 async function taiChiTiet() {
@@ -454,6 +476,56 @@ function xuLyAnhLoi(event) {
           <p v-else class="text-sm text-slate-400">Chưa có đánh giá nào. Khách hàng đã mua và nhận hàng có thể đánh giá trong mục Đơn hàng của bạn.</p>
         </section>
       </template>
+
+      <!-- Sản phẩm tương tự -->
+      <section v-if="sanPhamTuongTu.length && sanPham && !daNgungBan" class="mt-12">
+        <div class="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <p class="text-lg font-bold text-slate-900">Sản phẩm tương tự</p>
+            <p class="mt-1 text-sm text-slate-500">Có thể bạn cũng sẽ thích</p>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <router-link
+            v-for="muc in sanPhamTuongTu"
+            :key="muc.id"
+            :to="`/khachhang/san-pham/${muc.id}`"
+            class="group block overflow-hidden rounded-2xl border border-primary/15 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
+          >
+            <div class="relative h-60 overflow-hidden bg-slate-50">
+              <img :src="resolveHinhAnh(muc.hinhAnh)" :alt="muc.ten" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
+              <span
+                v-if="muc.nhan"
+                class="absolute left-3 top-3 rounded-md bg-red-600 px-2.5 py-1 text-xs font-extrabold text-white shadow-md"
+              >
+                {{ muc.nhan }}
+              </span>
+            </div>
+
+            <div class="p-5">
+              <p class="text-[11px] text-slate-400 font-medium">{{ muc.thuongHieu }}</p>
+              <h3 class="mt-1 text-sm font-semibold text-black line-clamp-2 group-hover:text-primary transition-colors">{{ muc.ten }}</h3>
+
+              <div class="mt-3 flex items-end gap-2">
+                <span class="text-base font-bold text-primary">{{ dinhDangTienViet(muc.gia) }}</span>
+                <span v-if="muc.giaCu" class="pb-0.5 text-[11px] text-slate-400 line-through">
+                  {{ dinhDangTienViet(muc.giaCu) }}
+                </span>
+              </div>
+              <div class="mt-1.5 flex items-center gap-1.5">
+                <div class="flex text-xs">
+                  <span v-for="i in 5" :key="i" :class="i <= Math.round(muc.soSao) ? 'text-amber-400' : 'text-slate-300'">★</span>
+                </div>
+                <span class="text-[11px] text-slate-400">
+                  {{ muc.soDanhGia ? `${muc.soSao.toFixed(1)} (${muc.soDanhGia})` : 'Chưa có đánh giá' }}
+                  <template v-if="muc.daBan"> · Đã bán {{ muc.daBan }}</template>
+                </span>
+              </div>
+            </div>
+          </router-link>
+        </div>
+      </section>
     </div>
   </main>
 </template>

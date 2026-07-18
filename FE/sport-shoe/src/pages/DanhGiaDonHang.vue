@@ -111,8 +111,7 @@ function xuLyAnhLoi(event) {
       <div v-else-if="loi || !don" class="py-28 text-center text-sm text-rose-500">{{ loi || 'Không tìm thấy đơn hàng.' }}</div>
 
       <template v-else>
-        <h1 class="text-2xl font-bold text-slate-900">Đánh giá đơn hàng #{{ don.ma }}</h1>
-        <p class="mt-1 text-sm text-slate-400">Chia sẻ cảm nhận của bạn về các sản phẩm đã mua.</p>
+        <h1 class="text-2xl font-bold text-slate-900 mb-6">Đánh giá đơn hàng #{{ don.ma }}</h1>
 
         <div class="mt-6 space-y-5">
           <div v-for="sp in don.sanPhams" :key="sp.hoaDonChiTietId" class="rounded-3xl bg-white border border-slate-100 p-6 shadow-sm">
