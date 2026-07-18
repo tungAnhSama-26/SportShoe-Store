@@ -456,65 +456,42 @@ function toggleChat() {
     class="fixed bottom-6 right-6 z-[9999] font-sans flex flex-col items-end" 
     :style="{ transform: `translate3d(0px, ${position.y}px, 0)`, transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }"
   >
-    <!-- Chat Button -->
-    <div class="relative flex flex-col items-end">
-      <button
-        v-show="!isOpen"
-        @mousedown="onMouseDown"
-        @mouseup="isPressed = false"
-        @mouseleave="isPressed = false"
-        @click="toggleChat"
-        class="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-xl cursor-grab active:cursor-grabbing z-10 transition-transform duration-100 ease-out"
-        :class="isPressed ? 'scale-90' : 'hover:scale-105 scale-100'"
-      >
-        <Bot class="h-6 w-6" />
-      </button>
-
-      <!-- Notification Badge (Messenger-like) -->
-      <span 
-        v-show="!isOpen"
-        class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm z-20 animate-bounce"
-      >
-        1
-      </span>
-    </div>
-
     <!-- Chat Window -->
     <Transition name="chat-window">
       <div
         v-show="isOpen"
-        class="flex h-[560px] w-[380px] flex-col overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-2xl shadow-slate-200 dark:border-slate-800 dark:bg-slate-900 origin-bottom-right"
+        class="flex h-[560px] w-[380px] flex-col overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-2xl shadow-slate-200 dark:border-slate-800 dark:bg-slate-900 origin-bottom-right mb-4"
       >
         <!-- Header -->
-      <div 
-        class="flex items-center justify-between bg-gradient-to-r from-red-600 to-rose-700 px-5 py-4 text-white cursor-grab active:cursor-grabbing"
-        @mousedown="onMouseDown"
-      >
-        <div class="flex items-center gap-3">
-          <div class="rounded-xl bg-white/10 p-2">
-            <Sparkles class="h-5 w-5" />
+        <div 
+          class="flex items-center justify-between bg-gradient-to-r from-red-600 to-rose-700 px-5 py-4 text-white cursor-grab active:cursor-grabbing"
+          @mousedown="onMouseDown"
+        >
+          <div class="flex items-center gap-3">
+            <div class="rounded-xl bg-white/10 p-2">
+              <Sparkles class="h-5 w-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-bold tracking-wide">Trợ Lý Admin AI</h3>
+              <p class="text-[10px] text-rose-200">Trực tuyến</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-sm font-bold tracking-wide">Trợ Lý Admin AI</h3>
-            <p class="text-[10px] text-rose-200">Trực tuyến</p>
+          <div class="flex items-center gap-2">
+            <button
+              @click="xoaLichSu"
+              title="Xóa lịch sử trò chuyện"
+              class="rounded-lg p-1.5 transition hover:bg-white/10"
+            >
+              <Trash2 class="h-4.5 w-4.5" />
+            </button>
+            <button
+              @click="isOpen = false"
+              class="rounded-lg p-1.5 transition hover:bg-white/10"
+            >
+              <X class="h-4.5 w-4.5" />
+            </button>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            @click="xoaLichSu"
-            title="Xóa lịch sử trò chuyện"
-            class="rounded-lg p-1.5 transition hover:bg-white/10"
-          >
-            <Trash2 class="h-4.5 w-4.5" />
-          </button>
-          <button
-            @click="isOpen = false"
-            class="rounded-lg p-1.5 transition hover:bg-white/10"
-          >
-            <X class="h-4.5 w-4.5" />
-          </button>
-        </div>
-      </div>
 
       <!-- Messages list -->
       <div
@@ -615,6 +592,31 @@ function toggleChat() {
       </div>
       </div>
     </Transition>
+
+    <!-- Chat Button -->
+    <div class="relative flex flex-col items-end">
+      <button
+        @mousedown="onMouseDown"
+        @mouseup="isPressed = false"
+        @mouseleave="isPressed = false"
+        @click="toggleChat"
+        class="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-xl cursor-grab active:cursor-grabbing z-10 transition-transform duration-100 ease-out"
+        :class="isPressed ? 'scale-90' : 'hover:scale-105 scale-100'"
+      >
+        <transition name="fade" mode="out-in">
+          <X v-if="isOpen" class="h-6 w-6" />
+          <Bot v-else class="h-6 w-6" />
+        </transition>
+      </button>
+
+      <!-- Notification Badge (Messenger-like) -->
+      <span 
+        v-show="!isOpen"
+        class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm z-20 animate-bounce"
+      >
+        1
+      </span>
+    </div>
   </div>
 </template>
 
@@ -633,8 +635,6 @@ function toggleChat() {
   background: #cbd5e1;
 }
 
-
-
 /* Messenger-like Chat Window Animation */
 .chat-window-enter-active,
 .chat-window-leave-active {
@@ -644,5 +644,15 @@ function toggleChat() {
 .chat-window-leave-to {
   opacity: 0;
   transform: scale(0.8) translateY(20px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8) rotate(-45deg);
 }
 </style>
