@@ -14,5 +14,6 @@ public record DanhGiaCongKhaiResponse(
         Instant ngayPhanHoi,
         Integer giayId,
         String tenSanPham,
-        String hinhAnhSanPham
+        String hinhAnhSanPham,
+        String hinhAnhKhach
 ) {}
