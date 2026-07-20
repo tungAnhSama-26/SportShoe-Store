@@ -290,12 +290,7 @@ onUnmounted(() => {
         <router-link :to="{ path: '/', hash: '#gia-tri' }" class="shrink-0 transition hover:text-primary">Giới thiệu</router-link>
         <router-link :to="{ path: '/khachhang/tra-cuu-don' }" class="shrink-0 transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link :to="{ path: '/khachhang/danh-gia' }" class="shrink-0 transition hover:text-primary">Đánh giá</router-link>
-        <router-link :to="{ path: '/khachhang/goi-y' }" class="flex shrink-0 items-center gap-1 transition hover:text-primary">
-          <svg class="h-3.5 w-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1m0-12.8l-2.1 2.1M7.7 16.3l-2.1 2.1" />
-          </svg>
-          Gợi ý giày
-        </router-link>
+        <router-link :to="{ path: '/khachhang/goi-y' }" class="shrink-0 transition hover:text-primary">Gợi ý giày</router-link>
       </nav>
 
       <!-- Desktop Actions -->

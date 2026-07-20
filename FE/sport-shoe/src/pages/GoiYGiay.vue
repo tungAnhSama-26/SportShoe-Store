@@ -172,13 +172,7 @@ function anhLoi(e) {
   <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
     <!-- Tiêu đề -->
     <div class="text-center">
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <Sparkles class="h-7 w-7" />
-      </div>
       <h1 class="mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">Gợi ý giày cho bạn</h1>
-      <p class="mx-auto mt-2 max-w-xl text-sm text-slate-500">
-        Trả lời từng câu hỏi ngắn, mỗi câu có thể chọn nhiều đáp án.
-      </p>
     </div>
 
     <div v-if="dangTaiCauHoi" class="py-20 text-center text-sm text-slate-400">Đang tải câu hỏi...</div>
@@ -203,7 +197,6 @@ function anhLoi(e) {
         <!-- Một câu hỏi -->
         <section v-if="cauHoiHienTai" :key="cauHoiHienTai.ma" class="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-7">
           <h2 class="text-lg font-bold text-slate-800">{{ cauHoiHienTai.cauHoi }}</h2>
-          <p class="mt-1 text-xs text-slate-400">{{ cauHoiHienTai.moTa }}</p>
 
           <!-- Câu kích cỡ: THANH TRƯỢT -->
           <div v-if="laCauHoiSize" class="mt-8 pb-2">
@@ -236,9 +229,6 @@ function anhLoi(e) {
                 {{ lc }}
               </button>
             </div>
-            <p class="mt-3 text-center text-xs text-slate-400">
-              Kéo thanh trượt hoặc bấm vào số để chọn size
-            </p>
           </div>
 
           <!-- Các câu còn lại: ô tick chọn nhiều -->
@@ -271,9 +261,6 @@ function anhLoi(e) {
         <!-- Bước cuối: gửi ảnh outfit -->
         <section v-else class="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-7">
           <h2 class="text-lg font-bold text-slate-800">Ảnh outfit của bạn</h2>
-          <p class="mt-1 text-xs text-slate-400">
-            Không bắt buộc — gửi ảnh để AI gợi ý giày hợp với bộ đồ bạn đang mặc. Bỏ qua cũng được.
-          </p>
 
           <div class="mt-5">
             <input ref="oChonAnh" type="file" accept="image/*" class="hidden" @change="chonAnh" />
@@ -332,10 +319,6 @@ function anhLoi(e) {
             {{ dangGoiY ? 'Đang phân tích giày phù hợp với bạn...' : 'Xem giày phù hợp' }}
           </button>
         </div>
-
-        <p v-if="!dangOBuocAnh && !daTraLoiCauNay" class="mt-2 text-center text-xs text-slate-400">
-          Chọn ít nhất 1 đáp án để đi tiếp.
-        </p>
       </div>
 
       <!-- ===== Kết quả ===== -->

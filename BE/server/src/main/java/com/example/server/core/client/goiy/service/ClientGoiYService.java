@@ -282,7 +282,8 @@ public class ClientGoiYService {
             throw e;
         } catch (Exception e) {
             System.err.println("[AI GOI Y] Lỗi gọi AI: " + e.getMessage());
-            throw new BusinessException("AI đang bận, vui lòng thử lại sau ít phút");
+            e.printStackTrace();
+            throw new BusinessException("AI đang bận hoặc ảnh tải lên không được hỗ trợ (vi phạm chính sách nội dung). Vui lòng thử lại ảnh khác hoặc bỏ qua bước tải ảnh!");
         }
     }
 

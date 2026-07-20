@@ -30,15 +30,18 @@ public class ClientDanhGiaService {
     private final DanhGiaRepository danhGiaRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final com.example.server.core.admin.quanlydanhgia.service.DanhGiaAiService danhGiaAiService;
+    private final com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
 
     public ClientDanhGiaService(
             DanhGiaRepository danhGiaRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
-            com.example.server.core.admin.quanlydanhgia.service.DanhGiaAiService danhGiaAiService
+            com.example.server.core.admin.quanlydanhgia.service.DanhGiaAiService danhGiaAiService,
+            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository
     ) {
         this.danhGiaRepository = danhGiaRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.danhGiaAiService = danhGiaAiService;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
     }
 
     @Transactional(readOnly = true)
@@ -68,6 +71,14 @@ public class ClientDanhGiaService {
     public DanhGiaCongKhaiPage layCongKhai(Integer soSao, int trang, int kichThuoc) {
         Pageable pageable = PageRequest.of(Math.max(trang, 0), Math.min(Math.max(kichThuoc, 1), 50));
         Page<DanhGia> page = danhGiaRepository.findCongKhai(soSao, pageable);
+        List<Integer> giayIds = page.getContent().stream().map(dg -> dg.getGiay().getId()).distinct().toList();
+        java.util.Map<Integer, String> anhChinh = new java.util.LinkedHashMap<>();
+        if (!giayIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayIds(giayIds)) {
+                anhChinh.putIfAbsent((Integer) row[0], (String) row[1]);
+            }
+        }
+
         List<DanhGiaCongKhaiResponse> danhSach = page.getContent().stream()
                 .map(dg -> new DanhGiaCongKhaiResponse(
                         dg.getId(),
@@ -80,7 +91,8 @@ public class ClientDanhGiaService {
                         dg.getNgayPhanHoi(),
                         dg.getGiay().getId(),
                         dg.getGiay().getTen(),
-                        dg.getGiay().getHinhAnh()))
+                        anhChinh.getOrDefault(dg.getGiay().getId(), dg.getGiay().getHinhAnh()),
+                        dg.getKhachHang().getHinhAnh()))
                 .toList();
         return new DanhGiaCongKhaiPage(danhSach, page.getNumber(), page.getTotalPages(), page.getTotalElements());
     }
