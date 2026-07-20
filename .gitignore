@@ -12,3 +12,7 @@ node_modules/
 BE/server/uploads
 AGENTS.md
 
+
+### Claude Code (ca nhan - khong commit)
+.claude/
+CLAUDE.md
