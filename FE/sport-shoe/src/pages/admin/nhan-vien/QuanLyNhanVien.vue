@@ -464,12 +464,12 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-2 py-2 font-semibold text-slate-800 text-xs">
-                <div class="truncate" :title="nv.hoTen">
+                <div class="truncate max-w-[140px]" :title="nv.hoTen">
                   {{ nv.hoTen }}
                 </div>
               </td>
               <td class="px-2 py-2 text-slate-600 text-xs">
-                <div class="truncate font-semibold text-slate-800 select-all" :title="nv.email">
+                <div class="truncate font-semibold text-slate-800 select-all max-w-[160px]" :title="nv.email">
                   {{ nv.email }}
                 </div>
               </td>
@@ -484,7 +484,7 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-2 py-2 text-slate-600 text-xs">
-                <div class="truncate" :title="nv.diaChi || '—'">
+                <div class="min-w-[180px] max-w-[320px] break-words whitespace-normal leading-normal" :title="nv.diaChi || '—'">
                   {{ nv.diaChi || "—" }}
                 </div>
               </td>
