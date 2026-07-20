@@ -119,6 +119,9 @@ export function useThongKeDashboard() {
   let dashboardFilterTimer;
   let dashboardRequestController;
   let latestDashboardRequestId = 0;
+  let autoRefreshTimer = null;
+
+  const lastUpdatedAt = ref(null);
 
   const brandSearchText = ref("");
   const brandHints = ref([]);
@@ -731,6 +734,7 @@ export function useThongKeDashboard() {
 
       dashboard.value = normalizeDashboard(data);
       syncFiltersFromServer(data.boLoc);
+      lastUpdatedAt.value = new Date();
     } catch (error) {
       if (error?.name === "AbortError" || requestId !== latestDashboardRequestId) {
         return;
@@ -865,6 +869,43 @@ export function useThongKeDashboard() {
     dashboardFilterTimer = window.setTimeout(() => {
       fetchDashboard();
     }, 250);
+  }
+
+  /**
+   * Tính số ms còn lại đến 22:00 ngày hôm nay (hoặc 22:00 ngày mai nếu đã qua).
+   */
+  function msUntilNext2200() {
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(22, 0, 0, 0);
+    if (now >= target) {
+      // Đã qua 22:00 hôm nay → hẹn 22:00 ngày mai
+      target.setDate(target.getDate() + 1);
+    }
+    return target.getTime() - now.getTime();
+  }
+
+  /**
+   * Lên lịch tự động cập nhật doanh thu lúc 22:00 hàng ngày.
+   */
+  function scheduleAutoRefreshAt2200() {
+    if (autoRefreshTimer !== null) {
+      window.clearTimeout(autoRefreshTimer);
+    }
+    const delay = msUntilNext2200();
+    autoRefreshTimer = window.setTimeout(() => {
+      autoRefreshTimer = null;
+      fetchDashboard();
+      // Sau khi chạy xong, lên lịch cho ngày tiếp theo
+      scheduleAutoRefreshAt2200();
+    }, delay);
+  }
+
+  /**
+   * Cập nhật doanh thu thủ công khi người dùng bấm nút.
+   */
+  function manualRefresh() {
+    fetchDashboard();
   }
 
   function resolveDefaultFromDate(today, periodType) {
@@ -1137,15 +1178,20 @@ export function useThongKeDashboard() {
   onMounted(() => {
     fetchDashboard();
     window.addEventListener("click", clickOutsideHandler);
+    scheduleAutoRefreshAt2200();
   });
 
   onBeforeUnmount(() => {
     if (dashboardFilterTimer) {
       window.clearTimeout(dashboardFilterTimer);
     }
+    if (autoRefreshTimer !== null) {
+      window.clearTimeout(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
     dashboardRequestController?.abort();
     window.removeEventListener("click", clickOutsideHandler);
   });
 
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Line, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, salesLineChartData, salesLineChartOptions, brandChartData, brandChartOptions, brandLineChartData, brandLineChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter, salesChartType, brandChartTypeFormat, partitionedBrandData, xuatExcelThoiGian, xuatExcelNhanVien, xuatExcelSanPham };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, watch, BarChart3, Calendar, Filter, Package, PieChart, RefreshCw, Search, ShoppingCart, Store, TrendingUp, Users, CreditCard, ArcElement, BarElement, CategoryScale, ChartJS, Legend, LinearScale, Tooltip, Bar, Pie, Line, Card, Button, AdminTableFooter, layDashboardThongKe, getDisplayErrorMessage, PERIOD_OPTIONS, PIE_COLORS, PRODUCT_STOCK_OPTIONS, PRODUCT_SORT_OPTIONS, EMPLOYEE_SORT_OPTIONS, PRODUCT_PAGE_SIZE_OPTIONS, EMPTY_DASHBOARD, dashboard, isLoading, errorMessage, filters, fromDatePickerRef, toDatePickerRef, productFilters, productCurrentPage, employeeFilters, employeeCurrentPage, brandChartType, setQuickPeriod, averageOrderValue, dashboardFilterTimer, dashboardRequestController, latestDashboardRequestId, periodLabel, summaryCards, salesLabels, salesChartData, salesChartOptions, salesLineChartData, salesLineChartOptions, brandChartData, brandChartOptions, brandLineChartData, brandLineChartOptions, topBrands, hasSalesData, hasBrandData, filteredProducts, productTotalPages, paginatedProducts, productCountLabel, filteredEmployees, employeeTotalPages, paginatedEmployees, employeeCountLabel, fetchDashboard, onApplyFilters, onResetFilters, onPeriodTypeChange, openDatePicker, handleDateChange, syncFiltersFromServer, normalizeDashboard, createDefaultFilters, createDefaultProductFilters, createDefaultEmployeeFilters, resetProductFilters, resetEmployeeFilters, scheduleDashboardFetch, resolveDefaultFromDate, formatDateForDisplay, formatDateForInput, formatCurrency, formatNumber, shouldShowSalesTick, sortProducts, sortEmployees, rowBadgeClass, hasOrderStatusData, orderStatusChartData, orderStatusChartOptions, brandSearchText, brandHints, brandSearchContainerRef, chonThuongHieuGoiY, onBrandSearchEnter, salesChartType, brandChartTypeFormat, partitionedBrandData, xuatExcelThoiGian, xuatExcelNhanVien, xuatExcelSanPham, lastUpdatedAt, manualRefresh };
 }
