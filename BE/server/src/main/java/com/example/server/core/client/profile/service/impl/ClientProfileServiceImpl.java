@@ -51,7 +51,8 @@ public class ClientProfileServiceImpl implements ClientProfileService {
                 khachHang.getEmail(),
                 khachHang.getSdt(),
                 khachHang.getNgaySinh(),
-                khachHang.getGioiTinh()
+                khachHang.getGioiTinh(),
+                khachHang.getHinhAnh()
         );
     }
 

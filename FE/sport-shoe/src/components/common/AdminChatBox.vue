@@ -383,55 +383,115 @@ watch(isOpen, (newVal) => {
     cuonXuongCuoi();
   }
 });
+
+// --- Dragging Logic ---
+const position = ref({ x: 0, y: 0 });
+const isDragging = ref(false);
+const isPressed = ref(false);
+let wasDragging = false;
+let startMousePos = { x: 0, y: 0 };
+let startPos = { x: 0, y: 0 };
+
+function onMouseDown(e) {
+  if (e.button !== 0) return;
+  isDragging.value = false;
+  wasDragging = false;
+  isPressed.value = true;
+  startMousePos = { x: e.clientX, y: e.clientY };
+  startPos = { ...position.value };
+  
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
+
+function onMouseMove(e) {
+  const dx = e.clientX - startMousePos.x;
+  const dy = e.clientY - startMousePos.y;
+  
+  if (!isDragging.value && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+    isDragging.value = true;
+    wasDragging = true;
+  }
+  
+  if (isDragging.value) {
+    // Only allow vertical dragging along the right edge
+    position.value.x = 0;
+    position.value.y = startPos.y + dy;
+  }
+}
+
+function onMouseUp() {
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', onMouseUp);
+  isDragging.value = false;
+  isPressed.value = false;
+
+  if (wasDragging) {
+    // Ensure it stays on the right edge
+    position.value.x = 0;
+
+    const bottomOffset = 24; 
+    const buttonHeight = 56;
+    const absoluteY = window.innerHeight - bottomOffset - buttonHeight + position.value.y;
+    
+    if (absoluteY < 24) {
+      position.value.y -= (absoluteY - 24);
+    } else if (absoluteY > window.innerHeight - 24 - buttonHeight) {
+      position.value.y -= (absoluteY - (window.innerHeight - 24 - buttonHeight));
+    }
+  }
+}
+
+function toggleChat() {
+  if (wasDragging) {
+    wasDragging = false;
+    return;
+  }
+  isOpen.value = !isOpen.value;
+}
 </script>
 
 <template>
-  <div class="fixed bottom-6 right-6 z-[9999] font-sans">
-    <!-- Chat Button -->
-    <button
-      v-show="!isOpen"
-      @click="isOpen = true"
-      class="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg transition hover:scale-105 hover:shadow-xl active:scale-95"
-    >
-      <span class="absolute -top-1 -right-1 flex h-4 w-4">
-        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
-        <span class="relative inline-flex h-4 w-4 rounded-full bg-rose-500"></span>
-      </span>
-      <Bot class="h-6 w-6 transition group-hover:rotate-12" />
-    </button>
-
+  <div 
+    class="fixed bottom-6 right-6 z-[9999] font-sans flex flex-col items-end" 
+    :style="{ transform: `translate3d(0px, ${position.y}px, 0)`, transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }"
+  >
     <!-- Chat Window -->
-    <div
-      v-show="isOpen"
-      class="flex h-[560px] w-[380px] flex-col overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-2xl shadow-slate-200 dark:border-slate-800 dark:bg-slate-900"
-    >
-      <!-- Header -->
-      <div class="flex items-center justify-between bg-gradient-to-r from-red-600 to-rose-700 px-5 py-4 text-white">
-        <div class="flex items-center gap-3">
-          <div class="rounded-xl bg-white/10 p-2">
-            <Sparkles class="h-5 w-5" />
+    <Transition name="chat-window">
+      <div
+        v-show="isOpen"
+        class="flex h-[560px] w-[380px] flex-col overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-2xl shadow-slate-200 dark:border-slate-800 dark:bg-slate-900 origin-bottom-right mb-4"
+      >
+        <!-- Header -->
+        <div 
+          class="flex items-center justify-between bg-gradient-to-r from-red-600 to-rose-700 px-5 py-4 text-white cursor-grab active:cursor-grabbing"
+          @mousedown="onMouseDown"
+        >
+          <div class="flex items-center gap-3">
+            <div class="rounded-xl bg-white/10 p-2">
+              <Sparkles class="h-5 w-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-bold tracking-wide">Trợ Lý Admin AI</h3>
+              <p class="text-[10px] text-rose-200">Trực tuyến</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-sm font-bold tracking-wide">Trợ Lý Admin AI</h3>
-            <p class="text-[10px] text-rose-200">Trực tuyến</p>
+          <div class="flex items-center gap-2">
+            <button
+              @click="xoaLichSu"
+              title="Xóa lịch sử trò chuyện"
+              class="rounded-lg p-1.5 transition hover:bg-white/10"
+            >
+              <Trash2 class="h-4.5 w-4.5" />
+            </button>
+            <button
+              @click="isOpen = false"
+              class="rounded-lg p-1.5 transition hover:bg-white/10"
+            >
+              <X class="h-4.5 w-4.5" />
+            </button>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            @click="xoaLichSu"
-            title="Xóa lịch sử trò chuyện"
-            class="rounded-lg p-1.5 transition hover:bg-white/10"
-          >
-            <Trash2 class="h-4.5 w-4.5" />
-          </button>
-          <button
-            @click="isOpen = false"
-            class="rounded-lg p-1.5 transition hover:bg-white/10"
-          >
-            <X class="h-4.5 w-4.5" />
-          </button>
-        </div>
-      </div>
 
       <!-- Messages list -->
       <div
@@ -530,6 +590,32 @@ watch(isOpen, (newVal) => {
           </button>
         </form>
       </div>
+      </div>
+    </Transition>
+
+    <!-- Chat Button -->
+    <div class="relative flex flex-col items-end">
+      <button
+        @mousedown="onMouseDown"
+        @mouseup="isPressed = false"
+        @mouseleave="isPressed = false"
+        @click="toggleChat"
+        class="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-xl cursor-grab active:cursor-grabbing z-10 transition-transform duration-100 ease-out"
+        :class="isPressed ? 'scale-90' : 'hover:scale-105 scale-100'"
+      >
+        <transition name="fade" mode="out-in">
+          <X v-if="isOpen" class="h-6 w-6" />
+          <Bot v-else class="h-6 w-6" />
+        </transition>
+      </button>
+
+      <!-- Notification Badge (Messenger-like) -->
+      <span 
+        v-show="!isOpen"
+        class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm z-20 animate-bounce"
+      >
+        1
+      </span>
     </div>
   </div>
 </template>
@@ -546,6 +632,27 @@ watch(isOpen, (newVal) => {
   border-radius: 4px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #cbd5e1;
+}
+
+/* Messenger-like Chat Window Animation */
+.chat-window-enter-active,
+.chat-window-leave-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chat-window-enter-from,
+.chat-window-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(20px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8) rotate(-45deg);
 }
 </style>

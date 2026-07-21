@@ -10,6 +10,7 @@ public record ClientProfileResponse(
         String email,
         String sdt,
         LocalDate ngaySinh,
-        Integer gioiTinh
+        Integer gioiTinh,
+        String hinhAnh
 ) {
 }

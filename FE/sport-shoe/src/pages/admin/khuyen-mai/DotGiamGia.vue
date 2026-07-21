@@ -35,7 +35,7 @@ const trangHienTai = ref(1);
 const totalItems = ref(0);
 
 const dsTrangThai = [
-  { label: "Tất cả", value: "" },
+  { label: "Tất cả trạng thái", value: "" },
   { label: "Đang hoạt động", value: "1" },
   { label: "Ngừng hoạt động", value: "0" },
   { label: "Hết hạn", value: "het_han" },

@@ -24,7 +24,7 @@ export function useVariantBuilder() {
     const groupedVariants = new Map()
 
     generatedVariants.value.forEach((item) => {
-      const colorKey = Number(item.mauSacId || 0) || item.mauSac || item.key
+      const colorKey = (item.mauSacId != null) ? Number(item.mauSacId) : (item.mauSac || item.key)
 
       if (!groupedVariants.has(colorKey)) {
         groupedVariants.set(colorKey, item)

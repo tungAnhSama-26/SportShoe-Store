@@ -40,11 +40,11 @@ const mauSacDropdownRef = ref(null)
 const kichCoDropdownRef = ref(null)
 
 const selectedMauSacItems = computed(() =>
-  (props.danhMuc?.mauSac || []).filter((item) => props.bulkBienTheForm.mauSacIds.includes(item.id))
+  (props.danhMuc?.mauSac || []).filter((item) => props.bulkBienTheForm.mauSacIds.includes(Number(item.id)))
 )
 
 const selectedKichCoItems = computed(() =>
-  (props.danhMuc?.kichCo || []).filter((item) => props.bulkBienTheForm.kichCoIds.includes(item.id))
+  (props.danhMuc?.kichCo || []).filter((item) => props.bulkBienTheForm.kichCoIds.includes(Number(item.id)))
 )
 
 const filteredMauSacItems = computed(() => {
