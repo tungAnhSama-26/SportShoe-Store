@@ -71,7 +71,7 @@ const formatLastUpdated = computed(() => {
               v-model="filters.fromDate"
               type="date"
               class="pointer-events-none absolute inset-0 opacity-0"
-              :max="filters.toDate || undefined"
+              :max="todayStr"
               tabindex="-1"
               @change="handleDateChange"
             >

@@ -17,6 +17,19 @@ import {
 } from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
+const formatToLocalDateString = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const gmt7Time = d.getTime() + (7 * 60 * 60 * 1000);
+  const localDate = new Date(gmt7Time);
+  const year = localDate.getUTCFullYear();
+  const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const date = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 export function useChiTietPhieuGiamGia() {
   const route = useRoute();
   const router = useRouter();
@@ -96,6 +109,14 @@ export function useChiTietPhieuGiamGia() {
       return true;
     }
     return false;
+  });
+
+  const todayStr = computed(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
   });
 
   // Computed cho giá trị giảm (% hoặc VNĐ)
@@ -495,8 +516,8 @@ export function useChiTietPhieuGiamGia() {
             : String(detail.giaTri ?? ""),
         giaTriToiThieu: formatVndNumber(detail.giaTriToiThieu ?? 0),
         giamToiDa: formatVndNumber(detail.giamToiDa ?? 0),
-        ngayBatDau: detail.ngayBatDau ?? "",
-        ngayKetThuc: detail.ngayKetThuc ?? "",
+        ngayBatDau: formatToLocalDateString(detail.ngayBatDau),
+        ngayKetThuc: formatToLocalDateString(detail.ngayKetThuc),
         soLuong: formatQuantityNumber(soLuong),
         soLuongDaDung: Number(detail.soLuongDaDung ?? 0),
         trangThai: String(detail.trangThai ?? 1),
@@ -907,5 +928,6 @@ export function useChiTietPhieuGiamGia() {
     taiHoaDonLienQuan,
     xemChiTietHoaDon,
     mauTrangThai,
+    todayStr,
   };
 }
