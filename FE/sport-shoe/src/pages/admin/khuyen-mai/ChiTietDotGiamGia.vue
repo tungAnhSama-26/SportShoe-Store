@@ -85,6 +85,7 @@ const {
   filterKichCo,
   danhMuc,
   danhSachSPSauKhiLoc,
+  todayStr,
 } = useChiTietDotGiamGia();
 
 const searchSelectedText = ref("");
@@ -177,11 +178,13 @@ const filteredSelectedVariants = computed(() => {
                 <div class="relative">
                   <input
                     v-model="form.ma"
-                    class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100"
+                    :readonly="!laMoi"
+                    class="h-11 w-full rounded-2xl border border-slate-200 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+                    :class="!laMoi ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-slate-50'"
                     placeholder="Ví dụ: SUMMER2024"
                   />
                   <button
-                    v-if="!isReadOnly"
+                    v-if="laMoi && !isReadOnly"
                     @click="taoMaNgauNhien"
                     type="button"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors"
@@ -248,6 +251,7 @@ const filteredSelectedVariants = computed(() => {
                   <input
                     v-model="form.ngayBatDau"
                     type="date"
+                    :max="todayStr"
                     class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
                   />
                   <p
@@ -264,6 +268,7 @@ const filteredSelectedVariants = computed(() => {
                   <input
                     v-model="form.ngayKetThuc"
                     type="date"
+                    :min="form.ngayBatDau || undefined"
                     class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
                   />
                   <p
