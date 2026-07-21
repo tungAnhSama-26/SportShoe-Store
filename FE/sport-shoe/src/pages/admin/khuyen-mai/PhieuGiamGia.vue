@@ -70,6 +70,7 @@ const {
   openCreateModal,
   openEditModal,
   xuatExcel,
+  todayStr,
 } = usePhieuGiamGiaList();
 </script>
 
@@ -133,6 +134,7 @@ const {
               <input
                 v-model="boLoc.tuNgay"
                 type="date"
+                :max="todayStr"
                 class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
@@ -142,6 +144,7 @@ const {
               <input
                 v-model="boLoc.denNgay"
                 type="date"
+                :min="boLoc.tuNgay || undefined"
                 class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>

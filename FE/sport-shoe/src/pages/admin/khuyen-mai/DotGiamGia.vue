@@ -23,6 +23,19 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError } from "../../../utils/alert";
 
+const formatToLocalDateString = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const gmt7Time = d.getTime() + (7 * 60 * 60 * 1000);
+  const localDate = new Date(gmt7Time);
+  const year = localDate.getUTCFullYear();
+  const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const date = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 const router = useRouter();
 
 const dangTai = ref(false);
@@ -203,8 +216,8 @@ async function nhanhDoiTrangThai(item) {
       moTa: item.moTa,
       loaiGiam: item.loaiGiam,
       giaTriGiam: item.giaTriGiam,
-      ngayBatDau: item.ngayBatDau,
-      ngayKetThuc: item.ngayKetThuc,
+      ngayBatDau: formatToLocalDateString(item.ngayBatDau),
+      ngayKetThuc: formatToLocalDateString(item.ngayKetThuc),
       kichHoat: nextStatus,
     });
 
@@ -285,10 +298,16 @@ watch(soPhanTuMotTrang, () => {
 });
 watch(trangHienTai, taiDanhSach);
 
-let timer;
 watch(
   boLoc,
   () => {
+    const today = todayStr.value;
+    if (boLoc.value.tuNgay && boLoc.value.tuNgay > today) {
+      boLoc.value.tuNgay = today;
+    }
+    if (boLoc.value.tuNgay && boLoc.value.denNgay && boLoc.value.tuNgay > boLoc.value.denNgay) {
+      boLoc.value.denNgay = boLoc.value.tuNgay;
+    }
     clearTimeout(timer);
     timer = setTimeout(() => {
       trangHienTai.value = 1;
@@ -393,6 +412,7 @@ onMounted(() => {
             <input
               v-model="boLoc.tuNgay"
               type="date"
+              :max="todayStr"
               class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
           </div>
@@ -402,6 +422,7 @@ onMounted(() => {
             <input
               v-model="boLoc.denNgay"
               type="date"
+              :min="boLoc.tuNgay || undefined"
               class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
           </div>
