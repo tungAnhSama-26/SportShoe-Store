@@ -132,9 +132,6 @@ function xuLyAnhLoi(event) {
         <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
           {{ tuKhoaTen.trim() ? `Kết quả cho "${tuKhoaTen.trim()}"` : 'Tất cả sản phẩm' }}
         </h1>
-        <p class="text-slate-400 max-w-xl text-sm md:text-base">
-          {{ tuKhoaTen.trim() ? `Các sản phẩm có tên khớp với "${tuKhoaTen.trim()}".` : 'Khám phá toàn bộ các mẫu giày đang được bán tại cửa hàng, được thiết kế cho mọi nhu cầu và phong cách.' }}
-        </p>
       </div>
     </section>
 

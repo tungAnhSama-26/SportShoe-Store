@@ -146,8 +146,7 @@ onUnmounted(dungPoll);
 <template>
   <main class="orders-six-radius bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-3xl px-6 lg:px-10 pt-10">
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">Theo dõi đơn hàng</h1>
-      <p class="text-sm text-slate-400 mb-8">Nhập mã hóa đơn để tra cứu thông tin đơn hàng của bạn (không cần đăng nhập).</p>
+      <h1 class="text-3xl font-bold text-slate-900 mb-8">Theo dõi đơn hàng</h1>
 
       <!-- Banner cảm ơn sau khi đặt hàng -->
       <div v-if="laDonMoiDat && don" class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-6 py-5 text-center">

@@ -24,7 +24,6 @@ function xuLyAnhLoi(event) {
       <div class="mb-8 flex items-start justify-between gap-4">
         <div>
           <p class="text-sm font-semibold text-black">Sản phẩm nổi bật</p>
-          <p class="mt-2 text-xs text-slate-500">Những lựa chọn được chọn riêng cho bạn</p>
         </div>
         <router-link
           to="/khachhang/san-pham"

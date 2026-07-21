@@ -503,8 +503,7 @@ function xuLyAnhLoi(event) {
 <template>
   <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
-      <p class="text-sm text-slate-400 mb-8">Bước 1: Thông tin giao hàng</p>
+      <h1 class="text-3xl font-bold text-slate-900 mb-8">Thanh toán</h1>
 
       <div v-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải...</div>
 

@@ -155,7 +155,7 @@ const generatedVariantFieldErrors = computed(() =>
 );
 
 function resolveColorGroupKey(item) {
-  return Number(item?.mauSacId || 0) || item?.mauSac || item?.key;
+  return (item?.mauSacId != null) ? Number(item.mauSacId) : (item?.mauSac || item?.key);
 }
 
 const generatedVariantGroups = computed(() => {

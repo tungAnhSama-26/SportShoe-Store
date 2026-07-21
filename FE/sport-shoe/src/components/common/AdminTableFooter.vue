@@ -145,16 +145,7 @@ function itemKey(item, index) {
       v-if="hasResults"
       class="flex flex-wrap items-center justify-end gap-2"
     >
-      <button
-        v-if="showRefresh"
-        type="button"
-        class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-        :class="props.compact ? 'h-9 w-9 rounded-[6px]' : 'h-9 w-9 rounded-[6px]'"
-        title="Làm mới"
-        @click="emit('refresh')"
-      >
-        <RefreshCw class="h-4 w-4" />
-      </button>
+
 
       <div
         class="flex items-center"

@@ -362,7 +362,7 @@ export function useChiTietSanPhamFormPage() {
     ]
   }
   function selectInlineCreatedItem(type, item) {
-    if (!item?.id) {
+    if (item?.id == null) {
       return
     }
     if (type === 'mauSac') {
@@ -679,7 +679,7 @@ export function useChiTietSanPhamFormPage() {
       if (!isExistingProduct.value) {
         if (productForm.ma && productForm.ma.trim() !== '') {
           const checkMa = await api.checkMaGiay(productForm.ma.trim());
-          if (checkMa.exists && checkMa.id) {
+          if (checkMa.exists && checkMa.id != null) {
             saving.value = false;
             const confirmed = await showConfirm(
               `Mã sản phẩm <b>${productForm.ma}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
@@ -697,7 +697,7 @@ export function useChiTietSanPhamFormPage() {
         
         if (!isExistingProduct.value && productForm.ten && productForm.ten.trim() !== '') {
           const checkTen = await api.checkTenGiay(productForm.ten.trim());
-          if (checkTen.exists && checkTen.id) {
+          if (checkTen.exists && checkTen.id != null) {
             saving.value = false;
             const confirmed = await showConfirm(
               `Sản phẩm với tên <b>${productForm.ten}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
@@ -715,7 +715,7 @@ export function useChiTietSanPhamFormPage() {
 
         if (!isExistingProduct.value) {
           const checkTrung = await api.checkTrungThuocTinh(buildCreateProductPayload());
-          if (checkTrung && checkTrung.id) {
+          if (checkTrung && checkTrung.id != null) {
             saving.value = false;
             const confirmed = await showConfirm(
               `Sản phẩm <b>${checkTrung.ten}</b> đang có các thuộc tính giống hệt với các thuộc tính bạn vừa chọn. Bạn có muốn gộp các biến thể này vào sản phẩm <b>${checkTrung.ten}</b> không?`,
@@ -762,7 +762,7 @@ export function useChiTietSanPhamFormPage() {
         ...createdVariants.value
       ]
       
-      if (!isExistingProduct.value && variantsResult?.giay?.id) {
+      if (!isExistingProduct.value && variantsResult?.giay?.id != null) {
         currentProductId.value = variantsResult.giay.id
         isExistingProduct.value = true
       }
@@ -823,6 +823,12 @@ export function useChiTietSanPhamFormPage() {
     document.addEventListener('mousedown', handleDocumentClick)
     try {
       await loadInitialData()
+      if (isExistingProduct.value && existingProductVariants.value?.length) {
+        existingProductVariants.value.forEach(variant => {
+          if (variant.mauSacId != null) appendSelectedValue('mauSacIds', variant.mauSacId)
+          if (variant.kichCoId != null) appendSelectedValue('kichCoIds', variant.kichCoId)
+        })
+      }
     } catch (error) {
       showToast(getDisplayErrorMessage(error, 'Không thể tải dữ liệu form lúc này'), 'error')
     }

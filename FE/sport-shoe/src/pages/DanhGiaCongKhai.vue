@@ -71,8 +71,7 @@ function xuLyAnhLoi(e) {
 <template>
   <main class="bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-3xl px-6 lg:px-10 pt-8">
-      <h1 class="text-2xl font-bold text-slate-900">Đánh giá từ khách hàng</h1>
-      <p class="mt-1 text-sm text-slate-400">Tất cả đánh giá thực tế về sản phẩm trong cửa hàng.</p>
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Đánh giá từ khách hàng</h1>
 
       <!-- Bộ lọc số sao -->
       <div class="mt-5 flex flex-wrap gap-2">
@@ -101,7 +100,8 @@ function xuLyAnhLoi(e) {
         <div v-for="dg in danhSach" :key="dg.id" class="rounded-3xl bg-white border border-slate-100 p-6 shadow-sm">
           <!-- Khách + sao -->
           <div class="flex gap-4">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            <img v-if="dg.hinhAnhKhach" :src="resolveMediaUrl(dg.hinhAnhKhach)" :alt="dg.hoTenKhach" class="h-10 w-10 shrink-0 rounded-full object-cover" @error="dg.hinhAnhKhach = null" />
+            <div v-else class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
               {{ chuCaiDau(dg.hoTenKhach) }}
             </div>
             <div class="flex-1">

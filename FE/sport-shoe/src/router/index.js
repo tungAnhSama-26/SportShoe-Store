@@ -14,6 +14,7 @@ const SanPhamNoiBat = () => import("../pages/SanPhamNoiBat.vue");
 const GioiThieu = () => import("../pages/GioiThieu.vue");
 const TraCuuDonHang = () => import("../pages/TraCuuDonHang.vue");
 const DanhGiaCongKhai = () => import("../pages/DanhGiaCongKhai.vue");
+const GoiYGiay = () => import("../pages/GoiYGiay.vue");
 const ClientProfile = () => import("../pages/Profile.vue");
 const Login = () => import("../pages/login/Login.vue");
 const AdminLogin = () => import("../pages/login/AdminLogin.vue");
@@ -204,6 +205,11 @@ const router = createRouter({
           path: "danh-gia",
           name: "danh-gia-cong-khai",
           component: DanhGiaCongKhai
+        },
+        {
+          path: "goi-y",
+          name: "goi-y-giay",
+          component: GoiYGiay
         },
         {
           path: "profile",

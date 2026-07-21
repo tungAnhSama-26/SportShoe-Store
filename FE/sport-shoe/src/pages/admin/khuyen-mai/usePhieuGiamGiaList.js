@@ -77,7 +77,7 @@ export function usePhieuGiamGiaList() {
   const totalItemsKh = ref(0);
 
   const dsTrangThai = [
-    { label: "Tất cả", value: "" },
+    { label: "Tất cả trạng thái", value: "" },
     { label: "Đang hoạt động", value: "1" },
     { label: "Ngưng hoạt động", value: "0" },
     { label: "Hết hạn", value: "het_han" },
@@ -86,7 +86,7 @@ export function usePhieuGiamGiaList() {
   ];
 
   const dsLoai = [
-    { label: "Tất cả", value: "" },
+    { label: "Tất cả loại giảm", value: "" },
     { label: "Phần trăm", value: "1" },
     { label: "Tiền mặt", value: "2" },
   ];
