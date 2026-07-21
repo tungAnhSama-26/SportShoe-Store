@@ -260,16 +260,51 @@ async function chonHuyen(event) {
 
 function validate() {
   const next = {};
-  if (!form.value.tenNguoiNhan.trim()) next.tenNguoiNhan = "Vui lòng nhập tên người nhận.";
-  if (!/^(0|\+84)[35789]\d{8}$/.test(form.value.sdtNguoiNhan.trim())) {
-    next.sdtNguoiNhan = "Số điện thoại không đúng định dạng.";
+  
+  // 1. Tên người nhận
+  const ten = (form.value.tenNguoiNhan || "").trim();
+  if (!ten) {
+    next.tenNguoiNhan = "Vui lòng nhập tên người nhận.";
+  } else if (ten.length < 3 || ten.length > 49) {
+    next.tenNguoiNhan = "Họ và tên người nhận phải từ 3 đến 49 ký tự.";
+  } else if (!/^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠƯưăâêôơư\s]+$/.test(ten)) {
+    next.tenNguoiNhan = "Họ và tên người nhận chỉ chứa chữ cái tiếng Việt và khoảng trắng.";
+  }
+
+  // 2. Số điện thoại
+  const sdt = (form.value.sdtNguoiNhan || "").trim();
+  if (!sdt) {
+    next.sdtNguoiNhan = "Vui lòng nhập số điện thoại người nhận.";
+  } else if (!/^0[35789]\d{8}$/.test(sdt)) {
+    next.sdtNguoiNhan = "Số điện thoại gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08 hoặc 09.";
+  }
+
+  // 3. Email (nếu nhập)
+  const emailVal = (form.value.email || "").trim();
+  if (emailVal) {
+    if (emailVal.length > 100) {
+      next.email = "Email không được vượt quá 100 ký tự.";
+    } else if (/\s/.test(emailVal)) {
+      next.email = "Email không được chứa khoảng trắng.";
+    } else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(emailVal)) {
+      next.email = "Email phải đúng định dạng @gmail.com.";
+    }
   }
   
+  // 4. Địa chỉ khu vực & Địa chỉ cụ thể
   if (form.value.diaChiId === "new") {
     if (!form.value.tinhThanh) next.tinhThanh = "Vui lòng chọn tỉnh/thành phố.";
     if (!form.value.quanHuyen) next.quanHuyen = "Vui lòng chọn quận/huyện.";
     if (!form.value.phuongXa) next.phuongXa = "Vui lòng chọn phường/xã.";
-    if (!form.value.diaChiCuThe.trim()) next.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+    
+    const dc = (form.value.diaChiCuThe || "").trim();
+    if (!dc) {
+      next.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+    } else if (dc.length < 3 || dc.length > 70) {
+      next.diaChiCuThe = "Địa chỉ cụ thể phải từ 3 đến 70 ký tự.";
+    } else if (!/^[a-zA-Z0-9ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠƯưăâêôơư\s\,\.\-\/]+$/.test(dc)) {
+      next.diaChiCuThe = "Địa chỉ cụ thể không chứa ký tự đặc biệt ngoài dấu phẩy, dấu chấm, dấu gạch ngang, dấu gạch chéo.";
+    }
   }
   
   errors.value = next;
@@ -356,6 +391,7 @@ watch(
           <label class="block space-y-1.5">
             <span class="text-[13px] text-slate-600">Email</span>
             <input v-model="form.email" type="email" placeholder="example@gmail.com" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" />
+            <p v-if="errors.email" class="text-xs text-red-500">{{ errors.email }}</p>
           </label>
 
           <!-- Address selection box -->

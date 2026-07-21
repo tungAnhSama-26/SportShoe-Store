@@ -171,6 +171,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             LocalDate denNgay,
             UUID giaoCaId
     ) {
+        if (keyword != null && keyword.trim().length() > 100) {
+            throw new BusinessException("Từ khóa tìm kiếm không được vượt quá 100 ký tự");
+        }
         Integer kenhBan = mapLoaiDonToKenhBan(loaiDon);
         Integer trangThaiDb = mapTrangThaiFilterToDb(trangThai);
         Instant tuNgayValue = tuNgay != null ? tuNgay.atStartOfDay(MUI_GIO_HOA_DON).toInstant() : null;
@@ -374,6 +377,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 }
             }
             case "Hủy" -> {
+                if (request.ghiChu() == null || request.ghiChu().isBlank()) {
+                    throw new BusinessException("Lý do hủy hóa đơn là bắt buộc");
+                }
                 capNhatThanhToanKhiHuyDon(hoaDon);
                 // Đơn online đã trừ kho (đã xác nhận trước đó) -> cộng trả lại tồn.
                 if (request.hoanKho() == null || request.hoanKho()) {
@@ -1359,9 +1365,11 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
 
     private void ensureCoTheCapNhatThongTinGiaoHang(HoaDon hoaDon) {
         Integer trangThai = hoaDon.getTrangThai();
-        if (!Objects.equals(trangThai, TRANG_THAI_CHO_XAC_NHAN)) {
+        if (!Objects.equals(trangThai, TRANG_THAI_CHO_XAC_NHAN)
+                && !Objects.equals(trangThai, TRANG_THAI_DA_XAC_NHAN)
+                && !Objects.equals(trangThai, TRANG_THAI_CHO_GIAO_HANG)) {
             throw new BusinessException(
-                    "Chỉ có thể cập nhật thông tin giao hàng khi hóa đơn đang chờ xác nhận"
+                    "Chỉ có thể cập nhật thông tin giao hàng khi hóa đơn ở trạng thái chờ xác nhận, đã xác nhận hoặc chờ lấy hàng"
             );
         }
     }
