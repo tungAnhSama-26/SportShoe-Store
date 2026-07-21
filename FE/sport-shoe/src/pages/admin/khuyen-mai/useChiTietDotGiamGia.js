@@ -33,6 +33,19 @@ import {
 } from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
+const formatToLocalDateString = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const gmt7Time = d.getTime() + (7 * 60 * 60 * 1000);
+  const localDate = new Date(gmt7Time);
+  const year = localDate.getUTCFullYear();
+  const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const date = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 export function useChiTietDotGiamGia() {
   const route = useRoute();
   const router = useRouter();
@@ -587,8 +600,8 @@ export function useChiTietDotGiamGia() {
         moTa: detail.moTa ?? "",
         loaiGiam: String(detail.loaiGiam ?? 1),
         giaTriGiam: detail.giaTriGiam ?? "",
-        ngayBatDau: detail.ngayBatDau ?? "",
-        ngayKetThuc: detail.ngayKetThuc ?? "",
+        ngayBatDau: formatToLocalDateString(detail.ngayBatDau),
+        ngayKetThuc: formatToLocalDateString(detail.ngayKetThuc),
         kichHoat: String(detail.kichHoat ?? 1)
       });
 
