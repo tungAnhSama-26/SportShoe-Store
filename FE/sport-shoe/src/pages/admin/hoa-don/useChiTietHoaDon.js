@@ -913,13 +913,24 @@ export function useChiTietHoaDon() {
       thongBaoDonDaHoanThanh();
       return;
     }
+    if (!danhSachSanPhamUpdate.value || !danhSachSanPhamUpdate.value.length) {
+      showError("Hóa đơn phải có ít nhất một sản phẩm.");
+      return;
+    }
+    for (const item of danhSachSanPhamUpdate.value) {
+      const q = Number(item.soLuong);
+      if (isNaN(q) || !Number.isInteger(q) || q < 1) {
+        showError("Số lượng của mỗi sản phẩm phải là số nguyên lớn hơn hoặc bằng 1.");
+        return;
+      }
+    }
     dangCapNhat.value = true;
     try {
       ganHoaDonSauThaoTac(
         await capNhatSanPhamHoaDon(hoaDon.value.id, {
           items: danhSachSanPhamUpdate.value.map((i) => ({
             chiTietId: i.chiTietId,
-            soLuong: i.soLuong,
+            soLuong: Number(i.soLuong),
           })),
         }),
       );

@@ -234,6 +234,14 @@ watch(
 );
 
 async function taiDanhSach() {
+  if (boLoc.value.keyword && boLoc.value.keyword.length > 100) {
+    showError("Từ khóa tìm kiếm không được vượt quá 100 ký tự.");
+    return;
+  }
+  if (boLoc.value.tuNgay && boLoc.value.denNgay && boLoc.value.tuNgay > boLoc.value.denNgay) {
+    showError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+    return;
+  }
   dangTai.value = true;
   loiTrang.value = "";
   try {
@@ -380,6 +388,7 @@ onBeforeUnmount(() => {
             <input
               v-model="boLoc.keyword"
               type="text"
+              maxlength="100"
               placeholder="Mã hóa đơn / mã nhân viên..."
               class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
             />
