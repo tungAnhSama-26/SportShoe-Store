@@ -424,9 +424,23 @@ watch(() => props.showProductDropdown, (newVal) => {
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4">
-                      <span class="font-bold text-slate-800 dark:text-slate-200 text-lg">
-                        {{ product.chiTietId ? soLuongConLai(product.chiTietId, product.soLuongTon) : product.soLuongTon }}
-                      </span>
+                      <div class="flex flex-col items-start gap-1">
+                        <span class="font-bold text-slate-800 dark:text-slate-200 text-lg">
+                          {{ product.chiTietId ? soLuongConLai(product.chiTietId, product.soLuongTon) : product.soLuongTon }}
+                        </span>
+                        <span
+                          v-if="(product.chiTietId ? soLuongConLai(product.chiTietId, product.soLuongTon) : product.soLuongTon) <= 2 && (product.chiTietId ? soLuongConLai(product.chiTietId, product.soLuongTon) : product.soLuongTon) > 0"
+                          class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-0.5 text-[11px] font-bold text-rose-600 dark:text-rose-400"
+                        >
+                          ⚠️ Sắp hết hàng
+                        </span>
+                        <span
+                          v-else-if="(product.chiTietId ? soLuongConLai(product.chiTietId, product.soLuongTon) : product.soLuongTon) <= 0"
+                          class="inline-flex rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-bold text-slate-500"
+                        >
+                          Hết hàng
+                        </span>
+                      </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4">
                       <div class="flex flex-col">
