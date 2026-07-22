@@ -1,5 +1,5 @@
 <script setup>
-import { Trash2 } from "lucide-vue-next";
+import { Trash2, Pencil } from "lucide-vue-next";
 import { resolveHinhAnh } from "../../../utils/resolve-image";
 defineProps({
   cartItems: {
@@ -105,7 +105,15 @@ function formatDiscountPercent(item) {
             </div>
           </td>
           <td class="px-3 py-2">
-            <div class="flex items-center justify-center">
+            <div class="flex items-center justify-center gap-1">
+              <button
+                type="button"
+                class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition"
+                @click="emit('edit-item', item)"
+                title="Đổi biến thể (Size/Màu)"
+              >
+                <Pencil class="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 class="p-1.5 text-slate-400 dark:text-slate-500 transition hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md flex items-center justify-center"

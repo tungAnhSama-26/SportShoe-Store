@@ -1,5 +1,6 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
+import com.example.server.core.admin.banHangTaiQuay.dto.request.DoiBienTheTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTietResponse;
 import com.example.server.entity.GiayChiTiet;
@@ -207,6 +208,60 @@ public class HoaDonChoTaiQuayService {
         invoiceUseCase.dongBoVanChuyen(savedHoaDon, request.thongTinGiaoHang());
 
         return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, chiTietCanLuu, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
+    }
+
+    @Transactional
+    public HoaDonChoChiTietResponse doiBienThe(Integer hoaDonChiTietId, DoiBienTheTaiQuayRequest request) {
+        HoaDonChiTiet oldItem = hoaDonChiTietRepository.findById(hoaDonChiTietId)
+                .orElseGet(() -> hoaDonChiTietRepository.findAll().stream()
+                        .filter(h -> h.getId().equals(hoaDonChiTietId) || h.getGiayChiTiet().getId().equals(hoaDonChiTietId))
+                        .findFirst()
+                        .orElse(null));
+
+        if (oldItem == null) {
+            throw new ResourceNotFoundException("Chi tiết hóa đơn không tồn tại");
+        }
+
+        HoaDon hoaDon = oldItem.getHoaDon();
+        if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
+            throw new BusinessException("Hóa đơn này không còn ở trạng thái chờ");
+        }
+
+        GiayChiTiet bienTheMoi = giayChiTietRepository.findById(request.giayChiTietMoiId())
+                .orElseThrow(() -> new ResourceNotFoundException("Biến thể mới không tồn tại"));
+
+        int soLuong = (request.soLuong() != null && request.soLuong() > 0) ? request.soLuong() : oldItem.getSoLuong();
+
+        // Stock adjustment: restore old, deduct new
+        inventoryUseCase.restoreStock(oldItem.getGiayChiTiet(), oldItem.getSoLuong());
+        inventoryUseCase.deductStock(bienTheMoi, soLuong, false);
+
+        giayChiTietRepository.save(oldItem.getGiayChiTiet());
+        giayChiTietRepository.save(bienTheMoi);
+
+        oldItem.setGiayChiTiet(bienTheMoi);
+        oldItem.setSoLuong(soLuong);
+        BigDecimal giaBan = bienTheMoi.getGiaBan();
+        oldItem.setGiaDonVi(giaBan);
+        oldItem.setThanhTien(giaBan.multiply(BigDecimal.valueOf(soLuong)));
+        hoaDonChiTietRepository.save(oldItem);
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+        BigDecimal tongTienHang = items.stream()
+                .map(HoaDonChiTiet::getThanhTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        hoaDon.setTongTienHang(tongTienHang);
+        hoaDon.setTongTienThanhToan(tongTienHang);
+        if (hoaDon.getPhieuGiamGia() != null) {
+            voucherUseCase.giaiPhongPhieuGiamGia(hoaDon.getPhieuGiamGia(), hoaDon.getKhachHang());
+            voucherUseCase.ganPhieuGiamGiaChoHoaDon(hoaDon, hoaDon.getPhieuGiamGia().getMa(), hoaDon.getKhachHang(), tongTienHang);
+        }
+
+        hoaDon.setNgayCapNhat(Instant.now());
+        HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
+
+        return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, items, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
     }
 
     @Transactional
