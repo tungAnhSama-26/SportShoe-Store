@@ -1,5 +1,6 @@
 package com.example.server.core.admin.quanlykhuyenmai.dto.request;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -53,6 +54,7 @@ public class PhieuGiamGiaRequest {
     private BigDecimal giaTriToiThieu;
 
     @DecimalMin(value = "0.00", message = "Mức giảm tối đa không được nhỏ hơn 0")
+    @DecimalMax(value = "100000000.00", message = "Mức giảm tối đa không được vượt quá 100.000.000 VNĐ")
     private BigDecimal giamToiDa;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
