@@ -16,6 +16,8 @@ public record ThanhToanTaiQuayRequest(
         @NotNull(message = "Hình thức thanh toán không được để trống")
         Integer hinhThucThanhToan,
         BigDecimal tienKhachDua,
+        BigDecimal tienMat,
+        BigDecimal tienChuyenKhoan,
         String ghiChu,
         List<@Valid TaoHoaDonChoItemRequest> items
 ) {
