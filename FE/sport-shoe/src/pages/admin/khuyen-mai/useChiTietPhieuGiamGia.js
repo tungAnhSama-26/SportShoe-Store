@@ -62,9 +62,18 @@ export function useChiTietPhieuGiamGia() {
   const soLuongVoHan = ref(false);
   const isLoadingData = ref(false);
 
+  const MIN_INT = -2147483648;
+  const MAX_INT = 2147483647;
+  const MAX_GIAM_TOI_DA = 100000000;
+
   function parseQuantityNumber(value) {
-    const rawValue = String(value ?? "").replace(/[^\d]/g, "");
-    return rawValue ? Number(rawValue) : 0;
+    if (value === "" || value == null) return 0;
+    const str = String(value).trim();
+    const isNegative = str.startsWith("-");
+    const rawDigits = str.replace(/[^\d]/g, "");
+    if (!rawDigits) return 0;
+    const num = Number(rawDigits);
+    return isNegative ? -num : num;
   }
 
   function formatQuantityNumber(value) {
@@ -82,7 +91,14 @@ export function useChiTietPhieuGiamGia() {
     },
     set(val) {
       if (!soLuongVoHan.value) {
-        form.soLuong = formatQuantityNumber(val);
+        const numeric = parseQuantityNumber(val);
+        if (numeric > MAX_INT || numeric < MIN_INT) {
+          soLuongVoHan.value = true;
+          form.soLuong = "999999";
+          delete formErrors.soLuong;
+        } else {
+          form.soLuong = formatQuantityNumber(val);
+        }
       }
     }
   });
@@ -90,8 +106,10 @@ export function useChiTietPhieuGiamGia() {
   function handleSoLuongEnter() {
     if (soLuongVoHan.value || form.loaiPhieu === "2") return;
     const numeric = parseQuantityNumber(form.soLuong);
-    if (numeric > 999999) {
+    if (numeric > MAX_INT || numeric < MIN_INT) {
       soLuongVoHan.value = true;
+      form.soLuong = "999999";
+      delete formErrors.soLuong;
     }
   }
 
@@ -459,9 +477,29 @@ export function useChiTietPhieuGiamGia() {
         const val = parseVndNumber(newVal);
         if (val <= 0) {
           formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
+        } else if (val > MAX_GIAM_TOI_DA) {
+          formErrors.giaTri = "Giá trị giảm không được vượt quá 100.000.000 VNĐ";
         } else {
           delete formErrors.giaTri;
         }
+      }
+    },
+  );
+
+  watch(
+    () => form.giamToiDa,
+    (newVal) => {
+      if (newVal === "" || newVal === null || newVal === undefined) {
+        delete formErrors.giamToiDa;
+        return;
+      }
+      const val = parseVndNumber(newVal);
+      if (val < 0) {
+        formErrors.giamToiDa = "Mức giảm tối đa không được nhỏ hơn 0";
+      } else if (val > MAX_GIAM_TOI_DA) {
+        formErrors.giamToiDa = "Mức giảm tối đa không được vượt quá 100.000.000 VNĐ";
+      } else {
+        delete formErrors.giamToiDa;
       }
     },
   );
@@ -613,6 +651,9 @@ export function useChiTietPhieuGiamGia() {
       if (!form.giaTri || val <= 0) {
         formErrors.giaTri = "Giá trị giảm phải lớn hơn 0";
         isValid = false;
+      } else if (val > MAX_GIAM_TOI_DA) {
+        formErrors.giaTri = "Giá trị giảm không được vượt quá 100.000.000 VNĐ";
+        isValid = false;
       }
     }
 
@@ -628,6 +669,9 @@ export function useChiTietPhieuGiamGia() {
     if (giamToiDa < 0) {
       formErrors.giamToiDa = "Mức giảm tối đa không được nhỏ hơn 0";
       isValid = false;
+    } else if (giamToiDa > MAX_GIAM_TOI_DA) {
+      formErrors.giamToiDa = "Mức giảm tối đa không được vượt quá 100.000.000 VNĐ";
+      isValid = false;
     }
 
     if (
@@ -642,7 +686,11 @@ export function useChiTietPhieuGiamGia() {
 
     if (!soLuongVoHan.value) {
       const numericSoLuong = parseQuantityNumber(form.soLuong);
-      if (!form.soLuong || numericSoLuong <= 0) {
+      if (numericSoLuong > MAX_INT || numericSoLuong < MIN_INT) {
+        soLuongVoHan.value = true;
+        form.soLuong = "999999";
+        delete formErrors.soLuong;
+      } else if (!form.soLuong || numericSoLuong <= 0) {
         formErrors.soLuong = "Số lượng phiếu phải lớn hơn 0";
         isValid = false;
       } else if (
