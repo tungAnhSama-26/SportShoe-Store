@@ -52,6 +52,10 @@ defineProps({
   soLuongConLai: {
     type: Function,
     default: (id, qty) => qty
+  },
+  isEditMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -98,70 +102,68 @@ function formatDiscountPercent(product) {
             </svg>
           </button>
 
-          <div class="flex flex-col md:flex-row">
-            <!-- Left: Image -->
-            <div class="bg-slate-50 md:w-4/12 lg:w-4/12 flex-shrink-0">
-              <div class="relative h-64 w-full md:h-full md:min-h-[500px]">
-                <img
-                  v-if="currentProductImage"
-                  :src="currentProductImage"
-                  alt="Product Image"
-                  class="absolute inset-0 h-full w-full object-cover"
-                />
-                <div
-                  v-else
-                  class="absolute inset-0 flex items-center justify-center bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-8xl font-black text-red-300"
-                >
-                  {{ selectedProductDetail.tenSanPham?.slice(0, 1) }}
-                </div>
-                
-                <!-- Badge Giảm giá trên ảnh -->
-                <span
-                  v-if="isDiscounted(chiTietDangChon)"
-                  class="absolute left-4 top-4 inline-flex items-center rounded-md bg-red-500 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-md"
-                >
-                  Giảm giá
-                </span>
+          <div class="flex flex-col md:flex-row min-h-[480px]">
+            <!-- Left: Image (Compact fixed w-64) -->
+            <div class="bg-slate-50 border-r border-slate-100 p-4 w-full md:w-64 flex items-center justify-center relative shrink-0">
+              <img
+                v-if="currentProductImage"
+                :src="resolveHinhAnh(currentProductImage)"
+                alt="Product Image"
+                class="max-h-60 max-w-full object-contain drop-shadow-md transition-transform hover:scale-105"
+              />
+              <div
+                v-else
+                class="flex h-36 w-36 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] text-5xl font-black text-red-300 shadow-inner"
+              >
+                {{ selectedProductDetail.tenSanPham?.slice(0, 1) }}
               </div>
+              
+              <!-- Badge Giảm giá trên ảnh -->
+              <span
+                v-if="isDiscounted(chiTietDangChon)"
+                class="absolute left-3 top-3 inline-flex items-center rounded-md bg-red-500 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md"
+              >
+                Giảm giá
+              </span>
             </div>
 
-            <!-- Right: Content -->
-            <div class="flex flex-col p-6 md:w-8/12 md:p-8 lg:w-8/12 max-h-[85vh] overflow-hidden">
+            <!-- Right: Content (Spacious flex-1 min-w-0 for table) -->
+            <div class="flex flex-col p-5 md:p-6 flex-1 min-w-0 max-h-[85vh] overflow-hidden">
               <div class="shrink-0">
                 <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
                   Mã: {{ selectedProductDetail.maSanPham }}
                 </p>
-                <h3 class="mt-2 text-2xl font-bold text-slate-900 leading-tight">
+                <h3 class="mt-1.5 text-2xl font-bold text-slate-900 leading-tight">
                   {{ selectedProductDetail.tenSanPham }}
                 </h3>
 
-                <div class="mt-4 flex flex-col gap-1">
-                  <p class="text-3xl font-bold text-red-500">
+                <div class="mt-3 flex items-baseline gap-3">
+                  <p class="text-2xl font-bold text-red-500">
                     {{ dinhDangTien(chiTietDangChon?.giaBan || selectedProductDetail.giaBanKhoiDiem || 0) }}
                   </p>
                   <p
                     v-if="isDiscounted(chiTietDangChon)"
-                    class="text-base font-medium text-slate-400 line-through"
+                    class="text-sm font-medium text-slate-400 line-through"
                   >
                     {{ dinhDangTien(chiTietDangChon?.giaGoc || 0) }}
                   </p>
                 </div>
               </div>
 
-              <div class="my-6 h-px w-full bg-slate-100"></div>
+              <div class="my-4 h-px w-full bg-slate-100"></div>
 
               <!-- Variants Table -->
-              <div class="flex-1 overflow-auto min-h-[300px] border border-slate-200 rounded-md my-4 custom-scrollbar">
-                <table class="w-full text-left text-sm text-slate-600 whitespace-nowrap">
-                  <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 sticky top-0 z-10">
+              <div class="flex-1 overflow-auto min-h-[280px] border border-slate-200 rounded-lg my-2 custom-scrollbar">
+                <table class="w-full text-left text-xs text-slate-600 whitespace-nowrap">
+                  <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200 sticky top-0 z-10 text-[11px]">
                     <tr>
-                      <th class="px-4 py-3">Hình ảnh</th>
-                      <th class="px-4 py-3">Mã SKU</th>
-                      <th class="px-4 py-3">Màu sắc</th>
-                      <th class="px-4 py-3">Kích cỡ</th>
-                      <th class="px-4 py-3 text-right">Giá bán</th>
-                      <th class="px-4 py-3 text-center">Giảm giá</th>
-                      <th class="px-4 py-3 text-right">Tồn kho</th>
+                      <th class="px-2.5 py-2.5 text-center">Hình ảnh</th>
+                      <th class="px-2.5 py-2.5">Mã SKU</th>
+                      <th class="px-2.5 py-2.5">Màu sắc</th>
+                      <th class="px-2.5 py-2.5 text-center">Kích cỡ</th>
+                      <th class="px-2.5 py-2.5 text-right">Giá bán</th>
+                      <th class="px-2.5 py-2.5 text-center">Số lượng</th>
+                      <th class="px-2.5 py-2.5 text-center">Giảm giá</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
@@ -175,33 +177,33 @@ function formatDiscountPercent(product) {
                       ]"
                       @click="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 && emit('select-variant', variant)"
                     >
-                      <td class="px-4 py-3">
-                        <img v-if="variant.hinhAnh" :src="resolveHinhAnh(variant.hinhAnh)" class="w-10 h-10 rounded-md object-cover border border-slate-200" />
-                        <div v-else class="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400">
+                      <td class="px-2.5 py-2 text-center">
+                        <img v-if="variant.hinhAnh" :src="resolveHinhAnh(variant.hinhAnh)" class="w-9 h-9 mx-auto rounded-md object-cover border border-slate-200" />
+                        <div v-else class="w-9 h-9 mx-auto rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400">
                           {{ (variant.mauSac || "?").slice(0, 2) }}
                         </div>
                       </td>
-                      <td class="px-4 py-3 font-medium text-slate-900">{{ variant.sku || variant.maBienThe }}</td>
-                      <td class="px-4 py-3">{{ variant.mauSac || variant.maBienThe }}</td>
-                      <td class="px-4 py-3 font-medium">{{ variant.kichCo }}</td>
-                      <td class="px-4 py-3 text-right">
+                      <td class="px-2.5 py-2 font-medium text-slate-900 text-xs">{{ variant.sku || variant.maBienThe }}</td>
+                      <td class="px-2.5 py-2 text-xs">{{ variant.mauSac || variant.maBienThe }}</td>
+                      <td class="px-2.5 py-2 text-center font-semibold text-xs">{{ variant.kichCo }}</td>
+                      <td class="px-2.5 py-2 text-right">
                         <div class="flex flex-col">
-                          <span class="text-red-500 font-semibold">{{ dinhDangTien(variant.giaBan || 0) }}</span>
-                          <span v-if="isDiscounted(variant)" class="text-xs text-slate-400 line-through">{{ dinhDangTien(variant.giaGoc || 0) }}</span>
+                          <span class="text-red-500 font-semibold text-xs">{{ dinhDangTien(variant.giaBan || 0) }}</span>
+                          <span v-if="isDiscounted(variant)" class="text-[10px] text-slate-400 line-through">{{ dinhDangTien(variant.giaGoc || 0) }}</span>
                         </div>
                       </td>
-                      <td class="px-4 py-3 text-center">
+                      <td class="px-2.5 py-2 text-center">
+                        <span :class="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
+                          {{ soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? soLuongConLai(variant.chiTietId, variant.soLuongTon) : 'Hết hàng' }}
+                        </span>
+                      </td>
+                      <td class="px-2.5 py-2 text-center">
                         <div v-if="isDiscounted(variant)" class="flex flex-col gap-1 items-center justify-center">
-                          <span class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                          <span class="inline-flex rounded bg-rose-100 dark:bg-rose-900/30 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
                             {{ formatDiscountPercent(variant) }}
                           </span>
                         </div>
                         <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>
-                      </td>
-                      <td class="px-4 py-3 text-right">
-                        <span :class="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
-                          {{ soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? soLuongConLai(variant.chiTietId, variant.soLuongTon) : 'Hết hàng' }}
-                        </span>
                       </td>
                     </tr>
                     <tr v-if="!bienTheLienQuan || bienTheLienQuan.length === 0">
@@ -259,11 +261,17 @@ function formatDiscountPercent(product) {
             <div class="mt-4 shrink-0">
               <button
                 type="button"
-                class="w-full rounded-md bg-red-500 py-4 text-base font-semibold text-white transition-all hover:bg-red-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                class="w-full rounded-md py-4 text-base font-semibold text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                :class="isEditMode ? 'bg-amber-500 hover:bg-amber-600 shadow-md' : 'bg-red-500 hover:bg-red-600'"
                 :disabled="!chiTietDangChon || soLuongTonKhaDungChiTiet <= 0"
                 @click="emit('add-selected-variant')"
               >
-                {{ !chiTietDangChon ? 'Vui lòng chọn phân loại' : (soLuongTonKhaDungChiTiet > 0 ? 'Thêm vào hóa đơn' : 'Đã hết hàng') }}
+                <template v-if="isEditMode">
+                  Xác nhận đổi sản phẩm
+                </template>
+                <template v-else>
+                  {{ !chiTietDangChon ? 'Vui lòng chọn phân loại' : (soLuongTonKhaDungChiTiet > 0 ? 'Thêm vào hóa đơn' : 'Đã hết hàng') }}
+                </template>
               </button>
             </div>
             </div>

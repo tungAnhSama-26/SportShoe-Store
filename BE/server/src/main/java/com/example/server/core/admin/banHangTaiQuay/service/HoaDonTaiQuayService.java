@@ -342,6 +342,7 @@ public class HoaDonTaiQuayService {
                                 hinhAnh = hinhAnhs.get(0).getUrl();
                             }
                             return new HoaDonChoDongSanPhamResponse(
+                                    item.getId(),
                                     item.getGiayChiTiet().getId(),
                                     item.getGiayChiTiet().getGiay().getMa(),
                                     item.getGiayChiTiet().getGiay().getTen(),

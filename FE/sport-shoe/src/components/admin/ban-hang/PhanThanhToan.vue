@@ -111,6 +111,14 @@ const props = defineProps({
     type: String,
     default: ""
   },
+  tienMatKetHop: {
+    type: String,
+    default: ""
+  },
+  tienChuyenKhoanKetHop: {
+    type: String,
+    default: ""
+  },
   paymentValidationMessage: {
     type: String,
     default: ""
@@ -168,6 +176,8 @@ const emit = defineEmits([
   "calculate-shipping",
   "update:paymentMethod",
   "amount-input",
+  "cash-split-input",
+  "transfer-split-input",
   "update:paymentNote",
   "print-invoice",
   "pay-now",
@@ -369,8 +379,8 @@ const sepayQrUrl = computed(() => {
         <!-- Shipping Section moved to BanHangShippingSection.vue -->
         <div>
           <p class="mb-1.5 text-sm text-slate-500 dark:text-slate-400">Hình thức thanh toán</p>
-          <div class="grid grid-cols-2 gap-x-6 gap-y-2">
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <div class="grid grid-cols-3 gap-x-2 gap-y-2">
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
               <input
                 :checked="paymentMethod === 1"
                 type="radio"
@@ -379,7 +389,7 @@ const sepayQrUrl = computed(() => {
               />
               <span>Tiền mặt</span>
             </label>
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
               <input
                 :checked="paymentMethod === 2"
                 type="radio"
@@ -388,8 +398,18 @@ const sepayQrUrl = computed(() => {
               />
               <span>Chuyển khoản</span>
             </label>
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <input
+                :checked="paymentMethod === 5"
+                type="radio"
+                class="h-4 w-4 accent-red-500"
+                @change="emit('update:paymentMethod', 5)"
+              />
+              <span>Kết hợp</span>
+            </label>
           </div>
         </div>
+
         <div v-if="paymentMethod === 1">
           <label class="mb-1.5 block text-sm text-slate-500 dark:text-slate-400">Khách thanh toán</label>
           <input
@@ -409,7 +429,35 @@ const sepayQrUrl = computed(() => {
           </p>
         </div>
 
-        <div v-if="paymentMethod === 1" class="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-2">
+        <div v-if="paymentMethod === 5" class="space-y-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-3">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Tiền mặt</label>
+            <input
+              :value="tienMatKetHop"
+              type="text"
+              inputmode="numeric"
+              placeholder="Nhập số tiền mặt..."
+              class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-red-300 dark:focus:border-red-500"
+              @input="emit('cash-split-input', $event.target.value)"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Chuyển khoản</label>
+            <input
+              :value="tienChuyenKhoanKetHop"
+              type="text"
+              inputmode="numeric"
+              placeholder="Nhập số tiền chuyển khoản..."
+              class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-red-300 dark:focus:border-red-500"
+              @input="emit('transfer-split-input', $event.target.value)"
+            />
+          </div>
+          <p v-if="paymentValidationMessage" class="text-xs font-medium text-rose-500">
+            {{ paymentValidationMessage }}
+          </p>
+        </div>
+
+        <div v-if="paymentMethod === 1 || paymentMethod === 5" class="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-2">
           <span class="text-sm text-slate-500 dark:text-slate-400">Tiền thừa trả khách</span>
           <span class="max-w-[65%] break-all text-right text-base font-bold text-slate-900 dark:text-slate-100">{{ dinhDangTien(tienThua) }}</span>
         </div>

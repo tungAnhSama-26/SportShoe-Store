@@ -83,6 +83,8 @@ const {
   thongTinGiaoHang,
   phuongThucThanhToan,
   tienKhachDua,
+  tienMatKetHop,
+  tienChuyenKhoanKetHop,
   thongBaoLoiThanhToan,
   tienThua,
   ghiChuThanhToan,
@@ -105,6 +107,8 @@ const {
   dongDanhSachSanPham,
   moChiTietSanPham,
   themTrucTiepBienThe,
+  itemDangDoiBienThe,
+  xuLyMoDoiBienTheInCart,
   xuLyQuetQrSanPham,
   tangSoLuong,
   giamSoLuong,
@@ -126,6 +130,8 @@ const {
   capNhatThongTinGiaoHang,
   xuLyTinhPhiVanChuyen,
   xuLyTienKhachDuaInput,
+  xuLyTienMatKetHopInput,
+  xuLyTienChuyenKhoanKetHopInput,
   xuLyTaoHoaDonCho,
   xuLyTaoHoaDonChoMoi,
   xuLyThanhToanNgay,
@@ -300,6 +306,7 @@ function xuLyThemKhachHang(khachHangMoi) {
               @decrease-item="giamSoLuong"
               @remove-item="xoaSanPham"
               @update-item="capNhatSoLuong"
+              @edit-item="xuLyMoDoiBienTheInCart"
             />
           </div>
 
@@ -373,6 +380,8 @@ function xuLyThemKhachHang(khachHangMoi) {
             :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
             :payment-method="phuongThucThanhToan"
             :amount-paid="tienKhachDua"
+            :tien-mat-ket-hop="tienMatKetHop"
+            :tien-chuyen-khoan-ket-hop="tienChuyenKhoanKetHop"
             :payment-validation-message="thongBaoLoiThanhToan"
             :tien-thua="tienThua"
             :payment-note="ghiChuThanhToan"
@@ -396,6 +405,8 @@ function xuLyThemKhachHang(khachHangMoi) {
             @calculate-shipping="xuLyTinhPhiVanChuyen"
             @update:payment-method="datPhuongThucThanhToan"
             @amount-input="xuLyTienKhachDuaInput"
+            @cash-split-input="xuLyTienMatKetHopInput"
+            @transfer-split-input="xuLyTienChuyenKhoanKetHopInput"
             @update:payment-note="datGhiChuThanhToan"
             @print-invoice="xuLyInHoaDon"
             @pay-now="xuLyThanhToanNgay"
@@ -423,6 +434,7 @@ function xuLyThemKhachHang(khachHangMoi) {
       :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
       :dinh-dang-tien="dinhDangTien"
       :so-luong-con-lai="soLuongConLai"
+      :is-edit-mode="Boolean(itemDangDoiBienThe)"
       @close="dongChiTietSanPham"
       @select-color="chonMauSac"
       @select-size="chonKichCo"

@@ -34,15 +34,23 @@ const { Button, ArrowLeft, router, hoaDon, dinhDangGio, dinhDangNgay } =
         </span>
       </p>
     </div>
-    <Button
-      variant="soft"
-      @click="router.push({ name: 'admin-hoa-don' })"
-      class="h-10 shrink-0"
-    >
-      <template #prefix>
-        <ArrowLeft class="h-4 w-4" />
-      </template>
-      Quay Lại Danh Sách
-    </Button>
+    <div class="flex items-center gap-2 shrink-0">
+      <Button
+        @click="router.push('/admin/ban-hang')"
+        class="h-10 shrink-0 !bg-red-500 hover:!bg-red-600 !text-white font-bold shadow-sm"
+      >
+        Quay lại Bán hàng tại quầy
+      </Button>
+      <Button
+        variant="soft"
+        @click="router.push({ name: 'admin-hoa-don' })"
+        class="h-10 shrink-0"
+      >
+        <template #prefix>
+          <ArrowLeft class="h-4 w-4" />
+        </template>
+        Quay Lại Danh Sách
+      </Button>
+    </div>
   </section>
 </template>
