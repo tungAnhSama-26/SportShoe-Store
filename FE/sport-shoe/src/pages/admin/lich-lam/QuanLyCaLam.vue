@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { 
-  Filter, Plus, RotateCcw, Clock, Eye, X, Search 
+  Filter, Plus, RotateCcw, Clock, Eye, X, Search
 } from 'lucide-vue-next';
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import TimePicker24h from "../../../components/common/TimePicker24h.vue";
@@ -36,12 +36,11 @@ const filters = ref({
 
 const dsHienThi = computed(() => {
   return danhSachCaLam.value.filter(ca => {
-    // Tên/Mã
     if (filters.value.timKiem) {
-      const keyword = filters.value.timKiem.toLowerCase();
-      if (!ca.ten.toLowerCase().includes(keyword) && !ca.id.toLowerCase().includes(keyword)) {
-        return false;
-      }
+      const keyword = filters.value.timKiem.trim().toLowerCase();
+      const maCa = String(ca.id ?? '').toLowerCase();
+      const tenCa = String(ca.ten ?? '').toLowerCase();
+      if (!maCa.includes(keyword) && !tenCa.includes(keyword)) return false;
     }
     // Trạng thái
     if (filters.value.trangThai === 'active' && !ca.trangThai) return false;
@@ -121,19 +120,24 @@ function huyTaoCa() {
 }
 
 async function luuTaoCa() {
-  // Loại bỏ khoảng trắng đầu cuối
-  formTaoCa.value.tenCa = formTaoCa.value.tenCa.trim();
-
   let isValid = true;
   formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "" };
+  const tenCaRaw = String(formTaoCa.value.tenCa ?? "");
+  const tenCa = tenCaRaw.trim();
 
-  if (!formTaoCa.value.tenCa) {
+  if (!tenCa) {
     formErrors.value.tenCa = "Vui lòng nhập tên ca làm việc.";
+    isValid = false;
+  } else if (tenCaRaw !== tenCa) {
+    formErrors.value.tenCa = "Tên ca không được có khoảng trắng ở đầu hoặc cuối.";
+    isValid = false;
+  } else if (tenCa.length < 3 || tenCa.length > 100) {
+    formErrors.value.tenCa = "Tên ca phải từ 3 đến 100 ký tự.";
     isValid = false;
   } else {
     // Validate không chứa kí tự đặc biệt
-    const regexTenCa = /^[a-zA-ZÀ-ỹ0-9 ]+$/;
-    if (!regexTenCa.test(formTaoCa.value.tenCa)) {
+    const regexTenCa = /^[\p{L}0-9]+(?: [\p{L}0-9]+)*$/u;
+    if (!regexTenCa.test(tenCa)) {
       formErrors.value.tenCa = "Tên ca không được chứa ký tự đặc biệt.";
       isValid = false;
     }
@@ -158,7 +162,7 @@ async function luuTaoCa() {
     if (isEdit.value) {
       const targetCa = danhSachCaLam.value.find(c => c.id === formTaoCa.value.id);
       await capNhatCaLam(formTaoCa.value.id, {
-        ten: formTaoCa.value.tenCa,
+        ten: tenCa,
         gioBatDau: formTaoCa.value.gioBatDau,
         gioKetThuc: formTaoCa.value.gioKetThuc,
         trangThai: targetCa ? targetCa.trangThai : true
@@ -166,7 +170,7 @@ async function luuTaoCa() {
       showSuccess("Cập nhật ca làm việc thành công!");
     } else {
       await taoCaLam({
-        ten: formTaoCa.value.tenCa,
+        ten: tenCa,
         gioBatDau: formTaoCa.value.gioBatDau,
         gioKetThuc: formTaoCa.value.gioKetThuc,
         trangThai: true
@@ -184,23 +188,25 @@ async function luuTaoCa() {
 <template>
   <div class="space-y-6">
     
-    <!-- Bộ lọc tìm kiếm -->
+    <!-- Bộ lọc -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-      <div class="flex items-center gap-2 mb-4">
-        <Filter class="w-5 h-5 text-slate-600" />
-        <h3 class="text-[16px] font-bold text-slate-800">Bộ lọc tìm kiếm</h3>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+          <Filter class="h-5 w-5" />
+        </div>
+        <h3 class="text-[16px] font-bold text-slate-800">Bộ lọc</h3>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- Tìm kiếm chung -->
+        <!-- Tìm kiếm mã/tên ca -->
         <div class="space-y-2">
-          <label class="text-[13px] font-medium text-slate-600">Tìm kiếm chung</label>
+          <label class="text-[13px] font-medium text-slate-600">Tìm kiếm</label>
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               v-model="filters.timKiem"
               type="text" 
-              placeholder="Nhập tên ca, mã ca..." 
+              placeholder="Nhập mã hoặc tên ca..." 
               class="w-full h-10 pl-9 pr-3 text-[14px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition"
             />
           </div>
@@ -240,7 +246,7 @@ async function luuTaoCa() {
     <!-- Danh sách ca làm việc -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
       <div class="flex items-center justify-between mb-6">
-        <h3 class="text-[16px] font-bold text-slate-800">Danh sách ca làm việc</h3>
+        <h3 class="text-[16px] font-bold text-slate-800">Lịch ca làm</h3>
         <div class="flex items-center gap-3">
           <button @click="lamMoi" class="h-9 px-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-500 text-[14px] font-medium transition shadow-sm">
             <RotateCcw class="w-4 h-4" />
