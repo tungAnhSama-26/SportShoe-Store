@@ -241,18 +241,18 @@ public class ChatbotModelConfig {
         }
 
         List<ChatModel> models = new ArrayList<>();
+        if (isValidKey(activeGroqKey)) {
+            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", context));
+        }
+        if (isValidKey(activeGeminiKey)) {
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash", "Gemini", context));
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-1.5-flash", "Gemini-1.5-DuPhong", context));
+        }
         if (isValidKey(activeOpenAiKey)) {
             models.add(createModel(activeOpenAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", context));
         }
-        if (isValidKey(activeGeminiKey)) {
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-3.5-flash", "Gemini", context));
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.5-flash", "Gemini-2.5-DuPhong", context));
-        }
         if (isValidKey(activeDeepseekKey)) {
             models.add(createModel(activeDeepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", context));
-        }
-        if (isValidKey(activeGroqKey)) {
-            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", context));
         }
 
         if (models.isEmpty()) {
@@ -349,7 +349,7 @@ public class ChatbotModelConfig {
 
         public boolean containsKey(Object key) {
             if (key instanceof String) {
-                return this.containsHeader((String) key);
+                return super.containsKey(key);
             }
             return false;
         }
