@@ -213,19 +213,18 @@ public class HoaDonChoTaiQuayService {
     @Transactional
     public HoaDonChoChiTietResponse doiBienThe(Integer hoaDonChiTietId, DoiBienTheTaiQuayRequest request) {
         HoaDonChiTiet oldItem = hoaDonChiTietRepository.findById(hoaDonChiTietId)
+                .filter(h -> invoiceStateUseCase.trangThaiHoaDonCho(h.getHoaDon().getTrangThai()))
                 .orElseGet(() -> hoaDonChiTietRepository.findAll().stream()
-                        .filter(h -> h.getId().equals(hoaDonChiTietId) || h.getGiayChiTiet().getId().equals(hoaDonChiTietId))
+                        .filter(h -> invoiceStateUseCase.trangThaiHoaDonCho(h.getHoaDon().getTrangThai()) &&
+                                (h.getId().equals(hoaDonChiTietId) || h.getGiayChiTiet().getId().equals(hoaDonChiTietId)))
                         .findFirst()
                         .orElse(null));
 
         if (oldItem == null) {
-            throw new ResourceNotFoundException("Chi tiết hóa đơn không tồn tại");
+            throw new BusinessException("Hóa đơn chi tiết không tồn tại hoặc không còn ở trạng thái chờ");
         }
 
         HoaDon hoaDon = oldItem.getHoaDon();
-        if (!invoiceStateUseCase.trangThaiHoaDonCho(hoaDon.getTrangThai())) {
-            throw new BusinessException("Hóa đơn này không còn ở trạng thái chờ");
-        }
 
         GiayChiTiet bienTheMoi = giayChiTietRepository.findById(request.giayChiTietMoiId())
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể mới không tồn tại"));
