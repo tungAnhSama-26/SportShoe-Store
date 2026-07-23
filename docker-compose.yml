@@ -10,7 +10,7 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=MatKhauDatabaseCuaBan123!
-      - MSSQL_MEMORY_LIMIT_MB=600
+      - MSSQL_MEMORY_LIMIT_MB=450
     volumes:
       - mssql_data:/var/opt/mssql
     restart: unless-stopped
@@ -24,6 +24,8 @@ services:
     container_name: sportshoe-backend
     ports:
       - "8080:8080"
+    environment:
+      - JAVA_OPTS=-Xmx256m -Xms128m
     env_file:
       - ./BE/server/.env
     volumes:
