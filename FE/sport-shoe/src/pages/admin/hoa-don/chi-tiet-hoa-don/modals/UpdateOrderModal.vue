@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
 
 const {
@@ -18,9 +19,18 @@ const {
   dinhDangGio,
   dinhDangNgay,
   moModalSuaDiaChi,
-  handleHuyDonTuModal,
   handleLuuThongTin,
+  khongHoanKho,
 } = useInvoiceDetailContext();
+
+watch(
+  () => formThongTin.value.trangThai,
+  (newVal) => {
+    if (newVal !== "Giao hàng thất bại") {
+      formThongTin.value.ghiChu = "";
+    }
+  }
+);
 </script>
 
 <template>
@@ -112,6 +122,31 @@ const {
               </template>
             </select>
           </div>
+          <div v-if="formThongTin.trangThai === 'Giao hàng thất bại'">
+            <label class="mb-1.5 block text-[13px] font-medium text-slate-600">
+              Lý do giao hàng thất bại <span class="text-rose-500">*</span>
+            </label>
+            <textarea
+              v-model="formThongTin.ghiChu"
+              rows="3"
+              placeholder="Nhập lý do giao hàng thất bại..."
+              class="w-full rounded-[8px] border border-slate-200 bg-slate-50 p-3 text-[14px] text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white resize-none"
+            ></textarea>
+            <div class="mt-3 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="khongHoanKhoCheckbox"
+                v-model="khongHoanKho"
+                class="h-4 w-4 cursor-pointer rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+              />
+              <label
+                for="khongHoanKhoCheckbox"
+                class="cursor-pointer select-none text-[13px] font-medium text-slate-600 hover:text-slate-800 transition"
+              >
+                Hàng bị mất / thất lạc (Không hoàn trả vào kho)
+              </label>
+            </div>
+          </div>
         </div>
 
         <div v-if="tabHienTai === 'khachHang'" class="space-y-4">
@@ -189,21 +224,13 @@ const {
             v-if="!coTheSuaThongTinGiaoHang"
             class="rounded-[6px] bg-amber-50 px-3 py-2 text-xs text-amber-700"
           >
-            Thông tin giao hàng đã khóa vì đơn đã bắt đầu giao.
+            Thông tin giao hàng đã khóa vì đơn đã được xác nhận.
           </p>
         </div>
       </div>
 
       <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-        <button
-          v-if="hoaDon && (hoaDon.trangThai || '').toLowerCase().trim() === 'chờ xác nhận'"
-          @click="handleHuyDonTuModal"
-          :disabled="dangCapNhat"
-          type="button"
-          class="mr-auto inline-flex h-11 items-center justify-center rounded-[6px] bg-red-600 px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Hủy đơn hàng
-        </button>
+
         <button
           @click="hienModalThongTin = false"
           type="button"
@@ -221,5 +248,8 @@ const {
         </button>
       </div>
     </div>
+
+
+
   </div>
 </template>

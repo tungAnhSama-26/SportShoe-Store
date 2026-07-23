@@ -64,6 +64,11 @@ public class VanChuyen {
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "ly_do_giao_hang_that_bai", length = 500)
+    private String lyDoGiaoHangThatBai;
+
     @NotNull
     @ColumnDefault("sysdatetime()")
     @Column(name = "ngay_tao", nullable = false)
@@ -72,5 +77,15 @@ public class VanChuyen {
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
+    public void setNgayTao(Instant ngayTao) {
+        this.ngayTao = ngayTao;
+    }
 
+    public void setNgayCapNhat(Instant ngayCapNhat) {
+        this.ngayCapNhat = ngayCapNhat;
+    }
+
+    public void setTrangThai(Integer trangThai) {
+        this.trangThai = trangThai;
+    }
 }

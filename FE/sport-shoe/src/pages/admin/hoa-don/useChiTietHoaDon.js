@@ -21,6 +21,7 @@ import {
   Truck,
   User,
   X,
+  RefreshCw,
 } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
@@ -32,6 +33,7 @@ import {
   tinhPhiVanChuyenGhn,
   xacNhanHoanTien,
   xacNhanThanhToanCod,
+  checkMuaLai,
 } from "../../../services/hoa-don";
 import { layDanhSachDiaChi } from "../../../services/khach-hang";
 import { timSanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
@@ -71,6 +73,7 @@ export function useChiTietHoaDon() {
   });
 
   const hienModalThongTin = ref(false);
+  const khongHoanKho = ref(false);
   const hienModalGiaoHang = ref(false);
   const dangLuuGiaoHang = ref(false);
   const diaChiDaLuu = ref([]);
@@ -82,6 +85,7 @@ export function useChiTietHoaDon() {
     email: "",
     diaChi: "",
     loaiDon: "",
+    ghiChu: "",
   });
   const formGhn = ref({
     serviceTypeId: 2,
@@ -191,6 +195,16 @@ export function useChiTietHoaDon() {
     { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
   ];
 
+  const cacBuocDaHuyTaiQuay = [
+    {
+      id: 1,
+      key: "Hóa đơn chờ",
+      ten: "Hóa đơn chờ",
+      icon: markRaw(Hourglass),
+    },
+    { id: 6, key: "Hủy", ten: "Đã Hủy", icon: markRaw(CircleX) },
+  ];
+
   const donGiaoThatBai = computed(() => {
     const stt = (hoaDon.value?.trangThai || "").toLowerCase().trim();
     return stt === "giao hàng thất bại" || stt === "giao_hang_that_bai";
@@ -222,8 +236,8 @@ export function useChiTietHoaDon() {
       return [
         {
           id: 1,
-          key: "Chờ xác nhận",
-          ten: "Chờ Xác Nhận",
+          key: "Hóa đơn chờ",
+          ten: "Hóa đơn chờ",
           icon: markRaw(Hourglass),
         },
         { id: 6, key: "Hoàn thành", ten: "Hoàn Thành", icon: markRaw(Flag) },
@@ -290,7 +304,7 @@ export function useChiTietHoaDon() {
   const buocHienTai = computed(() => {
     if (!hoaDon.value) return 0;
     const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
-    if (stt === "chờ xác nhận" || stt === "cho_xac_nhan") return 1;
+    if (stt === "chờ xác nhận" || stt === "cho_xac_nhan" || stt === "hóa đơn chờ" || stt === "hoa_don_cho") return 1;
     if (stt === "đã xác nhận" || stt === "da_xac_nhan") return 2;
     if (
       stt === "chờ lấy hàng" ||
@@ -372,6 +386,18 @@ export function useChiTietHoaDon() {
     );
   });
 
+  const lyDoHuyDon = computed(() => {
+    const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
+    const banGhiHuy = [...lichSu].reverse().find(
+      (item) =>
+        (item.trangThai || "").toLowerCase() === "hủy" ||
+        (item.trangThai || "").toLowerCase() === "đã hủy" ||
+        (item.trangThai || "").toLowerCase() === "huy" ||
+        (item.trangThai || "").toLowerCase() === "da_huy"
+    );
+    return banGhiHuy?.ghiChu || "";
+  });
+
   const donDangChoHoanTien = computed(() => {
     const coThanhToanCanHoan = (hoaDon.value?.lichSuThanhToan ?? []).some(
       (item) => laTrangThaiCanHoanTien(item.trangThaiThanhToan),
@@ -383,7 +409,7 @@ export function useChiTietHoaDon() {
     () => donDaHoanThanh.value || donDaHuy.value || donDangChoHoanTien.value,
   );
   const coTheSuaThongTinGiaoHang = computed(() =>
-    [1, 2, 3].includes(buocHienTai.value),
+    buocHienTai.value === 1,
   );
 
   function hienThiThongBao(loai, tieuDe, noiDung = "") {
@@ -649,7 +675,7 @@ export function useChiTietHoaDon() {
   const thongTinBuoc = computed(() => {
     const lichSu = hoaDon.value?.lichSuHoaDon ?? [];
     const nguonBuoc = donDaHuy.value
-      ? cacBuocDaHuy
+      ? (laDonTaiQuay.value ? cacBuocDaHuyTaiQuay : cacBuocDaHuy)
       : donYeuCauHuy.value
         ? cacBuocYeuCauHuy
         : cacBuoc.value;
@@ -837,12 +863,13 @@ export function useChiTietHoaDon() {
       return;
     }
     danhSachSanPhamUpdate.value = (hoaDon.value.sanPham || []).map((sp) => ({
-      chiTietId: sp.id,
+      chiTietId: sp.giayChiTietId,
       tenSanPham: sp.tenSanPham,
       soLuong: sp.soLuong,
       giaBan: sp.donGia,
       maBienThe: sp.phanLoai || "",
     }));
+
   });
 
   async function timKiemSanPham() {
@@ -886,13 +913,24 @@ export function useChiTietHoaDon() {
       thongBaoDonDaHoanThanh();
       return;
     }
+    if (!danhSachSanPhamUpdate.value || !danhSachSanPhamUpdate.value.length) {
+      showError("Hóa đơn phải có ít nhất một sản phẩm.");
+      return;
+    }
+    for (const item of danhSachSanPhamUpdate.value) {
+      const q = Number(item.soLuong);
+      if (isNaN(q) || !Number.isInteger(q) || q < 1) {
+        showError("Số lượng của mỗi sản phẩm phải là số nguyên lớn hơn hoặc bằng 1.");
+        return;
+      }
+    }
     dangCapNhat.value = true;
     try {
       ganHoaDonSauThaoTac(
         await capNhatSanPhamHoaDon(hoaDon.value.id, {
           items: danhSachSanPhamUpdate.value.map((i) => ({
             chiTietId: i.chiTietId,
-            soLuong: i.soLuong,
+            soLuong: Number(i.soLuong),
           })),
         }),
       );
@@ -915,6 +953,7 @@ export function useChiTietHoaDon() {
   }
 
   const danhSachTrangThaiHienThi = [
+    { key: "Hóa đơn chờ", label: "Hóa đơn chờ" },
     { key: "Chờ xác nhận", label: "Chờ xác nhận" },
     { key: "Đã xác nhận", label: "Đã xác nhận" },
     { key: "Chờ lấy hàng", label: "Chờ lấy hàng" },
@@ -930,7 +969,9 @@ export function useChiTietHoaDon() {
     if (!hoaDon.value) return -1;
     const currentStt = (hoaDon.value.trangThai || "").toLowerCase().trim();
     let normalizedStt = hoaDon.value.trangThai;
-    if (currentStt === "chờ xác nhận" || currentStt === "cho_xac_nhan")
+    if (currentStt === "hóa đơn chờ" || currentStt === "hoa_don_cho")
+      normalizedStt = "Hóa đơn chờ";
+    else if (currentStt === "chờ xác nhận" || currentStt === "cho_xac_nhan")
       normalizedStt = "Chờ xác nhận";
     else if (currentStt === "đã xác nhận" || currentStt === "da_xac_nhan")
       normalizedStt = "Đã xác nhận";
@@ -1005,7 +1046,7 @@ export function useChiTietHoaDon() {
       return true;
     }
     return laDonTaiQuay.value
-      ? index === 0 || key === "Hoàn thành"
+      ? key === "Hóa đơn chờ" || key === "Hoàn thành"
       : key !== "Giao hàng thất bại" &&
           (index === indexTrangThaiHienTai.value ||
             index === indexTrangThaiHienTai.value + 1);
@@ -1020,7 +1061,9 @@ export function useChiTietHoaDon() {
     }
     const stt = (hoaDon.value.trangThai || "").toLowerCase().trim();
     let defaultStt = hoaDon.value.trangThai;
-    if (stt === "chờ xác nhận" || stt === "cho_xac_nhan")
+    if (stt === "hóa đơn chờ" || stt === "hoa_don_cho")
+      defaultStt = "Hóa đơn chờ";
+    else if (stt === "chờ xác nhận" || stt === "cho_xac_nhan")
       defaultStt = "Chờ xác nhận";
     else if (stt === "đã xác nhận" || stt === "da_xac_nhan")
       defaultStt = "Đã xác nhận";
@@ -1058,6 +1101,7 @@ export function useChiTietHoaDon() {
       defaultStt = "Cần hoàn tiền";
     else if (stt === "hủy" || stt === "huy") defaultStt = "Hủy";
 
+    khongHoanKho.value = false;
     formThongTin.value = {
       trangThai: defaultStt,
       tenKhachHang: hoaDon.value.tenKhachHang || "",
@@ -1065,6 +1109,9 @@ export function useChiTietHoaDon() {
       email: hoaDon.value.email || "",
       diaChi: hoaDon.value.diaChi || "",
       loaiDon: hoaDon.value.loaiDon || "",
+      ghiChu: (hoaDon.value.trangThai === "GIAO_HANG_THAT_BAI" || hoaDon.value.trangThai === "Giao hàng thất bại")
+        ? (hoaDon.value.lyDoGiaoHangThatBai || "")
+        : "",
     };
     tabHienTai.value = "donHang";
   });
@@ -1102,6 +1149,13 @@ export function useChiTietHoaDon() {
       thongBaoDonDaHoanThanh();
       return;
     }
+    if (
+      formThongTin.value.trangThai === "Giao hàng thất bại" &&
+      (!formThongTin.value.ghiChu || !formThongTin.value.ghiChu.trim())
+    ) {
+      showError("Vui lòng nhập lý do giao hàng thất bại.");
+      return;
+    }
     dangCapNhat.value = true;
     try {
       const thongTinGiaoHangThayDoi =
@@ -1127,11 +1181,16 @@ export function useChiTietHoaDon() {
         );
       }
 
-      if (formThongTin.value.trangThai !== hoaDon.value.trangThai) {
+      const trangThaiThayDoi = formThongTin.value.trangThai !== hoaDon.value.trangThai;
+      const lyDoThatBaiThayDoi = formThongTin.value.trangThai === "Giao hàng thất bại" &&
+        (formThongTin.value.ghiChu || "").trim() !== (hoaDon.value.lyDoGiaoHangThatBai || "").trim();
+
+      if (trangThaiThayDoi || lyDoThatBaiThayDoi) {
         ganHoaDonSauThaoTac(
           await capNhatTrangThaiHoaDon(hoaDon.value.id, {
             trangThai: formThongTin.value.trangThai,
-            ghiChu: "",
+            ghiChu: (formThongTin.value.ghiChu || "").trim(),
+            hoanKho: !khongHoanKho.value,
           }),
         );
       }
@@ -1376,22 +1435,16 @@ export function useChiTietHoaDon() {
     }
   }
 
-  async function handleHuyDonTuModal() {
+  async function handleHuyDonTuModal(lyDoHuy) {
     if (!hoaDon.value || dangCapNhat.value) return;
-    const daXacNhan = await showConfirm(
-      "Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác.",
-      "Hủy đơn hàng",
-      "Đồng ý",
-      "Quay lại"
-    );
-    if (!daXacNhan) return;
+    if (!lyDoHuy || !lyDoHuy.trim()) return;
 
     dangCapNhat.value = true;
     try {
       ganHoaDonSauThaoTac(
         await capNhatTrangThaiHoaDon(hoaDon.value.id, {
           trangThai: "Hủy",
-          ghiChu: "Hủy đơn hàng từ màn hình chỉnh sửa bởi Admin",
+          ghiChu: lyDoHuy.trim(),
         }),
       );
       hienThiThongBao(
@@ -1426,6 +1479,46 @@ export function useChiTietHoaDon() {
       },
     });
   });
+
+  const laHoanThanh = computed(() => hoaDon.value?.trangThai === 5);
+
+  async function xuLyMuaLai() {
+    if (!hoaDon.value) return;
+    dangCapNhat.value = true;
+    try {
+      const res = await checkMuaLai(hoaDon.value.id);
+      if (res.warnings && res.warnings.length > 0) {
+        const listHtml = res.warnings.map(w => `<li style="text-align: left; margin-bottom: 5px;">⚠️ ${w}</li>`).join("");
+        const checkResult = await showConfirm(
+          "Cảnh báo sản phẩm",
+          `<div style="font-size: 14.5px; line-height: 1.5;">Một số sản phẩm không khả dụng:<br/><ul style="margin-top: 10px; max-height: 200px; overflow-y: auto; padding-left: 15px;">${listHtml}</ul><br/>Bạn có muốn tiếp tục mua lại các sản phẩm khả dụng còn lại không?</div>`,
+          {
+            confirmButtonText: "Tiếp tục",
+            cancelButtonText: "Hủy bỏ",
+            icon: "warning"
+          }
+        );
+        if (!checkResult) {
+          dangCapNhat.value = false;
+          return;
+        }
+      }
+
+      if (!res.items || res.items.length === 0) {
+        showError("Không có sản phẩm nào khả dụng để mua lại.");
+        dangCapNhat.value = false;
+        return;
+      }
+
+      localStorage.setItem("reorder_items", JSON.stringify(res.items));
+      showSuccess("Đang chuẩn bị giỏ hàng tại quầy...");
+      router.push("/admin/ban-hang");
+    } catch (e) {
+      showError(getDisplayErrorMessage(e, "Không thể kiểm tra sản phẩm mua lại."));
+    } finally {
+      dangCapNhat.value = false;
+    }
+  }
 
   onBeforeUnmount(() => {
     ngatKetNoiRealtime?.();
@@ -1587,5 +1680,9 @@ export function useChiTietHoaDon() {
     dangTaiNganHangKhach,
     taiKhoanNganHangChon,
     qrHoanTienUrl,
+    khongHoanKho,
+    lyDoHuyDon,
+    laHoanThanh,
+    xuLyMuaLai,
   };
 }

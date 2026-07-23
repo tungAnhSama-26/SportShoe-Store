@@ -105,7 +105,7 @@ const danhSachLoc = computed(() => {
   return [...result].sort((a, b) => {
     const dateComp = b.ngay.localeCompare(a.ngay);
     if (dateComp !== 0) return dateComp;
-    if (a.ca !== b.ca) return a.ca - b.ca;
+    if (a.ca !== b.ca) return b.ca - a.ca;
     return a.hoTen.localeCompare(b.hoTen);
   });
 });
@@ -381,7 +381,7 @@ onMounted(taiDanhSach);
         <div class="flex flex-wrap items-center justify-end gap-3">
           <Button variant="soft" @click="lamMoiBoLoc">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
-            Đặt lại
+            Đặt lại bộ lọc
           </Button>
           <Button variant="soft" @click="xuatExcel">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>

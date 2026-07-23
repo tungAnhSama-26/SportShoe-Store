@@ -41,6 +41,11 @@ public class HoaDon {
     private NhanVien nhanVien;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "giao_ca_id")
+    private GiaoCa giaoCa;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "phieu_giam_gia_id")
     private PhieuGiamGia phieuGiamGia;
 
@@ -54,6 +59,7 @@ public class HoaDon {
     @NotNull
     @Column(name = "sdt_nguoi_nhan", nullable = false, length = 20)
     private String sdtNguoiNhan;
+
 
     @Size(max = 300)
     @NotNull
@@ -117,5 +123,27 @@ public class HoaDon {
     @Column(name = "da_tru_kho", nullable = false)
     private Boolean daTruKho = false;
 
+    @ColumnDefault("0")
+    @Column(name = "so_lan_sua_dia_chi", nullable = false)
+    private Integer soLanSuaDiaChi = 0;
 
+    public void setNgayTao(Instant ngayTao) {
+        this.ngayTao = ngayTao;
+    }
+
+    public void setNgayCapNhat(Instant ngayCapNhat) {
+        this.ngayCapNhat = ngayCapNhat;
+    }
+
+    public void setNgayThanhToan(Instant ngayThanhToan) {
+        this.ngayThanhToan = ngayThanhToan;
+    }
+
+    public void setNgayLap(Instant ngayLap) {
+        this.ngayLap = ngayLap;
+    }
+
+    public void setTrangThai(Integer trangThai) {
+        this.trangThai = trangThai;
+    }
 }

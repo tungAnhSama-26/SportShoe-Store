@@ -21,7 +21,8 @@ public record ClientChiTietSanPhamResponse(
         Integer gioiTinh,
         String hinhAnh,
         Long daBan,
-        List<BienTheItem> bienThe
+        List<BienTheItem> bienThe,
+        Integer trangThai
 ) {
     public record BienTheItem(
             Integer id,

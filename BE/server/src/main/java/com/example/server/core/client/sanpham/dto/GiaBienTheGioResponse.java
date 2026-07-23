@@ -10,12 +10,16 @@ import java.math.BigDecimal;
  * @param giaHienTai    giá sau giảm hiện tại (bằng niêm yết nếu không có đợt giảm)
  * @param tonKho        tồn kho hiện tại
  * @param conBan        biến thể còn được bán (đang kích hoạt)
+ * @param canNang       cân nặng 1 sản phẩm (gram) - lấy từ thuộc tính trọng lượng của giày
+ * @param ma            mã sản phẩm (Giay.ma) để hiển thị ở giỏ hàng
  */
 public record GiaBienTheGioResponse(
         Integer giayChiTietId,
         BigDecimal giaNiemYet,
         BigDecimal giaHienTai,
         Integer tonKho,
-        boolean conBan
+        boolean conBan,
+        Integer canNang,
+        String ma
 ) {
 }

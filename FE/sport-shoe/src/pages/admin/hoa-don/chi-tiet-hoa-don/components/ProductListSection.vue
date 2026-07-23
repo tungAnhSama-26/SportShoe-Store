@@ -142,17 +142,20 @@ const {
           <thead>
             <tr class="bg-slate-100 text-left text-xs font-bold tracking-wide text-slate-950">
               <th class="rounded-l-2xl px-5 py-3.5">STT</th>
+              <th class="px-5 py-3.5">Mã SPCT</th>
               <th class="px-5 py-3.5">Ảnh</th>
               <th class="px-5 py-3.5">Sản Phẩm</th>
+              <th class="px-5 py-3.5">Màu Sắc</th>
+              <th class="px-5 py-3.5">Size</th>
               <th class="px-5 py-3.5">Số Lượng</th>
               <th class="px-5 py-3.5">Thời Gian</th>
-              <th class="px-5 py-3.5">Đơn Giá</th>
-              <th class="rounded-r-2xl px-5 py-3.5">Tổng Tiền</th>
+              <th class="px-5 py-3.5">Giảm Giá</th>
+              <th class="rounded-r-2xl px-5 py-3.5">Đơn Giá</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!danhSachSanPhamPhanTrang.length">
-              <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400">
+              <td colspan="10" class="px-5 py-10 text-center text-sm text-slate-400">
                 Không có sản phẩm phù hợp với bộ lọc.
               </td>
             </tr>
@@ -163,6 +166,9 @@ const {
             >
               <td class="px-5 py-6 font-semibold text-slate-600">
                 {{ (trangSanPhamHienTai - 1) * soSanPhamMoiTrang + index + 1 }}
+              </td>
+              <td class="px-5 py-6 font-medium text-slate-600">
+                {{ item.maBienThe || '—' }}
               </td>
               <td class="px-5 py-6">
                 <img
@@ -177,6 +183,12 @@ const {
                 </p>
                 <p class="mt-1 text-sm text-slate-400">{{ item.phanLoai }}</p>
               </td>
+              <td class="px-5 py-6 text-slate-600">
+                {{ item.mauSac || '—' }}
+              </td>
+              <td class="px-5 py-6 text-slate-600">
+                {{ item.kichCo || '—' }}
+              </td>
               <td class="px-5 py-6 font-semibold text-slate-700">
                 {{ item.soLuong }}
               </td>
@@ -188,11 +200,28 @@ const {
                   {{ dinhDangNgay(hoaDon.ngayTao) }}
                 </p>
               </td>
-              <td class="px-5 py-6 font-semibold text-[#B82220]">
-                {{ dinhDangTien(item.donGia) }}
+              <td class="px-5 py-6">
+                <span
+                  v-if="item.giaTriGiamDotGiamGia"
+                  class="inline-flex items-center gap-1 rounded bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600"
+                  :title="item.tenDotGiamGia"
+                >
+                  -{{ item.giaTriGiamDotGiamGia }}%
+                </span>
+                <span v-else class="text-slate-400">—</span>
               </td>
-              <td class="px-5 py-6 font-semibold text-[#B82220]">
-                {{ dinhDangTien(item.thanhTien) }}
+              <td class="px-5 py-6 text-[#B82220]">
+                <div v-if="item.giaBanChiTiet && Number(item.giaBanChiTiet) > Number(item.donGia)">
+                  <p class="text-xs text-slate-400 line-through mb-0.5">
+                    {{ dinhDangTien(item.giaBanChiTiet) }}
+                  </p>
+                  <p class="text-sm font-semibold">
+                    {{ dinhDangTien(item.donGia) }}
+                  </p>
+                </div>
+                <div v-else class="font-semibold">
+                  {{ dinhDangTien(item.donGia) }}
+                </div>
               </td>
             </tr>
           </tbody>

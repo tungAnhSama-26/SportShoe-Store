@@ -9,6 +9,7 @@ import com.example.server.repository.PhieuGiamGiaRepository;
 import com.example.server.repository.PhieuGiamGiaKhachHangRepository;
 import com.example.server.repository.DotGiamGiaRepository;
 import com.example.server.repository.GiayChiTietRepository;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import java.time.LocalDate;
 import java.time.Instant;
 
@@ -21,6 +22,7 @@ public class DiscountScheduler {
     private final PhieuGiamGiaKhachHangRepository phieuGiamGiaKhachHangRepository;
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final ThongBaoService thongBaoService;
 
     /**
      * Tác vụ quét và cập nhật lại giá bán trong DB và trạng thái phiếu giảm giá.
@@ -45,6 +47,9 @@ public class DiscountScheduler {
             dotGiamGiaRepository.capNhatTrangThaiTuDong();
             phieuGiamGiaRepository.capNhatTrangThaiTuDong();
             phieuGiamGiaKhachHangRepository.dongBoTrangThaiTuPhieuGiamGia();
+
+            // 3. Kiểm tra và tạo cảnh báo voucher sắp hết hạn hoặc hết số lượng
+            thongBaoService.checkVoucherCanhBao();
             
             log.info("Đồng bộ hoàn tất.");
         } catch (Exception e) {

@@ -3,6 +3,7 @@ package com.example.server.core.admin.banHangTaiQuay.constant;
 public class BanHangTaiQuayConstants {
     // Trạng thái hóa đơn
     public static final int TRANG_THAI_HOA_DON_CHO_XAC_NHAN = 1;
+    public static final int TRANG_THAI_HOA_DON_CHO_TAI_QUAY = 11;
     public static final int TRANG_THAI_HOA_DON_CHO_GIAO_HANG = 2;
     public static final int TRANG_THAI_HOA_DON_HOAN_THANH = 5;
     public static final int TRANG_THAI_HOA_DON_HUY = 6;

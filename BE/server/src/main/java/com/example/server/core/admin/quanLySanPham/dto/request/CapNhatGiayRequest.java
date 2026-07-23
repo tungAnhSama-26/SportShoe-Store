@@ -9,14 +9,14 @@ import jakarta.validation.constraints.Size;
 
 public record CapNhatGiayRequest(
         @NotBlank @Size(min = 3, max = 300) String ten,
-        @NotNull @Positive Integer thuongHieuId,
-        @NotNull @Positive Integer loaiGiayId,
+        @NotNull @Min(0) Integer thuongHieuId,
+        @NotNull @Min(0) Integer loaiGiayId,
         @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        @Positive Integer chatLieuGiayId,
+        @Min(0) Integer chatLieuGiayId,
         @Size(max = 2000) String moTa,
-        @Positive Integer deGiayId,
-        @Positive Integer coGiayId,
-        @Positive Integer congNgheDemId,
-        @Positive Integer trongLuongId
+        @Min(0) Integer deGiayId,
+        @Min(0) Integer coGiayId,
+        @Min(0) Integer congNgheDemId,
+        @Min(0) Integer trongLuongId
 ) {}

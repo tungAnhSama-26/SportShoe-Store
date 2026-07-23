@@ -27,6 +27,7 @@ import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -227,7 +228,7 @@ public class ClientSanPhamController {
                 tt != null ? tt.coGiay() : null,
                 tt != null ? tt.congNgheDem() : null,
                 tt != null ? tt.trongLuong() : null,
-                detail.gioiTinh(), hinhAnhSanPham, daBan, items);
+                detail.gioiTinh(), hinhAnhSanPham, daBan, items, detail.trangThai());
         return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết sản phẩm thành công", data));
     }
 
@@ -236,6 +237,7 @@ public class ClientSanPhamController {
      * Giỏ hàng (lưu cục bộ) gọi để cập nhật lại giá khi đợt giảm giá thay đổi sau lúc thêm vào giỏ.
      */
     @PostMapping("/dong-bo-gia")
+    @Transactional(readOnly = true) // mở transaction để lazy-load trọng lượng (OSIV đang tắt)
     public ResponseEntity<ApiResponse<List<GiaBienTheGioResponse>>> dongBoGiaGio(
             @RequestBody DongBoGiaGioRequest request
     ) {
@@ -251,9 +253,29 @@ public class ClientSanPhamController {
                         gct.getGiaBan(),
                         giaSauGiamMap.getOrDefault(gct.getId(), gct.getGiaBan()),
                         gct.getSoLuong(),
-                        Integer.valueOf(1).equals(gct.getKichHoat())))
+                        coTheBan(gct),
+                        layCanNangSanPham(gct),
+                        gct.getGiay().getMa()))
                 .toList();
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ giá thành công", data));
+    }
+
+    /** Biến thể còn bán được: biến thể đang bán (kichHoat=1) VÀ sản phẩm cha đang kinh doanh (trangThai=1). */
+    private boolean coTheBan(GiayChiTiet gct) {
+        return Integer.valueOf(1).equals(gct.getKichHoat())
+                && gct.getGiay() != null
+                && Integer.valueOf(1).equals(gct.getGiay().getTrangThai());
+    }
+
+    /** Cân nặng 1 sản phẩm (gram) từ thuộc tính trọng lượng; mặc định 500g khi chưa set (khớp GHN). */
+    private Integer layCanNangSanPham(GiayChiTiet gct) {
+        if (gct.getGiay() != null
+                && gct.getGiay().getGiayThuocTinh() != null
+                && gct.getGiay().getGiayThuocTinh().getTrongLuong() != null
+                && gct.getGiay().getGiayThuocTinh().getTrongLuong().getGiaTri() != null) {
+            return gct.getGiay().getGiayThuocTinh().getTrongLuong().getGiaTri();
+        }
+        return 500;
     }
 
     /**

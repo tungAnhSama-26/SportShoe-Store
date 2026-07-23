@@ -56,4 +56,29 @@ public class DanhGia {
 
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
+
+    /** Ảnh/video kèm đánh giá - lưu chuỗi JSON: [{"url":"..","loai":"image|video"}]. */
+    @Nationalized
+    @Column(name = "media")
+    private String media;
+
+    /** Phản hồi của shop cho đánh giá (mỗi đánh giá chỉ phản hồi 1 lần). */
+    @Size(max = 1000)
+    @Nationalized
+    @Column(name = "phan_hoi", length = 1000)
+    private String phanHoi;
+
+    @Column(name = "ngay_phan_hoi")
+    private Instant ngayPhanHoi;
+
+    /** Admin đã xem đánh giá này chưa (cho chuông thông báo). */
+    @ColumnDefault("0")
+    @Column(name = "da_xem")
+    private Boolean daXem;
+
+    /** Lý do đánh giá bị ẩn (AI tự ẩn / quản trị viên xóa) - null nếu đang hiển thị. */
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "ly_do_an", length = 500)
+    private String lyDoAn;
 }

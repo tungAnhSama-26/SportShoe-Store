@@ -72,7 +72,8 @@ const emit = defineEmits([
 ])
 
 function canToggleStatus(item) {
-  return true
+  // Hết hàng (không còn tồn): trạng thái bán theo tồn kho -> không bật/tắt thủ công.
+  return Number(item.soLuong || 0) > 0
 }
 
 function quickToggleLabel(item) {
@@ -84,7 +85,9 @@ function quickToggleIntent(item) {
 }
 
 function quickToggleDisabledTitle(item) {
-  return quickToggleLabel(item)
+  return canToggleStatus(item)
+    ? quickToggleLabel(item)
+    : 'Biến thể đang hết hàng — không thể đổi trạng thái thủ công'
 }
 
 function quickToggleConfirmMessage(item) {
@@ -101,6 +104,31 @@ function formatPercentValue(value) {
   return normalizedValue % 1 === 0 ? `${normalizedValue.toFixed(0)}%` : `${normalizedValue.toFixed(1)}%`
 }
 
+function giaSauDotGiam(item) {
+  const giaBan = Number(item?.giaBan || 0)
+  const giaTriGiam = Number(item?.giaTriGiam || 0)
+  const loaiGiam = Number(item?.loaiGiam || 0)
+
+  if (!item?.dotGiamGiaId || giaBan <= 0 || giaTriGiam <= 0) return giaBan
+  if (loaiGiam === 1) return Math.max(0, giaBan * (1 - Math.min(giaTriGiam, 100) / 100))
+  if (loaiGiam === 2) return Math.max(0, giaBan - giaTriGiam)
+  return giaBan
+}
+
+function giaHienThi(item) {
+  return giaSauDotGiam(item)
+}
+
+function giaGachNgang(item) {
+  if (item?.dotGiamGiaId && giaSauDotGiam(item) < Number(item?.giaBan || 0)) {
+    return Number(item?.giaBan || 0)
+  }
+  if (Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)) {
+    return Number(item?.giaGoc || 0)
+  }
+  return null
+}
+
 function formatDiscountPercent(item) {
   const loaiGiam = Number(item?.loaiGiam || 0)
   const giaTriGiam = Number(item?.giaTriGiam || 0)
@@ -112,8 +140,8 @@ function formatDiscountPercent(item) {
       return formatPercentValue(giaTriGiam)
     }
 
-    if (loaiGiam === 2 && giaGoc > 0) {
-      return formatPercentValue((giaTriGiam / giaGoc) * 100)
+    if (loaiGiam === 2 && giaBan > 0) {
+      return formatPercentValue((giaTriGiam / giaBan) * 100)
     }
   }
 
@@ -128,7 +156,6 @@ function formatDiscountPercent(item) {
     <div
       v-if="open"
       class="fixed inset-0 z-[52] flex items-center justify-center bg-black/55 p-4"
-      @click.self="emit('close')"
     >
       <div class="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
         <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
@@ -139,7 +166,7 @@ function formatDiscountPercent(item) {
             </p>
           </div>
           <button
-            class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            class="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             @click="emit('close')"
           >
             <X :size="18" />
@@ -147,13 +174,13 @@ function formatDiscountPercent(item) {
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-6">
-          <div v-if="loading" class="rounded-2xl border border-slate-100 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
+          <div v-if="loading" class="rounded-md border border-slate-100 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
             Đang tải CTSP...
           </div>
 
           <template v-else-if="selectedGiay">
             <div class="mb-5 grid gap-4 xl:grid-cols-[1fr_220px]">
-              <div class="rounded-3xl border border-slate-100 bg-slate-50 p-5">
+              <div class="rounded-md border border-slate-100 bg-slate-50 p-5">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
@@ -187,14 +214,14 @@ function formatDiscountPercent(item) {
 
                   <div class="flex flex-wrap gap-2">
                     <button
-                      class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                      class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                       @click="emit('edit-product', selectedGiay)"
                     >
                       <Pencil :size="15" />
                       Sửa sản phẩm
                     </button>
                     <button
-                      class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                      class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                       @click="emit('close')"
                     >
                       <X :size="15" />
@@ -204,8 +231,8 @@ function formatDiscountPercent(item) {
                 </div>
               </div>
 
-              <div class="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                <div class="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div class="rounded-md border border-slate-100 bg-slate-50 p-4">
+                <div class="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white">
                   <img
                     v-if="selectedGiayMainImage"
                     :src="selectedGiayMainImage.url"
@@ -228,7 +255,7 @@ function formatDiscountPercent(item) {
               </div>
 
               <button
-                class="inline-flex h-10 items-center gap-2 rounded-xl bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600"
+                class="inline-flex h-10 items-center gap-2 rounded-md bg-rose-500 px-4 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:bg-rose-600"
                 @click="emit('open-add-bienthe')"
               >
                 <Plus :size="15" />
@@ -274,7 +301,10 @@ function formatDiscountPercent(item) {
                     <td class="px-4 py-4 align-top">
                       <div class="font-semibold text-slate-700">{{ formatCount(item.soLuong) }} sản phẩm</div>
                       <div class="mt-1 text-xs text-slate-400">Giá gốc: {{ formatCurrency(item.giaGoc) }}đ</div>
-                      <div class="text-xs text-slate-400">Giá bán: {{ formatCurrency(item.giaBan) }}đ</div>
+                      <div class="text-xs text-slate-400">
+                        Giá bán: <span class="font-semibold text-rose-600">{{ formatCurrency(giaHienThi(item)) }}đ</span>
+                        <span v-if="giaGachNgang(item)" class="ml-1 line-through">{{ formatCurrency(giaGachNgang(item)) }}đ</span>
+                      </div>
                     </td>
                     <td class="px-4 py-4 align-top">
                       <span
@@ -331,7 +361,7 @@ function formatDiscountPercent(item) {
             </div>
           </template>
 
-          <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
+          <div v-else class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center text-sm text-slate-400">
             Không thể tải dữ liệu biến thể cho sản phẩm này.
           </div>
         </div>

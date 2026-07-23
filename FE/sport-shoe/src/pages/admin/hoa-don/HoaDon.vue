@@ -30,6 +30,7 @@ const loiTrang = ref("");
 const trangThaiDangChon = ref("Tất cả");
 const dsTrangThai = [
   "Tất cả",
+  "Hóa đơn chờ",
   "Chờ xác nhận",
   "Đã xác nhận",
   "Chờ lấy hàng",
@@ -45,6 +46,7 @@ const tuNgayPicker = ref(null);
 const denNgayPicker = ref(null);
 
 const mauTrangThai = {
+  "Hóa đơn chờ": "bg-yellow-50 text-yellow-600",
   "Chờ xác nhận": "bg-amber-50 text-amber-600",
   "Đã xác nhận": "bg-orange-50 text-orange-600",
   "Chờ lấy hàng": "bg-blue-50 text-blue-600",
@@ -170,12 +172,22 @@ const thongKeTrangThai = computed(() => {
   return thongKe;
 });
 
-const tongTheoTrangThai = computed(() =>
-  dsTrangThai.map((trangThai) => ({
+const tongTheoTrangThai = computed(() => {
+  const filteredDs = dsTrangThai.filter((trangThai) => {
+    if (boLoc.value.loaiDon === "Cửa hàng") {
+      return ["Tất cả", "Hóa đơn chờ", "Hoàn thành", "Hủy"].includes(trangThai);
+    }
+    if (boLoc.value.loaiDon === "Trực tuyến") {
+      return trangThai !== "Hóa đơn chờ";
+    }
+    return true;
+  });
+
+  return filteredDs.map((trangThai) => ({
     ten: trangThai,
     tong: thongKeTrangThai.value.get(trangThai) || 0,
-  })),
-);
+  }));
+});
 
 const danhSachHienThi = computed(() => {
   if (trangThaiDangChon.value === "Tất cả") return danhSach.value;
@@ -205,7 +217,31 @@ watch(soPhanTuMotTrang, () => {
   trangHienTai.value = 1;
 });
 
+watch(
+  () => boLoc.value.loaiDon,
+  (newLoaiDon) => {
+    if (newLoaiDon === "Cửa hàng") {
+      const validStatuses = ["Tất cả", "Hóa đơn chờ", "Hoàn thành", "Hủy"];
+      if (!validStatuses.includes(trangThaiDangChon.value)) {
+        trangThaiDangChon.value = "Tất cả";
+      }
+    } else if (newLoaiDon === "Trực tuyến") {
+      if (trangThaiDangChon.value === "Hóa đơn chờ") {
+        trangThaiDangChon.value = "Tất cả";
+      }
+    }
+  },
+);
+
 async function taiDanhSach() {
+  if (boLoc.value.keyword && boLoc.value.keyword.length > 100) {
+    showError("Từ khóa tìm kiếm không được vượt quá 100 ký tự.");
+    return;
+  }
+  if (boLoc.value.tuNgay && boLoc.value.denNgay && boLoc.value.tuNgay > boLoc.value.denNgay) {
+    showError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+    return;
+  }
   dangTai.value = true;
   loiTrang.value = "";
   try {
@@ -352,6 +388,7 @@ onBeforeUnmount(() => {
             <input
               v-model="boLoc.keyword"
               type="text"
+              maxlength="100"
               placeholder="Mã hóa đơn / mã nhân viên..."
               class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:bg-white"
             />
@@ -429,7 +466,7 @@ onBeforeUnmount(() => {
         <div class="flex shrink-0 items-center gap-3">
           <Button variant="soft" @click="lamMoiBoLoc">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
-            Đặt lại
+            Đặt lại bộ lọc
           </Button>
           <Button variant="soft" @click="xuatExcel">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>

@@ -92,6 +92,8 @@ public class QuanLySanPhamService {
     private final TrongLuongRepository trongLuongRepository;
     private final CongNgheDemRepository congNgheDemRepository;
     private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
+    private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final HoaDonRepository hoaDonRepository;
 
     public QuanLySanPhamService(
             GiayRepository giayRepository,
@@ -108,7 +110,9 @@ public class QuanLySanPhamService {
             ChatLieuGiayRepository chatLieuGiayRepository,
             TrongLuongRepository trongLuongRepository,
             CongNgheDemRepository congNgheDemRepository,
-            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher
+            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher,
+            HoaDonChiTietRepository hoaDonChiTietRepository,
+            HoaDonRepository hoaDonRepository
     ) {
         this.giayRepository = giayRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -125,6 +129,8 @@ public class QuanLySanPhamService {
         this.trongLuongRepository = trongLuongRepository;
         this.congNgheDemRepository = congNgheDemRepository;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
+        this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.hoaDonRepository = hoaDonRepository;
     }
 
     // ─── Danh mục ────────────────────────────────────────────────────────────
@@ -378,7 +384,7 @@ public class QuanLySanPhamService {
                 gct.getKichCo().getGiaTri(),
                 gct.getSoLuong(),
                 gct.getGiaGoc(),
-                activeDiscount != null ? activeDiscount.giaSauGiam() : gct.getGiaBan(),
+                gct.getGiaBan(),
                 gct.getKichHoat(),
                 imageMap.get(gct.getId()),
                 gct.getNgayTao(),
@@ -409,7 +415,7 @@ public class QuanLySanPhamService {
                 gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getId() : null,
                 gtt.getChatLieuGiay() != null ? gtt.getChatLieuGiay().getTen() : null,
                 gtt.getTrongLuong() != null ? gtt.getTrongLuong().getId() : null,
-                gtt.getTrongLuong() != null ? gtt.getTrongLuong().getMa() : null
+                gtt.getTrongLuong() != null ? gtt.getTrongLuong().getGiaTri() + "g" : null
         );
 
         List<Integer> chiTietIds = giayChiTietRepository.findByGiayIdEager(id).stream()
@@ -686,32 +692,36 @@ public class QuanLySanPhamService {
 
     @Transactional
     public void doiTrangThai(Integer id, DoiTrangThaiRequest req) {
-        System.out.println(">>> DOI TRANG THAI GIAY #" + id + " -> " + req.trangThai());
         if (!isTrangThaiGiayHopLe(req.trangThai())) {
             throw new BusinessException("Trạng thái sản phẩm không hợp lệ");
         }
         var giay = giayRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Giày #" + id + " không tồn tại"));
-        if (req.trangThai() == TRANG_THAI_KINH_DOANH && !coTonKho(id)) {
-            throw new BusinessException("Sản phẩm hết hàng, chưa thể chuyển sang kinh doanh");
-        }
-        if (req.trangThai() == TRANG_THAI_HET_HANG && coTonKho(id)) {
-            throw new BusinessException("Sản phẩm vẫn còn tồn kho, không thể chuyển sang hết hàng");
-        }
-        giay.setTrangThai(req.trangThai());
-        giay.setNgayCapNhat(Instant.now());
-        
-        List<GiayChiTiet> chiTiets = giayChiTietRepository.findByGiayIdEager(id);
-        int kichHoatValue = (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) ? 1 : 0;
-        for (GiayChiTiet ct : chiTiets) {
-            ct.setKichHoat(kichHoatValue);
-            ct.setNgayCapNhat(Instant.now());
-            giayChiTietRepository.save(ct);
+
+        if (req.trangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
+            // Ngừng kinh doanh: đổi trạng thái sản phẩm + gỡ khỏi giỏ khách + chuyển tất cả biến thể sang ngừng bán (kichHoat = 0).
+            giay.setTrangThai(TRANG_THAI_NGUNG_KINH_DOANH);
+            giay.setNgayCapNhat(Instant.now());
+            for (GiayChiTiet ct : giayChiTietRepository.findByGiayIdEager(id)) {
+                ct.setKichHoat(0);
+                ct.setNgayCapNhat(Instant.now());
+                giayChiTietRepository.save(ct);
+                xoaKhoiGioHangCuaKhachHang(ct.getId());
+            }
+            sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
+            return;
         }
 
-        if (req.trangThai() != TRANG_THAI_NGUNG_KINH_DOANH) {
-            updateTrangThaiTuSoLuong(giay);
+
+        // Bật kinh doanh: phải còn ít nhất 1 biến thể đang bán (không tự bật biến thể nữa).
+        if (!giayChiTietRepository.existsByGiayIdAndKichHoat(id, 1)) {
+            throw new BusinessException(
+                    "Tất cả biến thể đang ngừng bán. Hãy bật ít nhất 1 biến thể trước khi kinh doanh sản phẩm.");
         }
+        giay.setNgayCapNhat(Instant.now());
+        // Tự đặt Kinh doanh / Hết hàng theo tồn của các biến thể đang bán.
+        updateTrangThaiTuSoLuong(giay);
+        sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
     }
 
     @Transactional
@@ -736,6 +746,7 @@ public class QuanLySanPhamService {
                 for (GiayChiTiet ct : chiTiets) {
                     ct.setKichHoat(0);
                     ct.setNgayCapNhat(Instant.now());
+                    xoaKhoiGioHangCuaKhachHang(ct.getId());
                     giayChiTietRepository.save(ct);
                 }
             }
@@ -814,6 +825,9 @@ public class QuanLySanPhamService {
         gct.setGiaBan(req.giaBan());
         gct.setKichHoat(req.kichHoat());
         gct.setNgayCapNhat(Instant.now());
+        if (req.kichHoat() != null && req.kichHoat() == 0) {
+            xoaKhoiGioHangCuaKhachHang(id);
+        }
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("CAP_NHAT_BIEN_THE");
@@ -831,6 +845,9 @@ public class QuanLySanPhamService {
 
         gct.setKichHoat(req.kichHoat());
         gct.setNgayCapNhat(Instant.now());
+        if (req.kichHoat() != null && req.kichHoat() == 0) {
+            xoaKhoiGioHangCuaKhachHang(id);
+        }
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_BIEN_THE");
@@ -843,15 +860,50 @@ public class QuanLySanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể #" + id + " không tồn tại"));
         Integer giayId = gct.getGiay().getId();
         giayChiTietRepository.deleteById(id);
+        xoaKhoiGioHangCuaKhachHang(id);
         updateTrangThaiTuSoLuong(giayId);
         sanPhamRealtimePublisher.phatSauCommit("XOA_BIEN_THE");
+    }
+
+    private void xoaKhoiGioHangCuaKhachHang(Integer giayChiTietId) {
+        // CHỈ gỡ khỏi giỏ hàng (hóa đơn trạng thái 0). KHÔNG đụng đơn thật (chờ xác nhận = 1...)
+        // vì xóa dòng đơn thật vừa sai nghiệp vụ vừa dính khóa ngoại (vd phiếu trả hàng tham chiếu).
+        List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0));
+        for (HoaDonChiTiet hdct : toDelete) {
+            HoaDon hd = hdct.getHoaDon();
+            
+            BigDecimal currentTongTienHang = hd.getTongTienHang() != null ? hd.getTongTienHang() : BigDecimal.ZERO;
+            BigDecimal itemThanhTien = hdct.getThanhTien() != null ? hdct.getThanhTien() : BigDecimal.ZERO;
+            
+            BigDecimal newTongTienHang = currentTongTienHang.subtract(itemThanhTien);
+            if (newTongTienHang.compareTo(BigDecimal.ZERO) < 0) {
+                newTongTienHang = BigDecimal.ZERO;
+            }
+            hd.setTongTienHang(newTongTienHang);
+
+            BigDecimal currentTongTienThanhToan = hd.getTongTienThanhToan() != null ? hd.getTongTienThanhToan() : BigDecimal.ZERO;
+            BigDecimal newTongTienThanhToan = currentTongTienThanhToan.subtract(itemThanhTien);
+            if (newTongTienThanhToan.compareTo(BigDecimal.ZERO) < 0) {
+                newTongTienThanhToan = BigDecimal.ZERO;
+            }
+            hd.setTongTienThanhToan(newTongTienThanhToan);
+            
+            if (newTongTienHang.compareTo(BigDecimal.ZERO) == 0) {
+                hd.setTienGiam(BigDecimal.ZERO);
+                hd.setPhieuGiamGia(null);
+                hd.setTongTienThanhToan(BigDecimal.ZERO);
+            }
+            
+            hoaDonChiTietRepository.delete(hdct);
+            hoaDonRepository.save(hd);
+        }
     }
 
     private BienTheResponse toBienThe(GiayChiTiet gct, ActiveDiscountInfo activeDiscount) {
         return new BienTheResponse(
                 gct.getId(), gct.getMaBienThe(), gct.getSku(),
                 gct.getSoLuong(), gct.getGiaGoc(),
-                activeDiscount != null ? activeDiscount.giaSauGiam() : gct.getGiaBan(),
+                gct.getGiaBan(),
                 gct.getKichHoat(),
                 gct.getMauSac().getId(), gct.getMauSac().getTen(), gct.getMauSac().getMaMauHex(),
                 gct.getKichCo().getId(), gct.getKichCo().getGiaTri(),
@@ -1267,14 +1319,35 @@ public class QuanLySanPhamService {
             return;
         }
         updateTrangThaiTuSoLuong(giay);
+        giayRepository.save(giay);
+    }
+
+    /**
+     * Đồng bộ trạng thái sản phẩm theo tồn kho: hết tồn -> "Hết hàng", còn tồn -> "Kinh doanh"
+     * (giữ nguyên nếu admin đã đặt "Ngừng kinh doanh"). Gọi sau khi trừ/hoàn kho ở đơn online.
+     */
+    @Transactional
+    public void dongBoTrangThaiTheoTonKho(Integer giayId) {
+        if (giayId == null) {
+            return;
+        }
+        giayRepository.findById(giayId).ifPresent(giay -> {
+            updateTrangThaiTuSoLuong(giay);
+            giayRepository.save(giay);
+        });
     }
 
     private void updateTrangThaiTuSoLuong(Giay giay) {
-        if (giay.getTrangThai() == TRANG_THAI_NGUNG_KINH_DOANH) {
-            return;
+        // Trạng thái sản phẩm suy ra từ biến thể:
+        //  - Không còn biến thể nào đang bán -> Ngừng kinh doanh.
+        //  - Còn biến thể đang bán + còn tồn   -> Kinh doanh.
+        //  - Còn biến thể đang bán + hết tồn   -> Hết hàng.
+        int newStatus;
+        if (!giayChiTietRepository.existsByGiayIdAndKichHoat(giay.getId(), 1)) {
+            newStatus = TRANG_THAI_NGUNG_KINH_DOANH;
+        } else {
+            newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
         }
-
-        int newStatus = coTonKho(giay.getId()) ? TRANG_THAI_KINH_DOANH : TRANG_THAI_HET_HANG;
 
         if (giay.getTrangThai() != newStatus) {
             giay.setTrangThai(newStatus);

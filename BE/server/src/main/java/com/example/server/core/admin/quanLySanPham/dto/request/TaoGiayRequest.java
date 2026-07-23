@@ -3,20 +3,19 @@ package com.example.server.core.admin.quanLySanPham.dto.request;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record TaoGiayRequest(
         @Size(max = 100) String ma,
         @NotBlank @Size(min = 3, max = 300) String ten,
-        @Positive Integer thuongHieuId,
-        @Positive Integer loaiGiayId,
+        @Min(0) Integer thuongHieuId,
+        @Min(0) Integer loaiGiayId,
         @Min(1) @Max(3) Integer gioiTinh,
         String chatLieu,
-        @Positive Integer chatLieuGiayId,
+        @Min(0) Integer chatLieuGiayId,
         @Size(max = 2000) String moTa,
-        @Positive Integer deGiayId,
-        @Positive Integer coGiayId,
-        @Positive Integer congNgheDemId,
-        @Positive Integer trongLuongId
+        @Min(0) Integer deGiayId,
+        @Min(0) Integer coGiayId,
+        @Min(0) Integer congNgheDemId,
+        @Min(0) Integer trongLuongId
 ) {}

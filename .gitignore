@@ -10,3 +10,9 @@ FE/sport-shoe/build/index.html
 node_modules/
 /fe_mobile
 BE/server/uploads
+AGENTS.md
+
+
+### Claude Code (ca nhan - khong commit)
+.claude/
+CLAUDE.md

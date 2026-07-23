@@ -1,5 +1,6 @@
 <script setup>
 import anhMacDinh from "../../assets/login-shoe.png";
+import { resolveHinhAnh } from "../../utils/resolve-image";
 
 // Prop "danhMuc" giờ chứa danh sách HÃNG (thương hiệu) nổi bật.
 defineProps({
@@ -21,7 +22,6 @@ function xuLyAnhLoi(event) {
     <div class="mx-auto max-w-7xl">
       <div class="text-center">
         <h2 class="text-2xl font-semibold text-black">Mua sắm theo hãng</h2>
-        <p class="mt-3 text-sm text-slate-500">Khám phá các thương hiệu nổi bật nhất</p>
       </div>
 
       <p v-if="!danhMuc.length" class="mt-10 rounded-2xl border border-dashed border-primary/20 bg-white/60 py-12 text-center text-sm text-slate-400">
@@ -38,7 +38,7 @@ function xuLyAnhLoi(event) {
         >
           <div class="relative h-72 overflow-hidden">
             <img
-              :src="muc.hinhAnh"
+              :src="resolveHinhAnh(muc.hinhAnh)"
               :alt="muc.ten"
               class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               @error="xuLyAnhLoi"

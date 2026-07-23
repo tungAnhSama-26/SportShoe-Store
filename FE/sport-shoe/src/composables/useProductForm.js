@@ -69,7 +69,7 @@ export function useProductForm() {
   function parsePositiveNumber(value) {
     const normalized = Array.isArray(value) ? value[0] : value
     const parsed = Number(normalized)
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
   }
 
   function normalizeNullableNumber(value) {
@@ -78,7 +78,7 @@ export function useProductForm() {
       return normalizeNullableNumber(value.id ?? value.value)
     }
     const parsed = Number(value)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
   }
 
   function taoMaGiayDuKien() {
@@ -106,12 +106,12 @@ export function useProductForm() {
     if (item == null || item === '') return null
     if (typeof item !== 'object') {
       const parsed = Number(item)
-      return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+      return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
     }
 
     for (const key of keys) {
       const parsed = Number(item[key])
-      if (Number.isInteger(parsed) && parsed > 0) {
+      if (Number.isInteger(parsed) && parsed >= 0) {
         return parsed
       }
     }
@@ -140,7 +140,7 @@ export function useProductForm() {
 
   function normalizeCategoryItems(value, idKeys, labelKeys) {
     return extractList(value)
-      .filter(Boolean)
+      .filter(item => item != null)
       .map((item) => {
         const id = readPositiveId(item, idKeys)
         const label = readLabel(item, labelKeys)
@@ -223,13 +223,13 @@ export function useProductForm() {
       productErrors.ten = 'Tên sản phẩm không được vượt quá 300 ký tự'
     }
 
-    if (!productForm.thuongHieuId) {
+    if (productForm.thuongHieuId == null || productForm.thuongHieuId === '') {
       productErrors.thuongHieuId = 'Vui lòng chọn thương hiệu cho sản phẩm'
     } else if (!hasOptionId(danhMuc.value?.thuongHieu, productForm.thuongHieuId)) {
       productErrors.thuongHieuId = 'Thương hiệu đã chọn không hợp lệ'
     }
 
-    if (!productForm.loaiGiayId) {
+    if (productForm.loaiGiayId == null || productForm.loaiGiayId === '') {
       productErrors.loaiGiayId = 'Vui lòng chọn loại giày cho sản phẩm'
     } else if (!hasOptionId(danhMuc.value?.loaiGiay, productForm.loaiGiayId)) {
       productErrors.loaiGiayId = 'Loại giày đã chọn không hợp lệ'
@@ -343,20 +343,20 @@ export function useProductForm() {
     const normalized = String(name).trim().toLowerCase()
     return danhMuc.value.chatLieuGiay.find(
       (item) => item.ten?.trim().toLowerCase() === normalized
-    )?.id || null
+    )?.id ?? null
   }
 
   function hydrateProductForm(detail) {
     productForm.ten = detail.ten || ''
-    productForm.thuongHieuId = detail.thuongHieuId || null
-    productForm.loaiGiayId = detail.loaiGiayId || null
+    productForm.thuongHieuId = detail.thuongHieuId ?? null
+    productForm.loaiGiayId = detail.loaiGiayId ?? null
     productForm.gioiTinh = detail.gioiTinh ?? null
-    productForm.chatLieuGiayId = detail.thuocTinh?.chatLieuGiayId || findChatLieuGiayIdByName(detail.chatLieu)
+    productForm.chatLieuGiayId = detail.thuocTinh?.chatLieuGiayId ?? findChatLieuGiayIdByName(detail.chatLieu)
     productForm.moTa = detail.moTa || ''
-    productForm.deGiayId = detail.thuocTinh?.deGiayId || null
-    productForm.coGiayId = detail.thuocTinh?.coGiayId || null
-    productForm.congNgheDemId = detail.thuocTinh?.congNgheDemId || null
-    productForm.trongLuongId = detail.thuocTinh?.trongLuongId || null
+    productForm.deGiayId = detail.thuocTinh?.deGiayId ?? null
+    productForm.coGiayId = detail.thuocTinh?.coGiayId ?? null
+    productForm.congNgheDemId = detail.thuocTinh?.congNgheDemId ?? null
+    productForm.trongLuongId = detail.thuocTinh?.trongLuongId ?? null
   }
 
   async function loadInitialData() {

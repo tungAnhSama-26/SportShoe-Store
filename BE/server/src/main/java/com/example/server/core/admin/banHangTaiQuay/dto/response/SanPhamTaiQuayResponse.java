@@ -19,6 +19,7 @@ public record SanPhamTaiQuayResponse(
         String congNgheDem,
         String mauSac,
         String kichCo,
-        String trongLuong
+        String trongLuong,
+        String tenDotGiamGia
 ) {
 }

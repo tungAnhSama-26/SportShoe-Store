@@ -26,7 +26,9 @@ const {
   form,
   soLuongVoHan,
   soLuongDisplay,
+  handleSoLuongEnter,
   isReadOnly,
+  isHetHan,
   giaTriDisplay,
   giaTriToiThieuVnd,
   giamToiDaVnd,
@@ -56,11 +58,12 @@ const {
   xemChiTietHoaDon,
   mauTrangThai,
   parseVndNumber,
+  todayStr,
 } = useChiTietPhieuGiamGia();
 </script>
 
 <template>
-  <div class="space-y-5 pb-10">
+  <div class="w-full min-w-0 space-y-5 pb-10 radius-6px">
 
     <section class="flex items-center gap-4 border-b border-slate-100 pb-4">
       <button
@@ -82,14 +85,13 @@ const {
       v-if="isReadOnly"
       class="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-700"
     >
-      Phiếu giảm giá này đã hết hạn hoặc ngừng hoạt động nên chỉ có thể xem chi
-      tiết.
+      Phiếu giảm giá cá nhân này đã hết hạn nên không thể chỉnh sửa thông tin.
     </div>
 
     <section
-      class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"
+      class="w-full min-w-0 space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <fieldset :disabled="isReadOnly" class="space-y-6">
+      <fieldset :disabled="isReadOnly" class="min-w-0 space-y-6">
         <div class="flex items-center gap-3">
           <div
             class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500"
@@ -110,11 +112,13 @@ const {
             <div class="relative">
               <input
                 v-model="form.ma"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:opacity-70 disabled:bg-slate-100"
+                :readonly="!laMoi"
+                class="h-11 w-full rounded-2xl border border-slate-200 pl-4 pr-11 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+                :class="!laMoi ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-slate-50'"
                 placeholder="Ví dụ: VOUCHER2024"
               />
               <button
-                v-if="!isReadOnly"
+                v-if="laMoi && !isReadOnly"
                 @click="taoMaNgauNhien"
                 type="button"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-rose-500"
@@ -277,8 +281,9 @@ const {
             <div class="space-y-3">
               <input
                 v-model="soLuongDisplay"
-                :type="soLuongVoHan ? 'text' : 'number'"
-                min="1"
+                type="text"
+                inputmode="numeric"
+                @keydown.enter.prevent="handleSoLuongEnter"
                 :readonly="form.loaiPhieu === '2' || soLuongVoHan"
                 :disabled="soLuongVoHan"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
@@ -319,6 +324,7 @@ const {
             <input
               v-model="form.ngayBatDau"
               type="date"
+              :max="todayStr"
               :readonly="isReadOnly"
               class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               :class="
@@ -340,7 +346,14 @@ const {
             <input
               v-model="form.ngayKetThuc"
               type="date"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+              :min="form.ngayBatDau || undefined"
+              :readonly="isReadOnly"
+              class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+              :class="
+                isReadOnly
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-500'
+                  : 'bg-slate-50'
+              "
             />
             <p v-if="formErrors.ngayKetThuc" class="mt-1 text-xs text-rose-500">
               {{ formErrors.ngayKetThuc }}
@@ -350,7 +363,7 @@ const {
 
         <div
           v-if="form.loaiPhieu === '2'"
-          class="mt-6 space-y-4 rounded-3xl border border-slate-100 bg-slate-50/30 p-5"
+          class="w-full min-w-0 mt-6 space-y-4 rounded-3xl border border-slate-100 bg-slate-50/30 p-5"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3 text-slate-800">
@@ -398,7 +411,7 @@ const {
           </div>
 
           <div
-            class="custom-scrollbar max-h-[400px] overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm"
+            class="custom-scrollbar max-h-[400px] overflow-x-auto overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-sm"
           >
             <table class="w-full border-collapse text-left text-sm">
               <thead
@@ -407,10 +420,8 @@ const {
                 <tr>
                   <th class="w-12 px-4 py-3 text-center">#</th>
                   <th class="px-4 py-3">Họ và tên</th>
-                  <th class="px-4 py-3">Tên đăng nhập</th>
                   <th class="px-4 py-3">Số điện thoại</th>
                   <th class="px-4 py-3">Email</th>
-                  <th class="px-4 py-3">Ngày sinh</th>
                   <th class="px-4 py-3">Tổng đơn hàng</th>
                   <th class="px-4 py-3">Đơn hàng gần nhất</th>
                 </tr>
@@ -418,7 +429,7 @@ const {
               <tbody class="divide-y divide-slate-100">
                 <tr v-if="dangTaiKh">
                   <td
-                    colspan="8"
+                    colspan="6"
                     class="px-4 py-6 text-center text-sm text-slate-400"
                   >
                     Đang tải danh sách khách hàng...
@@ -426,7 +437,7 @@ const {
                 </tr>
                 <tr v-else-if="!danhSachKhTrang.length">
                   <td
-                    colspan="8"
+                    colspan="6"
                     class="px-4 py-6 text-center text-sm text-slate-400"
                   >
                     {{ boLocKh === 'da-chon' ? 'Chưa chọn khách hàng nào.' : 'Không có khách hàng phù hợp.' }}
@@ -436,10 +447,10 @@ const {
                   v-for="(kh, index) in danhSachKhTrang"
                   v-else
                   :key="kh.id"
-                  @click="!laKhachHangDaDung(kh.email) && toggleEmail(kh.email)"
+                  @click="!isReadOnly && !laKhachHangDaDung(kh.email) && toggleEmail(kh.email)"
                   class="transition-colors"
                   :class="[
-                    laKhachHangDaDung(kh.email) ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer hover:bg-rose-50/50',
+                    isReadOnly || laKhachHangDaDung(kh.email) ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer hover:bg-rose-50/50',
                     dsEmailChon.includes(kh.email) && !laKhachHangDaDung(kh.email) ? 'bg-rose-50/30' : ''
                   ]"
                 >
@@ -447,7 +458,7 @@ const {
                     <CheckSquare
                       v-if="dsEmailChon.includes(kh.email)"
                       class="mx-auto h-5 w-5"
-                      :class="laKhachHangDaDung(kh.email) ? 'text-slate-400' : 'text-rose-500'"
+                      :class="isReadOnly || laKhachHangDaDung(kh.email) ? 'text-slate-400' : 'text-rose-500'"
                     />
                     <div
                       v-else
@@ -460,17 +471,11 @@ const {
                       <span v-if="laKhachHangDaDung(kh.email)" class="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 rounded px-1.5 py-0.5 whitespace-nowrap">Đã dùng</span>
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-slate-600 font-medium">
-                    {{ kh.tenDangNhap }}
-                  </td>
                   <td class="px-4 py-3 text-slate-500 font-medium">
                     {{ kh.sdt || "—" }}
                   </td>
                   <td class="px-4 py-3 text-slate-500 font-medium">
                     {{ kh.email }}
-                  </td>
-                  <td class="px-4 py-3 text-slate-500 font-medium">
-                    {{ dinhDangNgaySinh(kh.ngaySinh) }}
                   </td>
                   <td class="px-4 py-3" @click.stop>
                     <div
@@ -567,7 +572,7 @@ const {
     <!-- Danh sách đơn hàng đã áp dụng phiếu giảm giá -->
     <section
       v-if="!laMoi"
-      class="space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"
+      class="w-full min-w-0 space-y-6 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"
     >
       <div
         class="flex items-center justify-between border-b border-slate-100 pb-4"
@@ -622,7 +627,7 @@ const {
 
       <div
         v-else
-        class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+        class="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm"
       >
         <table class="w-full border-collapse text-left text-sm">
           <thead class="bg-slate-50 text-[12px] font-semibold text-slate-500">

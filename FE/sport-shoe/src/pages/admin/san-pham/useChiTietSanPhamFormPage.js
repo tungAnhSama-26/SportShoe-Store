@@ -1,10 +1,10 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import FormHeader from '../../../components/admin/san-pham/FormHeader.vue'
-import ProductFormSection from '../../../components/admin/san-pham/ProductFormSection.vue'
-import VariantBuilderSection from '../../../components/admin/san-pham/VariantBuilderSection.vue'
-import ChiTietSanPhamGeneratedVariantsSection from '../../../components/admin/san-pham/ChiTietSanPhamGeneratedVariantsSection.vue'
-import SuccessSection from '../../../components/admin/san-pham/SuccessSection.vue'
-import QuickCreateModal from '../../../components/admin/san-pham/QuickCreateModal.vue'
+import TieuDeForm from '../../../components/admin/san-pham/TieuDeForm.vue'
+import PhanNhapThongTinSanPham from '../../../components/admin/san-pham/PhanNhapThongTinSanPham.vue'
+import PhanTaoBienThe from '../../../components/admin/san-pham/PhanTaoBienThe.vue'
+import PhanBienTheDaTao from '../../../components/admin/san-pham/PhanBienTheDaTao.vue'
+import PhanThanhCong from '../../../components/admin/san-pham/PhanThanhCong.vue'
+import ModalThemNhanh from '../../../components/admin/san-pham/ModalThemNhanh.vue'
 import { useProductForm } from '../../../composables/useProductForm.js'
 import { useVariantBuilder } from '../../../composables/useVariantBuilder.js'
 import { useToast } from '../../../composables/useToast.js'
@@ -271,12 +271,12 @@ export function useChiTietSanPhamFormPage() {
     )
   }
   function normalizeWeightValue(value) {
-    const matched = String(value ?? '').trim().match(/^(\d{1,4})(?:\s*(?:g|gram))?$/i)
+    const matched = String(value ?? '').trim().match(/^(\d{1,5})(?:\s*(?:g|gram))?$/i)
     if (!matched) {
       return null
     }
     const parsed = Number(matched[1])
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+    return Number.isInteger(parsed) && parsed > 0 && parsed <= 10000 ? parsed : null
   }
   function clearQuickCreateErrors() {
     Object.keys(quickCreateErrors).forEach((key) => delete quickCreateErrors[key])
@@ -362,7 +362,7 @@ export function useChiTietSanPhamFormPage() {
     ]
   }
   function selectInlineCreatedItem(type, item) {
-    if (!item?.id) {
+    if (item?.id == null) {
       return
     }
     if (type === 'mauSac') {
@@ -402,7 +402,7 @@ export function useChiTietSanPhamFormPage() {
     if (type === 'trongLuong') {
       const giaTri = normalizeWeightValue(rawValue)
       if (!giaTri) {
-        throw new Error('Trọng lượng phải là số nguyên từ 1 g trở lên')
+        throw new Error('Trọng lượng phải là số nguyên từ 1 đến 10,000 g')
       }
       return {
         create: config.create,
@@ -566,7 +566,7 @@ export function useChiTietSanPhamFormPage() {
       const mauSacId = Number(mauSacIdStr)
       if (isNaN(mauSacId)) continue
       const relatedVariants = variants.filter(
-        (variant) => Number(variant?.id) > 0 && Number(variant?.mauSacId) === mauSacId
+        (variant) => Number(variant?.id) >= 0 && Number(variant?.mauSacId) === mauSacId
       )
       if (!relatedVariants.length) {
         continue
@@ -679,7 +679,7 @@ export function useChiTietSanPhamFormPage() {
       if (!isExistingProduct.value) {
         if (productForm.ma && productForm.ma.trim() !== '') {
           const checkMa = await api.checkMaGiay(productForm.ma.trim());
-          if (checkMa.exists && checkMa.id) {
+          if (checkMa.exists && checkMa.id != null) {
             saving.value = false;
             const confirmed = await showConfirm(
               `Mã sản phẩm <b>${productForm.ma}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
@@ -697,7 +697,7 @@ export function useChiTietSanPhamFormPage() {
         
         if (!isExistingProduct.value && productForm.ten && productForm.ten.trim() !== '') {
           const checkTen = await api.checkTenGiay(productForm.ten.trim());
-          if (checkTen.exists && checkTen.id) {
+          if (checkTen.exists && checkTen.id != null) {
             saving.value = false;
             const confirmed = await showConfirm(
               `Sản phẩm với tên <b>${productForm.ten}</b> đã tồn tại. Bạn có muốn cập nhật và thêm các biến thể này vào sản phẩm đó không?`,
@@ -715,7 +715,7 @@ export function useChiTietSanPhamFormPage() {
 
         if (!isExistingProduct.value) {
           const checkTrung = await api.checkTrungThuocTinh(buildCreateProductPayload());
-          if (checkTrung && checkTrung.id) {
+          if (checkTrung && checkTrung.id != null) {
             saving.value = false;
             const confirmed = await showConfirm(
               `Sản phẩm <b>${checkTrung.ten}</b> đang có các thuộc tính giống hệt với các thuộc tính bạn vừa chọn. Bạn có muốn gộp các biến thể này vào sản phẩm <b>${checkTrung.ten}</b> không?`,
@@ -762,7 +762,7 @@ export function useChiTietSanPhamFormPage() {
         ...createdVariants.value
       ]
       
-      if (!isExistingProduct.value && variantsResult?.giay?.id) {
+      if (!isExistingProduct.value && variantsResult?.giay?.id != null) {
         currentProductId.value = variantsResult.giay.id
         isExistingProduct.value = true
       }
@@ -823,6 +823,12 @@ export function useChiTietSanPhamFormPage() {
     document.addEventListener('mousedown', handleDocumentClick)
     try {
       await loadInitialData()
+      if (isExistingProduct.value && existingProductVariants.value?.length) {
+        existingProductVariants.value.forEach(variant => {
+          if (variant.mauSacId != null) appendSelectedValue('mauSacIds', variant.mauSacId)
+          if (variant.kichCoId != null) appendSelectedValue('kichCoIds', variant.kichCoId)
+        })
+      }
     } catch (error) {
       showToast(getDisplayErrorMessage(error, 'Không thể tải dữ liệu form lúc này'), 'error')
     }
@@ -830,6 +836,5 @@ export function useChiTietSanPhamFormPage() {
   onBeforeUnmount(() => {
     document.removeEventListener('mousedown', handleDocumentClick)
   })
-  return { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
+  return { computed, onBeforeUnmount, onMounted, reactive, ref, TieuDeForm, PhanNhapThongTinSanPham, PhanTaoBienThe, PhanBienTheDaTao, PhanThanhCong, ModalThemNhanh, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, existingProductVariants, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave };
 }
-

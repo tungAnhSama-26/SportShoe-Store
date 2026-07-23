@@ -1,14 +1,8 @@
-# Stage 1: Build source code VueJS / Vite
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-# Stage 2: Dùng Nginx để serve file tĩnh
+# Dùng Nginx để serve file tĩnh
 FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY build /usr/share/nginx/html
+# Cấp quyền đọc ghi cho Nginx đối với toàn bộ file tĩnh
+RUN chmod -R 755 /usr/share/nginx/html
 # Copy cấu hình nginx tùy chỉnh (hỗ trợ Vue Router history mode)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

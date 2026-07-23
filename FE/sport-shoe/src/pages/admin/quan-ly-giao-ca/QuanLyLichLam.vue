@@ -79,6 +79,8 @@ async function taiDanhSachCa() {
           muaNhat: colorSet.muaNhat
         };
       });
+    } else {
+      DS_CA.value = [];
     }
   } catch (e) {
     console.error("Không thể tải danh sách ca làm việc", e);

@@ -1,4 +1,5 @@
 <script setup>
+import Button from "../../../components/ui/Button.vue";
 import { usePhieuGiamGiaList } from "./usePhieuGiamGiaList";
 const {
   computed,
@@ -44,9 +45,12 @@ const {
   totalItemsKh,
   dsTrangThai,
   dsLoai,
+  dsLoaiPhieu,
   isHetHan,
   mauTrangThai,
   statusText,
+  statusTextKh,
+  mauTrangThaiKh,
   loaiGiamText,
   loaiPhieuText,
   mauLoaiPhieu,
@@ -66,11 +70,12 @@ const {
   openCreateModal,
   openEditModal,
   xuatExcel,
+  todayStr,
 } = usePhieuGiamGiaList();
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="w-full min-w-0 space-y-5 radius-6px">
 
 
     <!-- Header removed -->
@@ -91,7 +96,7 @@ const {
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div class="space-y-2">
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
@@ -109,10 +114,27 @@ const {
 
           <template v-if="activeTab === 'phieu'">
             <div class="space-y-2">
+              <label class="admin-filter-label">Hình thức</label>
+              <select
+                v-model="boLoc.loaiPhieu"
+                class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              >
+                <option
+                  v-for="item in dsLoaiPhieu"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
               <label class="admin-filter-label">Ngày bắt đầu</label>
               <input
                 v-model="boLoc.tuNgay"
                 type="date"
+                :max="todayStr"
                 class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
@@ -122,6 +144,7 @@ const {
               <input
                 v-model="boLoc.denNgay"
                 type="date"
+                :min="boLoc.tuNgay || undefined"
                 class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
@@ -164,27 +187,27 @@ const {
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-3">
-          <button
+          <Button
+            variant="soft"
             @click="lamMoiBoLoc"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
           >
-            <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-          </button>
-          <button
+            <template #prefix><RotateCcw class="h-4 w-4" /></template> Đặt lại bộ lọc
+          </Button>
+          <Button
+            variant="soft"
             @click="xuatExcel"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
           >
-            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-          </button>
-          <button
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template> Xuất Excel
+          </Button>
+          <Button
+            variant="primary"
             @click="openCreateModal"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]"
           >
-            <Plus class="h-4 w-4" />
+            <template #prefix><Plus class="h-4 w-4" /></template>
             {{
               activeTab === "phieu" ? "Tạo phiếu mới" : "Tặng phiếu khách hàng"
             }}
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -383,9 +406,9 @@ const {
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="mauTrangThai(item.trangThai)"
+                    :class="mauTrangThaiKh(item.trangThai)"
                   >
-                    {{ statusText(item.trangThai) }}
+                    {{ statusTextKh(item.trangThai) }}
                   </span>
                 </td>
                 <td class="px-4 py-3 text-center">

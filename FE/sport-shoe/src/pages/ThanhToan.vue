@@ -5,7 +5,7 @@ import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
-import { showWarning, showSuccess, showError } from '../utils/alert';
+import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
@@ -121,6 +121,11 @@ const dsVoucher = ref([]);
 const hienDsVoucher = ref(false);
 const dangTaiVoucher = ref(false);
 
+// Voucher tốt nhất = phiếu đủ điều kiện, giảm nhiều nhất (BE đã sắp xếp -> lấy cái đủ điều kiện đầu tiên).
+const voucherTotNhat = computed(() =>
+  dsVoucher.value.find((v) => v.apDung && Number(v.tienGiam) > 0) || null,
+);
+
 function moTaGiamVoucher(v) {
   if (Number(v.loai) === 1) {
     return `Giảm ${Number(v.giaTri)}%` + (v.giamToiDa ? ` (tối đa ${dinhDangTienViet(v.giamToiDa)})` : '');
@@ -130,14 +135,25 @@ function moTaGiamVoucher(v) {
 
 async function moDanhSachVoucher() {
   hienDsVoucher.value = true;
-  if (dsVoucher.value.length || dangTaiVoucher.value) return;
+  if (dangTaiVoucher.value) return;
   dangTaiVoucher.value = true;
   try {
+    // Luôn tải mới: BE chỉ trả phiếu đang hoạt động -> phiếu đã bị ngừng tự không hiện.
     dsVoucher.value = await layVoucherKhaDung();
   } catch {
     dsVoucher.value = [];
   } finally {
     dangTaiVoucher.value = false;
+  }
+}
+
+// Đồng bộ lại danh sách voucher (vd admin vừa ngừng 1 phiếu -> phiếu đó tự ẩn khỏi danh sách).
+async function taiLaiDsVoucherNeuMo() {
+  if (!hienDsVoucher.value && !dsVoucher.value.length) return;
+  try {
+    dsVoucher.value = await layVoucherKhaDung();
+  } catch {
+    // lỗi mạng -> giữ danh sách hiện tại
   }
 }
 
@@ -151,8 +167,6 @@ async function chonVoucher(v) {
 // VNPay (giả lập)
 const qrVnPay = ref(null); // { token, qrData, maGiaoDich }
 let pollTimer = null;
-let countdownTimer = null;
-const demNguoc = ref(60); // phiên QR sống tối đa 60 giây
 
 // Phí vận chuyển (GHN) - tính lại mỗi khi địa chỉ thay đổi.
 const phiShip = ref(null); // { phiVanChuyen, uocTinh, moTa }
@@ -163,6 +177,14 @@ const tienHang = computed(() =>
   voucher.value ? Number(voucher.value.tongTienSauGiam) : Number(gio.value.tongTien || 0)
 );
 const tongThanhToan = computed(() => tienHang.value + phiShipSo.value);
+
+// Tổng cân nặng đơn (gram) = tổng (cân nặng mỗi giày × số lượng).
+const tongCanNang = computed(() =>
+  (gio.value.items || []).reduce(
+    (tong, it) => tong + Number(it.canNang || 0) * Number(it.soLuong || 0),
+    0,
+  ),
+);
 
 let phiTimer = null;
 async function capNhatPhiShip() {
@@ -226,6 +248,8 @@ async function reSyncGio() {
   }
   // Phiếu đang áp vừa bị ngừng -> gỡ + báo ngay (không đợi tới lúc bấm thanh toán).
   await kiemTraLaiVoucher();
+  // Danh sách voucher: phiếu vừa bị ad ngừng tự ẩn khỏi danh sách (không hiện disabled nữa).
+  await taiLaiDsVoucherNeuMo();
 }
 
 onUnmounted(() => {
@@ -366,15 +390,19 @@ async function hoanTatDatHang(maHoaDon) {
   daDatHang.value = true;
   xoaGioHang();
   gioHangStore.datSoLuong(0);
+  // Popup to giữa màn báo đặt hàng thành công (giống các màn khác), popup sống qua điều hướng.
+  showBigSuccess(`Mã đơn hàng của bạn: <b>${maHoaDon}</b>`, 'Đặt hàng thành công!');
   // Thay vì về trang sản phẩm -> sang màn cảm ơn + tra cứu đơn (hiện mã đơn + chi tiết hóa đơn).
   router.push({ path: '/khachhang/tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
 }
 
+// 1 item đã ngừng bán (admin ngừng SP/biến thể) hoặc hết hàng.
+function itemKhongBan(it) {
+  return it.conBan === false || Number(it.tonKho) <= 0;
+}
 // Giỏ có sản phẩm đã ngừng bán hoặc hết hàng -> không cho đặt.
 function coSanPhamKhongBan() {
-  return (gio.value.items || []).some(
-    (it) => it.conBan === false || Number(it.tonKho) <= 0,
-  );
+  return (gio.value.items || []).some(itemKhongBan);
 }
 
 async function datHangMoi() {
@@ -386,6 +414,14 @@ async function datHangMoi() {
   }
   // Phiếu đang áp có thể vừa bị admin ngừng -> kiểm tra lại trước khi thanh toán.
   if (!(await kiemTraLaiVoucher())) return;
+  // Hộp xác nhận trước khi đặt/thanh toán.
+  const xacNhan = await showConfirm(
+    `Đặt hàng với tổng cộng <b>${dinhDangTienViet(tongThanhToan.value)}</b>?`,
+    'Xác nhận đặt hàng',
+    hinhThucThanhToan.value !== 'COD' ? 'Thanh toán' : 'Đặt hàng',
+    'Hủy',
+  );
+  if (!xacNhan) return;
   if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
     return moThanhToanVnPay();
   }
@@ -421,12 +457,8 @@ const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
 function batDauPoll() {
   dungPoll();
-  demNguoc.value = 60;
-  // Đếm ngược 60s: hết giờ chưa thanh toán -> phiên hết hạn (BE đã hoàn tồn về).
-  countdownTimer = setInterval(() => {
-    demNguoc.value -= 1;
-    if (demNguoc.value <= 0) ngatHetHan();
-  }, 1000);
+  // Không còn đếm ngược: mã QR sống đến khi khách thanh toán hoặc tự hủy
+  // (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn nên không cần hết hạn).
   pollTimer = setInterval(async () => {
     if (!qrVnPay.value) return;
     try {
@@ -448,17 +480,13 @@ function batDauPoll() {
 function ngatHetHan() {
   dungPoll();
   qrVnPay.value = null;
-  showError('Phiên thanh toán đã hết hạn (quá 1 phút). Sản phẩm đã được hoàn lại, vui lòng đặt lại đơn.');
+  showError('Phiên thanh toán không còn hiệu lực, vui lòng đặt lại đơn.');
 }
 
 function dungPoll() {
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
-  }
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
   }
 }
 
@@ -475,8 +503,7 @@ function xuLyAnhLoi(event) {
 <template>
   <main class="invoice-flat bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">Thanh toán</h1>
-      <p class="text-sm text-slate-400 mb-8">Bước 1: Thông tin giao hàng</p>
+      <h1 class="text-3xl font-bold text-slate-900 mb-8">Thanh toán</h1>
 
       <div v-if="dangTai" class="py-24 text-center text-sm text-slate-400">Đang tải...</div>
 
@@ -596,11 +623,14 @@ function xuLyAnhLoi(event) {
         <aside class="h-fit rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
           <h2 class="text-base font-bold text-slate-900 mb-4">Đơn hàng ({{ gio.tongSoLuong }} sản phẩm)</h2>
           <div class="space-y-3 max-h-72 overflow-y-auto pr-1">
-            <div v-for="item in gio.items" :key="item.id" class="flex gap-3">
-              <img :src="item.hinhAnh || anhMacDinh" :alt="item.tenSanPham" class="h-14 w-14 shrink-0 rounded-lg object-cover bg-slate-50" @error="xuLyAnhLoi" />
+            <div v-for="item in gio.items" :key="item.id" class="flex gap-3" :class="{ 'opacity-60': itemKhongBan(item) }">
+              <img :src="item.hinhAnh || anhMacDinh" :alt="item.tenSanPham" class="h-14 w-14 shrink-0 rounded-lg object-cover bg-slate-50" :class="{ grayscale: itemKhongBan(item) }" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800 line-clamp-1">{{ item.tenSanPham }}</p>
                 <p class="text-xs text-slate-400">{{ item.mauSac }} · {{ item.kichCo }} · x{{ item.soLuong }}</p>
+                <p v-if="itemKhongBan(item)" class="mt-0.5 text-[11px] font-semibold text-rose-500">
+                  {{ Number(item.tonKho) <= 0 ? 'Đã hết hàng' : 'Đã ngừng bán' }}
+                </p>
               </div>
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(Number(item.giaBan) * Number(item.soLuong)) }}</p>
             </div>
@@ -608,19 +638,16 @@ function xuLyAnhLoi(event) {
           <!-- Mã giảm giá (khách vãng lai dùng được voucher toàn sàn) -->
           <div class="mt-4 border-t border-slate-100 pt-4">
             <div v-if="!voucher">
-              <div class="flex gap-2">
-                <input
-                  v-model="maVoucher"
-                  type="text"
-                  placeholder="Nhập hoặc chọn mã giảm giá"
-                  class="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  @focus="moDanhSachVoucher"
-                  @keyup.enter="apVoucher"
-                />
-                <button @click="apVoucher" :disabled="dangApVoucher" class="rounded-xl bg-slate-800 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60">
-                  {{ dangApVoucher ? '...' : 'Áp dụng' }}
-                </button>
-              </div>
+              <button
+                @click="moDanhSachVoucher"
+                class="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-primary hover:text-primary"
+              >
+                <span class="flex items-center gap-2">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H5a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V7a2 2 0 0 0-2-2h-4" /><path d="M9 3v18" /></svg>
+                  Chọn voucher
+                </span>
+                <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
 
               <!-- Danh sách voucher khả dụng -->
               <div v-if="hienDsVoucher" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
@@ -640,6 +667,7 @@ function xuLyAnhLoi(event) {
                       <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-1.5">
                           <span class="text-sm font-semibold text-slate-800">{{ moTaGiamVoucher(v) }}</span>
+                          <span v-if="voucherTotNhat && v.phieuId === voucherTotNhat.phieuId" class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">⭐ Tốt nhất</span>
                           <span v-if="v.rieng" class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Của bạn</span>
                         </div>
                         <p class="mt-0.5 text-xs text-slate-500">Mã: <span class="font-medium text-slate-700">{{ v.ma }}</span></p>
@@ -720,11 +748,7 @@ function xuLyAnhLoi(event) {
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
           </div>
-          <div class="mt-2 text-center text-sm">
-            <span class="text-slate-400">Phiên hết hạn sau </span>
-            <span :class="['font-bold', demNguoc <= 10 ? 'text-rose-600' : 'text-slate-700']">{{ demNguoc }}s</span>
-          </div>
-          <p class="mt-1 text-center text-[11px] text-slate-400">Quá 1 phút chưa thanh toán, đơn sẽ tự hủy và hoàn sản phẩm về kho.</p>
+          <p class="mt-2 text-center text-[11px] text-slate-400">Mã QR có hiệu lực đến khi bạn thanh toán hoặc nhấn Hủy.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>

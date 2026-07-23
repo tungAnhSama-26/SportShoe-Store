@@ -73,17 +73,15 @@ public class ClientCheckoutItemService {
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Biến thể sản phẩm không tồn tại: " + id));
             if (!boQuaKiemTon) {
-                // Chặn đặt sản phẩm đã ngừng bán (admin ẩn biến thể) dù còn tồn kho.
-                if (!Integer.valueOf(1).equals(bienThe.getKichHoat())) {
+                // Chặn đặt khi biến thể ngừng bán HOẶC sản phẩm cha không còn kinh doanh (trangThai != 1).
+                if (!Integer.valueOf(1).equals(bienThe.getKichHoat())
+                        || !Integer.valueOf(1).equals(bienThe.getGiay().getTrangThai())) {
                     throw new BusinessException(
                             "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng bán");
                 }
-                inventoryUseCase.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
+                tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             }
-<<<<<<< Updated upstream
             tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
-=======
->>>>>>> Stashed changes
             bienThes.add(bienThe);
         }
 
@@ -132,7 +130,7 @@ public class ClientCheckoutItemService {
             GiayChiTiet bienThe = giayChiTietRepository.findByIdForUpdate(e.getKey())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Biến thể sản phẩm không tồn tại: " + e.getKey()));
-            inventoryUseCase.deductStock(bienThe, e.getValue());
+            tonKhoService.deductStock(bienThe, e.getValue());
             giayChiTietRepository.save(bienThe);
             daGiu.put(e.getKey(), e.getValue());
         }

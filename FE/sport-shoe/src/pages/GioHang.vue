@@ -128,6 +128,7 @@ function thanhTien(item) {
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <router-link :to="`/khachhang/san-pham/${item.giayId}`" class="text-sm font-bold text-slate-900 hover:text-primary line-clamp-2">{{ item.tenSanPham }}</router-link>
+                  <p v-if="item.ma" class="mt-0.5 text-xs text-slate-400">Mã SP: <span class="font-medium text-slate-500">{{ item.ma }}</span></p>
                   <p class="mt-1 text-xs text-slate-400">Màu: {{ item.mauSac }} · Size: {{ item.kichCo }}</p>
                   <div class="mt-1 flex flex-wrap items-center gap-2">
                     <span class="text-sm font-bold text-primary">{{ dinhDangTienViet(item.giaBan) }}</span>

@@ -6,13 +6,19 @@ import { layKhachId, themVaoGio } from '../services/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import { resolveMediaUrl } from '../utils/media';
 import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
+import anhMacDinh from '../assets/login-shoe.png';
 
 const router = useRouter();
 const danhSach = ref([]);
 const dangTai = ref(true);
 const daDangNhap = computed(() => Boolean(layKhachId()));
+
+function xuLyAnhLoi(e) {
+  if (e.target.src !== anhMacDinh) e.target.src = anhMacDinh;
+}
 
 const dangChonDeTra = ref(null);
 const laMoTraHangModal = ref(false);
@@ -118,7 +124,7 @@ const dsTrangThai = [
   { value: 3, label: "Đang giao hàng" },
   { value: 5, label: "Hoàn thành" },
   { value: 6, label: "Đã hủy" },
-  { value: "TRA_HANG", label: "Trả hàng/Hoàn tiền" },
+  { value: "TRA_HANG", label: "Hoàn tiền" },
 ];
 
 const trangThaiDangChon = ref("");
@@ -160,11 +166,11 @@ async function muaLai(don) {
 const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
 
 function laQuaHanTraHang(don) {
-  if (!don || !don.ngayCapNhat) return true;
-  const thoiGianHoanThanh = new Date(don.ngayCapNhat).getTime();
+  if (!don) return true;
+  const mocTime = don.ngayGiao ? new Date(don.ngayGiao).getTime() : (don.ngayCapNhat ? new Date(don.ngayCapNhat).getTime() : new Date().getTime());
   const bayGio = new Date().getTime();
   const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
-  return (bayGio - thoiGianHoanThanh) > thoiHanTraHangMs;
+  return (bayGio - mocTime) > thoiHanTraHangMs;
 }
 
 function moYeuCauTraHang(don) {
@@ -285,9 +291,10 @@ async function guiYeuCauHuy(don) {
               >
                 <!-- Product Image -->
                 <img
-                  :src="sp.hinhAnh"
-                  alt="Product Image"
+                  :src="resolveMediaUrl(sp.hinhAnh) || anhMacDinh"
+                  :alt="sp.ten || 'Sản phẩm'"
                   class="w-16 h-16 object-cover rounded-xl border border-slate-100 bg-slate-50 flex-shrink-0"
+                  @error="xuLyAnhLoi"
                 />
 
                 <!-- Product Details -->
@@ -332,7 +339,7 @@ async function guiYeuCauHuy(don) {
                 </button>
                 <!-- Cho phép gửi lại sau khi phiếu trước bị từ chối/hủy và vẫn còn trong thời hạn trả hàng. -->
                 <button
-                  v-if="don.trangThai === 5 && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
+                  v-if="[4, 5].includes(don.trangThai) && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
                   @click="moYeuCauTraHang(don)"
                   class="px-5 py-2 text-xs md:text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition shadow-sm"
                 >

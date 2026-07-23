@@ -152,6 +152,7 @@ export function showSuccess(text = '', title = 'Thành công!') {
     text: text || undefined,
     timer: 2000,
     iconColor: BRAND_RED,
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 }
 
@@ -170,6 +171,7 @@ export function showError(text = '', title = 'Thất bại!') {
     background: '#ffffff',
     color: '#334155',
     iconColor: BRAND_RED,
+    target: document.getElementById('pos-tablet-screen') || 'body',
     showClass: {
       popup: 'sportshoe-popup-show',
       backdrop: 'swal2-noanimation',
@@ -187,6 +189,40 @@ export function showError(text = '', title = 'Thất bại!') {
   });
 }
 
+/** Popup thành công TO giữa màn hình (giống showError nhưng icon xanh) - dùng cho các mốc lớn như đặt hàng. */
+export function showBigSuccess(text = '', title = 'Thành công!') {
+  ensureAlertStyles();
+
+  return Swal.fire({
+    icon: 'success',
+    title: normalizeSuccessTitle(title),
+    html: text || undefined,
+    toast: false,
+    position: 'center',
+    showConfirmButton: false,
+    timer: 2600,
+    timerProgressBar: true,
+    background: '#ffffff',
+    color: '#334155',
+    iconColor: '#16a34a',
+    target: document.getElementById('pos-tablet-screen') || 'body',
+    showClass: {
+      popup: 'sportshoe-popup-show',
+      backdrop: 'swal2-noanimation',
+    },
+    hideClass: {
+      popup: 'sportshoe-popup-hide',
+      backdrop: 'swal2-noanimation',
+    },
+    customClass: {
+      popup: 'sportshoe-success-popup',
+      title: 'sportshoe-success-title',
+      htmlContainer: 'sportshoe-success-text',
+      timerProgressBar: 'sportshoe-success-progress',
+    },
+  });
+}
+
 export function showToastSuccess(text = '', title = 'Thành công!') {
   return toastSwal.fire({
     icon: 'success',
@@ -194,6 +230,7 @@ export function showToastSuccess(text = '', title = 'Thành công!') {
     text: text || undefined,
     timer: 2000,
     iconColor: BRAND_RED,
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 }
 
@@ -204,6 +241,7 @@ export function showWarning(text = '', title = 'Thông báo') {
     text: text || undefined,
     timer: 4000,
     iconColor: '#f59e0b',
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 }
 
@@ -222,6 +260,7 @@ export async function showConfirm(
     cancelButtonText: cancelText,
     reverseButtons: true,
     focusConfirm: false,
+    target: document.getElementById('pos-tablet-screen') || 'body',
   });
 
   return result.isConfirmed;
@@ -296,6 +335,7 @@ export async function showPaymentConfirmWithCoupon({
       actions: 'gap-3 mt-6 justify-end w-full flex-nowrap',
       closeButton: 'focus:outline-none mt-2 mr-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700 transition'
     },
+    target: document.getElementById('pos-tablet-screen') || 'body',
     buttonsStyling: false
   });
 

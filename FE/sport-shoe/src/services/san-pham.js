@@ -75,16 +75,6 @@ async function layDanhGia(giayId) {
   });
 }
 
-// Gửi đánh giá: payload = { khachHangId, soSao, noiDung }.
-async function guiDanhGia(giayId, payload) {
-  return apiRequest(`/client/san-pham/${giayId}/danh-gia`, {
-    method: "POST",
-    authenticated: false,
-    body: JSON.stringify(payload),
-    fallbackMessage: "Không thể gửi đánh giá",
-  });
-}
-
 // Số liệu thật cho banner trang chủ: { soKhachHang, soSanPham, diemTrungBinh, soDanhGia }.
 async function layThongKeTrangChu() {
   return apiRequest(`/client/thong-ke`, {
@@ -103,6 +93,15 @@ function mapHangNoiBat(h) {
   };
 }
 
+// Trang Đánh giá công khai: { danhSach, trang, tongTrang, tongSo }. soSao=null -> tất cả.
+async function layDanhGiaCongKhai({ soSao = null, trang = 0, kichThuoc = 10 } = {}) {
+  const query = buildQuery({ soSao: soSao || undefined, trang, kichThuoc });
+  return apiRequest(`/client/danh-gia/cong-khai${query}`, {
+    authenticated: false,
+    fallbackMessage: "Không thể tải đánh giá",
+  });
+}
+
 // Lấy các hãng nổi bật nhất từ DB (public, không cần đăng nhập).
 async function layHangNoiBat(limit = 4) {
   const data = await apiRequest(`/client/thuong-hieu/noi-bat${buildQuery({ limit })}`, {
@@ -118,6 +117,6 @@ export {
   layTatCaSanPham,
   layChiTietSanPham,
   layDanhGia,
-  guiDanhGia,
+  layDanhGiaCongKhai,
   layThongKeTrangChu,
 };

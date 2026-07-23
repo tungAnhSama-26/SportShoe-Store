@@ -14,6 +14,7 @@ import com.example.server.infrastructure.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,11 +43,12 @@ public class QuanLyHoaDonController {
             @RequestParam(name = "loaiDon", required = false) String loaiDon,
             @RequestParam(name = "trangThai", required = false) String trangThai,
             @RequestParam(name = "tuNgay", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
-            @RequestParam(name = "denNgay", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay
+            @RequestParam(name = "denNgay", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay,
+            @RequestParam(name = "giaoCaId", required = false) UUID giaoCaId
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy danh sách hóa đơn thành công",
-                quanLyHoaDonService.layDanhSachHoaDon(keyword, loaiDon, trangThai, tuNgay, denNgay)
+                quanLyHoaDonService.layDanhSachHoaDon(keyword, loaiDon, trangThai, tuNgay, denNgay, giaoCaId)
         ));
     }
 
@@ -121,6 +123,14 @@ public class QuanLyHoaDonController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Xác nhận hoàn tiền thành công",
                 quanLyHoaDonService.xacNhanHoanTien(id, request)
+        ));
+    }
+
+    @GetMapping("/{id}/check-mua-lai")
+    public ResponseEntity<ApiResponse<com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse>> checkMuaLai(@PathVariable Integer id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Kiểm tra mua lại thành công",
+                quanLyHoaDonService.checkMuaLai(id)
         ));
     }
 }

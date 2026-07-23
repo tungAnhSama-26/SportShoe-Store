@@ -25,6 +25,19 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
+const formatToLocalDateString = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const gmt7Time = d.getTime() + (7 * 60 * 60 * 1000);
+  const localDate = new Date(gmt7Time);
+  const year = localDate.getUTCFullYear();
+  const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const date = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 export function usePhieuGiamGiaList() {
   const router = useRouter();
   const route = useRoute();
@@ -57,6 +70,7 @@ export function usePhieuGiamGiaList() {
     tuNgay: "",
     denNgay: "",
     loai: "",
+    loaiPhieu: "",
   });
   const boLocKh = ref({
     keyword: "",
@@ -76,7 +90,7 @@ export function usePhieuGiamGiaList() {
   const totalItemsKh = ref(0);
 
   const dsTrangThai = [
-    { label: "Tất cả", value: "" },
+    { label: "Tất cả trạng thái", value: "" },
     { label: "Đang hoạt động", value: "1" },
     { label: "Ngưng hoạt động", value: "0" },
     { label: "Hết hạn", value: "het_han" },
@@ -85,9 +99,15 @@ export function usePhieuGiamGiaList() {
   ];
 
   const dsLoai = [
-    { label: "Tất cả", value: "" },
+    { label: "Tất cả loại giảm", value: "" },
     { label: "Phần trăm", value: "1" },
     { label: "Tiền mặt", value: "2" },
+  ];
+
+  const dsLoaiPhieu = [
+    { label: "Tất cả hình thức", value: "" },
+    { label: "Công khai", value: "1" },
+    { label: "Cá nhân", value: "2" },
   ];
 
   function isHetHan(ngayKetThuc) {
@@ -96,8 +116,8 @@ export function usePhieuGiamGiaList() {
     homNay.setHours(0, 0, 0, 0);
     const ngayKT = new Date(ngayKetThuc);
     ngayKT.setHours(0, 0, 0, 0);
-    // Hết hạn nếu ngayKetThuc <= homNay (bao gồm cả hôm nay)
-    return ngayKT <= homNay;
+    // Hết hạn nếu ngayKetThuc < homNay (hết hôm nay mới tính là hết hạn)
+    return ngayKT < homNay;
   }
 
   function mauTrangThai(trangThai, ngayKetThuc) {
@@ -118,6 +138,22 @@ export function usePhieuGiamGiaList() {
     if (status === 3) return "Hết số lượng";
     if (status === 4) return "Sắp diễn ra";
     return "Ngưng hoạt động";
+  }
+
+  function statusTextKh(trangThai) {
+    const status = Number(trangThai);
+    if (status === 1) return "Chưa sử dụng";
+    if (status === 0) return "Đã sử dụng";
+    if (status === 2) return "Hết hạn";
+    return "Không hoạt động";
+  }
+
+  function mauTrangThaiKh(trangThai) {
+    const status = Number(trangThai);
+    if (status === 1) return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100";
+    if (status === 0) return "bg-blue-50 text-blue-600 ring-1 ring-blue-100";
+    if (status === 2) return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
+    return "bg-rose-50 text-rose-600 ring-1 ring-rose-100";
   }
 
   function loaiGiamText(loai) {
@@ -161,12 +197,14 @@ export function usePhieuGiamGiaList() {
   }
 
   function soLuongDaDung(item) {
-    return Number(item?.soLuongDaDung || 0);
+    return Number(item?.soLuongDaDung || 0).toLocaleString("vi-VN");
   }
 
   function soLuongConLai(item) {
     if (Number(item?.soLuong || 0) === 999999) return "Vô hạn";
-    return Math.max(Number(item?.soLuong || 0) - soLuongDaDung(item), 0);
+    const used = Number(item?.soLuongDaDung || 0);
+    const total = Number(item?.soLuong || 0);
+    return Math.max(total - used, 0).toLocaleString("vi-VN");
   }
 
   watch(activeTab, (newTab) => {
@@ -194,10 +232,25 @@ export function usePhieuGiamGiaList() {
 
   watch(trangHienTaiKh, taiDanhSachKh);
 
+  const todayStr = computed(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+  });
+
   let timer;
   watch(
     boLoc,
     () => {
+      const today = todayStr.value;
+      if (boLoc.value.tuNgay && boLoc.value.tuNgay > today) {
+        boLoc.value.tuNgay = today;
+      }
+      if (boLoc.value.tuNgay && boLoc.value.denNgay && boLoc.value.tuNgay > boLoc.value.denNgay) {
+        boLoc.value.denNgay = boLoc.value.tuNgay;
+      }
       clearTimeout(timer);
       timer = setTimeout(() => {
         trangHienTai.value = 1;
@@ -247,6 +300,7 @@ export function usePhieuGiamGiaList() {
           ? Number(boLoc.value.trangThai)
           : undefined,
         loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+        loaiPhieu: boLoc.value.loaiPhieu !== "" ? Number(boLoc.value.loaiPhieu) : undefined,
         tuNgay: boLoc.value.tuNgay || undefined,
         denNgay: boLoc.value.denNgay || undefined,
         pageNo: needFetchAll ? 0 : (trangHienTai.value - 1),
@@ -332,6 +386,7 @@ export function usePhieuGiamGiaList() {
         tuNgay: "",
         denNgay: "",
         loai: "",
+        loaiPhieu: "",
       };
       return;
     }
@@ -358,8 +413,8 @@ export function usePhieuGiamGiaList() {
         giaTri: item.giaTri,
         giaTriToiThieu: item.giaTriToiThieu || null,
         giamToiDa: item.giamToiDa || null,
-        ngayBatDau: item.ngayBatDau,
-        ngayKetThuc: item.ngayKetThuc,
+        ngayBatDau: formatToLocalDateString(item.ngayBatDau),
+        ngayKetThuc: formatToLocalDateString(item.ngayKetThuc),
         soLuong: item.soLuong,
         soLuongDaDung: item.soLuongDaDung || 0,
         trangThai: nextStatus,
@@ -389,6 +444,7 @@ export function usePhieuGiamGiaList() {
       const nextStatus = 0;
       await updatePhieuGiamGiaKhachHang(item.id, {
         ...item,
+        ngaySuDung: item.ngaySuDung ? formatToLocalDateString(item.ngaySuDung) : null,
         trangThai: nextStatus,
       });
       hienThiThongBao(
@@ -443,6 +499,7 @@ export function usePhieuGiamGiaList() {
               ? Number(boLoc.value.trangThai)
               : undefined,
           loai: boLoc.value.loai !== "" ? Number(boLoc.value.loai) : undefined,
+          loaiPhieu: boLoc.value.loaiPhieu !== "" ? Number(boLoc.value.loaiPhieu) : undefined,
           tuNgay: boLoc.value.tuNgay || undefined,
           denNgay: boLoc.value.denNgay || undefined,
           pageNo: 0,
@@ -490,7 +547,7 @@ export function usePhieuGiamGiaList() {
               value: (row) =>
                 Number(row.soLuong || 0) === 999999
                   ? "Vô hạn"
-                  : Number(row.soLuong || 0),
+                  : Number(row.soLuong || 0).toLocaleString("vi-VN"),
             },
             { label: "Đã dùng", value: (row) => soLuongDaDung(row) },
             { label: "Còn lại", value: (row) => soLuongConLai(row) },
@@ -539,7 +596,7 @@ export function usePhieuGiamGiaList() {
           },
           { label: "Ngày tặng", value: (row) => toDisplayDate(row.ngayTao) },
           { label: "Ngày dùng", value: (row) => toDisplayDate(row.ngaySuDung) },
-          { label: "Trạng thái", value: (row) => statusText(row.trangThai) },
+          { label: "Trạng thái", value: (row) => statusTextKh(row.trangThai) },
         ],
         rows,
       });
@@ -565,5 +622,5 @@ export function usePhieuGiamGiaList() {
     taiDanhSach();
   });
 
-  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, isHetHan, mauTrangThai, statusText, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel };
+  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, dsLoaiPhieu, isHetHan, mauTrangThai, statusText, statusTextKh, mauTrangThaiKh, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel, todayStr };
 }

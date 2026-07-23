@@ -65,6 +65,26 @@ export function LogicSanPham({
     return Array.from(categories).sort();
   });
 
+  const boLocMauSacDaChon = ref("");
+  const boLocKichCoDaChon = ref("");
+
+  const mauSacCoSan = computed(() => {
+    const colors = new Set();
+    ketQuaBienTheSanPham.value.forEach(p => {
+      if (p.mauSac) colors.add(p.mauSac);
+      else if (p.maBienThe) colors.add(p.maBienThe);
+    });
+    return Array.from(colors).sort();
+  });
+
+  const kichCoCoSan = computed(() => {
+    const sizes = new Set();
+    ketQuaBienTheSanPham.value.forEach(p => {
+      if (p.kichCo) sizes.add(p.kichCo);
+    });
+    return Array.from(sizes).sort();
+  });
+
   const ketQuaSanPham = computed(() => {
     let filtered = ketQuaBienTheSanPham.value;
     
@@ -76,6 +96,14 @@ export function LogicSanPham({
       filtered = filtered.filter(p => p.loaiGiay === boLocDanhMucDaChon.value);
     }
 
+    if (boLocMauSacDaChon.value) {
+      filtered = filtered.filter(p => (p.mauSac || p.maBienThe) === boLocMauSacDaChon.value);
+    }
+
+    if (boLocKichCoDaChon.value) {
+      filtered = filtered.filter(p => p.kichCo === boLocKichCoDaChon.value);
+    }
+
     if (giaThapNhatDaChon.value > 0 || giaCaoNhatDaChon.value < giaCaoNhatCoSan.value) {
       filtered = filtered.filter(p => {
         const price = Number(p.giaBan || 0);
@@ -83,13 +111,19 @@ export function LogicSanPham({
       });
     }
     
-    return nhomBienTheSanPham(filtered);
+    return filtered.map(p => ({
+      ...p,
+      minPrice: Number(p.giaBan || 0),
+      maxPrice: Number(p.giaBan || 0),
+      coGiamGia: Number(p.giaBan || 0) < Number(p.giaGoc || 0),
+      _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
+    })).filter(p => p._soLuongHienTai > 0);
   });
 
   const tongSoMuc = computed(() => ketQuaSanPham.value.length);
   const tongSoTrang = computed(() => Math.ceil(tongSoMuc.value / kichThuocTrang.value) || 1);
   
-  watch([boLocThuongHieuDaChon, boLocDanhMucDaChon, giaThapNhatDaChon, giaCaoNhatDaChon, tuKhoaSanPham], () => {
+  watch([boLocThuongHieuDaChon, boLocDanhMucDaChon, boLocMauSacDaChon, boLocKichCoDaChon, giaThapNhatDaChon, giaCaoNhatDaChon, tuKhoaSanPham], () => {
     trangHienTai.value = 1;
   });
   
@@ -105,7 +139,10 @@ export function LogicSanPham({
     return ketQuaBienTheSanPham.value.filter(
       (product) => product.maSanPham === chiTietSanPhamDaChon.value?.maSanPham &&
         product.tenSanPham === chiTietSanPhamDaChon.value?.tenSanPham
-    );
+    ).map(p => ({
+      ...p,
+      _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
+    })).filter(p => p._soLuongHienTai > 0);
   });
   const luaChonMauSac = computed(() => {
     const grouped = new Map();
@@ -253,11 +290,23 @@ export function LogicSanPham({
     soLuongDaChon.value = 1;
   }
 
+  function lamMoiBoLoc() {
+    boLocThuongHieuDaChon.value = "";
+    boLocDanhMucDaChon.value = "";
+    boLocMauSacDaChon.value = "";
+    boLocKichCoDaChon.value = "";
+    giaThapNhatDaChon.value = 0;
+    giaCaoNhatDaChon.value = giaCaoNhatCoSan.value;
+    tuKhoaSanPham.value = "";
+  }
+
   function dongChiTietSanPham() {
     chiTietSanPhamDaChon.value = null;
     mauSacDaChon.value = "";
     kichCoDaChon.value = "";
     soLuongDaChon.value = 1;
+    // Không đóng hienThiDanhSachSanPham và không gọi lamMoiBoLoc ở đây
+    // để người dùng có thể tiếp tục chọn sản phẩm khác
   }
 
   async function xuLyQuetQrSanPham(rawValue) {
@@ -281,12 +330,20 @@ export function LogicSanPham({
         return;
       }
 
-      // 1. Try exact match first
+      // 1. Cố gắng tìm biến thể chính xác
       const exactVariant = timBienTheChinhXacTheoMa(products, keyword);
       console.log("Biến thể chính xác:", exactVariant);
       
-      if (exactVariant) {
-        const result = themSanPham(exactVariant, 1, {
+      // Theo yêu cầu: trả về giỏ hàng luôn (tự động chọn biến thể đầu tiên nếu không khớp chính xác)
+      let variantToAdd = exactVariant;
+      
+      if (!variantToAdd && products.length > 0) {
+        variantToAdd = products[0];
+        console.log("Tự động chọn biến thể đầu tiên để trả về giỏ hàng:", variantToAdd);
+      }
+      
+      if (variantToAdd) {
+        const result = themSanPham(variantToAdd, 1, {
           preserveProductSearch: true,
           scannedKeyword: keyword,
           scannedProducts: products,
@@ -294,9 +351,14 @@ export function LogicSanPham({
         console.log("Kết quả themSanPham:", result);
         
         if (!result) {
-          showError(`Không thể thêm sản phẩm ${keyword} vào giỏ hàng dù đã tìm thấy.`);
+          // themSanPham đã tự hiển thị thông báo lỗi (vd: vượt giới hạn tồn kho)
+          // Vẫn giữ hiển thị danh sách sản phẩm để user thấy trạng thái "Hết hàng"
+          hienThiDanhSachSanPham.value = true;
           return;
         }
+
+        hienThiDanhSachSanPham.value = false;
+        lamMoiBoLoc();
 
         if (result.status === "added") {
           showSuccess(`Đã thêm "${result.tenSanPham}" vào giỏ hàng.`, "Thành công!");
@@ -312,16 +374,6 @@ export function LogicSanPham({
         }
         return;
       }
-
-      // 2. If it's a general keyword, let the user choose
-      showWarning(`Mã ${keyword} tìm thấy ${products.length} biến thể nhưng không khớp chính xác. Vui lòng chọn thủ công.`);
-      const groupedProducts = nhomBienTheSanPham(products);
-      if (groupedProducts.length === 1) {
-        moChiTietSanPham(groupedProducts[0]);
-        return;
-      }
-
-      hienThiDanhSachSanPham.value = true;
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "Có lỗi khi xử lý mã quét";
       showError(errMsg);
@@ -338,6 +390,13 @@ export function LogicSanPham({
 
   function chonKichCo(value) {
     kichCoDaChon.value = value;
+    soLuongDaChon.value = 1;
+  }
+
+  function chonBienThe(variant) {
+    if (!variant) return;
+    mauSacDaChon.value = variant.mauSac || variant.maBienThe;
+    kichCoDaChon.value = variant.kichCo || "";
     soLuongDaChon.value = 1;
   }
 
@@ -396,6 +455,30 @@ export function LogicSanPham({
     }, 250);
   });
 
+  function themTrucTiepBienThe(product) {
+    if (!product) return;
+    const result = themSanPham(product, 1, {
+      preserveProductSearch: false // Không ghi đè danh sách sản phẩm bằng 1 sản phẩm này
+    });
+    
+    // Không đóng hienThiDanhSachSanPham.value = false;
+    // Không làm mới bộ lọc: lamMoiBoLoc();
+    if (!result) {
+      showError(`Không thể thêm sản phẩm vào giỏ hàng.`);
+      return;
+    }
+    if (result.status === "added") {
+      showSuccess(`Đã thêm "${result.tenSanPham}" vào giỏ hàng.`, "Thành công!");
+    } else if (result.status === "incremented") {
+      showSuccess(`Sản phẩm "${result.tenSanPham}" đã có trong giỏ hàng, đã tăng số lượng.`, "Thành công!");
+    } else if (result.status === "price_updated") {
+      const formatPrice = (price) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+      const oldFormatted = formatPrice(result.oldPrice);
+      const newFormatted = formatPrice(result.newPrice);
+      showWarning(`Giá sản phẩm "${result.tenSanPham}" đã được cập nhật từ ${oldFormatted} lên ${newFormatted}.`, "Thông báo đổi giá");
+    }
+  }
+
   return {
     tuKhoaSanPham,
     ketQuaBienTheSanPham,
@@ -414,11 +497,15 @@ export function LogicSanPham({
     tongSoTrang,
     boLocThuongHieuDaChon,
     boLocDanhMucDaChon,
+    boLocMauSacDaChon,
+    boLocKichCoDaChon,
     giaThapNhatDaChon,
     giaCaoNhatDaChon,
     giaCaoNhatCoSan,
     thuongHieuCoSan,
     danhMucCoSan,
+    mauSacCoSan,
+    kichCoCoSan,
     bienTheLienQuan,
     luaChonMauSac,
     luaChonKichCo,
@@ -433,9 +520,11 @@ export function LogicSanPham({
     laySoLuongTonHienTai,
     moChiTietSanPham,
     dongChiTietSanPham,
+    themTrucTiepBienThe,
     xuLyQuetQrSanPham,
     chonMauSac,
     chonKichCo,
+    chonBienThe,
     giamSoLuongChiTiet,
     tangSoLuongChiTiet,
     capNhatSoLuongChiTiet,

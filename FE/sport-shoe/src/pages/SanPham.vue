@@ -5,6 +5,7 @@ import Card from '../components/ui/Card.vue';
 import { layTatCaSanPham } from '../services/san-pham';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import anhMacDinh from '../assets/login-shoe.png';
+import { resolveHinhAnh } from '../utils/resolve-image';
 
 const tatCaSanPham = ref([]);
 const dangTai = ref(true);
@@ -131,9 +132,6 @@ function xuLyAnhLoi(event) {
         <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
           {{ tuKhoaTen.trim() ? `Kết quả cho "${tuKhoaTen.trim()}"` : 'Tất cả sản phẩm' }}
         </h1>
-        <p class="text-slate-400 max-w-xl text-sm md:text-base">
-          {{ tuKhoaTen.trim() ? `Các sản phẩm có tên khớp với "${tuKhoaTen.trim()}".` : 'Khám phá toàn bộ các mẫu giày đang được bán tại cửa hàng, được thiết kế cho mọi nhu cầu và phong cách.' }}
-        </p>
       </div>
     </section>
 
@@ -216,7 +214,7 @@ function xuLyAnhLoi(event) {
               class="group overflow-hidden cursor-pointer flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-none bg-white h-full"
             >
               <div class="relative aspect-square overflow-hidden bg-slate-100">
-                <img :src="sp.hinhAnh" :alt="sp.ten" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
+                <img :src="resolveHinhAnh(sp.hinhAnh)" :alt="sp.ten" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
                 <span v-if="sp.nhan" class="absolute left-3 top-3 rounded-md bg-red-600 px-2.5 py-1 text-xs font-extrabold text-white shadow-md">{{ sp.nhan }}</span>
               </div>
               <div class="p-4 flex flex-col flex-1">

@@ -17,7 +17,8 @@ public record DonHangTomTatResponse(
         Integer phieuTraHangId,
         Integer trangThaiTraHang,
         String trangThaiTraHangText,
-        Instant ngayCapNhat
+        Instant ngayCapNhat,
+        Instant ngayGiao
 ) {
     public record DongSanPhamTomTat(
             Integer hoaDonChiTietId,

@@ -28,6 +28,35 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("moc") Instant moc
     );
 
+    /** Đơn đã Hoàn thành nhưng khách chưa bấm "Đã nhận hàng" và đã quá mốc (để tự xác nhận). */
+    @Query("""
+            select hd from HoaDon hd
+            where hd.trangThai = :trangThai
+              and (hd.daNhanHang is null or hd.daNhanHang = false)
+              and hd.ngayCapNhat < :moc
+            """)
+    List<HoaDon> findDonHoanThanhChuaNhanQuaHan(
+            @Param("trangThai") Integer trangThai,
+            @Param("moc") Instant moc
+    );
+
+    /** Đơn đã giao và thanh toán thành công nhưng chưa bấm nhận quá 3 ngày kể từ khi THỎA MÃN CẢ HAI điều kiện. */
+    @Query("""
+            select hd from HoaDon hd
+            where hd.trangThai = 4
+              and hd.ngayThanhToan is not null
+              and hd.ngayThanhToan <= :moc
+              and coalesce(
+                  (select vc.ngayGiaoThat from VanChuyen vc where vc.hoaDon.id = hd.id),
+                  hd.ngayCapNhat,
+                  hd.ngayTao
+              ) <= :moc
+            """)
+    List<HoaDon> findDonDaGiaoDaThanhToanQuaHan(
+            @Param("moc") Instant moc
+    );
+
+
     /** Các giỏ đang giữ hàng đã quá hạn (để scheduler hoàn tồn). */
     List<HoaDon> findByTrangThaiAndHanGiuHangIsNotNullAndHanGiuHangBefore(Integer trangThai, Instant moc);
 

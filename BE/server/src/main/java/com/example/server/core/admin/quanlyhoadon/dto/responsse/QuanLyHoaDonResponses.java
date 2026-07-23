@@ -24,7 +24,8 @@ public final class QuanLyHoaDonResponses {
             String emailKhachHang,
             Integer phieuTraHangId,
             Integer trangThaiPhieuTraHang,
-            String trangThaiPhieuTraHangText
+            String trangThaiPhieuTraHangText,
+            String phuongThucThanhToan
     ) {
     }
 
@@ -52,16 +53,22 @@ public final class QuanLyHoaDonResponses {
 
     public record HoaDonProductResponse(
             Integer id,
+            Integer giayChiTietId,
+            String maBienThe,
             String tenSanPham,
             String phanLoai,
             String mauSac,
             String kichCo,
             Integer soLuong,
             BigDecimal donGia,
+            BigDecimal giaBanChiTiet,
             BigDecimal thanhTien,
-            String hinhAnh
+            String hinhAnh,
+            String tenDotGiamGia,
+            BigDecimal giaTriGiamDotGiamGia
     ) {
     }
+
 
     public record HoaDonDetailResponse(
             Integer id,
@@ -86,6 +93,7 @@ public final class QuanLyHoaDonResponses {
             BigDecimal giaTriGiamGia,
             String donViVanChuyen,
             String maVanDon,
+            String lyDoGiaoHangThatBai,
             List<HoaDonPaymentHistoryResponse> lichSuThanhToan,
             List<HoaDonProductResponse> sanPham,
             List<HoaDonHistoryResponse> lichSuHoaDon,

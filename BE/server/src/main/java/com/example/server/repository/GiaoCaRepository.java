@@ -19,6 +19,8 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     Optional<GiaoCa> findByNhanVienTrongCaIdAndTrangThai(UUID nhanVienId, String trangThai);
 
+    Optional<GiaoCa> findFirstByTrangThaiInOrderByThoiGianVaoDesc(List<String> trangThai);
+
     List<GiaoCa> findByNhanVienNhanIdAndTrangThaiOrderByThoiGianVaoDesc(UUID nhanVienId, String trangThai);
 
     @Query("SELECT g FROM GiaoCa g WHERE " +
@@ -36,29 +38,21 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     @Query("SELECT COALESCE(SUM(CASE WHEN t.loaiGiaoDich = 1 THEN t.soTien ELSE -t.soTien END), 0) " +
            "FROM ThanhToan t JOIN t.hoaDon h " +
-           "WHERE t.nhanVien.id = :nhanVienId " +
+           "WHERE h.giaoCa.id = :giaoCaId " +
            "AND t.trangThai = 1 " +
            "AND h.kenhBan = 1 " +
-           "AND t.hinhThuc = 1 " + // Cash
-           "AND t.ngayTao >= :thoiGianVao " +
-           "AND (t.ngayTao <= :thoiGianRa OR :thoiGianRa IS NULL)")
+           "AND t.hinhThuc = 1")
     BigDecimal calculateTienMatTrongCa(
-            @Param("nhanVienId") UUID nhanVienId,
-            @Param("thoiGianVao") Instant thoiGianVao,
-            @Param("thoiGianRa") Instant thoiGianRa
+            @Param("giaoCaId") UUID giaoCaId
     );
 
     @Query("SELECT COALESCE(SUM(CASE WHEN t.loaiGiaoDich = 1 THEN t.soTien ELSE -t.soTien END), 0) " +
            "FROM ThanhToan t JOIN t.hoaDon h " +
-           "WHERE t.nhanVien.id = :nhanVienId " +
+           "WHERE h.giaoCa.id = :giaoCaId " +
            "AND t.trangThai = 1 " +
            "AND h.kenhBan = 1 " +
-           "AND t.hinhThuc != 1 " + // Cashless
-           "AND t.ngayTao >= :thoiGianVao " +
-           "AND (t.ngayTao <= :thoiGianRa OR :thoiGianRa IS NULL)")
+           "AND t.hinhThuc != 1")
     BigDecimal calculateTienChuyenKhoanTrongCa(
-            @Param("nhanVienId") UUID nhanVienId,
-            @Param("thoiGianVao") Instant thoiGianVao,
-            @Param("thoiGianRa") Instant thoiGianRa
+            @Param("giaoCaId") UUID giaoCaId
     );
 }

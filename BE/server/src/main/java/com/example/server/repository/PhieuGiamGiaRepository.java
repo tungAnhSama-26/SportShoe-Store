@@ -94,10 +94,10 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     WHERE (:keyword IS NULL 
         OR LOWER(phieuGG.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) 
         OR LOWER(phieuGG.ten) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        OR CAST(phieuGG.giaTri AS string) LIKE CONCAT('%', :keyword, '%')
-        OR CAST(phieuGG.soLuong AS string) LIKE CONCAT('%', :keyword, '%'))
+        OR CAST(phieuGG.giaTri AS string) LIKE CONCAT('%', :keyword, '%'))
     AND (:trangThai IS NULL OR phieuGG.trangThai = :trangThai)
     AND (:loai IS NULL OR phieuGG.loai = :loai)
+    AND (:loaiPhieu IS NULL OR phieuGG.loaiPhieu = :loaiPhieu)
     AND (CAST(:tuNgay AS timestamp) IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
     AND (CAST(:denNgay AS timestamp) IS NULL OR phieuGG.ngayKetThuc <= :denNgay)
     ORDER BY phieuGG.ngayTao DESC, phieuGG.id DESC
@@ -106,6 +106,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             @Param("keyword") String keyword, 
             @Param("trangThai") Integer trangThai, 
             @Param("loai") Integer loai, 
+            @Param("loaiPhieu") Integer loaiPhieu, 
             @Param("tuNgay") java.time.Instant tuNgay, 
             @Param("denNgay") java.time.Instant denNgay, 
             Pageable pageable);

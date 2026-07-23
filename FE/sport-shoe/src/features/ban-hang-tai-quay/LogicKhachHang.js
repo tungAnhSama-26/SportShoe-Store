@@ -1,12 +1,7 @@
 import { computed, ref, watch } from "vue";
 import { showError } from "../../utils/alert";
 import { timKhachHangTheoSoDienThoai } from "../../services/ban-hang-tai-quay";
-import {
-  KHACH_VANG_LAI,
-  AN_THONG_TIN,
-  CHUA_CHON_KHACH,
-  CHON_KHACH_HOAC_VANG_LAI
-} from "./HangSo";
+import {KHACH_VANG_LAI,AN_THONG_TIN,CHUA_CHON_KHACH,CHON_KHACH_HOAC_VANG_LAI} from "./HangSo";
 
 export function LogicKhachHang({
   hoaDonChoDaChon,
@@ -70,7 +65,7 @@ export function LogicKhachHang({
     if (!sdtNguoiNhanGiaoHang.value.trim()) {
       sdtNguoiNhanGiaoHang.value = customer.sdt || "";
     }
-    if (diaChiGiaoHang && !diaChiGiaoHang.value.trim() && customer.diaChiMacDinh) {
+    if (diaChiGiaoHang && (!diaChiGiaoHang.value || (typeof diaChiGiaoHang.value === 'string' && !diaChiGiaoHang.value.trim())) && customer.diaChiMacDinh) {
       diaChiGiaoHang.value = customer.diaChiMacDinh;
     }
     ketQuaTimKiemKhachHang.value = [];
@@ -82,6 +77,9 @@ export function LogicKhachHang({
   function boChonKhachHang() {
     khachHangDuocChon.value = null;
     tuKhoaKhachHang.value = "";
+    if (tenNguoiNhanGiaoHang) tenNguoiNhanGiaoHang.value = "";
+    if (sdtNguoiNhanGiaoHang) sdtNguoiNhanGiaoHang.value = "";
+    if (diaChiGiaoHang) diaChiGiaoHang.value = "";
     ketQuaTimKiemKhachHang.value = [];
     hienThiDanhSachKhachHang.value = false;
     danhDauCanApDungLaiPhieu();
@@ -114,7 +112,7 @@ export function LogicKhachHang({
   function dongDanhSachKhachHang() {
     window.setTimeout(() => {
       hienThiDanhSachKhachHang.value = false;
-    }, 150);
+    }, 250);
   }
 
   function xoaBoDemThoiGianKhachHang() {

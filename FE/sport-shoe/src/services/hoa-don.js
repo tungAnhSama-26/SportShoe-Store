@@ -16,6 +16,7 @@ export function layDanhSachHoaDon(filters) {
   if (filters?.trangThai?.trim() && filters.trangThai.trim() !== "Tất cả") params.set("trangThai", filters.trangThai.trim());
   if (filters?.tuNgay?.trim()) params.set("tuNgay", filters.tuNgay.trim());
   if (filters?.denNgay?.trim()) params.set("denNgay", filters.denNgay.trim());
+  if (filters?.giaoCaId) params.set("giaoCaId", filters.giaoCaId);
   const query = params.toString();
   return request(`/admin/hoa-don${query ? `?${query}` : ""}`);
 }
@@ -104,4 +105,8 @@ export function xacNhanHoanTien(id, payload) {
     });
     return hoaDon;
   });
+}
+
+export function checkMuaLai(id) {
+  return request(`/admin/hoa-don/${id}/check-mua-lai`);
 }
