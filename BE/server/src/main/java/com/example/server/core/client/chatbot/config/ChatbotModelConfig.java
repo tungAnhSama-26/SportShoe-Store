@@ -349,7 +349,7 @@ public class ChatbotModelConfig {
 
         public boolean containsKey(Object key) {
             if (key instanceof String) {
-                return this.containsHeader((String) key);
+                return super.containsKey(key);
             }
             return false;
         }
