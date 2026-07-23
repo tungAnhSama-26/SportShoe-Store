@@ -47,7 +47,7 @@ const TRANG_THAI_DAC_BIET = Object.freeze({
     lopMau: 'bg-amber-50 text-amber-700',
   },
   8: {
-    tieuDe: 'Trả hàng / Hoàn tiền',
+    tieuDe: 'Hoàn tiền',
     moTa: 'Đơn hàng đã hủy thành công. Cửa hàng đang tiến hành hoàn phí cho bạn.',
     lopMau: 'bg-rose-50 text-rose-600 border border-rose-100',
   },
