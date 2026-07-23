@@ -44,14 +44,7 @@ public class MauSacService {
             if (existing.getTrangThai() != null && existing.getTrangThai() == 1) {
                 throw new BusinessException("Màu sắc '" + ten + "' đã tồn tại và đang hoạt động.");
             } else {
-                // If it is disabled, reactivate it
-                existing.setTrangThai(1);
-                // Also update MaMauHex if provided
-                if (req.maMauHex() != null && !req.maMauHex().isBlank()) {
-                    existing.setMaMauHex(req.maMauHex());
-                }
-                existing.setNgayCapNhat(Instant.now());
-                return toMauSac(mauSacRepository.save(existing));
+                throw new BusinessException("Màu sắc '" + ten + "' đã tồn tại nhưng đang ngừng hoạt động. Vui lòng kích hoạt lại trong Quản lý thuộc tính.");
             }
         }
 

@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.server.infrastructure.security.ratelimit.RateLimit;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -36,6 +38,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @RateLimit(limit = 10, durationInSeconds = 60)
     public ResponseEntity<ApiResponse<CustomerLoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Đăng nhập thành công",
@@ -44,6 +47,7 @@ public class AuthController {
     }
 
     @PostMapping("/admin/login")
+    @RateLimit(limit = 10, durationInSeconds = 60)
     public ResponseEntity<ApiResponse<AdminLoginResponse>> adminLogin(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Đăng nhập admin thành công",
@@ -52,6 +56,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @RateLimit(limit = 5, durationInSeconds = 60)
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
         registrationService.register(request);
         return ResponseEntity.ok(ApiResponse.success(
@@ -61,6 +66,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
+    @RateLimit(limit = 3, durationInSeconds = 60)
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetService.forgotPassword(request);
         return ResponseEntity.ok(ApiResponse.success(
@@ -70,6 +76,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
+    @RateLimit(limit = 5, durationInSeconds = 60)
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success(
@@ -77,4 +84,5 @@ public class AuthController {
                 null
         ));
     }
+
 }

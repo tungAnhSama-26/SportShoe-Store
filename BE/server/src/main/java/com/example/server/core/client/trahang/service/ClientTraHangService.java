@@ -8,6 +8,7 @@ import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,6 +31,7 @@ public class ClientTraHangService {
     private final HinhAnhTraHangRepository hinhAnhTraHangRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final TraHangPolicy traHangPolicy;
+    private final ThongBaoService thongBaoService;
 
     public ClientTraHangService(
             HoaDonRepository hoaDonRepository,
@@ -39,7 +41,8 @@ public class ClientTraHangService {
             LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository,
             HinhAnhTraHangRepository hinhAnhTraHangRepository,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
-            TraHangPolicy traHangPolicy
+            TraHangPolicy traHangPolicy,
+            ThongBaoService thongBaoService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -49,6 +52,7 @@ public class ClientTraHangService {
         this.hinhAnhTraHangRepository = hinhAnhTraHangRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.traHangPolicy = traHangPolicy;
+        this.thongBaoService = thongBaoService;
     }
 
     @Transactional
@@ -59,6 +63,8 @@ public class ClientTraHangService {
         if (hoaDon.getKhachHang() == null || !hoaDon.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Hóa đơn này không thuộc về bạn");
         }
+
+
 
         traHangPolicy.kiemTraHoaDonChoKhachHang(hoaDon);
 
@@ -174,5 +180,18 @@ public class ClientTraHangService {
         ls.setNgayTao(now);
         lichSuPhieuTraHangRepository.save(ls);
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRA_HANG");
+
+        // Trigger return/refund request notification
+        try {
+            String tenKH = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getHoTen() : "Khách hàng";
+            thongBaoService.taoThongBao(
+                    "Yêu cầu trả hàng mới",
+                    "Khách hàng \"" + tenKH + "\" đã gửi yêu cầu trả hàng/hoàn tiền cho đơn hàng #" + hoaDon.getMa() + ".",
+                    "REFUND",
+                    "/admin/tra-hang"
+            );
+        } catch (Exception e) {
+            System.err.println("[ClientTraHangService] Lỗi tạo thông báo trả hàng: " + e.getMessage());
+        }
     }
 }

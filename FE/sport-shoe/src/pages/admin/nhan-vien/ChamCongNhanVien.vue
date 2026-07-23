@@ -452,19 +452,18 @@ const caTimeLimits = computed(() => {
   
   const opening = new Date(start.getTime() - 30 * 60 * 1000);
   const startPlus5 = new Date(start.getTime() + 5 * 60 * 1000);
-  const midpoint = new Date(start.getTime() + 2 * 60 * 60 * 1000);
   
-  return { start, end, opening, startPlus5, midpoint };
+  return { start, end, opening, startPlus5 };
 });
 
 const currentGateStatus = computed(() => {
   if (!caTimeLimits.value) return null;
   const now = new Date(Date.now() + clockOffset.value);
-  const { opening, startPlus5, midpoint } = caTimeLimits.value;
+  const { opening, startPlus5, end } = caTimeLimits.value;
   
   if (now < opening) return 'VUNG_SOM';
   if (now >= opening && now <= startPlus5) return 'VUNG_XANH';
-  if (now > startPlus5 && now <= midpoint) return 'VUNG_CAM';
+  if (now > startPlus5 && now <= end) return 'VUNG_CAM';
   return 'VUNG_DO';
 });
 
@@ -780,6 +779,12 @@ async function taiLichSuToanBo() {
           trangThaiVao: r.trangThaiVao,
           trangThaiRa: r.trangThaiRa
         };
+      })
+      .sort((a, b) => {
+        const dateComp = b.ngay.localeCompare(a.ngay);
+        if (dateComp !== 0) return dateComp;
+        const caOrder = { 'toi': 3, 'chieu': 2, 'sang': 1 };
+        return (caOrder[b.ca] || 0) - (caOrder[a.ca] || 0);
       });
   } catch (error) {
     showError(getDisplayErrorMessage(error, "Không thể tải lịch sử chấm công"));

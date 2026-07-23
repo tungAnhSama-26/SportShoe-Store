@@ -56,17 +56,22 @@ defineProps({
 
 const emit = defineEmits(["add", "change-page-size", "export", "go-page", "search", "update:keyword"]);
 
+let timeout = null;
 function onKeywordInput(event) {
   emit("update:keyword", event.target.value);
+  if (timeout) clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    emit("search");
+  }, 300);
 }
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
     <Transition name="fade">
       <div
         v-if="toast?.show && toast.type !== 'success'"
-        class="fixed right-4 top-[88px] z-50 rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
+        class="fixed right-4 top-[88px] z-50 rounded-md px-4 py-3 text-sm font-medium text-white shadow-lg"
         :class="toast.type === 'success' ? 'bg-[#ff6a00]' : 'bg-[#cf1018]'"
       >
         {{ toast.message }}
@@ -91,7 +96,7 @@ function onKeywordInput(event) {
               :value="keyword"
               type="text"
               :placeholder="searchPlaceholder"
-              class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               @input="onKeywordInput"
               @keyup.enter="emit('search')"
             />
@@ -101,7 +106,7 @@ function onKeywordInput(event) {
         <div class="flex flex-wrap items-center gap-3 xl:justify-end">
           <Button variant="soft" @click="emit('update:keyword', ''); emit('search')">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
-            Đặt lại
+            Đặt lại bộ lọc
           </Button>
           <Button v-if="showExport" variant="soft" @click="emit('export')">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>

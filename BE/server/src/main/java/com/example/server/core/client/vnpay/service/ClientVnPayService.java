@@ -44,12 +44,9 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_CHO = "CHO";
     public static final String TRANG_THAI_DA_THANH_TOAN = "DA_THANH_TOAN";
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
-    public static final String TRANG_THAI_HET_HAN = "HET_HAN";
 
-    /** Phiên QR sống tối đa 1 phút; quá hạn chưa thanh toán -> hủy + hoàn tồn đã giữ chỗ. */
-    private static final long PHIEN_TTL_MS = 60_000L;
-    /** Dọn hẳn phiên đã thanh toán / hết hạn khỏi bộ nhớ sau 5 phút. */
-    private static final long PHIEN_DON_SAU_MS = 300_000L;
+    /** Dọn phiên ĐÃ THANH TOÁN khỏi bộ nhớ sau 15 phút (tránh rò rỉ). Phiên chờ KHÔNG hết hạn. */
+    private static final long PHIEN_DON_SAU_MS = 900_000L;
 
     private final ClientDatHangService datHangService;
     private final ClientCheckoutItemService checkoutItemService;
@@ -116,6 +113,9 @@ public class ClientVnPayService {
 
     /** Tạo phiên thanh toán + ảnh QR VietQR (SePay) hoặc link VNPAY Sandbox. Chưa tạo đơn. */
     public TaoMaVnPayResponse taoMa(DatHangRequest request) {
+        // Mỗi khách chỉ giữ 1 phiên QR đang CHỜ: huỷ phiên chờ cũ của cùng khách trước khi tạo phiên mới
+        // (tránh khoá cùng 1 voucher ở nhiều QR rồi thanh toán nhiều lần -> dùng voucher quá số lượt).
+        huyPhienChoCu(request);
         String token = UUID.randomUUID().toString().replace("-", "");
         String maThanhToan = sepayPrefix + token.substring(0, 10).toUpperCase(Locale.ROOT);
         // Khóa giá sản phẩm tại thời điểm tạo mã QR: đợt giảm/giá đổi sau đó không ảnh hưởng đơn.
@@ -129,10 +129,8 @@ public class ClientVnPayService {
         ClientDatHangService.KhoaThanhToan khoa =
                 new ClientDatHangService.KhoaThanhToan(giaKhoa, tienGiamKhoa);
         long soTien = tinhSoTienPhaiTra(request, checkout.tongTienHang(), tienGiamKhoa);
-        // Giữ chỗ tồn kho NGAY (trừ kho) -> tránh oversell + đảm bảo tạo đơn không lỗi thiếu hàng.
-        // Nếu quá 1 phút không thanh toán, scheduler sẽ hoàn lại tồn này.
-        Map<Integer, Integer> giuCho = checkoutItemService.giuChoTonKho(request.sanPhams());
-        phienMap.put(token, new Phien(request, maThanhToan, soTien, khoa, giuCho));
+        // KHÔNG giữ chỗ tồn lúc tạo QR -> tồn chỉ bị trừ khi nhân viên xác nhận đơn (giống COD).
+        phienMap.put(token, new Phien(request, maThanhToan, soTien, khoa, java.util.Map.of()));
 
         String qrData;
         if ("VNPAY".equalsIgnoreCase(request.hinhThucThanhToan())
@@ -149,6 +147,28 @@ public class ClientVnPayService {
                     + "&template=compact";
         }
         return new TaoMaVnPayResponse(token, qrData, maThanhToan);
+    }
+
+    /** Huỷ các phiên QR đang CHỜ của cùng khách (theo khachHangId; khách vãng lai dùng SĐT người nhận). */
+    private void huyPhienChoCu(DatHangRequest request) {
+        String key = khoaChuSoHuu(request);
+        if (key == null) {
+            return;
+        }
+        phienMap.values().removeIf(p ->
+                TRANG_THAI_CHO.equals(p.trangThai) && key.equals(khoaChuSoHuu(p.request)));
+    }
+
+    /** Khoá định danh chủ phiên: ưu tiên khachHangId; khách vãng lai dùng SĐT người nhận. */
+    private String khoaChuSoHuu(DatHangRequest req) {
+        if (req == null) {
+            return null;
+        }
+        if (req.khachHangId() != null) {
+            return "kh:" + req.khachHangId();
+        }
+        String sdt = req.sdtNguoiNhan();
+        return (sdt != null && !sdt.isBlank()) ? "sdt:" + sdt.trim() : null;
     }
 
     /** Tiền giảm voucher đã khóa lúc tạo QR: mã còn hợp lệ -> chốt tiền giảm; không hợp lệ -> 0. */
@@ -195,13 +215,10 @@ public class ClientVnPayService {
         if (phien == null) {
             throw new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn");
         }
-        if (TRANG_THAI_HET_HAN.equals(phien.trangThai)) {
-            throw new BusinessException("Phiên thanh toán đã hết hạn (quá 1 phút), vui lòng đặt lại");
-        }
         if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
-            // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA lúc tạo mã QR. Tồn đã giữ chỗ -> daGiuCho=true.
+            // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA. KHÔNG trừ kho ở đây -> nhân viên xác nhận mới trừ.
             DatHangResponse ketQua = datHangService.datHang(
-                    phien.request, phien.maThanhToan, phien.khoa, true);
+                    phien.request, phien.maThanhToan, phien.khoa, false);
             phien.maHoaDon = ketQua.maHoaDon();
             phien.trangThai = TRANG_THAI_DA_THANH_TOAN;
         }
@@ -209,25 +226,16 @@ public class ClientVnPayService {
     }
 
     /**
-     * Dọn phiên QR: phiên quá 1 phút chưa thanh toán -> HOÀN tồn đã giữ chỗ + đánh dấu hết hạn.
-     * Phiên đã thanh toán/hết hạn quá 5 phút -> xóa khỏi bộ nhớ (tránh rò rỉ).
+     * Dọn bộ nhớ phiên QR: chỉ xóa phiên ĐÃ THANH TOÁN sau một thời gian (tránh rò rỉ).
+     * Phiên đang chờ KHÔNG còn bị hết hạn -> khách chuyển khoản lúc nào cũng được
+     * (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn).
      */
-    @Scheduled(fixedRate = 15_000L)
+    @Scheduled(fixedRate = 60_000L)
     public synchronized void donPhien() {
         long now = System.currentTimeMillis();
-        for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
-            Phien phien = entry.getValue();
-            if (TRANG_THAI_CHO.equals(phien.trangThai)
-                    && now - phien.thoiDiemTao > PHIEN_TTL_MS) {
-                // Hết hạn: hoàn lại tồn đã giữ chỗ + thông báo realtime cho giỏ khách.
-                checkoutItemService.hoanGiuCho(phien.giuCho);
-                phien.trangThai = TRANG_THAI_HET_HAN;
-                sanPhamRealtimePublisher.phatSauCommit("HOAN_GIU_CHO");
-            } else if (!TRANG_THAI_CHO.equals(phien.trangThai)
-                    && now - phien.thoiDiemTao > PHIEN_DON_SAU_MS) {
-                phienMap.remove(entry.getKey());
-            }
-        }
+        phienMap.entrySet().removeIf(e ->
+                !TRANG_THAI_CHO.equals(e.getValue().trangThai)
+                        && now - e.getValue().thoiDiemTao > PHIEN_DON_SAU_MS);
     }
 
     /**
@@ -242,9 +250,6 @@ public class ClientVnPayService {
         for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
             Phien phien = entry.getValue();
             if (content.contains(phien.maThanhToan)) {
-                if (TRANG_THAI_HET_HAN.equals(phien.trangThai)) {
-                    return null; // phiên đã hết hạn (quá 1 phút) -> tiền tới trễ, không tạo đơn
-                }
                 if (phien.soTienKyVong > 0 && soTien < phien.soTienKyVong) {
                     return null; // chuyển thiếu tiền -> không tạo đơn
                 }
@@ -271,7 +276,8 @@ public class ClientVnPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString()).replace("+", "%20");
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.US_ASCII.toString())
+                    .replaceAll("\\+", "%20");
         } catch (Exception ex) {
             return "";
         }
@@ -372,13 +378,26 @@ public class ClientVnPayService {
             if (fieldName != null && fieldName.startsWith("vnp_")) {
                 String fieldValue = signParams.get(fieldName);
                 if (fieldValue != null && !fieldValue.isEmpty()) {
-                    hashParts.add(fieldName + "=" + urlEncode(fieldValue));
+                    hashParts.add(fieldName + "=" + fieldValue);
                 }
             }
         }
         
         String hashData = String.join("&", hashParts);
         String calculatedHash = hmactSHA512(vnp_HashSecret, hashData);
+        
+        try {
+            java.io.FileWriter fw = new java.io.FileWriter("D:\\SportShoe-Store\\vnpay_debug.txt", true);
+            java.io.PrintWriter pw = new java.io.PrintWriter(fw);
+            pw.println("=== NEW CALLBACK TIME: " + new java.util.Date() + " ===");
+            pw.println("Params: " + params);
+            pw.println("HashData: " + hashData);
+            pw.println("Secret: " + vnp_HashSecret);
+            pw.println("Calculated Hash: " + calculatedHash);
+            pw.println("Received Hash: " + vnp_SecureHash);
+            pw.println("========================================\n");
+            pw.close();
+        } catch (Exception ignored) {}
         
         System.out.println("=== VNPAY DEBUG CALLBACK ===");
         System.out.println("vnp_SecureHash received: " + vnp_SecureHash);

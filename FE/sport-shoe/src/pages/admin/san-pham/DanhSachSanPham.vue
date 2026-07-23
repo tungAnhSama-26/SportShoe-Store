@@ -13,6 +13,9 @@ import {
 import * as api from "../../../services/san-pham-api";
 import AdminQuickStatusAction from "../../../components/common/AdminQuickStatusAction.vue";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import BoLocSanPham from '../../../components/admin/san-pham/BoLocSanPham.vue'
+import BangSanPham from '../../../components/admin/san-pham/BangSanPham.vue'
+
 import Card from "../../../components/ui/Card.vue";
 import Table from "../../../components/ui/Table.vue";
 import Button from "../../../components/ui/Button.vue";
@@ -35,14 +38,14 @@ const totalItems = ref(0);
 const totalPages = ref(0);
 const updatingStatusIds = reactive(new Set());
 
-const filters = reactive({
-  keyword: "",
+const boLoc = reactive({
+  tuKhoa: "",
   thuongHieuId: null,
   loaiGiayId: null,
   trangThai: null,
 });
 
-const toast = reactive({
+const thongBao = reactive({
   show: false,
   message: "",
   type: "success",
@@ -65,11 +68,11 @@ function showToast(message, type = "success") {
   }
 
   if (toastTimer) clearTimeout(toastTimer);
-  toast.message = message;
-  toast.type = type;
-  toast.show = true;
+  thongBao.message = message;
+  thongBao.type = type;
+  thongBao.show = true;
   toastTimer = setTimeout(() => {
-    toast.show = false;
+    thongBao.show = false;
     toastTimer = null;
   }, 3000);
 }
@@ -149,7 +152,7 @@ function hasOriginalPrice(item) {
 function trangThaiLabel(value) {
   if (value === 1) return "Kinh doanh";
   if (value === 2) return "Hết hàng";
-  return "Ngừng bán";
+  return "Ngừng kinh doanh";
 }
 
 function trangThaiClass(value) {
@@ -158,11 +161,11 @@ function trangThaiClass(value) {
   return "bg-rose-50 text-rose-600";
 }
 
-function nextProductStatus(item) {
+function trangThaiKeTiep(item) {
   return Number(item.trangThai) === 0 ? 1 : 0;
 }
 
-function canQuickToggleProduct(item) {
+function coTheChuyenTrangThaiNhanh(item) {
   return Number(item.trangThai) !== 0 || Number(item.tongSoLuong || 0) > 0;
 }
 
@@ -170,25 +173,25 @@ function isUpdatingStatus(id) {
   return updatingStatusIds.has(id);
 }
 
-function productQuickToggleLabel(item) {
+function nhanChuyenTrangThaiNhanh(item) {
   return Number(item.trangThai) === 0
     ? "Chuyển sang kinh doanh"
     : "Chuyển sang ngừng kinh doanh";
 }
 
-function productQuickToggleIntent(item) {
+function hanhDongChuyenTrangThaiNhanh(item) {
   return Number(item.trangThai) === 0 ? "activate" : "deactivate";
 }
 
-function productQuickToggleDisabledTitle(item) {
-  return canQuickToggleProduct(item)
-    ? productQuickToggleLabel(item)
+function tieuDeKhiKhongTheChuyenTrangThai(item) {
+  return coTheChuyenTrangThaiNhanh(item)
+    ? nhanChuyenTrangThaiNhanh(item)
     : "Hết hàng chưa thể chuyển sang kinh doanh";
 }
 
-function productQuickToggleConfirmMessage(item) {
+function tinNhanXacNhanChuyenTrangThai(item) {
   const action =
-    nextProductStatus(item) === 1 ? "kinh doanh" : "ngừng kinh doanh";
+    trangThaiKeTiep(item) === 1 ? "kinh doanh" : "ngừng kinh doanh";
   return `Bạn có muốn chuyển sản phẩm "${item.ten}" sang ${action} không?`;
 }
 
@@ -208,10 +211,10 @@ async function loadData(page = 0) {
   loading.value = true;
   try {
     const response = await api.layDanhSachGiay({
-      keyword: filters.keyword.trim() || undefined,
-      thuongHieuId: normalizeFilterNumber(filters.thuongHieuId),
-      loaiGiayId: normalizeFilterNumber(filters.loaiGiayId),
-      trangThai: normalizeFilterNumber(filters.trangThai),
+      keyword: boLoc.tuKhoa.trim() || undefined,
+      thuongHieuId: normalizeFilterNumber(boLoc.thuongHieuId),
+      loaiGiayId: normalizeFilterNumber(boLoc.loaiGiayId),
+      trangThai: normalizeFilterNumber(boLoc.trangThai),
       page,
       size: pageSize.value,
     });
@@ -232,11 +235,11 @@ async function loadData(page = 0) {
   }
 }
 
-function resetFilters() {
-  filters.keyword = "";
-  filters.thuongHieuId = null;
-  filters.loaiGiayId = null;
-  filters.trangThai = null;
+function datLaiBoLoc() {
+  boLoc.tuKhoa = "";
+  boLoc.thuongHieuId = null;
+  boLoc.loaiGiayId = null;
+  boLoc.trangThai = null;
   loadData(0);
 }
 
@@ -259,15 +262,15 @@ function goToChiTietList(item) {
   });
 }
 
-async function handleToggleStatus(item) {
+async function xuLyDoiTrangThai(item) {
   if (isUpdatingStatus(item.id)) return;
-  if (!canQuickToggleProduct(item)) {
+  if (!coTheChuyenTrangThaiNhanh(item)) {
     showToast("Sản phẩm hết hàng chưa thể chuyển sang kinh doanh", "error");
     return;
   }
   updatingStatusIds.add(item.id);
   try {
-    await api.doiTrangThai(item.id, nextProductStatus(item));
+    await api.doiTrangThai(item.id, trangThaiKeTiep(item));
     showToast("Cập nhật trạng thái sản phẩm thành công");
     await loadData(currentPage.value);
   } catch (error) {
@@ -293,10 +296,10 @@ async function xuatExcel() {
 
   try {
     const response = await api.layDanhSachGiay({
-      keyword: filters.keyword.trim() || undefined,
-      thuongHieuId: normalizeFilterNumber(filters.thuongHieuId),
-      loaiGiayId: normalizeFilterNumber(filters.loaiGiayId),
-      trangThai: normalizeFilterNumber(filters.trangThai),
+      keyword: boLoc.tuKhoa.trim() || undefined,
+      thuongHieuId: normalizeFilterNumber(boLoc.thuongHieuId),
+      loaiGiayId: normalizeFilterNumber(boLoc.loaiGiayId),
+      trangThai: normalizeFilterNumber(boLoc.trangThai),
       page: 0,
       size: Math.max(totalItems.value, pageSize.value),
     });
@@ -351,7 +354,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => filters.keyword,
+  () => boLoc.tuKhoa,
   () => {
     scheduleKeywordSearch();
   },
@@ -364,263 +367,47 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="radius-6px">
     <div class="space-y-5">
+      <BoLocSanPham
+        :filters="boLoc"
+        :danh-muc="danhMuc"
+        @reset-filters="datLaiBoLoc"
+        @go-to-form="goToForm"
+        @load-data="loadData(0)"
+        @export-excel="xuatExcel"
+      />
 
-    <Card>
-        <div class="mb-5 flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
-            <Filter class="h-5 w-5" />
-          </div>
-          <div>
-            <h2 class="admin-section-title">Bộ lọc</h2>
-          </div>
-        </div>
+      <BangSanPham
+        :items="items"
+        :loading="loading"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total-items="totalItems"
+        :total-pages="totalPages"
+        :page-size-options="pageSizeOptions"
+        :updating-status-ids="updatingStatusIds"
+        @toggle-status="xuLyDoiTrangThai"
+        @open-qr="goToChiTietList"
+        @refresh="loadData"
+        @update:current-page="loadData"
+        @update:page-size="handlePageSizeChange"
+      />
 
-      <div class="flex flex-col gap-4">
-        <div
-          class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
-        >
-          <label class="min-w-0 flex-1 space-y-2">
-            <span class="admin-filter-label mb-1">Tìm kiếm</span>
-            <div class="relative max-w-3xl">
-              <Search
-                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                v-model="filters.keyword"
-                type="text"
-                placeholder="Tìm theo mã / tên sản phẩm..."
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-                @keyup.enter="loadData(0)"
-              />
-            </div>
-          </label>
 
-          <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-            <Button class="bg-black text-white hover:bg-gray-800" @click="resetFilters">
-              <template #prefix><RotateCcw class="h-4 w-4" /></template>
-              Đặt lại
-            </Button>
-            <Button class="bg-black text-white hover:bg-gray-800" @click="xuatExcel">
-              <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
-              Xuất Excel
-            </Button>
-            <Button class="bg-black text-white hover:bg-gray-800" @click="goToForm">
-              <template #prefix><Plus class="h-4 w-4" /></template>
-              Thêm sản phẩm
-            </Button>
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label class="min-w-0 space-y-2">
-            <span class="admin-filter-label mb-1">Thương hiệu</span>
-            <select
-              v-model.number="filters.thuongHieuId"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              @change="loadData(0)"
-            >
-              <option :value="null">Tất cả thương hiệu</option>
-              <option
-                v-for="item in danhMuc?.thuongHieu || []"
-                :key="item.id"
-                :value="item.id"
-              >
-                {{ item.ten }}
-              </option>
-            </select>
-          </label>
-
-          <label class="min-w-0 space-y-2">
-            <span class="admin-filter-label mb-1">Loại giày</span>
-            <select
-              v-model.number="filters.loaiGiayId"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              @change="loadData(0)"
-            >
-              <option :value="null">Tất cả loại giày</option>
-              <option
-                v-for="item in danhMuc?.loaiGiay || []"
-                :key="item.id"
-                :value="item.id"
-              >
-                {{ item.ten }}
-              </option>
-            </select>
-          </label>
-          <label class="min-w-0 space-y-2">
-            <span class="admin-filter-label mb-1">Trạng thái</span>
-            <select
-              v-model.number="filters.trangThai"
-              class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
-              @change="loadData(0)"
-            >
-              <option :value="null">Tất cả trạng thái</option>
-              <option :value="1">Kinh doanh</option>
-              <option :value="2">Hết hàng</option>
-              <option :value="0">Ngừng bán</option>
-            </select>
-          </label>
-        </div>
-      </div>
-    </Card>
-
-    <Card>
-        <div class="mb-5 flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B82220]/5 text-[#B82220]">
-            <Package class="h-5 w-5" />
-          </div>
-          <div>
-            <h2 class="admin-section-title">Danh sách sản phẩm</h2>
-          </div>
-        </div>
-
-      <div class="overflow-x-auto rounded-[24px] border border-slate-100 admin-table-scroll">
-        <table
-          class="w-full min-w-[1050px] table-fixed border-separate border-spacing-0 text-sm"
-        >
-          <colgroup>
-            <col class="w-[5%]" />
-            <col class="w-[9%]" />
-            <col class="w-[23%]" />
-            <col class="w-[11%]" />
-            <col class="w-[8%]" />
-            <col class="w-[19%]" />
-            <col class="w-[13%]" />
-            <col class="w-[12%]" />
-          </colgroup>
-          <thead>
-            <tr class="text-left text-[13px] font-bold text-slate-950 [&>th]:whitespace-nowrap">
-              <th class="rounded-tl-2xl bg-slate-100 px-4 py-3">STT</th>
-              <th class="bg-slate-100 px-4 py-3">Mã SP</th>
-              <th class="bg-slate-100 px-4 py-3">Tên SP</th>
-              <th class="bg-slate-100 px-4 py-3">Thương hiệu</th>
-              <th class="bg-slate-100 px-4 py-3 text-center">Số lượng</th>
-              <th class="bg-slate-100 px-4 py-3">Giá bán</th>
-              <th class="bg-slate-100 px-4 py-3 text-center">Trạng thái</th>
-              <th class="rounded-tr-2xl bg-slate-100 px-4 py-3 text-center">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
-                Đang tải dữ liệu...
-              </td>
-            </tr>
-            <tr v-else-if="!items.length">
-              <td colspan="8" class="py-10 text-center text-sm text-slate-400">
-                Chưa có sản phẩm nào
-              </td>
-            </tr>
-            <tr
-              v-for="(item, index) in items"
-              :key="item.id"
-              class="bg-white text-slate-700 shadow-sm ring-1 ring-slate-100"
-            >
-              <td
-                class="rounded-l-2xl px-4 py-4 align-top font-semibold text-slate-500"
-              >
-                {{ currentPage * pageSize + index + 1 }}
-              </td>
-              <td
-                class="px-4 py-4 align-top font-semibold text-slate-800 break-words"
-              >
-                {{ item.ma }}
-              </td>
-              <td class="px-4 py-4 align-top">
-                <p
-                  class="font-semibold leading-7 text-slate-800"
-                  :title="item.ten"
-                >
-                  {{ item.ten }}
-                </p>
-              </td>
-              <td class="px-4 py-4 align-middle">
-                <p class="font-semibold text-slate-800 whitespace-nowrap">
-                  {{ item.thuongHieu || "—" }}
-                </p>
-              </td>
-              <td class="px-4 py-4 text-center align-middle font-semibold text-slate-700 whitespace-nowrap">
-                {{ Number(item.tongSoLuong || 0).toLocaleString("vi-VN") }}
-              </td>
-              <td class="px-4 py-4 font-semibold text-slate-800">
-                <div
-                  class="flex min-h-[56px] flex-col justify-center gap-1.5 leading-5"
-                >
-                  <div>
-                    <div
-                      class="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] font-semibold text-slate-800"
-                    >
-                      <span class="whitespace-nowrap">{{ giaTrongBang(item).start }}</span>
-                      <span v-if="giaTrongBang(item).isRange" class="text-slate-400 font-normal mx-0.5">-</span>
-                      <span v-if="giaTrongBang(item).isRange" class="whitespace-nowrap">{{ giaTrongBang(item).end }}</span>
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-4 text-center whitespace-nowrap">
-                <Badge :variant="item.trangThai === 1 ? 'success' : item.trangThai === 2 ? 'warning' : 'danger'">
-                  {{ trangThaiLabel(item.trangThai) }}
-                </Badge>
-              </td>
-              <td class="rounded-r-2xl px-4 py-4 text-center align-middle">
-                <div class="flex items-center justify-center gap-2">
-                  <AdminQuickStatusAction
-                    :loading="isUpdatingStatus(item.id)"
-                    :disabled="
-                      isUpdatingStatus(item.id) || !canQuickToggleProduct(item)
-                    "
-                    :action-label="productQuickToggleLabel(item)"
-                    :disabled-title="productQuickToggleDisabledTitle(item)"
-                    :confirm-message="productQuickToggleConfirmMessage(item)"
-                    :intent="productQuickToggleIntent(item)"
-                    @toggle="handleToggleStatus(item)"
-                  />
-                  <button
-                    type="button"
-                    class="admin-table-action text-slate-600 hover:text-rose-500"
-                    title="Xem danh sách biến thể"
-                    @click="goToChiTietList(item)"
-                  >
-                    <Eye class="h-4 w-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <template #footer>
-        <AdminTableFooter
-          :current-page="currentPage"
-          :page-size="pageSize"
-          :page-size-options="pageSizeOptions"
-          :total-items="totalItems"
-          :total-pages="totalPages"
-          zero-based
-          compact
-          show-refresh
-          @refresh="loadData(currentPage)"
-          @update:current-page="loadData"
-          @update:page-size="handlePageSizeChange"
-        />
-      </template>
-    </Card>
+    </div>
 
     <Teleport to="body">
       <Transition name="fade">
         <div
-          v-if="toast.show && toast.type !== 'success'"
-          class="fixed right-5 top-5 z-[90] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
-          :class="toast.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
+          v-if="thongBao.show && thongBao.type !== 'success'"
+          class="fixed right-5 top-5 z-[90] rounded-md px-4 py-3 text-sm font-medium text-white shadow-lg"
+          :class="thongBao.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
         >
-          {{ toast.message }}
+          {{ thongBao.message }}
         </div>
       </Transition>
     </Teleport>
-  </div>
   </div>
 </template>
 

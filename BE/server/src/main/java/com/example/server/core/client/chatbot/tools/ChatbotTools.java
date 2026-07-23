@@ -20,9 +20,20 @@ import java.util.function.Function;
 public class ChatbotTools {
 
     private final EntityManager entityManager;
+    private final com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService;
+    private final com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService quanLySanPhamService;
+    private final com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService;
 
-    public ChatbotTools(EntityManager entityManager) {
+    public ChatbotTools(
+            EntityManager entityManager,
+            com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService,
+            com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService quanLySanPhamService,
+            com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService
+    ) {
         this.entityManager = entityManager;
+        this.quanLyHoaDonService = quanLyHoaDonService;
+        this.quanLySanPhamService = quanLySanPhamService;
+        this.phieuGiamGiaService = phieuGiamGiaService;
     }
 
     public record SearchRequest(
@@ -47,6 +58,40 @@ public class ChatbotTools {
             BigDecimal tongTienThanhToan,
             String trangThaiText,
             String ngayLap
+    ) {}
+
+    public record AdminRevenueRequest(String period) {}
+    public record AdminLowStockRequest(Integer threshold) {}
+    public record AdminInvoiceSearchRequest(String query, String status) {}
+
+    public record AdminProductReviewRequest(Integer productId, String productName) {}
+    public record AdminTopReviewsRequest() {}
+    public record AdminOrderUpdateRequest(String invoiceCode, String action) {}
+
+    public record AdminProductStockUpdateRequest(
+            String productName,
+            Integer sizeValue,
+            String colorName,
+            Integer newStock
+    ) {}
+
+    public record AdminVoucherCreateRequest(
+            String code,
+            String name,
+            Integer type,
+            BigDecimal value,
+            BigDecimal minOrder,
+            BigDecimal maxDiscount,
+            Integer quantity,
+            Integer durationDays
+    ) {}
+
+    public record AdminChartDataRequest(
+            String chartType
+    ) {}
+
+    public record AdminCsvExportRequest(
+            String dataType
     ) {}
 
     private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
@@ -481,6 +526,636 @@ public class ChatbotTools {
                 } catch (Exception e) {
                     e.printStackTrace();
                     return null;
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_revenue_stats_tool")
+    @Description("Lấy thống kê doanh thu của cửa hàng theo chu kỳ (period: 'today', 'month', 'year')")
+    public Function<AdminRevenueRequest, String> getAdminRevenueStatsTool() {
+        return new Function<AdminRevenueRequest, String>() {
+            @Override
+            public String apply(AdminRevenueRequest request) {
+                try {
+                    String timeQuery = "";
+                    java.time.LocalDate today = java.time.LocalDate.now();
+                    java.time.Instant startInstant = java.time.Instant.MIN;
+                    java.time.Instant endInstant = java.time.Instant.MAX;
+                    
+                    if ("today".equalsIgnoreCase(request.period())) {
+                        startInstant = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Hôm nay (" + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ")";
+                    } else if ("month".equalsIgnoreCase(request.period())) {
+                        java.time.LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+                        startInstant = firstDayOfMonth.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = firstDayOfMonth.plusMonths(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Tháng này (" + today.getMonthValue() + "/" + today.getYear() + ")";
+                    } else if ("year".equalsIgnoreCase(request.period())) {
+                        java.time.LocalDate firstDayOfYear = today.withDayOfYear(1);
+                        startInstant = firstDayOfYear.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = firstDayOfYear.plusYears(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Năm nay (" + today.getYear() + ")";
+                    } else {
+                        startInstant = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        endInstant = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                        timeQuery = "Hôm nay (" + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ")";
+                    }
+
+                    List<com.example.server.entity.HoaDon> invoices = entityManager.createQuery(
+                            "SELECT h FROM HoaDon h WHERE h.ngayLap >= :start AND h.ngayLap < :end AND h.trangThai = 5", com.example.server.entity.HoaDon.class)
+                            .setParameter("start", startInstant)
+                            .setParameter("end", endInstant)
+                            .getResultList();
+
+                    if (invoices.isEmpty()) {
+                        return "Thống kê doanh thu cho " + timeQuery + ": Chưa có đơn hàng nào hoàn thành. Doanh thu: 0đ.";
+                    }
+
+                    BigDecimal tongDoanhThu = BigDecimal.ZERO;
+                    int count = 0;
+                    for (com.example.server.entity.HoaDon h : invoices) {
+                        tongDoanhThu = tongDoanhThu.add(h.getTongTienThanhToan() != null ? h.getTongTienThanhToan() : BigDecimal.ZERO);
+                        count++;
+                    }
+
+                    java.text.NumberFormat nf = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("vi", "VN"));
+                    return String.format("Thống kê doanh thu cho %s:\n- Số đơn hoàn thành: %d\n- Tổng doanh thu: %s", 
+                            timeQuery, count, nf.format(tongDoanhThu));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi thống kê doanh thu: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_low_stock_tool")
+    @Description("Lấy danh sách sản phẩm sắp hết hàng (số lượng tồn kho dưới ngưỡng threshold, mặc định là 5)")
+    public Function<AdminLowStockRequest, String> getAdminLowStockTool() {
+        return new Function<AdminLowStockRequest, String>() {
+            @Override
+            public String apply(AdminLowStockRequest request) {
+                try {
+                    int limit = request.threshold() != null ? request.threshold() : 5;
+                    List<com.example.server.entity.GiayChiTiet> lowStockList = entityManager.createQuery(
+                            "SELECT gct FROM GiayChiTiet gct WHERE gct.soLuong < :limit AND gct.kichHoat = 1 ORDER BY gct.soLuong ASC", com.example.server.entity.GiayChiTiet.class)
+                            .setParameter("limit", limit)
+                            .setMaxResults(10)
+                            .getResultList();
+
+                    if (lowStockList.isEmpty()) {
+                        return "Hiện tại không có sản phẩm nào có số lượng tồn kho dưới " + limit + " chiếc.";
+                    }
+
+                    StringBuilder sb = new StringBuilder("Danh sách sản phẩm sắp hết hàng (Tồn kho < " + limit + "):\n");
+                    for (com.example.server.entity.GiayChiTiet gct : lowStockList) {
+                        sb.append(String.format("- **%s** | Màu: %s | Size: %s | **Số lượng tồn: %d**\n",
+                                gct.getGiay() != null ? gct.getGiay().getTen() : "Giày",
+                                gct.getMauSac() != null ? gct.getMauSac().getTen() : "N/A",
+                                gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "N/A",
+                                gct.getSoLuong()));
+                    }
+                    return sb.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi lấy danh sách sản phẩm hết hàng: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("search_admin_invoices_tool")
+    @Description("Tìm kiếm danh sách hóa đơn của hệ thống theo mã hóa đơn, tên người nhận hoặc số điện thoại, trạng thái")
+    public Function<AdminInvoiceSearchRequest, List<InvoiceDto>> searchAdminInvoicesTool() {
+        return new Function<AdminInvoiceSearchRequest, List<InvoiceDto>>() {
+            @Override
+            public List<InvoiceDto> apply(AdminInvoiceSearchRequest request) {
+                try {
+                    String jpql = "SELECT h FROM HoaDon h WHERE 1=1";
+                    Map<String, Object> params = new HashMap<>();
+
+                    if (request.query() != null && !request.query().isBlank()) {
+                        String q = "%" + request.query().trim().toLowerCase() + "%";
+                        jpql += " AND (LOWER(h.ma) LIKE :query OR LOWER(h.tenNguoiNhan) LIKE :query OR LOWER(h.sdtNguoiNhan) LIKE :query)";
+                        params.put("query", q);
+                    }
+
+                    if (request.status() != null && !request.status().isBlank()) {
+                        try {
+                            Integer statusInt = Integer.parseInt(request.status().trim());
+                            jpql += " AND h.trangThai = :status";
+                            params.put("status", statusInt);
+                        } catch (NumberFormatException e) {
+                            // ignore
+                        }
+                    }
+
+                    jpql += " ORDER BY h.ngayLap DESC";
+
+                    var typedQuery = entityManager.createQuery(jpql, com.example.server.entity.HoaDon.class);
+                    for (Map.Entry<String, Object> entry : params.entrySet()) {
+                        typedQuery.setParameter(entry.getKey(), entry.getValue());
+                    }
+
+                    List<com.example.server.entity.HoaDon> results = typedQuery.setMaxResults(10).getResultList();
+                    List<InvoiceDto> dtoList = new ArrayList<>();
+
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault());
+
+                    for (com.example.server.entity.HoaDon h : results) {
+                        String trangThaiText = "Không xác định";
+                        if (h.getTrangThai() != null) {
+                            try {
+                                trangThaiText = TrangThaiHoaDon.tuMa(h.getTrangThai()).getTen();
+                            } catch (Exception ex) {
+                                trangThaiText = "Mã: " + h.getTrangThai();
+                            }
+                        }
+                        String ngayLapStr = h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "";
+
+                        dtoList.add(new InvoiceDto(
+                                h.getId(),
+                                h.getMa(),
+                                h.getTenNguoiNhan(),
+                                h.getSdtNguoiNhan(),
+                                h.getTongTienThanhToan(),
+                                trangThaiText,
+                                ngayLapStr
+                        ));
+                    }
+                    return dtoList;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return List.of();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_product_reviews_tool")
+    @Description("Lấy thống kê đánh giá của khách hàng đối với một sản phẩm cụ thể theo ID hoặc Tên sản phẩm")
+    public Function<AdminProductReviewRequest, String> getAdminProductReviewsTool() {
+        return new Function<AdminProductReviewRequest, String>() {
+            @Override
+            public String apply(AdminProductReviewRequest request) {
+                try {
+                    List<com.example.server.entity.Giay> list = new ArrayList<>();
+                    if (request.productId() != null) {
+                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, request.productId());
+                        if (g != null) list.add(g);
+                    } else if (request.productName() != null && !request.productName().isBlank()) {
+                        list = entityManager.createQuery(
+                                "SELECT g FROM Giay g WHERE LOWER(g.ten) LIKE :name", com.example.server.entity.Giay.class)
+                                .setParameter("name", "%" + request.productName().toLowerCase().trim() + "%")
+                                .setMaxResults(1)
+                                .getResultList();
+                    }
+                    
+                    if (list.isEmpty()) {
+                        return "Không tìm thấy sản phẩm phù hợp.";
+                    }
+                    com.example.server.entity.Giay g = list.get(0);
+                    
+                    List<com.example.server.entity.DanhGia> reviews = entityManager.createQuery(
+                            "SELECT d FROM DanhGia d WHERE d.giay.id = :giayId AND d.trangThai = 1 ORDER BY d.ngayTao DESC", com.example.server.entity.DanhGia.class)
+                            .setParameter("giayId", g.getId())
+                            .getResultList();
+                    
+                    if (reviews.isEmpty()) {
+                        return "Sản phẩm **" + g.getTen() + "** chưa có lượt đánh giá nào.";
+                    }
+                    
+                    int total = reviews.size();
+                    double sum = 0;
+                    int positive = 0;
+                    int negative = 0;
+                    
+                    for (com.example.server.entity.DanhGia d : reviews) {
+                        sum += d.getSoSao();
+                        if (d.getSoSao() >= 4) positive++;
+                        if (d.getSoSao() <= 2) negative++;
+                    }
+                    
+                    double avg = sum / total;
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(String.format("Thống kê đánh giá cho sản phẩm **%s**:\n", g.getTen()));
+                    sb.append(String.format("- Điểm đánh giá trung bình: **%.1f/5.0** ⭐\n", avg));
+                    sb.append(String.format("- Tổng số lượt đánh giá: %d\n", total));
+                    sb.append(String.format("- Số đánh giá tích cực (4-5 sao): %d (%.1f%%)\n", positive, (positive * 100.0 / total)));
+                    sb.append(String.format("- Số đánh giá tiêu cực (1-2 sao): %d (%.1f%%)\n", negative, (negative * 100.0 / total)));
+                    
+                    sb.append("\n5 đánh giá gần nhất:\n");
+                    int showCount = Math.min(5, reviews.size());
+                    for (int i = 0; i < showCount; i++) {
+                        com.example.server.entity.DanhGia d = reviews.get(i);
+                        sb.append(String.format("%d. **%d sao** | %s: \"%s\"\n", 
+                                i + 1, 
+                                d.getSoSao(), 
+                                d.getKhachHang() != null ? d.getKhachHang().getHoTen() : "Khách hàng",
+                                d.getNoiDung() != null ? d.getNoiDung() : "(Không có nội dung)"));
+                    }
+                    return sb.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi truy vấn đánh giá sản phẩm: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_top_reviews_tool")
+    @Description("Lấy danh sách các sản phẩm có đánh giá tích cực nhiều nhất (điểm trung bình cao nhất) và sản phẩm có nhiều đánh giá tiêu cực nhất")
+    public Function<AdminTopReviewsRequest, String> getAdminTopReviewsTool() {
+        return new Function<AdminTopReviewsRequest, String>() {
+            @Override
+            public String apply(AdminTopReviewsRequest request) {
+                try {
+                    List<Object[]> stats = entityManager.createQuery(
+                            "SELECT d.giay.id, d.giay.ten, AVG(CAST(d.soSao as double)), COUNT(d.id) " +
+                            "FROM DanhGia d WHERE d.trangThai = 1 " +
+                            "GROUP BY d.giay.id, d.giay.ten", Object[].class)
+                            .getResultList();
+                    
+                    if (stats.isEmpty()) {
+                        return "Chưa có sản phẩm nào nhận được đánh giá trong hệ thống.";
+                    }
+                    
+                    List<Object[]> topPositive = new ArrayList<>(stats);
+                    topPositive.sort((a, b) -> Double.compare((Double) b[2], (Double) a[2]));
+                    
+                    List<Object[]> topNegative = new ArrayList<>(stats);
+                    topNegative.sort((a, b) -> Double.compare((Double) a[2], (Double) b[2]));
+                    
+                    StringBuilder sb = new StringBuilder("### THỐNG KÊ ĐÁNH GIÁ HỆ THỐNG\n\n");
+                    
+                    sb.append("🏆 **Top 5 sản phẩm đánh giá cao nhất:**\n");
+                    int limitPos = Math.min(5, topPositive.size());
+                    for (int i = 0; i < limitPos; i++) {
+                        Object[] row = topPositive.get(i);
+                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
+                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                    }
+                    
+                    sb.append("\n⚠️ **Top 5 sản phẩm điểm đánh giá thấp nhất:**\n");
+                    int limitNeg = Math.min(5, topNegative.size());
+                    for (int i = 0; i < limitNeg; i++) {
+                        Object[] row = topNegative.get(i);
+                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
+                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                    }
+                    
+                    return sb.toString();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi lấy thống kê đánh giá hệ thống: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("update_admin_order_status_tool")
+    @Description("Cập nhật trạng thái đơn hàng (xác nhận đơn hàng hoặc hủy đơn hàng) theo mã hóa đơn và hành động (action: 'confirm' hoặc 'cancel')")
+    public Function<AdminOrderUpdateRequest, String> updateAdminOrderStatusTool() {
+        return new Function<AdminOrderUpdateRequest, String>() {
+            @Override
+            public String apply(AdminOrderUpdateRequest request) {
+                try {
+                    if (request.invoiceCode() == null || request.invoiceCode().isBlank()) {
+                        return "Vui lòng cung cấp mã hóa đơn hợp lệ.";
+                    }
+                    List<com.example.server.entity.HoaDon> list = entityManager.createQuery(
+                            "SELECT h FROM HoaDon h WHERE h.ma = :ma", com.example.server.entity.HoaDon.class)
+                            .setParameter("ma", request.invoiceCode().trim())
+                            .getResultList();
+                    if (list.isEmpty()) {
+                        return "Không tìm thấy hóa đơn có mã: " + request.invoiceCode();
+                    }
+                    com.example.server.entity.HoaDon hoaDon = list.get(0);
+                    String action = request.action() != null ? request.action().toLowerCase().trim() : "";
+                    
+                    String targetStatus;
+                    String actionText;
+                    if ("confirm".equals(action)) {
+                        targetStatus = "Đã xác nhận";
+                        actionText = "xác nhận";
+                    } else if ("cancel".equals(action)) {
+                        targetStatus = "Hủy";
+                        actionText = "hủy";
+                    } else {
+                        return "Hành động không hợp lệ. Chỉ chấp nhận 'confirm' (xác nhận) hoặc 'cancel' (hủy).";
+                    }
+                    
+                    var updateRequest = new com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest(
+                            targetStatus, "Cập nhật qua Trợ lý AI Admin", null, null, true);
+                    
+                    quanLyHoaDonService.capNhatTrangThaiHoaDon(hoaDon.getId(), updateRequest);
+                    return "Đã thực hiện " + actionText + " thành công đơn hàng " + request.invoiceCode() + ".";
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi cập nhật trạng thái đơn hàng: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("update_admin_product_stock_tool")
+    @Description("Cập nhật số lượng tồn kho cho một biến thể sản phẩm cụ thể theo tên sản phẩm, size (kích cỡ), tên màu sắc và số lượng tồn kho mới")
+    public Function<AdminProductStockUpdateRequest, String> updateAdminProductStockTool() {
+        return new Function<AdminProductStockUpdateRequest, String>() {
+            @Override
+            public String apply(AdminProductStockUpdateRequest request) {
+                try {
+                    if (request.productName() == null || request.productName().isBlank()) {
+                        return "Vui lòng cung cấp tên sản phẩm.";
+                    }
+                    if (request.sizeValue() == null) {
+                        return "Vui lòng cung cấp kích cỡ (size).";
+                    }
+                    if (request.colorName() == null || request.colorName().isBlank()) {
+                        return "Vui lòng cung cấp tên màu sắc.";
+                    }
+                    if (request.newStock() == null || request.newStock() < 0) {
+                        return "Số lượng tồn kho mới không hợp lệ.";
+                    }
+
+                    List<com.example.server.entity.GiayChiTiet> list = entityManager.createQuery(
+                            "SELECT gct FROM GiayChiTiet gct WHERE " +
+                            "LOWER(gct.giay.ten) LIKE :productName AND " +
+                            "gct.kichCo.giaTri = :sizeValue AND " +
+                            "LOWER(gct.mauSac.ten) = :colorName", com.example.server.entity.GiayChiTiet.class)
+                            .setParameter("productName", "%" + request.productName().toLowerCase().trim() + "%")
+                            .setParameter("sizeValue", request.sizeValue())
+                            .setParameter("colorName", request.colorName().toLowerCase().trim())
+                            .getResultList();
+
+                    if (list.isEmpty()) {
+                        return String.format("Không tìm thấy biến thể sản phẩm cho: %s (Size %d, Màu %s)", 
+                                request.productName(), request.sizeValue(), request.colorName());
+                    }
+
+                    com.example.server.entity.GiayChiTiet variant = list.get(0);
+                    var updateRequest = new com.example.server.core.admin.quanLySanPham.dto.request.CapNhatBienTheRequest(
+                            request.newStock(),
+                            variant.getGiaGoc(),
+                            variant.getGiaBan(),
+                            request.newStock() > 0 ? 1 : 0
+                    );
+
+                    quanLySanPhamService.capNhatBienThe(variant.getId(), updateRequest);
+                    return String.format("Đã cập nhật số lượng tồn kho của biến thể **%s (Màu %s, Size %d)** thành **%d** thành công.", 
+                            variant.getGiay().getTen(), variant.getMauSac().getTen(), variant.getKichCo().getGiaTri(), request.newStock());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi cập nhật số lượng tồn kho: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("create_admin_voucher_tool")
+    @Description("Tạo nhanh mã giảm giá mới (voucher) trong hệ thống với các tham số tương ứng")
+    public Function<AdminVoucherCreateRequest, String> createAdminVoucherTool() {
+        return new Function<AdminVoucherCreateRequest, String>() {
+            @Override
+            public String apply(AdminVoucherCreateRequest request) {
+                try {
+                    if (request.code() == null || request.code().isBlank()) {
+                        return "Vui lòng cung cấp mã giảm giá.";
+                    }
+                    if (request.name() == null || request.name().isBlank()) {
+                        return "Vui lòng cung cấp tên hiển thị của mã giảm giá.";
+                    }
+                    if (request.value() == null || request.value().doubleValue() <= 0) {
+                        return "Giá trị giảm giá không hợp lệ.";
+                    }
+                    if (request.quantity() == null || request.quantity() <= 0) {
+                        return "Số lượng mã giảm giá phát hành phải lớn hơn 0.";
+                    }
+
+                    var voucherRequest = new com.example.server.core.admin.quanlykhuyenmai.dto.request.PhieuGiamGiaRequest();
+                    voucherRequest.setMa(request.code().trim().toUpperCase());
+                    voucherRequest.setTen(request.name().trim());
+                    // loai: 1 là phần trăm (%), 2 là tiền mặt (VND)
+                    voucherRequest.setLoai(request.type() != null ? request.type() : 1);
+                    voucherRequest.setLoaiPhieu(1); // 1: Công khai (public)
+                    voucherRequest.setGiaTri(request.value());
+                    voucherRequest.setGiaTriToiThieu(request.minOrder() != null ? request.minOrder() : BigDecimal.ZERO);
+                    voucherRequest.setGiamToiDa(request.maxDiscount() != null ? request.maxDiscount() : BigDecimal.ZERO);
+                    voucherRequest.setNgayBatDau(java.time.LocalDate.now());
+                    
+                    int duration = request.durationDays() != null ? request.durationDays() : 30;
+                    voucherRequest.setNgayKetThuc(java.time.LocalDate.now().plusDays(duration));
+                    voucherRequest.setSoLuong(request.quantity());
+                    voucherRequest.setTrangThai(1); // 1: Hoạt động
+
+                    phieuGiamGiaService.add(voucherRequest);
+                    
+                    String typeStr = voucherRequest.getLoai() == 1 ? "%" : " VNĐ";
+                    return String.format("Đã tạo thành công mã giảm giá **%s** (%s) giảm %s%s, áp dụng từ hôm nay đến hết ngày %s.",
+                            voucherRequest.getMa(), 
+                            voucherRequest.getTen(), 
+                            voucherRequest.getGiaTri().toPlainString(), 
+                            typeStr,
+                            voucherRequest.getNgayKetThuc().toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi tạo mã giảm giá: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("get_admin_chart_data_tool")
+    @Description("Cung cấp dữ liệu thô dạng JSON để vẽ biểu đồ thống kê (chartType: 'revenue_7_days' - doanh thu 7 ngày qua, 'top_selling_shoes' - top 5 giày bán chạy nhất, 'order_statuses' - tỷ lệ các trạng thái hóa đơn)")
+    public Function<AdminChartDataRequest, String> getAdminChartDataTool() {
+        return new Function<AdminChartDataRequest, String>() {
+            @Override
+            public String apply(AdminChartDataRequest request) {
+                try {
+                    if ("revenue_7_days".equalsIgnoreCase(request.chartType())) {
+                        java.time.LocalDate today = java.time.LocalDate.now();
+                        List<String> labelsList = new ArrayList<>();
+                        List<BigDecimal> dataList = new ArrayList<>();
+                        java.time.format.DateTimeFormatter labelFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+
+                        for (int i = 6; i >= 0; i--) {
+                            java.time.LocalDate date = today.minusDays(i);
+                            labelsList.add(date.format(labelFormatter));
+                            
+                            java.time.Instant start = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                            java.time.Instant end = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+
+                            List<BigDecimal> amounts = entityManager.createQuery(
+                                    "SELECT SUM(h.tongTienThanhToan) FROM HoaDon h WHERE h.trangThai = 5 AND h.ngayLap >= :start AND h.ngayLap < :end", BigDecimal.class)
+                                    .setParameter("start", start)
+                                    .setParameter("end", end)
+                                    .getResultList();
+
+                            BigDecimal dayTotal = (amounts.isEmpty() || amounts.get(0) == null) ? BigDecimal.ZERO : amounts.get(0);
+                            dataList.add(dayTotal);
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{\"chartType\":\"line\",\"title\":\"Doanh thu 7 ngày gần nhất\",\"labels\":[");
+                        for (int i = 0; i < labelsList.size(); i++) {
+                            sb.append("\"").append(labelsList.get(i)).append("\"");
+                            if (i < labelsList.size() - 1) sb.append(",");
+                        }
+                        sb.append("],\"data\":[");
+                        for (int i = 0; i < dataList.size(); i++) {
+                            sb.append(dataList.get(i).toPlainString());
+                            if (i < dataList.size() - 1) sb.append(",");
+                        }
+                        sb.append("]}");
+                        return sb.toString();
+                    }
+                    else if ("top_selling_shoes".equalsIgnoreCase(request.chartType())) {
+                        List<Object[]> results = entityManager.createQuery(
+                                "SELECT hdct.chiTietGiay.giay.ten, SUM(hdct.soLuong) FROM HoaDonChiTiet hdct " +
+                                "WHERE hdct.hoaDon.trangThai = 5 GROUP BY hdct.chiTietGiay.giay.ten ORDER BY SUM(hdct.soLuong) DESC", Object[].class)
+                                .setMaxResults(5)
+                                .getResultList();
+
+                        List<String> labelsList = new ArrayList<>();
+                        List<Long> dataList = new ArrayList<>();
+                        for (Object[] row : results) {
+                            labelsList.add((String) row[0]);
+                            dataList.add((Long) row[1]);
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{\"chartType\":\"bar\",\"title\":\"Top 5 sản phẩm bán chạy nhất\",\"labels\":[");
+                        for (int i = 0; i < labelsList.size(); i++) {
+                            sb.append("\"").append(labelsList.get(i).replace("\"", "\\\"")).append("\"");
+                            if (i < labelsList.size() - 1) sb.append(",");
+                        }
+                        sb.append("],\"data\":[");
+                        for (int i = 0; i < dataList.size(); i++) {
+                            sb.append(dataList.get(i));
+                            if (i < dataList.size() - 1) sb.append(",");
+                        }
+                        sb.append("]}");
+                        return sb.toString();
+                    }
+                    else if ("order_statuses".equalsIgnoreCase(request.chartType())) {
+                        List<Object[]> results = entityManager.createQuery(
+                                "SELECT h.trangThai, COUNT(h.id) FROM HoaDon h GROUP BY h.trangThai", Object[].class)
+                                .getResultList();
+
+                        List<String> labelsList = new ArrayList<>();
+                        List<Long> dataList = new ArrayList<>();
+                        for (Object[] row : results) {
+                            Integer statusInt = (Integer) row[0];
+                            Long count = (Long) row[1];
+                            String name = "Mã: " + statusInt;
+                            try {
+                                name = TrangThaiHoaDon.tuMa(statusInt).getTen();
+                            } catch (Exception e) {}
+                            labelsList.add(name);
+                            dataList.add(count);
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{\"chartType\":\"doughnut\",\"title\":\"Tỷ lệ trạng thái đơn hàng\",\"labels\":[");
+                        for (int i = 0; i < labelsList.size(); i++) {
+                            sb.append("\"").append(labelsList.get(i)).append("\"");
+                            if (i < labelsList.size() - 1) sb.append(",");
+                        }
+                        sb.append("],\"data\":[");
+                        for (int i = 0; i < dataList.size(); i++) {
+                            sb.append(dataList.get(i));
+                            if (i < dataList.size() - 1) sb.append(",");
+                        }
+                        sb.append("]}");
+                        return sb.toString();
+                    }
+                    else {
+                        return "Loại biểu đồ không hợp lệ.";
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi lấy dữ liệu biểu đồ: " + e.getMessage();
+                }
+            }
+        };
+    }
+
+    @Bean("export_admin_data_csv_tool")
+    @Description("Xuất file báo cáo Excel dạng CSV trực tiếp từ cơ sở dữ liệu (dataType: 'revenue' - doanh thu, 'cancelled_invoices' - đơn hàng bị hủy, 'low_stock' - sản phẩm tồn kho thấp)")
+    public Function<AdminCsvExportRequest, String> exportAdminDataCsvTool() {
+        return new Function<AdminCsvExportRequest, String>() {
+            @Override
+            public String apply(AdminCsvExportRequest request) {
+                try {
+                    String csvContent = "";
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault());
+
+                    if ("revenue".equalsIgnoreCase(request.dataType())) {
+                        List<com.example.server.entity.HoaDon> results = entityManager.createQuery(
+                                "SELECT h FROM HoaDon h WHERE h.trangThai = 5 ORDER BY h.ngayLap DESC", com.example.server.entity.HoaDon.class)
+                                .getResultList();
+
+                        StringBuilder sb = new StringBuilder("Mã hóa đơn,Khách hàng,Số điện thoại,Tổng thanh toán,Ngày lập\n");
+                        for (com.example.server.entity.HoaDon h : results) {
+                            sb.append(h.getMa()).append(",")
+                              .append(h.getTenNguoiNhan() != null ? h.getTenNguoiNhan().replace(",", " ") : "").append(",")
+                              .append(h.getSdtNguoiNhan() != null ? h.getSdtNguoiNhan() : "").append(",")
+                              .append(h.getTongTienThanhToan() != null ? h.getTongTienThanhToan().toPlainString() : "0").append(",")
+                              .append(h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "").append("\n");
+                        }
+                        csvContent = sb.toString();
+                    }
+                    else if ("cancelled_invoices".equalsIgnoreCase(request.dataType())) {
+                        List<com.example.server.entity.HoaDon> results = entityManager.createQuery(
+                                "SELECT h FROM HoaDon h WHERE h.trangThai = 6 ORDER BY h.ngayLap DESC", com.example.server.entity.HoaDon.class)
+                                .getResultList();
+
+                        StringBuilder sb = new StringBuilder("Mã hóa đơn,Khách hàng,Số điện thoại,Tổng tiền hàng,Tiền giảm,Tổng thanh toán,Ngày lập\n");
+                        for (com.example.server.entity.HoaDon h : results) {
+                            sb.append(h.getMa()).append(",")
+                              .append(h.getTenNguoiNhan() != null ? h.getTenNguoiNhan().replace(",", " ") : "").append(",")
+                              .append(h.getSdtNguoiNhan() != null ? h.getSdtNguoiNhan() : "").append(",")
+                              .append(h.getTongTienHang() != null ? h.getTongTienHang().toPlainString() : "0").append(",")
+                              .append(h.getTienGiam() != null ? h.getTienGiam().toPlainString() : "0").append(",")
+                              .append(h.getTongTienThanhToan() != null ? h.getTongTienThanhToan().toPlainString() : "0").append(",")
+                              .append(h.getNgayLap() != null ? formatter.format(h.getNgayLap()) : "").append("\n");
+                        }
+                        csvContent = sb.toString();
+                    }
+                    else if ("low_stock".equalsIgnoreCase(request.dataType())) {
+                        List<com.example.server.entity.GiayChiTiet> results = entityManager.createQuery(
+                                "SELECT gct FROM GiayChiTiet gct WHERE gct.soLuong < 10 AND gct.kichHoat = 1 ORDER BY gct.soLuong ASC", com.example.server.entity.GiayChiTiet.class)
+                                .getResultList();
+
+                        StringBuilder sb = new StringBuilder("Tên sản phẩm,Màu sắc,Kích cỡ,Số lượng tồn\n");
+                        for (com.example.server.entity.GiayChiTiet gct : results) {
+                            sb.append(gct.getGiay() != null ? gct.getGiay().getTen().replace(",", " ") : "Giày").append(",")
+                              .append(gct.getMauSac() != null ? gct.getMauSac().getTen() : "").append(",")
+                              .append(gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "").append(",")
+                              .append(gct.getSoLuong()).append("\n");
+                        }
+                        csvContent = sb.toString();
+                    }
+                    else {
+                        return "Loại dữ liệu xuất báo cáo không hợp lệ.";
+                    }
+
+                    // Convert to UTF-8 bytes with BOM
+                    byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+                    byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    byte[] fileBytes = new byte[bom.length + csvBytes.length];
+                    System.arraycopy(bom, 0, fileBytes, 0, bom.length);
+                    System.arraycopy(csvBytes, 0, fileBytes, bom.length, csvBytes.length);
+
+                    String token = java.util.UUID.randomUUID().toString();
+                    com.example.server.core.client.chatbot.service.ChatbotService.EXPORT_CACHE.put(token, fileBytes);
+
+                    return "[Tải file Excel báo cáo](/api/v1/admin/chatbot/download-csv?token=" + token + ")";
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Lỗi khi xuất file báo cáo: " + e.getMessage();
                 }
             }
         };

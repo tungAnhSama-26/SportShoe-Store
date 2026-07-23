@@ -1,12 +1,12 @@
 <script setup>
 import { useChiTietSanPhamFormPage } from "./useChiTietSanPhamFormPage";
 
-const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, ProductFormSection, VariantBuilderSection, ChiTietSanPhamGeneratedVariantsSection, SuccessSection, QuickCreateModal, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave } = useChiTietSanPhamFormPage();
+const { computed, onBeforeUnmount, onMounted, reactive, ref, TieuDeForm, PhanNhapThongTinSanPham, PhanTaoBienThe, PhanBienTheDaTao, PhanThanhCong, ModalThemNhanh, useProductForm, useVariantBuilder, useToast, chatLieuGiayApi, coGiayApi, congNgheDemApi, deGiayApi, kichCoApi, loaiGiayApi, mauSacApi, thuongHieuApi, trongLuongApi, api, getDisplayErrorMessage, getFieldErrors, createAttributeCodeSeed, generateAttributeCode, generateColorAttributeCode, generateHexColorFromText, generateWeightAttributeCode, isValidHexColor, normalizeAttributeText, normalizeRequiredText, normalizeSizeValue, danhMuc, loadingInit, saving, currentProductId, createdVariants, createdImageManagerRefs, productForm, productErrors, pageTitle, productCode, isExistingProduct, representativeCreatedVariants, loadInitialData, goBack, handleGoBack, setCreatedImageManagerRef, validateProductForm, buildCreateProductPayload, regenerateDraftProductCode, variantBuilder, variantErrors, generatedVariants, draftVariantImages, mauSacSearch, kichCoSearch, openVariantDropdown, representativeGeneratedVariants, generateVariants, applyGeneratedDefaults, removeGeneratedVariant, toggleVariantDropdown, toggleSelectedValue, clearSelectedValues, appendSelectedValue, updateDraftImagesForVariant, toast, showToast, inlineCreatingType, quickCreateOpen, quickCreateType, quickCreateSaving, quickCreateColorSeed, quickCreateForm, quickCreateErrors, attributeConfigs, quickCreateDefinition, handleDocumentClick, normalizeErrorText, isDuplicateProductCodeError, isDuplicateAttributeErrorMessage, getQuickCreateDuplicateValue, setQuickCreateDuplicateError, applyQuickCreateRequestError, normalizeWeightValue, clearQuickCreateErrors, resetQuickCreateForm, closeQuickCreate, syncQuickCreateColorFields, openQuickCreate, getCategoryItems, findExistingInlineItem, appendCategoryItem, selectInlineCreatedItem, getInlineItemDisplayValue, buildInlineCreatePayload, updateQuickCreateForm, handleQuickCreateSave, handleInlineCreateAttribute, handleGenerateVariants, buildDraftImagePayload, syncDraftImagesToVariants, clearSavedDraftImages, handleSave } = useChiTietSanPhamFormPage();
 </script>
 
 <template>
-  <div class="space-y-5">
-    <FormHeader :page-title="pageTitle" @go-back="goBack" />
+  <div class="space-y-5 radius-6px">
+    <TieuDeForm :page-title="pageTitle" @go-back="goBack" />
 
     <section
       v-if="loadingInit"
@@ -17,7 +17,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
 
     <template v-else>
       <section class="space-y-6">
-        <ProductFormSection
+        <PhanNhapThongTinSanPham
           :product-form="productForm"
           :product-errors="productErrors"
           :product-code="productCode"
@@ -26,7 +26,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
           @inline-create-attribute="handleInlineCreateAttribute"
         />
 
-        <VariantBuilderSection
+        <PhanTaoBienThe
           :variant-builder="variantBuilder"
           :variant-errors="variantErrors"
           :danh-muc="danhMuc"
@@ -49,7 +49,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
             <textarea
               v-model="productForm.moTa"
               rows="5"
-              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              class="w-full rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
               placeholder="Mô tả sản phẩm"
             ></textarea>
             <p v-if="productErrors.moTa" class="mt-1 text-xs text-rose-500">
@@ -59,7 +59,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
         </article>
       </section>
 
-      <ChiTietSanPhamGeneratedVariantsSection
+      <PhanBienTheDaTao
         :generated-variants="generatedVariants"
         :representative-generated-variants="representativeGeneratedVariants"
         :variant-builder="variantBuilder"
@@ -76,7 +76,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
         @error="showToast($event, 'error')"
       />
 
-      <SuccessSection
+      <PhanThanhCong
         :representative-created-variants="representativeCreatedVariants"
         :created-image-manager-refs="createdImageManagerRefs"
         @go-back="handleGoBack"
@@ -85,7 +85,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
       />
     </template>
 
-    <QuickCreateModal
+    <ModalThemNhanh
       :show="quickCreateOpen"
       :definition="quickCreateDefinition"
       :form="quickCreateForm"
@@ -100,7 +100,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, FormHeader, Product
   <Transition name="fade">
     <div
       v-if="toast.show && toast.type !== 'success'"
-      class="fixed right-5 top-5 z-[100] rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg"
+      class="fixed right-5 top-5 z-[100] rounded-md px-4 py-3 text-sm font-medium text-white shadow-lg"
       :class="toast.type === 'error' ? 'bg-[#cf1018]' : 'bg-[#ff6a00]'"
     >
       {{ toast.message }}

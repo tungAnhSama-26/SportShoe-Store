@@ -18,6 +18,11 @@ public class FileUploadController {
 
     private final Path rootLocation = Paths.get("uploads");
 
+    /** Chỉ cho phép tệp ảnh và video (tránh upload .html/.exe... bị serve tĩnh gây XSS/lưu mã độc). */
+    private static final java.util.Set<String> DUOI_CHO_PHEP = java.util.Set.of(
+            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif",
+            ".mp4", ".webm", ".ogg", ".mov", ".m4v", ".avi", ".mkv");
+
     public FileUploadController() {
         try {
             Files.createDirectories(rootLocation);
@@ -48,6 +53,10 @@ public class FileUploadController {
                     extension = ".jpg";
                 }
             }
+            if (!DUOI_CHO_PHEP.contains(extension.toLowerCase())) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Chỉ chấp nhận tệp ảnh hoặc video."));
+            }
+
             String newFilename = UUID.randomUUID().toString() + extension;
             Path destinationFile = rootLocation.resolve(Paths.get(newFilename)).normalize().toAbsolutePath();
 
@@ -57,10 +66,7 @@ public class FileUploadController {
 
             file.transferTo(destinationFile);
 
-            String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/uploads/")
-                    .path(newFilename)
-                    .toUriString();
+            String fileDownloadUri = "/uploads/" + newFilename;
 
             return ResponseEntity.ok(ApiResponse.success("File uploaded successfully", Map.of("url", fileDownloadUri)));
         } catch (Exception e) {

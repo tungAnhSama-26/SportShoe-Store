@@ -102,6 +102,8 @@ async function taiDanhSachCa() {
         return tA.localeCompare(tB);
       });
       DS_CA.value = mapped;
+    } else {
+      DS_CA.value = [];
     }
   } catch (e) {
     console.error("Không thể tải danh sách ca làm việc", e);
@@ -304,7 +306,7 @@ async function taiNhanVien() {
   loiTrang.value = "";
   try {
     await taiDanhSachCa();
-    const ds = await layDanhSachNhanVien({ trangThai: 1 });
+    const ds = await layDanhSachNhanVien({ trangThai: 1, vaiTro: 2 });
     danhSachNV.value = ds.map((nv) => ({
       id: String(nv.id),
       ma: nv.ma ?? "",
@@ -738,9 +740,9 @@ async function xoaCaTuBang(nv, ngayStr, caInfo) {
     showSuccess("Xóa ca làm việc thành công!");
     await taiDuLieuLich();
     
-    const updatedDay = lichBoard.value.find(d => d.ngayStr === day.ngayStr);
+    const updatedDay = lichBoard.value.find(d => d.ngayStr === ngayStr);
     if (updatedDay) {
-      const updatedCa = updatedDay.cas.find(c => c.id === ca.id);
+      const updatedCa = updatedDay.cas.find(c => c.id.toLowerCase() === caInfo.id.toLowerCase());
       if (updatedCa) {
         currentChiTietCa.value = { day: updatedDay, ca: updatedCa };
       }
@@ -1274,7 +1276,6 @@ function layThongTinCa(id) {
             </div>
 
           </div>
-
 
           <!-- Footer -->
           <div class="flex items-center gap-3 p-5 pt-0">

@@ -21,7 +21,7 @@ public class GiaoHangTaiQuayService {
     public String requireDiaChiGiaoHang(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
         String diaChi = thongTinGiaoHang != null ? thongTinGiaoHang.diaChiGiaoHang() : null;
         if (diaChi == null || diaChi.isBlank()) {
-            throw new BusinessException("Vui long nhap dia chi giao hang");
+            throw new BusinessException("Vui lòng nhập địa chỉ giao hàng");
         }
         return diaChi.trim();
     }
@@ -29,7 +29,7 @@ public class GiaoHangTaiQuayService {
     public BigDecimal resolvePhiVanChuyen(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
         BigDecimal phiVanChuyen = pricingUseCase.defaultMoney(thongTinGiaoHang != null ? thongTinGiaoHang.phiVanChuyen() : null);
         if (phiVanChuyen.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("Phi van chuyen khong hop le");
+            throw new BusinessException("Phí vận chuyển không hợp lệ");
         }
         return phiVanChuyen;
     }

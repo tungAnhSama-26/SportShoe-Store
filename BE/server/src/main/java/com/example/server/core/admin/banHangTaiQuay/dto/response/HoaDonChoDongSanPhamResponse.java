@@ -3,6 +3,7 @@ package com.example.server.core.admin.banHangTaiQuay.dto.response;
 import java.math.BigDecimal;
 
 public record HoaDonChoDongSanPhamResponse(
+        Integer hoaDonChiTietId,
         Integer chiTietId,
         String maSanPham,
         String tenSanPham,
@@ -13,6 +14,7 @@ public record HoaDonChoDongSanPhamResponse(
         Integer soLuong,
         Integer soLuongTon,
         BigDecimal giaBan,
+        BigDecimal giaGoc,
         BigDecimal thanhTien
 ) {
 }

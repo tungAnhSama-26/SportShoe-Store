@@ -723,7 +723,7 @@ public class ThongKeService {
                     if (tradeDate == null || tradeDate.isBefore(start) || !tradeDate.isBefore(end)) {
                         return false;
                     }
-                    return khopBoLocSanPham(line.getGiayChiTiet().getGiay(), boLoc);
+                    return khopBoLocSanPham(line.getGiayChiTiet() != null ? line.getGiayChiTiet().getGiay() : null, boLoc);
                 })
                 .toList();
 

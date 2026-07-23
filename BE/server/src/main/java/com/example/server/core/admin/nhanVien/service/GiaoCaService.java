@@ -16,6 +16,8 @@ public interface GiaoCaService {
 
     GiaoCaResponse layCaHoatDong(UUID nhanVienId);
 
+    void kiemTraQuyenMoCa(UUID nhanVienId);
+
     GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request);
 
     GiaoCaStatsResponse layThongTinGiaoCaCurrent(UUID nhanVienId);

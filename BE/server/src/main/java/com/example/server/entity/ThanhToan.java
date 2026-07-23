@@ -94,5 +94,11 @@ public class ThanhToan {
     @Column(name = "ngay_tao", nullable = false)
     private Instant ngayTao;
 
+    public void setNgayTao(Instant ngayTao) {
+        this.ngayTao = ngayTao;
+    }
 
+    public void setTrangThai(Integer trangThai) {
+        this.trangThai = trangThai;
+    }
 }

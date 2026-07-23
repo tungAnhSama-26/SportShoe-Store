@@ -1,4 +1,4 @@
-const fs = require('fs');
+`const fs = require('fs');
 const file = 'c:/Users/tunga/Desktop/SportShoe-Store/FE/sport-shoe/src/features/ban-hang-tai-quay/useBanHangTaiQuay.js';
 let content = fs.readFileSync(file, 'utf8');
 

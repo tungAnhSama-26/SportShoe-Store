@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { getCurrentAdminUser, hasRequiredAdminCccd, isAdminAuthenticated, isAdminRole } from "../services/auth";
-import { showWarning } from "../utils/alert";
+import { getCurrentAdminUser, isAdminAuthenticated, isAdminRole } from "../services/auth";
 
 const TrangMacDinh = () => import("../layouts/TrangMacDinh.vue");
 const TrangChu = () => import("../pages/TrangChu.vue");
@@ -14,6 +13,8 @@ const DanhGiaDonHang = () => import("../pages/DanhGiaDonHang.vue");
 const SanPhamNoiBat = () => import("../pages/SanPhamNoiBat.vue");
 const GioiThieu = () => import("../pages/GioiThieu.vue");
 const TraCuuDonHang = () => import("../pages/TraCuuDonHang.vue");
+const DanhGiaCongKhai = () => import("../pages/DanhGiaCongKhai.vue");
+const GoiYGiay = () => import("../pages/GoiYGiay.vue");
 const ClientProfile = () => import("../pages/Profile.vue");
 const Login = () => import("../pages/login/Login.vue");
 const AdminLogin = () => import("../pages/login/AdminLogin.vue");
@@ -28,10 +29,13 @@ const ChiTietPhieuGiamGiaKhachHang = () => import("../pages/admin/khuyen-mai/Chi
 const DotGiamGia = () => import("../pages/admin/khuyen-mai/DotGiamGia.vue");
 const ChiTietDotGiamGia = () => import("../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue");
 const HoaDon = () => import("../pages/admin/hoa-don/HoaDon.vue");
-const ChiTietHoaDon = () => import("../pages/admin/hoa-don/ChiTietHoaDon.vue");
+const ChiTietHoaDon = () => import("../pages/admin/hoa-don/chi-tiet-hoa-don/ChiTietHoaDon.vue");
 const TraHang = () => import("../pages/admin/tra-hang/TraHang.vue");
+const QuanLyDanhGia = () => import("../pages/admin/danh-gia/QuanLyDanhGia.vue");
 const ChiTietTraHang = () => import("../pages/admin/tra-hang/ChiTietTraHang.vue");
 const BanHangTaiQuay = () => import("../pages/admin/ban-hang/BanHangTaiQuay.vue");
+const PosLayout = () => import("../layouts/admin/PosLayout.vue");
+const PosIpadApp = () => import("../pages/admin/ban-hang/PosIpadApp.vue");
 const DanhSachSanPham = () => import("../pages/admin/san-pham/DanhSachSanPham.vue");
 const DanhSachChiTietSanPham = () => import("../pages/admin/san-pham/DanhSachChiTietSanPham.vue");
 const ChiTietSanPhamForm = () => import("../pages/admin/san-pham/ChiTietSanPhamForm.vue");
@@ -51,6 +55,7 @@ const QuanLyChamCong = () => import("../pages/admin/lich-lam/QuanLyChamCong.vue"
 const QuanLyCaLam = () => import("../pages/admin/lich-lam/QuanLyCaLam.vue");
 const LichSuHoatDong = () => import("../pages/admin/lich-lam/LichSuHoatDong.vue");
 const BanGiaoCa = () => import("../pages/admin/quan-ly-giao-ca/BanGiaoCa.vue");
+const QuanLyThuChi = () => import("../pages/admin/thu-chi/QuanLyThuChi.vue");
 const Profile = () => import("../pages/admin/profile/Profile.vue");
 const QuanLyKhachHang = () => import("../pages/admin/khach-hang/QuanLyKhachHang.vue");
 const ChiTietKhachHang = () => import("../pages/admin/khach-hang/ChiTietKhachHang.vue");
@@ -59,12 +64,14 @@ const ChatManagement = () => import("../pages/admin/chat/ChatManagement.vue");
 
 const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
+  "/pos",
   "/admin/hoa-don",
   "/admin/tra-hang",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
   "/admin/cham-cong",
   "/admin/ban-giao-ca",
+  "/admin/thu-chi",
   "/admin/mo-ca",
   "/admin/chat",
   "/admin/profile"
@@ -86,7 +93,7 @@ function isOwnEmployeeProfile(path) {
 }
 
 function isProtectedAdminArea(path) {
-  return path.startsWith("/admin") || path.startsWith("/nhanvien");
+  return path.startsWith("/admin") || path.startsWith("/nhanvien") || path.startsWith("/pos");
 }
 
 const router = createRouter({
@@ -195,6 +202,16 @@ const router = createRouter({
           component: TraCuuDonHang
         },
         {
+          path: "danh-gia",
+          name: "danh-gia-cong-khai",
+          component: DanhGiaCongKhai
+        },
+        {
+          path: "goi-y",
+          name: "goi-y-giay",
+          component: GoiYGiay
+        },
+        {
           path: "profile",
           name: "client-profile",
           component: ClientProfile
@@ -213,6 +230,17 @@ const router = createRouter({
           path: "profile",
           name: "nhanvien-profile",
           component: Profile
+        }
+      ]
+    },
+    {
+      path: "/pos",
+      component: PosLayout,
+      children: [
+        {
+          path: "",
+          name: "admin-pos-ipad",
+          component: PosIpadApp
         }
       ]
     },
@@ -278,6 +306,11 @@ const router = createRouter({
           path: "tra-hang/:id",
           name: "admin-tra-hang-chi-tiet",
           component: ChiTietTraHang
+        },
+        {
+          path: "danh-gia",
+          name: "admin-danh-gia",
+          component: QuanLyDanhGia
         },
         {
           path: "ban-hang",
@@ -424,6 +457,11 @@ const router = createRouter({
           component: BanGiaoCa
         },
         {
+          path: "thu-chi",
+          name: "admin-thu-chi",
+          component: QuanLyThuChi
+        },
+        {
           path: "mo-ca",
           name: "admin-mo-ca",
           component: BanGiaoCa
@@ -432,10 +470,16 @@ const router = createRouter({
           path: "lich-su-hoat-dong",
           name: "admin-lich-su-hoat-dong",
           component: LichSuHoatDong
-},{
+        },
+        {
           path: "chat",
           name: "admin-chat",
           component: ChatManagement
+        },
+        {
+          path: "chatbot-config",
+          name: "admin-chatbot-config",
+          component: () => import("../pages/admin/chatbot-config/ChatbotConfig.vue")
         }
       ]
     },
@@ -472,29 +516,12 @@ router.beforeEach((to) => {
     };
   }
 
-  if (!hasRequiredAdminCccd() && !isOwnEmployeeProfile(to.path)) {
-    showWarning(
-      "Tài khoản của bạn chưa xác minh CCCD. Vui lòng vào hồ sơ cá nhân và quét CCCD trước khi sử dụng các chức năng khác.",
-      "Cần xác minh CCCD"
-    );
-    return {
-      path: ownEmployeeProfilePath(),
-      query: { requireCccd: "1", redirect: to.fullPath }
-    };
-  }
-
-  if (!hasRequiredAdminCccd() && isOwnEmployeeProfile(to.path)) {
-    return true;
-  }
 
   if (to.path.startsWith("/nhanvien")) {
     return isOwnEmployeeProfile(to.path) ? true : ownEmployeeProfilePath();
   }
 
   if (isAdminRole()) {
-    if (to.path === "/admin/ban-giao-ca" || to.path === "/admin/mo-ca") {
-      return "/admin/lich-su-hoat-dong";
-    }
     return true;
   }
 

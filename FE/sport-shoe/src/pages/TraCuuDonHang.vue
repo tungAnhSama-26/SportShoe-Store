@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { traCuuDonHangTheoMa } from '../services/don-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import { resolveMediaUrl } from '../utils/media';
 import {
   CAC_BUOC_DON_HANG,
   layCauHinhTrangThaiDonHang,
@@ -80,6 +81,27 @@ function xuLyAnhLoi(event) {
   if (event.target.src !== anhMacDinh) event.target.src = anhMacDinh;
 }
 
+let pollTimer = null;
+
+function dungPoll() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+function batDauPoll() {
+  dungPoll();
+  pollTimer = setInterval(lamMoiNgam, 10000); // tự cập nhật trạng thái đơn mỗi 10s
+}
+// Làm mới trạng thái đơn ngầm (không hiện loading) để theo dõi realtime.
+async function lamMoiNgam() {
+  const ma = String(maTimKiem.value || '').trim();
+  if (!ma) return;
+  try {
+    const moi = await traCuuDonHangTheoMa(ma);
+    if (moi) don.value = moi;
+  } catch {
+    // lỗi mạng -> giữ nguyên đơn hiện tại
+  }
+}
+
 async function traCuu(maInput) {
   const ma = String(maInput ?? maTimKiem.value).trim();
   if (!ma) {
@@ -91,13 +113,24 @@ async function traCuu(maInput) {
   try {
     don.value = await traCuuDonHangTheoMa(ma);
     maTimKiem.value = ma;
+    batDauPoll(); // bắt đầu tự cập nhật trạng thái
   } catch (e) {
     don.value = null;
+    dungPoll();
     loi.value = getDisplayErrorMessage(e, 'Không tìm thấy đơn hàng với mã này.');
   } finally {
     dangTai.value = false;
   }
 }
+
+let traCuuTimer = null;
+watch(maTimKiem, (newVal) => {
+  if (traCuuTimer) clearTimeout(traCuuTimer);
+  if (!newVal.trim()) return;
+  traCuuTimer = setTimeout(() => {
+    traCuu(newVal);
+  }, 500);
+});
 
 onMounted(() => {
   const ma = route.query.ma;
@@ -106,13 +139,14 @@ onMounted(() => {
     traCuu(ma);
   }
 });
+
+onUnmounted(dungPoll);
 </script>
 
 <template>
   <main class="orders-six-radius bg-slate-50 min-h-screen pb-20">
     <div class="mx-auto max-w-3xl px-6 lg:px-10 pt-10">
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">Theo dõi đơn hàng</h1>
-      <p class="text-sm text-slate-400 mb-8">Nhập mã hóa đơn để tra cứu thông tin đơn hàng của bạn (không cần đăng nhập).</p>
+      <h1 class="text-3xl font-bold text-slate-900 mb-8">Theo dõi đơn hàng</h1>
 
       <!-- Banner cảm ơn sau khi đặt hàng -->
       <div v-if="laDonMoiDat && don" class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-6 py-5 text-center">
@@ -206,7 +240,10 @@ onMounted(() => {
                     {{ buoc.ten }}
                   </p>
                   <div class="mt-1 min-h-[32px] text-[11px] leading-4 text-slate-400">
-                    <p v-if="buoc.thoiGian">{{ formatGioBuoc(buoc.thoiGian) }} {{ formatNgayBuoc(buoc.thoiGian) }}</p>
+                    <p v-if="buoc.thoiGian">
+                      <span class="block">{{ formatGioBuoc(buoc.thoiGian) }}</span>
+                      <span class="block">{{ formatNgayBuoc(buoc.thoiGian) }}</span>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -229,7 +266,7 @@ onMounted(() => {
           <h2 class="mb-4 text-base font-bold text-slate-800">Sản phẩm</h2>
           <div class="space-y-4">
             <div v-for="(sp, i) in don.sanPhams" :key="sp.hoaDonChiTietId ?? i" class="flex gap-4">
-              <img :src="sp.hinhAnh || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
+              <img :src="resolveMediaUrl(sp.hinhAnh) || anhMacDinh" :alt="sp.tenSanPham" class="h-16 w-16 shrink-0 rounded-xl object-cover bg-slate-50" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800">{{ sp.tenSanPham }}</p>
                 <p class="text-xs text-slate-400">{{ sp.mauSac }} · {{ sp.kichCo }} · x{{ sp.soLuong }}</p>

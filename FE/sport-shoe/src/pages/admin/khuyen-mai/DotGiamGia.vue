@@ -1,4 +1,5 @@
 <script setup>
+import Button from "../../../components/ui/Button.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -22,6 +23,19 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError } from "../../../utils/alert";
 
+const formatToLocalDateString = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const gmt7Time = d.getTime() + (7 * 60 * 60 * 1000);
+  const localDate = new Date(gmt7Time);
+  const year = localDate.getUTCFullYear();
+  const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const date = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 const router = useRouter();
 
 const dangTai = ref(false);
@@ -34,7 +48,7 @@ const trangHienTai = ref(1);
 const totalItems = ref(0);
 
 const dsTrangThai = [
-  { label: "Tất cả", value: "" },
+  { label: "Tất cả trạng thái", value: "" },
   { label: "Đang hoạt động", value: "1" },
   { label: "Ngừng hoạt động", value: "0" },
   { label: "Hết hạn", value: "het_han" },
@@ -202,8 +216,8 @@ async function nhanhDoiTrangThai(item) {
       moTa: item.moTa,
       loaiGiam: item.loaiGiam,
       giaTriGiam: item.giaTriGiam,
-      ngayBatDau: item.ngayBatDau,
-      ngayKetThuc: item.ngayKetThuc,
+      ngayBatDau: formatToLocalDateString(item.ngayBatDau),
+      ngayKetThuc: formatToLocalDateString(item.ngayKetThuc),
       kichHoat: nextStatus,
     });
 
@@ -284,10 +298,16 @@ watch(soPhanTuMotTrang, () => {
 });
 watch(trangHienTai, taiDanhSach);
 
-let timer;
 watch(
   boLoc,
   () => {
+    const today = todayStr.value;
+    if (boLoc.value.tuNgay && boLoc.value.tuNgay > today) {
+      boLoc.value.tuNgay = today;
+    }
+    if (boLoc.value.tuNgay && boLoc.value.denNgay && boLoc.value.tuNgay > boLoc.value.denNgay) {
+      boLoc.value.denNgay = boLoc.value.tuNgay;
+    }
     clearTimeout(timer);
     timer = setTimeout(() => {
       trangHienTai.value = 1;
@@ -313,7 +333,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-5 radius-6px">
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="translate-y-3 opacity-0"
@@ -392,6 +412,7 @@ onMounted(() => {
             <input
               v-model="boLoc.tuNgay"
               type="date"
+              :max="todayStr"
               class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
           </div>
@@ -401,6 +422,7 @@ onMounted(() => {
             <input
               v-model="boLoc.denNgay"
               type="date"
+              :min="boLoc.tuNgay || undefined"
               class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
             />
           </div>
@@ -423,24 +445,24 @@ onMounted(() => {
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-3">
-          <button
+          <Button
+            variant="soft"
             @click="lamMoiBoLoc"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
           >
-            <RotateCcw class="h-4 w-4" /> Đặt lại bộ lọc
-          </button>
-          <button
+            <template #prefix><RotateCcw class="h-4 w-4" /></template> Đặt lại bộ lọc
+          </Button>
+          <Button
+            variant="soft"
             @click="xuatExcel"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-500 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-600"
           >
-            <FileSpreadsheet class="h-4 w-4" /> Xuất Excel
-          </button>
-          <button
+            <template #prefix><FileSpreadsheet class="h-4 w-4" /></template> Xuất Excel
+          </Button>
+          <Button
+            variant="primary"
             @click="router.push({ name: 'admin-dot-giam-gia-them' })"
-            class="inline-flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 hover:shadow-[0_18px_34px_rgba(239,68,68,0.32)]"
           >
-            <Plus class="h-4 w-4" /> Tạo đợt giảm giá
-          </button>
+            <template #prefix><Plus class="h-4 w-4" /></template> Tạo đợt giảm giá
+          </Button>
         </div>
       </div>
     </section>

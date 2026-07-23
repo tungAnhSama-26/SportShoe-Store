@@ -7,14 +7,17 @@ import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
 import com.example.server.core.admin.nhanVien.service.GiaoCaService;
 import com.example.server.entity.GiaoCa;
+import com.example.server.entity.ChamCong;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.GiaoCaRepository;
 import com.example.server.repository.NhanVienRepository;
+import com.example.server.repository.ChamCongRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -24,12 +27,24 @@ import java.util.UUID;
 @Service
 public class GiaoCaServiceImpl implements GiaoCaService {
 
+    private static final List<String> CHUA_KET_THUC_TRANG_THAI = List.of("MO_CA", "CHO_BAN_GIAO");
+    private static final String KHONG_CO_QUYEN_MO_CA = "T\u1ea1m th\u1eddi kh\u00f4ng c\u00f3 quy\u1ec1n truy c\u1eadp.";
+
     private final GiaoCaRepository giaoCaRepository;
     private final NhanVienRepository nhanVienRepository;
+    private final ChamCongRepository chamCongRepository;
+    private final ThongBaoService thongBaoService;
 
-    public GiaoCaServiceImpl(GiaoCaRepository giaoCaRepository, NhanVienRepository nhanVienRepository) {
+    public GiaoCaServiceImpl(
+            GiaoCaRepository giaoCaRepository,
+            NhanVienRepository nhanVienRepository,
+            ChamCongRepository chamCongRepository,
+            ThongBaoService thongBaoService
+    ) {
         this.giaoCaRepository = giaoCaRepository;
         this.nhanVienRepository = nhanVienRepository;
+        this.chamCongRepository = chamCongRepository;
+        this.thongBaoService = thongBaoService;
     }
 
     @Override
@@ -41,8 +56,16 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public void kiemTraQuyenMoCa(UUID nhanVienId) {
+        checkCaChuaKetThucCuaNhanVienKhac(nhanVienId);
+    }
+
+    @Override
     @Transactional
     public GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request) {
+        checkCaChuaKetThucCuaNhanVienKhac(nhanVienId);
+
         if (giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA").isPresent()) {
             throw new BusinessException("Nhân viên đã có ca làm việc đang hoạt động.");
         }
@@ -73,8 +96,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         GiaoCa gc = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA")
                 .orElseThrow(() -> new BusinessException("Nhân viên không có ca làm việc nào đang hoạt động."));
 
-        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(nhanVienId, gc.getThoiGianVao(), null);
-        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(nhanVienId, gc.getThoiGianVao(), null);
+        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(gc.getId());
+        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(gc.getId());
         BigDecimal tienHeThong = gc.getTienDauCa().add(tienMat);
 
         return new GiaoCaStatsResponse(tienMat, tienCK, tienHeThong);
@@ -93,8 +116,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         NhanVien nhanVienNhan = nhanVienRepository.findById(request.nhanVienNhanId())
                 .orElseThrow(() -> new BusinessException("Nhân viên nhận bàn giao không tồn tại."));
 
-        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(nhanVienId, gc.getThoiGianVao(), null);
-        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(nhanVienId, gc.getThoiGianVao(), null);
+        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(gc.getId());
+        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(gc.getId());
         BigDecimal tienHeThong = gc.getTienDauCa().add(tienMat);
         BigDecimal tienChenhLech = request.tienCuoiCaThucTe().subtract(tienHeThong);
 
@@ -113,7 +136,22 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         gc.setTrangThai("CHO_BAN_GIAO");
         gc.setGhiChu(request.ghiChu());
 
-        return mapToResponse(giaoCaRepository.save(gc));
+        GiaoCa saved = giaoCaRepository.save(gc);
+
+        // Trigger shift handover notification
+        try {
+            String tenNV = saved.getNhanVienTrongCa() != null ? saved.getNhanVienTrongCa().getHoTen() : "Nhân viên";
+            thongBaoService.taoThongBao(
+                    "Yêu cầu bàn giao ca chờ duyệt",
+                    "Nhân viên \"" + tenNV + "\" đã gửi yêu cầu bàn giao ca (Mã ca: " + saved.getMa() + ").",
+                    "SHIFT",
+                    "/admin/ban-giao-ca"
+            );
+        } catch (Exception e) {
+            System.err.println("[GiaoCa] Lỗi gửi thông báo bàn giao ca: " + e.getMessage());
+        }
+
+        return mapToResponse(saved);
     }
 
     @Override
@@ -177,8 +215,22 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 .map(this::mapToResponse);
     }
 
+    private void checkCaChuaKetThucCuaNhanVienKhac(UUID nhanVienId) {
+        // Cho phép nhiều nhân viên cùng mở ca để xử lý bán hàng song song
+        // hoặc không cản trở nhân viên mới khi ca trước quên đóng.
+    }
+
     private GiaoCaResponse mapToResponse(GiaoCa gc) {
         if (gc == null) return null;
+        
+        Instant thoiGianChamCong = null;
+        if (gc.getNhanVienTrongCa() != null) {
+            List<ChamCong> chamCongs = chamCongRepository.findByNhanVienIdAndThoiGianRaIsNull(gc.getNhanVienTrongCa().getId());
+            if (chamCongs != null && !chamCongs.isEmpty()) {
+                thoiGianChamCong = chamCongs.get(0).getThoiGianVao();
+            }
+        }
+        
         return new GiaoCaResponse(
                 gc.getId(),
                 gc.getMa(),
@@ -189,6 +241,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 gc.getNhanVienNhan() != null ? gc.getNhanVienNhan().getHoTen() : null,
                 gc.getNhanVienNhan() != null ? gc.getNhanVienNhan().getMa() : null,
                 gc.getThoiGianVao(),
+                thoiGianChamCong,
                 gc.getThoiGianRa(),
                 gc.getTienDauCa(),
                 gc.getTienMatTrongCa(),

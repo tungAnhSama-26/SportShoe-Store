@@ -321,7 +321,7 @@ async function xuatExcel() {
           <template v-if="loading">
             <tr v-for="j in 5" :key="j" class="animate-pulse">
               <td class="px-4 py-3"><div class="h-4 bg-gray-200 rounded w-6"></div></td>
-              <td class="px-4 py-3"><div class="h-10 w-10 bg-gray-200 rounded-lg"></div></td>
+              <td class="px-4 py-3"><div class="h-10 w-10 bg-gray-200 rounded-md"></div></td>
               <td class="px-4 py-3"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
               <td class="px-4 py-3"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
               <td class="px-4 py-3"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
@@ -336,8 +336,8 @@ async function xuatExcel() {
             <td class="px-4 py-3 text-gray-500">{{ currentPage * pageSize + idx + 1 }}</td>
             <td class="px-4 py-3">
               <div class="flex justify-center">
-                <img v-if="item.logoUrl" :src="item.logoUrl" alt="" class="h-10 w-10 object-contain rounded-lg border border-gray-100" />
-                <div v-else class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400">N/A</div>
+                <img v-if="item.logoUrl" :src="item.logoUrl" alt="" class="h-10 w-10 object-contain rounded-md border border-gray-100" />
+                <div v-else class="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-400">N/A</div>
               </div>
             </td>
             <td class="px-4 py-3 font-semibold text-slate-800"><span class="block truncate">{{ item.ma }}</span></td>
@@ -372,14 +372,13 @@ async function xuatExcel() {
           <div
             v-if="showModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          @click.self="showModal = false"
         >
-          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+          <div class="bg-white rounded-md shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 class="text-lg font-semibold text-gray-800">
                 {{ modalMode === 'add' ? 'Thêm thương hiệu' : modalMode === 'edit' ? 'Cập nhật thương hiệu' : 'Chi tiết thương hiệu' }}
               </h2>
-              <button @click="showModal = false" class="p-1.5 rounded-lg hover:bg-gray-100">
+              <button @click="showModal = false" class="p-1.5 rounded-md hover:bg-gray-100">
                 <X :size="18" />
               </button>
             </div>
@@ -391,7 +390,7 @@ async function xuatExcel() {
                   <input
                     v-model="form.ma"
                     readonly
-                    class="w-full px-3 py-2 border rounded-lg text-sm uppercase text-slate-500 bg-slate-50 focus:outline-none"
+                    class="w-full px-3 py-2 border rounded-md text-sm uppercase text-slate-500 bg-slate-50 focus:outline-none"
                     :class="errors.ma ? 'border-red-400' : 'border-gray-200'"
                   />
                   <p v-if="errors.ma" class="text-xs text-red-500 mt-1">{{ errors.ma }}</p>
@@ -403,7 +402,7 @@ async function xuatExcel() {
                     v-model="form.ten"
                     :disabled="modalMode === 'view'"
                     maxlength="200"
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                     :class="errors.ten ? 'border-red-400' : 'border-gray-200'"
                     placeholder="Tên thương hiệu"
                   />
@@ -417,7 +416,7 @@ async function xuatExcel() {
                   v-model="form.xuatXu"
                   :disabled="modalMode === 'view'"
                   maxlength="100"
-                  class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                   :class="errors.xuatXu ? 'border-red-400' : 'border-gray-200'"
                   placeholder="VD: Mỹ"
                 />
@@ -426,9 +425,9 @@ async function xuatExcel() {
 
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-2">Logo</label>
-                <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                <div class="rounded-md border border-dashed border-gray-200 bg-gray-50 p-4">
                   <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                    <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-white">
                       <img v-if="form.logoUrl" :src="form.logoUrl" class="h-full w-full object-contain p-2" alt="Logo preview" />
                       <div v-else class="flex flex-col items-center gap-2 text-gray-400">
                         <ImageOff :size="22" />
@@ -439,7 +438,7 @@ async function xuatExcel() {
                     <div class="min-w-0 flex-1 space-y-2">
                       <label
                         v-if="modalMode !== 'view'"
-                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-600"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-rose-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-600"
                       >
                         <Upload :size="16" />
                         {{ uploadingLogo ? 'Đang tải ảnh...' : form.logoUrl ? 'Đổi ảnh logo' : 'Chọn ảnh logo' }}
@@ -449,7 +448,7 @@ async function xuatExcel() {
                       <button
                         v-if="modalMode !== 'view' && form.logoUrl"
                         type="button"
-                        class="ml-2 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-gray-50"
+                        class="ml-2 inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-gray-50"
                         @click="clearLogo"
                       >
                         <Trash2 :size="16" />
@@ -471,7 +470,7 @@ async function xuatExcel() {
                   :disabled="modalMode === 'view'"
                   rows="3"
                   maxlength="500"
-                  class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
+                  class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
                   :class="errors.moTa ? 'border-red-400' : 'border-gray-200'"
                   placeholder="Mô tả..."
                 ></textarea>
@@ -480,13 +479,13 @@ async function xuatExcel() {
             </div>
 
             <div v-if="modalMode !== 'view'" class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
-              <button @click="showModal = false" class="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+              <button @click="showModal = false" class="px-4 py-2 border border-gray-200 rounded-md text-sm hover:bg-gray-50">
                 Hủy
               </button>
               <button
                 @click="handleSave"
                 :disabled="saving"
-                class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium disabled:opacity-60"
+                class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-md text-sm font-medium disabled:opacity-60"
               >
                 {{ saving ? 'Đang lưu...' : 'Lưu' }}
               </button>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'blur'])
+const emit = defineEmits(['update:modelValue', 'blur', 'focus'])
 
 const displayValue = ref('')
 
@@ -30,17 +30,20 @@ function sanitizeDigits(value) {
 
 function syncDisplay(value) {
   if (value == null || value === '') {
-    displayValue.value = ''
+    if (displayValue.value !== '') displayValue.value = ''
     return
   }
 
   const numericValue = Number(value)
   if (Number.isNaN(numericValue)) {
-    displayValue.value = ''
+    if (displayValue.value !== '') displayValue.value = ''
     return
   }
 
-  displayValue.value = formatNumber(Math.max(numericValue, props.min))
+  const formatted = formatNumber(Math.max(numericValue, props.min))
+  if (displayValue.value !== formatted) {
+    displayValue.value = formatted
+  }
 }
 
 function emitValue(rawDigits) {
@@ -54,7 +57,19 @@ function emitValue(rawDigits) {
 }
 
 function handleInput(event) {
-  const rawDigits = sanitizeDigits(event.target.value)
+  const el = event.target
+  const cursor = el.selectionStart
+  const originalValue = el.value
+
+  // Count digits before cursor
+  let digitsBeforeCursor = 0
+  for (let i = 0; i < cursor; i++) {
+    if (/\d/.test(originalValue[i])) {
+      digitsBeforeCursor++
+    }
+  }
+
+  const rawDigits = sanitizeDigits(originalValue)
 
   if (!rawDigits) {
     displayValue.value = ''
@@ -63,8 +78,28 @@ function handleInput(event) {
   }
 
   const numericValue = Math.max(Number(rawDigits), props.min)
-  displayValue.value = formatNumber(numericValue)
+  const formattedValue = formatNumber(numericValue)
+
+  if (displayValue.value !== formattedValue) {
+    displayValue.value = formattedValue
+  }
   emit('update:modelValue', numericValue)
+
+  // Restore cursor position accurately
+  nextTick(() => {
+    let newCursor = 0
+    let digitsSeen = 0
+    for (let i = 0; i < formattedValue.length; i++) {
+      if (digitsSeen === digitsBeforeCursor) break
+      if (/\d/.test(formattedValue[i])) digitsSeen++
+      newCursor++
+    }
+    el.setSelectionRange(newCursor, newCursor)
+  })
+}
+
+function handleFocus() {
+  emit('focus')
 }
 
 function handleBlur() {
@@ -91,6 +126,7 @@ watch(
     inputmode="numeric"
     autocomplete="off"
     @input="handleInput"
+    @focus="handleFocus"
     @blur="handleBlur"
   />
 </template>

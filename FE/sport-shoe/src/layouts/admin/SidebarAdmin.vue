@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { demDanhGiaChuaXem } from "../../services/admin-danh-gia";
 import logoChinh from "../../assets/logo/delete-background-logo.png";
 import {
   isDesktopSidebar,
@@ -22,6 +23,7 @@ import {
   Feather,
   History,
   Footprints,
+  CircleDollarSign,
   Home,
   LayoutDashboard,
   Layers,
@@ -31,6 +33,7 @@ import {
   Palette,
   ReceiptText,
   Ruler,
+  Star,
   Store,
   Tag,
   Ticket,
@@ -43,6 +46,28 @@ const route = useRoute();
 const { adminSession } = useAdminSession();
 const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
 const isActive = (path) => route.path.startsWith(path);
+
+// Chuông thông báo: số đánh giá chưa xem.
+const soDanhGiaChuaXem = ref(0);
+let dongHoChuaXem = null;
+async function taiSoDanhGiaChuaXem() {
+  try {
+    soDanhGiaChuaXem.value = (await demDanhGiaChuaXem()) || 0;
+  } catch {
+    // bỏ qua lỗi nền
+  }
+}
+onMounted(() => {
+  taiSoDanhGiaChuaXem();
+  // Tự cập nhật mỗi 30s để chuông sáng khi có người đánh giá (không cần F5).
+  dongHoChuaXem = setInterval(taiSoDanhGiaChuaXem, 30000);
+  // Cập nhật tức thì khi admin vừa xem đánh giá của 1 sản phẩm.
+  window.addEventListener("danh-gia-da-xem", taiSoDanhGiaChuaXem);
+});
+onUnmounted(() => {
+  if (dongHoChuaXem) clearInterval(dongHoChuaXem);
+  window.removeEventListener("danh-gia-da-xem", taiSoDanhGiaChuaXem);
+});
 const checkThuocTinhActive = (newPath) => {
   const routes = [
     "/admin/loai-giay",
@@ -81,6 +106,7 @@ const openLichLam = ref(checkLichLamActive(route.path));
 watch(
   () => route.path,
   (newPath) => {
+    taiSoDanhGiaChuaXem(); // cập nhật badge chuông khi điều hướng
     if (checkSanPhamActive(newPath)) {
       openSanPham.value = true;
     }
@@ -166,9 +192,9 @@ function subItemClass(active) {
     <nav class="mt-6 flex-1 space-y-1 overflow-x-hidden overflow-y-auto" :class="compactMode ? 'px-2' : 'px-4'">
 
 
-      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'T\u1ed5ng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
+      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'Tổng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
         <LayoutDashboard :class="navIconClass(isActive('/admin/thong-ke'))" />
-        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">T&#7893;ng quan</span>
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Tổng quan</span>
       </router-link>
 
       <router-link to="/admin/ban-hang" :title="compactMode ? 'B\u00e1n h\u00e0ng t\u1ea1i qu\u1ea7y' : undefined" :class="navItemClass(isActive('/admin/ban-hang'))">
@@ -328,6 +354,20 @@ function subItemClass(active) {
       <router-link to="/admin/chat" :title="compactMode ? 'Hỗ trợ trực tuyến' : undefined" :class="navItemClass(isActive('/admin/chat'))">
         <MessageSquare :class="navIconClass(isActive('/admin/chat'))" />
         <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Hỗ trợ trực tuyến</span>
+      </router-link>
+
+      <router-link v-if="laAdmin" to="/admin/danh-gia" :title="compactMode ? 'Quản lý đánh giá' : undefined" :class="navItemClass(isActive('/admin/danh-gia'))">
+        <div class="relative shrink-0" :class="compactMode ? '' : 'mr-3'">
+          <Star
+            class="h-5 w-5"
+            :class="isActive('/admin/danh-gia') ? 'text-primary' : 'text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300'"
+          />
+          <span
+            v-if="soDanhGiaChuaXem > 0"
+            class="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white"
+          >{{ soDanhGiaChuaXem > 99 ? '99+' : soDanhGiaChuaXem }}</span>
+        </div>
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Quản lý đánh giá</span>
       </router-link>
 
 

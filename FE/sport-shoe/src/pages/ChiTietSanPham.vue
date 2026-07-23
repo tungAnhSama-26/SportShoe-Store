@@ -1,13 +1,15 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { layChiTietSanPham, layDanhGia } from '../services/san-pham';
+import { layChiTietSanPham, layDanhGia, layTatCaSanPham } from '../services/san-pham';
 import { themVaoGio as apiThemGio } from '../services/gio-hang';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import DanhGiaMedia from '../components/DanhGiaMedia.vue';
 import anhMacDinh from '../assets/login-shoe.png';
+import { resolveHinhAnh } from '../utils/resolve-image';
 
 const route = useRoute();
 const router = useRouter();
@@ -15,6 +17,9 @@ const router = useRouter();
 const sanPham = ref(null);
 const dangTai = ref(true);
 const loi = ref('');
+
+// Sản phẩm chỉ có "đang bán" (1) hoặc "ngừng bán" (khác 1).
+const daNgungBan = computed(() => !!sanPham.value && sanPham.value.trangThai !== 1);
 
 const mauChon = ref('');
 const sizeChon = ref('');
@@ -27,7 +32,29 @@ onMounted(taiTatCa);
 watch(() => route.params.id, taiTatCa);
 
 async function taiTatCa() {
-  await Promise.all([taiChiTiet(), taiDanhGia()]);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  await taiChiTiet();
+  if (sanPham.value) {
+    Promise.all([taiDanhGia(), taiSanPhamTuongTu()]);
+  }
+}
+
+const sanPhamTuongTu = ref([]);
+
+async function taiSanPhamTuongTu() {
+  try {
+    const all = await layTatCaSanPham();
+    // Filter similar products: same brand or same category, exclude current
+    let similar = all.filter(p => p.id !== sanPham.value.id && (p.thuongHieu === sanPham.value.thuongHieu || p.loaiGiay === sanPham.value.loaiGiay));
+    // If not enough similar products, pad with other products
+    if (similar.length < 4) {
+       const others = all.filter(p => p.id !== sanPham.value.id && !similar.find(s => s.id === p.id));
+       similar.push(...others.slice(0, 4 - similar.length));
+    }
+    sanPhamTuongTu.value = similar.slice(0, 4);
+  } catch(e) {
+    sanPhamTuongTu.value = [];
+  }
 }
 
 async function taiChiTiet() {
@@ -97,13 +124,13 @@ const anhTheoMau = computed(() => {
 });
 
 // Ưu tiên: biến thể đã chọn -> màu đang chọn -> biến thể rẻ nhất -> ảnh gốc -> ảnh mặc định.
-const anhHienThi = computed(
-  () =>
+const anhHienThi = computed(() =>
+  resolveHinhAnh(
     bienTheChon.value?.hinhAnh ||
     anhTheoMau.value ||
     bienTheReNhat.value?.hinhAnh ||
-    sanPham.value?.hinhAnh ||
-    anhMacDinh
+    sanPham.value?.hinhAnh
+  ) || anhMacDinh
 );
 
 const giaHienThi = computed(() => {
@@ -272,6 +299,19 @@ function xuLyAnhLoi(event) {
       <div v-if="dangTai" class="py-32 text-center text-sm text-slate-400">Đang tải sản phẩm...</div>
       <div v-else-if="loi || !sanPham" class="py-32 text-center text-sm text-rose-500">{{ loi || 'Không tìm thấy sản phẩm.' }}</div>
 
+      <!-- Sản phẩm đã ngừng bán -->
+      <div v-else-if="daNgungBan" class="py-24 text-center">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+          <svg class="h-8 w-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><path d="m4.9 4.9 14.2 14.2" /></svg>
+        </div>
+        <h2 class="mt-4 text-xl font-bold text-slate-800">Sản phẩm đã ngừng bán</h2>
+        <p class="mt-1.5 text-sm text-slate-400">"{{ sanPham.ten }}" hiện không còn được bán.</p>
+        <button @click="router.back()" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
+          Quay lại
+        </button>
+      </div>
+
       <template v-else>
         <!-- Khối trên: ảnh + chọn mua -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -422,12 +462,70 @@ function xuLyAnhLoi(event) {
                   <span v-for="i in 5" :key="i" class="text-xs" :class="i <= dg.soSao ? 'text-amber-400' : 'text-slate-300'">★</span>
                 </div>
                 <p v-if="dg.noiDung" class="mt-1.5 text-sm leading-6 text-slate-600">{{ dg.noiDung }}</p>
+                <DanhGiaMedia :media="dg.media" />
+                <div v-if="dg.phanHoi" class="mt-2 rounded-xl border-l-2 border-primary bg-slate-50 p-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-primary">Phản hồi từ cửa hàng</span>
+                    <span class="text-xs text-slate-400">{{ formatNgay(dg.ngayPhanHoi) }}</span>
+                  </div>
+                  <p class="mt-1 text-sm leading-6 text-slate-600">{{ dg.phanHoi }}</p>
+                </div>
               </div>
             </div>
           </div>
           <p v-else class="text-sm text-slate-400">Chưa có đánh giá nào. Khách hàng đã mua và nhận hàng có thể đánh giá trong mục Đơn hàng của bạn.</p>
         </section>
       </template>
+
+      <!-- Sản phẩm tương tự -->
+      <section v-if="sanPhamTuongTu.length && sanPham && !daNgungBan" class="mt-12">
+        <div class="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <p class="text-lg font-bold text-slate-900">Sản phẩm tương tự</p>
+            <p class="mt-1 text-sm text-slate-500">Có thể bạn cũng sẽ thích</p>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <router-link
+            v-for="muc in sanPhamTuongTu"
+            :key="muc.id"
+            :to="`/khachhang/san-pham/${muc.id}`"
+            class="group block overflow-hidden rounded-2xl border border-primary/15 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-primary/10 hover:shadow-2xl"
+          >
+            <div class="relative h-60 overflow-hidden bg-slate-50">
+              <img :src="resolveHinhAnh(muc.hinhAnh)" :alt="muc.ten" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" @error="xuLyAnhLoi" />
+              <span
+                v-if="muc.nhan"
+                class="absolute left-3 top-3 rounded-md bg-red-600 px-2.5 py-1 text-xs font-extrabold text-white shadow-md"
+              >
+                {{ muc.nhan }}
+              </span>
+            </div>
+
+            <div class="p-5">
+              <p class="text-[11px] text-slate-400 font-medium">{{ muc.thuongHieu }}</p>
+              <h3 class="mt-1 text-sm font-semibold text-black line-clamp-2 group-hover:text-primary transition-colors">{{ muc.ten }}</h3>
+
+              <div class="mt-3 flex items-end gap-2">
+                <span class="text-base font-bold text-primary">{{ dinhDangTienViet(muc.gia) }}</span>
+                <span v-if="muc.giaCu" class="pb-0.5 text-[11px] text-slate-400 line-through">
+                  {{ dinhDangTienViet(muc.giaCu) }}
+                </span>
+              </div>
+              <div class="mt-1.5 flex items-center gap-1.5">
+                <div class="flex text-xs">
+                  <span v-for="i in 5" :key="i" :class="i <= Math.round(muc.soSao) ? 'text-amber-400' : 'text-slate-300'">★</span>
+                </div>
+                <span class="text-[11px] text-slate-400">
+                  {{ muc.soDanhGia ? `${muc.soSao.toFixed(1)} (${muc.soDanhGia})` : 'Chưa có đánh giá' }}
+                  <template v-if="muc.daBan"> · Đã bán {{ muc.daBan }}</template>
+                </span>
+              </div>
+            </div>
+          </router-link>
+        </div>
+      </section>
     </div>
   </main>
 </template>

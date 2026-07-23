@@ -38,6 +38,18 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
     java.util.Optional<HoaDonChiTiet> findByHoaDonIdAndGiayChiTietId(Integer hoaDonId, Integer giayChiTietId);
 
     @Query("""
+            select hdct
+            from HoaDonChiTiet hdct
+            join fetch hdct.hoaDon hd
+            where hdct.giayChiTiet.id = :giayChiTietId
+              and hd.trangThai in :trangThais
+            """)
+    List<HoaDonChiTiet> findByGiayChiTietIdAndTrangThaiHoaDon(
+            @Param("giayChiTietId") Integer giayChiTietId,
+            @Param("trangThais") Collection<Integer> trangThais
+    );
+
+    @Query("""
             from HoaDonChiTiet hdct
             join fetch hdct.hoaDon hd
             left join fetch hd.nhanVien nv

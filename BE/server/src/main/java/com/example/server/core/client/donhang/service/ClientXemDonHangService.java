@@ -10,6 +10,7 @@ import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuT
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HinhAnhTraHang;
@@ -23,6 +24,7 @@ import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.GiayChiTietRepository;
+import com.example.server.repository.HinhAnhGiayRepository;
 import com.example.server.repository.HinhAnhTraHangRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
@@ -47,6 +49,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
+import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
+import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
 
 @Service
 public class ClientXemDonHangService {
@@ -56,6 +61,7 @@ public class ClientXemDonHangService {
 
     /** Trạng thái đơn đã hoàn thành (giao xong) - mới được xác nhận nhận hàng / đánh giá. */
     private static final int TRANG_THAI_HOAN_THANH = 5;
+    private static final int TRANG_THAI_DA_GIAO_HANG = 4;
     private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
     private static final int TRANG_THAI_DA_XAC_NHAN = 9;
     private static final int TRANG_THAI_CHO_LAY_HANG = 2;
@@ -83,6 +89,9 @@ public class ClientXemDonHangService {
     private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final HinhAnhGiayRepository hinhAnhGiayRepository;
+    private final ThongBaoService thongBaoService;
+    private final GhnShippingService ghnShippingService;
 
     public ClientXemDonHangService(
             HoaDonRepository hoaDonRepository,
@@ -96,7 +105,10 @@ public class ClientXemDonHangService {
             HinhAnhTraHangRepository hinhAnhTraHangRepository,
             PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             ThanhToanRepository thanhToanRepository,
-            GiayChiTietRepository giayChiTietRepository
+            GiayChiTietRepository giayChiTietRepository,
+            HinhAnhGiayRepository hinhAnhGiayRepository,
+            ThongBaoService thongBaoService,
+            GhnShippingService ghnShippingService
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -110,6 +122,9 @@ public class ClientXemDonHangService {
         this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
+        this.thongBaoService = thongBaoService;
+        this.ghnShippingService = ghnShippingService;
     }
 
     @Transactional(readOnly = true)
@@ -124,6 +139,7 @@ public class ClientXemDonHangService {
                     .mapToInt(ct -> ct.getSoLuong() == null ? 0 : ct.getSoLuong())
                     .sum();
 
+            Map<Integer, String> anhBienThe = mapAnhBienTheTheoDong(dong);
             List<DonHangTomTatResponse.DongSanPhamTomTat> sanPhams = new ArrayList<>();
             for (HoaDonChiTiet ct : dong) {
                 GiayChiTiet gct = ct.getGiayChiTiet();
@@ -133,7 +149,7 @@ public class ClientXemDonHangService {
                         gct.getGiay().getTen(),
                         gct.getMauSac().getTen(),
                         gct.getKichCo().getGiaTri(),
-                        gct.getGiay().getHinhAnh(),
+                        anhBienThe.getOrDefault(gct.getId(), gct.getGiay().getHinhAnh()),
                         gct.getGiaBan(),
                         ct.getGiaDonVi(),
                         ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
@@ -160,12 +176,25 @@ public class ClientXemDonHangService {
                 virtualStatusText = "Cần hoàn tiền";
             }
 
+            Instant ngayGiaoThat = vanChuyenRepository.findByHoaDonId(hd.getId())
+                    .map(com.example.server.entity.VanChuyen::getNgayGiaoThat)
+                    .orElse(null);
+            Instant ngayThanhToan = hd.getNgayThanhToan();
+            Instant ngayGiao = ngayGiaoThat;
+            if (ngayGiao != null && ngayThanhToan != null) {
+                if (ngayThanhToan.isAfter(ngayGiao)) {
+                    ngayGiao = ngayThanhToan;
+                }
+            } else if (ngayGiao == null) {
+                ngayGiao = ngayThanhToan;
+            }
+
             result.add(new DonHangTomTatResponse(
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
                     virtualStatus, virtualStatusText,
                     soLuong, hd.getTongTienThanhToan(), sanPhams,
                     phieuTraHangId, trangThaiTraHang, trangThaiTraHangText,
-                    hd.getNgayCapNhat()));
+                    hd.getNgayCapNhat(), ngayGiao));
         }
         return result;
     }
@@ -192,6 +221,20 @@ public class ClientXemDonHangService {
         return buildChiTiet(hd);
     }
 
+    /** Map biến thể -> URL ảnh chính của biến thể đó (ảnh đúng màu/loại khách đã mua). */
+    private Map<Integer, String> mapAnhBienTheTheoDong(List<HoaDonChiTiet> dong) {
+        List<Integer> bienTheIds = dong.stream()
+                .map(ct -> ct.getGiayChiTiet().getId())
+                .distinct().toList();
+        Map<Integer, String> anh = new HashMap<>();
+        if (!bienTheIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(bienTheIds)) {
+                anh.putIfAbsent((Integer) row[0], (String) row[1]);
+            }
+        }
+        return anh;
+    }
+
     /** Dựng chi tiết đơn từ HoaDon (dùng chung cho xem đơn của khách + tra cứu công khai). */
     private DonHangChiTietResponse buildChiTiet(HoaDon hd) {
         List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findGioItems(hd.getId());
@@ -206,6 +249,9 @@ public class ClientXemDonHangService {
                 }
             }
         }
+
+        // Ảnh chính của từng biến thể (ảnh đúng màu/loại khách đã mua, không phải ảnh gốc SP).
+        Map<Integer, String> anhBienThe = mapAnhBienTheTheoDong(dong);
 
         List<DongSanPham> sanPhams = new ArrayList<>();
         BigDecimal tamTinh = BigDecimal.ZERO;
@@ -222,11 +268,13 @@ public class ClientXemDonHangService {
                     gct.getGiay().getTen(),
                     gct.getMauSac().getTen(),
                     gct.getKichCo().getGiaTri(),
-                    gct.getGiay().getHinhAnh(),
+                    anhBienThe.getOrDefault(gct.getId(), gct.getGiay().getHinhAnh()),
                     giaNiemYet, giaDonVi, sl, ct.getThanhTien(),
                     dg != null,
                     dg != null ? dg.getSoSao() : null,
-                    dg != null ? dg.getNoiDung() : null));
+                    dg != null ? dg.getNoiDung() : null,
+                    dg != null ? dg.getPhanHoi() : null,
+                    dg != null ? dg.getNgayPhanHoi() : null));
         }
 
         BigDecimal tongTienHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();
@@ -291,19 +339,33 @@ public class ClientXemDonHangService {
                 .map(lichSu -> new LichSuTrangThai(
                         lichSu.getTrangThai(),
                         lichSu.getNgayTao(),
-                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() : "Khách hàng"))
+                        lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() + " - " + lichSu.getNhanVien().getHoTen() : (lichSu.getNguoiThaoTac() != null ? lichSu.getNguoiThaoTac() : "Khách hàng"),
+                        lichSu.getGhiChu()))
                 .toList();
 
         boolean laCK = laChuyenKhoan(hd.getId());
         boolean dangChoXacNhan = hd.getTrangThai() != null
                 && hd.getTrangThai() == TRANG_THAI_CHO_XAC_NHAN;
-        boolean coTheSua = dangChoXacNhan && !laCK;
+        boolean coTheSua = dangChoXacNhan && !laCK && (hd.getSoLanSuaDiaChi() == null || hd.getSoLanSuaDiaChi() < 1);
 
         int virtualStatus = hd.getTrangThai();
         String virtualStatusText = nhanTrangThai(hd.getTrangThai());
         if (hd.getTrangThai() == TRANG_THAI_HUY && laCanHoanTien(hd.getId())) {
             virtualStatus = TRANG_THAI_CAN_HOAN_TIEN;
             virtualStatusText = "Cần hoàn tiền";
+        }
+
+        Instant ngayGiaoThat = vanChuyenRepository.findByHoaDonId(hd.getId())
+                .map(com.example.server.entity.VanChuyen::getNgayGiaoThat)
+                .orElse(null);
+        Instant ngayThanhToan = hd.getNgayThanhToan();
+        Instant ngayGiao = ngayGiaoThat;
+        if (ngayGiao != null && ngayThanhToan != null) {
+            if (ngayThanhToan.isAfter(ngayGiao)) {
+                ngayGiao = ngayThanhToan;
+            }
+        } else if (ngayGiao == null) {
+            ngayGiao = ngayThanhToan;
         }
 
         return new DonHangChiTietResponse(
@@ -319,10 +381,22 @@ public class ClientXemDonHangService {
                 hinhAnhTraHang, chiTietTraHang,
                 laCK ? "CHUYEN_KHOAN" : "COD",
                 // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
-                dangChoXacNhan, coTheSua, false);
+                dangChoXacNhan, coTheSua, false, ngayGiao,
+                hd.getSoLanSuaDiaChi() != null ? hd.getSoLanSuaDiaChi() : 0);
     }
 
-    /** Khách xác nhận đã nhận hàng (đơn phải đã hoàn thành). */
+    private boolean coThanhToanThanhCong(HoaDon hoaDon) {
+        return thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId()).stream()
+                .anyMatch(thanhToan ->
+                        Objects.equals(thanhToan.getLoaiGiaoDich(), LOAI_GIAO_DICH_THANH_TOAN)
+                                && Objects.equals(
+                                thanhToan.getTrangThai(),
+                                TT_THANH_TOAN_THANH_CONG
+                        )
+                );
+    }
+
+    /** Khách xác nhận đã nhận hàng (đơn phải ở trạng thái Đã giao hàng). */
     @Transactional
     public void xacNhanDaNhanHang(UUID khachHangId, Integer id) {
         HoaDon hd = hoaDonRepository.findById(id)
@@ -330,12 +404,44 @@ public class ClientXemDonHangService {
         if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
         }
-        if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_HOAN_THANH) {
-            throw new BusinessException("Đơn hàng chưa hoàn thành, chưa thể xác nhận đã nhận hàng");
+        if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_DA_GIAO_HANG) {
+            throw new BusinessException("Đơn hàng chưa ở trạng thái đã giao hàng, chưa thể xác nhận đã nhận hàng");
         }
+        
+        Instant now = Instant.now();
         hd.setDaNhanHang(true);
-        hd.setNgayCapNhat(Instant.now());
-        hoaDonRepository.save(hd);
+        
+        // Kiểm tra xem đơn đã có giao dịch thanh toán thành công hay chưa
+        boolean daThanhToan = coThanhToanThanhCong(hd);
+        if (daThanhToan) {
+            hd.setTrangThai(TRANG_THAI_HOAN_THANH);
+            hd.setNgayCapNhat(now);
+            hoaDonRepository.save(hd);
+            
+            // Ghi lịch sử hóa đơn: Hoàn thành
+            LichSuHoaDon lichSu = new LichSuHoaDon();
+            lichSu.setHoaDon(hd);
+            lichSu.setNhanVien(null);
+            lichSu.setTrangThai("Hoàn thành");
+            lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng và đơn đã được thanh toán");
+            lichSu.setNgayTao(now);
+            lichSuHoaDonRepository.save(lichSu);
+            
+            hoaDonRealtimePublisher.publishAfterCommit(hd, "TRANG_THAI");
+        } else {
+            hd.setNgayCapNhat(now);
+            hoaDonRepository.save(hd);
+            
+            // Ghi lịch sử hóa đơn: Khách hàng xác nhận nhận hàng, chờ thanh toán
+            LichSuHoaDon lichSu = new LichSuHoaDon();
+            lichSu.setHoaDon(hd);
+            lichSu.setNhanVien(null);
+            lichSu.setTrangThai("Đã giao hàng");
+            lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng (Đang chờ xác nhận thanh toán)");
+            lichSu.setNgayTao(now);
+            lichSuHoaDonRepository.save(lichSu);
+        }
+        
         hoaDonRealtimePublisher.publishAfterCommit(hd, "DA_NHAN_HANG");
     }
 
@@ -372,6 +478,18 @@ public class ClientXemDonHangService {
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
         hoaDonRealtimePublisher.publishAfterCommit(hd, "HUY");
+
+        // Trigger cancel order notification
+        try {
+            String title = canHoanTien ? "Yêu cầu hoàn tiền đơn hủy" : "Đơn hàng online đã hủy";
+            String text = canHoanTien 
+                    ? "Khách hàng \"" + hd.getTenNguoiNhan() + "\" đã hủy đơn hàng #" + hd.getMa() + " (đã thanh toán). Cần hoàn tiền!"
+                    : "Khách hàng \"" + hd.getTenNguoiNhan() + "\" đã hủy đơn hàng #" + hd.getMa() + ".";
+            String type = canHoanTien ? "REFUND" : "CANCEL";
+            thongBaoService.taoThongBao(title, text, type, "/admin/hoa-don/" + hd.getId());
+        } catch (Exception e) {
+            System.err.println("[ClientXemDonHangService] Lỗi tạo thông báo hủy đơn: " + e.getMessage());
+        }
     }
 
     @Transactional
@@ -394,18 +512,90 @@ public class ClientXemDonHangService {
             throw new BusinessException(
                     "Chỉ có thể cập nhật thông tin giao hàng khi đơn đang chờ xác nhận");
         }
+        if (hd.getSoLanSuaDiaChi() != null && hd.getSoLanSuaDiaChi() >= 1) {
+            throw new BusinessException("Bạn chỉ được phép chỉnh sửa thông tin giao hàng tối đa 1 lần.");
+        }
+
+        BigDecimal phiShipCu = BigDecimal.ZERO;
+        var vcOpt = vanChuyenRepository.findByHoaDonId(id);
+        if (vcOpt.isPresent()) {
+            phiShipCu = vcOpt.get().getPhiVanChuyen() == null ? BigDecimal.ZERO : vcOpt.get().getPhiVanChuyen();
+        }
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(id);
+        BigDecimal phiShipMoi = phiShipCu;
+        if (!items.isEmpty()) {
+            try {
+                TinhPhiVanChuyenGhnRequest ghnReq = new TinhPhiVanChuyenGhnRequest(
+                        null, null, request.diaChiGiaoHang().trim(), null, null, null, null, null, null, null, null
+                );
+                TinhPhiVanChuyenGhnResponse phiGhn = ghnShippingService.tinhPhi(hd, items, ghnReq);
+                phiShipMoi = phiGhn.phiVanChuyen();
+            } catch (Exception e) {
+                System.err.println("[ClientXemDonHangService] Lỗi tính phí vận chuyển GHN mới: " + e.getMessage());
+            }
+        }
+
+        com.example.server.entity.VanChuyen vanChuyen = vcOpt.orElseGet(() -> {
+            com.example.server.entity.VanChuyen created = new com.example.server.entity.VanChuyen();
+            created.setHoaDon(hd);
+            created.setDonViVanChuyen("GHN");
+            created.setTrangThai(0); // Cho_XU_LY
+            created.setNgayTao(Instant.now());
+            return created;
+        });
+        vanChuyen.setPhiVanChuyen(phiShipMoi);
+        vanChuyen.setNgayCapNhat(Instant.now());
+        vanChuyenRepository.save(vanChuyen);
+
+        StringBuilder ghiChuHistory = new StringBuilder("Khách hàng cập nhật thông tin giao hàng:\n");
+        String tenCu = hd.getTenNguoiNhan() == null ? "" : hd.getTenNguoiNhan();
+        String tenMoi = request.tenNguoiNhan().trim();
+        if (!tenCu.equals(tenMoi)) {
+            ghiChuHistory.append("- Tên người nhận: '").append(tenCu).append("' -> '").append(tenMoi).append("'\n");
+        }
+
+        String sdtCu = hd.getSdtNguoiNhan() == null ? "" : hd.getSdtNguoiNhan();
+        String sdtMoi = request.sdtNguoiNhan().trim();
+        if (!sdtCu.equals(sdtMoi)) {
+            ghiChuHistory.append("- SĐT: '").append(sdtCu).append("' -> '").append(sdtMoi).append("'\n");
+        }
+
+        String dcCu = hd.getDiaChiGiaoHang() == null ? "" : hd.getDiaChiGiaoHang();
+        String dcMoi = request.diaChiGiaoHang().trim();
+        if (!dcCu.equals(dcMoi)) {
+            ghiChuHistory.append("- Địa chỉ: '").append(dcCu).append("' -> '").append(dcMoi).append("'\n");
+        }
+
+        if (phiShipCu.compareTo(phiShipMoi) != 0) {
+            ghiChuHistory.append("- Phí ship: '").append(phiShipCu.intValue()).append("đ' -> '").append(phiShipMoi.intValue()).append("đ'\n");
+        }
+
+        String finalGhiChu = ghiChuHistory.toString();
+        if (finalGhiChu.equals("Khách hàng cập nhật thông tin giao hàng:\n")) {
+            finalGhiChu = "Khách hàng cập nhật người nhận và địa chỉ giao hàng";
+        } else if (finalGhiChu.length() > 1000) {
+            finalGhiChu = finalGhiChu.substring(0, 995) + "...";
+        }
 
         hd.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hd.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
         hd.setDiaChiGiaoHang(request.diaChiGiaoHang().trim());
+        hd.setSoLanSuaDiaChi((hd.getSoLanSuaDiaChi() == null ? 0 : hd.getSoLanSuaDiaChi()) + 1);
+
+        BigDecimal tongHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();
+        BigDecimal tienGiam = hd.getTienGiam() == null ? BigDecimal.ZERO : hd.getTienGiam();
+        hd.setTongTienThanhToan(tongHang.add(phiShipMoi).subtract(tienGiam).max(BigDecimal.ZERO));
+
         hd.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(hd);
 
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hd);
         lichSu.setNhanVien(null);
+        lichSu.setNguoiThaoTac("Khách hàng");
         lichSu.setTrangThai("Cập nhật thông tin giao hàng");
-        lichSu.setGhiChu("Khách hàng cập nhật người nhận và địa chỉ giao hàng");
+        lichSu.setGhiChu(finalGhiChu);
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
 

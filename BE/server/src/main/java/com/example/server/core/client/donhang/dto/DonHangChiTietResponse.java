@@ -44,7 +44,9 @@ public record DonHangChiTietResponse(
         /** Khách được sửa thông tin giao hàng (COD + chờ xác nhận). */
         boolean coTheCapNhatGiaoHang,
         /** Khách được sửa số lượng sản phẩm (COD + chờ xác nhận). */
-        boolean coTheCapNhatSoLuong
+        boolean coTheCapNhatSoLuong,
+        Instant ngayGiao,
+        Integer soLanSuaDiaChi
 ) {
     public record ChiTietTraHangItem(
             Integer hoaDonChiTietId,
@@ -57,7 +59,8 @@ public record DonHangChiTietResponse(
     public record LichSuTrangThai(
             String trangThai,
             Instant ngayTao,
-            String maNhanVien
+            String maNhanVien,
+            String ghiChu
     ) {}
 
     public record LichSuTraHang(
@@ -78,6 +81,8 @@ public record DonHangChiTietResponse(
             BigDecimal thanhTien,
             boolean daDanhGia,
             Integer soSao,
-            String noiDungDanhGia
+            String noiDungDanhGia,
+            String phanHoiDanhGia,
+            Instant ngayPhanHoiDanhGia
     ) {}
 }

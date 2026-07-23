@@ -96,7 +96,7 @@ public class HoaDonTaiQuayService {
     public List<HoaDonChoTomTatResponse> layDanhSachHoaDonCho() {
         List<HoaDon> hoaDons = hoaDonRepository.findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(
                         KENH_BAN_TAI_QUAY,
-                        TRANG_THAI_HOA_DON_CHO_XAC_NHAN
+                        TRANG_THAI_HOA_DON_CHO_TAI_QUAY
                 )
                 .stream()
                 .toList();
@@ -270,9 +270,14 @@ public class HoaDonTaiQuayService {
     }
 
     public HoaDonChiTiet taoDongHoaDon(TaoHoaDonChoItemRequest itemRequest) {
-        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(itemRequest.chiTietId(), itemRequest.soLuong());
+        return taoDongHoaDon(itemRequest, null);
+    }
 
-        inventoryUseCase.deductStock(giayChiTiet, itemRequest.soLuong());
+    public HoaDonChiTiet taoDongHoaDon(TaoHoaDonChoItemRequest itemRequest, java.util.Set<Integer> bypassActiveCheckIds) {
+        GiayChiTiet giayChiTiet = layGiayChiTietHopLe(itemRequest.chiTietId(), itemRequest.soLuong(), bypassActiveCheckIds);
+
+        boolean bypassActiveCheck = bypassActiveCheckIds != null && bypassActiveCheckIds.contains(itemRequest.chiTietId());
+        inventoryUseCase.deductStock(giayChiTiet, itemRequest.soLuong(), bypassActiveCheck);
         giayChiTietRepository.save(giayChiTiet);
 
         // Use the price sent from the frontend (may be the locked old price if variant's price changed)
@@ -288,6 +293,7 @@ public class HoaDonTaiQuayService {
         hoaDonChiTiet.setNgayTao(Instant.now());
         return hoaDonChiTiet;
     }
+
 
     public List<HoaDonChiTiet> taoDanhSachDongHoaDonTam(List<TaoHoaDonChoItemRequest> items) {
         if (items == null || items.isEmpty()) {
@@ -336,6 +342,7 @@ public class HoaDonTaiQuayService {
                                 hinhAnh = hinhAnhs.get(0).getUrl();
                             }
                             return new HoaDonChoDongSanPhamResponse(
+                                    item.getId(),
                                     item.getGiayChiTiet().getId(),
                                     item.getGiayChiTiet().getGiay().getMa(),
                                     item.getGiayChiTiet().getGiay().getTen(),
@@ -346,6 +353,7 @@ public class HoaDonTaiQuayService {
                                     item.getSoLuong(),
                                     item.getGiayChiTiet().getSoLuong(),
                                     item.getGiaDonVi(),
+                                    item.getGiayChiTiet().getGiaBan(),
                                     item.getThanhTien()
                             );
                         })
@@ -404,12 +412,18 @@ public class HoaDonTaiQuayService {
     }
 
     private GiayChiTiet layGiayChiTietHopLe(Integer chiTietId, Integer soLuong) {
+        return layGiayChiTietHopLe(chiTietId, soLuong, null);
+    }
+
+    private GiayChiTiet layGiayChiTietHopLe(Integer chiTietId, Integer soLuong, java.util.Set<Integer> bypassActiveCheckIds) {
         GiayChiTiet giayChiTiet = giayChiTietRepository.findById(chiTietId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm chi tiết không tồn tại"));
 
-        inventoryUseCase.validateAvailable(giayChiTiet, soLuong);
+        boolean bypassActiveCheck = bypassActiveCheckIds != null && bypassActiveCheckIds.contains(chiTietId);
+        inventoryUseCase.validateAvailable(giayChiTiet, soLuong, bypassActiveCheck);
         return giayChiTiet;
     }
+
 
     private ThongTinGiaoHangTaiQuayResponse mapThongTinGiaoHangHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
         boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null && !laDiaChiTaiQuay(hoaDon.getDiaChiGiaoHang());

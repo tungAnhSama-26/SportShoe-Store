@@ -78,8 +78,16 @@ function huyHoaDonCho(id) {
     method: "PATCH"
   });
 }
+function doiBienTheHoaDonChiTiet(id, payload) {
+  return request(`/admin/ban-hang-tai-quay/hoa-don-chi-tiet/${id}/doi-bien-the`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
 export {
   apDungPhieuGiamGiaTaiQuay,
+  doiBienTheHoaDonChiTiet,
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,

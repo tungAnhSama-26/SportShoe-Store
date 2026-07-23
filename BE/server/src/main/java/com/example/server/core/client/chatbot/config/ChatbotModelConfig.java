@@ -191,52 +191,86 @@ public class ChatbotModelConfig {
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.context.ApplicationContext applicationContext;
 
+    private FallbackChatModel activeFallbackModel;
+    private org.springframework.ai.model.function.FunctionCallbackContext context;
+
     @Bean
     @Primary
     public ChatModel chatModel(org.springframework.ai.model.function.FunctionCallbackContext functionCallbackContext) {
-        List<ChatModel> models = new ArrayList<>();
+        this.context = functionCallbackContext;
+        List<ChatModel> models = loadModelsFromConfig(functionCallbackContext);
+        this.activeFallbackModel = new FallbackChatModel(models);
+        return this.activeFallbackModel;
+    }
 
-        System.out.println("[AI CHATBOT INIT] AppContext contains search_products_tool: " + applicationContext.containsBean("search_products_tool"));
-        if (applicationContext.containsBean("search_products_tool")) {
-            System.out.println("[AI CHATBOT INIT] search_products_tool class: " + applicationContext.getBean("search_products_tool").getClass());
-            System.out.println("[AI CHATBOT INIT] search_products_tool type: " + applicationContext.getType("search_products_tool"));
+    public synchronized void reloadModels() {
+        if (this.activeFallbackModel != null && this.context != null) {
+            System.out.println("[AI CHATBOT] Reloading AI Models from file config...");
+            List<ChatModel> newModels = loadModelsFromConfig(this.context);
+            this.activeFallbackModel.updateModels(newModels);
+            System.out.println("[AI CHATBOT] AI Models reloaded successfully. Active models count: " + newModels.size());
         }
-        System.out.println("[AI CHATBOT INIT] AppContext contains get_best_selling_shoes_tool: " + applicationContext.containsBean("get_best_selling_shoes_tool"));
+    }
+
+    private List<ChatModel> loadModelsFromConfig(org.springframework.ai.model.function.FunctionCallbackContext context) {
+        String activeOpenAiKey = openAiKey;
+        String activeGeminiKey = geminiKey;
+        String activeDeepseekKey = deepseekKey;
+        String activeGroqKey = groqKey;
 
         try {
-            Object callback = functionCallbackContext.getFunctionCallback("search_products_tool", null);
-            System.out.println("[AI CHATBOT INIT] search_products_tool callback resolved: " + (callback != null ? callback.getClass() : "null"));
+            java.io.File file = new java.io.File("data/chatbot-keys.json");
+            if (file.exists()) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(file);
+                if (node.has("openaiApiKey") && !node.get("openaiApiKey").asText().isBlank()) {
+                    activeOpenAiKey = node.get("openaiApiKey").asText();
+                }
+                if (node.has("geminiApiKey") && !node.get("geminiApiKey").asText().isBlank()) {
+                    activeGeminiKey = node.get("geminiApiKey").asText();
+                }
+                if (node.has("deepseekApiKey") && !node.get("deepseekApiKey").asText().isBlank()) {
+                    activeDeepseekKey = node.get("deepseekApiKey").asText();
+                }
+                if (node.has("groqApiKey") && !node.get("groqApiKey").asText().isBlank()) {
+                    activeGroqKey = node.get("groqApiKey").asText();
+                }
+            }
         } catch (Exception e) {
-            System.out.println("[AI CHATBOT INIT] Failed to resolve search_products_tool: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("[AI CHATBOT WARNING] Không thể đọc chatbot-keys.json: " + e.getMessage());
         }
 
-        if (isValidKey(openAiKey)) {
-            models.add(createModel(openAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", functionCallbackContext));
+        List<ChatModel> models = new ArrayList<>();
+        if (isValidKey(activeOpenAiKey)) {
+            models.add(createModel(activeOpenAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", context));
         }
-        if (isValidKey(geminiKey)) {
-            models.add(createModel(geminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-3.5-flash", "Gemini", functionCallbackContext));
+        if (isValidKey(activeGeminiKey)) {
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-3.5-flash", "Gemini", context));
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.5-flash", "Gemini-2.5-DuPhong", context));
         }
-        if (isValidKey(deepseekKey)) {
-            models.add(createModel(deepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", functionCallbackContext));
+        if (isValidKey(activeDeepseekKey)) {
+            models.add(createModel(activeDeepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", context));
         }
-        if (isValidKey(groqKey)) {
-            models.add(createModel(groqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", functionCallbackContext));
+        if (isValidKey(activeGroqKey)) {
+            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", context));
         }
 
         if (models.isEmpty()) {
             System.out.println("[AI CHATBOT] CẢNH BÁO: Chưa cấu hình bất kỳ API Key hợp lệ nào. Sẽ dùng key giả lập.");
-            models.add(createModel("dummy-key", "https://api.openai.com", "gpt-4o-mini", "Dummy-OpenAI", functionCallbackContext));
+            models.add(createModel("dummy-key", "https://api.openai.com", "gpt-4o-mini", "Dummy-OpenAI", context));
         }
-
-        return new FallbackChatModel(models);
+        return models;
     }
 
     public static class FallbackChatModel implements ChatModel {
-        private final List<ChatModel> models;
+        private volatile List<ChatModel> models;
 
         public FallbackChatModel(List<ChatModel> models) {
-            this.models = models;
+            this.models = new java.util.concurrent.CopyOnWriteArrayList<>(models);
+        }
+
+        public void updateModels(List<ChatModel> newModels) {
+            this.models = new java.util.concurrent.CopyOnWriteArrayList<>(newModels);
         }
 
         @Override

@@ -391,7 +391,6 @@ onBeforeUnmount(() => {
       <div
         v-if="open"
         class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-4"
-        @click.self="dongModal"
       >
         <div
           class="w-full overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)] max-w-3xl"
@@ -421,7 +420,7 @@ onBeforeUnmount(() => {
 
             <button
               type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-slate-200"
               @click="dongModal"
             >
               <X :size="18" />
@@ -474,7 +473,7 @@ onBeforeUnmount(() => {
                 <button
                   v-if="props.showRetryButton"
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+                  class="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                   @click="thuLai"
                 >
                   <RefreshCw :size="15" />
@@ -484,7 +483,7 @@ onBeforeUnmount(() => {
 
               <p
                 v-if="mergedError"
-                class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+                class="mt-4 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
               >
                 {{ mergedError }}
               </p>

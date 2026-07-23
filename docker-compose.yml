@@ -1,7 +1,23 @@
 version: '3.8'
 
 services:
+  # 1. Container Microsoft SQL Server
+  database:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sportshoe-db
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=MatKhauDatabaseCuaBan123!
+      - MSSQL_MEMORY_LIMIT_MB=600
+    volumes:
+      - mssql_data:/var/opt/mssql
+    restart: unless-stopped
+
+  # 2. Container Spring Boot Backend
   backend:
+    image: ${DOCKER_USERNAME:-tunganhsama}/sportshoe-backend:latest
     build:
       context: ./BE/server
       dockerfile: Dockerfile
@@ -10,15 +26,27 @@ services:
       - "8080:8080"
     env_file:
       - ./BE/server/.env
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - database
     restart: unless-stopped
 
+  # 3. Container Vue.js Frontend
   frontend:
+    image: ${DOCKER_USERNAME:-tunganhsama}/sportshoe-frontend:latest
     build:
       context: ./FE/sport-shoe
       dockerfile: Dockerfile
     container_name: sportshoe-frontend
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  mssql_data:

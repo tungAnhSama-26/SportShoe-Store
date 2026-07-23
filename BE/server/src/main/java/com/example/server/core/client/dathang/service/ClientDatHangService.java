@@ -6,6 +6,7 @@ import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
@@ -57,6 +58,7 @@ public class ClientDatHangService {
     private final VanChuyenRepository vanChuyenRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
+    private final ThongBaoService thongBaoService;
 
     public ClientDatHangService(
             ClientCheckoutItemService checkoutItemService,
@@ -68,7 +70,8 @@ public class ClientDatHangService {
             ThanhToanRepository thanhToanRepository,
             VanChuyenRepository vanChuyenRepository,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
-            EmailService emailService
+            EmailService emailService,
+            ThongBaoService thongBaoService
     ) {
         this.emailService = emailService;
         this.checkoutItemService = checkoutItemService;
@@ -80,6 +83,7 @@ public class ClientDatHangService {
         this.thanhToanRepository = thanhToanRepository;
         this.vanChuyenRepository = vanChuyenRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
+        this.thongBaoService = thongBaoService;
     }
 
     @Transactional
@@ -151,7 +155,11 @@ public class ClientDatHangService {
         hoaDon.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hoaDon.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
         hoaDon.setDiaChiGiaoHang(diaChi);
-        hoaDon.setGhiChu(request.ghiChu());
+        String rawGhiChu = request.ghiChu() != null ? request.ghiChu().trim() : "";
+        if (khachHang == null && request.emailNguoiNhan() != null && !request.emailNguoiNhan().isBlank()) {
+            rawGhiChu = "[GuestEmail:" + request.emailNguoiNhan().trim() + "] " + rawGhiChu;
+        }
+        hoaDon.setGhiChu(rawGhiChu.trim().isEmpty() ? null : rawGhiChu.trim());
 
         BigDecimal tongTienHang = checkout.tongTienHang();
         BigDecimal tienGiam = BigDecimal.ZERO;
@@ -197,6 +205,15 @@ public class ClientDatHangService {
         luuVanChuyen(hoaDon, phiShip, now);
         taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
+
+        // Trigger notification for new online order:
+        thongBaoService.taoThongBao(
+                "Đơn hàng online mới",
+                "Có đơn hàng mới #" + hoaDon.getMa() + " từ khách hàng " + (khachHang != null ? khachHang.getHoTen() : hoaDon.getTenNguoiNhan()) + ". Tổng tiền: " + String.format("%,.0f", hoaDon.getTongTienThanhToan()) + "đ",
+                "ORDER",
+                "/admin/hoa-don/" + hoaDon.getId()
+        );
+
         // Email xác nhận: khách có tài khoản -> email tài khoản; khách vãng lai -> email tự nhập (nếu có).
         String emailNhan = khachHang != null && khachHang.getEmail() != null && !khachHang.getEmail().isBlank()
                 ? khachHang.getEmail()

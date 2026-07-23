@@ -49,7 +49,8 @@ export function LogicGioHang({
   }
 
   function soLuongConLai(chiTietId, soLuongTon) {
-    return Math.max(Number(soLuongTon) - soLuongDaChon(chiTietId), 0);
+    const totalStock = Number(soLuongTon) + soLuongDaLuu(chiTietId);
+    return Math.max(totalStock - soLuongDaChon(chiTietId), 0);
   }
 
   function themSanPham(product, quantity = 1, options = {}) {
@@ -96,6 +97,8 @@ export function LogicGioHang({
           soLuong: quantity,
           soLuongBanDau: 0,
           giaBan: product.giaBan,
+          giaGoc: product.giaGoc,
+          oldPrice: oldPrice,
           soLuongTon: product.soLuongTon
         }
       ];
@@ -169,7 +172,8 @@ export function LogicGioHang({
 
       if (newQuantityNum > maxAllowed) {
         reachedLimit = item.tenSanPham;
-        return { ...item, soLuong: maxAllowed };
+        // The user specifically requested to return to 1 if quantity exceeds stock
+        return { ...item, soLuong: 1 };
       }
       return { ...item, soLuong: newQuantityNum };
     });

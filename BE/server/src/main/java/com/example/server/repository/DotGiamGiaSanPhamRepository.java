@@ -60,6 +60,9 @@ public interface DotGiamGiaSanPhamRepository extends JpaRepository<DotGiamGiaSan
     @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia WHERE d.giayChiTiet.id = ?1 AND d.trangThai = 1 AND d.dotGiamGia.kichHoat = 1")
     List<DotGiamGiaSanPham> findActiveByGiayChiTietId(Integer giayChiTietId);
 
+    @Query("SELECT d FROM DotGiamGiaSanPham d JOIN FETCH d.dotGiamGia dg WHERE d.giayChiTiet.id = ?1")
+    List<DotGiamGiaSanPham> findAllByGiayChiTietId(Integer giayChiTietId);
+
     @Query("SELECT d FROM DotGiamGiaSanPham d WHERE d.dotGiamGia.id = ?1")
     List<DotGiamGiaSanPham> findByDotGiamGiaId(Integer dotGiamGiaId);
 

@@ -20,7 +20,8 @@ public interface QuanLyHoaDonService {
             String loaiDon,
             String trangThai,
             LocalDate tuNgay,
-            LocalDate denNgay
+            LocalDate denNgay,
+            UUID giaoCaId
     );
 
     HoaDonDetailResponse layChiTietHoaDon(Integer id);
@@ -38,4 +39,6 @@ public interface QuanLyHoaDonService {
     HoaDonDetailResponse xacNhanHoanTien(Integer id, XacNhanHoanTienRequest request);
 
     List<HoaDonSummaryResponse> layDanhSachHoaDonTheoKhachHang(UUID khachHangId);
+
+    com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse checkMuaLai(Integer id);
 }

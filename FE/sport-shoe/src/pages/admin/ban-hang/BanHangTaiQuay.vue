@@ -7,6 +7,7 @@ import PhanKhachHang from "../../../components/admin/ban-hang/PhanKhachHang.vue"
 import PhanThanhToan from "../../../components/admin/ban-hang/PhanThanhToan.vue";
 import ModalSanPham from "../../../components/admin/ban-hang/ModalSanPham.vue";
 import ModalQuetQR from "../../../components/admin/ban-hang/ModalQuetQR.vue";
+import ModalThemNhanhKhachHang from "../../../components/admin/ban-hang/ModalThemNhanhKhachHang.vue";
 import { LogicBanHangTaiQuay } from "../../../composable/LogicBanHangTaiQuay";
 import { ref } from "vue";
 
@@ -35,11 +36,15 @@ const {
   tongSoTrang,
   boLocThuongHieuDaChon,
   boLocDanhMucDaChon,
+  boLocMauSacDaChon,
+  boLocKichCoDaChon,
   giaToiThieuDaChon,
   giaToiDaDaChon,
   giaToiDaCoSan,
   thuongHieuCoSan,
   danhMucCoSan,
+  mauSacCoSan,
+  kichCoCoSan,
   nhanTimKiemSanPham,
   cartItems,
   chiTietSanPhamDaChon,
@@ -78,6 +83,8 @@ const {
   thongTinGiaoHang,
   phuongThucThanhToan,
   tienKhachDua,
+  tienMatKetHop,
+  tienChuyenKhoanKetHop,
   thongBaoLoiThanhToan,
   tienThua,
   ghiChuThanhToan,
@@ -99,12 +106,16 @@ const {
   moDanhSachSanPham,
   dongDanhSachSanPham,
   moChiTietSanPham,
+  themTrucTiepBienThe,
+  itemDangDoiBienThe,
+  xuLyMoDoiBienTheInCart,
   xuLyQuetQrSanPham,
   tangSoLuong,
   giamSoLuong,
   dongChiTietSanPham,
   chonMauSac,
   chonKichCo,
+  chonBienThe,
   giamSoLuongChiTiet,
   tangSoLuongChiTiet,
   capNhatSoLuongChiTiet,
@@ -119,13 +130,16 @@ const {
   capNhatThongTinGiaoHang,
   xuLyTinhPhiVanChuyen,
   xuLyTienKhachDuaInput,
+  xuLyTienMatKetHopInput,
+  xuLyTienChuyenKhoanKetHopInput,
   xuLyTaoHoaDonCho,
   xuLyTaoHoaDonChoMoi,
   xuLyThanhToanNgay,
   xuLyThanhToanSau,
   xuLyHuyHoaDonCho,
   xuLyInHoaDon,
-  daInHoaDon
+  daInHoaDon,
+  bienTheLienQuan
 } = LogicBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
@@ -138,51 +152,7 @@ subscribeTopic('/topic/admin/san-pham', async (message) => {
   taiSanPham();
 
   if (cartItems.value && cartItems.value.length > 0) {
-    try {
-      const ids = cartItems.value.map(it => Number(it.chiTietId)).filter(Boolean);
-      if (ids.length > 0) {
-        const { apiRequest } = await import("../../../services/api-client");
-        const ds = await apiRequest(`/client/san-pham/dong-bo-gia`, {
-          method: "POST",
-          authenticated: false,
-          body: JSON.stringify({ ids }),
-          fallbackMessage: "",
-        });
-        
-        if (ds && Array.isArray(ds)) {
-          const theoId = new Map(ds.map((x) => [Number(x.giayChiTietId), x]));
-          let daThayDoiGia = false;
-          let dsTenThayDoi = [];
-          
-          for (const item of cartItems.value) {
-            const moi = theoId.get(Number(item.chiTietId));
-            if (!moi) continue;
-            
-            const giaBanMoi = Number(moi.giaHienTai ?? moi.giaBan);
-            if (Number(item.giaBan) !== giaBanMoi) {
-              item.giaCu = Number(item.giaBan);
-              item.giaMoi = giaBanMoi;
-              item.giaBan = giaBanMoi;
-              item.isPriceChanged = true;
-              daThayDoiGia = true;
-              if (!dsTenThayDoi.includes(item.tenSanPham)) {
-                dsTenThayDoi.push(item.tenSanPham);
-              }
-            }
-          }
-          
-          if (daThayDoiGia) {
-            const { showToast } = await import("../../../utils/alert");
-            showToast(`Giá của ${dsTenThayDoi.join(', ')} vừa được cập nhật tự động.`, "warning");
-            cartItems.value = [...cartItems.value];
-            // Trigger recalculation if needed
-            if (typeof capNhatTienKhachThanhToan === 'function') capNhatTienKhachThanhToan();
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi đồng bộ giá giỏ hàng POS", err);
-    }
+    // Không tự động cập nhật giá trong giỏ hàng nữa theo yêu cầu của user
   }
 });
 
@@ -208,6 +178,8 @@ const datTrangHienTai = (val) => { trangHienTai.value = val; };
 const datKichThuocTrang = (val) => { kichThuocTrang.value = val; };
 const datBoLocThuongHieu = (val) => { boLocThuongHieuDaChon.value = val; };
 const datBoLocDanhMuc = (val) => { boLocDanhMucDaChon.value = val; };
+const datBoLocMauSac = (val) => { boLocMauSacDaChon.value = val; };
+const datBoLocKichCo = (val) => { boLocKichCoDaChon.value = val; };
 const datGiaToiThieu = (val) => { giaToiThieuDaChon.value = val; };
 const datGiaToiDa = (val) => { giaToiDaDaChon.value = val; };
 const datMaPhieuGiamGia = (val) => { maPhieuGiamGia.value = val; };
@@ -230,13 +202,32 @@ function xuLyMaQuet(keyword) {
     xuLyQuetQrSanPham(keyword);
   }
 }
+
+const showAddCustomerModal = ref(false);
+const sdtGoiY = ref("");
+
+function moThemNhanhKhachHang(keyword) {
+  sdtGoiY.value = keyword && !isNaN(keyword.replace(/\s/g, '')) ? keyword : "";
+  showAddCustomerModal.value = true;
+}
+
+function dongThemNhanhKhachHang() {
+  showAddCustomerModal.value = false;
+}
+
+function xuLyThemKhachHang(khachHangMoi) {
+  // Khi thêm thành công, ta tự động gán keyword bằng sdt khách và gọi selectKhachHang hoặc tương tự
+  tuKhoaKhachHang.value = khachHangMoi.sdt || khachHangMoi.hoTen;
+  // Cố gắng chọn khách hàng đó luôn
+  chonKhachHang(khachHangMoi);
+}
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 p-2 h-full overflow-hidden">
+  <div class="flex flex-col gap-2 p-2 h-full lg:overflow-hidden overflow-y-auto custom-scrollbar radius-6px">
     <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
       <!-- Left Column: Pending Invoices, Cart -->
-      <div class="flex flex-col gap-4 min-h-0">
+      <div class="flex flex-col gap-4 min-h-0 lg:h-auto h-[600px] lg:flex-1 shrink-0">
 
         <!-- Pending Invoices Section -->
         <PhanHoaDonCho
@@ -274,11 +265,15 @@ function xuLyMaQuet(keyword) {
                 :total-pages="tongSoTrang"
                 :selected-brand-filter="boLocThuongHieuDaChon"
                 :selected-category-filter="boLocDanhMucDaChon"
+                :selected-color-filter="boLocMauSacDaChon"
+                :selected-size-filter="boLocKichCoDaChon"
                 :selected-min-price="giaToiThieuDaChon"
                 :selected-max-price="giaToiDaDaChon"
                 :max-available-price="giaToiDaCoSan"
                 :available-brands="thuongHieuCoSan"
                 :available-categories="danhMucCoSan"
+                :available-colors="mauSacCoSan"
+                :available-sizes="kichCoCoSan"
                 :product-search-label="nhanTimKiemSanPham"
                 :dinh-dang-tien="dinhDangTien"
                 :so-luong-con-lai="soLuongConLai"
@@ -287,12 +282,14 @@ function xuLyMaQuet(keyword) {
                 @update:page-size="datKichThuocTrang"
                 @update:selected-brand-filter="datBoLocThuongHieu"
                 @update:selected-category-filter="datBoLocDanhMuc"
+                @update:selected-color-filter="datBoLocMauSac"
+                @update:selected-size-filter="datBoLocKichCo"
                 @update:selected-min-price="datGiaToiThieu"
                 @update:selected-max-price="datGiaToiDa"
                 @refresh="taiSanPham"
                 @focus-product="moDanhSachSanPham"
                 @blur-product="dongDanhSachSanPham"
-                @open-product="moChiTietSanPham"
+                @open-product="themTrucTiepBienThe"
                 @scan-product="xuLyQuetQrSanPham"
                 @open-qr-scanner="moQuetQr"
                 @update:show-product-dropdown="hienThiDanhSachSanPham = $event"
@@ -309,6 +306,7 @@ function xuLyMaQuet(keyword) {
               @decrease-item="giamSoLuong"
               @remove-item="xoaSanPham"
               @update-item="capNhatSoLuong"
+              @edit-item="xuLyMoDoiBienTheInCart"
             />
           </div>
 
@@ -316,6 +314,7 @@ function xuLyMaQuet(keyword) {
             <PhanGiaoHang
               :shipping-info="thongTinGiaoHang"
               :dinh-dang-tien="dinhDangTien"
+              :customer-id="khachHangDuocChon?.id"
               @update-shipping="capNhatThongTinGiaoHang"
               @calculate-shipping="xuLyTinhPhiVanChuyen"
             />
@@ -323,7 +322,7 @@ function xuLyMaQuet(keyword) {
         </section>
       </div>
 
-      <div class="flex flex-col gap-3 h-full overflow-y-auto pr-1 custom-scrollbar">
+      <div class="flex flex-col gap-3 lg:h-full lg:overflow-y-auto pr-1 custom-scrollbar shrink-0">
 
         <!-- Customer Section -->
         <section class="shrink-0 flex flex-col rounded-[24px] border border-white/70 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
@@ -343,6 +342,7 @@ function xuLyMaQuet(keyword) {
             @select-customer="chonKhachHang"
             @select-guest="chonKhachVangLai"
             @clear-customer="boChonKhachHang"
+            @open-add-customer="moThemNhanhKhachHang"
           />
         </section>
 
@@ -380,6 +380,8 @@ function xuLyMaQuet(keyword) {
             :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
             :payment-method="phuongThucThanhToan"
             :amount-paid="tienKhachDua"
+            :tien-mat-ket-hop="tienMatKetHop"
+            :tien-chuyen-khoan-ket-hop="tienChuyenKhoanKetHop"
             :payment-validation-message="thongBaoLoiThanhToan"
             :tien-thua="tienThua"
             :payment-note="ghiChuThanhToan"
@@ -403,6 +405,8 @@ function xuLyMaQuet(keyword) {
             @calculate-shipping="xuLyTinhPhiVanChuyen"
             @update:payment-method="datPhuongThucThanhToan"
             @amount-input="xuLyTienKhachDuaInput"
+            @cash-split-input="xuLyTienMatKetHopInput"
+            @transfer-split-input="xuLyTienChuyenKhoanKetHopInput"
             @update:payment-note="datGhiChuThanhToan"
             @print-invoice="xuLyInHoaDon"
             @pay-now="xuLyThanhToanNgay"
@@ -421,6 +425,7 @@ function xuLyMaQuet(keyword) {
       :chi-tiet-dang-chon="chiTietDangChon"
       :current-product-image="hinhAnhDangChon"
       :so-luong-ton-sau-khi-chon="soLuongTonSauKhiChon"
+      :bien-the-lien-quan="bienTheLienQuan"
       :color-options="luaChonMauSac"
       :size-options="luaChonKichCo"
       :selected-color="mauSacDaChon"
@@ -428,9 +433,12 @@ function xuLyMaQuet(keyword) {
       :selected-quantity="soLuongDaChon"
       :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
       :dinh-dang-tien="dinhDangTien"
+      :so-luong-con-lai="soLuongConLai"
+      :is-edit-mode="Boolean(itemDangDoiBienThe)"
       @close="dongChiTietSanPham"
       @select-color="chonMauSac"
       @select-size="chonKichCo"
+      @select-variant="chonBienThe"
       @decrease-quantity="giamSoLuongChiTiet"
       @increase-quantity="tangSoLuongChiTiet"
       @update-quantity="capNhatSoLuongChiTiet"
@@ -444,6 +452,13 @@ function xuLyMaQuet(keyword) {
       :show-retry-button="false"
       @close="dongQuetQr"
       @scan="xuLyMaQuet"
+    />
+
+    <ModalThemNhanhKhachHang
+      :open="showAddCustomerModal"
+      :sdt-goi-y="sdtGoiY"
+      @close="dongThemNhanhKhachHang"
+      @created="xuLyThemKhachHang"
     />
 
   </div>

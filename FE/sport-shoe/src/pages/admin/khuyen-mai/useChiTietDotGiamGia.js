@@ -33,6 +33,19 @@ import {
 } from "../../../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../../../utils/alert";
 
+const formatToLocalDateString = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const gmt7Time = d.getTime() + (7 * 60 * 60 * 1000);
+  const localDate = new Date(gmt7Time);
+  const year = localDate.getUTCFullYear();
+  const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+  const date = String(localDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+};
+
 export function useChiTietDotGiamGia() {
   const route = useRoute();
   const router = useRouter();
@@ -66,6 +79,14 @@ export function useChiTietDotGiamGia() {
   });
 
   const isReadOnly = computed(() => false);
+
+  const todayStr = computed(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+  });
 
   const searchSP = ref("");
   const danhSachSP = ref([]);
@@ -128,14 +149,12 @@ export function useChiTietDotGiamGia() {
     });
   });
 
-  // Tính toán giá sau giảm cho các biến thể hiển thị trong bảng
+  // Tinh gia sau giam theo gia ban cua bien the.
   const bienTheHienThi = computed(() => {
     const mucGiam = Number(form.giaTriGiam) || 0;
     return tatCaBienThe.value.map(bt => ({
       ...bt,
-      giaSauGiam: bt.giaGoc
-        ? bt.giaGoc * (1 - mucGiam / 100)
-        : bt.giaBan * (1 - mucGiam / 100)
+      giaSauGiam: Number(bt.giaBan || 0) * (1 - mucGiam / 100)
     }));
   });
 
@@ -189,6 +208,9 @@ export function useChiTietDotGiamGia() {
       variant?.chiTietId ??
       variant?.id ??
       null;
+
+    const giaBan = Number(variant?.giaBan ?? variant?.gia ?? 0);
+
     return {
       ...variant,
       linkId:
@@ -205,8 +227,7 @@ export function useChiTietDotGiamGia() {
         variant?.sku ||
         variant?.ma ||
         "",
-      giaBan: Number(variant?.giaBan ?? variant?.gia ?? 0),
-      giaGoc: Number(variant?.giaGoc ?? variant?.giaBan ?? variant?.gia ?? 0),
+      giaBan,
       mauSac: variant?.mauSac || variant?.tenMauSac || "",
       kichCo: variant?.kichCo || variant?.tenKichCo || "",
       thuongHieu: variant?.thuongHieu || product?.thuongHieu || "",
@@ -239,13 +260,6 @@ export function useChiTietDotGiamGia() {
       tenSanPham: incoming?.tenSanPham || existing?.tenSanPham || "",
       maBienThe: incoming?.maBienThe || existing?.maBienThe || "",
       giaBan: Number(incoming?.giaBan ?? existing?.giaBan ?? 0),
-      giaGoc: Number(
-        incoming?.giaGoc ??
-        existing?.giaGoc ??
-        incoming?.giaBan ??
-        existing?.giaBan ??
-        0,
-      ),
       mauSac: incoming?.mauSac || existing?.mauSac || "",
       kichCo: incoming?.kichCo || existing?.kichCo || "",
       thuongHieu: incoming?.thuongHieu || existing?.thuongHieu || "",
@@ -357,9 +371,9 @@ export function useChiTietDotGiamGia() {
     return [...extraProducts, ...items];
   }
 
-  function tinhGiaGiam(giaGoc) {
+  function tinhGiaGiam(giaBan) {
     const giam = Number(form.giaTriGiam) || 0;
-    return giaGoc * (1 - giam / 100);
+    return Number(giaBan || 0) * (1 - giam / 100);
   }
 
   function taoMaNgauNhien() {
@@ -400,13 +414,6 @@ export function useChiTietDotGiamGia() {
   }
 
   let searchTimer;
-  watch([searchSP, filterMauSac, filterKichCo], () => {
-    clearTimeout(searchTimer);
-    trangBienThe.value = 1;
-    // We only need to fetch again if searchSP changes, but since searchSP is in the watch array,
-    // we just call taiDanhSachSP. However, color/size are filtered locally, so we only need to reset page.
-    // Let's refactor this:
-  });
 
   watch(searchSP, () => {
     clearTimeout(searchTimer);
@@ -601,8 +608,8 @@ export function useChiTietDotGiamGia() {
         moTa: detail.moTa ?? "",
         loaiGiam: String(detail.loaiGiam ?? 1),
         giaTriGiam: detail.giaTriGiam ?? "",
-        ngayBatDau: detail.ngayBatDau ?? "",
-        ngayKetThuc: detail.ngayKetThuc ?? "",
+        ngayBatDau: formatToLocalDateString(detail.ngayBatDau),
+        ngayKetThuc: formatToLocalDateString(detail.ngayKetThuc),
         kichHoat: String(detail.kichHoat ?? 1)
       });
 
@@ -772,5 +779,5 @@ export function useChiTietDotGiamGia() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc };
+  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc, todayStr };
 }
