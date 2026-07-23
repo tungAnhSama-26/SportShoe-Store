@@ -341,7 +341,7 @@ public class ClientVnPayService {
             if (fieldValue != null && !fieldValue.isEmpty()) {
                 String encodedKey = urlEncode(fieldName);
                 String encodedValue = urlEncode(fieldValue);
-                hashParts.add(fieldName + "=" + encodedValue);
+                hashParts.add(fieldName + "=" + fieldValue);
                 queryParts.add(encodedKey + "=" + encodedValue);
             }
         }
