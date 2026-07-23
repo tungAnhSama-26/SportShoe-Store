@@ -15,8 +15,7 @@ import {
   List,
   Trash2,
   Upload,
-  Search,
-  SlidersHorizontal,
+  Filter,
   Table as TableIcon,
   Eye
 } from "lucide-vue-next";
@@ -223,10 +222,6 @@ function tuanSau() {
   else if (calendarMode.value === 'thang') d.setMonth(d.getMonth() + 1);
   else d.setDate(d.getDate() + 7);
   ngayHienTai.value = d;
-}
-
-function homNay() {
-  ngayHienTai.value = new Date();
 }
 
 // Khi thay đổi mode, tải lại dữ liệu vì chu kỳ thời gian thay đổi
@@ -495,6 +490,21 @@ const currentChiTietCa = ref(null);
 function xemChiTietCa(day, ca) {
   currentChiTietCa.value = { day, ca };
   showModalChiTietCa.value = true;
+}
+
+function xemChiTietCaTuBang(item) {
+  const day = lichBoard.value.find((ngay) => ngay.ngayStr === item.ngayStr) || {
+    ngay: item.ngay,
+    ngayStr: item.ngayStr,
+    thu: NHAN_TUAN[(item.ngay.getDay() + 6) % 7] || "",
+  };
+  const ca = day.cas?.find((caInfo) => String(caInfo.id).toLowerCase() === String(item.caInfo.id).toLowerCase()) || {
+    ...item.caInfo,
+    nhanViens: danhSachLocVaiTro.value.filter(
+      (nv) => String(nv.lich[item.ngayStr] || "").toLowerCase() === String(item.caInfo.id).toLowerCase(),
+    ),
+  };
+  xemChiTietCa(day, ca);
 }
 
 // ───────── Hiển thị modal Thêm nhân viên (Modal 2) ─────────
@@ -842,9 +852,11 @@ function layThongTinCa(id) {
 
     <!-- ───── HEADER TÙY CHỌN ───── -->
     <div class="bg-white rounded-[16px] border border-slate-200 p-5 shadow-sm">
-      <div class="flex items-center gap-2 mb-4 text-slate-700">
-        <SlidersHorizontal class="w-4 h-4" />
-        <span class="font-bold text-[15px]">Bộ lọc</span>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+          <Filter class="h-5 w-5" />
+        </div>
+        <h2 class="admin-section-title">Bộ lọc</h2>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-4">
         <!-- Filters -->
@@ -867,8 +879,7 @@ function layThongTinCa(id) {
           <div class="flex items-center gap-2">
             <span class="text-[13px] font-medium text-slate-700">Ngày làm:</span>
             <div class="relative flex items-center h-9 border border-slate-200 rounded-lg bg-white overflow-hidden focus-within:border-rose-400 transition">
-              <CalendarDays class="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
-              <input type="date" v-model="ngayLocSelect" class="w-36 h-full pl-9 pr-2 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
+              <input type="date" v-model="ngayLocSelect" class="w-36 h-full px-3 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
             </div>
           </div>
         </div>
@@ -974,11 +985,11 @@ function layThongTinCa(id) {
                 <td class="py-2.5 px-3 text-[12px] text-slate-600 text-center">{{ formatNgay(item.ngay) }}/{{ item.ngay.getFullYear() }}</td>
                 <td class="py-2.5 px-3 text-center whitespace-nowrap">
                   <div class="flex items-center justify-center gap-2">
-                    <button @click="xemChiTietCa({ ngay: item.ngay, ngayStr: item.ngayStr, thu: '' }, item.caInfo)" class="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-sm" title="Xem chi tiết">
-                      <Eye class="w-4 h-4" />
+                    <button @click="xemChiTietCaTuBang(item)" class="admin-table-action text-slate-600 hover:text-slate-900" title="Xem chi tiết">
+                      <Eye :size="14" />
                     </button>
-                    <button @click="xoaCaTuBang(item.nv, item.ngayStr, item.caInfo)" class="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 transition shadow-sm" title="Xóa ca">
-                      <Trash2 class="w-4 h-4" />
+                    <button @click="xoaCaTuBang(item.nv, item.ngayStr, item.caInfo)" class="admin-table-action text-rose-500 hover:text-rose-700" title="Xóa ca">
+                      <Trash2 :size="14" />
                     </button>
                   </div>
                 </td>
@@ -1021,9 +1032,6 @@ function layThongTinCa(id) {
                 </h2>
                 <button @click="tuanSau" class="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition shadow-sm">
                   <ChevronRight class="h-4 w-4" />
-                </button>
-                <button @click="homNay" class="ml-2 h-8 px-3 rounded-md border border-slate-200 text-[13px] font-medium text-slate-600 hover:bg-slate-50 transition shadow-sm">
-                  Hôm nay
                 </button>
               </div>
           

@@ -20,7 +20,7 @@ public record TaoNhanVienRequest(
         @Size(max = 100, message = "Email không quá 100 ký tự")
         String email,
         @NotBlank(message = "Số điện thoại không được để trống")
-        @Pattern(regexp = ValidationPatterns.VN_PHONE, message = "Số điện thoại không đúng định dạng")
+        @Pattern(regexp = ValidationPatterns.VN_PHONE, message = "Số điện thoại phải bắt đầu bằng 03, 05, 07, 08 hoặc 09 và có đúng 10 chữ số")
         String sdt,
         @Size(max = 10) String gioiTinh,
         @Past(message = "Ngày sinh không được là ngày trong tương lai") LocalDate ngaySinh,
