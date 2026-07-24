@@ -1,6 +1,8 @@
 <script setup>
+import { ref, computed } from "vue";
 import { resolveHinhAnh } from "../../../utils/resolve-image";
-defineProps({
+
+const props = defineProps({
   selectedProductDetail: {
     type: Object,
     default: null
@@ -69,6 +71,42 @@ const emit = defineEmits([
   "select-variant",
   "add-selected-variant"
 ]);
+
+const filterColor = ref("");
+const filterSize = ref("");
+
+const availableColors = computed(() => {
+  if (!props.bienTheLienQuan) return [];
+  const set = new Set();
+  props.bienTheLienQuan.forEach(v => {
+    const val = v.mauSac || v.maBienThe;
+    if (val) set.add(val);
+  });
+  return Array.from(set);
+});
+
+const availableSizes = computed(() => {
+  if (!props.bienTheLienQuan) return [];
+  const set = new Set();
+  props.bienTheLienQuan.forEach(v => {
+    if (v.kichCo) set.add(v.kichCo);
+  });
+  return Array.from(set).sort((a, b) => {
+    const numA = parseFloat(a);
+    const numB = parseFloat(b);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return String(a).localeCompare(String(b));
+  });
+});
+
+const filteredVariants = computed(() => {
+  if (!props.bienTheLienQuan) return [];
+  return props.bienTheLienQuan.filter(v => {
+    const matchColor = !filterColor.value || (v.mauSac || v.maBienThe) === filterColor.value;
+    const matchSize = !filterSize.value || String(v.kichCo) === String(filterSize.value);
+    return matchColor && matchSize;
+  });
+});
 
 function isDiscounted(product) {
   return Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
@@ -150,7 +188,56 @@ function formatDiscountPercent(product) {
                 </div>
               </div>
 
-              <div class="my-4 h-px w-full bg-slate-100"></div>
+              <div class="my-3 h-px w-full bg-slate-100"></div>
+
+              <!-- Filter Combobox Bar -->
+              <div class="flex items-center gap-3 mb-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Lọc biến thể:
+                </div>
+
+                <!-- Color Combobox -->
+                <div class="relative flex-1 max-w-[170px]">
+                  <select
+                    v-model="filterColor"
+                    class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-sm transition"
+                  >
+                    <option value="">Tất cả màu sắc</option>
+                    <option v-for="c in availableColors" :key="c" :value="c">
+                      Màu {{ c }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Size Combobox -->
+                <div class="relative flex-1 max-w-[150px]">
+                  <select
+                    v-model="filterSize"
+                    class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-sm transition"
+                  >
+                    <option value="">Tất cả kích cỡ</option>
+                    <option v-for="s in availableSizes" :key="s" :value="s">
+                      Size {{ s }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Clear Filter -->
+                <button
+                  v-if="filterColor || filterSize"
+                  type="button"
+                  class="text-xs font-bold text-rose-600 hover:text-rose-700 underline ml-auto cursor-pointer flex items-center gap-1"
+                  @click="filterColor = ''; filterSize = ''"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                  Xóa lọc
+                </button>
+              </div>
 
               <!-- Variants Table -->
               <div class="flex-1 overflow-auto min-h-[280px] border border-slate-200 rounded-lg my-2 custom-scrollbar">
@@ -168,7 +255,7 @@ function formatDiscountPercent(product) {
                   </thead>
                   <tbody class="divide-y divide-slate-100">
                     <tr
-                      v-for="variant in bienTheLienQuan"
+                      v-for="variant in filteredVariants"
                       :key="variant.chiTietId"
                       class="transition-colors"
                       :class="[

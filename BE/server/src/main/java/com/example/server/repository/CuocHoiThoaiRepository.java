@@ -7,4 +7,5 @@ import java.util.List;
 public interface CuocHoiThoaiRepository extends JpaRepository<CuocHoiThoai, Integer> {
     List<CuocHoiThoai> findByTrangThaiInOrderByNgayTaoDesc(List<Integer> trangThais);
     List<CuocHoiThoai> findByNhanVienIdAndTrangThai(java.util.UUID nhanVienId, Integer trangThai);
+    List<CuocHoiThoai> findByNhanVienIdOrderByNgayTaoDesc(java.util.UUID nhanVienId);
 }

@@ -44,6 +44,34 @@ public class AdminChatbotController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", history));
     }
 
+    @PostMapping("/close-session")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> closeSession(
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        chatbotService.closeAdminAiSession(principal.id());
+        return ResponseEntity.ok(ApiResponse.success("Đã đóng phiên trò chuyện thành công", null));
+    }
+
+    @GetMapping("/sessions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<com.example.server.core.client.chatbot.dto.ChatbotSessionDto>>> getAdminSessions(
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        List<com.example.server.core.client.chatbot.dto.ChatbotSessionDto> sessions = chatbotService.getAdminAiSessions(principal.id());
+        return ResponseEntity.ok(ApiResponse.success("Thành công", sessions));
+    }
+
+    @GetMapping("/session/{sessionId}/messages")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<ChatbotMessageDto>>> getSessionMessages(
+            @AuthenticationPrincipal AdminPrincipal principal,
+            @PathVariable("sessionId") Integer sessionId
+    ) {
+        List<ChatbotMessageDto> history = chatbotService.getAdminAiSessionMessages(principal.id(), sessionId);
+        return ResponseEntity.ok(ApiResponse.success("Thành công", history));
+    }
+
     @GetMapping("/download-csv")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<byte[]> downloadCsv(

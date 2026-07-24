@@ -1,7 +1,13 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
-import { chatWithAdminAi, getAdminChatHistory } from "../../services/admin-chatbot";
+import { 
+  chatWithAdminAi, 
+  getAdminChatHistory, 
+  closeAdminAiSession, 
+  getAdminAiSessions, 
+  getAdminAiSessionMessages 
+} from "../../services/admin-chatbot";
 import { showConfirm } from "../../utils/alert";
 import { Bar, Line, Doughnut } from "vue-chartjs";
 import { 
@@ -28,8 +34,12 @@ import {
   TrendingUp,
   AlertTriangle,
   Search,
-  Zap
+  Zap,
+  History,
+  Power
 } from "lucide-vue-next";
+
+import { resolveHinhAnh } from "../../utils/resolve-image";
 
 const router = useRouter();
 const isOpen = ref(false);
@@ -37,6 +47,34 @@ const messages = ref([]);
 const inputText = ref("");
 const isSending = ref(false);
 const chatContainer = ref(null);
+
+const showHistoryModal = ref(false);
+const sessionList = ref([]);
+const loadingSessions = ref(false);
+const activeSessionId = ref(null);
+
+function formatDateTime(isoStr) {
+  if (!isoStr) return "";
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch (e) {
+    return isoStr;
+  }
+}
+
+function dinhDangTien(val) {
+  if (val === null || val === undefined) return "0 đ";
+  const num = Number(val);
+  if (isNaN(num)) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(num);
+}
 
 const promptSuggestions = [
   { label: "Doanh thu hôm nay", text: "Thống kê doanh thu hôm nay", icon: TrendingUp },
@@ -48,45 +86,63 @@ const promptSuggestions = [
 function parseMessage(text) {
   if (!text) return [];
   const segments = [];
-  const chartRegex = /```chart([\s\S]*?)```/g;
+  const blockRegex = /```(chart|product)([\s\S]*?)```/g;
   let lastIndex = 0;
   let match;
 
-  while ((match = chartRegex.exec(text)) !== null) {
+  const hasProductBlock = text.includes("```product");
+
+  while ((match = blockRegex.exec(text)) !== null) {
     const matchIndex = match.index;
     if (matchIndex > lastIndex) {
-      segments.push(...parseLinks(text.substring(lastIndex, matchIndex)));
+      const rawText = text.substring(lastIndex, matchIndex);
+      if (!hasProductBlock) {
+        segments.push(...parseLinksAndImages(rawText));
+      } else {
+        const cleanedText = rawText.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "");
+        segments.push(...parseLinksAndImages(cleanedText));
+      }
     }
-    try {
-      const chartJson = JSON.parse(match[1].trim());
-      segments.push({
-        type: "chart",
-        chartData: chartJson
-      });
-    } catch (e) {
-      console.error("Lỗi parse JSON chart:", e);
-      segments.push({
-        type: "text",
-        content: "[Lỗi hiển thị biểu đồ: Dữ liệu JSON không hợp lệ]"
-      });
+    const blockType = match[1].trim();
+    const content = match[2].trim();
+    if (blockType === "chart") {
+      try {
+        const chartJson = JSON.parse(content);
+        segments.push({ type: "chart", chartData: chartJson });
+      } catch (e) {
+        console.error("Lỗi parse chart JSON:", e);
+      }
+    } else if (blockType === "product") {
+      try {
+        const productJson = JSON.parse(content);
+        segments.push({ type: "product", productData: productJson });
+      } catch (e) {
+        console.error("Lỗi parse product JSON:", e);
+      }
     }
-    lastIndex = chartRegex.lastIndex;
+    lastIndex = blockRegex.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    segments.push(...parseLinks(text.substring(lastIndex)));
+    const rawText = text.substring(lastIndex);
+    if (!hasProductBlock) {
+      segments.push(...parseLinksAndImages(rawText));
+    } else {
+      const cleanedText = rawText.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "");
+      segments.push(...parseLinksAndImages(cleanedText));
+    }
   }
 
   return segments;
 }
 
-function parseLinks(text) {
+function parseLinksAndImages(text) {
   const segments = [];
-  const linkRegex = /\[([^]]+)\]\(([^)]+)\)/g;
+  const regex = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)/g;
   let lastIndex = 0;
   let match;
 
-  while ((match = linkRegex.exec(text)) !== null) {
+  while ((match = regex.exec(text)) !== null) {
     const matchIndex = match.index;
     if (matchIndex > lastIndex) {
       segments.push({
@@ -94,13 +150,22 @@ function parseLinks(text) {
         content: text.substring(lastIndex, matchIndex)
       });
     }
-    const linkText = match[1].replace(/\*\*/g, "");
-    segments.push({
-      type: "link",
-      text: linkText,
-      url: match[2]
-    });
-    lastIndex = linkRegex.lastIndex;
+
+    if (match[0].startsWith("!")) {
+      segments.push({
+        type: "image",
+        alt: match[1],
+        url: match[2]
+      });
+    } else {
+      const linkText = match[3].replace(/\*\*/g, "");
+      segments.push({
+        type: "link",
+        text: linkText,
+        url: match[4]
+      });
+    }
+    lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < text.length) {
@@ -115,7 +180,11 @@ function parseLinks(text) {
 
 function renderText(text) {
   if (!text) return "";
-  let escaped = text
+  let clean = text
+    .replace(/số lượng tồn kho/gi, "Số lượng")
+    .replace(/số lượng tồn/gi, "Số lượng")
+    .replace(/tồn kho/gi, "Số lượng");
+  let escaped = clean
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
@@ -330,6 +399,59 @@ function xoaLichSu() {
   ];
 }
 
+async function xemLichSuTroChuyen() {
+  showHistoryModal.value = true;
+  loadingSessions.value = true;
+  try {
+    const data = await getAdminAiSessions();
+    sessionList.value = data || [];
+  } catch (e) {
+    console.error("Lỗi lấy danh sách phiên chat:", e);
+  } finally {
+    loadingSessions.value = false;
+  }
+}
+
+async function loadSessionMessages(sessionId) {
+  try {
+    const data = await getAdminAiSessionMessages(sessionId);
+    if (data && data.length > 0) {
+      activeSessionId.value = sessionId;
+      messages.value = data.map(m => ({
+        id: m.id.toString(),
+        sender: m.nguoiGui === "STAFF" ? "USER" : "AI",
+        content: m.noiDung,
+        time: m.ngayTao
+      }));
+      showHistoryModal.value = false;
+      cuonXuongCuoi();
+    }
+  } catch (e) {
+    console.error("Lỗi tải tin nhắn của phiên:", e);
+  }
+}
+
+async function dongPhienTroChuyen() {
+  try {
+    await closeAdminAiSession();
+  } catch (e) {
+    console.error("Lỗi đóng phiên backend:", e);
+  }
+  activeSessionId.value = null;
+  messages.value = [
+    {
+      id: "welcome-" + Date.now(),
+      sender: "AI",
+      content: "Xin chào Quản trị viên! Tôi là trợ lý ảo hỗ trợ quản lý SportShoe. Tôi có thể giúp bạn thống kê doanh thu, kiểm tra sản phẩm hết hàng hoặc tìm kiếm hóa đơn nhanh chóng.",
+      time: new Date().toISOString()
+    }
+  ];
+  if (showHistoryModal.value) {
+    showHistoryModal.value = false;
+  }
+  cuonXuongCuoi();
+}
+
 async function guiTinNhan(contentStr) {
   const msgText = contentStr || inputText.value.trim();
   if (!msgText || isSending.value) return;
@@ -464,31 +586,113 @@ function toggleChat() {
       >
         <!-- Header -->
         <div 
-          class="flex items-center justify-between bg-gradient-to-r from-red-600 to-rose-700 px-5 py-4 text-white cursor-grab active:cursor-grabbing"
+          class="flex items-center justify-between bg-gradient-to-r from-red-600 to-rose-700 px-5 py-4 text-white cursor-grab active:cursor-grabbing relative z-10"
           @mousedown="onMouseDown"
         >
           <div class="flex items-center gap-3">
-            <div class="rounded-xl bg-white/10 p-2">
-              <Sparkles class="h-5 w-5" />
-            </div>
             <div>
               <h3 class="text-sm font-bold tracking-wide">Trợ Lý Admin AI</h3>
               <p class="text-[10px] text-rose-200">Trực tuyến</p>
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5">
+            <!-- Icon Lịch sử trò chuyện -->
             <button
-              @click="xoaLichSu"
-              title="Xóa lịch sử trò chuyện"
-              class="rounded-lg p-1.5 transition hover:bg-white/10"
+              @click="xemLichSuTroChuyen"
+              title="Lịch sử cuộc hội thoại AI"
+              class="rounded-lg p-1.5 transition hover:bg-white/20 active:scale-95 cursor-pointer"
             >
-              <Trash2 class="h-4.5 w-4.5" />
+              <History class="h-4.5 w-4.5 text-white" />
             </button>
+
+            <!-- Icon Đóng phiên trò chuyện -->
+            <button
+              @click="dongPhienTroChuyen"
+              title="Đóng phiên làm việc hiện tại"
+              class="rounded-lg p-1.5 transition hover:bg-white/20 active:scale-95 text-rose-100 hover:text-white cursor-pointer"
+            >
+              <Power class="h-4.5 w-4.5" />
+            </button>
+
+            <!-- Icon Đóng cửa sổ -->
             <button
               @click="isOpen = false"
-              class="rounded-lg p-1.5 transition hover:bg-white/10"
+              title="Thu nhỏ cửa sổ"
+              class="rounded-lg p-1.5 transition hover:bg-white/20 active:scale-95 cursor-pointer"
             >
-              <X class="h-4.5 w-4.5" />
+              <X class="h-4.5 w-4.5 text-white" />
+            </button>
+          </div>
+        </div>
+
+        <!-- History Modal Overlay -->
+        <div
+          v-if="showHistoryModal"
+          class="absolute inset-0 z-50 flex flex-col bg-white dark:bg-slate-900 rounded-[24px] p-4 shadow-2xl transition-all duration-200"
+        >
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="p-1.5 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400">
+                <History class="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100">Lịch sử cuộc hội thoại AI</h4>
+                <p class="text-[10px] text-slate-400">Danh sách các phiên chat trước đây</p>
+              </div>
+            </div>
+            <button
+              @click="showHistoryModal = false"
+              class="rounded-lg p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Loading state -->
+          <div v-if="loadingSessions" class="flex-1 flex flex-col items-center justify-center text-xs text-slate-400 gap-2">
+            <span class="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></span>
+            Đang tải lịch sử phiên...
+          </div>
+
+          <!-- Session List -->
+          <div v-else-if="sessionList && sessionList.length > 0" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            <div
+              v-for="ses in sessionList"
+              :key="ses.id"
+              @click="loadSessionMessages(ses.id)"
+              class="p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 hover:border-rose-300 dark:hover:border-rose-900/50 hover:bg-rose-50/30 transition cursor-pointer group"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  📅 {{ formatDateTime(ses.ngayTao) }}
+                </span>
+                <span
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  :class="ses.trangThai === 1 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400'"
+                >
+                  {{ ses.trangThai === 1 ? 'Đang mở' : 'Đã đóng' }}
+                </span>
+              </div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-rose-600 transition">
+                Phiên chat #{{ ses.id }}
+              </p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Bấm để tải lại toàn bộ nội dung tin nhắn phiên này</p>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-4 text-slate-400">
+            <MessageSquare class="w-8 h-8 mb-2 text-slate-300" />
+            <p class="text-xs font-medium">Chưa có lịch sử phiên trò chuyện nào.</p>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <button
+              @click="dongPhienTroChuyen"
+              type="button"
+              class="w-full text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Power class="w-3.5 h-3.5" /> Bắt đầu cuộc hội thoại mới
             </button>
           </div>
         </div>
@@ -521,6 +725,77 @@ function toggleChat() {
                 >
                   {{ seg.text }}
                 </button>
+                <div
+                  v-else-if="seg.type === 'image'"
+                  class="my-2 inline-block cursor-pointer group relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-rose-400 transition"
+                  @click="handleNavigate('/admin/san-pham')"
+                  title="Bấm để đến trang sản phẩm"
+                >
+                  <img
+                    :src="resolveHinhAnh(seg.url)"
+                    :alt="seg.alt || 'Sản phẩm'"
+                    class="h-36 w-36 object-cover group-hover:scale-105 transition duration-300"
+                  />
+                  <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/25 transition flex items-center justify-center">
+                    <span class="text-[11px] font-bold text-white bg-rose-500/90 px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition shadow">
+                      Đến sản phẩm ➔
+                    </span>
+                  </div>
+                </div>
+                <div
+                  v-else-if="seg.type === 'product'"
+                  class="my-2.5 flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-2xl hover:border-rose-400 hover:shadow-md transition cursor-pointer group"
+                  @click="handleNavigate(seg.productData.url || '/admin/san-pham')"
+                >
+                  <div class="relative w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200/60 dark:border-slate-600">
+                    <img
+                      v-if="seg.productData.image"
+                      :src="resolveHinhAnh(seg.productData.image)"
+                      class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center text-base">
+                      👟
+                    </div>
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate group-hover:text-rose-600 transition">
+                      {{ seg.productData.name }}
+                    </p>
+
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400">
+                        {{ seg.productData.price ? dinhDangTien(seg.productData.price) : '' }}
+                      </span>
+                      <span
+                        v-if="seg.productData.originalPrice && Number(seg.productData.originalPrice) > Number(seg.productData.price)"
+                        class="text-[10px] text-slate-400 line-through"
+                      >
+                        {{ dinhDangTien(seg.productData.originalPrice) }}
+                      </span>
+                    </div>
+
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <span v-if="seg.productData.color" class="inline-flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                        {{ seg.productData.color }}
+                      </span>
+                      <span v-if="seg.productData.size" class="inline-flex items-center gap-1">
+                        • Size {{ seg.productData.size }}
+                      </span>
+                      <span v-if="seg.productData.stock !== undefined" class="font-bold text-amber-600 dark:text-amber-400">
+                        • Số lượng: {{ seg.productData.stock }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="shrink-0 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 px-2.5 py-1.5 rounded-xl shadow-sm transition flex items-center gap-1"
+                  >
+                    Xem <span class="text-[9px]">➔</span>
+                  </button>
+                </div>
                 <div v-else-if="seg.type === 'chart'" class="my-3 p-3 bg-slate-50 border border-slate-100 rounded-xl dark:bg-slate-900/80 dark:border-slate-800">
                   <div class="text-xs font-bold text-slate-700 mb-2 dark:text-slate-200">
                     {{ seg.chartData.title }}
@@ -609,13 +884,6 @@ function toggleChat() {
         </transition>
       </button>
 
-      <!-- Notification Badge (Messenger-like) -->
-      <span 
-        v-show="!isOpen"
-        class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm z-20 animate-bounce"
-      >
-        1
-      </span>
     </div>
   </div>
 </template>

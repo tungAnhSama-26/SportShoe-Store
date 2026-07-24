@@ -451,17 +451,17 @@ public class ChatbotService {
 
                 *Chú ý:* Chỉ khi người dùng gửi tin nhắn bắt đầu bằng lệnh "/execute-..." (Ví dụ: "/execute-confirm-order HD0001", "/execute-update-stock Ananas|41|đen|20", "/execute-create-voucher GIAMGIA|Tên|1|10|0|0|100|30"), bạn mới được phép gọi ngay lập tức tool tương ứng để thực hiện thao tác trực tiếp vào DB và trả về kết quả thành công cho họ.
 
-                # HƯỚNG DẪN HIỂN THỊ LINK ADMIN (QUAN TRỌNG)
-                - Khi hiển thị sản phẩm, hãy đính kèm link dạng:
-                  [Xem chi tiết sản phẩm](/admin/san-pham)
+                # HƯỚNG DẪN HIỂN THỊ LINK & THẺ SẢN PHẨM (QUAN TRỌNG)
+                - BẮT BUỘC: Tuyệt đối KHÔNG dùng từ "tồn kho" hay "số lượng tồn kho". Chỉ được sử dụng duy nhất từ "Số lượng" (Ví dụ: "Số lượng: 3", "Số lượng còn lại: 5").
+                - Khi hiển thị danh sách sản phẩm (sản phẩm sắp hết hàng, sản phẩm bán chạy, đợt giảm giá sắp hết hạn), BẮT BUỘC đính kèm ảnh sản phẩm dạng ![Tên](URL_Ảnh) và thẻ ```product``` kèm link [Xem sản phẩm](/admin/san-pham) để giao diện hiển thị ảnh giày và khi bấm vào ảnh sẽ đưa thẳng Admin tới sản phẩm đó.
                 - Khi hiển thị hóa đơn, hãy đính kèm link dạng:
                   [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
                   (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm).
                   Ví dụ: "Hóa đơn **[HD0001]** của khách hàng đã hoàn thành: [Xem chi tiết hóa đơn](/admin/hoa-don/10)".
-                - Hệ thống giao diện admin sẽ tự động nhận diện link này để hiển thị nút liên kết.
+                - Hệ thống giao diện admin sẽ tự động nhận diện thẻ và link này để hiển thị ảnh và nút bấm chuyển hướng.
 
                 # NGUYÊN TẮC HOẠT ĐỘNG
-                - Luôn sử dụng thông tin thực tế từ công cụ, không tự bịa số liệu tài chính hoặc số lượng tồn kho.
+                - Luôn sử dụng thông tin thực tế từ công cụ, không tự bịa số liệu tài chính hoặc số lượng.
                 - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
                 """;
 
@@ -551,6 +551,38 @@ public class ChatbotService {
             return List.of();
         }
         return tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessions.get(0).getId())
+                .stream()
+                .map(m -> new ChatbotMessageDto(
+                        m.getId(),
+                        m.getNguoiGui(),
+                        m.getNoiDung(),
+                        m.getNgayTao(),
+                        m.getNhanVien() != null ? m.getNhanVien().getMa() : null
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void closeAdminAiSession(java.util.UUID nhanVienId) {
+        List<CuocHoiThoai> activeSessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
+        for (CuocHoiThoai session : activeSessions) {
+            session.setTrangThai(4);
+            session.setNgayCapNhat(java.time.Instant.now());
+            cuocHoiThoaiRepository.save(session);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotSessionDto> getAdminAiSessions(java.util.UUID nhanVienId) {
+        return cuocHoiThoaiRepository.findByNhanVienIdOrderByNgayTaoDesc(nhanVienId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotMessageDto> getAdminAiSessionMessages(java.util.UUID nhanVienId, Integer sessionId) {
+        return tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessionId)
                 .stream()
                 .map(m -> new ChatbotMessageDto(
                         m.getId(),
