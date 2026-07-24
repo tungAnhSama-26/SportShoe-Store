@@ -251,6 +251,7 @@ const {
                 <th class="px-4 py-3">Tên phiếu</th>
                 <th class="px-4 py-3">Hình thức</th>
                 <th class="px-4 py-3">Giá trị giảm</th>
+                <th class="px-4 py-3 whitespace-nowrap">Còn lại</th>
                 <th class="px-4 py-3">Ngày bắt đầu</th>
                 <th class="px-4 py-3">Ngày kết thúc</th>
                 <th class="px-4 py-3">Trạng thái</th>
@@ -261,12 +262,12 @@ const {
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-if="dangTai">
-                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
+                <td colspan="10" class="py-10 text-center text-sm text-slate-400">
                   Đang tải...
                 </td>
               </tr>
               <tr v-else-if="!danhSach.length">
-                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
+                <td colspan="10" class="py-10 text-center text-sm text-slate-400">
                   Không có dữ liệu.
                 </td>
               </tr>
@@ -294,6 +295,9 @@ const {
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   {{ formatGiaTri(item.giaTri, item.loai) }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap font-semibold text-slate-900">
+                  {{ soLuongConLai(item) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   {{ toDisplayDate(item.ngayBatDau) }}
