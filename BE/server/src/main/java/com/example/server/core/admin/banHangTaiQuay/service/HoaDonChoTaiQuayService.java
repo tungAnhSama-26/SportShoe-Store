@@ -44,6 +44,7 @@ public class HoaDonChoTaiQuayService {
     private final HoaDonTaiQuayService invoiceUseCase;
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
     private final TonKhoTaiQuayService inventoryUseCase;
+    private final SanPhamTaiQuayService productUseCase;
 
     public HoaDonChoTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -54,7 +55,8 @@ public class HoaDonChoTaiQuayService {
             TrangThaiHoaDonTaiQuayService invoiceStateUseCase,
             HoaDonTaiQuayService invoiceUseCase,
             PhieuGiamGiaTaiQuayService voucherUseCase,
-            TonKhoTaiQuayService inventoryUseCase
+            TonKhoTaiQuayService inventoryUseCase,
+            SanPhamTaiQuayService productUseCase
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -65,6 +67,7 @@ public class HoaDonChoTaiQuayService {
         this.invoiceUseCase = invoiceUseCase;
         this.voucherUseCase = voucherUseCase;
         this.inventoryUseCase = inventoryUseCase;
+        this.productUseCase = productUseCase;
     }
 
     @Transactional
@@ -226,6 +229,13 @@ public class HoaDonChoTaiQuayService {
 
         HoaDon hoaDon = oldItem.getHoaDon();
 
+        List<HoaDonChiTiet> existingItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+        for (HoaDonChiTiet existingItem : existingItems) {
+            if (existingItem.getGiayChiTiet().getId().equals(request.giayChiTietMoiId())) {
+                throw new BusinessException("Sản phẩm này đã có trong giỏ hàng");
+            }
+        }
+
         GiayChiTiet bienTheMoi = giayChiTietRepository.findById(request.giayChiTietMoiId())
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể mới không tồn tại"));
 
@@ -240,7 +250,7 @@ public class HoaDonChoTaiQuayService {
 
         oldItem.setGiayChiTiet(bienTheMoi);
         oldItem.setSoLuong(soLuong);
-        BigDecimal giaBan = bienTheMoi.getGiaBan();
+        BigDecimal giaBan = productUseCase.layGiaBanThucTe(bienTheMoi);
         oldItem.setGiaDonVi(giaBan);
         oldItem.setThanhTien(giaBan.multiply(BigDecimal.valueOf(soLuong)));
         hoaDonChiTietRepository.save(oldItem);

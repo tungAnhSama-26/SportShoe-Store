@@ -246,7 +246,7 @@ public class ChatbotModelConfig {
         }
         if (isValidKey(activeGeminiKey)) {
             models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash", "Gemini", context));
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-1.5-flash", "Gemini-1.5-DuPhong", context));
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash-lite", "Gemini-Lite-DuPhong", context));
         }
         if (isValidKey(activeOpenAiKey)) {
             models.add(createModel(activeOpenAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", context));

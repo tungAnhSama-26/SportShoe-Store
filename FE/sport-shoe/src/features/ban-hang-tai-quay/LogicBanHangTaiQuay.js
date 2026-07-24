@@ -22,7 +22,7 @@ import { LogicInHoaDon } from "./LogicInHoaDon";
 import { LogicThanhToan } from "./LogicThanhToan";
 import { LogicSanPham } from "./LogicSanPham";
 import { LogicGiaoHang } from "./LogicGiaoHang";
-import { showConfirm, showToastSuccess, showError, toastSwal, showPaymentConfirmWithCoupon } from "../../utils/alert";
+import { showConfirm, showToastSuccess, showError, showWarning, toastSwal, showPaymentConfirmWithCoupon } from "../../utils/alert";
 import { useRealtime } from "../../composables/useRealtime";
 
 
@@ -529,6 +529,14 @@ function LogicBanHangTaiQuay() {
 
   async function xuLyDoiBienTheInCart(item, bienTheMoi) {
     if (!bienTheMoi || !item) return;
+
+    const isDuplicate = cartItems.value.some(
+      (i) => Number(i.chiTietId) === Number(bienTheMoi.chiTietId)
+    );
+    if (isDuplicate) {
+      showError("Sản phẩm này đã có trong giỏ hàng", "Thông báo");
+      return;
+    }
 
     const tenMoTa = `${bienTheMoi.tenSanPham || ''} (${bienTheMoi.mauSac || ''} - Size ${bienTheMoi.kichCo || ''})`;
     const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn đổi sản phẩm sang "${tenMoTa}" không?`);

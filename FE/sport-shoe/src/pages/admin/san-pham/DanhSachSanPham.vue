@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import {
   Eye,
   FileSpreadsheet,
@@ -39,7 +39,7 @@ const totalPages = ref(0);
 const updatingStatusIds = reactive(new Set());
 
 const boLoc = reactive({
-  tuKhoa: "",
+  tuKhoa: (route.query.search || route.query.keyword || "").toString(),
   thuongHieuId: null,
   loaiGiayId: null,
   trangThai: null,
@@ -352,6 +352,16 @@ onMounted(async () => {
     loadData(currentPage.value);
   });
 });
+
+watch(
+  () => route.query.search || route.query.keyword,
+  (newVal) => {
+    if (newVal !== undefined) {
+      boLoc.tuKhoa = String(newVal || "");
+      loadData(0);
+    }
+  }
+);
 
 watch(
   () => boLoc.tuKhoa,
