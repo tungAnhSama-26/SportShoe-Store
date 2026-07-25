@@ -417,7 +417,7 @@ public class ChatbotService {
         }
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = Exception.class)
     public String generateAdminAiResponse(java.util.UUID nhanVienId, String userMessage) {
         String systemPrompt = """
                 Bạn là một trợ lý ảo hỗ trợ quản trị và vận hành cửa hàng SportShoe dành riêng cho Admin/Quản lý.
@@ -451,9 +451,10 @@ public class ChatbotService {
 
                 *Chú ý:* Chỉ khi người dùng gửi tin nhắn bắt đầu bằng lệnh "/execute-..." (Ví dụ: "/execute-confirm-order HD0001", "/execute-update-stock Ananas|41|đen|20", "/execute-create-voucher GIAMGIA|Tên|1|10|0|0|100|30"), bạn mới được phép gọi ngay lập tức tool tương ứng để thực hiện thao tác trực tiếp vào DB và trả về kết quả thành công cho họ.
 
-                # HƯỚNG DẪN HIỂN THỊ LINK & THẺ SẢN PHẨM (QUAN TRỌNG)
+                # HƯỚNG DẪN HIỂN THỊ LINK & THẺ SẢN PHẨM (CỰC KỲ QUAN TRỌNG)
                 - BẮT BUỘC: Tuyệt đối KHÔNG dùng từ "tồn kho" hay "số lượng tồn kho". Chỉ được sử dụng duy nhất từ "Số lượng" (Ví dụ: "Số lượng: 3", "Số lượng còn lại: 5").
-                - Khi hiển thị danh sách sản phẩm (sản phẩm sắp hết hàng, sản phẩm bán chạy, đợt giảm giá sắp hết hạn), BẮT BUỘC đính kèm ảnh sản phẩm dạng ![Tên](URL_Ảnh) và thẻ ```product``` kèm link [Xem sản phẩm](/admin/san-pham) để giao diện hiển thị ảnh giày và khi bấm vào ảnh sẽ đưa thẳng Admin tới sản phẩm đó.
+                - KHI CÔNG CỤ (TOOLS) TRẢ VỀ DỮ LIỆU CÓ CÁC KHỐI THẺ SẢN PHẨM ```product ... ``` (như sản phẩm bán chạy, sản phẩm sắp hết hàng, tìm kiếm sản phẩm), BẮT BUỘC PHẢI GIỮ NGUYÊN TẤT CẢ CÁC KHỐI ```product ... ``` NÀY TRONG CÂU TRẢ LỜI CHO NGUỜI DÙNG! TUYỆT ĐỐI KHÔNG ĐƯỢC TÓM TẮT HOẶC VIẾT LẠI THÀNH DẠNG VĂN BẢN CHỮ THƯỜNG (như "1. Nike... 2. Asics...").
+                - Giao diện Admin Vue.js bắt buộc cần các khối ```product ... ``` này để tự động dựng thành các thẻ sản phẩm đẹp mắt có HÌNH ẢNH SẢN PHẨM, GIÁ BÁN, SỐ LƯỢNG và khi click vào ảnh sẽ tự động điều hướng Admin tới đúng sản phẩm đó.
                 - Khi hiển thị hóa đơn, hãy đính kèm link dạng:
                   [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
                   (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm).
@@ -538,9 +539,26 @@ public class ChatbotService {
 
             return reply;
         } catch (Exception e) {
-            System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI:");
+            System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI: " + e.getMessage());
             e.printStackTrace();
-            return "Trợ lý AI Admin hiện tại không thể xử lý yêu cầu. Lỗi: " + e.getMessage();
+            String errReply = "Hệ thống AI hiện đang không phản hồi do API Key hết hạn ngạch (Quota Exceeded / Insufficient Balance). Vui lòng cập nhật API Key mới tại file chatbot-keys.json.";
+            if (e.getMessage() != null && e.getMessage().contains("insufficient_quota")) {
+                errReply = "Tài khoản ChatGPT (OpenAI API Key) hiện chưa có số dư (0$). OpenAI bắt buộc phải nạp tiền ở platform.openai.com để dùng API. Bạn vui lòng đổi sang Gemini API Key miễn phí nhé!";
+            }
+            try {
+                List<CuocHoiThoai> sessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
+                if (!sessions.isEmpty()) {
+                    TinNhan aiErr = new TinNhan();
+                    aiErr.setCuocHoiThoai(sessions.get(0));
+                    aiErr.setNguoiGui("AI");
+                    aiErr.setNoiDung(errReply);
+                    aiErr.setNgayTao(java.time.Instant.now());
+                    tinNhanRepository.save(aiErr);
+                }
+            } catch (Exception ex) {
+                // Ignore DB error on error fallback
+            }
+            return errReply;
         }
     }
 

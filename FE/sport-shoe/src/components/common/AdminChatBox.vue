@@ -781,7 +781,7 @@ function toggleChat() {
                         {{ seg.productData.color }}
                       </span>
                       <span v-if="seg.productData.size" class="inline-flex items-center gap-1">
-                        • Size {{ seg.productData.size }}
+                        • {{ seg.productData.size.toLowerCase().includes("size") ? seg.productData.size : "Size " + seg.productData.size }}
                       </span>
                       <span v-if="seg.productData.stock !== undefined" class="font-bold text-amber-600 dark:text-amber-400">
                         • Số lượng: {{ seg.productData.stock }}
@@ -789,12 +789,6 @@ function toggleChat() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    class="shrink-0 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 px-2.5 py-1.5 rounded-xl shadow-sm transition flex items-center gap-1"
-                  >
-                    Xem <span class="text-[9px]">➔</span>
-                  </button>
                 </div>
                 <div v-else-if="seg.type === 'chart'" class="my-3 p-3 bg-slate-50 border border-slate-100 rounded-xl dark:bg-slate-900/80 dark:border-slate-800">
                   <div class="text-xs font-bold text-slate-700 mb-2 dark:text-slate-200">
@@ -820,6 +814,23 @@ function toggleChat() {
                 </div>
               </span>
             </div>
+
+            <!-- Gợi ý nhanh đính kèm trực tiếp dưới câu trả lời của AI -->
+            <div
+              v-if="msg.sender === 'AI'"
+              class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1.5"
+            >
+              <button
+                v-for="sug in promptSuggestions"
+                :key="sug.label"
+                @click="guiTinNhan(sug.text)"
+                :disabled="isSending"
+                class="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 shadow-2xs transition hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+              >
+                <component :is="sug.icon" class="h-3 w-3 text-rose-500 shrink-0" />
+                {{ sug.label }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -831,19 +842,6 @@ function toggleChat() {
             <span class="h-2 w-2 animate-bounce rounded-full bg-rose-500" style="animation-delay: 300ms"></span>
           </div>
         </div>
-      </div>
-
-      <!-- Quick suggestions -->
-      <div v-if="messages.length <= 1" class="border-t border-slate-50 p-3 bg-slate-50/30 flex flex-wrap gap-2 dark:border-slate-800 dark:bg-slate-900/30">
-        <button
-          v-for="sug in promptSuggestions"
-          :key="sug.label"
-          @click="guiTinNhan(sug.text)"
-          class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 shadow-sm transition hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-        >
-          <component :is="sug.icon" class="h-3.5 w-3.5" />
-          {{ sug.label }}
-        </button>
       </div>
 
       <!-- Input area -->
