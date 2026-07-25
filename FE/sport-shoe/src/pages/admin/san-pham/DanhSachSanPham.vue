@@ -28,6 +28,7 @@ import { useRealtime } from "../../../composables/useRealtime";
 const { subscribeTopic } = useRealtime();
 
 const router = useRouter();
+const route = useRoute();
 
 const loading = ref(false);
 const items = ref([]);

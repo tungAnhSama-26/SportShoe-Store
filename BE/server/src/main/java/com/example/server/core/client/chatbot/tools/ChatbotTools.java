@@ -278,7 +278,7 @@ public class ChatbotTools {
                         String hinhAnh = g.getHinhAnh();
                         if (hinhAnh == null || hinhAnh.isBlank()) {
                             List<com.example.server.entity.HinhAnhGiay> images = entityManager.createQuery(
-                                    "SELECT h FROM HinhAnhGiay h WHERE h.giay.id = :giayId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
+                                    "SELECT h FROM HinhAnhGiay h WHERE h.giayChiTiet.giay.id = :giayId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
                                     .setParameter("giayId", giayId)
                                     .setMaxResults(1)
                                     .getResultList();
@@ -305,9 +305,9 @@ public class ChatbotTools {
                         } catch (Exception ex) {}
 
                         sb.append(String.format("```product\n{\"name\":\"%s (Đã bán: %d)\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"Bán chạy\",\"size\":\"Nhiều size\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
-                                ten.replace("\"", "\\\""),
+                                cleanJsonString(ten),
                                 daBan,
-                                hinhAnh != null ? hinhAnh.replace("\"", "\\\"") : "",
+                                cleanJsonString(hinhAnh),
                                 giaThucTe.setScale(0, java.math.RoundingMode.HALF_UP),
                                 giaBan.setScale(0, java.math.RoundingMode.HALF_UP),
                                 soLuong,
@@ -628,12 +628,12 @@ public class ChatbotTools {
                         }
 
                         sb.append(String.format("```product\n{\"name\":\"%s\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"%s\",\"size\":\"%s\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
-                                ten.replace("\"", "\\\""),
-                                hinhAnh != null ? hinhAnh.replace("\"", "\\\"") : "",
+                                cleanJsonString(ten),
+                                cleanJsonString(hinhAnh),
                                 giaThucTe.setScale(0, java.math.RoundingMode.HALF_UP),
                                 giaBan.setScale(0, java.math.RoundingMode.HALF_UP),
-                                mau,
-                                size,
+                                cleanJsonString(mau),
+                                cleanJsonString(size),
                                 gct.getSoLuong(),
                                 url
                         ));
@@ -762,6 +762,7 @@ public class ChatbotTools {
                     double avg = sum / total;
                     StringBuilder sb = new StringBuilder();
                     sb.append(String.format("Thống kê đánh giá cho sản phẩm **%s**:\n", g.getTen()));
+                    sb.append(formatProductBlock(g, String.format("%.1f ⭐ (%d đánh giá)", avg, total), ""));
                     sb.append(String.format("- Điểm đánh giá trung bình: **%.1f/5.0** ⭐\n", avg));
                     sb.append(String.format("- Tổng số lượt đánh giá: %d\n", total));
                     sb.append(String.format("- Số đánh giá tích cực (4-5 sao): %d (%.1f%%)\n", positive, (positive * 100.0 / total)));
@@ -809,22 +810,34 @@ public class ChatbotTools {
                     List<Object[]> topNegative = new ArrayList<>(stats);
                     topNegative.sort((a, b) -> Double.compare((Double) a[2], (Double) b[2]));
                     
-                    StringBuilder sb = new StringBuilder("### THỐNG KÊ ĐÁNH GIÁ HỆ THỐNG\n\n");
+                    StringBuilder sb = new StringBuilder("Thống kê sản phẩm được đánh giá cao nhất và thấp nhất:\n\n");
                     
                     sb.append("🏆 **Top 5 sản phẩm đánh giá cao nhất:**\n");
                     int limitPos = Math.min(5, topPositive.size());
                     for (int i = 0; i < limitPos; i++) {
                         Object[] row = topPositive.get(i);
-                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
-                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                        Integer giayId = (Integer) row[0];
+                        Double avg = (Double) row[2];
+                        Long cnt = (Long) row[3];
+                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
+                        if (g != null && g.getTrangThai() == 1) {
+                            String badge = String.format("%.1f ⭐ (%d đánh giá)", avg, cnt);
+                            sb.append(formatProductBlock(g, badge, ""));
+                        }
                     }
                     
                     sb.append("\n⚠️ **Top 5 sản phẩm điểm đánh giá thấp nhất:**\n");
                     int limitNeg = Math.min(5, topNegative.size());
                     for (int i = 0; i < limitNeg; i++) {
                         Object[] row = topNegative.get(i);
-                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
-                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                        Integer giayId = (Integer) row[0];
+                        Double avg = (Double) row[2];
+                        Long cnt = (Long) row[3];
+                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
+                        if (g != null && g.getTrangThai() == 1) {
+                            String badge = String.format("%.1f ⭐ (%d đánh giá)", avg, cnt);
+                            sb.append(formatProductBlock(g, badge, ""));
+                        }
                     }
                     
                     return sb.toString();
@@ -1180,5 +1193,77 @@ public class ChatbotTools {
                 }
             }
         };
+    }
+
+    private static String cleanJsonString(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", " ")
+                  .replace("\r", " ");
+    }
+
+    private String formatProductBlock(com.example.server.entity.Giay g, String badgeText, String nameSuffix) {
+        if (g == null) return "";
+        Integer giayId = g.getId();
+        String ten = g.getTen() != null ? g.getTen() : "Giày";
+        if (nameSuffix != null && !nameSuffix.isBlank()) {
+            ten += nameSuffix;
+        }
+
+        String hinhAnh = g.getHinhAnh();
+        if (hinhAnh == null || hinhAnh.isBlank()) {
+            List<com.example.server.entity.HinhAnhGiay> images = entityManager.createQuery(
+                    "SELECT h FROM HinhAnhGiay h WHERE h.giayChiTiet.giay.id = :giayId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
+                    .setParameter("giayId", giayId)
+                    .setMaxResults(1)
+                    .getResultList();
+            if (!images.isEmpty() && images.get(0).getUrl() != null) {
+                hinhAnh = images.get(0).getUrl();
+            }
+        }
+
+        BigDecimal giaBan = entityManager.createQuery(
+                "SELECT MIN(gct.giaBan) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", BigDecimal.class)
+                .setParameter("giayId", giayId)
+                .getResultList()
+                .stream().findFirst().orElse(BigDecimal.ZERO);
+        if (giaBan == null) giaBan = BigDecimal.ZERO;
+        BigDecimal giaThucTe = calculateActualPrice(giayId, giaBan);
+
+        Long soLuong = entityManager.createQuery(
+                "SELECT COALESCE(SUM(gct.soLuong), 0L) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", Long.class)
+                .setParameter("giayId", giayId)
+                .getSingleResult();
+
+        List<String> kichCos = entityManager.createQuery(
+                "SELECT DISTINCT kc.giaTri FROM GiayChiTiet gct JOIN gct.kichCo kc WHERE gct.giay.id = :giayId AND gct.kichHoat = 1 ORDER BY kc.giaTri ASC", String.class)
+                .setParameter("giayId", giayId)
+                .getResultList();
+
+        String sizeStr = "Nhiều size";
+        if (!kichCos.isEmpty()) {
+            if (kichCos.size() == 1) {
+                sizeStr = kichCos.get(0);
+            } else {
+                sizeStr = kichCos.get(0) + " - " + kichCos.get(kichCos.size() - 1);
+            }
+        }
+
+        String url = "/admin/san-pham";
+        try {
+            url = "/admin/san-pham?search=" + java.net.URLEncoder.encode(g.getTen() != null ? g.getTen() : "", java.nio.charset.StandardCharsets.UTF_8.name());
+        } catch (Exception ex) {}
+
+        return String.format("```product\n{\"name\":\"%s\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"%s\",\"size\":\"%s\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
+                cleanJsonString(ten),
+                cleanJsonString(hinhAnh),
+                giaThucTe.setScale(0, java.math.RoundingMode.HALF_UP),
+                giaBan.setScale(0, java.math.RoundingMode.HALF_UP),
+                cleanJsonString(badgeText != null ? badgeText : "Sản phẩm"),
+                cleanJsonString(sizeStr),
+                soLuong != null ? soLuong : 0,
+                url
+        );
     }
 }
