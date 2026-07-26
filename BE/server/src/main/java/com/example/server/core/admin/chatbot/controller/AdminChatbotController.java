@@ -87,12 +87,28 @@ public class AdminChatbotController {
                 .body(fileBytes);
     }
 
+    public static java.io.File resolveConfigFile() {
+        java.io.File file1 = new java.io.File("data/chatbot-keys.json");
+        if (file1.exists()) {
+            return file1;
+        }
+        java.io.File file2 = new java.io.File("BE/server/data/chatbot-keys.json");
+        if (file2.exists()) {
+            return file2;
+        }
+        java.io.File beDir = new java.io.File("BE/server");
+        if (beDir.exists() && beDir.isDirectory()) {
+            return file2;
+        }
+        return file1;
+    }
+
     @GetMapping("/config")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<com.example.server.core.admin.chatbot.dto.ChatbotConfigDto>> getConfig() {
         com.example.server.core.admin.chatbot.dto.ChatbotConfigDto dto = new com.example.server.core.admin.chatbot.dto.ChatbotConfigDto("", "", "", "");
         try {
-            java.io.File file = new java.io.File("data/chatbot-keys.json");
+            java.io.File file = resolveConfigFile();
             if (file.exists()) {
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(file);
@@ -113,11 +129,10 @@ public class AdminChatbotController {
             @RequestBody com.example.server.core.admin.chatbot.dto.ChatbotConfigDto dto
     ) {
         try {
-            java.io.File dir = new java.io.File("data");
-            if (!dir.exists()) {
-                dir.mkdirs();
+            java.io.File file = resolveConfigFile();
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
             }
-            java.io.File file = new java.io.File("data/chatbot-keys.json");
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             
             com.fasterxml.jackson.databind.node.ObjectNode root = mapper.createObjectNode();

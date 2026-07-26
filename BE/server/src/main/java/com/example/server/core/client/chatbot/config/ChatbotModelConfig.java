@@ -219,7 +219,7 @@ public class ChatbotModelConfig {
         String activeGroqKey = groqKey;
 
         try {
-            java.io.File file = new java.io.File("data/chatbot-keys.json");
+            java.io.File file = com.example.server.core.admin.chatbot.controller.AdminChatbotController.resolveConfigFile();
             if (file.exists()) {
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(file);
