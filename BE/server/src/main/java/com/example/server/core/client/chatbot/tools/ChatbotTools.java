@@ -41,6 +41,7 @@ public class ChatbotTools {
             String color,
             String category,
             String brand,
+            String size,
             Boolean onSale
     ) {}
 
@@ -169,7 +170,7 @@ public class ChatbotTools {
     }
 
     @Bean("search_products_tool")
-    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa, màu sắc, loại giày (category), thương hiệu (brand) hoặc trạng thái giảm giá (onSale = true)")
+    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa (keyword), màu sắc (color), loại giày (category), thương hiệu (brand), kích cỡ giày số (size, ví dụ: '38', '39', '40') hoặc trạng thái giảm giá (onSale = true)")
     public Function<SearchRequest, List<ProductDto>> searchProductsTool() {
         return new Function<SearchRequest, List<ProductDto>>() {
             @Override
@@ -234,6 +235,16 @@ public class ChatbotTools {
                             boolean matchColor = mauSacs.stream().anyMatch(c -> c.toLowerCase().contains(request.color().toLowerCase().trim()));
                             if (!matchColor) {
                                 continue;
+                            }
+                        }
+
+                        if (request.size() != null && !request.size().isBlank()) {
+                            String searchSize = request.size().replaceAll("[^0-9]", "").trim();
+                            if (!searchSize.isEmpty()) {
+                                boolean matchSize = kichCos.stream().anyMatch(kc -> kc.trim().equals(searchSize) || kc.trim().contains(searchSize));
+                                if (!matchSize) {
+                                    continue;
+                                }
                             }
                         }
 
@@ -1047,8 +1058,8 @@ public class ChatbotTools {
                     }
                     else if ("top_selling_shoes".equalsIgnoreCase(request.chartType())) {
                         List<Object[]> results = entityManager.createQuery(
-                                "SELECT hdct.chiTietGiay.giay.ten, SUM(hdct.soLuong) FROM HoaDonChiTiet hdct " +
-                                "WHERE hdct.hoaDon.trangThai = 5 GROUP BY hdct.chiTietGiay.giay.ten ORDER BY SUM(hdct.soLuong) DESC", Object[].class)
+                                "SELECT hdct.giayChiTiet.giay.ten, SUM(hdct.soLuong) FROM HoaDonChiTiet hdct " +
+                                "WHERE hdct.hoaDon.trangThai = 5 GROUP BY hdct.giayChiTiet.giay.ten ORDER BY SUM(hdct.soLuong) DESC", Object[].class)
                                 .setMaxResults(5)
                                 .getResultList();
 
