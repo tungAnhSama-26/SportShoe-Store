@@ -69,7 +69,6 @@ const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/tra-hang",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
-  "/admin/cham-cong",
   "/admin/ban-giao-ca",
   "/admin/thu-chi",
   "/admin/mo-ca",

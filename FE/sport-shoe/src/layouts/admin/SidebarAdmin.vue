@@ -427,10 +427,6 @@ function subItemClass(active) {
           <CalendarDays :class="navIconClass(isActive('/admin/lich-lam-viec'))" />
           <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">L&#7883;ch l&#224;m vi&#7879;c</span>
         </router-link>
-        <router-link to="/admin/cham-cong" :title="compactMode ? 'Ch\u1ea5m c\u00f4ng' : undefined" :class="navItemClass(isActive('/admin/cham-cong'))">
-          <ClipboardList :class="navIconClass(isActive('/admin/cham-cong'))" />
-          <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Ch&#7845;m c&#244;ng</span>
-        </router-link>
         <router-link to="/admin/ban-giao-ca" :title="compactMode ? 'Bàn giao ca' : undefined" :class="navItemClass(isActive('/admin/ban-giao-ca'))">
           <ArrowRightLeft :class="navIconClass(isActive('/admin/ban-giao-ca'))" />
           <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Bàn giao ca</span>
