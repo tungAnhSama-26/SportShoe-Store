@@ -276,7 +276,7 @@ const {
           <div class="min-w-0 space-y-2">
             <label
               class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
-              >Số lượng <span class="text-rose-500">*</span></label
+              >Số lượng còn lại <span class="text-rose-500">*</span></label
             >
             <div class="space-y-3">
               <input
@@ -292,7 +292,7 @@ const {
                     ? 'cursor-not-allowed bg-slate-100 text-slate-500 focus:border-slate-200 focus:bg-slate-100'
                     : ''
                 "
-                placeholder="Nhập số lượng"
+                placeholder="Nhập số lượng còn lại"
               />
               <label
                 v-if="form.loaiPhieu === '1'"
@@ -313,6 +313,9 @@ const {
             </p>
             <p v-else-if="soLuongVoHan" class="text-xs text-emerald-600 font-medium">
               ✓ Phiếu giảm giá có số lượng không giới hạn
+            </p>
+            <p v-else-if="!laMoi && Number(form.soLuongDaDung) > 0" class="mt-1 text-xs text-slate-400">
+              Đã dùng {{ Number(form.soLuongDaDung).toLocaleString('vi-VN') }} lượt
             </p>
           </div>
 

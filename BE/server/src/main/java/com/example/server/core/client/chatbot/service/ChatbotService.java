@@ -9,14 +9,12 @@ import com.example.server.repository.TinNhanRepository;
 import com.example.server.repository.NhanVienRepository;
 import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.util.UUID;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,12 +28,59 @@ public class ChatbotService {
         return EXPORT_CACHE.get(token);
     }
 
-    private final ChatClient.Builder chatClientBuilder;
+    private static final String CLIENT_SYSTEM_PROMPT = """
+            Bạn là trợ lý ảo cửa hàng SportShoe.
+
+            # PHẠM VI HỖ TRỢ
+            - Mua sắm giày, tra cứu phiếu giảm giá, chương trình khuyến mãi, hóa đơn. Từ chối lịch sự các câu hỏi ngoài phạm vi.
+
+            # HƯỚNG DẪN TƯ VẤN KÍCH CỠ GIÀY (SIZE GUIDE CHUẨN VIỆT NAM)
+            Bảng quy đổi chiều dài bàn chân (cm) -> Size chuẩn VN/EU:
+            - 21.1 - 21.5 cm -> Size 35 | 21.6 - 22.0 cm -> Size 36 | 22.1 - 22.5 cm -> Size 37 | 22.6 - 23.5 cm -> Size 38
+            - 23.6 - 24.2 cm -> Size 39 | 24.3 - 25.0 cm -> Size 40 | 25.1 - 25.7 cm -> Size 41 | 25.8 - 26.5 cm -> Size 42
+            - 26.6 - 27.2 cm -> Size 43 | 27.3 - 28.0 cm -> Size 44 | > 28.0 cm -> Size 45
+            QUY TẮC:
+            1. Chân bè/mập: Khuyên nhích lên thêm 0.5 đến 1 Size.
+            2. Gọi tool: Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38) và gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
+
+            # LINK HƯỚNG DẪN
+            - Chi tiết sản phẩm: [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
+            - Chi tiết hóa đơn: [Xem chi tiết hóa đơn](/khachhang/don-hang/ID_HOA_DON)
+
+            # NGUYÊN TẮC
+            - Trả lời bằng Tiếng Việt thân thiện, tự nhiên, ngắn gọn (Tối đa 120 từ).
+            """;
+
+    private static final String ADMIN_SYSTEM_PROMPT = """
+            Bạn là trợ lý ảo hỗ trợ quản trị và vận hành cửa hàng SportShoe dành cho Admin.
+
+            # PHẠM VI HỖ TRỢ & HÀNH ĐỘNG
+            - Thống kê doanh thu, tồn kho, tra cứu hóa đơn, đánh giá, tạo voucher, vẽ biểu đồ.
+            - Hướng dẫn sinh hành động cần xác nhận:
+              + Xác nhận đơn: [Đồng ý xác nhận](/action/confirm-order/MÃ_HĐ)
+              + Hủy đơn: [Đồng ý hủy](/action/cancel-order/MÃ_HĐ)
+              + Cập nhật tồn kho: [Đồng ý cập nhật tồn kho](/action/update-stock/TÊN_SẢN_PHẨM/SIZE/MÀU/SỐ_LƯỢNG)
+              + Tạo mã: [Đồng ý tạo mã](/action/create-voucher/MÃ/TÊN/LOẠI/GIÁ_TRỊ/ĐƠN_TỐI_THIỂU/GIẢM_TỐI_ĐA/SỐ_LƯỢNG/SỐ_NGÀY)
+
+            # HIỂN THỊ LINK & THẺ SẢN PHẨM
+            - Chỉ dùng từ "Số lượng" (không dùng từ "tồn kho").
+            - Giữ nguyên khối thẻ sản phẩm ```product ... ``` trong kết quả trả về.
+            - Link hóa đơn: [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
+
+            # NGUYÊN TẮC
+            - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
+            """;
+
+    private final ChatClient clientChatClient;
+    private final ChatClient adminChatClient;
+
     private final CuocHoiThoaiRepository cuocHoiThoaiRepository;
     private final TinNhanRepository tinNhanRepository;
     private final NhanVienRepository nhanVienRepository;
     private final WebSocketNotificationService webSocketNotificationService;
     private final ThongBaoService thongBaoService;
+    private final FaqRuleEngine faqRuleEngine;
+    private final ChatbotIntentRouter intentRouter;
 
     @Value("${app.debug-errors:false}")
     private boolean debugErrors;
@@ -46,21 +91,27 @@ public class ChatbotService {
             TinNhanRepository tinNhanRepository,
             NhanVienRepository nhanVienRepository,
             WebSocketNotificationService webSocketNotificationService,
-            ThongBaoService thongBaoService) {
-        this.chatClientBuilder = chatClientBuilder;
+            ThongBaoService thongBaoService,
+            FaqRuleEngine faqRuleEngine,
+            ChatbotIntentRouter intentRouter) {
+        this.clientChatClient = chatClientBuilder.defaultSystem(CLIENT_SYSTEM_PROMPT).build();
+        this.adminChatClient = chatClientBuilder.defaultSystem(ADMIN_SYSTEM_PROMPT).build();
+
         this.cuocHoiThoaiRepository = cuocHoiThoaiRepository;
         this.tinNhanRepository = tinNhanRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.webSocketNotificationService = webSocketNotificationService;
         this.thongBaoService = thongBaoService;
+        this.faqRuleEngine = faqRuleEngine;
+        this.intentRouter = intentRouter;
     }
 
+    // --- BƯỚC 1: LƯU TIN NHẮN KHÁCH VÀO DB (TRANSACTION NGẮN) ---
     @Transactional
-    public ClientChatResponse handleClientMessage(ClientChatRequest request) {
+    public CuocHoiThoai prepareClientSessionAndSaveUserMsg(ClientChatRequest request) {
         CuocHoiThoai session = null;
         if (request.sessionId() != null) {
             session = cuocHoiThoaiRepository.findById(request.sessionId()).orElse(null);
-            // Nếu phiên đã đóng (trạng thái = 4), ta sẽ bắt đầu phiên mới
             if (session != null && Integer.valueOf(4).equals(session.getTrangThai())) {
                 session = null;
             }
@@ -71,12 +122,11 @@ public class ChatbotService {
             session.setTenKhachHang(request.customerName() != null && !request.customerName().isBlank()
                     ? request.customerName() : "Khách vãng lai");
             session.setSoDienThoai(request.phoneNumber());
-            session.setTrangThai(1); // Mặc định chat với AI
+            session.setTrangThai(1); // Chat với AI
             session.setNgayTao(Instant.now());
             session = cuocHoiThoaiRepository.save(session);
         }
 
-        // Lưu tin nhắn của Khách hàng
         TinNhan khachMsg = new TinNhan();
         khachMsg.setCuocHoiThoai(session);
         khachMsg.setNguoiGui("CUSTOMER");
@@ -84,106 +134,137 @@ public class ChatbotService {
         khachMsg.setNgayTao(Instant.now());
         tinNhanRepository.save(khachMsg);
 
-        // Phát WebSocket cho phiên chat
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/session/" + session.getId(),
                 "NEW_MESSAGE",
                 new ChatbotMessageDto(khachMsg.getId(), "CUSTOMER", khachMsg.getNoiDung(), khachMsg.getNgayTao(), null)
         );
 
-        String botReply;
+        return session;
+    }
+
+    // --- BƯỚC 2: LƯU PHẢN HỒI AI VÀO DB (TRANSACTION NGẮN) ---
+    @Transactional
+    public void saveAiMessage(Integer sessionId, String botReply) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId).orElse(null);
+        if (session == null || botReply == null) return;
+
+        TinNhan aiMsg = new TinNhan();
+        aiMsg.setCuocHoiThoai(session);
+        aiMsg.setNguoiGui("AI");
+        aiMsg.setNoiDung(botReply);
+        aiMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(aiMsg);
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/session/" + session.getId(),
+                "NEW_MESSAGE",
+                new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
+        );
+    }
+
+    @Transactional
+    public void updateSessionToStaffRequest(Integer sessionId, String userMessage) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId).orElse(null);
+        if (session == null) return;
+
+        session.setTrangThai(2); // Yêu cầu trợ giúp từ nhân viên
+        session.setNgayCapNhat(Instant.now());
+        cuocHoiThoaiRepository.save(session);
+
+        String botReply = "Đã gửi yêu cầu kết nối với nhân viên tư vấn. Nhân viên trực sẽ phản hồi bạn trong giây lát!";
+
+        TinNhan aiMsg = new TinNhan();
+        aiMsg.setCuocHoiThoai(session);
+        aiMsg.setNguoiGui("AI");
+        aiMsg.setNoiDung(botReply);
+        aiMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(aiMsg);
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/session/" + session.getId(),
+                "NEW_MESSAGE",
+                new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
+        );
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/session/" + session.getId(),
+                "STATE_CHANGED",
+                2
+        );
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/sessions",
+                "SESSION_UPDATED",
+                convertToDto(session)
+        );
+
+        guiThongBaoChatMoi(session, userMessage);
+    }
+
+    // --- LUỒNG XỬ LÝ CLIENT CHATBOT (KHÔNG KHÓA DB TRANSACTION KHI GỌI AI) ---
+    public ClientChatResponse handleClientMessage(ClientChatRequest request) {
+        // 1. Lưu tin nhắn người dùng (Tx ngắn)
+        CuocHoiThoai session = prepareClientSessionAndSaveUserMsg(request);
+
+        String botReply = null;
         if (session.getTrangThai() == 1) {
-            // Kiểm tra xem tin nhắn khách gửi có phải là yêu cầu gặp nhân viên không
+            // Check yêu cầu gặp nhân viên
             if ("Tôi muốn gặp nhân viên trực tiếp hỗ trợ".equals(request.message()) ||
                 "Liên hệ trực tiếp với nhân viên".equals(request.message())) {
-
-                session.setTrangThai(2); // Yêu cầu trợ giúp từ nhân viên
-                session.setNgayCapNhat(Instant.now());
-                session = cuocHoiThoaiRepository.save(session);
-
+                updateSessionToStaffRequest(session.getId(), request.message());
                 botReply = "Đã gửi yêu cầu kết nối với nhân viên tư vấn. Nhân viên trực sẽ phản hồi bạn trong giây lát!";
-
-                TinNhan aiMsg = new TinNhan();
-                aiMsg.setCuocHoiThoai(session);
-                aiMsg.setNguoiGui("AI");
-                aiMsg.setNoiDung(botReply);
-                aiMsg.setNgayTao(Instant.now());
-                tinNhanRepository.save(aiMsg);
-
-                // Phát WebSocket phản hồi từ AI/Hệ thống
-                webSocketNotificationService.sendToTopic(
-                        "/topic/chatbot/session/" + session.getId(),
-                        "NEW_MESSAGE",
-                        new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
-                );
-
-                webSocketNotificationService.sendToTopic(
-                        "/topic/chatbot/session/" + session.getId(),
-                        "STATE_CHANGED",
-                        2
-                );
-
-                // Gửi thông báo đến danh sách phiên chat admin
-                webSocketNotificationService.sendToTopic(
-                        "/topic/chatbot/sessions",
-                        "SESSION_UPDATED",
-                        convertToDto(session)
-                );
-
-                // Trigger chat notification
-                guiThongBaoChatMoi(session, request.message());
-            } else {
-                // Chat với AI thông thường
-                botReply = generateAiResponse(request.message());
-
-                TinNhan aiMsg = new TinNhan();
-                aiMsg.setCuocHoiThoai(session);
-                aiMsg.setNguoiGui("AI");
-                aiMsg.setNoiDung(botReply);
-                aiMsg.setNgayTao(Instant.now());
-                tinNhanRepository.save(aiMsg);
-
-                // Phát WebSocket phản hồi từ AI
-                webSocketNotificationService.sendToTopic(
-                        "/topic/chatbot/session/" + session.getId(),
-                        "NEW_MESSAGE",
-                        new ChatbotMessageDto(aiMsg.getId(), "AI", aiMsg.getNoiDung(), aiMsg.getNgayTao(), null)
-                );
+                return new ClientChatResponse(session.getId(), botReply, 2);
             }
-        } else {
-            // Khi đang đợi hoặc đang chat với nhân viên, hệ thống/AI không tự động phản hồi nữa
-            botReply = null;
-            // Gửi thông báo đến danh sách phiên chat admin
-            webSocketNotificationService.sendToTopic(
-                    "/topic/chatbot/sessions",
-                    "SESSION_UPDATED",
-                    convertToDto(session)
-            );
 
-            // Trigger chat notification
-            guiThongBaoChatMoi(session, request.message());
+            // Check FAQ Rule Engine (0 token, 0ms AI call)
+            String faqAnswer = faqRuleEngine.matchFaq(request.message());
+            if (faqAnswer != null) {
+                botReply = faqAnswer;
+                saveAiMessage(session.getId(), botReply);
+                return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
+            }
+
+            // Gọi AI (HTTP REST Call - KHÔNG GIỮ DB TRANSACTION)
+            botReply = generateAiResponse(request.message());
+
+            // Lưu tin nhắn AI vào DB (Tx ngắn)
+            saveAiMessage(session.getId(), botReply);
+        } else {
+            notifyStaffNewMessage(session.getId(), request.message());
         }
 
         return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
     }
 
     @Transactional
+    public void notifyStaffNewMessage(Integer sessionId, String message) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId).orElse(null);
+        if (session != null) {
+            webSocketNotificationService.sendToTopic(
+                    "/topic/chatbot/sessions",
+                    "SESSION_UPDATED",
+                    convertToDto(session)
+            );
+            guiThongBaoChatMoi(session, message);
+        }
+    }
+
+    @Transactional
     public void requestStaff(Integer sessionId) {
         CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
-        session.setTrangThai(2); // Yêu cầu trợ giúp từ nhân viên
+        session.setTrangThai(2);
         session.setNgayCapNhat(Instant.now());
         cuocHoiThoaiRepository.save(session);
 
-        // Lưu tin nhắn hệ thống
         TinNhan sysMsg = new TinNhan();
         sysMsg.setCuocHoiThoai(session);
         sysMsg.setNguoiGui("AI");
-        sysMsg.setNoiDung("Đã gửi yêu cầu kết nối với nhân viên tư vấn. Nhân viên trực sẽ phản hồi bạn trong giây lát!");
+        sysMsg.setNoiDung("Khách hàng đã yêu cầu hỗ trợ từ nhân viên.");
         sysMsg.setNgayTao(Instant.now());
         tinNhanRepository.save(sysMsg);
 
-        // Phát thông báo WebSocket
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/session/" + sessionId,
                 "NEW_MESSAGE",
@@ -196,108 +277,22 @@ public class ChatbotService {
                 2
         );
 
-        // Trigger chat notification
-        guiThongBaoChatMoi(session, null);
         webSocketNotificationService.sendToTopic(
                 "/topic/chatbot/sessions",
                 "SESSION_UPDATED",
                 convertToDto(session)
         );
-    }
 
-    @Transactional
-    public void replyFromStaff(Integer sessionId, String message, UUID staffId) {
-        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
-
-        session.setTrangThai(3); // Đang chat với nhân viên
-        session.setNgayCapNhat(Instant.now());
-
-        NhanVien currentStaff = null;
-        if (staffId != null) {
-            currentStaff = nhanVienRepository.findById(staffId).orElse(null);
-            if (currentStaff != null) {
-                session.setNhanVien(currentStaff);
-            }
-        }
-        cuocHoiThoaiRepository.save(session);
-
-        TinNhan staffMsg = new TinNhan();
-        staffMsg.setCuocHoiThoai(session);
-        staffMsg.setNguoiGui("STAFF");
-        staffMsg.setNoiDung(message);
-        staffMsg.setNgayTao(Instant.now());
-        if (currentStaff != null) {
-            staffMsg.setNhanVien(currentStaff);
-        }
-        tinNhanRepository.save(staffMsg);
-
-        String maNhanVien = currentStaff != null ? currentStaff.getMa() : null;
-
-        // Phát WebSocket cho cuộc hội thoại
-        webSocketNotificationService.sendToTopic(
-                "/topic/chatbot/session/" + sessionId,
-                "NEW_MESSAGE",
-                new ChatbotMessageDto(staffMsg.getId(), "STAFF", staffMsg.getNoiDung(), staffMsg.getNgayTao(), maNhanVien)
-        );
-
-        webSocketNotificationService.sendToTopic(
-                "/topic/chatbot/session/" + sessionId,
-                "STATE_CHANGED",
-                3
-        );
-
-        // Phát WebSocket cập nhật danh sách phiên của admin
-        webSocketNotificationService.sendToTopic(
-                "/topic/chatbot/sessions",
-                "SESSION_UPDATED",
-                convertToDto(session)
-        );
-    }
-
-    @Transactional
-    public void closeSession(Integer sessionId) {
-        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
-        session.setTrangThai(4); // Đã kết thúc
-        session.setNgayCapNhat(Instant.now());
-        cuocHoiThoaiRepository.save(session);
-
-        // Lưu tin nhắn hệ thống báo kết thúc cuộc hội thoại
-        TinNhan sysMsg = new TinNhan();
-        sysMsg.setCuocHoiThoai(session);
-        sysMsg.setNguoiGui("AI");
-        sysMsg.setNoiDung("Cuộc hội thoại này đã kết thúc bởi nhân viên trực. Cảm ơn bạn!");
-        sysMsg.setNgayTao(Instant.now());
-        tinNhanRepository.save(sysMsg);
-
-        webSocketNotificationService.sendToTopic(
-                "/topic/chatbot/session/" + sessionId,
-                "NEW_MESSAGE",
-                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao(), null)
-        );
-
-        // Phát thông báo đóng session
-        webSocketNotificationService.sendToTopic(
-                "/topic/chatbot/session/" + sessionId,
-                "STATE_CHANGED",
-                4
-        );
-
-        webSocketNotificationService.sendToTopic(
-                "/topic/chatbot/sessions",
-                "SESSION_UPDATED",
-                convertToDto(session)
-        );
+        guiThongBaoChatMoi(session, "Khách hàng yêu cầu hỗ trợ trực tiếp từ nhân viên.");
     }
 
     @Transactional
     public void closeSessionDueToInactivity(Integer sessionId) {
-        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
-                .orElse(null);
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId).orElse(null);
         if (session == null || Integer.valueOf(4).equals(session.getTrangThai())) {
             return;
         }
+
         session.setTrangThai(4);
         session.setNgayCapNhat(Instant.now());
         cuocHoiThoaiRepository.save(session);
@@ -305,7 +300,7 @@ public class ChatbotService {
         TinNhan sysMsg = new TinNhan();
         sysMsg.setCuocHoiThoai(session);
         sysMsg.setNguoiGui("AI");
-        sysMsg.setNoiDung("Phiên trò chuyện đã tự động đóng do bạn đã quá thời gian không hoạt động. Cảm ơn bạn!");
+        sysMsg.setNoiDung("Phiên trò chuyện đã được tự động kết thúc do không có tương tác mới.");
         sysMsg.setNgayTao(Instant.now());
         tinNhanRepository.save(sysMsg);
 
@@ -326,22 +321,6 @@ public class ChatbotService {
                 "SESSION_UPDATED",
                 convertToDto(session)
         );
-    }
-
-    @Transactional(readOnly = true)
-    public List<ChatbotSessionDto> getActiveSessions() {
-        return cuocHoiThoaiRepository.findByTrangThaiInOrderByNgayTaoDesc(List.of(2, 3))
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ChatbotSessionDto> getClosedSessions() {
-        return cuocHoiThoaiRepository.findByTrangThaiInOrderByNgayTaoDesc(List.of(4))
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -358,6 +337,87 @@ public class ChatbotService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public ChatbotMessageDto replyFromStaff(Integer sessionId, String message, UUID nhanVienId) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
+        
+        NhanVien nv = null;
+        if (nhanVienId != null) {
+            nv = nhanVienRepository.findById(nhanVienId).orElse(null);
+        }
+
+        if (session.getTrangThai() == 1 || session.getTrangThai() == 2) {
+            session.setTrangThai(3);
+        }
+        if (nv != null) {
+            session.setNhanVien(nv);
+        }
+        session.setNgayCapNhat(Instant.now());
+        cuocHoiThoaiRepository.save(session);
+
+        TinNhan staffMsg = new TinNhan();
+        staffMsg.setCuocHoiThoai(session);
+        staffMsg.setNhanVien(nv);
+        staffMsg.setNguoiGui("STAFF");
+        staffMsg.setNoiDung(message);
+        staffMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(staffMsg);
+
+        ChatbotMessageDto dto = new ChatbotMessageDto(
+                staffMsg.getId(),
+                "STAFF",
+                staffMsg.getNoiDung(),
+                staffMsg.getNgayTao(),
+                nv != null ? nv.getMa() : null
+        );
+
+        webSocketNotificationService.sendToTopic("/topic/chatbot/session/" + sessionId, "NEW_MESSAGE", dto);
+        webSocketNotificationService.sendToTopic("/topic/chatbot/sessions", "SESSION_UPDATED", convertToDto(session));
+
+        return dto;
+    }
+
+    @Transactional
+    public void closeSession(Integer sessionId) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
+        session.setTrangThai(4);
+        session.setNgayCapNhat(Instant.now());
+        cuocHoiThoaiRepository.save(session);
+
+        TinNhan sysMsg = new TinNhan();
+        sysMsg.setCuocHoiThoai(session);
+        sysMsg.setNguoiGui("AI");
+        sysMsg.setNoiDung("Nhân viên tư vấn đã kết thúc phiên hỗ trợ. Cảm ơn bạn!");
+        sysMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(sysMsg);
+
+        webSocketNotificationService.sendToTopic(
+                "/topic/chatbot/session/" + sessionId,
+                "NEW_MESSAGE",
+                new ChatbotMessageDto(sysMsg.getId(), "AI", sysMsg.getNoiDung(), sysMsg.getNgayTao(), null)
+        );
+        webSocketNotificationService.sendToTopic("/topic/chatbot/session/" + sessionId, "STATE_CHANGED", 4);
+        webSocketNotificationService.sendToTopic("/topic/chatbot/sessions", "SESSION_UPDATED", convertToDto(session));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotSessionDto> getActiveSessions() {
+        return cuocHoiThoaiRepository.findByTrangThaiInOrderByNgayTaoDesc(List.of(2, 3))
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotSessionDto> getClosedSessions() {
+        return cuocHoiThoaiRepository.findByTrangThaiOrderByNgayTaoDesc(4)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
     private ChatbotSessionDto convertToDto(CuocHoiThoai session) {
         return new ChatbotSessionDto(
                 session.getId(),
@@ -369,42 +429,15 @@ public class ChatbotService {
         );
     }
 
+    // --- GOI CLIENT LLM (HTTP CALL - DÙNG CHATCLIENT DUY NHẤT & INTENT ROUTER TỐI ƯU TOKEN) ---
     private String generateAiResponse(String userMessage) {
-        String systemPrompt = """
-                Bạn là một trợ lý ảo hỗ trợ khách hàng mua sắm tại cửa hàng SportShoe.
-
-                # PHẠM VI HỖ TRỢ
-                - Bạn CHỈ được phép trả lời và truy vấn cơ sở dữ liệu cho các câu hỏi liên quan đến:
-                  1. Giày và các sản phẩm giày (Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`).
-                  2. Phiếu giảm giá / Vouchers / Coupons (Sử dụng công cụ `search_coupons_tool`).
-                  3. Chương trình / Đợt giảm giá / Sales / Promotions (Sử dụng công cụ `search_promotions_tool`).
-                  4. Hóa đơn / Tra cứu đơn hàng / Đơn mua (Sử dụng công cụ `search_invoice_tool`).
-                - Đối với bất kỳ câu hỏi nào KHÔNG liên quan đến 4 phạm vi trên, hãy lịch sự từ chối trả lời và khuyên khách hàng chỉ hỏi các thông tin liên quan đến sản phẩm, khuyến mãi hoặc hóa đơn của cửa hàng.
-
-                # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM & HÓA ĐƠN (QUAN TRỌNG)
-                - Khi hiển thị thông tin sản phẩm tìm thấy từ cơ sở dữ liệu, hãy luôn đính kèm một liên kết Markdown dẫn đến chi tiết sản phẩm đó theo định dạng chuẩn:
-                  [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
-                  (Trong đó ID_SAN_PHAM là ID dạng số của sản phẩm đó lấy từ kết quả gọi hàm hệ thống).
-                  Ví dụ: "Bạn có thể xem chi tiết đôi **[Adidas UltraBoost]** tại đây: [Xem chi tiết giày](/khachhang/san-pham/12)".
-                - Khi hiển thị thông tin hóa đơn tìm thấy từ cơ sở dữ liệu, hãy đính kèm một liên kết Markdown dẫn đến chi tiết hóa đơn đó theo định dạng chuẩn:
-                  [Xem chi tiết hóa đơn](/khachhang/don-hang/ID_HOA_DON)
-                  (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm hệ thống).
-                  Ví dụ: "Tôi tìm thấy hóa đơn **[HD0001]** của bạn. Hãy click vào đây để xem chi tiết: [Xem chi tiết hóa đơn](/khachhang/don-hang/10)".
-                - Hệ thống giao diện sẽ tự động chuyển đổi liên kết này thành một nút bấm đẹp mắt để khách hàng click xem chi tiết.
-
-                # NGUYÊN TẮC HOẠT ĐỘNG
-                - Khách hàng hỏi gì thì tự động gọi các công cụ (tools) tương ứng để truy vấn cơ sở dữ liệu lấy thông tin thực tế. Không tự bịa thông tin.
-                - Trả lời bằng Tiếng Việt thân thiện, tự nhiên, ngắn gọn, súc tích (Tối đa 150 từ).
-                """;
-
         try {
-            ChatClient chatClient = chatClientBuilder
-                    .defaultSystem(systemPrompt)
-                    .build();
+            // Intent Router: Chọn đúng Tool cần thiết
+            String[] activeTools = intentRouter.resolveClientTools(userMessage);
 
-            return chatClient.prompt()
+            return clientChatClient.prompt()
                     .user(userMessage)
-                    .functions("search_products_tool", "get_best_selling_shoes_tool", "search_coupons_tool", "search_promotions_tool", "search_invoice_tool")
+                    .functions(activeTools)
                     .call()
                     .content();
         } catch (Exception e) {
@@ -413,144 +446,148 @@ public class ChatbotService {
             if (debugErrors) {
                 return "Lỗi AI Chatbot (Debug): " + e.getMessage() + " | Nguyên nhân chi tiết: " + (e.getCause() != null ? e.getCause().getMessage() : "không có");
             }
-            return "Hệ thống tư vấn tự động hiện đang bận hoặc đang được bảo trì. Bạn vui lòng liên hệ hotline hỗ trợ trực tiếp của cửa hàng để được hỗ trợ nhanh nhất nhé!";
+            return "Hệ thống tư vấn tự động đang quá tải tạm thời. Bạn có thể đợi vài phút rồi gửi lại tin nhắn, hoặc kết nối ngay với nhân viên hỗ trợ nhé!";
         }
     }
 
+    // --- HELPER LƯU TIN NHẮN ADMIN TRONG TRANSACTION NGẮN ---
     @Transactional
-    public String generateAdminAiResponse(java.util.UUID nhanVienId, String userMessage) {
-        String systemPrompt = """
-                Bạn là một trợ lý ảo hỗ trợ quản trị và vận hành cửa hàng SportShoe dành riêng cho Admin/Quản lý.
+    public CuocHoiThoai prepareAdminSessionAndSaveMsg(UUID nhanVienId, String userMessage) {
+        NhanVien nv = nhanVienRepository.findById(nhanVienId)
+                .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại"));
 
-                # PHẠM VI HỖ TRỢ
-                - Bạn được phép truy cập và tra cứu thông tin quản trị hệ thống:
-                  1. Doanh thu cửa hàng: Sử dụng công cụ `get_admin_revenue_stats_tool` để thống kê theo ngày (today), tháng (month) hoặc năm (year).
-                  2. Hàng tồn kho và cảnh báo hết hàng: Sử dụng công cụ `get_admin_low_stock_tool` để tra cứu sản phẩm sắp hết hàng.
-                  3. Tra cứu nhanh danh sách hóa đơn admin: Sử dụng công cụ `search_admin_invoices_tool` để tìm kiếm hóa đơn theo từ khóa hoặc trạng thái.
-                  4. Tra cứu thông tin sản phẩm công khai: Sử dụng công cụ `search_products_tool` hoặc `get_best_selling_shoes_tool`.
-                  5. Tra cứu đánh giá khách hàng: Sử dụng công cụ `get_admin_product_reviews_tool` (đánh giá của sản phẩm cụ thể) hoặc `get_admin_top_reviews_tool` (sản phẩm đánh giá tốt nhất / tệ nhất).
-                  6. Cập nhật trạng thái đơn hàng (xác nhận hoặc hủy): Sử dụng công cụ `update_admin_order_status_tool`.
-                  7. Cập nhật tồn kho sản phẩm: Sử dụng công cụ `update_admin_product_stock_tool`.
-                  8. Tạo mã giảm giá nhanh: Sử dụng công cụ `create_admin_voucher_tool`.
-                  9. Vẽ biểu đồ thống kê (doanh thu, giày bán chạy, trạng thái đơn): Sử dụng công cụ `get_admin_chart_data_tool`.
-                  10. Xuất báo cáo Excel (CSV): Sử dụng công cụ `export_admin_data_csv_tool`.
-                - Bạn CHỈ hỗ trợ các câu hỏi liên quan đến quản lý cửa hàng, thống kê, kiểm kho và tra cứu vận hành. Từ chối trả lời lịch sự cho các câu hỏi cá nhân hoặc ngoài phạm vi.
+        CuocHoiThoai session = null;
+        List<CuocHoiThoai> sessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
+        if (!sessions.isEmpty()) {
+            session = sessions.get(0);
+        } else {
+            session = new CuocHoiThoai();
+            session.setNhanVien(nv);
+            session.setTrangThai(1);
+            session.setNgayTao(Instant.now());
+            session = cuocHoiThoaiRepository.save(session);
+        }
 
-                # HƯỚNG DẪN HIỂN THỊ BIỂU ĐỒ (QUAN TRỌNG)
-                Khi người dùng yêu cầu vẽ hoặc xem biểu đồ, hãy gọi công cụ `get_admin_chart_data_tool` để nhận chuỗi JSON dữ liệu thô. Sau đó, hiển thị nội dung đó nguyên bản bên trong khối code Markdown có tag là `chart` (ví dụ: bọc toàn bộ chuỗi JSON nhận được từ tool trong cặp dấu nháy ```chart và ```). Không thay đổi cấu trúc JSON bên trong tag chart này, và không chèn thêm ký tự lạ ngoài khối chart.
+        TinNhan adminMsg = new TinNhan();
+        adminMsg.setCuocHoiThoai(session);
+        adminMsg.setNhanVien(nv);
+        adminMsg.setNguoiGui("STAFF");
+        adminMsg.setNoiDung(userMessage);
+        adminMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(adminMsg);
 
-                # HƯỚNG DẪN SINH HÀNH ĐỘNG CẦN XÁC NHẬN (QUAN TRỌNG)
-                Khi người dùng yêu cầu thực hiện hành động thay đổi dữ liệu nhạy cảm (như xác nhận đơn hàng, hủy đơn hàng, cập nhật tồn kho, tạo mã giảm giá), bạn TUYỆT ĐỐI không được gọi các tool thay đổi trực tiếp ngay. Thay vào đó, hãy phân tích tham số và sinh ra liên kết hành động dưới dạng Markdown như sau để yêu cầu xác nhận từ Admin:
-                - Xác nhận đơn hàng: [Đồng ý xác nhận](/action/confirm-order/MÃ_HĐ)
-                - Hủy đơn hàng: [Đồng ý hủy](/action/cancel-order/MÃ_HĐ)
-                - Cập nhật tồn kho: [Đồng ý cập nhật tồn kho](/action/update-stock/TÊN_SẢN_PHẨM/SIZE/MÀU/SỐ_LƯỢNG)
-                - Tạo mã giảm giá: [Đồng ý tạo mã](/action/create-voucher/MÃ/TÊN/LOẠI/GIÁ_TRỊ/ĐƠN_TỐI_THIỂU/GIẢM_TỐI_ĐA/SỐ_LƯỢNG/SỐ_NGÀY)
-                  (Trong đó: LOẠI = 1 cho %, 2 cho tiền mặt. ĐƠN_TỐI_THIỂU và GIẢM_TỐI_ĐA mặc định là 0 nếu không yêu cầu. SỐ_LƯỢNG mặc định là 100. SỐ_NGÀY mặc định là 30).
+        return session;
+    }
 
-                Ví dụ: "Tôi có thể giúp bạn xác nhận hóa đơn HD0001. Bạn có muốn thực hiện không? [Đồng ý xác nhận](/action/confirm-order/HD0001)".
+    @Transactional(readOnly = true)
+    public List<org.springframework.ai.chat.messages.Message> getRecentAdminChatHistory(Integer sessionId, int maxMessages) {
+        List<TinNhan> historyMsgs = tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessionId);
+        if (historyMsgs.size() > maxMessages) {
+            historyMsgs = historyMsgs.subList(historyMsgs.size() - maxMessages, historyMsgs.size());
+        }
 
-                *Chú ý:* Chỉ khi người dùng gửi tin nhắn bắt đầu bằng lệnh "/execute-..." (Ví dụ: "/execute-confirm-order HD0001", "/execute-update-stock Ananas|41|đen|20", "/execute-create-voucher GIAMGIA|Tên|1|10|0|0|100|30"), bạn mới được phép gọi ngay lập tức tool tương ứng để thực hiện thao tác trực tiếp vào DB và trả về kết quả thành công cho họ.
+        List<org.springframework.ai.chat.messages.Message> springAiMsgs = new java.util.ArrayList<>();
+        for (TinNhan m : historyMsgs) {
+            if ("STAFF".equals(m.getNguoiGui())) {
+                springAiMsgs.add(new org.springframework.ai.chat.messages.UserMessage(m.getNoiDung()));
+            } else if ("AI".equals(m.getNguoiGui())) {
+                springAiMsgs.add(new org.springframework.ai.chat.messages.AssistantMessage(m.getNoiDung()));
+            }
+        }
+        return springAiMsgs;
+    }
 
-                # HƯỚNG DẪN HIỂN THỊ LINK ADMIN (QUAN TRỌNG)
-                - Khi hiển thị sản phẩm, hãy đính kèm link dạng:
-                  [Xem chi tiết sản phẩm](/admin/san-pham)
-                - Khi hiển thị hóa đơn, hãy đính kèm link dạng:
-                  [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
-                  (Trong đó ID_HOA_DON là ID dạng số của hóa đơn lấy từ kết quả gọi hàm).
-                  Ví dụ: "Hóa đơn **[HD0001]** của khách hàng đã hoàn thành: [Xem chi tiết hóa đơn](/admin/hoa-don/10)".
-                - Hệ thống giao diện admin sẽ tự động nhận diện link này để hiển thị nút liên kết.
+    @Transactional
+    public void saveAdminAiReply(Integer sessionId, String reply) {
+        CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId).orElse(null);
+        if (session == null || reply == null) return;
 
-                # NGUYÊN TẮC HOẠT ĐỘNG
-                - Luôn sử dụng thông tin thực tế từ công cụ, không tự bịa số liệu tài chính hoặc số lượng tồn kho.
-                - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
-                """;
+        TinNhan aiMsg = new TinNhan();
+        aiMsg.setCuocHoiThoai(session);
+        aiMsg.setNguoiGui("AI");
+        aiMsg.setNoiDung(reply);
+        aiMsg.setNgayTao(Instant.now());
+        tinNhanRepository.save(aiMsg);
+    }
+
+    // --- GOI ADMIN LLM (HTTP CALL - KHÔNG GIỮ DB TRANSACTION, CHATCLIENT DUY NHẤT & PROMPT CACHING) ---
+    public String generateAdminAiResponse(UUID nhanVienId, String userMessage) {
+        // 1. Check FAQ Rule Engine trước
+        String faqMatch = faqRuleEngine.matchFaq(userMessage);
+        if (faqMatch != null) {
+            CuocHoiThoai session = prepareAdminSessionAndSaveMsg(nhanVienId, userMessage);
+            saveAdminAiReply(session.getId(), faqMatch);
+            return faqMatch;
+        }
+
+        // 2. Lưu tin nhắn Admin (Tx ngắn)
+        CuocHoiThoai session = prepareAdminSessionAndSaveMsg(nhanVienId, userMessage);
+
+        // 3. Load 6 tin nhắn gần nhất để tiết kiệm token (Tx read-only ngắn)
+        List<org.springframework.ai.chat.messages.Message> historyMsgs = getRecentAdminChatHistory(session.getId(), 6);
 
         try {
-            NhanVien nv = nhanVienRepository.findById(nhanVienId)
-                    .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại"));
+            // Intent Router: Chọn đúng tập Tool liên quan tới câu hỏi
+            String[] activeTools = intentRouter.resolveAdminTools(userMessage);
 
-            CuocHoiThoai session = null;
-            List<CuocHoiThoai> sessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
-            if (!sessions.isEmpty()) {
-                session = sessions.get(0);
-            } else {
-                session = new CuocHoiThoai();
-                session.setNhanVien(nv);
-                session.setTrangThai(1);
-                session.setNgayTao(java.time.Instant.now());
-                session = cuocHoiThoaiRepository.save(session);
-            }
-
-            // Lưu tin nhắn Admin
-            TinNhan adminMsg = new TinNhan();
-            adminMsg.setCuocHoiThoai(session);
-            adminMsg.setNhanVien(nv);
-            adminMsg.setNguoiGui("STAFF");
-            adminMsg.setNoiDung(userMessage);
-            adminMsg.setNgayTao(java.time.Instant.now());
-            tinNhanRepository.save(adminMsg);
-
-            // Load lịch sử hội thoại (15 tin nhắn gần nhất)
-            List<TinNhan> historyMsgs = tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(session.getId());
-            if (historyMsgs.size() > 15) {
-                historyMsgs = historyMsgs.subList(historyMsgs.size() - 15, historyMsgs.size());
-            }
-
-            List<org.springframework.ai.chat.messages.Message> springAiMsgs = new java.util.ArrayList<>();
-            for (TinNhan m : historyMsgs) {
-                if ("STAFF".equals(m.getNguoiGui())) {
-                    springAiMsgs.add(new org.springframework.ai.chat.messages.UserMessage(m.getNoiDung()));
-                } else if ("AI".equals(m.getNguoiGui())) {
-                    springAiMsgs.add(new org.springframework.ai.chat.messages.AssistantMessage(m.getNoiDung()));
-                }
-            }
-
-            ChatClient chatClient = chatClientBuilder
-                    .defaultSystem(systemPrompt)
-                    .build();
-
-            String reply = chatClient.prompt()
-                    .messages(springAiMsgs)
-                    .functions(
-                            "get_admin_revenue_stats_tool", 
-                            "get_admin_low_stock_tool", 
-                            "search_admin_invoices_tool", 
-                            "search_products_tool", 
-                            "get_best_selling_shoes_tool",
-                            "get_admin_product_reviews_tool",
-                            "get_admin_top_reviews_tool",
-                            "update_admin_order_status_tool",
-                            "update_admin_product_stock_tool",
-                            "create_admin_voucher_tool",
-                            "get_admin_chart_data_tool",
-                            "export_admin_data_csv_tool"
-                    )
+            String reply = adminChatClient.prompt()
+                    .messages(historyMsgs)
+                    .functions(activeTools)
                     .call()
                     .content();
 
-            // Lưu tin nhắn AI
-            TinNhan aiMsg = new TinNhan();
-            aiMsg.setCuocHoiThoai(session);
-            aiMsg.setNguoiGui("AI");
-            aiMsg.setNoiDung(reply);
-            aiMsg.setNgayTao(java.time.Instant.now());
-            tinNhanRepository.save(aiMsg);
+            // 4. Lưu tin nhắn AI (Tx ngắn)
+            saveAdminAiReply(session.getId(), reply);
 
             return reply;
         } catch (Exception e) {
-            System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI:");
+            System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI: " + e.getMessage());
             e.printStackTrace();
-            return "Trợ lý AI Admin hiện tại không thể xử lý yêu cầu. Lỗi: " + e.getMessage();
+            String errReply = "Không thể gọi AI do API Key hiện tại bị hết dung lượng (Quota Exceeded). Vui lòng đổi sang API Key khác hoặc nạp thêm hạn ngạch để tiếp tục sử dụng.";
+            saveAdminAiReply(session.getId(), errReply);
+            return errReply;
         }
     }
 
     @Transactional(readOnly = true)
-    public List<ChatbotMessageDto> getAdminChatHistory(java.util.UUID nhanVienId) {
+    public List<ChatbotMessageDto> getAdminChatHistory(UUID nhanVienId) {
         List<CuocHoiThoai> sessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
         if (sessions.isEmpty()) {
             return List.of();
         }
         return tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessions.get(0).getId())
+                .stream()
+                .map(m -> new ChatbotMessageDto(
+                        m.getId(),
+                        m.getNguoiGui(),
+                        m.getNoiDung(),
+                        m.getNgayTao(),
+                        m.getNhanVien() != null ? m.getNhanVien().getMa() : null
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void closeAdminAiSession(UUID nhanVienId) {
+        List<CuocHoiThoai> activeSessions = cuocHoiThoaiRepository.findByNhanVienIdAndTrangThai(nhanVienId, 1);
+        for (CuocHoiThoai session : activeSessions) {
+            session.setTrangThai(4);
+            session.setNgayCapNhat(Instant.now());
+            cuocHoiThoaiRepository.save(session);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotSessionDto> getAdminAiSessions(UUID nhanVienId) {
+        return cuocHoiThoaiRepository.findByNhanVienIdOrderByNgayTaoDesc(nhanVienId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatbotMessageDto> getAdminAiSessionMessages(UUID nhanVienId, Integer sessionId) {
+        return tinNhanRepository.findByCuocHoiThoaiIdOrderByNgayTaoAsc(sessionId)
                 .stream()
                 .map(m -> new ChatbotMessageDto(
                         m.getId(),

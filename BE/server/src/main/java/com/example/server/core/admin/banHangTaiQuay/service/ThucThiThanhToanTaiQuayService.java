@@ -102,22 +102,59 @@ public class ThucThiThanhToanTaiQuayService {
         // Stock has already been deducted when items were added to HoaDonCho or during taoHoaDon
 
         BigDecimal tongTien = hoaDon.getTongTienThanhToan();
-        BigDecimal tienKhachDua = paymentUseCase.xacDinhTienKhachDua(request.hinhThucThanhToan(), request.tienKhachDua(), tongTien);
-        BigDecimal tienThua = paymentUseCase.tinhTienThua(request.hinhThucThanhToan(), tienKhachDua, tongTien);
+        BigDecimal tienKhachDua = paymentUseCase.xacDinhTienKhachDua(request.hinhThucThanhToan(), request.tienKhachDua(), tongTien, request.tienMat(), request.tienChuyenKhoan());
+        BigDecimal tienThua = paymentUseCase.tinhTienThua(request.hinhThucThanhToan(), tienKhachDua, tongTien, request.tienMat(), request.tienChuyenKhoan());
 
-        ThanhToan thanhToan = new ThanhToan();
-        thanhToan.setHoaDon(hoaDon);
-        thanhToan.setNhanVien(hoaDon.getNhanVien());
-        thanhToan.setHinhThuc(paymentUseCase.mapHinhThucThanhToan(request.hinhThucThanhToan()));
-        thanhToan.setSoTien(tongTien);
-        thanhToan.setTienThoiLai(tienThua);
-        thanhToan.setCongThanhToan(paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan()));
-        thanhToan.setNgayThanhToan(Instant.now());
-        thanhToan.setTrangThai(1);
-        thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
-        thanhToan.setGhiChu(request.ghiChu());
-        thanhToan.setNgayTao(Instant.now());
-        thanhToanRepository.save(thanhToan);
+        if (request.hinhThucThanhToan() != null && request.hinhThucThanhToan() == 5) {
+            BigDecimal tMat = request.tienMat() != null ? request.tienMat() : BigDecimal.ZERO;
+            BigDecimal tCk = request.tienChuyenKhoan() != null ? request.tienChuyenKhoan() : BigDecimal.ZERO;
+
+            if (tMat.compareTo(BigDecimal.ZERO) > 0) {
+                ThanhToan ttMat = new ThanhToan();
+                ttMat.setHoaDon(hoaDon);
+                ttMat.setNhanVien(hoaDon.getNhanVien());
+                ttMat.setHinhThuc(1);
+                ttMat.setSoTien(tMat);
+                ttMat.setTienThoiLai(tienThua);
+                ttMat.setCongThanhToan("Tien mat");
+                ttMat.setNgayThanhToan(Instant.now());
+                ttMat.setTrangThai(1);
+                ttMat.setLoaiGiaoDich(1);
+                ttMat.setGhiChu(request.ghiChu());
+                ttMat.setNgayTao(Instant.now());
+                thanhToanRepository.save(ttMat);
+            }
+
+            if (tCk.compareTo(BigDecimal.ZERO) > 0) {
+                ThanhToan ttCk = new ThanhToan();
+                ttCk.setHoaDon(hoaDon);
+                ttCk.setNhanVien(hoaDon.getNhanVien());
+                ttCk.setHinhThuc(2);
+                ttCk.setSoTien(tCk);
+                ttCk.setTienThoiLai(BigDecimal.ZERO);
+                ttCk.setCongThanhToan("Chuyen khoan");
+                ttCk.setNgayThanhToan(Instant.now());
+                ttCk.setTrangThai(1);
+                ttCk.setLoaiGiaoDich(1);
+                ttCk.setGhiChu(request.ghiChu());
+                ttCk.setNgayTao(Instant.now());
+                thanhToanRepository.save(ttCk);
+            }
+        } else {
+            ThanhToan thanhToan = new ThanhToan();
+            thanhToan.setHoaDon(hoaDon);
+            thanhToan.setNhanVien(hoaDon.getNhanVien());
+            thanhToan.setHinhThuc(paymentUseCase.mapHinhThucThanhToan(request.hinhThucThanhToan()));
+            thanhToan.setSoTien(tongTien);
+            thanhToan.setTienThoiLai(tienThua);
+            thanhToan.setCongThanhToan(paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan()));
+            thanhToan.setNgayThanhToan(Instant.now());
+            thanhToan.setTrangThai(1);
+            thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
+            thanhToan.setGhiChu(request.ghiChu());
+            thanhToan.setNgayTao(Instant.now());
+            thanhToanRepository.save(thanhToan);
+        }
 
         hoaDon.setTrangThai(trangThaiSauThanhToan);
         hoaDon.setNgayThanhToan(Instant.now());

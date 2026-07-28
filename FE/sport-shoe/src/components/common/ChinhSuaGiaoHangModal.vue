@@ -69,12 +69,20 @@ function tachDiaChiDayDu(value) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-  if (parts.length < 4) {
+  if (parts.length < 3) {
     return {
       diaChiCuThe: parts.join(", "),
       phuongXa: "",
       quanHuyen: "",
       tinhThanh: "",
+    };
+  }
+  if (parts.length === 3) {
+    return {
+      diaChiCuThe: parts[0],
+      phuongXa: parts[1],
+      quanHuyen: "",
+      tinhThanh: parts[2],
     };
   }
   return {
@@ -84,9 +92,10 @@ function tachDiaChiDayDu(value) {
     tinhThanh: parts.at(-1),
   };
 }
+
 function chuanHoaTen(s) {
   return String(s || "")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase()
     .replace(/\b(tinh|thanh pho|tp|quan|huyen|thi xa|phuong|xa|thi tran)\b/g, " ")
@@ -137,12 +146,11 @@ async function dienDuLieuDiaPhuong() {
     const huyen = timTheoTen(dsHuyen.value, form.value.quanHuyen);
     maHuyenChon.value = huyen?.id ? String(huyen.id) : "";
     if (!huyen) return;
+
     await taiXaTheoHuyen(huyen.id);
     const xa = timTheoTen(dsXa.value, form.value.phuongXa);
     if (xa) {
       form.value.phuongXa = xa.ten;
-    } else if (form.value.phuongXa) {
-      form.value.phuongXa = "";
     }
   } finally {
     dangTaiDiaPhuong.value = false;
@@ -161,8 +169,14 @@ async function khoiTaoForm() {
         return full === props.initialData.diaChiGiaoHang;
       });
     }
-    const defaultAddr = matched || props.savedAddresses.find(a => a.laMacDinh) || props.savedAddresses[0];
-    defaultDiaChiId = defaultAddr.id;
+    if (matched) {
+      defaultDiaChiId = matched.id;
+    } else if (!props.initialData?.diaChiGiaoHang) {
+      const defaultAddr = props.savedAddresses.find(a => a.laMacDinh) || props.savedAddresses[0];
+      defaultDiaChiId = defaultAddr.id;
+    } else {
+      defaultDiaChiId = "new";
+    }
   }
 
   form.value = {
@@ -193,7 +207,7 @@ async function khoiTaoForm() {
   try {
     await dienDuLieuDiaPhuong();
   } catch (err) {
-    errors.value.diaPhuong = "Lỗi: " + (err.message || "Không xác định") + " (Vui lòng chụp màn hình lỗi này)";
+    errors.value.diaPhuong = "Lỗi: " + (err.message || "Không xác định");
   }
 }
 
@@ -213,6 +227,8 @@ watch(
       });
       if (matched) {
         form.value.diaChiId = matched.id;
+      } else {
+        form.value.diaChiId = "new";
       }
     }
   },
@@ -260,16 +276,51 @@ async function chonHuyen(event) {
 
 function validate() {
   const next = {};
-  if (!form.value.tenNguoiNhan.trim()) next.tenNguoiNhan = "Vui lòng nhập tên người nhận.";
-  if (!/^(0|\+84)[35789]\d{8}$/.test(form.value.sdtNguoiNhan.trim())) {
-    next.sdtNguoiNhan = "Số điện thoại không đúng định dạng.";
+  
+  // 1. Tên người nhận
+  const ten = (form.value.tenNguoiNhan || "").trim();
+  if (!ten) {
+    next.tenNguoiNhan = "Vui lòng nhập tên người nhận.";
+  } else if (ten.length < 3 || ten.length > 49) {
+    next.tenNguoiNhan = "Họ và tên người nhận phải từ 3 đến 49 ký tự.";
+  } else if (!/^[\p{L}\s]+$/u.test(ten)) {
+    next.tenNguoiNhan = "Họ và tên người nhận chỉ chứa chữ cái tiếng Việt và khoảng trắng.";
+  }
+
+  // 2. Số điện thoại
+  const sdt = (form.value.sdtNguoiNhan || "").trim();
+  if (!sdt) {
+    next.sdtNguoiNhan = "Vui lòng nhập số điện thoại người nhận.";
+  } else if (!/^0[35789]\d{8}$/.test(sdt)) {
+    next.sdtNguoiNhan = "Số điện thoại gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08 hoặc 09.";
+  }
+
+  // 3. Email (nếu nhập)
+  const emailVal = (form.value.email || "").trim();
+  if (emailVal) {
+    if (emailVal.length > 100) {
+      next.email = "Email không được vượt quá 100 ký tự.";
+    } else if (/\s/.test(emailVal)) {
+      next.email = "Email không được chứa khoảng trắng.";
+    } else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(emailVal)) {
+      next.email = "Email phải đúng định dạng @gmail.com.";
+    }
   }
   
+  // 4. Địa chỉ khu vực & Địa chỉ cụ thể
   if (form.value.diaChiId === "new") {
     if (!form.value.tinhThanh) next.tinhThanh = "Vui lòng chọn tỉnh/thành phố.";
     if (!form.value.quanHuyen) next.quanHuyen = "Vui lòng chọn quận/huyện.";
     if (!form.value.phuongXa) next.phuongXa = "Vui lòng chọn phường/xã.";
-    if (!form.value.diaChiCuThe.trim()) next.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+    
+    const dc = (form.value.diaChiCuThe || "").trim();
+    if (!dc) {
+      next.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể.";
+    } else if (dc.length < 3 || dc.length > 70) {
+      next.diaChiCuThe = "Địa chỉ cụ thể phải từ 3 đến 70 ký tự.";
+    } else if (!/^[\p{L}\p{N}\s,.\-\/]+$/u.test(dc)) {
+      next.diaChiCuThe = "Địa chỉ cụ thể không chứa ký tự đặc biệt ngoài dấu phẩy, dấu chấm, dấu gạch ngang, dấu gạch chéo.";
+    }
   }
   
   errors.value = next;
@@ -305,15 +356,23 @@ watch(
         if (selected.email) form.value.email = selected.email;
       }
     } else if (oldId && oldId !== "new") {
-      // Khi chuyển từ địa chỉ cũ sang địa chỉ khác, làm sạch các ô chọn để họ nhập mới
-      form.value.tinhThanh = "";
-      form.value.quanHuyen = "";
-      form.value.phuongXa = "";
-      form.value.diaChiCuThe = "";
-      maTinhChon.value = "";
-      maHuyenChon.value = "";
-      dsHuyen.value = [];
-      dsXa.value = [];
+      if (props.initialData?.diaChiGiaoHang) {
+        const diaChi = tachDiaChiDayDu(props.initialData.diaChiGiaoHang);
+        form.value.tinhThanh = diaChi.tinhThanh;
+        form.value.quanHuyen = diaChi.quanHuyen;
+        form.value.phuongXa = diaChi.phuongXa;
+        form.value.diaChiCuThe = diaChi.diaChiCuThe;
+        dienDuLieuDiaPhuong();
+      } else {
+        form.value.tinhThanh = "";
+        form.value.quanHuyen = "";
+        form.value.phuongXa = "";
+        form.value.diaChiCuThe = "";
+        maTinhChon.value = "";
+        maHuyenChon.value = "";
+        dsHuyen.value = [];
+        dsXa.value = [];
+      }
     }
   }
 );
@@ -356,6 +415,7 @@ watch(
           <label class="block space-y-1.5">
             <span class="text-[13px] text-slate-600">Email</span>
             <input v-model="form.email" type="email" placeholder="example@gmail.com" class="h-[42px] w-full rounded border border-slate-200 px-3 text-[14px] text-slate-800 outline-none focus:border-[#B82220]" />
+            <p v-if="errors.email" class="text-xs text-red-500">{{ errors.email }}</p>
           </label>
 
           <!-- Address selection box -->

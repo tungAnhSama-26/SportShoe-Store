@@ -142,6 +142,13 @@ public class BanHangTaiQuayService {
     }
 
     @Transactional
+    public HoaDonChoChiTietResponse doiBienThe(Integer hoaDonChiTietId, com.example.server.core.admin.banHangTaiQuay.dto.request.DoiBienTheTaiQuayRequest request) {
+        HoaDonChoChiTietResponse response = pendingInvoiceUseCase.doiBienThe(hoaDonChiTietId, request);
+        phatRealtimeHoaDonCho("UPDATED", response.id());
+        return response;
+    }
+
+    @Transactional
     public void huyHoaDonCho(Integer hoaDonId) {
         pendingInvoiceUseCase.huyHoaDonCho(hoaDonId);
         phatRealtimeHoaDonCho("CANCELLED", hoaDonId);

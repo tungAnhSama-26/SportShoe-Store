@@ -12,3 +12,21 @@ export function getAdminChatHistory() {
     method: "GET",
   });
 }
+
+export function closeAdminAiSession() {
+  return apiRequest("/admin/chatbot/close-session", {
+    method: "POST",
+  });
+}
+
+export function getAdminAiSessions() {
+  return apiRequest("/admin/chatbot/sessions", {
+    method: "GET",
+  });
+}
+
+export function getAdminAiSessionMessages(sessionId) {
+  return apiRequest(`/admin/chatbot/session/${sessionId}/messages`, {
+    method: "GET",
+  });
+}

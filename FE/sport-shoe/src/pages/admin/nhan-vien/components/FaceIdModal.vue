@@ -63,6 +63,7 @@ async function startWebcam() {
   await loadModels();
   if (!isModelsLoaded.value) return;
   
+  stopWebcam();
   mode.value = 'webcam';
   errorMessage.value = '';
   capturedImage.value = null;
@@ -92,8 +93,14 @@ function stopWebcam() {
   }
 }
 
+function cancelWebcam() {
+  stopWebcam();
+  mode.value = 'selection';
+}
+
 async function handleVideoPlay() {
   if (!videoRef.value || !canvasRef.value) return;
+  if (detectionInterval) clearInterval(detectionInterval);
   
   const displaySize = { width: videoRef.value.videoWidth, height: videoRef.value.videoHeight };
   faceapi.matchDimensions(canvasRef.value, displaySize);
@@ -260,7 +267,7 @@ onUnmounted(() => {
             </div>
             
             <div class="flex gap-3">
-              <Button @click="stopWebcam; mode = 'selection'" variant="outline" class="flex-1 justify-center h-12">
+              <Button @click="cancelWebcam" variant="outline" class="flex-1 justify-center h-12">
                 Hủy
               </Button>
               <Button @click="captureWebcam" variant="primary" class="flex-1 justify-center h-12 gap-2">

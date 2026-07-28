@@ -96,7 +96,7 @@ async function taoPhieu() {
 </script>
 
 <template>
-  <Button v-if="coTheTaoPhieu" variant="soft" full-width @click="moModal">
+  <Button v-if="false && coTheTaoPhieu" variant="soft" full-width @click="moModal">
     <template #prefix><PackageCheck class="h-4 w-4" /></template>
     Tạo phiếu trả hàng
   </Button>

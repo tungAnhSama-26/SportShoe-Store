@@ -383,9 +383,10 @@ async function handleSaveFaceId(descriptorString) {
                 placeholder="Nhập địa chỉ cụ thể"
                 :class="[
                   'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:bg-white',
-                  'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
+                  loiForm.diaChiCuThe ? 'border-rose-400 focus:border-rose-400' : 'border-slate-200 focus:border-primary/50 focus:ring-4 focus:ring-primary/10',
                 ]"
               />
+              <p v-if="loiForm.diaChiCuThe" class="text-xs text-rose-500">{{ loiForm.diaChiCuThe }}</p>
             </label>
           </div>
           <div class="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4">

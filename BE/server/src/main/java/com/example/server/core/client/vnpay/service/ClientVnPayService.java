@@ -276,8 +276,7 @@ public class ClientVnPayService {
 
     private String urlEncode(String value) {
         try {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.US_ASCII.toString())
-                    .replaceAll("\\+", "%20");
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.US_ASCII.toString());
         } catch (Exception ex) {
             return "";
         }
@@ -341,7 +340,7 @@ public class ClientVnPayService {
             if (fieldValue != null && !fieldValue.isEmpty()) {
                 String encodedKey = urlEncode(fieldName);
                 String encodedValue = urlEncode(fieldValue);
-                hashParts.add(fieldName + "=" + fieldValue);
+                hashParts.add(fieldName + "=" + encodedValue);
                 queryParts.add(encodedKey + "=" + encodedValue);
             }
         }

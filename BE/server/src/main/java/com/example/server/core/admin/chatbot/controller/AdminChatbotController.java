@@ -44,6 +44,34 @@ public class AdminChatbotController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", history));
     }
 
+    @PostMapping("/close-session")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> closeSession(
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        chatbotService.closeAdminAiSession(principal.id());
+        return ResponseEntity.ok(ApiResponse.success("Đã đóng phiên trò chuyện thành công", null));
+    }
+
+    @GetMapping("/sessions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<com.example.server.core.client.chatbot.dto.ChatbotSessionDto>>> getAdminSessions(
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        List<com.example.server.core.client.chatbot.dto.ChatbotSessionDto> sessions = chatbotService.getAdminAiSessions(principal.id());
+        return ResponseEntity.ok(ApiResponse.success("Thành công", sessions));
+    }
+
+    @GetMapping("/session/{sessionId}/messages")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<ChatbotMessageDto>>> getSessionMessages(
+            @AuthenticationPrincipal AdminPrincipal principal,
+            @PathVariable("sessionId") Integer sessionId
+    ) {
+        List<ChatbotMessageDto> history = chatbotService.getAdminAiSessionMessages(principal.id(), sessionId);
+        return ResponseEntity.ok(ApiResponse.success("Thành công", history));
+    }
+
     @GetMapping("/download-csv")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<byte[]> downloadCsv(
@@ -59,12 +87,28 @@ public class AdminChatbotController {
                 .body(fileBytes);
     }
 
+    public static java.io.File resolveConfigFile() {
+        java.io.File file1 = new java.io.File("data/chatbot-keys.json");
+        if (file1.exists()) {
+            return file1;
+        }
+        java.io.File file2 = new java.io.File("BE/server/data/chatbot-keys.json");
+        if (file2.exists()) {
+            return file2;
+        }
+        java.io.File beDir = new java.io.File("BE/server");
+        if (beDir.exists() && beDir.isDirectory()) {
+            return file2;
+        }
+        return file1;
+    }
+
     @GetMapping("/config")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<com.example.server.core.admin.chatbot.dto.ChatbotConfigDto>> getConfig() {
         com.example.server.core.admin.chatbot.dto.ChatbotConfigDto dto = new com.example.server.core.admin.chatbot.dto.ChatbotConfigDto("", "", "", "");
         try {
-            java.io.File file = new java.io.File("data/chatbot-keys.json");
+            java.io.File file = resolveConfigFile();
             if (file.exists()) {
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(file);
@@ -85,11 +129,10 @@ public class AdminChatbotController {
             @RequestBody com.example.server.core.admin.chatbot.dto.ChatbotConfigDto dto
     ) {
         try {
-            java.io.File dir = new java.io.File("data");
-            if (!dir.exists()) {
-                dir.mkdirs();
+            java.io.File file = resolveConfigFile();
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
             }
-            java.io.File file = new java.io.File("data/chatbot-keys.json");
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             
             com.fasterxml.jackson.databind.node.ObjectNode root = mapper.createObjectNode();

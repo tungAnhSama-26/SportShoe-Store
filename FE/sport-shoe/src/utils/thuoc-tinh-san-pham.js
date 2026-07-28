@@ -59,8 +59,16 @@ export function isValidWebsiteUrl(value) {
 
 export function hasSpecialCharacters(value) {
   if (!value) return false
+  const str = String(value)
+  
+  // Phải có ít nhất 1 chữ cái hoặc số (chặn chuỗi chỉ toàn dấu phẩy, chấm, khoảng trắng, v.v)
+  const normalized = normalizeAttributeText(str)
+  if (!/[a-zA-Z0-9]/.test(normalized)) {
+    return true
+  }
+  
   const specialCharsRegex = /[@#$%^*+=\\{}\[\]<>;|~`]/
-  return specialCharsRegex.test(String(value))
+  return specialCharsRegex.test(str)
 }
 
 export function createAttributeCodeSeed() {

@@ -82,12 +82,16 @@ export function useChiTietPhieuGiamGia() {
     return numberValue ? numberValue.toLocaleString("vi-VN") : "";
   }
 
+  // Ô "Số lượng" hiển thị SỐ CÒN LẠI (= tổng - đã dùng), nhưng bên trong form.soLuong
+  // vẫn giữ TỔNG để validate/lưu không đổi. Nhập còn lại mới -> tổng = còn lại + đã dùng.
   const soLuongDisplay = computed({
     get() {
       if (soLuongVoHan.value) {
         return "Vô hạn";
       }
-      return formatQuantityNumber(form.soLuong);
+      const daDung = Number(form.soLuongDaDung || 0);
+      const conLai = Math.max(parseQuantityNumber(form.soLuong) - daDung, 0);
+      return formatQuantityNumber(conLai);
     },
     set(val) {
       if (!soLuongVoHan.value) {

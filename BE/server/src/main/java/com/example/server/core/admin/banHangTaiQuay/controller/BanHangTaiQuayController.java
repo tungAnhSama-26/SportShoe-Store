@@ -1,6 +1,7 @@
 package com.example.server.core.admin.banHangTaiQuay.controller;
 
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ApDungPhieuGiamGiaRequest;
+import com.example.server.core.admin.banHangTaiQuay.dto.request.DoiBienTheTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThanhToanTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TinhPhiVanChuyenTaiQuayRequest;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -116,6 +118,17 @@ public class BanHangTaiQuayController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Cập nhật hóa đơn chờ thành công",
                 banHangTaiQuayService.capNhatHoaDonCho(hoaDonId, request)
+        ));
+    }
+
+    @PutMapping("/hoa-don-chi-tiet/{id}/doi-bien-the")
+    public ResponseEntity<ApiResponse<HoaDonChoChiTietResponse>> doiBienThe(
+            @PathVariable Integer id,
+            @Valid @RequestBody DoiBienTheTaiQuayRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đổi biến thể sản phẩm thành công",
+                banHangTaiQuayService.doiBienThe(id, request)
         ));
     }
 

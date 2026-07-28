@@ -41,6 +41,7 @@ public class ChatbotTools {
             String color,
             String category,
             String brand,
+            String size,
             Boolean onSale
     ) {}
 
@@ -169,7 +170,7 @@ public class ChatbotTools {
     }
 
     @Bean("search_products_tool")
-    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa, màu sắc, loại giày (category), thương hiệu (brand) hoặc trạng thái giảm giá (onSale = true)")
+    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa (keyword), màu sắc (color), loại giày (category), thương hiệu (brand), kích cỡ giày số (size, ví dụ: '38', '39', '40') hoặc trạng thái giảm giá (onSale = true)")
     public Function<SearchRequest, List<ProductDto>> searchProductsTool() {
         return new Function<SearchRequest, List<ProductDto>>() {
             @Override
@@ -237,6 +238,16 @@ public class ChatbotTools {
                             }
                         }
 
+                        if (request.size() != null && !request.size().isBlank()) {
+                            String searchSize = request.size().replaceAll("[^0-9]", "").trim();
+                            if (!searchSize.isEmpty()) {
+                                boolean matchSize = kichCos.stream().anyMatch(kc -> kc.trim().equals(searchSize) || kc.trim().contains(searchSize));
+                                if (!matchSize) {
+                                    continue;
+                                }
+                            }
+                        }
+
                         result.add(buildProductDto(g, giaBan, mauSacs, kichCos, soLuongTon, daBan));
                     }
                     return result;
@@ -249,11 +260,11 @@ public class ChatbotTools {
     }
 
     @Bean("get_best_selling_shoes_tool")
-    @Description("Lấy danh sách các sản phẩm giày bán chạy nhất (Best Seller) của cửa hàng")
-    public Function<BestSellerRequest, List<ProductDto>> getBestSellingShoesTool() {
-        return new Function<BestSellerRequest, List<ProductDto>>() {
+    @Description("Lấy danh sách các sản phẩm giày bán chạy nhất (Best Seller) của cửa hàng và trả về các thẻ sản phẩm kèm link xem chi tiết")
+    public Function<BestSellerRequest, String> getBestSellingShoesTool() {
+        return new Function<BestSellerRequest, String>() {
             @Override
-            public List<ProductDto> apply(BestSellerRequest request) {
+            public String apply(BestSellerRequest request) {
                 try {
                     List<Object[]> sales = entityManager.createQuery(
                                     "SELECT gct.giay.id, SUM(hdct.soLuong) as totalSales FROM HoaDonChiTiet hdct " +
@@ -263,70 +274,61 @@ public class ChatbotTools {
                             .setMaxResults(5)
                             .getResultList();
 
-                    List<ProductDto> result = new ArrayList<>();
+                    if (sales.isEmpty()) {
+                        return "Hiện tại chưa có dữ liệu bán hàng cho các sản phẩm.";
+                    }
+
+                    StringBuilder sb = new StringBuilder("Danh sách sản phẩm bán chạy nhất của cửa hàng:\n");
                     for (Object[] row : sales) {
                         Integer giayId = (Integer) row[0];
+                        Long daBan = (Long) row[1];
                         com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
                         if (g == null || g.getTrangThai() != 1) continue;
 
-                        List<String> mauSacs = entityManager.createQuery(
-                                        "SELECT DISTINCT ms.ten FROM GiayChiTiet gct JOIN gct.mauSac ms WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", String.class)
-                                .setParameter("giayId", giayId)
-                                .getResultList();
-
-                        List<String> kichCos = entityManager.createQuery(
-                                        "SELECT DISTINCT kc.giaTri FROM GiayChiTiet gct JOIN gct.kichCo kc WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", String.class)
-                                .setParameter("giayId", giayId)
-                                .getResultList();
-
-                        Long soLuongTon = entityManager.createQuery(
-                                        "SELECT COALESCE(SUM(gct.soLuong), 0L) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", Long.class)
-                                .setParameter("giayId", giayId)
-                                .getSingleResult();
+                        String ten = g.getTen();
+                        String hinhAnh = g.getHinhAnh();
+                        if (hinhAnh == null || hinhAnh.isBlank()) {
+                            List<com.example.server.entity.HinhAnhGiay> images = entityManager.createQuery(
+                                    "SELECT h FROM HinhAnhGiay h WHERE h.giayChiTiet.giay.id = :giayId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
+                                    .setParameter("giayId", giayId)
+                                    .setMaxResults(1)
+                                    .getResultList();
+                            if (!images.isEmpty() && images.get(0).getUrl() != null) {
+                                hinhAnh = images.get(0).getUrl();
+                            }
+                        }
 
                         BigDecimal giaBan = entityManager.createQuery(
                                         "SELECT MIN(gct.giaBan) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", BigDecimal.class)
                                 .setParameter("giayId", giayId)
                                 .getSingleResult();
+                        if (giaBan == null) giaBan = BigDecimal.ZERO;
+                        BigDecimal giaThucTe = calculateActualPrice(g.getId(), giaBan);
 
-                        Long daBan = (Long) row[1];
+                        Long soLuong = entityManager.createQuery(
+                                        "SELECT COALESCE(SUM(gct.soLuong), 0L) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", Long.class)
+                                .setParameter("giayId", giayId)
+                                .getSingleResult();
 
-                        result.add(buildProductDto(g, giaBan, mauSacs, kichCos, soLuongTon, daBan));
+                        String url = "/admin/san-pham";
+                        try {
+                            url = "/admin/san-pham?search=" + java.net.URLEncoder.encode(ten, java.nio.charset.StandardCharsets.UTF_8.name());
+                        } catch (Exception ex) {}
+
+                        sb.append(String.format("```product\n{\"name\":\"%s (Đã bán: %d)\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"Bán chạy\",\"size\":\"Nhiều size\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
+                                cleanJsonString(ten),
+                                daBan,
+                                cleanJsonString(hinhAnh),
+                                giaThucTe.setScale(0, java.math.RoundingMode.HALF_UP),
+                                giaBan.setScale(0, java.math.RoundingMode.HALF_UP),
+                                soLuong,
+                                url
+                        ));
                     }
-
-                    if (result.isEmpty()) {
-                        List<com.example.server.entity.Giay> latest = entityManager.createQuery(
-                                        "SELECT g FROM Giay g WHERE g.trangThai = 1 ORDER BY g.id DESC", com.example.server.entity.Giay.class)
-                                .setMaxResults(5)
-                                .getResultList();
-                        for (com.example.server.entity.Giay g : latest) {
-                            List<String> mauSacs = entityManager.createQuery(
-                                            "SELECT DISTINCT ms.ten FROM GiayChiTiet gct JOIN gct.mauSac ms WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", String.class)
-                                    .setParameter("giayId", g.getId())
-                                    .getResultList();
-
-                            List<String> kichCos = entityManager.createQuery(
-                                            "SELECT DISTINCT kc.giaTri FROM GiayChiTiet gct JOIN gct.kichCo kc WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", String.class)
-                                    .setParameter("giayId", g.getId())
-                                    .getResultList();
-
-                            Long soLuongTon = entityManager.createQuery(
-                                            "SELECT COALESCE(SUM(gct.soLuong), 0L) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", Long.class)
-                                    .setParameter("giayId", g.getId())
-                                    .getSingleResult();
-
-                            BigDecimal giaBan = entityManager.createQuery(
-                                            "SELECT MIN(gct.giaBan) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", BigDecimal.class)
-                                    .setParameter("giayId", g.getId())
-                                    .getSingleResult();
-
-                            result.add(buildProductDto(g, giaBan, mauSacs, kichCos, soLuongTon, 0L));
-                        }
-                    }
-                    return result;
+                    return sb.toString();
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return List.of();
+                    return "Không thể lấy thông tin sản phẩm bán chạy. Lỗi: " + e.getMessage();
                 }
             }
         };
@@ -609,13 +611,43 @@ public class ChatbotTools {
                         return "Hiện tại không có sản phẩm nào có số lượng tồn kho dưới " + limit + " chiếc.";
                     }
 
-                    StringBuilder sb = new StringBuilder("Danh sách sản phẩm sắp hết hàng (Tồn kho < " + limit + "):\n");
+                    StringBuilder sb = new StringBuilder("Danh sách sản phẩm sắp hết hàng (Số lượng < " + limit + "):\n");
                     for (com.example.server.entity.GiayChiTiet gct : lowStockList) {
-                        sb.append(String.format("- **%s** | Màu: %s | Size: %s | **Số lượng tồn: %d**\n",
-                                gct.getGiay() != null ? gct.getGiay().getTen() : "Giày",
-                                gct.getMauSac() != null ? gct.getMauSac().getTen() : "N/A",
-                                gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "N/A",
-                                gct.getSoLuong()));
+                        String ten = gct.getGiay() != null ? gct.getGiay().getTen() : "Giày";
+                        String mau = gct.getMauSac() != null ? gct.getMauSac().getTen() : "N/A";
+                        String size = gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "N/A";
+                        BigDecimal giaBan = gct.getGiaBan() != null ? gct.getGiaBan() : BigDecimal.ZERO;
+                        BigDecimal giaThucTe = calculateActualPrice(gct.getGiay() != null ? gct.getGiay().getId() : 0, giaBan);
+
+                        String hinhAnh = gct.getGiay() != null ? gct.getGiay().getHinhAnh() : "";
+                        if (hinhAnh == null || hinhAnh.isBlank()) {
+                            List<com.example.server.entity.HinhAnhGiay> images = entityManager.createQuery(
+                                    "SELECT h FROM HinhAnhGiay h WHERE h.giayChiTiet.id = :gctId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
+                                    .setParameter("gctId", gct.getId())
+                                    .setMaxResults(1)
+                                    .getResultList();
+                            if (!images.isEmpty() && images.get(0).getUrl() != null) {
+                                hinhAnh = images.get(0).getUrl();
+                            }
+                        }
+
+                        String url = "/admin/san-pham";
+                        if (gct.getGiay() != null && gct.getGiay().getTen() != null) {
+                            try {
+                                url = "/admin/san-pham?search=" + java.net.URLEncoder.encode(gct.getGiay().getTen(), java.nio.charset.StandardCharsets.UTF_8.name());
+                            } catch (Exception ex) {}
+                        }
+
+                        sb.append(String.format("```product\n{\"name\":\"%s\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"%s\",\"size\":\"%s\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
+                                cleanJsonString(ten),
+                                cleanJsonString(hinhAnh),
+                                giaThucTe.setScale(0, java.math.RoundingMode.HALF_UP),
+                                giaBan.setScale(0, java.math.RoundingMode.HALF_UP),
+                                cleanJsonString(mau),
+                                cleanJsonString(size),
+                                gct.getSoLuong(),
+                                url
+                        ));
                     }
                     return sb.toString();
                 } catch (Exception e) {
@@ -741,6 +773,7 @@ public class ChatbotTools {
                     double avg = sum / total;
                     StringBuilder sb = new StringBuilder();
                     sb.append(String.format("Thống kê đánh giá cho sản phẩm **%s**:\n", g.getTen()));
+                    sb.append(formatProductBlock(g, String.format("%.1f ⭐ (%d đánh giá)", avg, total), ""));
                     sb.append(String.format("- Điểm đánh giá trung bình: **%.1f/5.0** ⭐\n", avg));
                     sb.append(String.format("- Tổng số lượt đánh giá: %d\n", total));
                     sb.append(String.format("- Số đánh giá tích cực (4-5 sao): %d (%.1f%%)\n", positive, (positive * 100.0 / total)));
@@ -788,22 +821,34 @@ public class ChatbotTools {
                     List<Object[]> topNegative = new ArrayList<>(stats);
                     topNegative.sort((a, b) -> Double.compare((Double) a[2], (Double) b[2]));
                     
-                    StringBuilder sb = new StringBuilder("### THỐNG KÊ ĐÁNH GIÁ HỆ THỐNG\n\n");
+                    StringBuilder sb = new StringBuilder("Thống kê sản phẩm được đánh giá cao nhất và thấp nhất:\n\n");
                     
                     sb.append("🏆 **Top 5 sản phẩm đánh giá cao nhất:**\n");
                     int limitPos = Math.min(5, topPositive.size());
                     for (int i = 0; i < limitPos; i++) {
                         Object[] row = topPositive.get(i);
-                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
-                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                        Integer giayId = (Integer) row[0];
+                        Double avg = (Double) row[2];
+                        Long cnt = (Long) row[3];
+                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
+                        if (g != null && g.getTrangThai() == 1) {
+                            String badge = String.format("%.1f ⭐ (%d đánh giá)", avg, cnt);
+                            sb.append(formatProductBlock(g, badge, ""));
+                        }
                     }
                     
                     sb.append("\n⚠️ **Top 5 sản phẩm điểm đánh giá thấp nhất:**\n");
                     int limitNeg = Math.min(5, topNegative.size());
                     for (int i = 0; i < limitNeg; i++) {
                         Object[] row = topNegative.get(i);
-                        sb.append(String.format("%d. **%s** | **%.1f** ⭐ (%d lượt đánh giá)\n", 
-                                i + 1, row[1], (Double) row[2], (Long) row[3]));
+                        Integer giayId = (Integer) row[0];
+                        Double avg = (Double) row[2];
+                        Long cnt = (Long) row[3];
+                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
+                        if (g != null && g.getTrangThai() == 1) {
+                            String badge = String.format("%.1f ⭐ (%d đánh giá)", avg, cnt);
+                            sb.append(formatProductBlock(g, badge, ""));
+                        }
                     }
                     
                     return sb.toString();
@@ -1013,8 +1058,8 @@ public class ChatbotTools {
                     }
                     else if ("top_selling_shoes".equalsIgnoreCase(request.chartType())) {
                         List<Object[]> results = entityManager.createQuery(
-                                "SELECT hdct.chiTietGiay.giay.ten, SUM(hdct.soLuong) FROM HoaDonChiTiet hdct " +
-                                "WHERE hdct.hoaDon.trangThai = 5 GROUP BY hdct.chiTietGiay.giay.ten ORDER BY SUM(hdct.soLuong) DESC", Object[].class)
+                                "SELECT hdct.giayChiTiet.giay.ten, SUM(hdct.soLuong) FROM HoaDonChiTiet hdct " +
+                                "WHERE hdct.hoaDon.trangThai = 5 GROUP BY hdct.giayChiTiet.giay.ten ORDER BY SUM(hdct.soLuong) DESC", Object[].class)
                                 .setMaxResults(5)
                                 .getResultList();
 
@@ -1159,5 +1204,77 @@ public class ChatbotTools {
                 }
             }
         };
+    }
+
+    private static String cleanJsonString(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", " ")
+                  .replace("\r", " ");
+    }
+
+    private String formatProductBlock(com.example.server.entity.Giay g, String badgeText, String nameSuffix) {
+        if (g == null) return "";
+        Integer giayId = g.getId();
+        String ten = g.getTen() != null ? g.getTen() : "Giày";
+        if (nameSuffix != null && !nameSuffix.isBlank()) {
+            ten += nameSuffix;
+        }
+
+        String hinhAnh = g.getHinhAnh();
+        if (hinhAnh == null || hinhAnh.isBlank()) {
+            List<com.example.server.entity.HinhAnhGiay> images = entityManager.createQuery(
+                    "SELECT h FROM HinhAnhGiay h WHERE h.giayChiTiet.giay.id = :giayId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
+                    .setParameter("giayId", giayId)
+                    .setMaxResults(1)
+                    .getResultList();
+            if (!images.isEmpty() && images.get(0).getUrl() != null) {
+                hinhAnh = images.get(0).getUrl();
+            }
+        }
+
+        BigDecimal giaBan = entityManager.createQuery(
+                "SELECT MIN(gct.giaBan) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", BigDecimal.class)
+                .setParameter("giayId", giayId)
+                .getResultList()
+                .stream().findFirst().orElse(BigDecimal.ZERO);
+        if (giaBan == null) giaBan = BigDecimal.ZERO;
+        BigDecimal giaThucTe = calculateActualPrice(giayId, giaBan);
+
+        Long soLuong = entityManager.createQuery(
+                "SELECT COALESCE(SUM(gct.soLuong), 0L) FROM GiayChiTiet gct WHERE gct.giay.id = :giayId AND gct.kichHoat = 1", Long.class)
+                .setParameter("giayId", giayId)
+                .getSingleResult();
+
+        List<String> kichCos = entityManager.createQuery(
+                "SELECT DISTINCT kc.giaTri FROM GiayChiTiet gct JOIN gct.kichCo kc WHERE gct.giay.id = :giayId AND gct.kichHoat = 1 ORDER BY kc.giaTri ASC", String.class)
+                .setParameter("giayId", giayId)
+                .getResultList();
+
+        String sizeStr = "Nhiều size";
+        if (!kichCos.isEmpty()) {
+            if (kichCos.size() == 1) {
+                sizeStr = kichCos.get(0);
+            } else {
+                sizeStr = kichCos.get(0) + " - " + kichCos.get(kichCos.size() - 1);
+            }
+        }
+
+        String url = "/admin/san-pham";
+        try {
+            url = "/admin/san-pham?search=" + java.net.URLEncoder.encode(g.getTen() != null ? g.getTen() : "", java.nio.charset.StandardCharsets.UTF_8.name());
+        } catch (Exception ex) {}
+
+        return String.format("```product\n{\"name\":\"%s\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"%s\",\"size\":\"%s\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
+                cleanJsonString(ten),
+                cleanJsonString(hinhAnh),
+                giaThucTe.setScale(0, java.math.RoundingMode.HALF_UP),
+                giaBan.setScale(0, java.math.RoundingMode.HALF_UP),
+                cleanJsonString(badgeText != null ? badgeText : "Sản phẩm"),
+                cleanJsonString(sizeStr),
+                soLuong != null ? soLuong : 0,
+                url
+        );
     }
 }

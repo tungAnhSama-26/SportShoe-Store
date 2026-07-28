@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
 
 const {
@@ -18,7 +19,24 @@ const {
   donDaHuy,
   hienModalLichSu,
   lyDoHuyDon,
+  donDaKetThuc,
+  dangCapNhat,
+  handleHuyDonTuModal,
 } = useInvoiceDetailContext();
+
+const hienModalLyDoHuy = ref(false);
+const lyDoHuy = ref("");
+
+const moModalHuy = () => {
+  lyDoHuy.value = "";
+  hienModalLyDoHuy.value = true;
+};
+
+const xacNhanHuy = async () => {
+  if (!lyDoHuy.value.trim()) return;
+  hienModalLyDoHuy.value = false;
+  await handleHuyDonTuModal(lyDoHuy.value);
+};
 </script>
 
 <template>
@@ -101,7 +119,17 @@ const {
         </template>
       </span>
     </div>
-    <div class="mt-5 flex justify-end">
+    <div class="mt-5 flex justify-end gap-3">
+      <Button
+        v-if="hoaDon && !donDaKetThuc"
+        @click="moModalHuy"
+        class="border-none bg-red-600 text-white hover:bg-red-700 shadow-sm"
+      >
+        <template #prefix>
+          <CircleX class="h-4 w-4" />
+        </template>
+        Hủy Đơn Hàng
+      </Button>
       <Button variant="primary" @click="hienModalLichSu = true">
         <template #prefix>
           <History class="h-4 w-4" />
@@ -110,4 +138,47 @@ const {
       </Button>
     </div>
   </Card>
+
+  <!-- Small modal for cancellation reason -->
+  <div
+    v-if="hienModalLyDoHuy"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-sm overflow-hidden rounded-[16px] bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h4 class="text-base font-bold text-slate-800">Lý do hủy đơn hàng</h4>
+        <button
+          @click="hienModalLyDoHuy = false"
+          class="text-slate-400 transition hover:text-slate-600"
+        >
+          <CircleX class="h-5 w-5" />
+        </button>
+      </div>
+      <div class="mt-4">
+        <textarea
+          v-model="lyDoHuy"
+          rows="3"
+          placeholder="Nhập lý do hủy đơn hàng..."
+          class="w-full rounded-[6px] border border-slate-200 bg-slate-50 p-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white resize-none"
+        ></textarea>
+      </div>
+      <div class="mt-6 flex gap-3">
+        <button
+          @click="hienModalLyDoHuy = false"
+          type="button"
+          class="flex-1 inline-flex h-9 items-center justify-center rounded-[6px] bg-slate-100 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition"
+        >
+          Quay lại
+        </button>
+        <button
+          @click="xacNhanHuy"
+          :disabled="!lyDoHuy.trim() || dangCapNhat"
+          type="button"
+          class="flex-1 inline-flex h-9 items-center justify-center rounded-[6px] bg-[#B82220] text-sm font-semibold text-white hover:bg-[#9f1d1b] transition disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          {{ dangCapNhat ? 'Đang hủy...' : 'Xác nhận hủy' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
