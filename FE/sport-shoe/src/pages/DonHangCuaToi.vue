@@ -124,7 +124,7 @@ const dsTrangThai = [
   { value: 3, label: "Đang giao hàng" },
   { value: 5, label: "Hoàn thành" },
   { value: 6, label: "Đã hủy" },
-  { value: "TRA_HANG", label: "Trả hàng/Hoàn tiền" },
+  { value: "TRA_HANG", label: "Hoàn tiền" },
 ];
 
 const trangThaiDangChon = ref("");

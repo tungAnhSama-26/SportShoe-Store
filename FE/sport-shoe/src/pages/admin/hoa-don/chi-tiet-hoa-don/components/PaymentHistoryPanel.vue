@@ -172,7 +172,7 @@ const {
       </template>
       In Hóa Đơn
     </Button>
-    <TaoPhieuTraHangModal v-if="laDonTaiQuay" :hoa-don="hoaDon" />
+    <!-- <TaoPhieuTraHangModal v-if="laDonTaiQuay" :hoa-don="hoaDon" /> -->
     <Button
       v-if="!donDaKetThuc"
       @click="moModalThongTin"

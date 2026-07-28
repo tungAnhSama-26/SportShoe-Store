@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed, watch, onUnmounted } from "vue";
-import { Printer, X, Sparkles, CheckCircle } from "lucide-vue-next";
+import { Printer, X, Sparkles, CheckCircle, QrCode } from "lucide-vue-next";
 import ghnLogo from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
+import { showWarning } from "../../../utils/alert";
+
 const props = defineProps({
   activePendingInvoice: {
     type: Object,
@@ -111,6 +113,14 @@ const props = defineProps({
     type: String,
     default: ""
   },
+  tienMatKetHop: {
+    type: String,
+    default: ""
+  },
+  tienChuyenKhoanKetHop: {
+    type: String,
+    default: ""
+  },
   paymentValidationMessage: {
     type: String,
     default: ""
@@ -168,6 +178,8 @@ const emit = defineEmits([
   "calculate-shipping",
   "update:paymentMethod",
   "amount-input",
+  "cash-split-input",
+  "transfer-split-input",
   "update:paymentNote",
   "print-invoice",
   "pay-now",
@@ -224,10 +236,42 @@ const sepayQrUrl = computed(() => {
   const bank = 'MB';
   const acc = '894932828';
   const prefix = 'SHOE';
-  const amount = Math.max(Number(props.khachCanTra) || 0, 0);
+  let amount = Math.max(Number(props.khachCanTra) || 0, 0);
+  if (props.paymentMethod === 5) {
+    const raw = String(props.tienChuyenKhoanKetHop || 0).replace(/\D/g, '');
+    amount = raw !== '' ? (Number(raw) || 0) : 0;
+  }
   const description = encodeURIComponent(`${prefix}${props.activePendingInvoice.maHoaDon}`);
   const accountName = encodeURIComponent('TRAN VU TUNG ANH');
   return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${accountName}`;
+});
+
+function handleQrClick() {
+  const cashNum = Number(String(props.tienMatKetHop || 0).replace(/\D/g, ''));
+  const transferNum = Number(String(props.tienChuyenKhoanKetHop || 0).replace(/\D/g, ''));
+  const needed = Number(props.khachCanTra) || 0;
+
+  if (props.paymentMethod === 5) {
+    if (cashNum >= needed && needed > 0) {
+      showWarning("Tiền mặt đã đủ số tiền cần trả. Số tiền chuyển khoản là 0đ, không cần quét QR!", "Thông báo");
+      return;
+    }
+    if (transferNum <= 0) {
+      showWarning("Số tiền chuyển khoản hiện tại là 0đ. Vui lòng nhập số tiền cần chuyển khoản!", "Thông báo");
+      return;
+    }
+  }
+  showLargeQr.value = true;
+}
+
+watch(() => props.tienMatKetHop, (val) => {
+  if (props.paymentMethod === 5) {
+    const cashNum = Number(String(val || 0).replace(/\D/g, ''));
+    const needed = Number(props.khachCanTra) || 0;
+    if (cashNum >= needed && needed > 0) {
+      showWarning(`Tiền mặt (${props.dinhDangTien(cashNum)}) đã đủ số tiền cần trả! Số tiền chuyển khoản tự động về 0đ.`, "Thông báo");
+    }
+  }
 });
 </script>
 
@@ -369,8 +413,8 @@ const sepayQrUrl = computed(() => {
         <!-- Shipping Section moved to BanHangShippingSection.vue -->
         <div>
           <p class="mb-1.5 text-sm text-slate-500 dark:text-slate-400">Hình thức thanh toán</p>
-          <div class="grid grid-cols-2 gap-x-6 gap-y-2">
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <div class="grid grid-cols-3 gap-x-2 gap-y-2">
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
               <input
                 :checked="paymentMethod === 1"
                 type="radio"
@@ -379,7 +423,7 @@ const sepayQrUrl = computed(() => {
               />
               <span>Tiền mặt</span>
             </label>
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
               <input
                 :checked="paymentMethod === 2"
                 type="radio"
@@ -388,8 +432,18 @@ const sepayQrUrl = computed(() => {
               />
               <span>Chuyển khoản</span>
             </label>
+            <label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <input
+                :checked="paymentMethod === 5"
+                type="radio"
+                class="h-4 w-4 accent-red-500"
+                @change="emit('update:paymentMethod', 5)"
+              />
+              <span>Kết hợp</span>
+            </label>
           </div>
         </div>
+
         <div v-if="paymentMethod === 1">
           <label class="mb-1.5 block text-sm text-slate-500 dark:text-slate-400">Khách thanh toán</label>
           <input
@@ -409,7 +463,45 @@ const sepayQrUrl = computed(() => {
           </p>
         </div>
 
-        <div v-if="paymentMethod === 1" class="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-2">
+        <div v-if="paymentMethod === 5" class="space-y-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-3">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Tiền mặt</label>
+            <input
+              :value="tienMatKetHop"
+              type="text"
+              inputmode="numeric"
+              placeholder="Nhập số tiền mặt..."
+              class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-red-300 dark:focus:border-red-500"
+              @input="emit('cash-split-input', $event.target.value)"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Chuyển khoản</label>
+            <div class="relative flex items-center">
+              <input
+                :value="tienChuyenKhoanKetHop"
+                type="text"
+                inputmode="numeric"
+                placeholder="Nhập số tiền chuyển khoản..."
+                class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-3 pr-10 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-red-300 dark:focus:border-red-500"
+                @input="emit('transfer-split-input', $event.target.value)"
+              />
+              <button
+                type="button"
+                class="absolute right-2 text-rose-500 hover:text-rose-600 transition p-1 rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/30 cursor-pointer flex items-center justify-center"
+                title="Bấm để quét/xem mã QR chuyển khoản VietQR"
+                @click="handleQrClick()"
+              >
+                <QrCode class="w-5 h-5 text-rose-500" />
+              </button>
+            </div>
+          </div>
+          <p v-if="paymentValidationMessage" class="text-xs font-medium text-rose-500">
+            {{ paymentValidationMessage }}
+          </p>
+        </div>
+
+        <div v-if="paymentMethod === 1 || paymentMethod === 5" class="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-2">
           <span class="text-sm text-slate-500 dark:text-slate-400">Tiền thừa trả khách</span>
           <span class="max-w-[65%] break-all text-right text-base font-bold text-slate-900 dark:text-slate-100">{{ dinhDangTien(tienThua) }}</span>
         </div>
@@ -422,7 +514,7 @@ const sepayQrUrl = computed(() => {
               alt="VietQR"
               class="h-40 w-40 cursor-pointer rounded-md border border-slate-100 object-contain transition hover:scale-105"
               title="Bấm để phóng to"
-              @click="showLargeQr = true"
+              @click="handleQrClick()"
             />
             <p class="mt-2 text-center text-xs text-slate-500">
               QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>

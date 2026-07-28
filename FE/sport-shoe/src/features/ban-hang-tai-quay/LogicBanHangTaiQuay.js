@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import {
   huyHoaDonCho,
   layChiTietHoaDonCho,
@@ -6,7 +7,8 @@ import {
   thanhToanTaiQuay,
   taoHoaDonCho,
   capNhatHoaDonCho,
-  timSanPhamTaiQuay
+  timSanPhamTaiQuay,
+  doiBienTheHoaDonChiTiet
 } from "../../services/ban-hang-tai-quay";
 import {
   KHACH_VANG_LAI,
@@ -20,7 +22,7 @@ import { LogicInHoaDon } from "./LogicInHoaDon";
 import { LogicThanhToan } from "./LogicThanhToan";
 import { LogicSanPham } from "./LogicSanPham";
 import { LogicGiaoHang } from "./LogicGiaoHang";
-import { showConfirm, showToastSuccess, showError, toastSwal, showPaymentConfirmWithCoupon } from "../../utils/alert";
+import { showConfirm, showToastSuccess, showError, showWarning, toastSwal, showPaymentConfirmWithCoupon } from "../../utils/alert";
 import { useRealtime } from "../../composables/useRealtime";
 
 
@@ -199,18 +201,23 @@ function LogicBanHangTaiQuay() {
     xoaPhanHoi
   });
 
+  const router = useRouter();
   const khachCanTra = computed(() => tongTienSauGiamHienThi.value + phiVanChuyenHienThi.value);
 
   const {
     phuongThucThanhToan,
     tienKhachDua,
+    tienMatKetHop,
+    tienChuyenKhoanKetHop,
     ghiChuThanhToan,
     tienKhachThanhToan,
     tienThua,
     thongBaoLoiThanhToan,
     capNhatTienKhachThanhToan,
     kiemTraLoiThanhToan,
-    xuLyTienKhachDuaInput
+    xuLyTienKhachDuaInput,
+    xuLyTienMatKetHopInput,
+    xuLyTienChuyenKhoanKetHopInput
   } = LogicThanhToan({
     cartItems,
     khachCanTra,
@@ -510,9 +517,73 @@ function LogicBanHangTaiQuay() {
     thongBaoThanhCong.value = "";
   });
 
+  const itemDangDoiBienThe = ref(null);
+
+  async function xuLyMoDoiBienTheInCart(item) {
+    itemDangDoiBienThe.value = item;
+    const products = await timSanPhamTaiQuay(item.maSanPham);
+    if (products && products.length > 0) {
+      moChiTietSanPham(products[0]);
+    }
+  }
+
+  async function xuLyDoiBienTheInCart(item, bienTheMoi) {
+    if (!bienTheMoi || !item) return;
+
+    const isDuplicate = cartItems.value.some(
+      (i) => Number(i.chiTietId) === Number(bienTheMoi.chiTietId)
+    );
+    if (isDuplicate) {
+      showError("Sản phẩm này đã có trong giỏ hàng", "Thông báo");
+      return;
+    }
+
+    const tenMoTa = `${bienTheMoi.tenSanPham || ''} (${bienTheMoi.mauSac || ''} - Size ${bienTheMoi.kichCo || ''})`;
+    const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn đổi sản phẩm sang "${tenMoTa}" không?`);
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      if (hoaDonChoDaChon.value?.id) {
+        const targetId = item.hoaDonChiTietId || item.id || item.chiTietId;
+        await doiBienTheHoaDonChiTiet(targetId, {
+          giayChiTietMoiId: bienTheMoi.chiTietId,
+          soLuong: item.soLuong
+        });
+        await taiDanhSachHoaDonCho();
+        const updatedDetail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
+        chuyenHoaDonThanhBanNhap(updatedDetail);
+      } else {
+        const index = cartItems.value.findIndex(i => (i.cartItemId || i.chiTietId) === (item.cartItemId || item.chiTietId));
+        if (index !== -1) {
+          cartItems.value[index] = {
+            ...cartItems.value[index],
+            chiTietId: bienTheMoi.chiTietId,
+            mauSac: bienTheMoi.mauSac || bienTheMoi.maBienThe,
+            kichCo: bienTheMoi.kichCo,
+            giaBan: bienTheMoi.giaBan,
+            hinhAnh: bienTheMoi.hinhAnh || cartItems.value[index].hinhAnh
+          };
+        }
+      }
+      showToastSuccess(`Đã đổi sản phẩm thành công!`);
+    } catch (e) {
+      showError(e instanceof Error ? e.message : "Không thể đổi biến thể");
+    } finally {
+      itemDangDoiBienThe.value = null;
+      dongChiTietSanPham();
+    }
+  }
+
   async function themBienTheDangChon() {
     if (!bienTheDaChon.value) {
       if (typeof thongBaoLoi !== 'undefined') thongBaoLoi.value = "Vui lòng chọn màu sắc và kích cỡ phù hợp";
+      return;
+    }
+    
+    if (itemDangDoiBienThe.value) {
+      await xuLyDoiBienTheInCart(itemDangDoiBienThe.value, bienTheDaChon.value);
       return;
     }
     
@@ -579,6 +650,7 @@ function LogicBanHangTaiQuay() {
       const thongTinSanPham = thongTinTheoChiTietId.get(item.chiTietId);
       return {
         cartItemId: Date.now().toString() + Math.random().toString(),
+        hoaDonChiTietId: item.hoaDonChiTietId || item.id || null,
         chiTietId: item.chiTietId,
         maSanPham: item.maSanPham,
         tenSanPham: item.tenSanPham,
@@ -933,13 +1005,19 @@ function LogicBanHangTaiQuay() {
         maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma ?? null,
         thongTinGiaoHang: taoPayloadGiaoHang(),
         hinhThucThanhToan: phuongThucThanhToan.value,
-        tienKhachDua: phuongThucThanhToan.value === 1 ? tienKhachThanhToan.value : khachCanTra.value,
+        tienKhachDua: phuongThucThanhToan.value === 1 ? tienKhachThanhToan.value : (phuongThucThanhToan.value === 5 ? tienKhachThanhToan.value : khachCanTra.value),
+        tienMat: phuongThucThanhToan.value === 5 ? (Number(tienMatKetHop.value.replace(/\D/g, '')) || 0) : null,
+        tienChuyenKhoan: phuongThucThanhToan.value === 5 ? (Number(tienChuyenKhoanKetHop.value.replace(/\D/g, '')) || 0) : null,
         ghiChu: ghiChuThanhToan.value,
         items: taoDanhSachSanPhamThanhToan()
       });
       thongBaoThanhCong.value = `Đã thanh toán ${response.maHoaDon}`;
       await taiDanhSachHoaDonCho();
+      const paidInvoiceId = response.hoaDonId || response.id;
       xoaBanNhap();
+      if (paidInvoiceId && router) {
+        router.push(`/admin/hoa-don/${paidInvoiceId}`);
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
       thongBaoLoi.value = msg;
@@ -1183,6 +1261,8 @@ function LogicBanHangTaiQuay() {
     thongTinGiaoHang,
     phuongThucThanhToan: phuongThucThanhToan,
     tienKhachDua: tienKhachDua,
+    tienMatKetHop,
+    tienChuyenKhoanKetHop,
     thongBaoLoiThanhToan: thongBaoLoiThanhToan,
     tienThua,
     ghiChuThanhToan: ghiChuThanhToan,
@@ -1207,7 +1287,10 @@ function LogicBanHangTaiQuay() {
     giamSoLuong,
     xoaSanPham,
     capNhatSoLuong,
-    dongChiTietSanPham,
+    dongChiTietSanPham: () => {
+      itemDangDoiBienThe.value = null;
+      dongChiTietSanPham();
+    },
     chonMauSac,
     chonKichCo,
     chonBienThe,
@@ -1216,6 +1299,9 @@ function LogicBanHangTaiQuay() {
     capNhatSoLuongChiTiet,
     themBienTheDangChon,
     themTrucTiepBienThe,
+    itemDangDoiBienThe,
+    xuLyMoDoiBienTheInCart,
+    xuLyDoiBienTheInCart,
     taiSanPham,
     xuLyQuetQrSanPham,
     xuLyKhiFocusPhieu: xuLyKhiFocusPhieu,
@@ -1226,6 +1312,8 @@ function LogicBanHangTaiQuay() {
     capNhatThongTinGiaoHang,
     xuLyTinhPhiVanChuyen,
     xuLyTienKhachDuaInput: xuLyTienKhachDuaInput,
+    xuLyTienMatKetHopInput,
+    xuLyTienChuyenKhoanKetHopInput,
     xuLyTaoHoaDonCho,
     xuLyTaoHoaDonChoMoi,
     xuLyThanhToanNgay,

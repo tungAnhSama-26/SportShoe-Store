@@ -25,7 +25,7 @@ public class OpenAiResponseHeaderExtractor {
 
     private static Duration getHeaderAsDuration(ResponseEntity<?> responseEntity, String headerName) {
         var headers = responseEntity.getHeaders();
-        if (headers.asMultiValueMap().containsKey(headerName)) {
+        if (headers.containsKey(headerName)) {
             List<String> values = headers.get(headerName);
             if (!CollectionUtils.isEmpty(values)) {
                 return DurationFormatter.TIME_UNIT.parse(values.get(0));
@@ -36,7 +36,7 @@ public class OpenAiResponseHeaderExtractor {
 
     private static Long getHeaderAsLong(ResponseEntity<?> responseEntity, String headerName) {
         var headers = responseEntity.getHeaders();
-        if (headers.asMultiValueMap().containsKey(headerName)) {
+        if (headers.containsKey(headerName)) {
             List<String> values = headers.get(headerName);
             if (!CollectionUtils.isEmpty(values)) {
                 return parseLong(headerName, values.get(0));

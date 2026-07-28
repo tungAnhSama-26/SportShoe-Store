@@ -219,7 +219,7 @@ public class ChatbotModelConfig {
         String activeGroqKey = groqKey;
 
         try {
-            java.io.File file = new java.io.File("data/chatbot-keys.json");
+            java.io.File file = com.example.server.core.admin.chatbot.controller.AdminChatbotController.resolveConfigFile();
             if (file.exists()) {
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(file);
@@ -241,18 +241,18 @@ public class ChatbotModelConfig {
         }
 
         List<ChatModel> models = new ArrayList<>();
+        if (isValidKey(activeGroqKey)) {
+            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", context));
+        }
+        if (isValidKey(activeGeminiKey)) {
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash", "Gemini", context));
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash-lite", "Gemini-Lite-DuPhong", context));
+        }
         if (isValidKey(activeOpenAiKey)) {
             models.add(createModel(activeOpenAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", context));
         }
-        if (isValidKey(activeGeminiKey)) {
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-3.5-flash", "Gemini", context));
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.5-flash", "Gemini-2.5-DuPhong", context));
-        }
         if (isValidKey(activeDeepseekKey)) {
             models.add(createModel(activeDeepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", context));
-        }
-        if (isValidKey(activeGroqKey)) {
-            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", context));
         }
 
         if (models.isEmpty()) {
@@ -349,7 +349,7 @@ public class ChatbotModelConfig {
 
         public boolean containsKey(Object key) {
             if (key instanceof String) {
-                return this.containsHeader((String) key);
+                return super.containsKey(key);
             }
             return false;
         }

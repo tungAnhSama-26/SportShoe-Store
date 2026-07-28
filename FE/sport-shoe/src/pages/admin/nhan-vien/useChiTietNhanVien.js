@@ -19,6 +19,7 @@ import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import {
   isValidEmail,
   isValidVnPhone,
+  validateAddress,
   validateFullName,
 } from "../../../utils/validation";
 
@@ -195,6 +196,7 @@ export function useChiTietNhanVien() {
     hoTen: "",
     email: "",
     sdt: "",
+    diaChiCuThe: "",
     ngaySinh: "",
     hinhAnh: "",
   });
@@ -513,7 +515,7 @@ export function useChiTietNhanVien() {
   }
 
   async function luu() {
-    loiForm.value = { hoTen: "", email: "", sdt: "", ngaySinh: "", hinhAnh: "" };
+    loiForm.value = { hoTen: "", email: "", sdt: "", diaChiCuThe: "", ngaySinh: "", hinhAnh: "" };
     let hasError = false;
 
     const loiHoTen = validateFullName(form.value.hoTen, "Họ và tên nhân viên");
@@ -539,7 +541,13 @@ export function useChiTietNhanVien() {
 
     if (!isValidVnPhone(form.value.sdt)) {
       loiForm.value.sdt =
-        "Số điện thoại không đúng định dạng (VD: 0901234567).";
+        "Số điện thoại phải bắt đầu bằng 03, 05, 07, 08 hoặc 09 và có đúng 10 chữ số.";
+      hasError = true;
+    }
+
+    const loiDiaChi = validateAddress(form.value.diaChiCuThe, "Địa chỉ");
+    if (loiDiaChi) {
+      loiForm.value.diaChiCuThe = loiDiaChi;
       hasError = true;
     }
 

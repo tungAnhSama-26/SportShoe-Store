@@ -12,3 +12,10 @@ node_modules/
 BE/server/uploads
 AGENTS.md
 
+
+### Claude Code (ca nhan - khong commit)
+.claude/
+CLAUDE.md
+
+### Chatbot Keys (chua API key ca nhan - khong commit)
+BE/server/data/chatbot-keys.json

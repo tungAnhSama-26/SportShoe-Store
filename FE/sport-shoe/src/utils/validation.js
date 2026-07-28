@@ -1,12 +1,12 @@
 // Các hàm/biểu thức kiểm tra dữ liệu dùng chung cho toàn ứng dụng.
 
-// Số điện thoại di động Việt Nam: bắt đầu bằng 0 hoặc +84,
-// đầu số 3/5/7/8/9, tổng cộng 10 chữ số (sau +84 là 9 chữ số).
-export const VN_PHONE_REGEX = /^(0|\+84)[35789]\d{8}$/;
+// Số điện thoại di động Việt Nam: bắt đầu bằng 03/05/07/08/09 và có đúng 10 chữ số.
+export const VN_PHONE_REGEX = /^0[35789]\d{8}$/;
 
 // Email cơ bản: có ký tự trước @, sau @ và phần đuôi .xxx
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const FULL_NAME_REGEX = /^\p{L}+(?: \p{L}+)*$/u;
+export const ADDRESS_REGEX = /^[\p{L}0-9]+(?:[ \-.,/]+[\p{L}0-9]+)*$/u;
 
 export function isValidVnPhone(value) {
   return VN_PHONE_REGEX.test(String(value ?? "").trim());
@@ -26,6 +26,20 @@ export function validateFullName(value, label = "Họ tên") {
   if (trimmed.length >= 100) return `${label} phải nhỏ hơn 100 ký tự.`;
   if (!FULL_NAME_REGEX.test(trimmed)) {
     return `${label} chỉ được chứa chữ cái và khoảng trắng, không chứa ký tự đặc biệt.`;
+  }
+
+  return "";
+}
+
+export function validateAddress(value, label = "Địa chỉ") {
+  const raw = String(value ?? "");
+  const trimmed = raw.trim();
+
+  if (!trimmed) return "";
+  if (raw !== trimmed) return `${label} không được có khoảng trắng ở đầu hoặc cuối.`;
+  if (trimmed.length < 2 || trimmed.length > 70) return `${label} phải từ 2 đến 70 ký tự.`;
+  if (!ADDRESS_REGEX.test(trimmed)) {
+    return `${label} chỉ được chứa chữ, số, khoảng trắng và các ký tự hợp lệ như -, ., ,, /.`;
   }
 
   return "";

@@ -290,6 +290,7 @@ onUnmounted(() => {
         <router-link :to="{ path: '/', hash: '#gia-tri' }" class="shrink-0 transition hover:text-primary">Giới thiệu</router-link>
         <router-link :to="{ path: '/khachhang/tra-cuu-don' }" class="shrink-0 transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link :to="{ path: '/khachhang/danh-gia' }" class="shrink-0 transition hover:text-primary">Đánh giá</router-link>
+        <router-link :to="{ path: '/khachhang/goi-y' }" class="shrink-0 transition hover:text-primary">Gợi ý giày</router-link>
       </nav>
 
       <!-- Desktop Actions -->
@@ -481,6 +482,7 @@ onUnmounted(() => {
         <router-link :to="{ path: '/', hash: '#gia-tri' }" @click="toggleMenu" class="transition hover:text-primary">Giới thiệu</router-link>
         <router-link to="/khachhang/tra-cuu-don" @click="toggleMenu" class="transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link to="/khachhang/danh-gia" @click="toggleMenu" class="transition hover:text-primary">Đánh giá</router-link>
+        <router-link to="/khachhang/goi-y" @click="toggleMenu" class="transition hover:text-primary">Gợi ý giày</router-link>
         <router-link to="/khachhang/gio-hang" @click="toggleMenu" class="transition hover:text-primary">Giỏ hàng</router-link>
         <template v-if="daDangNhap">
           <router-link to="/khachhang/profile" @click="toggleMenu" class="transition hover:text-primary">Hồ sơ của bạn</router-link>

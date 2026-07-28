@@ -1,5 +1,6 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
+import com.example.server.core.admin.banHangTaiQuay.dto.request.DoiBienTheTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTietResponse;
 import com.example.server.entity.GiayChiTiet;
@@ -43,6 +44,7 @@ public class HoaDonChoTaiQuayService {
     private final HoaDonTaiQuayService invoiceUseCase;
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
     private final TonKhoTaiQuayService inventoryUseCase;
+    private final SanPhamTaiQuayService productUseCase;
 
     public HoaDonChoTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -53,7 +55,8 @@ public class HoaDonChoTaiQuayService {
             TrangThaiHoaDonTaiQuayService invoiceStateUseCase,
             HoaDonTaiQuayService invoiceUseCase,
             PhieuGiamGiaTaiQuayService voucherUseCase,
-            TonKhoTaiQuayService inventoryUseCase
+            TonKhoTaiQuayService inventoryUseCase,
+            SanPhamTaiQuayService productUseCase
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -64,6 +67,7 @@ public class HoaDonChoTaiQuayService {
         this.invoiceUseCase = invoiceUseCase;
         this.voucherUseCase = voucherUseCase;
         this.inventoryUseCase = inventoryUseCase;
+        this.productUseCase = productUseCase;
     }
 
     @Transactional
@@ -207,6 +211,66 @@ public class HoaDonChoTaiQuayService {
         invoiceUseCase.dongBoVanChuyen(savedHoaDon, request.thongTinGiaoHang());
 
         return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, chiTietCanLuu, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
+    }
+
+    @Transactional
+    public HoaDonChoChiTietResponse doiBienThe(Integer hoaDonChiTietId, DoiBienTheTaiQuayRequest request) {
+        HoaDonChiTiet oldItem = hoaDonChiTietRepository.findById(hoaDonChiTietId)
+                .filter(h -> invoiceStateUseCase.trangThaiHoaDonCho(h.getHoaDon().getTrangThai()))
+                .orElseGet(() -> hoaDonChiTietRepository.findAll().stream()
+                        .filter(h -> invoiceStateUseCase.trangThaiHoaDonCho(h.getHoaDon().getTrangThai()) &&
+                                (h.getId().equals(hoaDonChiTietId) || h.getGiayChiTiet().getId().equals(hoaDonChiTietId)))
+                        .findFirst()
+                        .orElse(null));
+
+        if (oldItem == null) {
+            throw new BusinessException("Hóa đơn chi tiết không tồn tại hoặc không còn ở trạng thái chờ");
+        }
+
+        HoaDon hoaDon = oldItem.getHoaDon();
+
+        List<HoaDonChiTiet> existingItems = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+        for (HoaDonChiTiet existingItem : existingItems) {
+            if (existingItem.getGiayChiTiet().getId().equals(request.giayChiTietMoiId())) {
+                throw new BusinessException("Sản phẩm này đã có trong giỏ hàng");
+            }
+        }
+
+        GiayChiTiet bienTheMoi = giayChiTietRepository.findById(request.giayChiTietMoiId())
+                .orElseThrow(() -> new ResourceNotFoundException("Biến thể mới không tồn tại"));
+
+        int soLuong = (request.soLuong() != null && request.soLuong() > 0) ? request.soLuong() : oldItem.getSoLuong();
+
+        // Stock adjustment: restore old, deduct new
+        inventoryUseCase.restoreStock(oldItem.getGiayChiTiet(), oldItem.getSoLuong());
+        inventoryUseCase.deductStock(bienTheMoi, soLuong, false);
+
+        giayChiTietRepository.save(oldItem.getGiayChiTiet());
+        giayChiTietRepository.save(bienTheMoi);
+
+        oldItem.setGiayChiTiet(bienTheMoi);
+        oldItem.setSoLuong(soLuong);
+        BigDecimal giaBan = productUseCase.layGiaBanThucTe(bienTheMoi);
+        oldItem.setGiaDonVi(giaBan);
+        oldItem.setThanhTien(giaBan.multiply(BigDecimal.valueOf(soLuong)));
+        hoaDonChiTietRepository.save(oldItem);
+
+        List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+        BigDecimal tongTienHang = items.stream()
+                .map(HoaDonChiTiet::getThanhTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        hoaDon.setTongTienHang(tongTienHang);
+        hoaDon.setTongTienThanhToan(tongTienHang);
+        if (hoaDon.getPhieuGiamGia() != null) {
+            voucherUseCase.giaiPhongPhieuGiamGia(hoaDon.getPhieuGiamGia(), hoaDon.getKhachHang());
+            voucherUseCase.ganPhieuGiamGiaChoHoaDon(hoaDon, hoaDon.getPhieuGiamGia().getMa(), hoaDon.getKhachHang(), tongTienHang);
+        }
+
+        hoaDon.setNgayCapNhat(Instant.now());
+        HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
+
+        return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, items, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
     }
 
     @Transactional

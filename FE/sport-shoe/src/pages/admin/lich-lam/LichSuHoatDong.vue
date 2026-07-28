@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
-import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut } from "lucide-vue-next";
+import { ref, onMounted, watch } from "vue";
+import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw } from "lucide-vue-next";
 import { layLichSuGiaoCa } from "../../../services/giao-ca.js";
 import { dinhDangTienViet } from "../../../utils/dinhDangTien.js";
 import { showError } from "../../../utils/alert.js";
 import { getDisplayErrorMessage } from "../../../utils/error-message.js";
+import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 
 // Trạng thái chung
 const dangTai = ref(false);
@@ -18,6 +19,7 @@ const searchQuery = ref("");
 // Pagination
 const currentPage = ref(0);
 const pageSize = ref(10);
+const pageSizeOptions = [5, 10, 20, 50];
 const totalElements = ref(0);
 const totalPages = ref(1);
 
@@ -36,7 +38,11 @@ const fetchLichSu = async () => {
     
     const response = await layLichSuGiaoCa(filters);
     
-    if (response) {
+    if (Array.isArray(response)) {
+      danhSachLichSu.value = response;
+      totalElements.value = response.length;
+      totalPages.value = Math.ceil(response.length / pageSize.value) || 1;
+    } else if (response) {
       // Giả định backend trả về object phân trang chuẩn: { content, totalElements, totalPages }
       danhSachLichSu.value = response.content || response.data || [];
       totalElements.value = response.totalElements || danhSachLichSu.value.length;
@@ -57,11 +63,15 @@ const handleRefresh = () => {
   fetchLichSu();
 };
 
-const changePage = (newPage) => {
-  if (newPage >= 0 && newPage < totalPages.value) {
-    currentPage.value = newPage;
-    fetchLichSu();
-  }
+const handlePageChange = (newPage) => {
+  currentPage.value = newPage;
+  fetchLichSu();
+};
+
+const handlePageSizeChange = (newSize) => {
+  pageSize.value = newSize;
+  currentPage.value = 0;
+  fetchLichSu();
 };
 
 watch([tuNgay, denNgay], () => {
@@ -248,14 +258,14 @@ const onSearchInput = () => {
         </div>
       </div>
 
-      <!-- Nút Tải lại -->
+      <!-- Nút đặt lại bộ lọc -->
       <div class="w-full md:w-auto">
         <button 
           @click="handleRefresh"
           class="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg transition-all"
         >
-          <RefreshCw class="w-4 h-4" :class="dangTai ? 'animate-spin text-rose-500' : ''" />
-          Tải lại
+          <RotateCcw class="w-4 h-4" />
+          Đặt lại bộ lọc
         </button>
       </div>
 
@@ -265,7 +275,12 @@ const onSearchInput = () => {
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
       <!-- Table Header -->
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="text-base font-bold text-slate-800">Danh sách hoạt động</h2>
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/5 text-primary">
+            <ListChecks class="h-5 w-5" />
+          </div>
+          <h2 class="admin-section-title">Danh sách hoạt động</h2>
+        </div>
         <button 
           @click="fetchLichSu"
           class="h-8 w-8 rounded-full border border-slate-100 bg-white hover:bg-emerald-50 text-emerald-500 hover:text-emerald-600 flex items-center justify-center transition-all hover:scale-105 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-emerald-950/30"
@@ -395,41 +410,20 @@ const onSearchInput = () => {
         </table>
       </div>
 
-      <!-- Phân trang -->
-      <div v-if="totalPages > 1" class="border-t border-slate-100 p-4 flex items-center justify-between">
-        <span class="text-sm text-slate-500">
-          Hiển thị trang <span class="font-bold text-slate-700">{{ currentPage + 1 }}</span> / {{ totalPages }}
-        </span>
-        <div class="flex items-center gap-1">
-          <button 
-            @click="changePage(currentPage - 1)" 
-            :disabled="currentPage === 0"
-            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 transition-colors"
-          >
-            Trang trước
-          </button>
-          <div class="flex items-center gap-1 px-2">
-            <template v-for="page in totalPages" :key="page">
-              <button 
-                v-if="page - 1 === currentPage || page - 1 === 0 || page - 1 === totalPages - 1 || (page - 1 >= currentPage - 1 && page - 1 <= currentPage + 1)"
-                @click="changePage(page - 1)"
-                class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors"
-                :class="page - 1 === currentPage ? 'bg-rose-500 text-white shadow-sm' : 'hover:bg-slate-100 text-slate-600'"
-              >
-                {{ page }}
-              </button>
-              <span v-else-if="page - 1 === currentPage - 2 || page - 1 === currentPage + 2" class="px-1 text-slate-400">...</span>
-            </template>
-          </div>
-          <button 
-            @click="changePage(currentPage + 1)" 
-            :disabled="currentPage === totalPages - 1"
-            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 transition-colors"
-          >
-            Trang sau
-          </button>
-        </div>
-      </div>
+      <AdminTableFooter
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-size-options="pageSizeOptions"
+        :total-items="totalElements"
+        :total-pages="totalPages"
+        zero-based
+        compact
+        no-margin
+        show-refresh
+        @refresh="fetchLichSu"
+        @update:current-page="handlePageChange"
+        @update:page-size="handlePageSizeChange"
+      />
     </div>
   </div>
 </template>
