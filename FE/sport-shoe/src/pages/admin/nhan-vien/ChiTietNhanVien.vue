@@ -1,11 +1,9 @@
 <script setup>
 import { ref } from "vue";
 import { useChiTietNhanVien } from "./useChiTietNhanVien";
-import { Lock, MapPin, User, ScanFace } from "lucide-vue-next";
+import { Lock, MapPin, User } from "lucide-vue-next";
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
-import FaceIdModal from "./components/FaceIdModal.vue";
-import { capNhatFaceId } from "../../../services/nhan-vien";
 import { showSuccess, showError } from "../../../utils/alert";
 
 const { nextTick, onMounted, onUnmounted, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
@@ -17,26 +15,6 @@ function taoChuCaiDaiDien(value) {
     .slice(-2)
     .map((word) => word.charAt(0).toUpperCase())
     .join("") || "NV";
-}
-
-const showFaceIdModal = ref(false);
-
-async function handleSaveFaceId(descriptorString) {
-  if (laMoi) {
-    form.value.faceDescriptor = descriptorString;
-    showSuccess("Đã lưu tạm dữ liệu Face ID! Dữ liệu sẽ chính thức được lưu khi bạn bấm Tạo nhân viên.", "Thành công");
-    return;
-  }
-  dangLuu.value = true;
-  try {
-    const updated = await capNhatFaceId(id, descriptorString);
-    nhanVien.value = updated;
-    showSuccess("Lưu dữ liệu Face ID thành công!", "Thành công");
-  } catch (error) {
-    showError("Lỗi khi lưu Face ID: " + error.message);
-  } finally {
-    dangLuu.value = false;
-  }
 }
 </script>
 
@@ -114,14 +92,7 @@ async function handleSaveFaceId(descriptorString) {
             <p v-else class="mt-3 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
           </Card>
 
-          <Card class="!bg-white shadow-sm space-y-2">
-             <h3 class="mb-1 text-sm font-bold text-slate-800">Dữ liệu khuôn mặt (Face ID)</h3>
-             <p class="text-xs text-slate-500 mb-3">Dùng để nhân viên điểm danh (Check-in).</p>
-             <Button variant="outline" class="w-full justify-center gap-2" @click="showFaceIdModal = true">
-                <ScanFace class="h-4 w-4 text-primary" />
-                {{ (laMoi ? form.faceDescriptor : nhanVien?.faceDescriptor) ? 'Cập nhật lại Face ID' : 'Đăng ký Face ID' }}
-             </Button>
-          </Card>
+
 
           <template v-if="!laMoi">
             <Card class="!bg-white shadow-sm">
@@ -411,13 +382,7 @@ async function handleSaveFaceId(descriptorString) {
       </div>
     </template>
 
-    <FaceIdModal 
-      :show="showFaceIdModal" 
-      :employee-name="form.hoTen || 'Nhân viên mới'"
-      :has-existing-face-id="!!(laMoi ? form.faceDescriptor : nhanVien?.faceDescriptor)"
-      @close="showFaceIdModal = false" 
-      @saved="handleSaveFaceId" 
-    />
+
   </div>
 </template>
 
