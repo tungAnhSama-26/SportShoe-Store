@@ -38,6 +38,15 @@ const formatToLocalDateString = (dateStr) => {
 
 const router = useRouter();
 
+const todayStr = computed(() => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const date = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+});
+let timer = null;
+
 const dangTai = ref(false);
 const loiTrang = ref("");
 const boLoc = ref({ keyword: "", trangThai: "", tuNgay: "", denNgay: "" });
@@ -401,7 +410,7 @@ onMounted(() => {
               <input
                 v-model="boLoc.keyword"
                 type="text"
-                placeholder="Mã, tên..."
+                placeholder="Mã, tên, giá trị..."
                 class="admin-field h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
               />
             </div>
