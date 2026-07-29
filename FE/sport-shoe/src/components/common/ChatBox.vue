@@ -30,11 +30,56 @@ const sessionId = ref(null);
 function parseMessage(text) {
   if (!text) return [];
   const segments = [];
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const blockRegex = /```(product)([\s\S]*?)```/g;
   let lastIndex = 0;
   let match;
 
-  while ((match = linkRegex.exec(text)) !== null) {
+  const hasProductBlock = text.includes("```product");
+
+  while ((match = blockRegex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    if (matchIndex > lastIndex) {
+      const rawText = text.substring(lastIndex, matchIndex);
+      if (!hasProductBlock) {
+        segments.push(...parseLinksAndImages(rawText));
+      } else {
+        const cleanedText = rawText.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "");
+        segments.push(...parseLinksAndImages(cleanedText));
+      }
+    }
+    const blockType = match[1].trim();
+    const content = match[2].trim();
+    if (blockType === "product") {
+      try {
+        const productJson = JSON.parse(content);
+        segments.push({ type: "product", productData: productJson });
+      } catch (e) {
+        console.error("Lỗi parse product JSON:", e);
+      }
+    }
+    lastIndex = blockRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    const rawText = text.substring(lastIndex);
+    if (!hasProductBlock) {
+      segments.push(...parseLinksAndImages(rawText));
+    } else {
+      const cleanedText = rawText.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "");
+      segments.push(...parseLinksAndImages(cleanedText));
+    }
+  }
+
+  return segments;
+}
+
+function parseLinksAndImages(text) {
+  const segments = [];
+  const regex = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
     const matchIndex = match.index;
     if (matchIndex > lastIndex) {
       segments.push({
@@ -42,13 +87,22 @@ function parseMessage(text) {
         content: text.substring(lastIndex, matchIndex)
       });
     }
-    const linkText = match[1].replace(/\*\*/g, "");
-    segments.push({
-      type: "link",
-      text: linkText,
-      url: match[2]
-    });
-    lastIndex = linkRegex.lastIndex;
+
+    if (match[0].startsWith("!")) {
+      segments.push({
+        type: "image",
+        alt: match[1],
+        url: match[2]
+      });
+    } else {
+      const linkText = match[3].replace(/\*\*/g, "");
+      segments.push({
+        type: "link",
+        text: linkText,
+        url: match[4]
+      });
+    }
+    lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < text.length) {
@@ -717,6 +771,58 @@ function toggleChatWithDragCheck() {
                 <template v-for="(seg, idx) in parseMessage(msg.noiDung)" :key="idx">
                   <span v-if="seg.type === 'text'" v-html="renderText(seg.content)"></span>
                   
+                  <!-- Markdown Image -->
+                  <div
+                    v-else-if="seg.type === 'image'"
+                    class="my-2.5 overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-700/60 bg-white dark:bg-slate-800 shadow-sm"
+                  >
+                    <img 
+                      :src="seg.url" 
+                      :alt="seg.alt || 'Sản phẩm'" 
+                      class="max-h-48 w-full object-cover rounded-2xl hover:scale-105 transition duration-300 cursor-pointer"
+                      @click="handleNavigate('/khachhang/san-pham')"
+                    />
+                  </div>
+
+                  <!-- Product Codeblock Card -->
+                  <div
+                    v-else-if="seg.type === 'product'"
+                    class="mt-2 w-full max-w-full"
+                  >
+                    <div 
+                      @click="handleNavigate(seg.productData.url || '/khachhang/san-pham')"
+                      class="flex gap-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-2.5 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-md cursor-pointer transition-all relative overflow-hidden group w-full"
+                    >
+                      <div class="h-16 w-16 rounded-xl overflow-hidden shrink-0 bg-slate-50 relative">
+                        <img 
+                          :src="seg.productData.image || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80'" 
+                          alt="Product"
+                          class="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                      </div>
+                      <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <h6 class="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
+                          {{ seg.productData.name }}
+                        </h6>
+                        <div class="mt-1 flex items-baseline gap-1.5 flex-wrap">
+                          <span class="text-xs font-extrabold text-primary">
+                            {{ seg.productData.price ? dinhDangTienViet(seg.productData.price) : '' }}
+                          </span>
+                          <span 
+                            v-if="seg.productData.originalPrice && seg.productData.originalPrice > seg.productData.price"
+                            class="text-[10px] text-slate-400 dark:text-slate-500 line-through"
+                          >
+                            {{ dinhDangTienViet(seg.productData.originalPrice) }}
+                          </span>
+                        </div>
+                        <div v-if="seg.productData.size || seg.productData.color" class="text-[10px] text-slate-500 mt-0.5">
+                          <span v-if="seg.productData.size">Size: {{ seg.productData.size }}</span>
+                          <span v-if="seg.productData.color" class="ml-2">Màu: {{ seg.productData.color }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div 
                     v-else-if="seg.type === 'link' && (seg.url.includes('/san-pham/') || seg.url.includes('/product/'))"
                     class="mt-2 w-full max-w-full"
