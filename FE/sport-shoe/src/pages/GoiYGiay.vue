@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, ArrowRight, Check, Crown, ImagePlus, Loader2, RotateCcw, Sparkles, X } from 'lucide-vue-next';
+import { ArrowLeft, ArrowRight, Check, Crown, Footprints, Loader2, RotateCcw, ScanLine, Sparkles, X } from 'lucide-vue-next';
 import { layCauHoiGoiY, layGoiYGiay } from '../services/goi-y';
 import { resolveMediaUrl } from '../utils/media';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
@@ -15,10 +15,10 @@ const dsCauHoi = ref([]);
 const dangTaiCauHoi = ref(true);
 const daChon = ref({});          // { [maCauHoi]: string[] } - mỗi câu chọn được NHIỀU đáp án
 
-// Bước hiện tại: 0..(n-1) là câu hỏi, n là bước gửi ảnh (bước cuối).
+// Bước hiện tại: 0..(n-1) là câu hỏi, n là bước quét form bàn chân (bước cuối).
 const buoc = ref(0);
 
-const anhOutfit = ref('');
+const anhChan = ref('');
 const tenAnh = ref('');
 const oChonAnh = ref(null);
 
@@ -113,14 +113,14 @@ function chonAnh(e) {
   }
   const reader = new FileReader();
   reader.onload = () => {
-    anhOutfit.value = String(reader.result || '');
+    anhChan.value = String(reader.result || '');
     tenAnh.value = file.name;
   };
   reader.readAsDataURL(file);
 }
 
 function xoaAnh() {
-  anhOutfit.value = '';
+  anhChan.value = '';
   tenAnh.value = '';
   if (oChonAnh.value) oChonAnh.value.value = '';
 }
@@ -133,7 +133,7 @@ async function guiGoiY() {
     const traLoi = Object.entries(daChon.value)
       .filter(([, v]) => v && v.length)
       .map(([ma, v]) => ({ ma, daChon: v }));
-    ketQua.value = await layGoiYGiay({ traLoi, anhOutfit: anhOutfit.value });
+    ketQua.value = await layGoiYGiay({ traLoi, anhChan: anhChan.value });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'AI chưa gợi ý được, thử lại nhé'));
@@ -258,15 +258,22 @@ function anhLoi(e) {
           </div>
         </section>
 
-        <!-- Bước cuối: gửi ảnh outfit -->
+        <!-- Bước cuối: quét form bàn chân -->
         <section v-else class="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-7">
-          <h2 class="text-lg font-bold text-slate-800">Ảnh outfit của bạn</h2>
+          <h2 class="flex items-center gap-2 text-lg font-bold text-slate-800">
+            <ScanLine class="h-5 w-5 text-primary" /> Quét bàn chân để gợi ý size
+          </h2>
+          <p class="mt-1 text-xs text-slate-400">
+            Không bắt buộc — chụp/tải ảnh bàn chân (nhìn từ trên xuống) để AI <b>ước lượng size</b>
+            và đánh giá form chân (bè hay thon, vòm cao hay thấp...) rồi chọn giày vừa vặn hơn.
+            Bỏ qua cũng được, khi đó sẽ gợi ý cho mọi size.
+          </p>
 
           <div class="mt-5">
             <input ref="oChonAnh" type="file" accept="image/*" class="hidden" @change="chonAnh" />
 
-            <div v-if="anhOutfit" class="flex items-center gap-4">
-              <img :src="anhOutfit" alt="Ảnh outfit" class="h-32 w-32 rounded-2xl object-cover ring-1 ring-slate-200" />
+            <div v-if="anhChan" class="flex items-center gap-4">
+              <img :src="anhChan" alt="Ảnh bàn chân" class="h-32 w-32 rounded-2xl object-cover ring-1 ring-slate-200" />
               <div class="min-w-0">
                 <p class="truncate text-sm font-medium text-slate-700">{{ tenAnh }}</p>
                 <button type="button" @click="xoaAnh" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-rose-500 hover:text-rose-600">
@@ -279,9 +286,11 @@ function anhLoi(e) {
               v-else
               type="button"
               @click="oChonAnh?.click()"
-              class="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm font-semibold text-slate-500 transition hover:border-primary/40 hover:text-primary"
+              class="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm font-semibold text-slate-500 transition hover:border-primary/40 hover:text-primary"
             >
-              <ImagePlus class="h-5 w-5" /> Chọn ảnh từ máy
+              <Footprints class="h-7 w-7" />
+              Quét / chụp bàn chân
+              <span class="text-xs font-normal text-slate-400">Chụp thẳng từ trên xuống, đủ sáng, thấy rõ cả bàn chân</span>
             </button>
           </div>
         </section>
@@ -328,8 +337,13 @@ function anhLoi(e) {
             <Sparkles class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div class="min-w-0 space-y-2">
               <p class="text-sm leading-relaxed text-slate-700">{{ ketQua.loiKhuyen }}</p>
-              <p v-if="ketQua.nhanXetOutfit" class="rounded-2xl bg-white/70 px-3 py-2 text-sm leading-relaxed text-slate-600">
-                <span class="font-semibold text-slate-700">Về outfit của bạn: </span>{{ ketQua.nhanXetOutfit }}
+              <p v-if="ketQua.sizeGoiY" class="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-white">
+                Size gợi ý từ ảnh: {{ ketQua.sizeGoiY }}
+                <span class="text-[10px] font-medium opacity-80">(ước lượng, bạn kiểm lại nhé)</span>
+              </p>
+              <p v-if="ketQua.danhGiaChan" class="flex gap-2 rounded-2xl bg-white/70 px-3 py-2 text-sm leading-relaxed text-slate-600">
+                <Footprints class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span><span class="font-semibold text-slate-700">Đánh giá form chân của bạn: </span>{{ ketQua.danhGiaChan }}</span>
               </p>
             </div>
           </div>
