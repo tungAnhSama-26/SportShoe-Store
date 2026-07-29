@@ -280,10 +280,19 @@ public class PhieuGiamGiaService {
                 && request.getNgayKetThuc().isBefore(request.getNgayBatDau())) {
             errors.put("ngayKetThuc", "Ngày kết thúc không được trước ngày bắt đầu");
         }
+        java.math.BigDecimal maxDiscountLimit = java.math.BigDecimal.valueOf(100000000);
+        if (request.getGiamToiDa() != null && request.getGiamToiDa().compareTo(maxDiscountLimit) > 0) {
+            errors.put("giamToiDa", "Mức giảm tối đa không được vượt quá 100.000.000 VNĐ");
+        }
         if (Integer.valueOf(1).equals(request.getLoai())
                 && request.getGiaTri() != null
                 && request.getGiaTri().compareTo(java.math.BigDecimal.valueOf(100)) > 0) {
             errors.put("giaTri", "Phần trăm giảm không được vượt quá 100%");
+        }
+        if (Integer.valueOf(2).equals(request.getLoai())
+                && request.getGiaTri() != null
+                && request.getGiaTri().compareTo(maxDiscountLimit) > 0) {
+            errors.put("giaTri", "Giá trị giảm không được vượt quá 100.000.000 VNĐ");
         }
         if (Integer.valueOf(2).equals(request.getLoai())
                 && request.getGiaTriToiThieu() != null
