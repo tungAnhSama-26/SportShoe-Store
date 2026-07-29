@@ -5,15 +5,26 @@ import com.example.server.core.client.goiy.dto.GoiYDtos.GoiYRequest;
 import com.example.server.core.client.goiy.dto.GoiYDtos.GoiYResponse;
 import com.example.server.core.client.goiy.dto.GoiYDtos.SanPhamGoiYResponse;
 import com.example.server.core.client.goiy.dto.GoiYDtos.TraLoiRequest;
+import com.example.server.entity.LoaiGiay;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.HinhAnhGiayRepository;
+import com.example.server.repository.LoaiGiayRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.ObjectProvider;
@@ -24,21 +35,50 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 /**
- * Gợi ý giày cho khách bằng AI: khách trả lời 5 câu trắc nghiệm (chọn nhiều đáp án),
- * kèm ảnh outfit không bắt buộc. AI chỉ được chọn trong danh sách sản phẩm đang bán
- * do BE cung cấp nên không thể bịa ra giày không có thật.
+ * Gợi ý giày (HYBRID, KẾT QUẢ ỔN ĐỊNH): CODE chấm điểm các tiêu chí khách quan (mục đích,
+ * phong cách, màu, ưu tiên êm/nhẹ/bền, ngân sách) dựa trên thuộc tính thật, rồi CODE tự lấy
+ * top sản phẩm theo điểm -> cùng câu trả lời luôn cho ra CÙNG sản phẩm, cùng thứ tự (không
+ * để AI chọn nên không bị ngẫu nhiên). Loại giày được AI phân loại 1 lần rồi cache ở DB.
+ * AI chỉ còn dùng cho phần NHẬN XÉT ảnh form chân (temperature=0), không ảnh hưởng sản phẩm.
  */
 @Service
 public class ClientGoiYService {
 
-    /** Hạn mức token phải để rộng: gemini-2.5-flash tiêu token cho phần "suy nghĩ" ngầm,
-     *  để thấp sẽ trả về nội dung RỖNG (finish_reason=length). */
+    /** Token phải để rộng: gemini-2.5-flash tốn token cho phần "suy nghĩ" ngầm; thấp quá -> nội dung RỖNG. */
     private static final int GIOI_HAN_TOKEN = 2500;
-    private static final int SO_SAN_PHAM_UNG_VIEN = 45;
-    private static final int SO_SAN_PHAM_GOI_Y = 4;
+    private static final int SO_UNG_VIEN = 60;
+    private static final int SO_SAN_PHAM_GOI_Y = 4;   // số đôi gợi ý cuối cùng
 
-    /** Mã câu hỏi kích cỡ - xử lý riêng: dùng để LỌC sản phẩm chứ không chỉ đưa cho AI đọc. */
-    private static final String MA_KICH_CO = "kich-co";
+    private static final int NGUONG_NHE_GAM = 310;    // <= 310g coi là nhẹ
+    private static final String DEM_CO_BAN = "Standard EVA"; // đệm thường; khác cái này coi là đệm êm
+
+    // ─── Bảng map hằng số (dùng giá trị thật trong DB) ──────────────────────
+
+    private static final Map<String, String> MA_MUC_DICH = Map.of(
+            "Đi học, đi làm hằng ngày", "di-lam",
+            "Chơi thể thao, chạy bộ", "the-thao",
+            "Đi chơi, dạo phố, cà phê", "dao-pho",
+            "Dự tiệc, sự kiện", "du-tiec");
+
+    private static final Map<String, String> MA_PHONG_CACH = Map.of(
+            "Năng động, thể thao", "nang-dong",
+            "Đơn giản, tối giản", "toi-gian",
+            "Cá tính, nổi bật", "ca-tinh",
+            "Cổ điển, retro", "co-dien");
+
+    private static final Map<String, Set<String>> MAU_THEO_NHOM = Map.of(
+            "Trắng, kem, be", Set.of("Trắng", "Kem"),
+            "Đen, xám, navy", Set.of("Đen", "Xám", "Xanh Navy"),
+            "Màu nổi (đỏ, xanh, vàng)", Set.of("Đỏ", "Cam", "Xanh Lá"),
+            "Pastel nhẹ nhàng", Set.of("Hồng", "Kem"));
+
+    private static final Set<String> CHAT_LIEU_BEN =
+            Set.of("Da thật", "Da tổng hợp", "TPU", "Rubber Upper", "Suede");
+    private static final Set<String> CHAT_LIEU_THOANG =
+            Set.of("Mesh", "Knit", "Vải dệt", "Nylon", "Canvas");
+
+    private static final Set<String> MA_MUC_DICH_HOP_LE = Set.of("di-lam", "the-thao", "dao-pho", "du-tiec");
+    private static final Set<String> MA_PHONG_CACH_HOP_LE = Set.of("nang-dong", "toi-gian", "ca-tinh", "co-dien");
 
     private static final List<CauHoiResponse> CAC_CAU_HOI = List.of(
             new CauHoiResponse("muc-dich", "Bạn mua giày để dùng vào việc gì?",
@@ -65,33 +105,28 @@ public class ClientGoiYService {
     private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
     private final EntityManager entityManager;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
+    private final LoaiGiayRepository loaiGiayRepository;
 
     public ClientGoiYService(
             ObjectProvider<ChatClient.Builder> chatClientBuilderProvider,
             EntityManager entityManager,
-            HinhAnhGiayRepository hinhAnhGiayRepository
+            HinhAnhGiayRepository hinhAnhGiayRepository,
+            LoaiGiayRepository loaiGiayRepository
     ) {
         this.chatClientBuilderProvider = chatClientBuilderProvider;
         this.entityManager = entityManager;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
+        this.loaiGiayRepository = loaiGiayRepository;
     }
 
-    /**
-     * Bộ câu hỏi = 5 câu cố định + 1 câu kích cỡ dựng động từ các size ĐANG CÒN HÀNG,
-     * để khách không chọn phải size mà cửa hàng không có.
-     */
+    // ─── Câu hỏi ─────────────────────────────────────────────────────────────
+
     @Transactional(readOnly = true)
     public List<CauHoiResponse> layCauHoi() {
-        List<CauHoiResponse> ds = new ArrayList<>(CAC_CAU_HOI);
-        List<String> sizes = laySizeConHang();
-        if (!sizes.isEmpty()) {
-            ds.add(new CauHoiResponse(MA_KICH_CO, "Bạn đi giày size bao nhiêu?",
-                    "Chọn được nhiều size nếu bạn nằm giữa hai cỡ", sizes));
-        }
-        return ds;
+        // Không còn câu hỏi chọn size: size được AI ước lượng từ ảnh bàn chân ở bước gửi ảnh.
+        return CAC_CAU_HOI;
     }
 
-    /** Các size còn hàng thật (biến thể đang bán + tồn > 0), sắp xếp tăng dần. */
     @SuppressWarnings("unchecked")
     private List<String> laySizeConHang() {
         List<String> sizes = entityManager.createQuery("""
@@ -102,7 +137,6 @@ public class ClientGoiYService {
                 where g.trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0
                 """).getResultList();
         List<String> kq = new ArrayList<>(sizes);
-        // Size là chuỗi ("40", "41") -> sắp theo số cho đúng thứ tự hiển thị.
         kq.sort((a, b) -> {
             try {
                 return Double.compare(Double.parseDouble(a.trim()), Double.parseDouble(b.trim()));
@@ -113,54 +147,102 @@ public class ClientGoiYService {
         return kq;
     }
 
-    /** Gom biến thể đang bán thành danh sách sản phẩm ứng viên cho AI chọn. */
-    private record UngVien(Integer id, String ma, String ten, String thuongHieu,
-                           String loai, BigDecimal giaThapNhat, List<String> mauSac) {}
+    // ─── Ứng viên + thuộc tính ───────────────────────────────────────────────
 
-    @Transactional(readOnly = true)
+    private record UngVien(Integer id, String ma, String ten, String thuongHieu,
+                           Integer loaiId, String loai, BigDecimal giaThapNhat, List<String> mauSac,
+                           String congNgheDem, Integer trongLuong, String chatLieu) {}
+
+    private record KetQuaCham(int diem, List<String> tieuChiKhop) {}
+
+    @Transactional
     public GoiYResponse goiY(GoiYRequest request) {
         if (request == null || request.traLoi() == null || request.traLoi().isEmpty()) {
             throw new BusinessException("Vui lòng trả lời ít nhất một câu hỏi");
         }
 
-        // Size khách chọn -> lọc cứng danh sách, chỉ gợi ý giày còn đúng size đó.
-        List<String> sizeChon = request.traLoi().stream()
-                .filter(t -> MA_KICH_CO.equals(t.ma()) && t.daChon() != null)
-                .flatMap(t -> t.daChon().stream())
-                .distinct()
-                .toList();
+        Map<String, Set<String>> traLoiTheoCau = gomTraLoi(request.traLoi());
 
-        List<UngVien> ungVien = layUngVien(sizeChon);
+        // Ảnh bàn chân -> AI ước lượng size (chọn trong các size cửa hàng có) + nhận xét form chân.
+        KetQuaAnh anhKq = danhGiaAnh(request.anhChan(), laySizeConHang());
+        String sizeGoiY = anhKq.size();
+
+        // Lọc theo size gợi ý; nếu size đó hết hàng thì bỏ lọc, gợi ý mọi size.
+        List<String> locSize = sizeGoiY != null ? List.of(sizeGoiY) : List.of();
+        List<UngVien> ungVien = layUngVien(locSize);
+        if (ungVien.isEmpty() && !locSize.isEmpty()) {
+            ungVien = layUngVien(List.of());
+        }
         if (ungVien.isEmpty()) {
-            throw new BusinessException(sizeChon.isEmpty()
-                    ? "Cửa hàng chưa có sản phẩm nào đang bán để gợi ý"
-                    : "Không còn giày nào cỡ " + String.join(", ", sizeChon) + ". Bạn thử chọn size khác nhé.");
+            throw new BusinessException("Cửa hàng chưa có sản phẩm nào đang bán để gợi ý");
         }
 
-        String traLoi = motTaTraLoi(request.traLoi());
-        String danhSach = motTaUngVien(ungVien);
+        Map<Integer, String[]> phanLoai = boDamPhanLoai(ungVien);
 
-        String noiDung = goiAi(traLoi, danhSach, request.anhOutfit());
-        return phanTichKetQua(noiDung, ungVien);
+        // Chấm điểm bằng CODE -> xếp giảm dần (điểm cao trước, id nhỏ trước) => THỨ TỰ CỐ ĐỊNH.
+        Map<Integer, KetQuaCham> cham = new HashMap<>();
+        for (UngVien u : ungVien) {
+            String[] nl = phanLoai.getOrDefault(u.loaiId(), new String[]{"", ""});
+            cham.put(u.id(), chamDiem(u, traLoiTheoCau, nl[0], nl[1]));
+        }
+        List<UngVien> xepHang = new ArrayList<>(ungVien);
+        xepHang.sort(Comparator.comparingInt((UngVien u) -> cham.get(u.id()).diem()).reversed()
+                .thenComparingInt(UngVien::id));
+
+        // CODE tự lấy top N theo điểm -> KHÔNG để AI chọn, nên cùng câu trả lời luôn ra CÙNG sản phẩm.
+        List<UngVien> chon = xepHang.subList(0, Math.min(SO_SAN_PHAM_GOI_Y, xepHang.size()));
+
+        List<Integer> ids = chon.stream().map(UngVien::id).toList();
+        Map<Integer, String> anhChinh = new LinkedHashMap<>();
+        for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayIds(ids)) {
+            anhChinh.putIfAbsent((Integer) row[0], (String) row[1]);
+        }
+        List<SanPhamGoiYResponse> sanPhams = new ArrayList<>();
+        for (UngVien u : chon) {
+            sanPhams.add(new SanPhamGoiYResponse(u.id(), u.ma(), u.ten(), u.giaThapNhat(),
+                    anhChinh.get(u.id()), lyDoTuTieuChi(cham.get(u.id()))));
+        }
+
+        return new GoiYResponse(
+                sizeGoiY != null
+                        ? "Từ ảnh bàn chân, size gợi ý là " + sizeGoiY
+                            + ". Dưới đây là những đôi khớp bạn nhất, xếp từ phù hợp nhất."
+                        : "Đây là những đôi khớp nhiều tiêu chí bạn chọn nhất, xếp từ phù hợp nhất xuống.",
+                sizeGoiY, anhKq.danhGia(), sanPhams);
     }
 
-    // ─── Lấy sản phẩm đang bán ───────────────────────────────────────────────
+    private Map<String, Set<String>> gomTraLoi(List<TraLoiRequest> traLoi) {
+        Map<String, Set<String>> map = new LinkedHashMap<>();
+        for (TraLoiRequest t : traLoi) {
+            if (t.ma() == null || t.daChon() == null) {
+                continue;
+            }
+            map.computeIfAbsent(t.ma(), k -> new HashSet<>()).addAll(t.daChon());
+        }
+        return map;
+    }
 
     @SuppressWarnings("unchecked")
     private List<UngVien> layUngVien(List<String> sizeChon) {
         boolean locSize = sizeChon != null && !sizeChon.isEmpty();
         String jpql = """
-                select g.id, g.ma, g.ten, th.ten, lg.ten, gct.giaBan, ms.ten
+                select g.id, g.ma, g.ten, th.ten, lg.id, lg.ten, gct.giaBan, ms.ten,
+                       cnd.ten, tl.giaTri, clg.ten
                 from GiayChiTiet gct
                   join gct.giay g
                   join g.thuongHieu th
                   join g.loaiGiay lg
                   join gct.mauSac ms
                   join gct.kichCo kc
+                  left join g.giayThuocTinh gtt
+                  left join gtt.congNgheDem cnd
+                  left join gtt.trongLuong tl
+                  left join gtt.chatLieuGiay clg
                 where g.trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0
-                """ + (locSize ? " and kc.giaTri in :sizes" : "");
+                """ + (locSize ? " and kc.giaTri in :sizes" : "")
+                + " order by g.id asc";  // thứ tự cố định để chấm điểm/xếp hạng ổn định
 
-        var query = entityManager.createQuery(jpql).setMaxResults(500);
+        var query = entityManager.createQuery(jpql).setMaxResults(1000);
         if (locSize) {
             query.setParameter("sizes", sizeChon);
         }
@@ -169,143 +251,271 @@ public class ClientGoiYService {
         Map<Integer, UngVien> gom = new LinkedHashMap<>();
         for (Object[] r : rows) {
             Integer id = (Integer) r[0];
-            BigDecimal gia = (BigDecimal) r[5];
-            String mau = (String) r[6];
+            BigDecimal gia = (BigDecimal) r[6];
+            String mau = (String) r[7];
             UngVien cu = gom.get(id);
             if (cu == null) {
                 List<String> mauSac = new ArrayList<>();
                 if (mau != null) {
                     mauSac.add(mau);
                 }
-                gom.put(id, new UngVien(id, (String) r[1], (String) r[2],
-                        (String) r[3], (String) r[4], gia, mauSac));
+                gom.put(id, new UngVien(id, (String) r[1], (String) r[2], (String) r[3],
+                        (Integer) r[4], (String) r[5], gia, mauSac,
+                        (String) r[8], (Integer) r[9], (String) r[10]));
             } else {
                 if (mau != null && !cu.mauSac().contains(mau)) {
                     cu.mauSac().add(mau);
                 }
                 if (gia != null && (cu.giaThapNhat() == null || gia.compareTo(cu.giaThapNhat()) < 0)) {
                     gom.put(id, new UngVien(cu.id(), cu.ma(), cu.ten(), cu.thuongHieu(),
-                            cu.loai(), gia, cu.mauSac()));
+                            cu.loaiId(), cu.loai(), gia, cu.mauSac(),
+                            cu.congNgheDem(), cu.trongLuong(), cu.chatLieu()));
                 }
             }
-            if (gom.size() >= SO_SAN_PHAM_UNG_VIEN) {
+            if (gom.size() >= SO_UNG_VIEN) {
                 break;
             }
         }
         return new ArrayList<>(gom.values());
     }
 
-    // ─── Dựng prompt ─────────────────────────────────────────────────────────
+    // ─── Phân loại loại giày (AI, cache DB) ──────────────────────────────────
 
-    private String motTaTraLoi(List<TraLoiRequest> traLoi) {
-        Map<String, CauHoiResponse> theoMa = new LinkedHashMap<>();
-        CAC_CAU_HOI.forEach(c -> theoMa.put(c.ma(), c));
-
-        StringBuilder sb = new StringBuilder();
-        for (TraLoiRequest t : traLoi) {
-            if (t.daChon() == null || t.daChon().isEmpty()) {
+    private Map<Integer, String[]> boDamPhanLoai(List<UngVien> ungVien) {
+        Map<Integer, String[]> kq = new HashMap<>();
+        Set<Integer> loaiIds = ungVien.stream().map(UngVien::loaiId).filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+        for (Integer loaiId : loaiIds) {
+            LoaiGiay lg = loaiGiayRepository.findById(loaiId).orElse(null);
+            if (lg == null) {
+                kq.put(loaiId, new String[]{"", ""});
                 continue;
             }
-            CauHoiResponse ch = theoMa.get(t.ma());
-            sb.append("- ").append(ch != null ? ch.cauHoi() : t.ma())
-              .append(" -> ").append(String.join(", ", t.daChon())).append('\n');
+            if (lg.getNhomMucDich() != null) {
+                kq.put(loaiId, new String[]{
+                        lg.getNhomMucDich(), lg.getNhomPhongCach() == null ? "" : lg.getNhomPhongCach()});
+                continue;
+            }
+            kq.put(loaiId, phanLoaiBangAi(lg));
         }
-        return sb.length() == 0 ? "(khách chưa chọn gì)" : sb.toString();
+        return kq;
     }
 
-    private String motTaUngVien(List<UngVien> ds) {
-        StringBuilder sb = new StringBuilder();
-        for (UngVien u : ds) {
-            sb.append("[id=").append(u.id()).append("] ").append(u.ten())
-              .append(" | Hãng: ").append(u.thuongHieu())
-              .append(" | Loại: ").append(u.loai())
-              .append(" | Giá từ: ").append(u.giaThapNhat() == null ? "?" : u.giaThapNhat().toPlainString())
-              .append("đ | Màu: ").append(String.join(", ", u.mauSac()))
-              .append('\n');
-        }
-        return sb.toString();
-    }
-
-    // ─── Gọi AI ──────────────────────────────────────────────────────────────
-
-    private String goiAi(String traLoi, String danhSach, String anhOutfit) {
+    /** Gọi AI phân loại 1 loại giày -> [mucDichCsv, phongCachCsv], lưu vào DB. Lỗi -> trả rỗng, không lưu. */
+    private String[] phanLoaiBangAi(LoaiGiay lg) {
         ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
         if (builder == null) {
-            throw new BusinessException("Chưa cấu hình AI (thiếu API key), vui lòng thử lại sau");
+            return new String[]{"", ""};
         }
+        String moTa = lg.getMoTa() == null || lg.getMoTa().isBlank() ? "" : " (" + lg.getMoTa().trim() + ")";
+        String prompt = """
+                Phân loại loại giày sau vào các nhóm. Chỉ trả về ĐÚNG 2 dòng, không thêm gì.
+                Loại giày: "%s"%s
 
-        String heThong = """
-                Bạn là chuyên viên tư vấn giày thể thao của một cửa hàng online tại Việt Nam.
-                Dựa vào câu trả lời của khách (và ảnh outfit nếu có), hãy chọn ra %d đôi giày
-                PHÙ HỢP NHẤT trong DANH SÁCH SẢN PHẨM được cung cấp.
+                MỤC ĐÍCH sử dụng (chọn 1 hoặc nhiều mã, cách nhau bởi dấu phẩy):
+                - di-lam   : đi học, đi làm, mang hằng ngày
+                - the-thao : chơi thể thao, chạy bộ, tập luyện
+                - dao-pho  : đi chơi, dạo phố, cà phê
+                - du-tiec  : dự tiệc, sự kiện, cần lịch sự
 
-                RÀNG BUỘC:
-                - CHỈ được chọn giày có trong danh sách, dùng đúng id đã cho. Tuyệt đối không bịa.
-                - XẾP THEO ĐỘ PHÙ HỢP GIẢM DẦN: dòng SP đầu tiên là đôi hợp nhất với khách.
-                - Trả lời bằng tiếng Việt, thân thiện, ngắn gọn.
+                PHONG CÁCH (chọn 1 hoặc nhiều mã):
+                - nang-dong : năng động, thể thao
+                - toi-gian  : đơn giản, tối giản
+                - ca-tinh   : cá tính, nổi bật
+                - co-dien   : cổ điển, retro
 
-                Trả về ĐÚNG định dạng sau, không thêm gì khác:
-                NHAN_XET: <1-2 câu nhận xét về outfit trong ảnh; nếu không có ảnh thì ghi đúng chữ: khong>
-                LOI_KHUYEN: <2-3 câu tư vấn chung dựa trên lựa chọn của khách>
-                SP: <id>|<lý do hợp với khách; dòng ĐẦU viết kỹ hơn 1-2 câu vì là đôi hợp nhất>
-                SP: <id>|<lý do hợp với khách, 1 câu ngắn>
-                """.formatted(SO_SAN_PHAM_GOI_Y);
-
-        String cauHoiNguoiDung = "LỰA CHỌN CỦA KHÁCH:\n" + traLoi
-                + "\nDANH SÁCH SẢN PHẨM ĐANG BÁN:\n" + danhSach;
-
-        OpenAiChatOptions tuyChon = OpenAiChatOptions.builder()
-                .withMaxTokens(GIOI_HAN_TOKEN)
-                .build();
-
+                Định dạng:
+                MUC_DICH: <mã,mã>
+                PHONG_CACH: <mã,mã>
+                """.formatted(lg.getTen(), moTa);
         try {
-            var spec = builder.build().prompt()
-                    .system(heThong)
-                    .options(tuyChon);
-
-            byte[] anh = giaiMaAnh(anhOutfit);
-            String kq;
-            if (anh != null) {
-                // Spring AI 1.0.0-M1: UserSpec.media(MimeType, Resource) -> gửi ảnh kèm câu hỏi.
-                MimeType kieu = doanKieuAnh(anhOutfit);
-                kq = spec.user(u -> u.text(cauHoiNguoiDung + "\n(Khách có gửi kèm ảnh outfit ở dưới)")
-                                .media(kieu, new ByteArrayResource(anh)))
-                        .call().content();
-            } else {
-                kq = spec.user(cauHoiNguoiDung).call().content();
+            String kq = builder.build().prompt()
+                    .options(OpenAiChatOptions.builder().withMaxTokens(GIOI_HAN_TOKEN).withTemperature(0.0f).build())
+                    .user(prompt)
+                    .call().content();
+            String mucDich = "";
+            String phongCach = "";
+            for (String dong : (kq == null ? "" : kq).split("\\r?\\n")) {
+                String d = dong.trim();
+                if (d.regionMatches(true, 0, "MUC_DICH:", 0, 9)) {
+                    mucDich = locMa(d.substring(9), MA_MUC_DICH_HOP_LE);
+                } else if (d.regionMatches(true, 0, "PHONG_CACH:", 0, 11)) {
+                    phongCach = locMa(d.substring(11), MA_PHONG_CACH_HOP_LE);
+                }
             }
-            if (kq == null || kq.isBlank()) {
-                throw new BusinessException("AI không trả về nội dung, vui lòng thử lại");
-            }
-            return kq;
-        } catch (BusinessException e) {
-            throw e;
+            lg.setNhomMucDich(mucDich);
+            lg.setNhomPhongCach(phongCach);
+            loaiGiayRepository.save(lg);
+            System.out.println("[AI GOI Y] Đã phân loại loại '" + lg.getTen() + "' -> mục đích=["
+                    + mucDich + "] phong cách=[" + phongCach + "]");
+            return new String[]{mucDich, phongCach};
         } catch (Exception e) {
-            System.err.println("[AI GOI Y] Lỗi gọi AI: " + e.getMessage());
-            e.printStackTrace();
-            throw new BusinessException("AI đang bận hoặc ảnh tải lên không được hỗ trợ (vi phạm chính sách nội dung). Vui lòng thử lại ảnh khác hoặc bỏ qua bước tải ảnh!");
+            System.err.println("[AI GOI Y] Lỗi phân loại loại '" + lg.getTen() + "': " + e.getMessage());
+            return new String[]{"", ""};
         }
     }
 
-    /** Ảnh FE gửi lên dạng data URI base64; trả null nếu khách không gửi ảnh. */
-    private byte[] giaiMaAnh(String anhOutfit) {
-        if (anhOutfit == null || anhOutfit.isBlank()) {
+    private String locMa(String csv, Set<String> hopLe) {
+        return Arrays.stream(csv.split("[,;]"))
+                .map(s -> s.trim().toLowerCase(Locale.ROOT))
+                .filter(hopLe::contains)
+                .distinct()
+                .collect(Collectors.joining(","));
+    }
+
+    // ─── Chấm điểm bằng CODE ─────────────────────────────────────────────────
+
+    private KetQuaCham chamDiem(UngVien u, Map<String, Set<String>> traLoi,
+                                String nhomMucDichLoai, String nhomPhongCachLoai) {
+        int diem = 0;
+        List<String> khop = new ArrayList<>();
+
+        Set<String> chonMucDich = maTheoDapAn(traLoi.get("muc-dich"), MA_MUC_DICH);
+        if (!chonMucDich.isEmpty() && !Collections.disjoint(chonMucDich, tachCsv(nhomMucDichLoai))) {
+            diem++;
+            khop.add("đúng mục đích");
+        }
+        Set<String> chonPhongCach = maTheoDapAn(traLoi.get("phong-cach"), MA_PHONG_CACH);
+        if (!chonPhongCach.isEmpty() && !Collections.disjoint(chonPhongCach, tachCsv(nhomPhongCachLoai))) {
+            diem++;
+            khop.add("đúng phong cách");
+        }
+        Set<String> mauMongMuon = (traLoi.getOrDefault("mau-sac", Set.of())).stream()
+                .flatMap(g -> MAU_THEO_NHOM.getOrDefault(g, Set.of()).stream())
+                .collect(Collectors.toSet());
+        if (!mauMongMuon.isEmpty() && u.mauSac().stream()
+                .anyMatch(m -> mauMongMuon.stream().anyMatch(x -> x.equalsIgnoreCase(m)))) {
+            diem++;
+            khop.add("đúng màu");
+        }
+        Set<String> uuTien = traLoi.getOrDefault("uu-tien", Set.of());
+        if (uuTien.contains("Êm chân, đi lâu không mỏi")
+                && u.congNgheDem() != null && !u.congNgheDem().equalsIgnoreCase(DEM_CO_BAN)) {
+            diem++;
+            khop.add("êm chân");
+        }
+        if (uuTien.contains("Nhẹ, thoáng khí")
+                && ((u.trongLuong() != null && u.trongLuong() <= NGUONG_NHE_GAM)
+                    || (u.chatLieu() != null && CHAT_LIEU_THOANG.contains(u.chatLieu())))) {
+            diem++;
+            khop.add("nhẹ/thoáng");
+        }
+        if (uuTien.contains("Bền, dễ vệ sinh")
+                && u.chatLieu() != null && CHAT_LIEU_BEN.contains(u.chatLieu())) {
+            diem++;
+            khop.add("bền, dễ vệ sinh");
+        }
+        if ((traLoi.getOrDefault("ngan-sach", Set.of())).stream()
+                .anyMatch(ns -> giaTrongKhoang(u.giaThapNhat(), ns))) {
+            diem++;
+            khop.add("đúng tầm giá");
+        }
+        return new KetQuaCham(diem, khop);
+    }
+
+    private Set<String> maTheoDapAn(Set<String> dapAn, Map<String, String> bangMa) {
+        if (dapAn == null) {
+            return Set.of();
+        }
+        return dapAn.stream().map(bangMa::get).filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    private Set<String> tachCsv(String csv) {
+        if (csv == null || csv.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(csv.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    private boolean giaTrongKhoang(BigDecimal gia, String khoang) {
+        if (gia == null) {
+            return false;
+        }
+        double g = gia.doubleValue();
+        return switch (khoang) {
+            case "Dưới 1 triệu" -> g < 1_000_000;
+            case "1 - 2 triệu" -> g >= 1_000_000 && g <= 2_000_000;
+            case "2 - 3 triệu" -> g >= 2_000_000 && g <= 3_000_000;
+            case "Trên 3 triệu" -> g > 3_000_000;
+            default -> false;
+        };
+    }
+
+    /** Lý do sinh từ các tiêu chí đã khớp (CODE, nên cùng input luôn ra cùng lý do). */
+    private String lyDoTuTieuChi(KetQuaCham kq) {
+        if (kq == null || kq.tieuChiKhop().isEmpty()) {
+            return "Một gợi ý bạn có thể tham khảo thêm.";
+        }
+        return "Phù hợp vì: " + String.join(", ", kq.tieuChiKhop()) + ".";
+    }
+
+    // ─── AI đọc ảnh bàn chân: ước lượng size + nhận xét form (temperature=0) ─
+
+    /** Kết quả AI đọc ảnh: size ước lượng (đã khớp size cửa hàng có) + nhận xét form chân. */
+    private record KetQuaAnh(String size, String danhGia) {}
+
+    private KetQuaAnh danhGiaAnh(String anhChan, List<String> sizesCoSan) {
+        byte[] anh = giaiMaAnh(anhChan);
+        if (anh == null) {
+            return new KetQuaAnh(null, null);
+        }
+        ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
+        if (builder == null) {
+            return new KetQuaAnh(null, null);
+        }
+        String dsSize = sizesCoSan.isEmpty() ? "(cửa hàng chưa có size)" : String.join(", ", sizesCoSan);
+        try {
+            MimeType kieu = doanKieuAnh(anhChan);
+            String kq = builder.build().prompt()
+                    .options(OpenAiChatOptions.builder().withMaxTokens(GIOI_HAN_TOKEN).withTemperature(0.0f).build())
+                    .user(u -> u.text(("""
+                            Đây là ảnh bàn chân của khách. Làm 2 việc, trả về ĐÚNG 2 dòng, không thêm gì:
+                            1) Ước lượng size giày phù hợp, CHỌN 1 size gần nhất trong các size cửa hàng có: %s.
+                               Nếu ảnh không phải bàn chân hoặc không đoán được, ghi: khong
+                            2) Đánh giá FORM CHÂN (bề ngang bè/thon, vòm cao/thấp/bẹt, mu bàn chân, gót) trong
+                               2-3 câu và gợi ý kiểu giày nên đi. Nếu ảnh không rõ, ghi: khong
+                            SIZE: <size hoặc khong>
+                            DANH_GIA: <nhận xét hoặc khong>
+                            """).formatted(dsSize))
+                            .media(kieu, new ByteArrayResource(anh)))
+                    .call().content();
+            String size = null;
+            String danhGia = null;
+            for (String dong : (kq == null ? "" : kq).split("\\r?\\n")) {
+                String d = dong.trim();
+                if (d.regionMatches(true, 0, "SIZE:", 0, 5)) {
+                    String v = d.substring(5).trim();
+                    // Chỉ nhận nếu đúng là size cửa hàng đang có (chặn AI bịa size không tồn tại).
+                    size = sizesCoSan.stream().filter(v::contains).findFirst().orElse(null);
+                } else if (d.regionMatches(true, 0, "DANH_GIA:", 0, 9)) {
+                    String v = d.substring(9).trim();
+                    danhGia = v.equalsIgnoreCase("khong") || v.isBlank() ? null : v;
+                }
+            }
+            return new KetQuaAnh(size, danhGia);
+        } catch (Exception e) {
+            System.err.println("[AI GOI Y] Lỗi đọc ảnh chân: " + e.getMessage());
+            return new KetQuaAnh(null, null);
+        }
+    }
+
+    private byte[] giaiMaAnh(String anhChan) {
+        if (anhChan == null || anhChan.isBlank()) {
             return null;
         }
         try {
-            String base64 = anhOutfit.contains(",")
-                    ? anhOutfit.substring(anhOutfit.indexOf(',') + 1)
-                    : anhOutfit;
+            String base64 = anhChan.contains(",") ? anhChan.substring(anhChan.indexOf(',') + 1) : anhChan;
             byte[] du = Base64.getDecoder().decode(base64.trim());
             return du.length == 0 ? null : du;
         } catch (Exception e) {
-            System.err.println("[AI GOI Y] Ảnh outfit không hợp lệ, bỏ qua: " + e.getMessage());
+            System.err.println("[AI GOI Y] Ảnh chân không hợp lệ, bỏ qua: " + e.getMessage());
             return null;
         }
     }
 
     private MimeType doanKieuAnh(String dataUri) {
-        String d = dataUri == null ? "" : dataUri.toLowerCase(java.util.Locale.ROOT);
+        String d = dataUri == null ? "" : dataUri.toLowerCase(Locale.ROOT);
         if (d.startsWith("data:image/png")) {
             return MimeTypeUtils.IMAGE_PNG;
         }
@@ -313,66 +523,5 @@ public class ClientGoiYService {
             return MimeType.valueOf("image/webp");
         }
         return MimeTypeUtils.IMAGE_JPEG;
-    }
-
-    // ─── Đọc kết quả AI ──────────────────────────────────────────────────────
-
-    private GoiYResponse phanTichKetQua(String noiDung, List<UngVien> ungVien) {
-        Map<Integer, UngVien> theoId = new LinkedHashMap<>();
-        ungVien.forEach(u -> theoId.put(u.id(), u));
-
-        String nhanXet = null;
-        String loiKhuyen = null;
-        List<Integer> ids = new ArrayList<>();
-        Map<Integer, String> lyDoTheoId = new LinkedHashMap<>();
-
-        for (String dong : noiDung.split("\\r?\\n")) {
-            String d = dong.trim();
-            if (d.regionMatches(true, 0, "NHAN_XET:", 0, 9)) {
-                String v = d.substring(9).trim();
-                nhanXet = v.equalsIgnoreCase("khong") || v.isBlank() ? null : v;
-            } else if (d.regionMatches(true, 0, "LOI_KHUYEN:", 0, 11)) {
-                loiKhuyen = d.substring(11).trim();
-            } else if (d.regionMatches(true, 0, "SP:", 0, 3)) {
-                String v = d.substring(3).trim();
-                String phanId = v.contains("|") ? v.substring(0, v.indexOf('|')) : v;
-                String lyDo = v.contains("|") ? v.substring(v.indexOf('|') + 1).trim() : "";
-                try {
-                    Integer id = Integer.valueOf(phanId.replaceAll("[^0-9]", "").trim());
-                    // Chỉ nhận id có thật trong danh sách ứng viên -> chặn AI bịa sản phẩm.
-                    if (theoId.containsKey(id) && !ids.contains(id)) {
-                        ids.add(id);
-                        lyDoTheoId.put(id, lyDo);
-                    }
-                } catch (NumberFormatException ignored) {
-                    // dòng SP hỏng -> bỏ qua
-                }
-            }
-        }
-
-        if (ids.isEmpty()) {
-            throw new BusinessException("AI chưa chọn được sản phẩm phù hợp, bạn thử chọn lại đáp án nhé");
-        }
-
-        // Ảnh sản phẩm lấy từ biến thể (giay.hinhAnh là field cũ, hầu như luôn null).
-        Map<Integer, String> anhChinh = new LinkedHashMap<>();
-        for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayIds(ids)) {
-            anhChinh.putIfAbsent((Integer) row[0], (String) row[1]);
-        }
-
-        List<SanPhamGoiYResponse> sanPhams = new ArrayList<>();
-        for (Integer id : ids) {
-            UngVien u = theoId.get(id);
-            sanPhams.add(new SanPhamGoiYResponse(
-                    u.id(), u.ma(), u.ten(), u.giaThapNhat(),
-                    anhChinh.get(id), lyDoTheoId.getOrDefault(id, "")));
-        }
-
-        return new GoiYResponse(
-                loiKhuyen == null || loiKhuyen.isBlank()
-                        ? "Dưới đây là những đôi mình thấy hợp với bạn nhất."
-                        : loiKhuyen,
-                nhanXet,
-                sanPhams);
     }
 }
