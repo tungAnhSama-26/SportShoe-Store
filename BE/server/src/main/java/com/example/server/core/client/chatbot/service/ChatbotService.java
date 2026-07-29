@@ -39,9 +39,10 @@ public class ChatbotService {
             - 21.1 - 21.5 cm -> Size 35 | 21.6 - 22.0 cm -> Size 36 | 22.1 - 22.5 cm -> Size 37 | 22.6 - 23.5 cm -> Size 38
             - 23.6 - 24.2 cm -> Size 39 | 24.3 - 25.0 cm -> Size 40 | 25.1 - 25.7 cm -> Size 41 | 25.8 - 26.5 cm -> Size 42
             - 26.6 - 27.2 cm -> Size 43 | 27.3 - 28.0 cm -> Size 44 | > 28.0 cm -> Size 45
-            QUY TẮC:
+            QUY TẮC TƯ VẤN SIZE:
             1. Chân bè/mập: Khuyên nhích lên thêm 0.5 đến 1 Size.
-            2. Gọi tool: Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38) và gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
+            2. Nếu khách hỏi tư vấn size chung chung (chưa có chiều dài cm): Hướng dẫn cách đo chân, gửi bảng size và hỏi số đo cm. KHÔNG tự ý gọi `search_products_tool` liệt kê sản phẩm ngẫu nhiên.
+            3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38/40) và mới gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
 
             # LINK HƯỚNG DẪN
             - Chi tiết sản phẩm: [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)

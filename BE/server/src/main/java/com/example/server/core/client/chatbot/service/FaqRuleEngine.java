@@ -40,21 +40,28 @@ public class FaqRuleEngine {
                    "- Hoặc bấm nút **Gặp nhân viên** bên dưới để được nhân viên tư vấn trực tiếp qua chat nhé!";
         }
 
-        // 5. Bảng size / Cách đo chân tại nhà
-        if (query.contains("bảng size") || query.contains("đo size") || query.contains("hướng dẫn đo chân") || query.contains("cách đo chân")) {
+        // 5. Bảng size / Cách đo chân tại nhà / Tư vấn chọn size
+        if (query.contains("bảng size") || query.contains("đo size") || query.contains("hướng dẫn đo chân") || query.contains("cách đo chân") ||
+            query.contains("tư vấn chọn size") || query.contains("tư vấn size") || query.contains("chọn size") || query.contains("tư vấn kích cỡ") ||
+            query.contains("hướng dẫn chọn size") || query.contains("tư vấn chọn size giày")) {
             return "Hướng dẫn đo size chân chuẩn tại nhà:\n" +
                    "1. Đặt bàn chân vuông góc lên tờ giấy A4.\n" +
                    "2. Dùng bút vạch 2 điểm ở gót chân và đầu ngón chân dài nhất.\n" +
                    "3. Dùng thước đo khoảng cách chiều dài (cm) giữa 2 vạch đó.\n\n" +
                    "**Bảng quy đổi Size chuẩn VN/EU:**\n" +
+                   "- 21.1 - 21.5 cm: Size 35\n" +
+                   "- 21.6 - 22.0 cm: Size 36\n" +
+                   "- 22.1 - 22.5 cm: Size 37\n" +
                    "- 22.6 - 23.5 cm: Size 38\n" +
                    "- 23.6 - 24.2 cm: Size 39\n" +
                    "- 24.3 - 25.0 cm: Size 40\n" +
                    "- 25.1 - 25.7 cm: Size 41\n" +
                    "- 25.8 - 26.5 cm: Size 42\n" +
                    "- 26.6 - 27.2 cm: Size 43\n" +
-                   "- > 27.3 cm: Size 44 - 45\n\n" +
-                   "*(Lưu ý: Nếu chân bạn thuộc dạng bè ngang hoặc mập, nên nhích lên 0.5 - 1 size để mang thoải mái hơn).*";
+                   "- 27.3 - 28.0 cm: Size 44\n" +
+                   "- > 28.0 cm: Size 45\n\n" +
+                   "*(Lưu ý: Nếu chân bạn thuộc dạng bè ngang hoặc mập, nên nhích lên 0.5 - 1 size để mang thoải mái hơn).* \n\n" +
+                   "Bạn có thể cho shop biết chiều dài bàn chân (cm) hoặc mẫu giày bạn quan tâm để shop hỗ trợ tư vấn chuẩn nhất nhé!";
         }
 
         return null;
