@@ -3,7 +3,7 @@ package com.example.server.core.client.goiy.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Các DTO cho tính năng gợi ý giày bằng AI (trắc nghiệm + ảnh outfit). */
+/** Các DTO cho tính năng gợi ý giày bằng AI (trắc nghiệm + quét form bàn chân). */
 public final class GoiYDtos {
 
     private GoiYDtos() {
@@ -26,12 +26,13 @@ public final class GoiYDtos {
     /**
      * Yêu cầu gợi ý.
      *
-     * @param traLoi    danh sách đáp án đã chọn theo từng câu.
-     * @param anhOutfit ảnh outfit dạng data URI base64 (có thể null - khách không gửi ảnh).
+     * @param traLoi  danh sách đáp án đã chọn theo từng câu.
+     * @param anhChan ảnh bàn chân dạng data URI base64 để AI quét & đánh giá form chân
+     *                (có thể null - khách không quét chân).
      */
     public record GoiYRequest(
             List<TraLoiRequest> traLoi,
-            String anhOutfit
+            String anhChan
     ) {}
 
     /** Một sản phẩm được gợi ý kèm lý do. */
@@ -47,7 +48,8 @@ public final class GoiYDtos {
     /** Kết quả gợi ý trả về cho khách. */
     public record GoiYResponse(
             String loiKhuyen,
-            String nhanXetOutfit,
+            String sizeGoiY,        // size AI ước lượng từ ảnh chân (null nếu không gửi ảnh / không đoán được)
+            String danhGiaChan,
             List<SanPhamGoiYResponse> sanPhams
     ) {}
 }
