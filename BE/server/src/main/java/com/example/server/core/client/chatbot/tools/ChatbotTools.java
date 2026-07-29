@@ -170,7 +170,7 @@ public class ChatbotTools {
     }
 
     @Bean("search_products_tool")
-    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa (keyword), màu sắc (color), loại giày (category), thương hiệu (brand), kích cỡ giày số (size, ví dụ: '38', '39', '40') hoặc trạng thái giảm giá (onSale = true)")
+    @Description("Tìm kiếm sản phẩm giày theo các thuộc tính từ khóa (keyword), màu sắc (color), loại giày (category), thương hiệu (brand), kích cỡ giày số (size, ví dụ: '38', '39', '40') hoặc trạng thái giảm giá (onSale = true). Trả về thông tin sản phẩm gồm ID, mã, tên, giá bán, hình ảnh (hinhAnh), danh sách size, màu sắc, số lượng tồn kho. Khi trả lời khách hàng BẮT BUỘC chèn link `[Tên sản phẩm](/khachhang/san-pham/ID)` để giao diện tự dựng thẻ sản phẩm có hình ảnh.")
     public Function<SearchRequest, List<ProductDto>> searchProductsTool() {
         return new Function<SearchRequest, List<ProductDto>>() {
             @Override

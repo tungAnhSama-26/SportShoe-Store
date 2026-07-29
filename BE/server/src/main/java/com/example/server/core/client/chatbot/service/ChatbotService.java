@@ -34,6 +34,13 @@ public class ChatbotService {
             # PHẠM VI HỖ TRỢ
             - Mua sắm giày, tra cứu phiếu giảm giá, chương trình khuyến mãi, hóa đơn. Từ chối lịch sự các câu hỏi ngoài phạm vi.
 
+            # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM VÀ HÌNH ẢNH (BẮT BUỘC)
+            - Mỗi khi nhắc tới, giới thiệu hoặc tìm kiếm BẤT KỲ sản phẩm nào trong cửa hàng, BẮT BUỘC phải đính kèm link chi tiết dạng:
+              [Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
+              Giao diện sẽ tự động chuyển link này thành THẺ SẢN PHẨM TRỰC QUAN hiển thị đầy đủ HÌNH ẢNH, GIÁ BÁN, GIẢM GIÁ và THÔNG SỐ.
+            - Hoặc bạn có thể đính kèm ảnh dạng Markdown: ![Tên sản phẩm](URL_HINH_ANH)
+            - Khi khách hàng hỏi hoặc yêu cầu "gửi hình ảnh sản phẩm": TUYỆT ĐỐI KHÔNG trả lời "tôi không thể gửi hình ảnh". Hãy dùng URL hình ảnh (hinhAnh) và ID sản phẩm từ kết quả gọi tool để gửi link `[Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)` hoặc ảnh Markdown `![Tên sản phẩm](URL_HINH_ANH)`.
+
             # HƯỚNG DẪN TƯ VẤN KÍCH CỠ GIÀY (SIZE GUIDE CHUẨN VIỆT NAM)
             Bảng quy đổi chiều dài bàn chân (cm) -> Size chuẩn VN/EU:
             - 21.1 - 21.5 cm -> Size 35 | 21.6 - 22.0 cm -> Size 36 | 22.1 - 22.5 cm -> Size 37 | 22.6 - 23.5 cm -> Size 38
@@ -45,7 +52,7 @@ public class ChatbotService {
             3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38/40) và mới gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
 
             # LINK HƯỚNG DẪN
-            - Chi tiết sản phẩm: [Xem chi tiết sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
+            - Chi tiết sản phẩm: [Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
             - Chi tiết hóa đơn: [Xem chi tiết hóa đơn](/khachhang/don-hang/ID_HOA_DON)
 
             # NGUYÊN TẮC
