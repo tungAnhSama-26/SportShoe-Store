@@ -15,9 +15,9 @@ const STORAGE_KEYS = [
 
 const DEFAULT_SESSION = Object.freeze({
   id: "",
-  hoTen: "Quản trị hệ thống",
-  tenTaiKhoan: "admin",
-  vaiTro: "Quản trị viên",
+  hoTen: "",
+  tenTaiKhoan: "",
+  vaiTro: "",
   hinhAnh: "",
 });
 
