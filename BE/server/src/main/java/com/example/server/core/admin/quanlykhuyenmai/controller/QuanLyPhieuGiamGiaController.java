@@ -30,6 +30,14 @@ public class QuanLyPhieuGiamGiaController {
         return phieuGiamGiaService.checkTenTrung(ten, id);
     }
 
+    @GetMapping("check-ma")
+    public java.util.Map<String, Boolean> checkMaTrung(
+            @RequestParam String ma,
+            @RequestParam(required = false) Integer id
+    ) {
+        return phieuGiamGiaService.checkMaTrung(ma, id);
+    }
+
     @GetMapping("detail/{id}")
     public QuanLyPhieuGiamGiaResponse detail(@PathVariable("id") Integer id) {
         return phieuGiamGiaService.getOne(id);
