@@ -26,6 +26,13 @@ function checkTenPhieuGiamGia(ten, id = null) {
   return request(`/admin/phieu-giam-gia/check-ten?${params}`);
 }
 
+function checkMaPhieuGiamGia(ma, id = null) {
+  const params = new URLSearchParams();
+  params.set("ma", ma);
+  if (id != null) params.set("id", String(id));
+  return request(`/admin/phieu-giam-gia/check-ma?${params}`);
+}
+
 function getDotGiamGiaList(filters) {
   const params = new URLSearchParams();
   if (filters?.keyword?.trim()) params.set("keyword", filters.keyword.trim());
@@ -180,6 +187,7 @@ function getEmailSuggestions() {
 }
 
 export {
+  checkMaPhieuGiamGia,
   checkTenDotGiamGia,
   checkTenPhieuGiamGia,
   createDotGiamGia,
