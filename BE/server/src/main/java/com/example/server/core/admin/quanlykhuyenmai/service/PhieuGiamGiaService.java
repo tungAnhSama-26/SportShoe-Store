@@ -46,6 +46,19 @@ public class PhieuGiamGiaService {
         return java.util.Map.of("exists", exists);
     }
 
+    public java.util.Map<String, Boolean> checkMaTrung(String ma, Integer id) {
+        boolean exists = false;
+        if (ma != null && !ma.trim().isEmpty()) {
+            String trimmed = ma.trim();
+            if (id != null && id > 0) {
+                exists = phieuGiamGiaRepository.existsByMaIgnoreCaseAndIdNot(trimmed, id);
+            } else {
+                exists = phieuGiamGiaRepository.existsByMaIgnoreCase(trimmed);
+            }
+        }
+        return java.util.Map.of("exists", exists);
+    }
+
     public List<QuanLyPhieuGiamGiaResponse> getAll() {
         return phieuGiamGiaRepository.hienThiPhieuGiamGia();
     }
