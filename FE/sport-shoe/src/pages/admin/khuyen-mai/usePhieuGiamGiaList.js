@@ -200,13 +200,6 @@ export function usePhieuGiamGiaList() {
     return Number(item?.soLuongDaDung || 0).toLocaleString("vi-VN");
   }
 
-  function soLuongConLai(item) {
-    if (Number(item?.soLuong || 0) === 999999) return "Vô hạn";
-    const used = Number(item?.soLuongDaDung || 0);
-    const total = Number(item?.soLuong || 0);
-    return Math.max(total - used, 0).toLocaleString("vi-VN");
-  }
-
   watch(activeTab, (newTab) => {
     if (newTab === "phieu") {
       trangHienTai.value = 1;
@@ -550,7 +543,6 @@ export function usePhieuGiamGiaList() {
                   : Number(row.soLuong || 0).toLocaleString("vi-VN"),
             },
             { label: "Đã dùng", value: (row) => soLuongDaDung(row) },
-            { label: "Còn lại", value: (row) => soLuongConLai(row) },
             {
               label: "Ngày bắt đầu",
               value: (row) => toDisplayDate(row.ngayBatDau),
@@ -622,5 +614,5 @@ export function usePhieuGiamGiaList() {
     taiDanhSach();
   });
 
-  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, dsLoaiPhieu, isHetHan, mauTrangThai, statusText, statusTextKh, mauTrangThaiKh, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, soLuongConLai, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel, todayStr };
+  return { computed, onMounted, ref, watch, useRoute, useRouter, CheckCircle2, CircleX, Eye, FileSpreadsheet, Filter, Plus, RotateCcw, Search, X, Globe, User, getPhieuGiamGiaKhachHangList, getPhieuGiamGiaList, updatePhieuGiamGia, updatePhieuGiamGiaKhachHang, AdminTableFooter, AdminQuickStatusAction, exportRowsToExcel, getDisplayErrorMessage, router, route, dangTai, loiTrang, resolveActiveTab, activeTab, hienThiThongBao, boLoc, boLocKh, danhSach, tongSoTrang, soPhanTuMotTrang, trangHienTai, totalItems, danhSachKh, tongSoTrangKh, soPhanTuMotTrangKh, trangHienTaiKh, totalItemsKh, dsTrangThai, dsLoai, dsLoaiPhieu, isHetHan, mauTrangThai, statusText, statusTextKh, mauTrangThaiKh, loaiGiamText, loaiPhieuText, mauLoaiPhieu, formatGiaTri, formatTien, toDisplayDate, soLuongDaDung, timer, taiDanhSach, taiDanhSachKh, lamMoiBoLoc, nhanhDoiTrangThai, nhanhDoiTrangThaiKh, openCreateModal, openEditModal, xuatExcel, todayStr };
 }

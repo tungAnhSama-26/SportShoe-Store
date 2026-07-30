@@ -60,7 +60,6 @@ const {
   formatTien,
   toDisplayDate,
   soLuongDaDung,
-  soLuongConLai,
   timer,
   taiDanhSach,
   taiDanhSachKh,
@@ -96,7 +95,7 @@ const {
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
           <div class="space-y-2">
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
@@ -251,7 +250,6 @@ const {
                 <th class="px-4 py-3">Tên phiếu</th>
                 <th class="px-4 py-3">Hình thức</th>
                 <th class="px-4 py-3">Giá trị giảm</th>
-                <th class="px-4 py-3 whitespace-nowrap">Còn lại</th>
                 <th class="px-4 py-3">Ngày bắt đầu</th>
                 <th class="px-4 py-3">Ngày kết thúc</th>
                 <th class="px-4 py-3">Trạng thái</th>
@@ -262,12 +260,12 @@ const {
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-if="dangTai">
-                <td colspan="10" class="py-10 text-center text-sm text-slate-400">
+                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                   Đang tải...
                 </td>
               </tr>
               <tr v-else-if="!danhSach.length">
-                <td colspan="10" class="py-10 text-center text-sm text-slate-400">
+                <td colspan="9" class="py-10 text-center text-sm text-slate-400">
                   Không có dữ liệu.
                 </td>
               </tr>
@@ -295,9 +293,6 @@ const {
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   {{ formatGiaTri(item.giaTri, item.loai) }}
-                </td>
-                <td class="px-4 py-3 whitespace-nowrap font-semibold text-slate-900">
-                  {{ soLuongConLai(item) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   {{ toDisplayDate(item.ngayBatDau) }}
