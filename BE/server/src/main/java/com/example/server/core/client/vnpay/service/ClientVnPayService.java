@@ -377,7 +377,7 @@ public class ClientVnPayService {
             if (fieldName != null && fieldName.startsWith("vnp_")) {
                 String fieldValue = signParams.get(fieldName);
                 if (fieldValue != null && !fieldValue.isEmpty()) {
-                    hashParts.add(fieldName + "=" + fieldValue);
+                    hashParts.add(fieldName + "=" + urlEncode(fieldValue));
                 }
             }
         }
