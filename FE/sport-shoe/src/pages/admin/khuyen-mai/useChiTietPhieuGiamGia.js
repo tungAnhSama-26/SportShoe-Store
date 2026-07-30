@@ -8,6 +8,7 @@ import {
   getPhieuGiamGiaKhachHangList,
   updatePhieuGiamGia,
   checkTenPhieuGiamGia,
+  checkMaPhieuGiamGia,
 } from "../../../services/khuyen-mai";
 import { layDanhSachKhachHang } from "../../../services/khach-hang";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
@@ -406,6 +407,45 @@ export function useChiTietPhieuGiamGia() {
     }
   );
 
+  // Validate mã phiếu giảm giá realtime (kiểm tra trùng mã)
+  let checkMaTimer = null;
+  watch(
+    () => form.ma,
+    (newVal) => {
+      if (checkMaTimer) clearTimeout(checkMaTimer);
+      if (isLoadingData.value) return;
+
+      const ma = (newVal || "").trim();
+      if (!ma) {
+        formErrors.ma = "Vui lòng nhập mã phiếu giảm giá";
+        return;
+      }
+      if (ma.length > 100) {
+        formErrors.ma = "Mã phiếu giảm giá không được vượt quá 100 ký tự";
+        return;
+      }
+      if (!/^[A-Za-z0-9_-]+$/.test(ma)) {
+        formErrors.ma = "Mã phiếu chỉ được chứa chữ, số, dấu gạch ngang và gạch dưới";
+        return;
+      }
+
+      delete formErrors.ma;
+
+      checkMaTimer = setTimeout(async () => {
+        try {
+          const res = await checkMaPhieuGiamGia(ma, id || null);
+          if (res?.exists) {
+            formErrors.ma = "Mã phiếu giảm giá đã tồn tại";
+          } else if (formErrors.ma === "Mã phiếu giảm giá đã tồn tại") {
+            delete formErrors.ma;
+          }
+        } catch (error) {
+          console.error("Lỗi kiểm tra trùng mã phiếu:", error);
+        }
+      }, 300);
+    }
+  );
+
   // Validate ngày kết thúc realtime
   watch(
     () => form.ngayKetThuc,
@@ -631,6 +671,16 @@ export function useChiTietPhieuGiamGia() {
       formErrors.ma =
         "Mã phiếu chỉ được chứa chữ, số, dấu gạch ngang và gạch dưới";
       isValid = false;
+    } else {
+      try {
+        const res = await checkMaPhieuGiamGia(form.ma.trim(), id || null);
+        if (res?.exists) {
+          formErrors.ma = "Mã phiếu giảm giá đã tồn tại";
+          isValid = false;
+        }
+      } catch (error) {
+        console.error("Lỗi kiểm tra trùng mã phiếu:", error);
+      }
     }
 
     if (!form.ten.trim()) {
