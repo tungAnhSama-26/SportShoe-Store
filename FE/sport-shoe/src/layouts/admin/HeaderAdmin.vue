@@ -177,7 +177,12 @@ onMounted(() => {
   // Subscribe to real-time notification topic
   subscribeTopic("/topic/admin/notifications", (msg) => {
     if (msg.type === "NEW_NOTIFICATION") {
-      dsThongBao.value.unshift(msg.payload);
+      const tb = msg.payload;
+      const laAdmin = adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin";
+      if (!laAdmin && tb.loai !== "ORDER" && tb.loai !== "REFUND" && tb.loai !== "CANCEL") {
+        return; // Bỏ qua thông báo không phải hóa đơn đối với nhân viên
+      }
+      dsThongBao.value.unshift(tb);
       if (dsThongBao.value.length > 20) {
         dsThongBao.value.pop();
       }

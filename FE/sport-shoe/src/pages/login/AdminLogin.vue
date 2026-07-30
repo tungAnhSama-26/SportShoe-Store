@@ -90,6 +90,7 @@ import { Eye, EyeOff } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
 import { adminLogin } from "../../services/auth";
 import { showSuccess } from "../../utils/alert";
+import { useAdminSession } from "../../composable/useAdminSession";
 import "./Login.css";
 
 const router = useRouter();
@@ -173,6 +174,11 @@ const handleLogin = async () => {
   loading.value = true;
   try {
     const user = await adminLogin(loginForm.username, loginForm.password);
+    
+    // Làm mới trạng thái phiên admin ngay lập tức để các component con nhận diện đúng vai trò
+    const { refreshAdminSession } = useAdminSession();
+    refreshAdminSession();
+
     showToast("Đăng nhập hệ thống thành công!", "success");
     setTimeout(() => {
       router.push(layDuongDanSauDangNhap(user));

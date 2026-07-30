@@ -83,12 +83,29 @@ public class ThongBaoService {
         }
     }
 
+    private boolean isCurrentUserAdmin() {
+        org.springframework.security.core.Authentication authentication =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> "ROLE_ADMIN".equals(grantedAuthority.getAuthority()));
+    }
+
     /** Lấy danh sách thông báo phân trang, mới nhất lên đầu. */
     public Page<ThongBaoResponse> layDanhSach(int trang, int kichThuoc) {
         List<ThongBao> all = readFromFile();
         
         // Sắp xếp mới nhất lên đầu
         all.sort((a, b) -> b.getNgayTao().compareTo(a.getNgayTao()));
+
+        // Lọc thông báo cho nhân viên nếu không phải Admin
+        if (!isCurrentUserAdmin()) {
+            all = all.stream()
+                    .filter(tb -> "ORDER".equals(tb.getLoai()) || "REFUND".equals(tb.getLoai()) || "CANCEL".equals(tb.getLoai()))
+                    .collect(Collectors.toList());
+        }
 
         int start = trang * kichThuoc;
         int end = Math.min(start + kichThuoc, all.size());
@@ -114,6 +131,12 @@ public class ThongBaoService {
 
     /** Đếm số thông báo chưa đọc. */
     public long demChuaDoc() {
+        if (!isCurrentUserAdmin()) {
+            return readFromFile().stream()
+                    .filter(tb -> tb.getDaDoc() == null || !tb.getDaDoc())
+                    .filter(tb -> "ORDER".equals(tb.getLoai()) || "REFUND".equals(tb.getLoai()) || "CANCEL".equals(tb.getLoai()))
+                    .count();
+        }
         return readFromFile().stream()
                 .filter(tb -> tb.getDaDoc() == null || !tb.getDaDoc())
                 .count();
@@ -209,11 +232,14 @@ public class ThongBaoService {
         List<ThongBao> all = readFromFile();
         Instant now = Instant.now();
         boolean changed = false;
+        boolean isAdmin = isCurrentUserAdmin();
         for (ThongBao tb : all) {
             if (tb.getDaDoc() == null || !tb.getDaDoc()) {
-                tb.setDaDoc(true);
-                tb.setNgayCapNhat(now);
-                changed = true;
+                if (isAdmin || "ORDER".equals(tb.getLoai()) || "REFUND".equals(tb.getLoai()) || "CANCEL".equals(tb.getLoai())) {
+                    tb.setDaDoc(true);
+                    tb.setNgayCapNhat(now);
+                    changed = true;
+                }
             }
         }
         if (changed) {
