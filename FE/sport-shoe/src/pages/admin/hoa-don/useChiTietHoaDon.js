@@ -406,7 +406,7 @@ export function useChiTietHoaDon() {
   });
 
   const donDaKetThuc = computed(
-    () => donDaHoanThanh.value || donDaHuy.value || donDangChoHoanTien.value,
+    () => donDaHoanThanh.value || donDaHuy.value || donDangChoHoanTien.value || donGiaoThatBai.value,
   );
   const coTheSuaThongTinGiaoHang = computed(() =>
     buocHienTai.value === 1,

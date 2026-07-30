@@ -88,7 +88,7 @@ public enum TrangThaiHoaDon {
             case CHO_LAY_HANG -> EnumSet.of(DANG_GIAO_HANG, HUY);
             case DANG_GIAO_HANG -> EnumSet.of(DA_GIAO_HANG, GIAO_HANG_THAT_BAI, HUY);
             case DA_GIAO_HANG -> EnumSet.of(HOAN_THANH, GIAO_HANG_THAT_BAI, HUY);
-            case GIAO_HANG_THAT_BAI -> EnumSet.of(DANG_GIAO_HANG, HUY);
+            case GIAO_HANG_THAT_BAI -> EnumSet.noneOf(TrangThaiHoaDon.class);
             case YEU_CAU_HUY -> EnumSet.of(HUY, CHO_XAC_NHAN, DA_XAC_NHAN, CHO_LAY_HANG);
             case HOA_DON_CHO -> EnumSet.of(HOAN_THANH, CHO_XAC_NHAN, DA_XAC_NHAN, CHO_LAY_HANG, HUY);
             case HOAN_THANH, HUY, CAN_HOAN_TIEN_LEGACY -> EnumSet.noneOf(TrangThaiHoaDon.class);

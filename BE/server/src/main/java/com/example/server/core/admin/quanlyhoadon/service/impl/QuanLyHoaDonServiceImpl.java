@@ -736,7 +736,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         thanhToan.setGhiChu(taoGhiChuThanhToan(thanhToan, "Đã hoàn tiền qua giao dịch " + maGiaoDichHoan));
         thanhToanRepository.save(thanhToan);
 
-        hoaDon.setTrangThai(TRANG_THAI_HUY);
+        if (hoaDon.getTrangThai() == null || hoaDon.getTrangThai() != TRANG_THAI_GIAO_HANG_THAT_BAI) {
+            hoaDon.setTrangThai(TRANG_THAI_HUY);
+        }
         hoaDon.setNgayCapNhat(now);
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Xác nhận hoàn tiền", ghiChu);
