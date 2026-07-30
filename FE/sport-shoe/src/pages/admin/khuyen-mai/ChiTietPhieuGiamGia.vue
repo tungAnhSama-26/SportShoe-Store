@@ -106,7 +106,7 @@ const {
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Mã phiếu <span class="text-rose-500">*</span></label
             >
             <div class="relative">
@@ -133,7 +133,7 @@ const {
 
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Tên phiếu <span class="text-rose-500">*</span></label
             >
             <input
@@ -206,7 +206,7 @@ const {
 
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Giá trị giảm ({{ form.loai === "1" ? "%" : "VNĐ" }})
               <span class="text-rose-500">*</span></label
             >
@@ -234,7 +234,7 @@ const {
 
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Giá trị đơn tối thiểu (VNĐ)</label
             >
             <input
@@ -252,7 +252,7 @@ const {
 
           <div v-if="form.loai === '1'" class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Giảm tối đa (VNĐ)</label
             >
             <input
@@ -275,7 +275,7 @@ const {
 
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Số lượng còn lại <span class="text-rose-500">*</span></label
             >
             <div class="space-y-3">
@@ -321,7 +321,7 @@ const {
 
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Ngày bắt đầu <span class="text-rose-500">*</span></label
             >
             <input
@@ -343,7 +343,7 @@ const {
 
           <div class="min-w-0 space-y-2">
             <label
-              class="block whitespace-nowrap text-[13px] font-semibold text-slate-500"
+              class="block text-[13px] font-semibold text-slate-500"
               >Ngày kết thúc <span class="text-rose-500">*</span></label
             >
             <input
