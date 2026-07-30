@@ -95,7 +95,7 @@ const {
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div class="space-y-2">
             <label class="admin-filter-label">Tìm kiếm</label>
             <div class="relative">
