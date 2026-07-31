@@ -139,7 +139,10 @@ function validate() {
   const moTa = normalizeOptionalText(form.moTa)
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã công nghệ đệm'
-  if (!ten) errors.ten = 'Vui lòng nhập tên công nghệ đệm'
+  if (!form.ten || !form.ten.trim()) errors.ten = 'Vui lòng nhập tên công nghệ đệm'
+  else if (form.ten !== form.ten.trim()) {
+    errors.ten = 'Tên công nghệ đệm không được chứa khoảng trắng ở đầu hoặc cuối'
+  }
   else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
     errors.ten = `Tên công nghệ đệm phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
   }

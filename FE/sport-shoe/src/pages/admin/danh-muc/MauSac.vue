@@ -134,7 +134,10 @@ function validate() {
     : generateHexColorFromText(form.ten)
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã màu sắc'
-  if (!ten) errors.ten = 'Vui lòng nhập tên màu sắc'
+  if (!form.ten || !form.ten.trim()) errors.ten = 'Vui lòng nhập tên màu sắc'
+  else if (form.ten !== form.ten.trim()) {
+    errors.ten = 'Tên màu sắc không được chứa khoảng trắng ở đầu hoặc cuối'
+  }
   else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
     errors.ten = `Tên màu sắc phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
   }

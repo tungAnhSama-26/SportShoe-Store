@@ -139,7 +139,10 @@ function validate() {
   const moTa = normalizeOptionalText(form.moTa)
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã chất liệu giày'
-  if (!ten) errors.ten = 'Vui lòng nhập tên chất liệu giày'
+  if (!form.ten || !form.ten.trim()) errors.ten = 'Vui lòng nhập tên chất liệu giày'
+  else if (form.ten !== form.ten.trim()) {
+    errors.ten = 'Tên chất liệu giày không được chứa khoảng trắng ở đầu hoặc cuối'
+  }
   else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
     errors.ten = `Tên chất liệu giày phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
   }
