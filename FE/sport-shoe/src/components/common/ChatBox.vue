@@ -10,6 +10,7 @@ import {
 import { useRealtime } from "../../composables/useRealtime";
 import { layChiTietSanPham } from "../../services/san-pham";
 import { dinhDangTienViet } from "../../utils/dinhDangTien";
+import { filterProfanity } from "../../utils/profanity-filter";
 import { 
   MessageCircle, 
   X, 
@@ -155,8 +156,12 @@ async function KhoiTaoChatbox() {
       const history = await layTinNhanClient(sessionId.value);
       messages.value = history || [];
       
-      // Kiểm tra trạng thái phiên thông qua tin nhắn cuối cùng hoặc api (tạm thời lấy thông tin)
-      // Đồng bộ WebSocket cho phiên chat hiện tại
+      // Khôi phục sessionState = 3 nếu trong lịch sử có tin nhắn từ Nhân viên trực
+      const hasStaffMsg = (history || []).some(m => m.nguoiGui === "STAFF");
+      if (hasStaffMsg) {
+        sessionState.value = 3;
+      }
+      
       DongBoWebsocket(sessionId.value);
       CuonXuongCuoi();
     } catch (e) {
@@ -176,14 +181,20 @@ function DongBoWebsocket(id) {
   sessionSubscription = subscribeTopic(`/topic/chatbot/session/${id}`, (payload) => {
     if (payload.type === "NEW_MESSAGE") {
       const msg = payload.payload;
-      // Tránh trùng tin nhắn do client tự append trước đó bằng cách kiểm tra cả ID và nội dung
+      
+      // Mở khóa input realtime ngay khi Nhân viên trực phản hồi
+      if (msg.nguoiGui === "STAFF") {
+        sessionState.value = 3;
+      }
+
+      // Tránh trùng tin nhắn bằng cách kiểm tra ID hoặc khớp tin nhắn tạm của CUSTOMER
       const existsIndex = messages.value.findIndex(m => 
         m.id === msg.id || 
-        (m.nguoiGui === msg.nguoiGui && m.noiDung === msg.noiDung)
+        (m.nguoiGui === msg.nguoiGui && (m.noiDung === msg.noiDung || (m.nguoiGui === "CUSTOMER" && typeof m.id === "number" && m.id > 1000000000000)))
       );
       if (existsIndex > -1) {
-        // Cập nhật lại ID chính xác từ database
         messages.value[existsIndex].id = msg.id;
+        messages.value[existsIndex].noiDung = msg.noiDung;
       } else {
         messages.value.push(msg);
         CuonXuongCuoi();
@@ -228,12 +239,13 @@ async function GuiTinNhan(textToSend) {
     console.error("Lỗi lấy thông tin đăng nhập:", e);
   }
 
-  // Hiển thị tin nhắn của khách hàng ngay lập tức trên UI
+  // Hiển thị tin nhắn của khách hàng ngay lập tức trên UI (đã lọc từ thô tục)
+  const filteredUserText = filterProfanity(text);
   const tempUserMsgId = Date.now();
   messages.value.push({
     id: tempUserMsgId,
     nguoiGui: "CUSTOMER",
-    noiDung: text,
+    noiDung: filteredUserText,
     ngayTao: new Date().toISOString()
   });
 

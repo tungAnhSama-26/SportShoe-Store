@@ -390,6 +390,7 @@ public class ChatbotService {
         );
 
         webSocketNotificationService.sendToTopic("/topic/chatbot/session/" + sessionId, "NEW_MESSAGE", dto);
+        webSocketNotificationService.sendToTopic("/topic/chatbot/session/" + sessionId, "STATE_CHANGED", session.getTrangThai());
         webSocketNotificationService.sendToTopic("/topic/chatbot/sessions", "SESSION_UPDATED", convertToDto(session));
 
         return dto;
