@@ -10,7 +10,7 @@ import java.time.LocalDate;
 
 public record CapNhatKhachHangRequest(
         @NotBlank(message = "Họ tên không được để trống")
-        @Size(max = 100, message = "Họ tên không quá 100 ký tự")
+        @Size(min = 3, max = 100, message = "Họ tên phải có từ 3 đến 100 ký tự")
         String hoTen,
 
         @Email(message = "Email không hợp lệ")
