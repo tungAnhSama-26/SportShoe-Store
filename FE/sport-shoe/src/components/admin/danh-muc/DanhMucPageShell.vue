@@ -1,7 +1,9 @@
 <script setup>
+import { ref } from "vue";
 import { FileSpreadsheet, Filter, Layers3, Plus, Search, RotateCcw } from "lucide-vue-next";
 import AdminTableFooter from "../../common/AdminTableFooter.vue";
 import Button from "../../ui/Button.vue";
+import { validateSearchKeyword } from "../../../utils/thuoc-tinh-san-pham";
 
 defineProps({
   addLabel: {
@@ -56,13 +58,28 @@ defineProps({
 
 const emit = defineEmits(["add", "change-page-size", "export", "go-page", "search", "update:keyword"]);
 
+const searchError = ref("");
+
 let timeout = null;
 function onKeywordInput(event) {
-  emit("update:keyword", event.target.value);
+  const val = event.target.value;
+  const res = validateSearchKeyword(val);
+  if (!res.valid) {
+    searchError.value = res.error;
+  } else {
+    searchError.value = "";
+  }
+  emit("update:keyword", val);
   if (timeout) clearTimeout(timeout);
   timeout = setTimeout(() => {
     emit("search");
   }, 300);
+}
+
+function handleReset() {
+  searchError.value = "";
+  emit("update:keyword", "");
+  emit("search");
 }
 </script>
 
@@ -96,18 +113,23 @@ function onKeywordInput(event) {
               :value="keyword"
               type="text"
               :placeholder="searchPlaceholder"
-              class="admin-field h-11 w-full rounded-md border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
+              class="admin-field h-11 w-full rounded-md border bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:bg-white"
+              :class="searchError ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-rose-300'"
               @input="onKeywordInput"
               @keyup.enter="emit('search')"
             />
           </div>
+          <p v-if="searchError" class="mt-1 text-xs text-rose-500 font-medium">
+            {{ searchError }}
+          </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3 xl:justify-end">
-          <Button variant="soft" @click="emit('update:keyword', ''); emit('search')">
+          <Button variant="soft" @click="handleReset">
             <template #prefix><RotateCcw class="h-4 w-4" /></template>
             Đặt lại bộ lọc
           </Button>
+
           <Button v-if="showExport" variant="soft" @click="emit('export')">
             <template #prefix><FileSpreadsheet class="h-4 w-4" /></template>
             Xuất Excel

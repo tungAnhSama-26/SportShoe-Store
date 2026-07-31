@@ -140,11 +140,11 @@ function validate() {
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã cổ giày'
   if (!ten) errors.ten = 'Vui lòng nhập tên cổ giày'
+  else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
+    errors.ten = `Tên cổ giày phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
+  }
   else if (hasSpecialCharacters(ten)) {
     errors.ten = 'Tên không được chứa ký tự đặc biệt'
-  }
-  else if (exceedsMaxLength(ten, TEN_MAX_LENGTH)) {
-    errors.ten = `Tên cổ giày không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {

@@ -166,10 +166,14 @@ export function useQuickCreate() {
       return
     }
 
-    if (!quickCreateForm.ten.trim()) {
+    const trimmedTen = quickCreateForm.ten.trim()
+    if (!trimmedTen) {
       quickCreateErrors.value.ten = 'Tên không được để trống'
       return
-    } else if (hasSpecialCharacters(quickCreateForm.ten)) {
+    } else if (trimmedTen.length < 3 || trimmedTen.length > 100) {
+      quickCreateErrors.value.ten = 'Tên phải từ 3 đến 100 ký tự'
+      return
+    } else if (hasSpecialCharacters(trimmedTen)) {
       quickCreateErrors.value.ten = 'Tên không được chứa ký tự đặc biệt'
       return
     }

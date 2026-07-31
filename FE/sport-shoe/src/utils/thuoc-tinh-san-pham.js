@@ -42,6 +42,20 @@ export function exceedsMaxLength(value, maxLength) {
   return normalizeRequiredText(value).length > maxLength
 }
 
+export function isInvalidLength(value, min = 3, max = 100) {
+  const len = normalizeRequiredText(value).length
+  return len < min || len > max
+}
+
+export function validateSearchKeyword(keyword) {
+  const raw = String(keyword ?? '')
+  if (raw.length > 0 && raw.trim() === '') {
+    return { valid: false, error: 'Từ khóa tìm kiếm không được chỉ chứa khoảng trắng', keyword: '' }
+  }
+  return { valid: true, error: '', keyword: raw.trim() }
+}
+
+
 export function isValidWebsiteUrl(value) {
   const normalized = normalizeOptionalText(value)
 

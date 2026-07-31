@@ -135,11 +135,11 @@ function validate() {
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã màu sắc'
   if (!ten) errors.ten = 'Vui lòng nhập tên màu sắc'
+  else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
+    errors.ten = `Tên màu sắc phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
+  }
   else if (hasSpecialCharacters(ten)) {
     errors.ten = 'Tên không được chứa ký tự đặc biệt'
-  }
-  else if (exceedsMaxLength(ten, TEN_MAX_LENGTH)) {
-    errors.ten = `Tên màu sắc không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }
 
   if (!isValidHexColor(form.maMauHex)) {

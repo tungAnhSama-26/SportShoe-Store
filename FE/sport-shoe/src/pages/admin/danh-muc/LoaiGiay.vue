@@ -28,7 +28,7 @@ const pageSize = ref(5)
 const loading = ref(false)
 const keyword = ref('')
 
-const TEN_MAX_LENGTH = 200
+const TEN_MAX_LENGTH = 100
 const MO_TA_MAX_LENGTH = 500
 
 async function loadData(page = 0) {
@@ -140,11 +140,11 @@ function validate() {
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã loại giày'
   if (!ten) errors.ten = 'Vui lòng nhập tên loại giày'
+  else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
+    errors.ten = `Tên loại giày phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
+  }
   else if (hasSpecialCharacters(ten)) {
     errors.ten = 'Tên không được chứa ký tự đặc biệt'
-  }
-  else if (exceedsMaxLength(ten, TEN_MAX_LENGTH)) {
-    errors.ten = `Tên loại giày không được vượt quá ${TEN_MAX_LENGTH} ký tự`
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {

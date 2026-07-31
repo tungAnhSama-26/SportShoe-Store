@@ -6,8 +6,14 @@ import jakarta.validation.constraints.Size;
 
 public record ChatLieuGiayRequest(
         @NotBlank @Size(max = 50) String ma,
-        @NotBlank @Size(max = 100)
+        @NotBlank @Size(min = 3, max = 100, message = "Tên chất liệu giày phải từ 3 đến 100 ký tự")
         @Pattern(regexp = "^.*[a-zA-Z0-9À-ỹ].*$", message = "Tên chất liệu phải chứa ít nhất một chữ cái hoặc số")
         String ten,
         @Size(max = 300) String moTa
-) {}
+) {
+    public ChatLieuGiayRequest {
+        if (ma != null) ma = ma.trim();
+        if (ten != null) ten = ten.trim();
+        if (moTa != null) moTa = moTa.trim();
+    }
+}
