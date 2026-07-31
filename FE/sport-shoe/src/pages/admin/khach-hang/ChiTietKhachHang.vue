@@ -309,8 +309,8 @@ function validateThongTin() {
   if (!hoTen) {
     loiForm.value.hoTen = "Vui lòng nhập họ tên khách hàng.";
     hasError = true;
-  } else if (hoTen.length > 100) {
-    loiForm.value.hoTen = "Họ tên không quá 100 ký tự.";
+  } else if (hoTen.length < 3 || hoTen.length > 100) {
+    loiForm.value.hoTen = "Họ tên phải có từ 3 đến 100 ký tự.";
     hasError = true;
   } else if (!/^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/.test(hoTen)) {
     loiForm.value.hoTen = "Họ tên khách hàng không được chứa số hoặc ký tự đặc biệt.";
