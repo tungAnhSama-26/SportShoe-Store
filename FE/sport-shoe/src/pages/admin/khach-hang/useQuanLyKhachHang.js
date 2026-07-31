@@ -32,6 +32,9 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import { isValidVnPhone } from "../../../utils/validation";
+
+const HO_TEN_REGEX =
+  /^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/;
 import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 import Input from "../../../components/ui/Input.vue";
@@ -446,6 +449,15 @@ export function useQuanLyKhachHang() {
       !f.diaChiCuThe
     ) {
       loiDiaChi.value = "Vui lòng điền đầy đủ thông tin địa chỉ.";
+      return;
+    }
+    const hoTenNguoiNhan = f.hoTen.trim();
+    if (hoTenNguoiNhan.length < 3 || hoTenNguoiNhan.length > 100) {
+      loiDiaChi.value = "Họ tên người nhận phải có từ 3 đến 100 ký tự.";
+      return;
+    }
+    if (!HO_TEN_REGEX.test(hoTenNguoiNhan)) {
+      loiDiaChi.value = "Họ tên người nhận không được chứa số hoặc ký tự đặc biệt.";
       return;
     }
     if (!isValidVnPhone(f.sdt)) {

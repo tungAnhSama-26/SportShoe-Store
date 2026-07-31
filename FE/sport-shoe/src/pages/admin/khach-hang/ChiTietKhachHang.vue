@@ -44,6 +44,8 @@ const id = route.params.id;
 const laMoi = !id;
 const CUSTOMER_CREATE_TOAST_KEY = "admin-khach-hang-toast";
 const PHONE_HINT = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+const HO_TEN_REGEX =
+  /^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/;
 
 const dangTai = ref(false);
 const dangLuu = ref(false);
@@ -312,7 +314,7 @@ function validateThongTin() {
   } else if (hoTen.length < 3 || hoTen.length > 100) {
     loiForm.value.hoTen = "Họ tên phải có từ 3 đến 100 ký tự.";
     hasError = true;
-  } else if (!/^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/.test(hoTen)) {
+  } else if (!HO_TEN_REGEX.test(hoTen)) {
     loiForm.value.hoTen = "Họ tên khách hàng không được chứa số hoặc ký tự đặc biệt.";
     hasError = true;
   }
@@ -371,11 +373,15 @@ function validateDiaChi() {
     diaChiCuThe: "",
   };
   let ok = true;
-  if (!f.hoTen.trim()) {
+  const hoTenNguoiNhan = f.hoTen.trim();
+  if (!hoTenNguoiNhan) {
     err.hoTen = "Vui lòng nhập họ tên người nhận.";
     ok = false;
-  } else if (f.hoTen.trim().length > 100) {
-    err.hoTen = "Họ tên người nhận không quá 100 ký tự.";
+  } else if (hoTenNguoiNhan.length < 3 || hoTenNguoiNhan.length > 100) {
+    err.hoTen = "Họ tên người nhận phải có từ 3 đến 100 ký tự.";
+    ok = false;
+  } else if (!HO_TEN_REGEX.test(hoTenNguoiNhan)) {
+    err.hoTen = "Họ tên người nhận không được chứa số hoặc ký tự đặc biệt.";
     ok = false;
   }
   if (!f.sdt.trim()) {
