@@ -15,6 +15,7 @@ public record CapNhatKhachHangRequest(
                 message = "Họ tên không được chứa số hoặc ký tự đặc biệt")
         String hoTen,
 
+        @NotBlank(message = "Email không được để trống")
         @Email(message = "Email không hợp lệ")
         @Size(max = 100, message = "Email không quá 100 ký tự")
         String email,

@@ -336,9 +336,9 @@ public class KhachHangServiceImpl implements KhachHangService {
     private void mapDiaChi(DiaChiKhachHang dc, DiaChiRequest request) {
         dc.setHoTen(request.hoTen().trim());
         dc.setSdt(request.sdt().trim());
-        dc.setTinhThanh(request.tinhThanh());
-        dc.setQuanHuyen(request.quanHuyen());
-        dc.setPhuongXa(request.phuongXa());
+        dc.setTinhThanh(request.tinhThanh().trim());
+        dc.setQuanHuyen(request.quanHuyen().trim());
+        dc.setPhuongXa(request.phuongXa().trim());
         dc.setDiaChiCuThe(request.diaChiCuThe().trim());
         dc.setLaMacDinh(Boolean.TRUE.equals(request.laMacDinh()));
     }

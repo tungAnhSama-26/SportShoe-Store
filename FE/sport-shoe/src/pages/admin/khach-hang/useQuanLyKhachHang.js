@@ -466,11 +466,20 @@ export function useQuanLyKhachHang() {
     }
     loiDiaChi.value = "";
     dangLuuDiaChi.value = true;
+    const payload = {
+      hoTen: hoTenNguoiNhan,
+      sdt: f.sdt.trim(),
+      tinhThanh: f.tinhThanh.trim(),
+      quanHuyen: f.quanHuyen.trim(),
+      phuongXa: f.phuongXa.trim(),
+      diaChiCuThe: f.diaChiCuThe.trim(),
+      laMacDinh: Boolean(f.laMacDinh),
+    };
     try {
       if (diaChiDangSua.value) {
-        await capNhatDiaChi(diaChiDangSua.value.id, f);
+        await capNhatDiaChi(diaChiDangSua.value.id, payload);
       } else {
-        await themDiaChi(khModalDiaChi.value.id, f);
+        await themDiaChi(khModalDiaChi.value.id, payload);
       }
       await taiDsModalDiaChi(khModalDiaChi.value.id);
       // Cập nhật diaChiMacDinh trong bảng nếu có thay đổi mặc định
