@@ -139,7 +139,10 @@ function validate() {
   const moTa = normalizeOptionalText(form.moTa)
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã cổ giày'
-  if (!ten) errors.ten = 'Vui lòng nhập tên cổ giày'
+  if (!form.ten || !form.ten.trim()) errors.ten = 'Vui lòng nhập tên cổ giày'
+  else if (form.ten !== form.ten.trim()) {
+    errors.ten = 'Tên cổ giày không được chứa khoảng trắng ở đầu hoặc cuối'
+  }
   else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
     errors.ten = `Tên cổ giày phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
   }

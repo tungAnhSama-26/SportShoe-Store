@@ -167,8 +167,11 @@ export function useQuickCreate() {
     }
 
     const trimmedTen = quickCreateForm.ten.trim()
-    if (!trimmedTen) {
+    if (!quickCreateForm.ten || !trimmedTen) {
       quickCreateErrors.value.ten = 'Tên không được để trống'
+      return
+    } else if (quickCreateForm.ten !== trimmedTen) {
+      quickCreateErrors.value.ten = 'Tên không được chứa khoảng trắng ở đầu hoặc cuối'
       return
     } else if (trimmedTen.length < 3 || trimmedTen.length > 100) {
       quickCreateErrors.value.ten = 'Tên phải từ 3 đến 100 ký tự'
