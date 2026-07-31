@@ -15,6 +15,11 @@ public class ProfanityFilterUtil {
 
     // Danh sách các từ thô tục, tục tĩu Tiếng Việt và Tiếng Anh phổ biến
     private static final List<String> PROFANITY_WORDS = Arrays.asList(
+            // Từ chửi bậy xúc phạm chứa từ "ngu"
+            "ngu", "đồ ngu", "do ngu", "thằng ngu", "thang ngu", "con ngu", "ngu học", "ngu hoc",
+            "ngu lồn", "ngu lon", "ngu cặc", "ngu cac", "ngu vkl", "ngu vcl", "ngu vl", "ngu vãi", "ngu vai",
+            "ngu như chó", "ngu nhu cho", "ngu quá", "ngu qua", "ngu dốt", "ngu dot",
+
             // Tiếng Việt tắt / teencode / tục tĩu
             "đm", "dm", "dkm", "đkm", "đờ mờ", "do ma", "đồ má", "đố má", "đm", "đ.m", "d.k.m", "d.m",
             "vkl", "vcl", "vl", "v.k.l", "v.c.l", "v.l", "vkl",
@@ -22,7 +27,7 @@ public class ProfanityFilterUtil {
             "lồn", "lon", "l.ồ.n", "l.o.n", "con lồn", "con lon", "cái lồn",
             "đụ", "du", "đụ má", "du ma", "đụ mẹ", "du me",
             "đéo", "deo", "đ.é.o", "đéo con mẹ",
-            "bố láo", "bo lao", "chửi", "ngu vkl", "ngu vcl", "óc chó", "oc cho",
+            "bố láo", "bo lao", "chửi", "óc chó", "oc cho",
             "mẹ kiếp", "me kiep", "đồ chó", "do cho", "chó đẻ", "cho de",
 
             // Tiếng Anh
