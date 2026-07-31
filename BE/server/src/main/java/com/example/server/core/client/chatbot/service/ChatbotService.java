@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
+import com.example.server.infrastructure.utils.ProfanityFilterUtil;
 
 import java.util.UUID;
 import java.time.Instant;
@@ -135,10 +136,12 @@ public class ChatbotService {
             session = cuocHoiThoaiRepository.save(session);
         }
 
+        String filteredContent = ProfanityFilterUtil.filter(request.message());
+
         TinNhan khachMsg = new TinNhan();
         khachMsg.setCuocHoiThoai(session);
         khachMsg.setNguoiGui("CUSTOMER");
-        khachMsg.setNoiDung(request.message());
+        khachMsg.setNoiDung(filteredContent);
         khachMsg.setNgayTao(Instant.now());
         tinNhanRepository.save(khachMsg);
 
@@ -349,6 +352,10 @@ public class ChatbotService {
     public ChatbotMessageDto replyFromStaff(Integer sessionId, String message, UUID nhanVienId) {
         CuocHoiThoai session = cuocHoiThoaiRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên chat"));
+
+        if (Integer.valueOf(4).equals(session.getTrangThai())) {
+            throw new IllegalArgumentException("Cuộc hội thoại này đã kết thúc, không thể gửi thêm tin nhắn");
+        }
         
         NhanVien nv = null;
         if (nhanVienId != null) {
@@ -364,11 +371,13 @@ public class ChatbotService {
         session.setNgayCapNhat(Instant.now());
         cuocHoiThoaiRepository.save(session);
 
+        String filteredMessage = ProfanityFilterUtil.filter(message);
+
         TinNhan staffMsg = new TinNhan();
         staffMsg.setCuocHoiThoai(session);
         staffMsg.setNhanVien(nv);
         staffMsg.setNguoiGui("STAFF");
-        staffMsg.setNoiDung(message);
+        staffMsg.setNoiDung(filteredMessage);
         staffMsg.setNgayTao(Instant.now());
         tinNhanRepository.save(staffMsg);
 

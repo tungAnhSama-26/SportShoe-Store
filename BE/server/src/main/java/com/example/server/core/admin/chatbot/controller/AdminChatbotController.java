@@ -4,6 +4,9 @@ import com.example.server.core.client.chatbot.service.ChatbotService;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.security.AdminPrincipal;
 import com.example.server.core.client.chatbot.dto.ChatbotMessageDto;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,14 +25,18 @@ public class AdminChatbotController {
         this.chatbotModelConfig = chatbotModelConfig;
     }
 
-    public record AdminChatRequest(String message) {}
+    public record AdminChatRequest(
+            @NotBlank(message = "Tin nhắn không được để trống")
+            @Size(max = 2000, message = "Tin nhắn không được vượt quá 2000 ký tự")
+            String message
+    ) {}
     public record AdminChatResponse(String reply) {}
 
     @PostMapping("/chat")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AdminChatResponse>> chat(
             @AuthenticationPrincipal AdminPrincipal principal,
-            @RequestBody AdminChatRequest request
+            @Valid @RequestBody AdminChatRequest request
     ) {
         String reply = chatbotService.generateAdminAiResponse(principal.id(), request.message());
         return ResponseEntity.ok(ApiResponse.success("Thành công", new AdminChatResponse(reply)));

@@ -5,8 +5,13 @@ import com.example.server.core.client.chatbot.dto.ChatbotSessionDto;
 import com.example.server.core.client.chatbot.service.ChatbotService;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.security.AdminPrincipal;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/chat")
+@Validated
 public class AdminChatController {
 
     private final ChatbotService chatbotService;
@@ -22,7 +28,11 @@ public class AdminChatController {
         this.chatbotService = chatbotService;
     }
 
-    public record AdminChatReplyRequest(String message) {}
+    public record AdminChatReplyRequest(
+            @NotBlank(message = "Nội dung phản hồi không được để trống")
+            @Size(max = 2000, message = "Nội dung phản hồi không được vượt quá 2000 ký tự")
+            String message
+    ) {}
 
     @GetMapping("/sessions")
     public ResponseEntity<ApiResponse<List<ChatbotSessionDto>>> getActiveSessions() {
@@ -37,15 +47,17 @@ public class AdminChatController {
     }
 
     @GetMapping("/sessions/{id}/messages")
-    public ResponseEntity<ApiResponse<List<ChatbotMessageDto>>> getMessages(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<List<ChatbotMessageDto>>> getMessages(
+            @PathVariable @Min(value = 1, message = "ID phiên chat không hợp lệ") Integer id
+    ) {
         List<ChatbotMessageDto> messages = chatbotService.getMessagesBySession(id);
         return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử tin nhắn thành công", messages));
     }
 
     @PostMapping("/sessions/{id}/reply")
     public ResponseEntity<ApiResponse<Void>> reply(
-            @PathVariable Integer id,
-            @RequestBody AdminChatReplyRequest request,
+            @PathVariable @Min(value = 1, message = "ID phiên chat không hợp lệ") Integer id,
+            @Valid @RequestBody AdminChatReplyRequest request,
             Authentication authentication) {
         UUID staffId = null;
         if (authentication != null && authentication.getPrincipal() instanceof AdminPrincipal principal) {
@@ -56,7 +68,9 @@ public class AdminChatController {
     }
 
     @PostMapping("/sessions/{id}/close")
-    public ResponseEntity<ApiResponse<Void>> close(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<Void>> close(
+            @PathVariable @Min(value = 1, message = "ID phiên chat không hợp lệ") Integer id
+    ) {
         chatbotService.closeSession(id);
         return ResponseEntity.ok(ApiResponse.success("Đóng cuộc hội thoại thành công", null));
     }
