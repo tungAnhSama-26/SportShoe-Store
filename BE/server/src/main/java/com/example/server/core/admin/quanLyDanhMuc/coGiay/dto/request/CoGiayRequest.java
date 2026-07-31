@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record CoGiayRequest(
         @NotBlank @Size(max = 50) String ma,
-        @NotBlank @Size(min = 3, max = 100, message = "Tên cổ giày phải từ 3 đến 100 ký tự") String ten,
+        @NotBlank @Size(min = 4, max = 100, message = "Tên cổ giày phải từ 4 đến 100 ký tự") String ten,
         @Size(max = 300) String moTa
 ) {
     public CoGiayRequest {
