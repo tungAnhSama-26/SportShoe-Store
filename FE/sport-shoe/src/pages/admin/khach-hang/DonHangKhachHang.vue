@@ -105,11 +105,6 @@ onMounted(taiDuLieu);
       >
         <ArrowLeft class="h-5 w-5" />
       </Button>
-      <div>
-        <p class="text-sm text-slate-500">
-          Khách hàng: <span class="font-semibold text-slate-700">{{ khachHang ? khachHang.hoTen : "..." }}</span>
-        </p>
-      </div>
     </section>
 
     <div
