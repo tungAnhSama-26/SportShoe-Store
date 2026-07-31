@@ -319,17 +319,15 @@ function validateThongTin() {
     hasError = true;
   }
 
-  if (!email && laMoi) {
+  if (!email) {
     loiForm.value.email = "Vui lòng nhập email khách hàng.";
     hasError = true;
-  } else if (email) {
-    if (!isValidEmail(email)) {
-      loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
-      hasError = true;
-    } else if (email.length > 100) {
-      loiForm.value.email = "Email không quá 100 ký tự.";
-      hasError = true;
-    }
+  } else if (!isValidEmail(email)) {
+    loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
+    hasError = true;
+  } else if (email.length > 100) {
+    loiForm.value.email = "Email không quá 100 ký tự.";
+    hasError = true;
   }
 
   if (sdt && !isValidVnPhone(sdt)) {
@@ -768,7 +766,7 @@ onMounted(taiChiTiet);
 
               <label class="space-y-2">
                 <span class="text-[13px] font-semibold text-slate-500"
-                  >Email <span v-if="laMoi" class="text-rose-500">*</span></span
+                  >Email <span class="text-rose-500">*</span></span
                 >
                 <input
                   v-model="form.email"
