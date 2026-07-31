@@ -276,12 +276,16 @@ function xuLyAnhLoi(e) {
 
 <template>
   <div class="p-4 md:p-6">
-    <!-- Tiêu đề + combobox chuyển chế độ -->
-    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-bold text-slate-800 dark:text-white">Quản lý đánh giá</h1>
-        <p class="mt-0.5 text-sm text-slate-400">Xem và quản lý đánh giá của khách hàng.</p>
-      </div>
+    <!-- Thanh công cụ: Ô tìm kiếm + Combobox chọn chế độ (Cùng 1 dòng) -->
+    <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
+      <input
+        v-if="cheDo === 'theo-san-pham' && !spDangChon"
+        v-model="keyword"
+        @input="timKiem"
+        type="text"
+        placeholder="Tìm theo tên hoặc mã sản phẩm..."
+        class="w-72 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+      />
       <select
         v-model="cheDo"
         @change="doiCheDo"
@@ -294,15 +298,6 @@ function xuLyAnhLoi(e) {
 
     <!-- ===== Bảng sản phẩm (chế độ theo sản phẩm, chưa chọn SP) ===== -->
     <template v-if="cheDo === 'theo-san-pham' && !spDangChon">
-      <div class="mb-4 flex justify-end">
-        <input
-          v-model="keyword"
-          @input="timKiem"
-          type="text"
-          placeholder="Tìm theo tên hoặc mã sản phẩm..."
-          class="w-72 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
-        />
-      </div>
 
       <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700">
         <table class="w-full text-sm">

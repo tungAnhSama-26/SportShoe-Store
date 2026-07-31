@@ -69,6 +69,7 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Override
     @Transactional
     public KhachHangResponse taoKhachHang(TaoKhachHangRequest request) {
+        kiemTraHoTen(request.hoTen());
         if (request.email() != null && !request.email().isBlank() && khachHangRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email đã được sử dụng");
         }
@@ -97,6 +98,7 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Override
     @Transactional
     public KhachHangResponse capNhatKhachHang(UUID id, CapNhatKhachHangRequest request) {
+        kiemTraHoTen(request.hoTen());
         KhachHang kh = findKhachHang(id);
 
         if (request.email() != null && !request.email().isBlank()) {
@@ -315,6 +317,19 @@ public class KhachHangServiceImpl implements KhachHangService {
         }
         if (dc.getLaMacDinh() == null) {
             dc.setLaMacDinh(false);
+        }
+    }
+
+    private void kiemTraHoTen(String hoTen) {
+        if (hoTen == null || hoTen.isBlank()) {
+            throw new BusinessException("Vui lòng nhập họ tên khách hàng");
+        }
+        String trimmed = hoTen.trim();
+        if (trimmed.length() > 100) {
+            throw new BusinessException("Họ tên không được vượt quá 100 ký tự");
+        }
+        if (!trimmed.matches("^[a-zA-Z\\s\\u00C0-\\u1EF9]+$")) {
+            throw new BusinessException("Họ tên khách hàng không được chứa số hoặc ký tự đặc biệt");
         }
     }
 
