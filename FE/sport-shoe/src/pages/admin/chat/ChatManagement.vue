@@ -295,15 +295,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-112px)] flex flex-col space-y-4">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Hỗ trợ khách hàng trực tuyến</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Trực tiếp trò chuyện và giải đáp thắc mắc cho khách hàng khi được yêu cầu hỗ trợ.</p>
-      </div>
-    </div>
-
+  <div class="h-[calc(100vh-95px)] flex flex-col">
     <!-- Main Chat Workspace -->
     <div class="flex-1 flex bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm overflow-hidden min-h-0">
       

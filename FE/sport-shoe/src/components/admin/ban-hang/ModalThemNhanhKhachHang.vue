@@ -70,6 +70,9 @@ function validate() {
   if (!form.value.hoTen.trim()) {
     errors.value.hoTen = "Vui lòng nhập họ tên.";
     isValid = false;
+  } else if (!/^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/.test(form.value.hoTen.trim())) {
+    errors.value.hoTen = "Họ tên không được chứa số hoặc ký tự đặc biệt.";
+    isValid = false;
   }
 
   if (!form.value.sdt.trim()) {
