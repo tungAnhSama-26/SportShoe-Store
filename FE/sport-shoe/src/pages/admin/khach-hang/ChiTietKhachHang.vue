@@ -44,6 +44,8 @@ const id = route.params.id;
 const laMoi = !id;
 const CUSTOMER_CREATE_TOAST_KEY = "admin-khach-hang-toast";
 const PHONE_HINT = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+const HO_TEN_REGEX =
+  /^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/;
 
 const dangTai = ref(false);
 const dangLuu = ref(false);
@@ -312,22 +314,20 @@ function validateThongTin() {
   } else if (hoTen.length < 3 || hoTen.length > 100) {
     loiForm.value.hoTen = "Họ tên phải có từ 3 đến 100 ký tự.";
     hasError = true;
-  } else if (!/^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/.test(hoTen)) {
+  } else if (!HO_TEN_REGEX.test(hoTen)) {
     loiForm.value.hoTen = "Họ tên khách hàng không được chứa số hoặc ký tự đặc biệt.";
     hasError = true;
   }
 
-  if (!email && laMoi) {
+  if (!email) {
     loiForm.value.email = "Vui lòng nhập email khách hàng.";
     hasError = true;
-  } else if (email) {
-    if (!isValidEmail(email)) {
-      loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
-      hasError = true;
-    } else if (email.length > 100) {
-      loiForm.value.email = "Email không quá 100 ký tự.";
-      hasError = true;
-    }
+  } else if (!isValidEmail(email)) {
+    loiForm.value.email = "Email khách hàng chưa đúng định dạng.";
+    hasError = true;
+  } else if (email.length > 100) {
+    loiForm.value.email = "Email không quá 100 ký tự.";
+    hasError = true;
   }
 
   if (sdt && !isValidVnPhone(sdt)) {
@@ -371,11 +371,15 @@ function validateDiaChi() {
     diaChiCuThe: "",
   };
   let ok = true;
-  if (!f.hoTen.trim()) {
+  const hoTenNguoiNhan = f.hoTen.trim();
+  if (!hoTenNguoiNhan) {
     err.hoTen = "Vui lòng nhập họ tên người nhận.";
     ok = false;
-  } else if (f.hoTen.trim().length > 100) {
-    err.hoTen = "Họ tên người nhận không quá 100 ký tự.";
+  } else if (hoTenNguoiNhan.length < 3 || hoTenNguoiNhan.length > 100) {
+    err.hoTen = "Họ tên người nhận phải có từ 3 đến 100 ký tự.";
+    ok = false;
+  } else if (!HO_TEN_REGEX.test(hoTenNguoiNhan)) {
+    err.hoTen = "Họ tên người nhận không được chứa số hoặc ký tự đặc biệt.";
     ok = false;
   }
   if (!f.sdt.trim()) {
@@ -762,7 +766,7 @@ onMounted(taiChiTiet);
 
               <label class="space-y-2">
                 <span class="text-[13px] font-semibold text-slate-500"
-                  >Email <span v-if="laMoi" class="text-rose-500">*</span></span
+                  >Email <span class="text-rose-500">*</span></span
                 >
                 <input
                   v-model="form.email"

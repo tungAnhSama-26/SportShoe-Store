@@ -11,8 +11,11 @@ import java.time.LocalDate;
 public record CapNhatKhachHangRequest(
         @NotBlank(message = "Họ tên không được để trống")
         @Size(min = 3, max = 100, message = "Họ tên phải có từ 3 đến 100 ký tự")
+        @Pattern(regexp = "^[a-zA-Z\\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$",
+                message = "Họ tên không được chứa số hoặc ký tự đặc biệt")
         String hoTen,
 
+        @NotBlank(message = "Email không được để trống")
         @Email(message = "Email không hợp lệ")
         @Size(max = 100, message = "Email không quá 100 ký tự")
         String email,

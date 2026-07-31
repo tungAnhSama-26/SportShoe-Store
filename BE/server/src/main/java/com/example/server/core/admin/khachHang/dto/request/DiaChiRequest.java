@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Size;
 
 public record DiaChiRequest(
         @NotBlank(message = "Họ tên người nhận không được để trống")
-        @Size(max = 100)
+        @Size(min = 3, max = 100, message = "Họ tên người nhận phải có từ 3 đến 100 ký tự")
+        @Pattern(regexp = "^[a-zA-Z\\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$",
+                message = "Họ tên người nhận không được chứa số hoặc ký tự đặc biệt")
         String hoTen,
 
         @NotBlank(message = "SĐT người nhận không được để trống")
