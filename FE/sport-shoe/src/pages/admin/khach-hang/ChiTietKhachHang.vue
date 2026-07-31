@@ -637,15 +637,6 @@ onMounted(taiChiTiet);
       >
         <ArrowLeft class="h-5 w-5" />
       </Button>
-      <div>
-        <p class="text-sm text-slate-500">
-          {{
-            laMoi
-              ? "Điền thông tin khách hàng mới vào form bên dưới."
-              : `Tên đăng nhập: ${khachHang?.tenDangNhap ?? "..."}`
-          }}
-        </p>
-      </div>
     </section>
 
     <div
