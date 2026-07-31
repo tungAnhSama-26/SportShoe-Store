@@ -173,8 +173,8 @@ export function useQuickCreate() {
     } else if (quickCreateForm.ten !== trimmedTen) {
       quickCreateErrors.value.ten = 'Tên không được chứa khoảng trắng ở đầu hoặc cuối'
       return
-    } else if (trimmedTen.length < 3 || trimmedTen.length > 100) {
-      quickCreateErrors.value.ten = 'Tên phải từ 3 đến 100 ký tự'
+    } else if (trimmedTen.length < 4 || trimmedTen.length > 100) {
+      quickCreateErrors.value.ten = 'Tên phải từ 4 đến 100 ký tự'
       return
     } else if (hasSpecialCharacters(trimmedTen)) {
       quickCreateErrors.value.ten = 'Tên không được chứa ký tự đặc biệt'

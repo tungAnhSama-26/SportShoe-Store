@@ -168,8 +168,8 @@ function validate() {
   else if (form.ten !== form.ten.trim()) {
     errors.ten = 'Tên thương hiệu không được chứa khoảng trắng ở đầu hoặc cuối'
   }
-  else if (ten.length < 3 || ten.length > TEN_MAX_LENGTH) {
-    errors.ten = `Tên thương hiệu phải từ 3 đến ${TEN_MAX_LENGTH} ký tự`
+  else if (ten.length < 4 || ten.length > TEN_MAX_LENGTH) {
+    errors.ten = `Tên thương hiệu phải từ 4 đến ${TEN_MAX_LENGTH} ký tự`
   }
   else if (hasSpecialCharacters(ten)) {
     errors.ten = 'Tên không được chứa ký tự đặc biệt'

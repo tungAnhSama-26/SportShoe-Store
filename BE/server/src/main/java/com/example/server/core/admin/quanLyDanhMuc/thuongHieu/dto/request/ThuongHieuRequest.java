@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 public record ThuongHieuRequest(
         @NotBlank @Size(max = 50) String ma,
-        @NotBlank @Size(min = 3, max = 100, message = "Tên thương hiệu phải từ 3 đến 100 ký tự") String ten,
+        @NotBlank @Size(min = 4, max = 100, message = "Tên thương hiệu phải từ 4 đến 100 ký tự") String ten,
         @Size(max = 100) String xuatXu,
         @Size(max = 500) String logoUrl,
         @Size(max = 300)

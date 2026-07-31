@@ -42,7 +42,7 @@ export function exceedsMaxLength(value, maxLength) {
   return normalizeRequiredText(value).length > maxLength
 }
 
-export function isInvalidLength(value, min = 3, max = 100) {
+export function isInvalidLength(value, min = 4, max = 100) {
   const len = normalizeRequiredText(value).length
   return len < min || len > max
 }
