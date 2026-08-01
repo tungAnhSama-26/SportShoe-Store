@@ -55,16 +55,22 @@ export function useVariantBuilder() {
 
     if (soLuong < 0) {
       variantErrors.soLuong = 'Số lượng mặc định không được âm'
+    } else if (soLuong > 2000000000) {
+      variantErrors.soLuong = 'Số lượng mặc định vượt quá giới hạn cho phép'
     }
 
     if (giaGoc < 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định không được âm'
+    } else if (giaGoc > 2000000000) {
+      variantErrors.giaGoc = 'Giá gốc mặc định vượt quá giới hạn cho phép'
     } else if (requirePrices && giaGoc <= 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định phải lớn hơn 0'
     }
 
     if (giaBan < 0) {
       variantErrors.giaBan = 'Giá bán mặc định không được âm'
+    } else if (giaBan > 2000000000) {
+      variantErrors.giaBan = 'Giá bán mặc định vượt quá giới hạn cho phép'
     } else if (requirePrices && giaBan <= 0) {
       variantErrors.giaBan = 'Giá bán mặc định phải lớn hơn 0'
     }

@@ -123,9 +123,7 @@ const helperText = computed(() => {
   }
 
   if (!hasBarcodeDetectorSupport.value || props.forceCompatibilityScanner) {
-    return usingCompatibilityScanner.value
-      ? "Đang dùng chế độ quét tương thích cho trình duyệt hiện tại."
-      : "Trình duyệt này sẽ dùng chế độ quét tương thích để nhận QR.";
+    return props.fallbackHelperText;
   }
 
   return props.fallbackHelperText;
