@@ -113,7 +113,7 @@ export function translateValidationMessage(message, fieldKey = '') {
   }
 
   if (normalized.includes('numeric value out of bounds')) {
-    return label ? `${subject} vượt quá giới hạn cho phép` : 'Giá trị số vượt quá giới hạn cho phép'
+    return label ? `${subject} không được vượt quá 2.000.000.000` : 'Giá trị số không được vượt quá 2.000.000.000'
   }
 
   return resolved
