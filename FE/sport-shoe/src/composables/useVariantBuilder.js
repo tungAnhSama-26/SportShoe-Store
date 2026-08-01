@@ -50,32 +50,32 @@ export function useVariantBuilder() {
     delete variantErrors.giaBan
 
     const soLuong = parseNumericValue(variantBuilder.soLuong)
-    const giaGoc = parseNumericValue(variantBuilder.giaGoc)
-    const giaBan = parseNumericValue(variantBuilder.giaBan)
+    const numGiaGoc = parseNumericValue(variantBuilder.giaGoc)
+    const numGiaBan = parseNumericValue(variantBuilder.giaBan)
 
     if (soLuong < 0) {
       variantErrors.soLuong = 'Số lượng mặc định không được âm'
     } else if (soLuong > 2000000000) {
-      variantErrors.soLuong = 'Số lượng mặc định vượt quá giới hạn cho phép'
+      variantErrors.soLuong = 'Số lượng mặc định không được vượt quá 2.000.000.000'
     }
 
-    if (giaGoc < 0) {
+    if (numGiaGoc < 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định không được âm'
-    } else if (giaGoc > 2000000000) {
-      variantErrors.giaGoc = 'Giá gốc mặc định vượt quá giới hạn cho phép'
-    } else if (requirePrices && giaGoc <= 0) {
+    } else if (numGiaGoc > 2000000000) {
+      variantErrors.giaGoc = 'Giá gốc mặc định không được vượt quá 2.000.000.000'
+    } else if (requirePrices && numGiaGoc <= 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định phải lớn hơn 0'
     }
 
-    if (giaBan < 0) {
+    if (numGiaBan < 0) {
       variantErrors.giaBan = 'Giá bán mặc định không được âm'
-    } else if (giaBan > 2000000000) {
-      variantErrors.giaBan = 'Giá bán mặc định vượt quá giới hạn cho phép'
-    } else if (requirePrices && giaBan <= 0) {
+    } else if (numGiaBan > 2000000000) {
+      variantErrors.giaBan = 'Giá bán mặc định không được vượt quá 2.000.000.000'
+    } else if (requirePrices && numGiaBan <= 0) {
       variantErrors.giaBan = 'Giá bán mặc định phải lớn hơn 0'
     }
 
-    if (giaGoc > 0 && giaBan > 0 && giaGoc > giaBan) {
+    if (numGiaGoc > 0 && numGiaBan > 0 && numGiaGoc > numGiaBan) {
       variantErrors.giaGoc = 'Giá gốc mặc định không được lớn hơn giá bán'
     }
 
