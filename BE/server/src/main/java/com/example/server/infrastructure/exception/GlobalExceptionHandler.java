@@ -98,6 +98,17 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài nguyên: " + exception.getResourcePath()));
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(org.springframework.http.converter.HttpMessageNotReadableException exception) {
+        log.warn("Message not readable: {}", exception.getMessage());
+        String message = "Dữ liệu yêu cầu không hợp lệ. Vui lòng kiểm tra lại định dạng dữ liệu.";
+        if (exception.getMessage() != null && (exception.getMessage().contains("out of range of int") || exception.getMessage().contains("Numeric value out of bounds") || exception.getMessage().contains("out of range"))) {
+            message = "Giá trị số nhập vào vượt quá giới hạn cho phép.";
+        }
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(ErrorCode.VALIDATION_ERROR, message));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnhandled(Exception exception) {
         exception.printStackTrace(); // Added for debugging

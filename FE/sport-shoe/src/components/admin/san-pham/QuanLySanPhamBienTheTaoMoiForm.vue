@@ -84,14 +84,17 @@ function parseNumericValue(value) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function buildNegativeError(label, value) {
-  return parseNumericValue(value) < 0 ? `${label} không được âm` : ''
+function buildNumericError(label, value) {
+  const num = parseNumericValue(value)
+  if (num < 0) return `${label} không được âm`
+  if (num > 2000000000) return `${label} vượt quá giới hạn cho phép`
+  return ''
 }
 
 const bulkDefaultErrors = computed(() => ({
-  soLuong: buildNegativeError('Số lượng mặc định', props.bulkBienTheForm.soLuong),
-  giaGoc: buildNegativeError('Giá gốc mặc định', props.bulkBienTheForm.giaGoc),
-  giaBan: buildNegativeError('Giá bán mặc định', props.bulkBienTheForm.giaBan)
+  soLuong: buildNumericError('Số lượng mặc định', props.bulkBienTheForm.soLuong),
+  giaGoc: buildNumericError('Giá gốc mặc định', props.bulkBienTheForm.giaGoc),
+  giaBan: buildNumericError('Giá bán mặc định', props.bulkBienTheForm.giaBan)
 }))
 
 const generatedBulkFieldErrors = computed(() =>
@@ -99,9 +102,9 @@ const generatedBulkFieldErrors = computed(() =>
     props.generatedBulkBienThes.map((item) => [
       item.key,
       {
-        soLuong: buildNegativeError('Số lượng', item.soLuong),
-        giaGoc: buildNegativeError('Giá gốc', item.giaGoc),
-        giaBan: buildNegativeError('Giá bán', item.giaBan)
+        soLuong: buildNumericError('Số lượng', item.soLuong),
+        giaGoc: buildNumericError('Giá gốc', item.giaGoc),
+        giaBan: buildNumericError('Giá bán', item.giaBan)
       }
     ])
   )

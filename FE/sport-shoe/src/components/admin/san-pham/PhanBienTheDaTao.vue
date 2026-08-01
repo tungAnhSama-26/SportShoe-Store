@@ -83,6 +83,7 @@ function parseNumericValue(value) {
 function buildNumberFieldError(label, value, { allowZero = true } = {}) {
   const parsed = parseNumericValue(value);
   if (parsed < 0) return `${label} không được âm`;
+  if (parsed > 2000000000) return `${label} vượt quá giới hạn cho phép`;
   if (!allowZero && parsed <= 0) return `${label} phải lớn hơn 0`;
   return "";
 }

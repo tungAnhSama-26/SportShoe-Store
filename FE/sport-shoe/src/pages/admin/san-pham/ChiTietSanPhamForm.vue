@@ -23,6 +23,7 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, TieuDeForm, PhanNha
           :product-code="productCode"
           :danh-muc="danhMuc"
           :inline-creating-type="inlineCreatingType"
+          :is-existing-product="isExistingProduct"
           @inline-create-attribute="handleInlineCreateAttribute"
         />
 
@@ -49,7 +50,9 @@ const { computed, onBeforeUnmount, onMounted, reactive, ref, TieuDeForm, PhanNha
             <textarea
               v-model="productForm.moTa"
               rows="5"
-              class="w-full rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              :disabled="isExistingProduct"
+              class="w-full rounded-md border px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
+              :class="isExistingProduct ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500' : 'border-slate-200 bg-slate-50'"
               placeholder="Mô tả sản phẩm"
             ></textarea>
             <p v-if="productErrors.moTa" class="mt-1 text-xs text-rose-500">
