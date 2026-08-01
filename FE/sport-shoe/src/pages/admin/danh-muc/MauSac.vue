@@ -13,6 +13,8 @@ import {
   exceedsMaxLength,
   generateColorAttributeCode,
   generateHexColorFromText,
+  getColorNameFromHex,
+  hasSpecialCharacters,
   isValidHexColor,
   normalizeRequiredText
 } from '../../../utils/thuoc-tinh-san-pham'
@@ -83,7 +85,34 @@ const colorCodeSeed = ref(createAttributeCodeSeed())
 
 function syncGeneratedFields() {
   form.ma = generateColorAttributeCode(form.ten, colorCodeSeed.value)
-  form.maMauHex = generateHexColorFromText(form.ten)
+  if (form.ten && form.ten.trim()) {
+    const suggestedHex = generateHexColorFromText(form.ten)
+    if (suggestedHex) {
+      form.maMauHex = suggestedHex
+    }
+  }
+}
+
+function onTenInput() {
+  if (modalMode.value === 'view') return
+  form.ma = generateColorAttributeCode(form.ten, colorCodeSeed.value)
+  if (form.ten && form.ten.trim()) {
+    const suggestedHex = generateHexColorFromText(form.ten)
+    if (suggestedHex) {
+      form.maMauHex = suggestedHex
+    }
+  }
+}
+
+function onHexInput() {
+  if (modalMode.value === 'view') return
+  if (isValidHexColor(form.maMauHex)) {
+    const suggestedName = getColorNameFromHex(form.maMauHex)
+    if (suggestedName) {
+      form.ten = suggestedName
+      form.ma = generateColorAttributeCode(form.ten, colorCodeSeed.value)
+    }
+  }
 }
 
 function clearForm() {
@@ -354,6 +383,7 @@ async function xuatExcel() {
                   <label class="block text-xs font-medium text-gray-700 mb-1">Tên *</label>
                   <input
                     v-model="form.ten"
+                    @input="onTenInput"
                     :disabled="modalMode === 'view'"
                     class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                     :class="errors.ten ? 'border-red-400' : 'border-gray-200'"
@@ -368,12 +398,14 @@ async function xuatExcel() {
                 <div class="flex items-center gap-3">
                   <input
                     v-model="form.maMauHex"
+                    @input="onHexInput"
                     type="color"
                     :disabled="modalMode === 'view'"
                     class="h-10 w-16 rounded-md border border-gray-200 cursor-pointer disabled:opacity-60"
                   />
                   <input
                     v-model="form.maMauHex"
+                    @input="onHexInput"
                     :disabled="modalMode === 'view'"
                     maxlength="7"
                     class="flex-1 px-3 py-2 border rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase"

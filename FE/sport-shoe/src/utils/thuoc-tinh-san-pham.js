@@ -3,20 +3,26 @@ const SIZE_PREFIXES = ['EU']
 const SIZE_VALUE_PATTERN = /^(?:(EU)\s*)?(\d{1,2})(?:([.]5))?$/i
 
 const COLOR_PRESETS = [
-  { keywords: ['den', 'black'], hex: '#111827' },
-  { keywords: ['trang', 'white'], hex: '#FFFFFF' },
-  { keywords: ['xam', 'ghi', 'gray', 'grey'], hex: '#6B7280' },
-  { keywords: ['do', 'red', 'burgundy', 'maroon'], hex: '#DC2626' },
-  { keywords: ['hong', 'pink', 'rose'], hex: '#EC4899' },
-  { keywords: ['tim', 'purple', 'violet'], hex: '#7C3AED' },
-  { keywords: ['xanh duong', 'xanhduong', 'blue'], hex: '#2563EB' },
-  { keywords: ['navy'], hex: '#1E3A8A' },
-  { keywords: ['xanh la', 'xanhla', 'green'], hex: '#16A34A' },
-  { keywords: ['vang', 'yellow', 'gold'], hex: '#EAB308' },
-  { keywords: ['cam', 'orange'], hex: '#F97316' },
-  { keywords: ['nau', 'brown'], hex: '#8B5E3C' },
-  { keywords: ['be', 'kem', 'ivory'], hex: '#E7D3A8' },
-  { keywords: ['bac', 'silver'], hex: '#94A3B8' }
+  { name: 'Đen', keywords: ['den', 'black'], hex: '#111827', r: 17, g: 24, b: 39 },
+  { name: 'Trắng', keywords: ['trang', 'white'], hex: '#FFFFFF', r: 255, g: 255, b: 255 },
+  { name: 'Xám nhạt', keywords: ['xam nhat', 'ghi nhat', 'light gray'], hex: '#D1D5DB', r: 209, g: 213, b: 219 },
+  { name: 'Xám', keywords: ['xam', 'ghi', 'gray', 'grey'], hex: '#6B7280', r: 107, g: 114, b: 128 },
+  { name: 'Xám đậm', keywords: ['xam dam', 'ghi dam', 'dark gray'], hex: '#374151', r: 55, g: 65, b: 81 },
+  { name: 'Đỏ', keywords: ['do', 'red'], hex: '#DC2626', r: 220, g: 38, b: 38 },
+  { name: 'Đỏ đậm', keywords: ['do dam', 'do do', 'burgundy', 'maroon'], hex: '#991B1B', r: 153, g: 27, b: 27 },
+  { name: 'Hồng', keywords: ['hong', 'pink', 'rose'], hex: '#EC4899', r: 236, g: 72, b: 153 },
+  { name: 'Hồng nhạt', keywords: ['hong nhat', 'light pink'], hex: '#FBCFE8', r: 251, g: 207, b: 232 },
+  { name: 'Tím', keywords: ['tim', 'purple', 'violet'], hex: '#7C3AED', r: 124, g: 58, b: 237 },
+  { name: 'Xanh dương', keywords: ['xanh duong', 'xanhduong', 'blue', 'xanh lam'], hex: '#2563EB', r: 37, g: 99, b: 235 },
+  { name: 'Xanh đen', keywords: ['xanh den', 'navy', 'dark blue'], hex: '#1E3A8A', r: 30, g: 58, b: 138 },
+  { name: 'Xanh lá', keywords: ['xanh la', 'xanhla', 'green'], hex: '#16A34A', r: 22, g: 163, b: 74 },
+  { name: 'Xanh rêu', keywords: ['xanh reu', 'olive'], hex: '#4D7C0F', r: 77, g: 124, b: 15 },
+  { name: 'Xanh ngọc', keywords: ['xanh ngoc', 'turquoise', 'cyan'], hex: '#06B6D4', r: 6, g: 182, b: 212 },
+  { name: 'Vàng', keywords: ['vang', 'yellow', 'gold'], hex: '#EAB308', r: 234, g: 179, b: 8 },
+  { name: 'Cam', keywords: ['cam', 'orange'], hex: '#F97316', r: 249, g: 115, b: 22 },
+  { name: 'Nâu', keywords: ['nau', 'brown'], hex: '#8B5E3C', r: 139, g: 94, b: 60 },
+  { name: 'Be', keywords: ['be', 'beige', 'kem', 'ivory'], hex: '#E7D3A8', r: 231, g: 211, b: 168 },
+  { name: 'Bạc', keywords: ['bac', 'silver'], hex: '#94A3B8', r: 148, g: 163, b: 184 }
 ]
 
 export function normalizeAttributeText(value) {
@@ -134,6 +140,32 @@ function hslToHex(hue, saturation, lightness) {
 
 export function isValidHexColor(value) {
   return /^#[0-9A-F]{6}$/i.test(String(value || '').trim())
+}
+
+export function getColorNameFromHex(hexColor) {
+  if (!isValidHexColor(hexColor)) return ''
+  const hex = String(hexColor).trim().replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  let closest = null
+  let minDistance = Infinity
+
+  for (const c of COLOR_PRESETS) {
+    if (!c.r && c.r !== 0) continue
+    const dist = Math.sqrt(
+      2 * Math.pow(r - c.r, 2) +
+      4 * Math.pow(g - c.g, 2) +
+      3 * Math.pow(b - c.b, 2)
+    )
+    if (dist < minDistance) {
+      minDistance = dist
+      closest = c
+    }
+  }
+
+  return closest ? closest.name : ''
 }
 
 export function generateHexColorFromText(value) {
