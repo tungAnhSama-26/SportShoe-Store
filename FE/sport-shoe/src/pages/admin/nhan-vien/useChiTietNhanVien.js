@@ -552,7 +552,7 @@ export function useChiTietNhanVien() {
     }
 
     if (laMoi && !form.value.hinhAnh) {
-      loiForm.value.hinhAnh = "Vui lòng tải lên hình ảnh nhân viên để phục vụ chấm công.";
+      loiForm.value.hinhAnh = "Vui lòng tải lên hình ảnh nhân viên.";
       hasError = true;
     }
 

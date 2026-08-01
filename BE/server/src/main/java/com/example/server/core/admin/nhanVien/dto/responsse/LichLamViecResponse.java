@@ -7,6 +7,5 @@ public record LichLamViecResponse(
         UUID id,
         UUID nhanVienId,
         LocalDate ngay,
-        String ca,
-        String trangThaiChamCong
+        String ca
 ) {}

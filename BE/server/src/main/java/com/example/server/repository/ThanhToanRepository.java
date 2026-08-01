@@ -32,5 +32,4 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
 
     boolean existsByGiaoDichGocIdAndLoaiGiaoDich(Integer giaoDichGocId, Integer loaiGiaoDich);
 
-    boolean existsByPhieuTraHangIdAndLoaiGiaoDich(Integer phieuTraHangId, Integer loaiGiaoDich);
 }

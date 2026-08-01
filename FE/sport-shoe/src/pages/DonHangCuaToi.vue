@@ -7,7 +7,6 @@ import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import { resolveMediaUrl } from '../utils/media';
-import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
 import anhMacDinh from '../assets/login-shoe.png';
 
@@ -20,8 +19,6 @@ function xuLyAnhLoi(e) {
   if (e.target.src !== anhMacDinh) e.target.src = anhMacDinh;
 }
 
-const dangChonDeTra = ref(null);
-const laMoTraHangModal = ref(false);
 const donDangGuiYeuCauHuy = ref(null);
 
 let ngatKetNoiRealtime = null;
@@ -100,22 +97,6 @@ function lopTrangThai(tt) {
   }
 }
 
-function lopTrangThaiTraHang(tt) {
-  switch (tt) {
-    case 1: return 'bg-amber-50 text-amber-600 border border-amber-100';
-    case 2: return 'bg-blue-50 text-blue-600 border border-blue-100';
-    case 3: return 'bg-violet-50 text-violet-600 border border-violet-100';
-    case 4: return 'bg-cyan-50 text-cyan-600 border border-cyan-100';
-    case 5: return 'bg-purple-50 text-purple-600 border border-purple-100';
-    case 6: return 'bg-rose-50 text-rose-600 border border-rose-100';
-    case 7: return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-    case 8: return 'bg-stone-100 text-stone-600 border border-stone-200';
-    case 9: return 'bg-slate-100 text-slate-500 border border-slate-200';
-    case 10: return 'bg-rose-50 text-rose-600 border border-rose-100';
-    default: return 'bg-slate-100 text-slate-600';
-  }
-}
-
 const dsTrangThai = [
   { value: "", label: "Tất cả" },
   { value: 1, label: "Chờ xác nhận" },
@@ -124,7 +105,7 @@ const dsTrangThai = [
   { value: 3, label: "Đang giao hàng" },
   { value: 5, label: "Hoàn thành" },
   { value: 6, label: "Đã hủy" },
-  { value: "TRA_HANG", label: "Hoàn tiền" },
+  { value: 8, label: "Cần hoàn tiền" },
 ];
 
 const trangThaiDangChon = ref("");
@@ -137,11 +118,8 @@ const danhSachHienThi = computed(() => {
   if (trangThaiDangChon.value === "") {
     return danhSachHopLe.value;
   }
-  if (trangThaiDangChon.value === "TRA_HANG") {
-    return danhSachHopLe.value.filter((d) => d.phieuTraHangId != null || d.trangThai === 8);
-  }
   return danhSachHopLe.value.filter(
-    (d) => d.phieuTraHangId == null && d.trangThai === trangThaiDangChon.value,
+    (d) => d.trangThai === trangThaiDangChon.value,
   );
 });
 
@@ -163,27 +141,6 @@ async function muaLai(don) {
   }
 }
 
-const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
-
-function laQuaHanTraHang(don) {
-  if (!don) return true;
-  const mocTime = don.ngayGiao ? new Date(don.ngayGiao).getTime() : (don.ngayCapNhat ? new Date(don.ngayCapNhat).getTime() : new Date().getTime());
-  const bayGio = new Date().getTime();
-  const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
-  return (bayGio - mocTime) > thoiHanTraHangMs;
-}
-
-function moYeuCauTraHang(don) {
-  dangChonDeTra.value = don;
-  laMoTraHangModal.value = true;
-}
-
-async function xuLyTaoPhieuTraHangThanhCong() {
-  laMoTraHangModal.value = false;
-  trangThaiDangChon.value = "TRA_HANG";
-  await taiDanhSach(true);
-}
-
 async function guiYeuCauHuy(don) {
   const daXacNhan = await showConfirm(
     'Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác. Nếu đơn đã thanh toán, cửa hàng sẽ hoàn tiền cho bạn.',
@@ -199,9 +156,9 @@ async function guiYeuCauHuy(don) {
     await taiDanhSach(true);
     // Sau khi hủy, nhảy sang đúng tab chứa đơn để khách thấy kết quả.
     const donSauKhiHuy = danhSach.value.find((item) => item.id === don.id);
-    if (Number(donSauKhiHuy?.trangThai) === 8 || donSauKhiHuy?.phieuTraHangId != null) {
+    if (Number(donSauKhiHuy?.trangThai) === 8) {
       // Đơn chuyển khoản đã thanh toán -> cần hoàn tiền.
-      trangThaiDangChon.value = "TRA_HANG";
+      trangThaiDangChon.value = 8;
       showSuccess('Đơn hàng đã được hủy. Cửa hàng sẽ hoàn tiền cho bạn.');
     } else {
       if (Number(donSauKhiHuy?.trangThai) === 6) {
@@ -269,15 +226,8 @@ async function guiYeuCauHuy(don) {
                 <span class="text-xs text-slate-400 font-medium">| {{ formatNgay(don.ngayLap) }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span
-                  v-if="don.phieuTraHangId == null"
-                  class="rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="lopTrangThai(don.trangThai)"
-                >
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="lopTrangThai(don.trangThai)">
                   {{ don.trangThaiText }}
-                </span>
-                <span v-if="don.phieuTraHangId != null" class="rounded-full px-3 py-1 text-xs font-semibold" :class="lopTrangThaiTraHang(don.trangThaiTraHang)">
-                  {{ don.trangThaiTraHangText }}
                 </span>
               </div>
             </div>
@@ -337,14 +287,6 @@ async function guiYeuCauHuy(don) {
                 >
                   {{ donDangGuiYeuCauHuy === don.id ? 'Đang xử lý...' : 'Hủy đơn' }}
                 </button>
-                <!-- Cho phép gửi lại sau khi phiếu trước bị từ chối/hủy và vẫn còn trong thời hạn trả hàng. -->
-                <button
-                  v-if="[4, 5].includes(don.trangThai) && (don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !laQuaHanTraHang(don)"
-                  @click="moYeuCauTraHang(don)"
-                  class="px-5 py-2 text-xs md:text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 transition shadow-sm"
-                >
-                  Yêu cầu trả hàng
-                </button>
                 <!-- Mua Lại (Buy Again) button for Completed (5) or Cancelled (6) -->
                 <button
                   v-if="don.trangThai === 5 || don.trangThai === 6"
@@ -366,13 +308,6 @@ async function guiYeuCauHuy(don) {
       </div>
     </div>
 
-    <!-- Return Request Modal -->
-    <YeuCauTraHangModal
-      :isOpen="laMoTraHangModal"
-      :don="dangChonDeTra"
-      @close="laMoTraHangModal = false"
-      @success="xuLyTaoPhieuTraHangThanhCong"
-    />
   </main>
 </template>
 

@@ -27,16 +27,6 @@ public record DonHangChiTietResponse(
         BigDecimal tongThanhToan,
         Instant ngayCapNhat,
         List<LichSuTrangThai> lichSuTrangThai,
-        Integer phieuTraHangId,
-        Integer trangThaiTraHang,
-        String trangThaiTraHangText,
-        List<LichSuTraHang> lichSuTraHang,
-        String lyDoTraHangMa,
-        String lyDoTraHangMoTa,
-        BigDecimal tongTienDuKienTra,
-        BigDecimal tongTienThucTeTra,
-        List<String> hinhAnhTraHang,
-        List<ChiTietTraHangItem> chiTietTraHang,
         /** "CHUYEN_KHOAN" hoặc "COD" - để FE biết ràng buộc chỉnh sửa. */
         String hinhThucThanhToan,
         /** Khách được phép hủy đơn (chỉ khi đang chờ xác nhận). */
@@ -48,24 +38,11 @@ public record DonHangChiTietResponse(
         Instant ngayGiao,
         Integer soLanSuaDiaChi
 ) {
-    public record ChiTietTraHangItem(
-            Integer hoaDonChiTietId,
-            Integer soLuongTra,
-            Integer soLuongChapNhan,
-            BigDecimal giaBan,
-            BigDecimal soTienHoan
-    ) {}
-
     public record LichSuTrangThai(
             String trangThai,
             Instant ngayTao,
             String maNhanVien,
             String ghiChu
-    ) {}
-
-    public record LichSuTraHang(
-            Integer trangThai,
-            Instant ngayTao
     ) {}
 
     public record DongSanPham(

@@ -277,13 +277,11 @@ async function taiDuLieuLich() {
     danhSachNV.value.forEach((nv) => {
       // Xóa lịch cũ
       nv.lich = {};
-      nv.trangThaiChamCong = {};
       let countCa = 0;
       
       const lichNhanVien = lichData.filter(l => String(l.nhanVienId) === String(nv.id));
       lichNhanVien.forEach(l => {
         nv.lich[l.ngay] = l.ca;
-        nv.trangThaiChamCong[l.ngay] = l.trangThaiChamCong;
         countCa++;
       });
 
@@ -312,7 +310,6 @@ async function taiNhanVien() {
       hinhAnh: nv.hinhAnh ?? "",
       mauNen: mauNenNV(Number(nv.vaiTro) === 1 ? 1 : 2),
       lich: {},
-      trangThaiChamCong: {},
       tongGio: 0,
       overtime: 0,
       gioiHanOT: 5,
@@ -1193,9 +1190,6 @@ function layThongTinCa(id) {
                 </div>
                 <div>
                   <div class="text-sm font-semibold text-slate-800">{{ nv.ten }} <span class="text-slate-400 font-normal">({{ nv.ma }})</span></div>
-                  <div v-if="nv.trangThaiChamCong && nv.trangThaiChamCong[cacNgayTrongTuan.findIndex(d => formatISODate(d) === currentChiTietCa.day.ngayStr)]" :class="['text-[10px] font-bold mt-0.5', nv.trangThaiChamCong[cacNgayTrongTuan.findIndex(d => formatISODate(d) === currentChiTietCa.day.ngayStr)] === 'check in' ? 'text-blue-500' : 'text-emerald-500']">
-                    {{ nv.trangThaiChamCong[cacNgayTrongTuan.findIndex(d => formatISODate(d) === currentChiTietCa.day.ngayStr)] === 'check in' ? 'Đã check in' : 'Đã check out' }}
-                  </div>
                 </div>
               </div>
               <button v-if="!caHienTaiBiKhoa" @click="xoaCa(nv)" title="Xóa khỏi ca" class="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-100">

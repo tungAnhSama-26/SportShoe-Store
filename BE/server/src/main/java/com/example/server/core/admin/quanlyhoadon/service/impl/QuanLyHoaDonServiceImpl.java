@@ -1,7 +1,6 @@
 package com.example.server.core.admin.quanlyhoadon.service.impl;
 
 import com.example.server.core.admin.quanlyhoadon.domain.TrangThaiHoaDon;
-import com.example.server.core.admin.quanlytrahang.domain.GiaoDichHoanTienFactory;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatThongTinGiaoHangRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
@@ -28,11 +27,9 @@ import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.LichSuHoaDon;
 import com.example.server.entity.NhanVien;
-import com.example.server.entity.PhieuTraHang;
 import com.example.server.entity.ThanhToan;
 import com.example.server.entity.TaiKhoanNganHang;
 import com.example.server.entity.VanChuyen;
-import com.example.server.core.admin.quanlytrahang.domain.TrangThaiPhieuTraHang;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.AdminPrincipal;
@@ -42,7 +39,6 @@ import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichSuHoaDonRepository;
 import com.example.server.repository.NhanVienRepository;
-import com.example.server.repository.PhieuTraHangRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.repository.DotGiamGiaSanPhamRepository;
@@ -117,7 +113,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final NhanVienRepository nhanVienRepository;
     private final GhnShippingService ghnShippingService;
-    private final PhieuTraHangRepository phieuTraHangRepository;
     private final RefundBankAccountResolver refundBankAccountResolver;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
@@ -135,7 +130,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             GiayChiTietRepository giayChiTietRepository,
             NhanVienRepository nhanVienRepository,
             GhnShippingService ghnShippingService,
-            PhieuTraHangRepository phieuTraHangRepository,
             RefundBankAccountResolver refundBankAccountResolver,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
@@ -155,7 +149,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.giayChiTietRepository = giayChiTietRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.ghnShippingService = ghnShippingService;
-        this.phieuTraHangRepository = phieuTraHangRepository;
         this.refundBankAccountResolver = refundBankAccountResolver;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
@@ -218,10 +211,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         Function.identity(),
                         (latest, ignored) -> latest
                 ));
-        Map<Integer, PhieuTraHang> phieuTraHangMap = phieuTraHangRepository
-                .findByHoaDonIdInOrderByNgayTaoDesc(hoaDonIds)
-                .stream().collect(Collectors.toMap(p -> p.getHoaDon().getId(), Function.identity(), (p1, p2) -> p1));
-
         String searchKeyword = normalize(keyword);
 
         return hoaDons.stream()
@@ -241,9 +230,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null,
                         latestThanhToanMap.containsKey(hoaDon.getId()) ? mapPhuongThucThanhToan(latestThanhToanMap.get(hoaDon.getId()).getHinhThuc()) : "Chưa thanh toán"
                 ))
                 .toList();
@@ -261,11 +247,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 hoaDons.stream().map(HoaDon::getId).toList()
         ).stream().collect(Collectors.toMap(vc -> vc.getHoaDon().getId(), Function.identity()));
 
-        List<Integer> hoaDonIds = hoaDons.stream().map(HoaDon::getId).toList();
-        Map<Integer, PhieuTraHang> phieuTraHangMap = phieuTraHangRepository
-                .findByHoaDonIdInOrderByNgayTaoDesc(hoaDonIds)
-                .stream().collect(Collectors.toMap(p -> p.getHoaDon().getId(), Function.identity(), (p1, p2) -> p1));
-
         return hoaDons.stream()
                 .map(hoaDon -> new HoaDonSummaryResponse(
                         hoaDon.getId(),
@@ -279,9 +260,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getId() : null,
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? phieuTraHangMap.get(hoaDon.getId()).getTrangThai() : null,
-                        phieuTraHangMap.containsKey(hoaDon.getId()) ? TrangThaiPhieuTraHang.tuMa(phieuTraHangMap.get(hoaDon.getId()).getTrangThai()).getTen() : null,
                         "N/A" // phuongThucThanhToan is not easily available here without an extra query, and this method is for customer, so we can just return N/A or fetch it.
                 ))
                 .toList();
@@ -708,13 +686,18 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         String maNhanVien = nhanVienXuLy != null ? nhanVienXuLy.getMa() : "Hệ thống";
         String tenKhach = resolveTenKhachHang(hoaDon);
         String ghiChu = String.format("%s đã hoàn tiền cho khách hàng %s", maNhanVien, tenKhach);
-        ThanhToan giaoDichHoan = GiaoDichHoanTienFactory.taoKhongQuaPhieuTraHang(
-                thanhToan,
-                soTienHoan,
-                hinhThuc,
-                maGiaoDichHoan,
-                ghiChu
-        );
+        ThanhToan giaoDichHoan = new ThanhToan();
+        giaoDichHoan.setHoaDon(thanhToan.getHoaDon());
+        giaoDichHoan.setNhanVien(nhanVienXuLy);
+        giaoDichHoan.setGiaoDichGoc(thanhToan);
+        giaoDichHoan.setSoTien(soTienHoan);
+        giaoDichHoan.setHinhThuc(hinhThuc);
+        giaoDichHoan.setMaGiaoDich(maGiaoDichHoan);
+        giaoDichHoan.setLoaiGiaoDich(LOAI_GIAO_DICH_HOAN_TIEN);
+        giaoDichHoan.setTrangThai(TRANG_THAI_THANH_TOAN_DA_HOAN_TIEN);
+        giaoDichHoan.setNgayThanhToan(now);
+        giaoDichHoan.setNgayTao(now);
+        giaoDichHoan.setGhiChu(ghiChu);
         giaoDichHoan.setCongThanhToan("Hoàn tiền hóa đơn");
         TaiKhoanNganHang taiKhoan = refundBankAccountResolver.resolve(
                 hoaDon.getKhachHang(),
@@ -809,9 +792,6 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 ));
 
         List<LichSuHoaDon> lichSuHoaDons = lichSuHoaDonRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
-        PhieuTraHang phieuTraHang = phieuTraHangRepository
-                .findFirstByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId())
-                .orElse(null);
         ThanhToan thanhToanCoNhanVien = thanhToans.stream()
                 .filter(thanhToan -> thanhToan.getNhanVien() != null)
                 .findFirst()
@@ -850,11 +830,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 thanhToans.stream().map(this::mapThanhToan).toList(),
                 hoaDonChiTiets.stream().map(item -> mapSanPham(item, hinhAnhMap)).toList(),
                 lichSuHoaDons.stream()
-                        .map(this::mapLichSu).toList(),
-                phieuTraHang != null ? phieuTraHang.getId() : null,
-                phieuTraHang != null ? phieuTraHang.getMa() : null,
-                phieuTraHang != null ? phieuTraHang.getTrangThai() : null,
-                phieuTraHang != null ? TrangThaiPhieuTraHang.tuMa(phieuTraHang.getTrangThai()).getTen() : null
+                        .map(this::mapLichSu).toList()
         );
     }
 

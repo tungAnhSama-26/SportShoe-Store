@@ -4,34 +4,25 @@ import com.example.server.core.client.donhang.dto.CapNhatSoLuongRequest;
 import com.example.server.core.client.donhang.dto.CapNhatSoLuongResponse;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse;
 import com.example.server.core.client.donhang.dto.CapNhatThongTinGiaoHangRequest;
-import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.ChiTietTraHangItem;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.DongSanPham;
-import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTraHang;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
-import com.example.server.entity.HinhAnhTraHang;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.LichSuHoaDon;
-import com.example.server.entity.PhieuTraHang;
-import com.example.server.entity.PhieuTraHangChiTiet;
 import com.example.server.entity.ThanhToan;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.DanhGiaRepository;
 import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HinhAnhGiayRepository;
-import com.example.server.repository.HinhAnhTraHangRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichSuHoaDonRepository;
-import com.example.server.repository.LichSuPhieuTraHangRepository;
-import com.example.server.repository.PhieuTraHangChiTietRepository;
-import com.example.server.repository.PhieuTraHangRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import java.math.BigDecimal;
@@ -80,13 +71,9 @@ public class ClientXemDonHangService {
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final DanhGiaRepository danhGiaRepository;
-    private final PhieuTraHangRepository phieuTraHangRepository;
     private final LichSuHoaDonRepository lichSuHoaDonRepository;
     private final VanChuyenRepository vanChuyenRepository;
-    private final LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
-    private final HinhAnhTraHangRepository hinhAnhTraHangRepository;
-    private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
@@ -97,13 +84,9 @@ public class ClientXemDonHangService {
             HoaDonRepository hoaDonRepository,
             HoaDonChiTietRepository hoaDonChiTietRepository,
             DanhGiaRepository danhGiaRepository,
-            PhieuTraHangRepository phieuTraHangRepository,
             LichSuHoaDonRepository lichSuHoaDonRepository,
             VanChuyenRepository vanChuyenRepository,
-            LichSuPhieuTraHangRepository lichSuPhieuTraHangRepository,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
-            HinhAnhTraHangRepository hinhAnhTraHangRepository,
-            PhieuTraHangChiTietRepository phieuTraHangChiTietRepository,
             ThanhToanRepository thanhToanRepository,
             GiayChiTietRepository giayChiTietRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
@@ -113,13 +96,9 @@ public class ClientXemDonHangService {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.danhGiaRepository = danhGiaRepository;
-        this.phieuTraHangRepository = phieuTraHangRepository;
         this.lichSuHoaDonRepository = lichSuHoaDonRepository;
         this.vanChuyenRepository = vanChuyenRepository;
-        this.lichSuPhieuTraHangRepository = lichSuPhieuTraHangRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
-        this.hinhAnhTraHangRepository = hinhAnhTraHangRepository;
-        this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
         this.giayChiTietRepository = giayChiTietRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
@@ -157,18 +136,6 @@ public class ClientXemDonHangService {
                 ));
             }
 
-            // Check return slip for this invoice
-            Integer phieuTraHangId = null;
-            Integer trangThaiTraHang = null;
-            String trangThaiTraHangText = null;
-            var phieuOpt = phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hd.getId());
-            if (phieuOpt.isPresent()) {
-                PhieuTraHang phieu = phieuOpt.get();
-                phieuTraHangId = phieu.getId();
-                trangThaiTraHang = phieu.getTrangThai();
-                trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
-            }
-
             int virtualStatus = hd.getTrangThai();
             String virtualStatusText = nhanTrangThai(hd.getTrangThai());
             if (hd.getTrangThai() == TRANG_THAI_HUY && laCanHoanTien(hd.getId())) {
@@ -193,7 +160,6 @@ public class ClientXemDonHangService {
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
                     virtualStatus, virtualStatusText,
                     soLuong, hd.getTongTienThanhToan(), sanPhams,
-                    phieuTraHangId, trangThaiTraHang, trangThaiTraHangText,
                     hd.getNgayCapNhat(), ngayGiao));
         }
         return result;
@@ -285,54 +251,6 @@ public class ClientXemDonHangService {
                 .orElse(BigDecimal.ZERO);
         String maPhieu = hd.getPhieuGiamGia() != null ? hd.getPhieuGiamGia().getMa() : null;
 
-        // Check return slip for this invoice
-        Integer phieuTraHangId = null;
-        Integer trangThaiTraHang = null;
-        String trangThaiTraHangText = null;
-        List<LichSuTraHang> lichSuTraHang = List.of();
-        String lyDoTraHangMa = null;
-        String lyDoTraHangMoTa = null;
-        BigDecimal tongTienDuKienTra = null;
-        BigDecimal tongTienThucTeTra = null;
-        List<String> hinhAnhTraHang = List.of();
-        List<ChiTietTraHangItem> chiTietTraHang = List.of();
-
-        var phieuOpt = phieuTraHangRepository.findFirstByHoaDonIdOrderByNgayTaoDesc(hd.getId());
-        if (phieuOpt.isPresent()) {
-            PhieuTraHang phieu = phieuOpt.get();
-            phieuTraHangId = phieu.getId();
-            trangThaiTraHang = phieu.getTrangThai();
-            trangThaiTraHangText = nhanTrangThaiTraHang(phieu.getTrangThai());
-            lyDoTraHangMa = phieu.getLyDoMa();
-            lyDoTraHangMoTa = phieu.getMoTa();
-            tongTienDuKienTra = phieu.getTongTienDuKien();
-            tongTienThucTeTra = phieu.getTongTienThucTe();
-            hinhAnhTraHang = hinhAnhTraHangRepository
-                    .findByPhieuTraHangIdOrderByNgayTaoAsc(phieu.getId())
-                    .stream()
-                    .map(HinhAnhTraHang::getUrl)
-                    .toList();
-            chiTietTraHang = phieuTraHangChiTietRepository
-                    .findByPhieuTraHangIdOrderByIdAsc(phieu.getId())
-                    .stream()
-                    .map(ct -> new ChiTietTraHangItem(
-                            ct.getHoaDonChiTiet() != null ? ct.getHoaDonChiTiet().getId() : null,
-                            ct.getSoLuongTra(),
-                            ct.getSoLuongChapNhan(),
-                            ct.getGiaBan(),
-                            ct.getSoTienHoan()
-                    ))
-                    .toList();
-            lichSuTraHang = lichSuPhieuTraHangRepository
-                    .findByPhieuTraHangIdOrderByNgayTaoAsc(phieu.getId())
-                    .stream()
-                    .map(lichSu -> new LichSuTraHang(
-                            lichSu.getTrangThaiMoi(),
-                            lichSu.getNgayTao()
-                    ))
-                    .toList();
-        }
-
         List<LichSuTrangThai> lichSuTrangThai = lichSuHoaDonRepository
                 .findByHoaDonIdOrderByNgayTaoDesc(hd.getId())
                 .stream()
@@ -376,9 +294,6 @@ public class ClientXemDonHangService {
                 maPhieu, sanPhams,
                 tamTinh, giamDot, giamVoucher, phiVanChuyen, hd.getTongTienThanhToan(),
                 hd.getNgayCapNhat(), lichSuTrangThai,
-                phieuTraHangId, trangThaiTraHang, trangThaiTraHangText, lichSuTraHang,
-                lyDoTraHangMa, lyDoTraHangMoTa, tongTienDuKienTra, tongTienThucTeTra,
-                hinhAnhTraHang, chiTietTraHang,
                 laCK ? "CHUYEN_KHOAN" : "COD",
                 // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
                 dangChoXacNhan, coTheSua, false, ngayGiao,
@@ -795,23 +710,6 @@ public class ClientXemDonHangService {
             case 7 -> "Yêu cầu hủy";
             case 8 -> "Cần hoàn tiền";
             case 10 -> "Giao hàng thất bại";
-            default -> "Không xác định";
-        };
-    }
-
-    private String nhanTrangThaiTraHang(Integer trangThai) {
-        if (trangThai == null) return null;
-        return switch (trangThai) {
-            case 1 -> "Chờ duyệt";
-            case 2 -> "Chờ khách gửi hàng";
-            case 3 -> "Đang hoàn hàng";
-            case 4 -> "Đã nhận hàng";
-            case 5 -> "Đang kiểm tra";
-            case 6 -> "Chờ hoàn tiền";
-            case 7 -> "Đã hoàn tiền";
-            case 8 -> "Từ chối";
-            case 9 -> "Đã hủy";
-            case 10 -> "Hoàn hàng thất bại";
             default -> "Không xác định";
         };
     }

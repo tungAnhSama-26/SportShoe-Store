@@ -22,8 +22,7 @@ import {
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { useAdminSession } from "../../../composable/useAdminSession";
 import { useGiaoCa } from "../../../composable/useGiaoCa";
-import { layDanhSachNhanVien } from "../../../services/nhan-vien";
-import { layThongTinGiaoCaCurrent } from "../../../services/giao-ca";
+import { layThongTinGiaoCaCurrent, layTuyChonBanGiao } from "../../../services/giao-ca";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
 import ThuChiModal from "../../../components/admin/giao-ca/ThuChiModal.vue";
 
@@ -39,10 +38,13 @@ const {
   loadPendingHandovers,
   openShift,
   submitHandover,
-  confirmHandover
+  confirmHandover,
+  endShift
 } = useGiaoCa();
 
 const listNhanVien = ref([]);
+const coTheKetCa = ref(false);
+const caKeTiep = ref(null);
 const currentStats = ref(null);
 const loadingStats = ref(false);
 const isPaidInvoicesCollapsed = ref(true);
@@ -184,12 +186,14 @@ async function loadShiftTransactions() {
 // Load active employees list
 async function taiNhanVienGiaoCa() {
   try {
-    const list = await layDanhSachNhanVien({ trangThai: 1 });
-    listNhanVien.value = list.filter(
-      (nv) => String(nv.id) !== String(adminSession.value.id)
-    );
+    const options = await layTuyChonBanGiao();
+    listNhanVien.value = options?.nhanVienNhanCa || [];
+    coTheKetCa.value = Boolean(options?.coTheKetCa);
+    caKeTiep.value = options?.caKeTiep || null;
   } catch (err) {
     console.error("Lỗi tải danh sách nhân viên:", err);
+    listNhanVien.value = [];
+    coTheKetCa.value = false;
   }
 }
 
@@ -201,8 +205,10 @@ async function syncState() {
     } else if (activeShift.value.trangThai === "CHO_BAN_GIAO") {
       buocHienTai.value = 2;
     }
-    await taiThongKeCaHienTai();
-    await taiNhanVienGiaoCa();
+    if (activeShift.value.trangThai === "MO_CA") {
+      await taiThongKeCaHienTai();
+      await taiNhanVienGiaoCa();
+    }
     await loadShiftTransactions();
   } else {
     if (pendingHandovers.value && pendingHandovers.value.length > 0) {
@@ -369,6 +375,31 @@ async function xacNhanBanGiaoCaBtn() {
       }
     }
   });
+}
+
+async function ketCaLamViecBtn() {
+  if (chenhLech.value !== 0 && (!lyDoChenhLech.value || !lyDoChenhLech.value.trim())) {
+    showError("Số tiền chênh lệch khác 0. Vui lòng nhập lý do chênh lệch.");
+    return;
+  }
+  const confirmed = await showConfirm(
+    "Đây là ca cuối trong ngày. Kết ca sẽ không mở ca mới.",
+    "Xác nhận kết ca làm việc?"
+  );
+  if (!confirmed) return;
+  processing.value = true;
+  const res = await endShift({
+    tienCuoiCaThucTe: tienThucTe.value,
+    lyDoChenhLech: lyDoChenhLech.value,
+    ghiChu: ghiChu.value
+  });
+  processing.value = false;
+  if (res.success) {
+    buocHienTai.value = 4;
+    showSuccess(res.message);
+  } else {
+    showError(res.message);
+  }
 }
 
 // Action: Đồng ý nhận ca
@@ -1069,7 +1100,7 @@ function cuongCheKetThucCa() {
               <div class="flex justify-between md:justify-start gap-4">
                 <span class="text-slate-400 min-w-[100px]">Thời gian vào:</span>
                 <span class="font-medium text-slate-700 dark:text-slate-200">
-                  {{ displayShift?.thoiGianChamCong ? new Date(displayShift.thoiGianChamCong).toLocaleString('vi-VN') : (displayShift?.thoiGianVao ? new Date(displayShift.thoiGianVao).toLocaleString('vi-VN') : 'N/A') }}
+                  {{ displayShift?.thoiGianVao ? new Date(displayShift.thoiGianVao).toLocaleString('vi-VN') : 'N/A' }}
                 </span>
               </div>
               <div class="flex justify-between md:justify-start gap-4">
@@ -1195,7 +1226,7 @@ function cuongCheKetThucCa() {
               </div>
 
               <!-- Receiver dropdown -->
-              <div>
+              <div v-if="!coTheKetCa">
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                   Chọn nhân viên nhận ca <span class="text-rose-500">*</span>
                 </label>
@@ -1206,7 +1237,7 @@ function cuongCheKetThucCa() {
                     :key="nv.id" 
                     :value="nv.id"
                   >
-                    {{ nv.hoTen }} ({{ nv.ma }}) - {{ nv.tenVaiTro }}
+                    {{ nv.hoTen }} ({{ nv.ma }}){{ nv.vaiTro === 1 ? ' - Quản trị viên' : '' }}
                   </option>
                 </select>
               </div>
@@ -1242,13 +1273,21 @@ function cuongCheKetThucCa() {
               </div>
 
               <!-- Button: GỬI YÊU CẦU BÀN GIAO -->
-              <button 
+              <button v-if="!coTheKetCa"
                 type="button"
                 @click="xacNhanBanGiaoCaBtn"
                 :disabled="processing"
                 class="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl shadow-md transition text-xs uppercase tracking-wider disabled:opacity-50"
               >
                 {{ processing ? 'ĐANG GỬI BÀN GIAO...' : 'Gửi yêu cầu bàn giao' }}
+              </button>
+              <button v-else
+                type="button"
+                @click="ketCaLamViecBtn"
+                :disabled="processing"
+                class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition text-xs uppercase tracking-wider disabled:opacity-50"
+              >
+                {{ processing ? 'ĐANG KẾT CA...' : 'Kết ca làm việc' }}
               </button>
             </div>
 
@@ -1477,7 +1516,7 @@ function cuongCheKetThucCa() {
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Nhân viên giao ca</p>
                 <h4 class="font-bold text-slate-700 dark:text-slate-200 mt-1">{{ displayShift?.nhanVienTrongCaTen || adminSession.hoTen }}</h4>
                 <p class="text-[10px] text-slate-400 mt-0.5">
-                  Vào ca: {{ displayShift?.thoiGianChamCong ? new Date(displayShift.thoiGianChamCong).toLocaleString('vi-VN') : (displayShift?.thoiGianVao ? new Date(displayShift.thoiGianVao).toLocaleString('vi-VN') : 'N/A') }}
+                  Vào ca: {{ displayShift?.thoiGianVao ? new Date(displayShift.thoiGianVao).toLocaleString('vi-VN') : 'N/A' }}
                 </p>
               </div>
               

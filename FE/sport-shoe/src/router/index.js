@@ -30,9 +30,7 @@ const DotGiamGia = () => import("../pages/admin/khuyen-mai/DotGiamGia.vue");
 const ChiTietDotGiamGia = () => import("../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue");
 const HoaDon = () => import("../pages/admin/hoa-don/HoaDon.vue");
 const ChiTietHoaDon = () => import("../pages/admin/hoa-don/chi-tiet-hoa-don/ChiTietHoaDon.vue");
-const TraHang = () => import("../pages/admin/tra-hang/TraHang.vue");
 const QuanLyDanhGia = () => import("../pages/admin/danh-gia/QuanLyDanhGia.vue");
-const ChiTietTraHang = () => import("../pages/admin/tra-hang/ChiTietTraHang.vue");
 const BanHangTaiQuay = () => import("../pages/admin/ban-hang/BanHangTaiQuay.vue");
 const PosLayout = () => import("../layouts/admin/PosLayout.vue");
 const PosIpadApp = () => import("../pages/admin/ban-hang/PosIpadApp.vue");
@@ -51,7 +49,6 @@ const TrongLuong = () => import("../pages/admin/danh-muc/TrongLuong.vue");
 const QuanLyNhanVien = () => import("../pages/admin/nhan-vien/QuanLyNhanVien.vue");
 const ChiTietNhanVien = () => import("../pages/admin/nhan-vien/ChiTietNhanVien.vue");
 const QuanLyLichLam = () => import("../pages/admin/nhan-vien/QuanLyLichLam.vue");
-const QuanLyChamCong = () => import("../pages/admin/lich-lam/QuanLyChamCong.vue");
 const QuanLyCaLam = () => import("../pages/admin/lich-lam/QuanLyCaLam.vue");
 const LichSuHoatDong = () => import("../pages/admin/lich-lam/LichSuHoatDong.vue");
 const BanGiaoCa = () => import("../pages/admin/quan-ly-giao-ca/BanGiaoCa.vue");
@@ -66,7 +63,6 @@ const STAFF_ALLOWED_ADMIN_PATHS = [
   "/admin/ban-hang",
   "/pos",
   "/admin/hoa-don",
-  "/admin/tra-hang",
   "/admin/khach-hang",
   "/admin/lich-lam-viec",
   "/admin/ban-giao-ca",
@@ -297,16 +293,6 @@ const router = createRouter({
           component: ChiTietHoaDon
         },
         {
-          path: "tra-hang",
-          name: "admin-tra-hang",
-          component: TraHang
-        },
-        {
-          path: "tra-hang/:id",
-          name: "admin-tra-hang-chi-tiet",
-          component: ChiTietTraHang
-        },
-        {
           path: "danh-gia",
           name: "admin-danh-gia",
           component: QuanLyDanhGia
@@ -444,11 +430,6 @@ const router = createRouter({
           path: "lich-ca-lam",
           name: "admin-lich-ca-lam",
           component: QuanLyCaLam
-        },
-        {
-          path: "cham-cong",
-          name: "admin-cham-cong",
-          component: QuanLyChamCong
         },
         {
           path: "ban-giao-ca",

@@ -3,7 +3,9 @@ package com.example.server.core.admin.nhanVien.service;
 import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.BanGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.XacNhanBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
+import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaOptionsResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,10 @@ public interface GiaoCaService {
     GiaoCaStatsResponse layThongTinGiaoCaCurrent(UUID nhanVienId);
 
     GiaoCaResponse banGiaoCa(UUID nhanVienId, BanGiaoCaRequest request);
+
+    GiaoCaOptionsResponse layTuyChonBanGiao(UUID nhanVienId);
+
+    GiaoCaResponse ketCa(UUID nhanVienId, KetCaRequest request);
 
     List<GiaoCaResponse> layCaChoXacNhan(UUID nhanVienId);
 
