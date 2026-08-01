@@ -61,16 +61,16 @@ export function useVariantBuilder() {
 
     if (numGiaGoc < 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định không được âm'
-    } else if (numGiaGoc > 2000000000) {
-      variantErrors.giaGoc = 'Giá gốc mặc định không được vượt quá 2.000.000.000'
+    } else if (numGiaGoc > 999000000000) {
+      variantErrors.giaGoc = 'Giá gốc mặc định không được vượt quá 999.000.000.000'
     } else if (requirePrices && numGiaGoc <= 0) {
       variantErrors.giaGoc = 'Giá gốc mặc định phải lớn hơn 0'
     }
 
     if (numGiaBan < 0) {
       variantErrors.giaBan = 'Giá bán mặc định không được âm'
-    } else if (numGiaBan > 2000000000) {
-      variantErrors.giaBan = 'Giá bán mặc định không được vượt quá 2.000.000.000'
+    } else if (numGiaBan > 999000000000) {
+      variantErrors.giaBan = 'Giá bán mặc định không được vượt quá 999.000.000.000'
     } else if (requirePrices && numGiaBan <= 0) {
       variantErrors.giaBan = 'Giá bán mặc định phải lớn hơn 0'
     }

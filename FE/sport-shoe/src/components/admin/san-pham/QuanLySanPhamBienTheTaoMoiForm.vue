@@ -87,7 +87,9 @@ function parseNumericValue(value) {
 function buildNumericError(label, value) {
   const num = parseNumericValue(value)
   if (num < 0) return `${label} không được âm`
-  if (num > 2000000000) return `${label} không được vượt quá 2.000.000.000`
+  const limit = label.toLowerCase().includes('giá') ? 999000000000 : 2000000000
+  const limitStr = limit === 999000000000 ? '999.000.000.000' : '2.000.000.000'
+  if (num > limit) return `${label} không được vượt quá ${limitStr}`
   return ''
 }
 
