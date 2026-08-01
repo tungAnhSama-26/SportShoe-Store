@@ -31,7 +31,8 @@ const pageSize = ref(5)
 const loading = ref(false)
 const keyword = ref('')
 
-const TEN_MAX_LENGTH = 100
+const TEN_MIN_LENGTH = 2
+const TEN_MAX_LENGTH = 50
 
 async function loadData(page = 0) {
   loading.value = true
@@ -167,8 +168,8 @@ function validate() {
   else if (form.ten !== form.ten.trim()) {
     errors.ten = 'Tên màu sắc không được chứa khoảng trắng ở đầu hoặc cuối'
   }
-  else if (ten.length < 4 || ten.length > TEN_MAX_LENGTH) {
-    errors.ten = `Tên màu sắc phải từ 4 đến ${TEN_MAX_LENGTH} ký tự`
+  else if (ten.length < TEN_MIN_LENGTH || ten.length > TEN_MAX_LENGTH) {
+    errors.ten = `Tên màu sắc phải từ ${TEN_MIN_LENGTH} đến ${TEN_MAX_LENGTH} ký tự`
   }
   else if (hasSpecialCharacters(ten)) {
     errors.ten = 'Tên không được chứa ký tự đặc biệt'

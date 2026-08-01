@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 public record MauSacRequest(
         @NotBlank @Size(max = 50) String ma,
-        @NotBlank @Size(min = 4, max = 100, message = "Tên màu sắc phải từ 4 đến 100 ký tự") String ten,
+        @NotBlank @Size(min = 2, max = 50, message = "Tên màu sắc phải từ 2 đến 50 ký tự") String ten,
         @NotBlank
         @Size(max = 7)
         @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Mã màu chưa đúng định dạng, vui lòng nhập lại")
