@@ -316,14 +316,14 @@ public class ClientVnPayService {
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
         vnp_Params.put("vnp_Command", vnp_Command);
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_TmnCode", vnp_TmnCode.trim());
         vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
         vnp_Params.put("vnp_CurrCode", "VND");
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         vnp_Params.put("vnp_OrderInfo", vnp_OrderInfo);
         vnp_Params.put("vnp_OrderType", vnp_OrderType);
         vnp_Params.put("vnp_Locale", "vn");
-        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+        vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl != null ? vnp_ReturnUrl.trim() : "");
         vnp_Params.put("vnp_IpAddr", clientIp != null ? clientIp : "127.0.0.1");
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
         
@@ -347,11 +347,11 @@ public class ClientVnPayService {
         
         String hashData = String.join("&", hashParts);
         String queryUrl = String.join("&", queryParts);
-        String vnp_SecureHash = hmactSHA512(vnp_HashSecret, hashData);
+        String vnp_SecureHash = hmactSHA512(vnp_HashSecret.trim(), hashData);
         
         System.out.println("=== VNPAY DEBUG REQUEST ===");
-        System.out.println("vnp_TmnCode: " + vnp_TmnCode);
-        System.out.println("vnp_HashSecret: " + vnp_HashSecret);
+        System.out.println("vnp_TmnCode: " + vnp_TmnCode.trim());
+        System.out.println("vnp_HashSecret: " + vnp_HashSecret.trim());
         System.out.println("hashData: " + hashData);
         System.out.println("vnp_SecureHash: " + vnp_SecureHash);
         System.out.println("==========================");
@@ -383,7 +383,7 @@ public class ClientVnPayService {
         }
         
         String hashData = String.join("&", hashParts);
-        String calculatedHash = hmactSHA512(vnp_HashSecret, hashData);
+        String calculatedHash = hmactSHA512(vnp_HashSecret.trim(), hashData);
         
         try {
             java.io.FileWriter fw = new java.io.FileWriter("D:\\SportShoe-Store\\vnpay_debug.txt", true);

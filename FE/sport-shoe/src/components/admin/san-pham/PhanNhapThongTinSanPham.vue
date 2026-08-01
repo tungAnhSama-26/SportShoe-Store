@@ -33,6 +33,10 @@ const props = defineProps({
   inlineCreatingType: {
     type: String,
     default: null
+  },
+  isExistingProduct: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -137,11 +141,14 @@ function updateProductField(field, value, numeric = false) {
             <input
               :value="productForm.ten"
               type="text"
+              :disabled="isExistingProduct"
               class="h-11 w-full rounded-md border px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
               :class="
-                productErrors.ten
-                  ? 'border-rose-300 bg-rose-50'
-                  : 'border-slate-200 bg-slate-50'
+                isExistingProduct
+                  ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
+                  : productErrors.ten
+                    ? 'border-rose-300 bg-rose-50'
+                    : 'border-slate-200 bg-slate-50'
               "
               placeholder="Nhập tên sản phẩm..."
               @input="updateProductField('ten', $event.target.value)"
@@ -162,6 +169,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.thuongHieuId"
             :options="thuongHieuOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn thương hiệu..."
             search-placeholder="Tìm thương hiệu..."
             :error="Boolean(productErrors.thuongHieuId)"
@@ -180,6 +188,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.loaiGiayId"
             :options="loaiGiayOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn loại giày..."
             search-placeholder="Tìm loại giày..."
             :error="Boolean(productErrors.loaiGiayId)"
@@ -198,6 +207,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.gioiTinh"
             :options="genderSearchOptions"
+            :disabled="isExistingProduct"
             placeholder="Tất cả"
             search-placeholder="Tìm giới tính..."
             :error="Boolean(productErrors.gioiTinh)"
@@ -213,6 +223,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.chatLieuGiayId"
             :options="chatLieuOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn chất liệu giày..."
             search-placeholder="Tìm chất liệu..."
             :error="Boolean(productErrors.chatLieuGiayId)"
@@ -231,6 +242,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.deGiayId"
             :options="deGiayOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn đế giày..."
             search-placeholder="Tìm đế giày..."
             :error="Boolean(productErrors.deGiayId)"
@@ -249,6 +261,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.coGiayId"
             :options="coGiayOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn cổ giày..."
             search-placeholder="Tìm cổ giày..."
             :error="Boolean(productErrors.coGiayId)"
@@ -267,6 +280,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.congNgheDemId"
             :options="congNgheDemOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn công nghệ đệm..."
             search-placeholder="Tìm công nghệ đệm..."
             :error="Boolean(productErrors.congNgheDemId)"
@@ -285,6 +299,7 @@ function updateProductField(field, value, numeric = false) {
           <AdminSearchableSelect
             :model-value="productForm.trongLuongId"
             :options="trongLuongOptions"
+            :disabled="isExistingProduct"
             placeholder="Chọn trọng lượng..."
             search-placeholder="Tìm trọng lượng..."
             :error="Boolean(productErrors.trongLuongId)"
