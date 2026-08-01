@@ -3,7 +3,9 @@ package com.example.server.core.admin.nhanVien.controller;
 import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.BanGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.XacNhanBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
+import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaOptionsResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
 import com.example.server.core.admin.nhanVien.service.GiaoCaService;
 import com.example.server.infrastructure.api.ApiResponse;
@@ -70,6 +72,22 @@ public class GiaoCaController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Bàn giao ca thành công. Ca làm việc chuyển sang trạng thái chờ xác nhận",
                 giaoCaService.banGiaoCa(nhanVienId, request)
+        ));
+    }
+
+    @GetMapping("/handover-options")
+    public ResponseEntity<ApiResponse<GiaoCaOptionsResponse>> layTuyChonBanGiao() {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy danh sách nhân viên nhận ca thành công",
+                giaoCaService.layTuyChonBanGiao(getPrincipal().id())
+        ));
+    }
+
+    @PostMapping("/end")
+    public ResponseEntity<ApiResponse<GiaoCaResponse>> ketCa(@Valid @RequestBody KetCaRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Kết ca làm việc thành công",
+                giaoCaService.ketCa(getPrincipal().id(), request)
         ));
     }
 

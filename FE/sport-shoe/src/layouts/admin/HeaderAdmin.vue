@@ -198,8 +198,6 @@ onMounted(() => {
 const pageTitle = computed(() => {
   const titles = {
     'admin-thong-ke': 'Thống kê',
-    'admin-tra-hang': 'Trả hàng',
-    'admin-tra-hang-chi-tiet': 'Chi tiết trả hàng',
     'admin-phieu-giam-gia': 'Phiếu giảm giá',
     'admin-phieu-giam-gia-khach-hang': 'Phiếu giảm giá khách hàng',
     'admin-phieu-giam-gia-them': 'Thêm phiếu giảm giá',
@@ -240,7 +238,6 @@ const pageTitle = computed(() => {
     'admin-khach-hang-don-hang': 'Lịch sử mua hàng',
     'admin-lich-lam-viec': 'Lịch làm việc',
     'admin-lich-ca-lam': 'Lịch ca làm',
-    'admin-cham-cong': 'Chấm công',
     'admin-ban-giao-ca': 'Bàn giao ca',
     'admin-thu-chi': 'Quản lý thu / chi',
     'admin-mo-ca': 'Mở ca làm việc',
@@ -252,11 +249,6 @@ const pageTitle = computed(() => {
 });
 
 const subRouteBreadcrumbs = {
-  'admin-tra-hang-chi-tiet': {
-    parentPath: '/admin/tra-hang',
-    parentTitle: 'Trả hàng',
-    childTitle: 'Chi tiết trả hàng'
-  },
   'admin-phieu-giam-gia-them': {
     parentPath: '/admin/phieu-giam-gia',
     parentTitle: 'Phiếu giảm giá',
@@ -416,11 +408,6 @@ const subRouteBreadcrumbs = {
     parentPath: '',
     parentTitle: 'Quản lý lịch làm',
     childTitle: 'Lịch ca làm'
-  },
-  'admin-cham-cong': {
-    parentPath: '',
-    parentTitle: 'Quản lý lịch làm',
-    childTitle: 'Chấm công'
   },
   'admin-lich-su-hoat-dong': {
     parentPath: '',

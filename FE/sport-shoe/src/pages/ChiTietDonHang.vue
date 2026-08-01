@@ -18,7 +18,6 @@ import {
   layViTriTienTrinhDonHang,
 } from '../utils/order-status';
 import anhMacDinh from '../assets/login-shoe.png';
-import YeuCauTraHangModal from '../components/common/YeuCauTraHangModal.vue';
 import ChinhSuaGiaoHangModal from '../components/common/ChinhSuaGiaoHangModal.vue';
 import {
   ketNoiHoaDonRealtime,
@@ -61,36 +60,9 @@ const REALTIME_POLL_INTERVAL_MS = 3000;
 const don = ref(null);
 const dangTai = ref(true);
 const loi = ref('');
-const hienModalTraHang = ref(false);
 const hienModalGiaoHang = ref(false);
 const dangLuuGiaoHang = ref(false);
 const diaChiDaLuu = ref([]);
-const SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG = 3;
-
-const daQuaHanTraHang = computed(() => {
-  if (!don.value) return true;
-  const mocTime = don.value.ngayGiao ? new Date(don.value.ngayGiao).getTime() : (don.value.ngayCapNhat ? new Date(don.value.ngayCapNhat).getTime() : new Date().getTime());
-  const bayGio = new Date().getTime();
-  const thoiHanTraHangMs = SO_NGAY_DUOC_GUI_YEU_CAU_TRA_HANG * 24 * 60 * 60 * 1000;
-  return (bayGio - mocTime) > thoiHanTraHangMs;
-});
-
-function lopBadgeTraHang(tt) {
-  switch (tt) {
-    case 1: return 'bg-amber-50 text-amber-600 border border-amber-100';
-    case 2: return 'bg-blue-50 text-blue-600 border border-blue-100';
-    case 3: return 'bg-violet-50 text-violet-600 border border-violet-100';
-    case 4: return 'bg-cyan-50 text-cyan-600 border border-cyan-100';
-    case 5: return 'bg-purple-50 text-purple-600 border border-purple-100';
-    case 6: return 'bg-rose-50 text-rose-600 border border-rose-100';
-    case 7: return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-    case 8: return 'bg-stone-100 text-stone-600 border border-stone-200';
-    case 9: return 'bg-slate-100 text-slate-500 border border-slate-200';
-    case 10: return 'bg-rose-50 text-rose-600 border border-rose-100';
-    default: return 'bg-slate-100 text-slate-600';
-  }
-}
-
 let ngatKetNoiRealtime = null;
 let ngatKetNoiRealtimeNoiBo = null;
 let realtimeRefreshTimeout = null;
@@ -185,106 +157,8 @@ async function taiChiTiet(amThang = false) {
   }
 }
 
-const CAC_BUOC_TRA_HANG = Object.freeze([
-  {
-    id: 1,
-    ten: 'Chờ duyệt',
-    icon: 'M12 8v4l3 3 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
-  },
-  {
-    id: 2,
-    ten: 'Chờ gửi hàng',
-    icon: 'M3 6h18 M7 3v6 M17 3v6 M5 10h14v10H5z',
-  },
-  {
-    id: 3,
-    ten: 'Đang hoàn hàng',
-    icon: 'M3 12h15 M14 7l5 5-5 5 M5 5v14',
-  },
-  {
-    id: 4,
-    ten: 'Đã nhận hàng',
-    icon: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.3 7 12 12l8.7-5 M12 22V12',
-  },
-  {
-    id: 5,
-    ten: 'Đang kiểm tra',
-    icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
-  },
-  {
-    id: 6,
-    ten: 'Chờ hoàn tiền',
-    icon: 'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-  },
-  {
-    id: 7,
-    ten: 'Đã hoàn tiền',
-    icon: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M8 12l3 3 5-6',
-  },
-]);
-
-const TRANG_THAI_TRA_HANG_DAC_BIET = Object.freeze({
-  8: {
-    tieuDe: 'Yêu cầu trả hàng bị từ chối',
-    moTa: 'Yêu cầu trả hàng/hoàn tiền không được chấp nhận.',
-    lopMau: 'bg-rose-50 text-rose-600',
-  },
-  9: {
-    tieuDe: 'Yêu cầu trả hàng đã hủy',
-    moTa: 'Phiếu trả hàng/hoàn tiền này đã được hủy.',
-    lopMau: 'bg-slate-100 text-slate-600',
-  },
-  10: {
-    tieuDe: 'Hoàn hàng thất bại',
-    moTa: 'Hàng trả chưa được giao thành công. Vui lòng liên hệ cửa hàng để được hỗ trợ.',
-    lopMau: 'bg-rose-50 text-rose-600',
-  },
-});
-
-const coPhieuTraHang = computed(() => don.value?.phieuTraHangId != null);
-
-const tongTienSanPhamHoan = computed(() => {
-  return don.value?.chiTietTraHang?.reduce((sum, item) => sum + (Number(item.soTienHoan) || 0), 0) || 0;
-});
-
-const isLoiShop = computed(() => {
-  const lyDo = String(don.value?.lyDoTraHangMa || "").trim().toUpperCase();
-  return ["PRODUCT_DEFECT", "WRONG_SIZE", "NOT_AS_DESCRIBED", "GIAO_SAI", "HANG_LOI"].includes(lyDo);
-});
-
-const hoanPhiVanChuyen = computed(() => {
-  if (!don.value) return 0;
-  return (isLoiShop.value && tongTienSanPhamHoan.value > 0) ? (Number(don.value.phiVanChuyen) || 0) : 0;
-});
-
-const coPhieuGiamGia = computed(() => {
-  return don.value && don.value.maPhieuGiamGia && Number(don.value.giamVoucher || 0) > 0;
-});
-
-const viTriHienTai = computed(() => (
-  coPhieuTraHang.value
-    ? Math.min(Math.max(Number(don.value?.trangThaiTraHang) || 0, 0), CAC_BUOC_TRA_HANG.length)
-    : layViTriTienTrinhDonHang(don.value?.trangThai)
-));
-
-const cauHinhTrangThai = computed(() => {
-  if (!coPhieuTraHang.value) {
-    return layCauHinhTrangThaiDonHang(don.value?.trangThai);
-  }
-
-  const trangThai = Number(don.value?.trangThaiTraHang);
-  const dacBiet = TRANG_THAI_TRA_HANG_DAC_BIET[trangThai];
-  if (dacBiet) {
-    return { ...dacBiet, hienStepper: false };
-  }
-
-  return {
-    hienStepper: trangThai >= 1 && trangThai <= 7,
-    tieuDe: 'Trạng thái trả hàng chưa xác định',
-    moTa: 'Vui lòng tải lại trang hoặc liên hệ cửa hàng để được hỗ trợ.',
-    lopMau: 'bg-slate-100 text-slate-600',
-  };
-});
+const viTriHienTai = computed(() => layViTriTienTrinhDonHang(don.value?.trangThai));
+const cauHinhTrangThai = computed(() => layCauHinhTrangThaiDonHang(don.value?.trangThai));
 
 function chuanHoaTrangThai(value) {
   const trangThai = String(value || '')
@@ -297,19 +171,6 @@ function chuanHoaTrangThai(value) {
 }
 
 const thongTinCacBuoc = computed(() => {
-  if (coPhieuTraHang.value) {
-    const lichSuTraHang = Array.isArray(don.value?.lichSuTraHang) ? don.value.lichSuTraHang : [];
-    return CAC_BUOC_TRA_HANG.map((buoc) => {
-      const banGhi = lichSuTraHang.find(
-        (item) => Number(item?.trangThai) === buoc.id,
-      );
-      return {
-        ...buoc,
-        thoiGian: banGhi?.ngayTao || null,
-      };
-    });
-  }
-
   const lichSu = Array.isArray(don.value?.lichSuTrangThai) ? don.value.lichSuTrangThai : [];
 
   return CAC_BUOC_DON_HANG.map((buoc, index) => {
@@ -496,15 +357,8 @@ function xuLyAnhLoi(event) {
             <p class="mt-1 text-sm text-slate-400">Đặt lúc {{ formatNgay(don.ngayLap) }}</p>
           </div>
           <div class="flex items-center gap-2">
-            <span
-              v-if="don.phieuTraHangId == null"
-              class="rounded-full px-3.5 py-1.5 text-sm font-semibold"
-              :class="lopBadge(don.trangThai)"
-            >
+            <span class="rounded-full px-3.5 py-1.5 text-sm font-semibold" :class="lopBadge(don.trangThai)">
               {{ don.trangThaiText }}
-            </span>
-            <span v-if="don.phieuTraHangId != null" class="rounded-full px-3.5 py-1.5 text-sm font-semibold" :class="lopBadgeTraHang(don.trangThaiTraHang)">
-              {{ don.trangThaiTraHangText }}
             </span>
           </div>
         </div>
@@ -516,7 +370,7 @@ function xuLyAnhLoi(event) {
               <rect x="7" y="4" width="10" height="16" rx="2" />
               <path d="M9 4.5V3.8A1.8 1.8 0 0 1 10.8 2h2.4A1.8 1.8 0 0 1 15 3.8v.7M10 9h4M10 13h4M10 17h2" />
             </svg>
-            {{ coPhieuTraHang ? 'Trạng Thái Trả Hàng/Hoàn Tiền' : 'Trạng Thái Đơn Hàng' }}
+            Trạng Thái Đơn Hàng
           </div>
 
           <div
@@ -593,18 +447,6 @@ function xuLyAnhLoi(event) {
             Đánh giá sản phẩm
           </button>
 
-          <!-- Yêu cầu trả hàng: chỉ hiện khi còn trong thời hạn chính sách 3 ngày. -->
-          <button
-            v-if="(don.phieuTraHangId == null || [8, 9].includes(don.trangThaiTraHang)) && !daQuaHanTraHang"
-            @click="hienModalTraHang = true"
-            class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3 text-sm font-bold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100"
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 14 4 9l5-5" />
-              <path d="M4 9h10a6 6 0 0 1 6 6v5" />
-            </svg>
-            Yêu cầu trả hàng
-          </button>
         </section>
 
         <!-- Thông tin nhận hàng -->
@@ -683,117 +525,9 @@ function xuLyAnhLoi(event) {
           </div>
         </section>
 
-        <!-- Chi tiết trả hàng / hoàn tiền -->
-        <section v-if="coPhieuTraHang" class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
-          <div class="border-b border-slate-100 pb-4 mb-4">
-            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-500"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-              Chi tiết yêu cầu trả hàng
-            </h2>
-          </div>
-
-          <div class="grid gap-6 md:grid-cols-2">
-            <!-- Cột trái: Lý do & Hình ảnh -->
-            <div class="space-y-4">
-              <div>
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Lý do trả hàng</span>
-                <p class="text-sm font-semibold text-slate-800">{{ hienThiLyDo(don.lyDoTraHangMa) }}</p>
-                <p v-if="don.lyDoTraHangMoTa" class="mt-1.5 text-sm text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100 whitespace-pre-wrap">
-                  {{ don.lyDoTraHangMoTa }}
-                </p>
-              </div>
-
-              <div>
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Hình ảnh minh chứng</span>
-                <div v-if="don.hinhAnhTraHang?.length" class="grid grid-cols-3 gap-2">
-                  <a
-                    v-for="(url, index) in don.hinhAnhTraHang"
-                    :key="`${url}-${index}`"
-                    :href="resolveHinhAnh(url)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-                  >
-                    <img
-                      :src="resolveHinhAnh(url)"
-                      :alt="`Ảnh minh chứng trả hàng ${index + 1}`"
-                      class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  </a>
-                </div>
-                <div v-else class="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  Chưa cung cấp hình ảnh minh chứng.
-                </div>
-              </div>
-            </div>
-
-            <!-- Cột phải: Tổng kết hoàn tiền -->
-            <div class="border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 flex flex-col justify-between">
-              <div>
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">Tổng kết hoàn tiền</span>
-                <div class="space-y-3 text-sm">
-                  <div class="flex items-center justify-between text-slate-500">
-                    <span>Tiền hoàn dự kiến</span>
-                    <span class="font-semibold text-slate-700">{{ dinhDangTienViet(don.tongTienDuKienTra) }}</span>
-                  </div>
-
-                  <div class="border-t border-slate-100 pt-3 space-y-2">
-                    <div class="flex items-center justify-between text-slate-600">
-                      <span>Tiền sản phẩm hoàn trả</span>
-                      <span>{{ dinhDangTienViet(tongTienSanPhamHoan) }}</span>
-                    </div>
-
-                    <div v-if="hoanPhiVanChuyen > 0" class="flex items-center justify-between text-slate-600">
-                      <span class="flex items-center gap-1.5">
-                        Phí vận chuyển gốc được hoàn
-                        <img :src="logoGhn" alt="GHN" class="h-3.5 w-auto object-contain" />
-                        <span class="relative group inline-flex items-center cursor-help text-slate-400 hover:text-slate-600 transition">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                          <span class="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-xl bg-slate-800 p-2.5 text-center text-[10px] font-normal leading-normal text-white shadow-lg transition-all duration-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
-                            Hoàn phí ship GHN do lỗi của shop: {{ hienThiLyDo(don.lyDoTraHangMa) }}
-                          </span>
-                        </span>
-                      </span>
-                      <span class="text-slate-700 font-semibold">
-                        +{{ dinhDangTienViet(hoanPhiVanChuyen) }}
-                      </span>
-                    </div>
-
-                    <div v-if="coPhieuGiamGia" class="bg-slate-50 rounded-xl p-2.5 mt-2 space-y-1">
-                      <div class="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Mã giảm giá đã dùng</span>
-                        <span class="font-bold text-slate-700">{{ don.maPhieuGiamGia }}</span>
-                      </div>
-                      <div class="flex items-center justify-between text-[11px] text-slate-500">
-                        <span class="flex items-center gap-1">
-                          Tiền voucher giảm
-                          <span class="relative group inline-flex items-center cursor-help text-slate-400 hover:text-slate-600 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            <span class="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-xl bg-slate-800 p-2.5 text-center text-[10px] font-normal leading-normal text-white shadow-lg transition-all duration-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
-                              Số tiền hoàn của sản phẩm đã được tự động khấu trừ theo tỷ lệ áp dụng voucher của đơn hàng gốc.
-                            </span>
-                          </span>
-                        </span>
-                        <span class="text-emerald-600 font-semibold">-{{ dinhDangTienViet(don.giamVoucher) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="border-t border-slate-200 pt-4 mt-4">
-                <div class="flex items-center justify-between">
-                  <span class="text-base font-bold text-slate-800">Tiền hoàn được duyệt</span>
-                  <span class="text-xl font-bold text-emerald-600">{{ dinhDangTienViet(don.tongTienThucTeTra) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <!-- Phân tích giá -->
-        <section v-if="!coPhieuTraHang" class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
+        <section class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
           <h2 class="text-base font-bold text-slate-800 mb-4">Thông tin thanh toán</h2>
           <div class="space-y-2.5 text-sm">
             <div class="flex items-center justify-between text-slate-600">
@@ -824,13 +558,6 @@ function xuLyAnhLoi(event) {
       </template>
     </div>
 
-    <!-- Return Request Modal -->
-    <YeuCauTraHangModal
-      :isOpen="hienModalTraHang"
-      :don="don"
-      @close="hienModalTraHang = false"
-      @success="taiChiTiet"
-    />
     <ChinhSuaGiaoHangModal
       v-model="hienModalGiaoHang"
       title="Chỉnh sửa thông tin nhận hàng"

@@ -24,14 +24,6 @@ public class FaqRuleEngine {
             return "SportShoe mở cửa đón khách tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật & Ngày lễ) từ **08:00 sáng đến 22:00 tối** nhé!";
         }
 
-        // 3. Chính sách đổi trả / Hủy hàng
-        if (query.contains("chính sách đổi trả") || query.contains("đổi trả") || query.contains("đổi hàng") || query.contains("trả hàng thế nào")) {
-            return "Chính sách đổi trả của SportShoe:\n" +
-                   "- Đổi hàng miễn phí trong vòng **7 ngày** kể từ khi nhận hàng đối với sản phẩm còn nguyên tem mác, chưa qua sử dụng.\n" +
-                   "- Hỗ trợ đổi size hoặc đổi mẫu khác có giá trị tương đương hoặc cao hơn.\n" +
-                   "- Bạn có thể gửi yêu cầu đổi trả ngay trên mục **Đơn hàng của tôi** hoặc liên hệ nhân viên cửa hàng để được hỗ trợ nhanh nhất!";
-        }
-
         // 4. Hotline / Liên hệ
         if (query.contains("hotline") || query.contains("số điện thoại") || query.contains("liên hệ nhân viên") || query.contains("tổng đài")) {
             return "Bạn có thể liên hệ trực tiếp với bộ phận chăm sóc khách hàng của SportShoe qua:\n" +

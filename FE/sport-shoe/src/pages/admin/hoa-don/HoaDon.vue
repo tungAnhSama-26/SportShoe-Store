@@ -58,32 +58,6 @@ const mauTrangThai = {
   "Cần hoàn tiền": "bg-rose-100 text-rose-700 border border-rose-200",
 };
 
-function mauTrangThaiTraHang(trangThai) {
-  switch (trangThai) {
-    case 1:
-      return "bg-amber-50 text-amber-700";
-    case 2:
-      return "bg-blue-50 text-blue-700";
-    case 3:
-      return "bg-violet-50 text-violet-700";
-    case 4:
-      return "bg-cyan-50 text-cyan-700";
-    case 5:
-      return "bg-purple-50 text-purple-700";
-    case 6:
-      return "bg-orange-50 text-orange-700";
-    case 7:
-      return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100";
-    case 8:
-      return "bg-rose-50 text-rose-700";
-    case 9:
-      return "bg-slate-100 text-slate-600";
-    case 10:
-      return "bg-red-50 text-red-700";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
-}
 
 function dinhDangTien(value) {
   return new Intl.NumberFormat("vi-VN", {

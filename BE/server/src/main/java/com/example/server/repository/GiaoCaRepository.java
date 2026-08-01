@@ -19,6 +19,12 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     Optional<GiaoCa> findByNhanVienTrongCaIdAndTrangThai(UUID nhanVienId, String trangThai);
 
+    Optional<GiaoCa> findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(UUID nhanVienId, List<String> trangThai);
+
+    boolean existsByTrangThaiIn(List<String> trangThai);
+
+    boolean existsByNhanVienTrongCaIdAndTrangThaiIn(UUID nhanVienId, List<String> trangThai);
+
     Optional<GiaoCa> findFirstByTrangThaiInOrderByThoiGianVaoDesc(List<String> trangThai);
 
     List<GiaoCa> findByNhanVienNhanIdAndTrangThaiOrderByThoiGianVaoDesc(UUID nhanVienId, String trangThai);

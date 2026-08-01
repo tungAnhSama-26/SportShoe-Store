@@ -67,7 +67,7 @@ public class GiaoCa {
 
     @NotNull
     @Column(name = "trang_thai", nullable = false, length = 20)
-    private String trangThai; // 'MO_CA', 'CHO_BAN_GIAO', 'DA_BAN_GIAO'
+    private String trangThai; // 'MO_CA', 'CHO_BAN_GIAO', 'DA_BAN_GIAO', 'DA_KET_THUC'
 
     @Column(name = "ghi_chu", length = 255)
     private String ghiChu;

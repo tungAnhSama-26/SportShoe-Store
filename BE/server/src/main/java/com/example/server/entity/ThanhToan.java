@@ -77,10 +77,6 @@ public class ThanhToan {
     private Integer loaiGiaoDich;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "phieu_tra_hang_id")
-    private PhieuTraHang phieuTraHang;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "giao_dich_goc_id")
     private ThanhToan giaoDichGoc;
 

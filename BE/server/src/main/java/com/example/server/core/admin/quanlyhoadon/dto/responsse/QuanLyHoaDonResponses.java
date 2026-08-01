@@ -22,9 +22,6 @@ public final class QuanLyHoaDonResponses {
             String trangThai,
             String maPhieuGiamGia,
             String emailKhachHang,
-            Integer phieuTraHangId,
-            Integer trangThaiPhieuTraHang,
-            String trangThaiPhieuTraHangText,
             String phuongThucThanhToan
     ) {
     }
@@ -96,11 +93,7 @@ public final class QuanLyHoaDonResponses {
             String lyDoGiaoHangThatBai,
             List<HoaDonPaymentHistoryResponse> lichSuThanhToan,
             List<HoaDonProductResponse> sanPham,
-            List<HoaDonHistoryResponse> lichSuHoaDon,
-            Integer phieuTraHangId,
-            String maPhieuTraHang,
-            Integer trangThaiPhieuTraHang,
-            String trangThaiPhieuTraHangText
+            List<HoaDonHistoryResponse> lichSuHoaDon
     ) {
     }
 }

@@ -14,9 +14,6 @@ public record DonHangTomTatResponse(
         int soLuong,
         BigDecimal tongThanhToan,
         List<DongSanPhamTomTat> sanPhams,
-        Integer phieuTraHangId,
-        Integer trangThaiTraHang,
-        String trangThaiTraHangText,
         Instant ngayCapNhat,
         Instant ngayGiao
 ) {

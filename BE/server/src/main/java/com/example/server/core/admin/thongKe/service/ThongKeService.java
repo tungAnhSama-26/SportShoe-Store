@@ -24,7 +24,6 @@ import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.ThuongHieuRepository;
 import com.example.server.repository.ThanhToanRepository;
-import com.example.server.repository.PhieuTraHangChiTietRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -61,7 +60,6 @@ public class ThongKeService {
     private final ThuongHieuRepository thuongHieuRepository;
     private final HoaDonRepository hoaDonRepository;
     private final ThanhToanRepository thanhToanRepository;
-    private final PhieuTraHangChiTietRepository phieuTraHangChiTietRepository;
 
     public ThongKeService(
             HoaDonChiTietRepository hoaDonChiTietRepository,
@@ -69,8 +67,7 @@ public class ThongKeService {
             KhachHangRepository khachHangRepository,
             ThuongHieuRepository thuongHieuRepository,
             HoaDonRepository hoaDonRepository,
-            ThanhToanRepository thanhToanRepository,
-            PhieuTraHangChiTietRepository phieuTraHangChiTietRepository
+            ThanhToanRepository thanhToanRepository
     ) {
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -78,7 +75,6 @@ public class ThongKeService {
         this.thuongHieuRepository = thuongHieuRepository;
         this.hoaDonRepository = hoaDonRepository;
         this.thanhToanRepository = thanhToanRepository;
-        this.phieuTraHangChiTietRepository = phieuTraHangChiTietRepository;
     }
 
     @Transactional(readOnly = true)
@@ -112,16 +108,7 @@ public class ThongKeService {
                     .collect(Collectors.groupingBy(tt -> tt.getHoaDon().getId()));
         }
 
-        List<Object[]> rowsTra = phieuTraHangChiTietRepository.sumReturnedQuantityGroupedByGiayIdWithDates(
-                boLoc.tuNgayInstant(),
-                boLoc.denNgayDocQuyenInstant()
-        );
         Map<Integer, Long> mapSoLuongTra = new HashMap<>();
-        for (Object[] row : rowsTra) {
-            if (row[0] != null && row[1] != null) {
-                mapSoLuongTra.put((Integer) row[0], ((Number) row[1]).longValue());
-            }
-        }
 
         List<HoaDonChiTiet> dongBanHangTheoBoLoc = tatCaDongBanHang.stream()
                 .filter(dong -> khopBoLocDongBanHang(dong, boLoc))

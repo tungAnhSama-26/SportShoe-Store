@@ -867,7 +867,7 @@ public class QuanLySanPhamService {
 
     private void xoaKhoiGioHangCuaKhachHang(Integer giayChiTietId) {
         // CHỈ gỡ khỏi giỏ hàng (hóa đơn trạng thái 0). KHÔNG đụng đơn thật (chờ xác nhận = 1...)
-        // vì xóa dòng đơn thật vừa sai nghiệp vụ vừa dính khóa ngoại (vd phiếu trả hàng tham chiếu).
+        // Không xóa vật lý dòng đơn vì sẽ làm sai lịch sử nghiệp vụ và vi phạm khóa ngoại.
         List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0));
         for (HoaDonChiTiet hdct : toDelete) {
             HoaDon hd = hdct.getHoaDon();

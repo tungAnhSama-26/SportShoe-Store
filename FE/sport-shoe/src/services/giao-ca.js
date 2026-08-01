@@ -30,6 +30,17 @@ export function banGiaoCa(payload) {
   });
 }
 
+export function layTuyChonBanGiao() {
+  return request("/admin/giao-ca/handover-options");
+}
+
+export function ketCa(payload) {
+  return request("/admin/giao-ca/end", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function layCaChoXacNhan() {
   return request("/admin/giao-ca/pending-handovers");
 }

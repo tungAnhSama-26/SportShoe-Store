@@ -1,5 +1,4 @@
 <script setup>
-import TaoPhieuTraHangModal from "../../../../../components/admin/hoa-don/TaoPhieuTraHangModal.vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
 import {
   lopTrangThaiThanhToan,
@@ -51,24 +50,6 @@ const {
             Lịch Sử Thanh Toán
           </h2>
           <div class="flex flex-wrap items-center justify-end gap-2">
-            <button
-              v-if="hoaDon.phieuTraHangId"
-              type="button"
-              class="inline-flex h-9 items-center gap-2 rounded-full border border-[#B82220]/20 bg-[#B82220]/5 px-3.5 text-xs font-bold text-[#B82220] transition hover:bg-[#B82220]/10 active:scale-95"
-              @click="
-                router.push({
-                  name: 'admin-tra-hang-chi-tiet',
-                  params: { id: hoaDon.phieuTraHangId },
-                })
-              "
-            >
-              <Package class="h-4 w-4" />
-              {{
-                hoaDon.trangThaiPhieuTraHang === 6
-                  ? "Xử lý trả hàng"
-                  : "Xem phiếu trả hàng"
-              }}
-            </button>
             <button
               v-if="coTheThanhToanCod"
               type="button"
@@ -172,7 +153,6 @@ const {
       </template>
       In Hóa Đơn
     </Button>
-    <!-- <TaoPhieuTraHangModal v-if="laDonTaiQuay" :hoa-don="hoaDon" /> -->
     <Button
       v-if="!donDaKetThuc"
       @click="moModalThongTin"

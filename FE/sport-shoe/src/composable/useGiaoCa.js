@@ -4,7 +4,8 @@ import {
   moCa, 
   banGiaoCa, 
   layCaChoXacNhan, 
-  xacNhanBanGiao 
+  xacNhanBanGiao,
+  ketCa
 } from "../services/giao-ca";
 
 const activeShift = ref(null);
@@ -46,12 +47,21 @@ async function handleMoCa(tienDauCa, ghiChu) {
 
 async function handleBanGiaoCa(payload) {
   try {
-    await banGiaoCa(payload);
-    activeShift.value = null;
+    activeShift.value = await banGiaoCa(payload);
     await loadPendingHandovers();
     return { success: true, message: "Bàn giao ca thành công. Vui lòng chờ người nhận xác nhận." };
   } catch (error) {
     return { success: false, message: error?.message || "Bàn giao ca thất bại" };
+  }
+}
+
+async function handleKetCa(payload) {
+  try {
+    const data = await ketCa(payload);
+    activeShift.value = null;
+    return { success: true, data, message: "Kết ca làm việc thành công" };
+  } catch (error) {
+    return { success: false, message: error?.message || "Kết ca làm việc thất bại" };
   }
 }
 
@@ -75,6 +85,7 @@ export function useGiaoCa() {
     loadPendingHandovers,
     openShift: handleMoCa,
     submitHandover: handleBanGiaoCa,
-    confirmHandover: handleConfirmHandover
+    confirmHandover: handleConfirmHandover,
+    endShift: handleKetCa
   };
 }

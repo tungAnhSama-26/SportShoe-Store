@@ -3,16 +3,19 @@ package com.example.server.core.admin.nhanVien.service.impl;
 import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.BanGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.XacNhanBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
+import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaOptionsResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
 import com.example.server.core.admin.nhanVien.service.GiaoCaService;
 import com.example.server.entity.GiaoCa;
-import com.example.server.entity.ChamCong;
 import com.example.server.entity.NhanVien;
+import com.example.server.entity.CaLam;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.GiaoCaRepository;
 import com.example.server.repository.NhanVienRepository;
-import com.example.server.repository.ChamCongRepository;
+import com.example.server.repository.LichLamViecRepository;
+import com.example.server.repository.CaLamRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,7 +24,12 @@ import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,25 +40,28 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private final GiaoCaRepository giaoCaRepository;
     private final NhanVienRepository nhanVienRepository;
-    private final ChamCongRepository chamCongRepository;
     private final ThongBaoService thongBaoService;
+    private final LichLamViecRepository lichLamViecRepository;
+    private final CaLamRepository caLamRepository;
 
     public GiaoCaServiceImpl(
             GiaoCaRepository giaoCaRepository,
             NhanVienRepository nhanVienRepository,
-            ChamCongRepository chamCongRepository,
-            ThongBaoService thongBaoService
+            ThongBaoService thongBaoService,
+            LichLamViecRepository lichLamViecRepository,
+            CaLamRepository caLamRepository
     ) {
         this.giaoCaRepository = giaoCaRepository;
         this.nhanVienRepository = nhanVienRepository;
-        this.chamCongRepository = chamCongRepository;
         this.thongBaoService = thongBaoService;
+        this.lichLamViecRepository = lichLamViecRepository;
+        this.caLamRepository = caLamRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public GiaoCaResponse layCaHoatDong(UUID nhanVienId) {
-        return giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA")
+        return giaoCaRepository.findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(nhanVienId, CHUA_KET_THUC_TRANG_THAI)
                 .map(this::mapToResponse)
                 .orElse(null);
     }
@@ -116,6 +127,15 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         NhanVien nhanVienNhan = nhanVienRepository.findById(request.nhanVienNhanId())
                 .orElseThrow(() -> new BusinessException("Nhân viên nhận bàn giao không tồn tại."));
 
+        GiaoCaOptionsResponse options = layTuyChonBanGiao(nhanVienId);
+        if (options.coTheKetCa()) {
+            throw new BusinessException("Đây là ca cuối trong ngày. Vui lòng sử dụng chức năng kết ca làm việc.");
+        }
+        boolean hopLe = options.nhanVienNhanCa().stream().anyMatch(item -> item.id().equals(nhanVienNhan.getId()));
+        if (!hopLe) {
+            throw new BusinessException("Nhân viên nhận không thuộc ca kế tiếp và không phải quản trị viên hợp lệ.");
+        }
+
         BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(gc.getId());
         BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(gc.getId());
         BigDecimal tienHeThong = gc.getTienDauCa().add(tienMat);
@@ -156,6 +176,44 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     @Override
     @Transactional(readOnly = true)
+    public GiaoCaOptionsResponse layTuyChonBanGiao(UUID nhanVienId) {
+        giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA")
+                .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc đang hoạt động."));
+
+        LocalDate homNay = LocalDate.now(ZoneId.of("Asia/Bangkok"));
+        Optional<CaLam> caKeTiep = timCaKeTiep(nhanVienId, homNay);
+        if (caKeTiep.isEmpty()) {
+            return new GiaoCaOptionsResponse(true, null, List.of());
+        }
+
+        String maCaKeTiep = caKeTiep.get().getId();
+        List<GiaoCaOptionsResponse.NhanVienNhanCaResponse> candidates = nhanVienRepository.findAll().stream()
+                .filter(nv -> nv.getTrangThai() != null && nv.getTrangThai() == 1)
+                .filter(nv -> !nv.getId().equals(nhanVienId))
+                .filter(nv -> (nv.getVaiTro() != null && nv.getVaiTro() == 1)
+                        || lichLamViecRepository.existsByNhanVienIdAndNgayAndCa(nv.getId(), homNay, maCaKeTiep))
+                .filter(nv -> !giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(nv.getId(), CHUA_KET_THUC_TRANG_THAI))
+                .map(nv -> new GiaoCaOptionsResponse.NhanVienNhanCaResponse(
+                        nv.getId(), nv.getMa(), nv.getHoTen(), nv.getVaiTro()))
+                .toList();
+        return new GiaoCaOptionsResponse(candidates.isEmpty(), maCaKeTiep, candidates);
+    }
+
+    @Override
+    @Transactional
+    public GiaoCaResponse ketCa(UUID nhanVienId, KetCaRequest request) {
+        GiaoCa gc = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(nhanVienId, "MO_CA")
+                .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc đang hoạt động."));
+        if (!layTuyChonBanGiao(nhanVienId).coTheKetCa()) {
+            throw new BusinessException("Vẫn còn ca làm việc tiếp theo. Vui lòng bàn giao cho nhân viên ca kế tiếp.");
+        }
+        chotSoLieuCa(gc, request.tienCuoiCaThucTe(), request.lyDoChenhLech(), request.ghiChu());
+        gc.setTrangThai("DA_KET_THUC");
+        return mapToResponse(giaoCaRepository.save(gc));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<GiaoCaResponse> layCaChoXacNhan(UUID nhanVienId) {
         return giaoCaRepository.findByNhanVienNhanIdAndTrangThaiOrderByThoiGianVaoDesc(nhanVienId, "CHO_BAN_GIAO")
                 .stream()
@@ -177,12 +235,16 @@ public class GiaoCaServiceImpl implements GiaoCaService {
             throw new BusinessException("Bạn không phải người nhận bàn giao của ca làm việc này.");
         }
 
+        if (giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(nhanVienId, CHUA_KET_THUC_TRANG_THAI)) {
+            throw new BusinessException("Bạn đang có ca làm việc khác chưa kết thúc.");
+        }
+
         // Cập nhật ca cũ thành DA_BAN_GIAO
         gc.setTrangThai("DA_BAN_GIAO");
         if (request.ghiChu() != null && !request.ghiChu().isBlank()) {
             gc.setGhiChu(gc.getGhiChu() == null ? request.ghiChu() : gc.getGhiChu() + " | Nhận: " + request.ghiChu());
         }
-        giaoCaRepository.save(gc);
+        giaoCaRepository.saveAndFlush(gc);
 
         // Tự động mở ca mới cho nhân viên nhận với tiền đầu ca = tiền thực tế bàn giao
         GiaoCa gcMoi = new GiaoCa();
@@ -216,20 +278,54 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     private void checkCaChuaKetThucCuaNhanVienKhac(UUID nhanVienId) {
-        // Cho phép nhiều nhân viên cùng mở ca để xử lý bán hàng song song
-        // hoặc không cản trở nhân viên mới khi ca trước quên đóng.
+        if (giaoCaRepository.existsByTrangThaiIn(CHUA_KET_THUC_TRANG_THAI)) {
+            throw new BusinessException("Cửa hàng đang có ca làm việc chưa kết thúc. Vui lòng hoàn tất ca hiện tại trước.");
+        }
+    }
+
+    private Optional<CaLam> timCaKeTiep(UUID nhanVienId, LocalDate ngay) {
+        List<CaLam> cacCa = caLamRepository.findAll().stream()
+                .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
+                .sorted(Comparator.comparing(ca -> LocalTime.parse(ca.getGioBatDau())))
+                .toList();
+        if (cacCa.isEmpty()) return Optional.empty();
+
+        String maCaHienTai = lichLamViecRepository.findByNhanVienIdAndNgay(nhanVienId, ngay)
+                .map(lich -> lich.getCa())
+                .orElseGet(() -> {
+                    LocalTime now = LocalTime.now(ZoneId.of("Asia/Bangkok"));
+                    return cacCa.stream()
+                            .filter(ca -> !now.isBefore(LocalTime.parse(ca.getGioBatDau()))
+                                    && now.isBefore(LocalTime.parse(ca.getGioKetThuc())))
+                            .map(CaLam::getId).findFirst().orElse(null);
+                });
+        if (maCaHienTai == null) return Optional.empty();
+        for (int i = 0; i < cacCa.size() - 1; i++) {
+            if (cacCa.get(i).getId().equals(maCaHienTai)) return Optional.of(cacCa.get(i + 1));
+        }
+        return Optional.empty();
+    }
+
+    private void chotSoLieuCa(GiaoCa gc, BigDecimal tienThucTe, String lyDo, String ghiChu) {
+        BigDecimal tienMat = giaoCaRepository.calculateTienMatTrongCa(gc.getId());
+        BigDecimal tienCK = giaoCaRepository.calculateTienChuyenKhoanTrongCa(gc.getId());
+        BigDecimal tienHeThong = gc.getTienDauCa().add(tienMat);
+        BigDecimal chenhLech = tienThucTe.subtract(tienHeThong);
+        if (chenhLech.compareTo(BigDecimal.ZERO) != 0 && (lyDo == null || lyDo.isBlank())) {
+            throw new BusinessException("Số tiền chênh lệch khác 0. Vui lòng nhập lý do chênh lệch.");
+        }
+        gc.setThoiGianRa(Instant.now());
+        gc.setTienMatTrongCa(tienMat);
+        gc.setTienChuyenKhoanTrongCa(tienCK);
+        gc.setTienCuoiCaThucTe(tienThucTe);
+        gc.setTienCuoiCaHeThong(tienHeThong);
+        gc.setTienChenhLech(chenhLech);
+        gc.setLyDoChenhLech(lyDo);
+        gc.setGhiChu(ghiChu);
     }
 
     private GiaoCaResponse mapToResponse(GiaoCa gc) {
         if (gc == null) return null;
-        
-        Instant thoiGianChamCong = null;
-        if (gc.getNhanVienTrongCa() != null) {
-            List<ChamCong> chamCongs = chamCongRepository.findByNhanVienIdAndThoiGianRaIsNull(gc.getNhanVienTrongCa().getId());
-            if (chamCongs != null && !chamCongs.isEmpty()) {
-                thoiGianChamCong = chamCongs.get(0).getThoiGianVao();
-            }
-        }
         
         return new GiaoCaResponse(
                 gc.getId(),
@@ -241,7 +337,6 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 gc.getNhanVienNhan() != null ? gc.getNhanVienNhan().getHoTen() : null,
                 gc.getNhanVienNhan() != null ? gc.getNhanVienNhan().getMa() : null,
                 gc.getThoiGianVao(),
-                thoiGianChamCong,
                 gc.getThoiGianRa(),
                 gc.getTienDauCa(),
                 gc.getTienMatTrongCa(),
