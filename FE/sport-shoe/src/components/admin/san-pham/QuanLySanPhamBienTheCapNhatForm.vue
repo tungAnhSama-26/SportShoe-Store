@@ -60,14 +60,19 @@ function parseNumericValue(value) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function buildNegativeError(label, value) {
-  return parseNumericValue(value) < 0 ? `${label} không được âm` : ''
+function buildNumericError(label, value) {
+  const num = parseNumericValue(value)
+  if (num < 0) return `${label} không được âm`
+  const limit = label.toLowerCase().includes('giá') ? 999000000000 : 2000000000
+  const limitStr = limit === 999000000000 ? '999.000.000.000' : '2.000.000.000'
+  if (num > limit) return `${label} không được vượt quá ${limitStr}`
+  return ''
 }
 
 const editingFieldErrors = computed(() => ({
-  soLuong: buildNegativeError('Số lượng', props.bienTheForm.soLuong),
-  giaGoc: buildNegativeError('Giá gốc', props.bienTheForm.giaGoc),
-  giaBan: buildNegativeError('Giá bán', props.bienTheForm.giaBan)
+  soLuong: buildNumericError('Số lượng', props.bienTheForm.soLuong),
+  giaGoc: buildNumericError('Giá gốc', props.bienTheForm.giaGoc),
+  giaBan: buildNumericError('Giá bán', props.bienTheForm.giaBan)
 }))
 
 const hasEditingFieldErrors = computed(() =>

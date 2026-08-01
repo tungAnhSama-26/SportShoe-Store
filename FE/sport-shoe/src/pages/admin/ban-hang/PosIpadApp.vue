@@ -474,6 +474,7 @@ function xuLyMaQuet(keyword) {
 
     <ModalQuetQR
       :open="showQrScanner"
+      :fallback-helper-text="''"
       :show-manual-section="false"
       :show-camera-hint="false"
       :show-retry-button="false"
