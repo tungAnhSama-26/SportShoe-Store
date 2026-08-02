@@ -272,8 +272,9 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<GiaoCaResponse> layLichSuGiaoCa(UUID nhanVienId, String trangThai, Instant tuNgay, Instant denNgay, Pageable pageable) {
-        return giaoCaRepository.searchHistory(nhanVienId, trangThai, tuNgay, denNgay, pageable)
+    public Page<GiaoCaResponse> layLichSuGiaoCa(UUID nhanVienId, String trangThai, Instant tuNgay, Instant denNgay, String keyword, Pageable pageable) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        return giaoCaRepository.searchHistory(nhanVienId, trangThai, tuNgay, denNgay, kw, pageable)
                 .map(this::mapToResponse);
     }
 

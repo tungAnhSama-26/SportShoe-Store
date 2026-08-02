@@ -118,13 +118,14 @@ public class GiaoCaController {
             @RequestParam(name = "trangThai", required = false) String trangThai,
             @RequestParam(name = "tuNgay", required = false) Instant tuNgay,
             @RequestParam(name = "denNgay", required = false) Instant denNgay,
+            @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "thoiGianVao"));
         return ResponseEntity.ok(ApiResponse.success(
                 "Lấy lịch sử giao ca thành công",
-                giaoCaService.layLichSuGiaoCa(nhanVienId, trangThai, tuNgay, denNgay, pageable)
+                giaoCaService.layLichSuGiaoCa(nhanVienId, trangThai, tuNgay, denNgay, keyword, pageable)
         ));
     }
 

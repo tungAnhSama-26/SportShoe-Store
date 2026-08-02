@@ -33,8 +33,7 @@ const fetchLichSu = async () => {
       denNgay: denNgay.value ? new Date(`${denNgay.value}T23:59:59.999`).toISOString() : undefined,
       page: currentPage.value,
       size: pageSize.value,
-      // Backend có thể không nhận keyword, nhưng ta cứ truyền nếu có cập nhật API sau này
-      keyword: searchQuery.value || undefined 
+      keyword: searchQuery.value?.trim() || undefined 
     };
     
     const response = await layLichSuGiaoCa(filters);
