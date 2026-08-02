@@ -6,6 +6,7 @@ import { dinhDangTienViet } from "../../../utils/dinhDangTien.js";
 import { showError } from "../../../utils/alert.js";
 import { getDisplayErrorMessage } from "../../../utils/error-message.js";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import Button from "../../../components/ui/Button.vue";
 
 // Trạng thái chung
 const dangTai = ref(false);
@@ -259,15 +260,10 @@ const onSearchInput = () => {
       </div>
 
       <!-- Nút đặt lại bộ lọc -->
-      <div class="w-full md:w-auto">
-        <button 
-          @click="handleRefresh"
-          class="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg transition-all"
-        >
-          <RotateCcw class="w-4 h-4" />
-          Đặt lại bộ lọc
-        </button>
-      </div>
+      <Button variant="soft" @click="handleRefresh">
+        <template #prefix><RotateCcw class="h-4 w-4" /></template>
+        Đặt lại bộ lọc
+      </Button>
 
     </div>
 
@@ -293,7 +289,7 @@ const onSearchInput = () => {
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50/50 border-b border-slate-100 text-slate-500 text-[12px] font-bold uppercase tracking-wider">
+            <tr class="bg-slate-50/50 border-b border-slate-100 text-slate-500 text-[13px] font-semibold">
               <th class="py-3 px-4 w-16 text-center">STT</th>
               <th class="py-3 px-4 min-w-[220px]">Nhân viên / Ca làm việc</th>
               <th class="py-3 px-4 text-center">Vào ca</th>
