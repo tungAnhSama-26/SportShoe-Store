@@ -84,8 +84,7 @@ const fetchLichSu = async () => {
 };
 
 const handleRefresh = () => {
-  tuNgay.value = "";
-  denNgay.value = "";
+  setNgayMacDinh();
   searchQuery.value = "";
   currentPage.value = 0;
   fetchLichSu();
@@ -202,7 +201,19 @@ const getShiftDetails = (timeVaoStr, timeRaStr) => {
   };
 };
 
+const setNgayMacDinh = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+  
+  tuNgay.value = todayStr;
+  denNgay.value = todayStr;
+};
+
 onMounted(() => {
+  setNgayMacDinh();
   fetchLichSu();
 });
 
