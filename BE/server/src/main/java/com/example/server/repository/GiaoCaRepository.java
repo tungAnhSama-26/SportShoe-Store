@@ -39,13 +39,19 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
            " LOWER(g.nhanVienTrongCa.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(g.nhanVienTrongCa.tenDangNhap) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(g.nhanVienTrongCa.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           " (g.ghiChu IS NOT NULL AND LOWER(g.ghiChu) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
+           " (g.ghiChu IS NOT NULL AND LOWER(g.ghiChu) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
+           " (:isCaSang = true AND HOUR(g.thoiGianVao) < 13) OR " +
+           " (:isCaChieu = true AND HOUR(g.thoiGianVao) >= 13 AND HOUR(g.thoiGianVao) < 18) OR " +
+           " (:isCaToi = true AND HOUR(g.thoiGianVao) >= 18))")
     Page<GiaoCa> searchHistory(
             @Param("nhanVienId") UUID nhanVienId,
             @Param("trangThai") String trangThai,
             @Param("tuNgay") Instant tuNgay,
             @Param("denNgay") Instant denNgay,
             @Param("keyword") String keyword,
+            @Param("isCaSang") boolean isCaSang,
+            @Param("isCaChieu") boolean isCaChieu,
+            @Param("isCaToi") boolean isCaToi,
             Pageable pageable
     );
 

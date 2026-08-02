@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -274,7 +275,22 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Transactional(readOnly = true)
     public Page<GiaoCaResponse> layLichSuGiaoCa(UUID nhanVienId, String trangThai, Instant tuNgay, Instant denNgay, String keyword, Pageable pageable) {
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        return giaoCaRepository.searchHistory(nhanVienId, trangThai, tuNgay, denNgay, kw, pageable)
+        boolean isCaSang = false;
+        boolean isCaChieu = false;
+        boolean isCaToi = false;
+
+        if (kw != null) {
+            String lowerKw = kw.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+            if (lowerKw.equals("ca00001") || lowerKw.equals("ca001") || lowerKw.equals("ca1") || lowerKw.contains("casang") || lowerKw.contains("sang")) {
+                isCaSang = true;
+            } else if (lowerKw.equals("ca00002") || lowerKw.equals("ca002") || lowerKw.equals("ca2") || lowerKw.contains("cachieu") || lowerKw.contains("chieu")) {
+                isCaChieu = true;
+            } else if (lowerKw.equals("ca00003") || lowerKw.equals("ca003") || lowerKw.equals("ca3") || lowerKw.contains("catoi") || lowerKw.contains("toi")) {
+                isCaToi = true;
+            }
+        }
+
+        return giaoCaRepository.searchHistory(nhanVienId, trangThai, tuNgay, denNgay, kw, isCaSang, isCaChieu, isCaToi, pageable)
                 .map(this::mapToResponse);
     }
 

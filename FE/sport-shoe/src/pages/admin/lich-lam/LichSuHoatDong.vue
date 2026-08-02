@@ -23,12 +23,35 @@ const danhSachHienThi = computed(() => {
     return danhSachLichSu.value;
   }
   const q = searchQuery.value.trim().toLowerCase();
+  const lowerNoSpace = q.replace(/\s+/g, "");
+
   return danhSachLichSu.value.filter((item) => {
+    const shiftDetails = getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa);
     const tenNhanVien = (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || "").toLowerCase();
     const maNhanVien = (item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || "").toLowerCase();
     const maCa = (item.ma || "").toLowerCase();
+    const tenCa = (shiftDetails.tenCa || "").toLowerCase();
+    const gioCa = (shiftDetails.gioCa || "").toLowerCase();
     const ghiChu = (item.ghiChu || "").toLowerCase();
-    return tenNhanVien.includes(q) || maNhanVien.includes(q) || maCa.includes(q) || ghiChu.includes(q);
+
+    let isShiftCodeMatch = false;
+    if (lowerNoSpace === "ca00001" || lowerNoSpace === "ca001" || lowerNoSpace === "ca1" || lowerNoSpace.includes("casang")) {
+      isShiftCodeMatch = tenCa.includes("sáng");
+    } else if (lowerNoSpace === "ca00002" || lowerNoSpace === "ca002" || lowerNoSpace === "ca2" || lowerNoSpace.includes("cachieu")) {
+      isShiftCodeMatch = tenCa.includes("chiều");
+    } else if (lowerNoSpace === "ca00003" || lowerNoSpace === "ca003" || lowerNoSpace === "ca3" || lowerNoSpace.includes("catoi")) {
+      isShiftCodeMatch = tenCa.includes("tối");
+    }
+
+    return (
+      isShiftCodeMatch ||
+      tenNhanVien.includes(q) ||
+      maNhanVien.includes(q) ||
+      maCa.includes(q) ||
+      tenCa.includes(q) ||
+      gioCa.includes(q) ||
+      ghiChu.includes(q)
+    );
   });
 });
 
