@@ -30,6 +30,7 @@ public interface GiaoCaService {
 
     GiaoCaResponse ketCa(UUID nhanVienId, KetCaRequest request);
 
+
     List<GiaoCaResponse> layCaChoXacNhan(UUID nhanVienId);
 
     GiaoCaResponse xacNhanBanGiao(UUID nhanVienId, UUID giaoCaId, XacNhanBanGiaoRequest request);
@@ -41,6 +42,7 @@ public interface GiaoCaService {
             String trangThai,
             Instant tuNgay,
             Instant denNgay,
+            String keyword,
             Pageable pageable
     );
 }
