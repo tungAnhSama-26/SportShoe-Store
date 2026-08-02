@@ -58,6 +58,7 @@ export function layLichSuGiaoCa(filters) {
   if (filters?.trangThai) params.set("trangThai", filters.trangThai);
   if (filters?.tuNgay) params.set("tuNgay", filters.tuNgay);
   if (filters?.denNgay) params.set("denNgay", filters.denNgay);
+  if (filters?.keyword) params.set("keyword", filters.keyword.trim());
   if (filters?.page != null) params.set("page", String(filters.page));
   if (filters?.size != null) params.set("size", String(filters.size));
   const q = params.toString();

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw } from "lucide-vue-next";
 import { layLichSuGiaoCa } from "../../../services/giao-ca.js";
 import { dinhDangTienViet } from "../../../utils/dinhDangTien.js";
@@ -17,6 +17,21 @@ const tuNgay = ref("");
 const denNgay = ref("");
 const searchQuery = ref("");
 
+// Danh sách hiển thị tự động lọc từ khóa (Client & Server dual-filter)
+const danhSachHienThi = computed(() => {
+  if (!searchQuery.value || !searchQuery.value.trim()) {
+    return danhSachLichSu.value;
+  }
+  const q = searchQuery.value.trim().toLowerCase();
+  return danhSachLichSu.value.filter((item) => {
+    const tenNhanVien = (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || "").toLowerCase();
+    const maNhanVien = (item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || "").toLowerCase();
+    const maCa = (item.ma || "").toLowerCase();
+    const ghiChu = (item.ghiChu || "").toLowerCase();
+    return tenNhanVien.includes(q) || maNhanVien.includes(q) || maCa.includes(q) || ghiChu.includes(q);
+  });
+});
+
 // Pagination
 const currentPage = ref(0);
 const pageSize = ref(10);
@@ -28,9 +43,22 @@ const totalPages = ref(1);
 const fetchLichSu = async () => {
   dangTai.value = true;
   try {
+    let tuNgayIso = undefined;
+    let denNgayIso = undefined;
+
+    if (tuNgay.value) {
+      const d = new Date(`${tuNgay.value}T00:00:00`);
+      if (!isNaN(d.getTime())) tuNgayIso = d.toISOString();
+    }
+
+    if (denNgay.value) {
+      const d = new Date(`${denNgay.value}T23:59:59.999`);
+      if (!isNaN(d.getTime())) denNgayIso = d.toISOString();
+    }
+
     const filters = {
-      tuNgay: tuNgay.value ? new Date(`${tuNgay.value}T00:00:00`).toISOString() : undefined,
-      denNgay: denNgay.value ? new Date(`${denNgay.value}T23:59:59.999`).toISOString() : undefined,
+      tuNgay: tuNgayIso,
+      denNgay: denNgayIso,
       page: currentPage.value,
       size: pageSize.value,
       keyword: searchQuery.value?.trim() || undefined 
@@ -175,16 +203,6 @@ const getShiftDetails = (timeVaoStr, timeRaStr) => {
 };
 
 onMounted(() => {
-  // Lấy ngày hôm nay làm mặc định cho Từ ngày - Đến ngày
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-  
-  tuNgay.value = todayStr;
-  denNgay.value = todayStr;
-  
   fetchLichSu();
 });
 
@@ -302,7 +320,7 @@ const onSearchInput = () => {
             <tr v-if="dangTai" class="border-b border-slate-100">
               <td colspan="7" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
-            <tr v-else-if="danhSachLichSu.length === 0" class="border-b border-slate-100">
+            <tr v-else-if="danhSachHienThi.length === 0" class="border-b border-slate-100">
               <td colspan="7" class="py-8 text-center">
                 <div class="flex flex-col items-center justify-center text-slate-400">
                   <FileText class="w-10 h-10 mb-2 opacity-50" />
@@ -310,7 +328,7 @@ const onSearchInput = () => {
                 </div>
               </td>
             </tr>
-            <tr v-else v-for="(item, idx) in danhSachLichSu" :key="item.id || idx" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+            <tr v-else v-for="(item, idx) in danhSachHienThi" :key="item.id || idx" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
               <td class="py-4 px-4 text-[13px] text-slate-500 text-center">{{ currentPage * pageSize + idx + 1 }}</td>
               
               <!-- NHÂN VIÊN / CA LÀM VIỆC -->
