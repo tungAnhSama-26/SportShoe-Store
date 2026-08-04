@@ -34,6 +34,8 @@ public class CaLamServiceImpl implements CaLamService {
         if (request.id() != null && caLamRepository.existsById(request.id())) {
             throw new BusinessException("Mã ca làm việc đã tồn tại");
         }
+
+        validateGioCa(request.gioBatDau(), request.gioKetThuc());
         
         CaLam caLam = new CaLam();
         String id = request.id();
@@ -51,7 +53,11 @@ public class CaLamServiceImpl implements CaLamService {
         caLam.setGioKetThuc(request.gioKetThuc());
         caLam.setTrangThai(request.trangThai());
 
-        caLamRepository.save(caLam);
+        try {
+            caLamRepository.save(caLam);
+        } catch (Exception e) {
+            throw new BusinessException("Không thể lưu ca làm việc. Giờ kết thúc phải lớn hơn giờ bắt đầu!");
+        }
         return toResponse(caLam);
     }
 
@@ -61,13 +67,44 @@ public class CaLamServiceImpl implements CaLamService {
         CaLam caLam = caLamRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc"));
 
+        validateGioCa(request.gioBatDau(), request.gioKetThuc());
+
         caLam.setTen(request.ten());
         caLam.setGioBatDau(request.gioBatDau());
         caLam.setGioKetThuc(request.gioKetThuc());
         caLam.setTrangThai(request.trangThai());
 
-        caLamRepository.save(caLam);
+        try {
+            caLamRepository.save(caLam);
+        } catch (Exception e) {
+            throw new BusinessException("Không thể lưu ca làm việc. Giờ kết thúc phải lớn hơn giờ bắt đầu!");
+        }
         return toResponse(caLam);
+    }
+
+    private void validateGioCa(String gioBatDau, String gioKetThuc) {
+        if (gioBatDau == null || gioBatDau.isBlank()) {
+            throw new BusinessException("Vui lòng chọn giờ bắt đầu!");
+        }
+        if (gioKetThuc == null || gioKetThuc.isBlank()) {
+            throw new BusinessException("Vui lòng chọn giờ kết thúc!");
+        }
+
+        try {
+            String s = gioBatDau.trim();
+            String e = gioKetThuc.trim();
+            java.time.LocalTime start = java.time.LocalTime.parse(s.length() == 5 ? s + ":00" : s);
+            java.time.LocalTime end = java.time.LocalTime.parse(e.length() == 5 ? e + ":00" : e);
+
+            if (start.equals(end)) {
+                throw new BusinessException("Giờ kết thúc không được trùng với giờ bắt đầu!");
+            }
+            if (!start.isBefore(end)) {
+                throw new BusinessException("Giờ kết thúc (" + e + ") phải lớn hơn giờ bắt đầu (" + s + "). Ví dụ: 08:00 - 12:00!");
+            }
+        } catch (java.time.format.DateTimeParseException ex) {
+            throw new BusinessException("Định dạng giờ không hợp lệ!");
+        }
     }
 
     @Override

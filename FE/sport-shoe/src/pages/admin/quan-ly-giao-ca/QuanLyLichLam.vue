@@ -327,6 +327,10 @@ function luuTaoCa() {
     showError("Vui lòng chọn thời gian bắt đầu và kết thúc.");
     return;
   }
+  if (formTaoCa.value.gioBatDau >= formTaoCa.value.gioKetThuc) {
+    showError("Giờ kết thúc phải lớn hơn giờ bắt đầu (Ví dụ: 08:00 - 12:00).");
+    return;
+  }
 
   const idMoi = "ca_" + Date.now();
   DS_CA.value.push({

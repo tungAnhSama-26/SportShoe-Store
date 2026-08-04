@@ -16,6 +16,10 @@ const TraCuuDonHang = () => import("../pages/TraCuuDonHang.vue");
 const DanhGiaCongKhai = () => import("../pages/DanhGiaCongKhai.vue");
 const GoiYGiay = () => import("../pages/GoiYGiay.vue");
 const ClientProfile = () => import("../pages/Profile.vue");
+const LienHe = () => import("../pages/LienHe.vue");
+const ThongTinGiaoHang = () => import("../pages/ThongTinGiaoHang.vue");
+const HuongDanChonSize = () => import("../pages/HuongDanChonSize.vue");
+const FAQ = () => import("../pages/FAQ.vue");
 const Login = () => import("../pages/login/Login.vue");
 const AdminLogin = () => import("../pages/login/AdminLogin.vue");
 const Register = () => import("../pages/register/Register.vue");
@@ -152,6 +156,31 @@ const router = createRouter({
           component: SanPham
         },
         {
+          path: "hang-moi",
+          name: "hang-moi",
+          component: SanPham
+        },
+        {
+          path: "nam",
+          name: "nam",
+          component: SanPham
+        },
+        {
+          path: "nu",
+          name: "nu",
+          component: SanPham
+        },
+        {
+          path: "tre-em",
+          name: "tre-em",
+          component: SanPham
+        },
+        {
+          path: "giam-gia",
+          name: "giam-gia",
+          component: SanPham
+        },
+        {
           path: "san-pham/:id(\\d+)",
           name: "san-pham-chi-tiet",
           component: ChiTietSanPham
@@ -210,6 +239,26 @@ const router = createRouter({
           path: "profile",
           name: "client-profile",
           component: ClientProfile
+        },
+        {
+          path: "lien-he",
+          name: "lien-he",
+          component: LienHe
+        },
+        {
+          path: "thong-tin-giao-hang",
+          name: "thong-tin-giao-hang",
+          component: ThongTinGiaoHang
+        },
+        {
+          path: "huong-dan-chon-size",
+          name: "huong-dan-chon-size",
+          component: HuongDanChonSize
+        },
+        {
+          path: "faq",
+          name: "faq",
+          component: FAQ
         }
       ]
     },

@@ -2,9 +2,8 @@
 import { onMounted, ref } from "vue";
 import DanhSachDanhMuc from "../components/trang-chu/DanhSachDanhMuc.vue";
 import DanhSachSanPham from "../components/trang-chu/DanhSachSanPham.vue";
-import GiaTriThuongHieu from "../components/trang-chu/GiaTriThuongHieu.vue";
 import KhoiAnhHung from "../components/trang-chu/KhoiAnhHung.vue";
-import { giaTriNoiBat, thongKeTrangChu } from "../constants/trangChu";
+import { thongKeTrangChu } from "../constants/trangChu";
 import { laySanPhamNoiBat, layHangNoiBat, layThongKeTrangChu } from "../services/san-pham";
 
 const sanPhamNoiBat = ref([]);
@@ -39,6 +38,5 @@ onMounted(async () => {
     <KhoiAnhHung :thong-ke="thongKe" />
     <DanhSachDanhMuc :danh-muc="hangNoiBat" />
     <DanhSachSanPham :san-pham="sanPhamNoiBat" />
-    <GiaTriThuongHieu :danh-sach="giaTriNoiBat" />
   </main>
 </template>
