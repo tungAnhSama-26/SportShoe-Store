@@ -150,6 +150,16 @@ async function luuTaoCa() {
   if (!formTaoCa.value.gioKetThuc) {
     formErrors.value.gioKetThuc = "Vui lòng chọn thời gian kết thúc.";
     isValid = false;
+  } else if (formTaoCa.value.gioBatDau && formTaoCa.value.gioKetThuc) {
+    const start = formTaoCa.value.gioBatDau;
+    const end = formTaoCa.value.gioKetThuc;
+    if (start === end) {
+      formErrors.value.gioKetThuc = "Giờ kết thúc không được trùng với giờ bắt đầu.";
+      isValid = false;
+    } else if (start > end) {
+      formErrors.value.gioKetThuc = "Giờ kết thúc phải lớn hơn giờ bắt đầu (Ví dụ: 08:00 - 12:00).";
+      isValid = false;
+    }
   }
 
   if (!isValid) return;

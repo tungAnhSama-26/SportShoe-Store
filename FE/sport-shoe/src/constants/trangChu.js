@@ -55,28 +55,6 @@ const sanPhamNoiBat = [
     hinhAnh: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=900&q=80&sat=-100"
   }
 ];
-const giaTriNoiBat = [
-  {
-    tieuDe: "Mi\u1EC5n ph\xED v\u1EADn chuy\u1EC3n",
-    noiDung: "Cho \u0111\u01A1n h\xE0ng tr\xEAn 2.500.000\u0111",
-    bieuTuong: "giao-hang"
-  },
-  {
-    tieuDe: "Thanh to\xE1n an to\xE0n",
-    noiDung: "Quy tr\xECnh thanh to\xE1n \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 100%",
-    bieuTuong: "thanh-toan"
-  },
-  {
-    tieuDe: "\u0110\u1ED5i tr\u1EA3 d\u1EC5 d\xE0ng",
-    noiDung: "Ch\xEDnh s\xE1ch \u0111\u1ED5i tr\u1EA3 trong 30 ng\xE0y",
-    bieuTuong: "doi-tra"
-  },
-  {
-    tieuDe: "H\u1ED7 tr\u1EE3 24/7",
-    noiDung: "Lu\xF4n s\u1EB5n s\xE0ng h\u1ED7 tr\u1EE3 b\u1EA1n",
-    bieuTuong: "ho-tro"
-  }
-];
 const thongKeTrangChu = [
   { so: "12k+", nhan: "Kh\xE1ch h\xE0ng h\xE0i l\xF2ng" },
   { so: "48h", nhan: "Giao nhanh to\xE0n qu\u1ED1c" },
@@ -84,7 +62,6 @@ const thongKeTrangChu = [
 ];
 export {
   danhMucGiay,
-  giaTriNoiBat,
   sanPhamNoiBat,
   thongKeTrangChu
 };
