@@ -280,8 +280,15 @@ async function capNhatTrangThai(nv) {
   if (!(await showConfirm(message))) return;
 
   dangDoiTrangThai.value = nv.id;
+  const newStatus = nv.trangThai === 1 ? 0 : 1;
   try {
-    await doiTrangThaiNhanVien(nv.id, nv.trangThai === 1 ? 0 : 1);
+    await doiTrangThaiNhanVien(nv.id, newStatus);
+    showSuccess(
+      newStatus === 1
+        ? `Đã kích hoạt nhân viên "${nv.hoTen}" thành công.`
+        : `Đã chuyển nhân viên "${nv.hoTen}" sang trạng thái nghỉ làm thành công.`,
+      "Thành công"
+    );
     await taiDanhSach();
   } catch (e) {
     showError(

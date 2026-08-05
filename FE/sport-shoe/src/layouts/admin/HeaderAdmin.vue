@@ -460,7 +460,7 @@ function chuyenDenTrangConfigChatbot() {
 
 function chuyenDenTrangChu() {
   hienMenuTaiKhoan.value = false;
-  router.push("/");
+  router.push("/khachhang");
 }
 
 function chuyenDenCaLamViec() {

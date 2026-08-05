@@ -5,7 +5,7 @@ import { dongBoGiaGio, capNhatSoLuong, xoaItemGio } from '../services/gio-hang';
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
-import { showError, showConfirm } from '../utils/alert';
+import { showError, showWarning, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import anhMacDinh from '../assets/login-shoe.png';
 
@@ -50,9 +50,15 @@ onUnmounted(() => {
 async function taiGio(amTham = false) {
   if (!amTham) dangTai.value = true;
   try {
-    // Đồng bộ giá hiện tại (đợt giảm có thể đã đổi sau lúc thêm vào giỏ).
-    gio.value = await dongBoGiaGio();
+    // Đồng bộ giá hiện tại và tự động đẩy sản phẩm ngừng hoạt động ra khỏi giỏ
+    const ketQua = await dongBoGiaGio();
+    gio.value = ketQua;
     gioHangStore.datSoLuong(gio.value.tongSoLuong);
+    if (ketQua.removedNames && ketQua.removedNames.length > 0) {
+      for (const tenSP of ketQua.removedNames) {
+        showWarning(`Sản phẩm "${tenSP}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+      }
+    }
   } catch {
     if (!amTham) gio.value = { id: null, items: [], tongSoLuong: 0, tongTien: 0 };
   } finally {
@@ -139,7 +145,7 @@ function thanhTien(item) {
                       <span v-else class="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">Giá đã tăng</span>
                     </template>
                   </div>
-                  <p v-if="item.conBan === false" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm này đã ngừng bán</p>
+                  <p v-if="item.conBan === false" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm đã ngừng hoạt động, vui lòng chọn sản phẩm khác</p>
                   <p v-else-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm này đã hết hàng</p>
                   <p v-else-if="item.soLuong > item.tonKho" class="mt-1 text-xs font-semibold text-amber-600">⚠ Chỉ còn {{ item.tonKho }} sản phẩm</p>
                 </div>
@@ -179,7 +185,7 @@ function thanhTien(item) {
             Tiến hành thanh toán
           </button>
           <p v-if="coSanPhamKhongBan" class="mt-2 text-center text-xs font-medium text-rose-500">
-            Có sản phẩm đã hết hàng hoặc ngừng bán. Vui lòng xóa khỏi giỏ để tiếp tục.
+            Có sản phẩm đã hết hàng hoặc ngừng hoạt động. Vui lòng kiểm tra lại giỏ hàng.
           </p>
           <router-link to="/khachhang/san-pham" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Tiếp tục mua sắm</router-link>
         </aside>

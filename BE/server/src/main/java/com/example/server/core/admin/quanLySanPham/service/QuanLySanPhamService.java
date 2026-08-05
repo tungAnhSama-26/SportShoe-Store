@@ -831,7 +831,8 @@ public class QuanLySanPhamService {
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("CAP_NHAT_BIEN_THE");
-        return toBienThe(saved, null);
+        var activeDiscount = buildActiveDiscountInfoMap(List.of(saved)).get(saved.getId());
+        return toBienThe(saved, activeDiscount);
     }
 
     @Transactional
@@ -851,7 +852,8 @@ public class QuanLySanPhamService {
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_BIEN_THE");
-        return toBienThe(saved, null);
+        var activeDiscount = buildActiveDiscountInfoMap(List.of(saved)).get(saved.getId());
+        return toBienThe(saved, activeDiscount);
     }
 
     @Transactional

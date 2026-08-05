@@ -21,7 +21,7 @@ const formatLastUpdated = computed(() => {
       <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
           <Filter class="h-4 w-4 text-primary" />
-          Bộ lọc thống kê
+          Bộ lọc tổng quan
         </div>
         <div class="flex flex-wrap gap-1.5">
           <button
@@ -118,7 +118,7 @@ const formatLastUpdated = computed(() => {
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Thống kê</label>
+          <label class="text-xs font-medium text-slate-500">Tổng quan</label>
           <div class="relative">
             <BarChart3 class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <select
@@ -198,7 +198,7 @@ const formatLastUpdated = computed(() => {
     <div v-if="filters.fromDate && filters.toDate" class="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-700 flex flex-wrap items-center gap-3 shadow-sm">
       <div class="flex items-center gap-2 flex-1 min-w-0">
         <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse shrink-0"></span>
-        <span>Đang hiển thị dữ liệu thống kê từ ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.fromDate) }}</strong> đến ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.toDate) }}</strong></span>
+        <span>Đang hiển thị dữ liệu tổng quan từ ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.fromDate) }}</strong> đến ngày <strong class="text-slate-900 font-bold">{{ formatDateForDisplay(filters.toDate) }}</strong></span>
       </div>
       <div class="flex items-center gap-3 shrink-0">
         <span v-if="formatLastUpdated" class="text-xs text-slate-400">
@@ -377,7 +377,7 @@ const formatLastUpdated = computed(() => {
           <div>
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
               <Calendar class="h-4 w-4 text-emerald-500" />
-              Thống kê theo chu kỳ thời gian
+              Tổng quan theo chu kỳ thời gian
             </div>
           </div>
           <Button
@@ -486,7 +486,7 @@ const formatLastUpdated = computed(() => {
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Users class="h-4 w-4 text-rose-500" />
-            Thống kê doanh thu nhân viên
+            Tổng quan doanh thu nhân viên
           </div>
           <div class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
             {{ employeeCountLabel }}
@@ -623,7 +623,7 @@ const formatLastUpdated = computed(() => {
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Package class="h-4 w-4 text-rose-500" />
-            Thống kê sản phẩm
+            Tổng quan sản phẩm
           </div>
           <div class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
             {{ productCountLabel }}

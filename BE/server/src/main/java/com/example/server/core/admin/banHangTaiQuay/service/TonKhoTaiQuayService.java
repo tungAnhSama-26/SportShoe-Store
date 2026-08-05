@@ -17,7 +17,7 @@ public class TonKhoTaiQuayService {
             if (giayChiTiet.getKichHoat() == null || giayChiTiet.getKichHoat() != 1 || 
                 giayChiTiet.getGiay() == null || giayChiTiet.getGiay().getTrangThai() == null || giayChiTiet.getGiay().getTrangThai() != 1) {
                 String tenGiay = giayChiTiet.getGiay() != null ? giayChiTiet.getGiay().getTen() : "";
-                throw new BusinessException("Sản phẩm " + tenGiay + " đã ngừng kinh doanh");
+                throw new BusinessException("Sản phẩm " + tenGiay + " đã ngừng hoạt động, vui lòng chọn sản phẩm khác");
             }
         }
 

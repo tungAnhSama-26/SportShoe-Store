@@ -29,4 +29,22 @@ public class CaLam {
     @NotNull
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai = true;
+
+    public String getTen() {
+        if (ten != null) {
+            if ("chieu".equalsIgnoreCase(id) && (ten.contains("?") || "Ca chieu".equalsIgnoreCase(ten))) {
+                return "Ca chiều";
+            }
+            if ("toi".equalsIgnoreCase(id) && (ten.contains("?") || "Ca toi".equalsIgnoreCase(ten))) {
+                return "Ca tối";
+            }
+            if ("sang".equalsIgnoreCase(id) && (ten.contains("?") || "Ca sang".equalsIgnoreCase(ten))) {
+                return "Ca sáng";
+            }
+            return ten.replace("chi?u", "chiều").replace("Chi?u", "Chiều")
+                    .replace("t?i", "tối").replace("T?i", "Tối")
+                    .replace("s?ng", "sáng").replace("S?ng", "Sáng");
+        }
+        return ten;
+    }
 }
