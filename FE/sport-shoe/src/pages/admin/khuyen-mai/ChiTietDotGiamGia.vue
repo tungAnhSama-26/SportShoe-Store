@@ -92,6 +92,11 @@ const searchSelectedText = ref("");
 const filterSelectedMauSac = ref("");
 const filterSelectedKichCo = ref("");
 
+// Phân trang cho bảng đã chọn
+const trangDaChon = ref(1);
+const soHangDaChonMoiTrang = ref(10);
+const pageSizeDaChonOptions = [5, 10, 20, 50];
+
 const filteredSelectedVariants = computed(() => {
   let result = selectedVariants.value;
 
@@ -118,6 +123,20 @@ const filteredSelectedVariants = computed(() => {
   }
 
   return result;
+});
+
+// Reset trang về 1 khi filter/search thay đổi
+watch([searchSelectedText, filterSelectedMauSac, filterSelectedKichCo], () => {
+  trangDaChon.value = 1;
+});
+
+const tongSoTrangDaChon = computed(() =>
+  Math.max(1, Math.ceil(filteredSelectedVariants.value.length / soHangDaChonMoiTrang.value))
+);
+
+const filteredSelectedVariantsTrang = computed(() => {
+  const start = (trangDaChon.value - 1) * soHangDaChonMoiTrang.value;
+  return filteredSelectedVariants.value.slice(start, start + soHangDaChonMoiTrang.value);
 });
 </script>
 
@@ -425,7 +444,7 @@ const filteredSelectedVariants = computed(() => {
                   <tr
                     class="text-[12px] font-semibold text-slate-500 border-b border-slate-100 bg-slate-50 whitespace-nowrap"
                   >
-                    <th class="px-4 py-3 text-center w-12 rounded-tl-xl">
+                    <th class="px-4 py-3 text-left w-12 rounded-tl-xl">
                       <input
                         type="checkbox"
                         class="h-4 w-4 rounded border-slate-400 text-rose-500 focus:ring-rose-500 cursor-pointer"
@@ -435,10 +454,10 @@ const filteredSelectedVariants = computed(() => {
                         @change="toggleChonTatCa"
                       />
                     </th>
-                    <th class="px-4 py-3 text-center">STT</th>
-                    <th class="px-4 py-3 text-center">Mã SP</th>
-                    <th class="px-4 py-3 text-center">Tên sản phẩm</th>
-                    <th class="px-4 py-3 text-center w-12 rounded-tr-xl"></th>
+                    <th class="px-4 py-3 text-left">STT</th>
+                    <th class="px-4 py-3 text-left">Mã SP</th>
+                    <th class="px-4 py-3 text-left">Tên sản phẩm</th>
+                    <th class="px-4 py-3 text-left w-12 rounded-tr-xl"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -452,13 +471,13 @@ const filteredSelectedVariants = computed(() => {
                           : 'hover:bg-slate-50',
                       ]"
                     >
-                      <td class="px-4 py-3 text-center align-middle">
+                      <td class="px-4 py-3 text-left align-middle">
                         <button
                           :disabled="
                             isReadOnly || getProductSelectState(sp).disabled
                           "
                           @click="toggleProduct(sp)"
-                          class="flex items-center justify-center disabled:cursor-not-allowed mx-auto"
+                          class="flex items-center justify-start disabled:cursor-not-allowed"
                         >
                           <CheckSquare
                             v-if="getProductSelectState(sp).checked"
@@ -474,29 +493,29 @@ const filteredSelectedVariants = computed(() => {
                         </button>
                       </td>
                       <td
-                        class="px-4 py-3 text-center text-slate-400 font-medium whitespace-nowrap"
+                        class="px-4 py-3 text-left text-slate-400 font-medium whitespace-nowrap"
                       >
                         {{ (trangBienThe - 1) * soHangMoiTrang + idx + 1 }}
                       </td>
                       <td
-                        class="px-4 py-3 text-slate-500 font-medium whitespace-nowrap"
+                        class="px-4 py-3 text-left text-slate-500 font-medium whitespace-nowrap"
                       >
                         {{ sp.ma }}
                       </td>
-                      <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      <td class="px-4 py-3 text-left text-slate-600 whitespace-nowrap">
                         {{ sp.ten }}
                       </td>
-                      <td class="px-4 py-3 text-center align-middle">
+                      <td class="px-4 py-3 text-left align-middle">
                         <button
                           type="button"
                           @click="toggleProductExpansion(sp.id)"
-                          class="text-slate-500 hover:text-slate-800 focus:outline-none flex items-center justify-center w-full transition-colors"
+                          class="text-slate-500 hover:text-slate-800 focus:outline-none flex items-center justify-start w-full transition-colors"
                         >
                           <Plus
                             v-if="!expandedProducts.has(sp.id)"
-                            class="w-4 h-4 mx-auto"
+                            class="w-4 h-4"
                           />
-                          <Minus v-else class="w-4 h-4 mx-auto" />
+                          <Minus v-else class="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -511,22 +530,22 @@ const filteredSelectedVariants = computed(() => {
                                 class="text-slate-800 text-[12px] font-semibold whitespace-nowrap"
                               >
                                 <tr>
-                                  <th class="px-3 py-2 text-center font-medium">
+                                  <th class="px-3 py-2 text-left font-medium">
                                     Chọn
                                   </th>
-                                  <th class="px-3 py-2 text-center font-medium">
+                                  <th class="px-3 py-2 text-left font-medium">
                                     Ảnh
                                   </th>
-                                  <th class="px-3 py-2 text-center font-medium">
+                                  <th class="px-3 py-2 text-left font-medium">
                                     Mã biến thể
                                   </th>
-                                  <th class="px-3 py-2 text-center font-medium">
+                                  <th class="px-3 py-2 text-left font-medium">
                                     Màu sắc
                                   </th>
-                                  <th class="px-3 py-2 text-center font-medium">
+                                  <th class="px-3 py-2 text-left font-medium">
                                     Kích cỡ
                                   </th>
-                                  <th class="px-3 py-2 text-center font-medium">
+                                  <th class="px-3 py-2 text-left font-medium">
                                     Số lượng
                                   </th>
                                 </tr>
@@ -546,7 +565,7 @@ const filteredSelectedVariants = computed(() => {
                                         : 'hover:bg-white',
                                   ]"
                                 >
-                                  <td class="px-3 py-2">
+                                  <td class="px-3 py-2 text-left">
                                     <button
                                       :disabled="
                                         isReadOnly ||
@@ -571,7 +590,7 @@ const filteredSelectedVariants = computed(() => {
                                       />
                                     </button>
                                   </td>
-                                  <td class="px-3 py-2 flex justify-center">
+                                  <td class="px-3 py-2 text-left">
                                     <div
                                       class="h-8 w-8 rounded bg-white overflow-hidden border border-slate-200"
                                     >
@@ -583,17 +602,17 @@ const filteredSelectedVariants = computed(() => {
                                     </div>
                                   </td>
                                   <td
-                                    class="px-3 py-2 text-slate-500 font-medium"
+                                    class="px-3 py-2 text-left text-slate-500 font-medium"
                                   >
                                     {{ bt.sku || bt.maBienThe || sp.ten }}
                                   </td>
-                                  <td class="px-3 py-2 text-slate-600">
+                                  <td class="px-3 py-2 text-left text-slate-600">
                                     {{ bt.mauSac }}
                                   </td>
-                                  <td class="px-3 py-2 text-slate-600">
+                                  <td class="px-3 py-2 text-left text-slate-600">
                                     {{ bt.kichCo }}
                                   </td>
-                                  <td class="px-3 py-2 text-center">
+                                  <td class="px-3 py-2 text-left">
                                     <span
                                       class="inline-flex items-center text-[13px] font-medium text-slate-700"
                                     >
@@ -723,98 +742,87 @@ const filteredSelectedVariants = computed(() => {
 
         <div
           v-else
-          class="overflow-x-auto max-h-[450px] overflow-y-auto admin-table-scroll pr-1"
+          class="overflow-x-auto admin-table-scroll pr-1"
         >
           <table
-            class="w-full min-w-[1000px] table-fixed text-xs border-separate border-spacing-y-2"
+            class="w-full text-xs border-separate border-spacing-y-2"
           >
-            <colgroup>
-              <col class="w-[4%]" />
-              <col class="w-[6%]" />
-              <col class="w-[10%]" />
-              <col class="w-[22%]" />
-              <col class="w-[12%]" />
-              <col class="w-[9%]" />
-              <col class="w-[6%]" />
-              <col class="w-[10%]" />
-              <col class="w-[11%]" />
-              <col class="w-[6%]" />
-              <col class="w-[4%]" />
-            </colgroup>
             <thead>
               <tr
-                class="text-[11px] font-semibold text-slate-500 border-b border-slate-100 bg-slate-50 sticky top-0 z-10 whitespace-nowrap"
+                class="text-[11px] font-semibold text-slate-500 border-b border-slate-100 bg-slate-50 whitespace-nowrap"
               >
-                <th class="px-4 py-3 text-center rounded-l-xl">STT</th>
-                <th class="px-4 py-3 text-center">Ảnh</th>
-                <th class="px-4 py-3 text-center">Mã SP</th>
-                <th class="px-4 py-3 text-center">Tên sản phẩm</th>
-                <th class="px-4 py-3 text-center">Mã biến thể</th>
-                <th class="px-4 py-3 text-center">Màu sắc</th>
-                <th class="px-4 py-3 text-center">Kích cỡ</th>
-                <th class="px-4 py-3 text-center">Giá bán</th>
-                <th class="px-4 py-3 text-center">Giá sau giảm</th>
-                <th class="px-4 py-3 text-center">Số lượng</th>
-                <th class="px-4 py-3 text-center rounded-r-xl">
+                <th class="px-3 py-3 text-left rounded-l-xl w-10">STT</th>
+                <th class="px-3 py-3 text-left w-[32%]">Sản phẩm</th>
+                <th class="px-3 py-3 text-left w-[22%]">Biến thể</th>
+                <th class="px-3 py-3 text-left w-[14%]">Giá bán</th>
+                <th class="px-3 py-3 text-left w-[14%]">Giá sau giảm</th>
+                <th class="px-3 py-3 text-left w-[8%]">Số lượng</th>
+                <th class="px-3 py-3 text-left rounded-r-xl w-12">
                   <span v-if="!isReadOnly">Xóa</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr
-                v-for="(bt, index) in filteredSelectedVariants"
+                v-for="(bt, index) in filteredSelectedVariantsTrang"
                 :key="bt.id"
                 class="bg-white text-slate-950 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200 [&>td]:align-middle"
               >
-                <td
-                  class="rounded-l-xl px-4 py-3 text-center font-semibold text-slate-400"
-                >
-                  {{ index + 1 }}
+                <td class="rounded-l-xl px-3 py-3 text-left font-semibold text-slate-400">
+                  {{ (trangDaChon - 1) * soHangDaChonMoiTrang + index + 1 }}
                 </td>
-                <td class="px-4 py-3">
-                  <div
-                    class="h-10 w-10 shrink-0 rounded bg-slate-50 overflow-hidden border border-slate-200 flex items-center justify-center mx-auto"
-                  >
-                    <img
-                      v-if="bt.hinhAnh"
-                      :src="resolveHinhAnh(bt.hinhAnh)"
-                      class="h-full w-full object-cover"
-                    />
-                    <Tag v-else class="h-4 w-4 text-slate-300" />
+                <!-- Cột Sản phẩm: Ảnh + Tên + Mã SP -->
+                <td class="px-3 py-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="h-9 w-9 shrink-0 rounded-lg bg-slate-50 overflow-hidden border border-slate-200 flex items-center justify-center">
+                      <img
+                        v-if="bt.hinhAnh"
+                        :src="resolveHinhAnh(bt.hinhAnh)"
+                        class="h-full w-full object-cover"
+                      />
+                      <Tag v-else class="h-3.5 w-3.5 text-slate-300" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-slate-800 truncate text-[12px] leading-snug">{{ bt.tenSanPham }}</p>
+                      <p class="text-[11px] text-slate-400 font-medium mt-0.5">{{ bt.maSanPham || "—" }}</p>
+                    </div>
                   </div>
                 </td>
-                <td class="px-4 py-3 font-semibold text-slate-500 text-center">
-                  {{ bt.maSanPham || "—" }}
+                <!-- Cột Biến thể: Mã BT + Màu + Kích cỡ -->
+                <td class="px-3 py-3">
+                  <div class="flex flex-col gap-1 min-w-0">
+                    <span class="text-[11px] font-semibold text-slate-500 truncate">{{ bt.maBienThe || bt.sku || "—" }}</span>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span v-if="bt.mauSac" class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                        {{ bt.mauSac }}
+                      </span>
+                      <span v-if="bt.kichCo" class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                        {{ bt.kichCo }}
+                      </span>
+                    </div>
+                  </div>
                 </td>
-                <td
-                  class="px-4 py-3 font-bold text-slate-900 whitespace-normal break-words text-center"
-                >
-                  {{ bt.tenSanPham }}
-                </td>
-                <td class="px-4 py-3 font-medium text-slate-600 text-center">
-                  {{ bt.maBienThe || bt.sku || "—" }}
-                </td>
-                <td class="px-4 py-3 font-semibold text-slate-600 text-center">
-                  {{ bt.mauSac || "—" }}
-                </td>
-                <td class="px-4 py-3 font-semibold text-slate-600 text-center">
-                  {{ bt.kichCo || "—" }}
-                </td>
-                <td class="px-4 py-3 text-center font-semibold text-slate-500">
+                <!-- Giá bán -->
+                <td class="px-3 py-3 text-left font-semibold text-slate-500 whitespace-nowrap">
                   {{ formatCurrency(bt.giaBan) }}
                 </td>
-                <td class="px-4 py-3 text-center font-bold text-rose-600">
+                <!-- Giá sau giảm -->
+                <td class="px-3 py-3 text-left font-bold text-rose-600 whitespace-nowrap">
                   {{ formatCurrency(tinhGiaGiam(bt.giaBan)) }}
                 </td>
-                <td class="px-4 py-3 text-center font-medium text-slate-600">
-                  {{ bt.soLuong || 0 }}
+                <!-- Số lượng -->
+                <td class="px-3 py-3 text-left font-semibold text-slate-700">
+                  <span class="inline-flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 min-w-[40px] px-2 py-1 text-[12px]">
+                    {{ bt.soLuong || 0 }}
+                  </span>
                 </td>
-                <td class="rounded-r-xl px-4 py-3 text-center">
+                <!-- Xóa -->
+                <td class="rounded-r-xl px-3 py-3 text-left">
                   <button
                     v-if="!isReadOnly"
                     type="button"
                     @click="removeSelectedVariant(bt.id)"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
                     title="Xóa biến thể khỏi danh sách áp dụng"
                   >
                     <X class="h-4 w-4" />
@@ -824,6 +832,18 @@ const filteredSelectedVariants = computed(() => {
             </tbody>
           </table>
         </div>
+
+        <!-- Phân trang bảng đã chọn -->
+        <AdminTableFooter
+          :current-page="trangDaChon"
+          :page-size="soHangDaChonMoiTrang"
+          :page-size-options="pageSizeDaChonOptions"
+          :total-items="filteredSelectedVariants.length"
+          :total-pages="tongSoTrangDaChon"
+          compact
+          @update:current-page="trangDaChon = $event"
+          @update:page-size="soHangDaChonMoiTrang = $event; trangDaChon = 1"
+        />
       </div>
     </section>
   </div>
