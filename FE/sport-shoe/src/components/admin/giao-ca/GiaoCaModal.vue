@@ -14,6 +14,7 @@ import { useGiaoCa } from "../../../composable/useGiaoCa";
 import { useAdminSession } from "../../../composable/useAdminSession";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
 import { layThongTinGiaoCaCurrent } from "../../../services/giao-ca";
+import { layDanhSachCaLam } from "../../../services/ca-lam";
 
 const props = defineProps({
   show: Boolean
@@ -35,6 +36,48 @@ const { adminSession } = useAdminSession();
 // Form opening shift
 const tienDauCa = ref(500000);
 const moCaGhiChu = ref("");
+const lyDoMoCaMuon = ref("");
+const danhSachCaMo = ref([]);
+const caLamMoId = ref("");
+const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const isMyShift = computed(() =>
+  Boolean(activeShift.value)
+  && String(activeShift.value.nhanVienTrongCaId) === String(adminSession.value.id)
+);
+const isAdminSupportingShift = computed(() => isAdmin.value && Boolean(activeShift.value) && !isMyShift.value);
+const caLamDuocChon = computed(() =>
+  danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
+);
+const adminCanLyDoMoCa = computed(() => {
+  if (!isAdmin.value || !caLamDuocChon.value) return false;
+  const now = new Date();
+  const [hour, minute] = String(caLamDuocChon.value.gioBatDau).split(":").map(Number);
+  const start = new Date(now);
+  start.setHours(hour, minute, 0, 0);
+  return now < new Date(start.getTime() - 30 * 60 * 1000) || now > start;
+});
+
+async function taiCaLamChoMoCa() {
+  if (!isAdmin.value) return;
+  try {
+    danhSachCaMo.value = (await layDanhSachCaLam()).filter((ca) => ca.trangThai);
+    if (!caLamMoId.value && danhSachCaMo.value.length) {
+      const now = new Date();
+      const phuHop = danhSachCaMo.value.find((ca) => {
+        const [sh, sm] = String(ca.gioBatDau).split(":").map(Number);
+        const [eh, em] = String(ca.gioKetThuc).split(":").map(Number);
+        const start = new Date(now);
+        const end = new Date(now);
+        start.setHours(sh, sm, 0, 0);
+        end.setHours(eh, em, 0, 0);
+        return now >= new Date(start.getTime() - 30 * 60 * 1000) && now < end;
+      });
+      caLamMoId.value = String((phuHop || danhSachCaMo.value[0]).id);
+    }
+  } catch (error) {
+    messageError.value = error?.message || "Không thể tải danh sách ca làm việc";
+  }
+}
 
 // Form closing shift
 const tienCuoiCaThucTe = ref(0);
@@ -47,6 +90,7 @@ const loadingStats = ref(false);
 
 // Form accepting handover
 const confirmGhiChu = ref("");
+const confirmTienKiemDem = ref(null);
 
 const processing = ref(false);
 const messageError = ref("");
@@ -127,15 +171,20 @@ watch(() => props.show, async (newVal) => {
     messageError.value = "";
     messageSuccess.value = "";
     moCaGhiChu.value = "";
+    lyDoMoCaMuon.value = "";
     banGiaoGhiChu.value = "";
     lyDoChenhLech.value = "";
     nhanVienNhanId.value = "";
     confirmGhiChu.value = "";
+    confirmTienKiemDem.value = null;
     
     if (activeShift.value) {
       await taiThongKeCaHienTai();
-      await taiNhanVienGiaoCa();
+      if (isMyShift.value) {
+        await taiNhanVienGiaoCa();
+      }
     } else {
+      await taiCaLamChoMoCa();
       await loadPendingHandovers();
     }
   }
@@ -151,7 +200,12 @@ async function submitMoCa() {
   messageError.value = "";
   messageSuccess.value = "";
   
-  const res = await openShift(tienDauCa.value, moCaGhiChu.value);
+  const res = await openShift(
+    tienDauCa.value,
+    moCaGhiChu.value,
+    isAdmin.value ? caLamMoId.value : null,
+    lyDoMoCaMuon.value.trim()
+  );
   processing.value = false;
   if (res.success) {
     messageSuccess.value = res.message;
@@ -198,11 +252,25 @@ async function submitBanGiao() {
 
 // Submit confirm handover
 async function submitNhanBanGiao(id) {
-  processing.value = true;
   messageError.value = "";
   messageSuccess.value = "";
+
+  if (confirmTienKiemDem.value === null || confirmTienKiemDem.value === "" || Number(confirmTienKiemDem.value) < 0) {
+    messageError.value = "Vui lòng kiểm đếm và nhập số tiền thực nhận trước khi nhận ca.";
+    return;
+  }
+  if (isAdmin.value && !caLamMoId.value) {
+    messageError.value = "Vui lòng chọn ca làm việc cần mở.";
+    return;
+  }
+  if (adminCanLyDoMoCa.value && !lyDoMoCaMuon.value.trim()) {
+    messageError.value = "Vui lòng nhập lý do mở ca muộn hoặc ngoài khung giờ.";
+    return;
+  }
+
+  processing.value = true;
   
-  const res = await confirmHandover(id, confirmGhiChu.value);
+  const res = await confirmHandover(id, Number(confirmTienKiemDem.value), confirmGhiChu.value);
   processing.value = false;
   if (res.success) {
     messageSuccess.value = res.message;
@@ -272,6 +340,11 @@ async function submitNhanBanGiao(id) {
             </div>
           </div>
 
+          <div v-if="isAdminSupportingShift" class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
+            <p class="font-bold">Admin đang hỗ trợ ca của {{ activeShift.nhanVienTrongCaTen }}</p>
+            <p class="mt-1 text-xs">Bạn được bán hàng và thanh toán trong ca này nhưng không được bàn giao hoặc kết thúc ca thay nhân viên.</p>
+          </div>
+
           <!-- Live Financial Stats -->
           <div v-if="loadingStats" class="flex flex-col items-center py-6">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -314,7 +387,7 @@ async function submitNhanBanGiao(id) {
             </div>
 
             <!-- Handover Form Fields -->
-            <div class="border-t border-slate-100 pt-4 dark:border-slate-700 space-y-4">
+            <div v-if="isMyShift" class="border-t border-slate-100 pt-4 dark:border-slate-700 space-y-4">
               <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">
                 Thông tin bàn giao
               </h4>
@@ -402,7 +475,7 @@ async function submitNhanBanGiao(id) {
             </div>
 
             <!-- Handover Button -->
-            <button 
+            <button v-if="isMyShift"
               @click="submitBanGiao"
               :disabled="processing"
               class="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
@@ -459,6 +532,20 @@ async function submitNhanBanGiao(id) {
                 <span class="font-semibold text-slate-500">Ghi chú:</span> {{ pc.ghiChu }}
               </div>
 
+              <div class="mt-4">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Tiền thực nhận sau kiểm đếm <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  v-model="confirmTienKiemDem"
+                  placeholder="Nhập số tiền bạn đã kiểm đếm..."
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </div>
+
               <!-- Textbox to comment when receiving -->
               <div class="mt-4">
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
@@ -500,6 +587,39 @@ async function submitNhanBanGiao(id) {
                 <h4 class="font-bold text-slate-800 dark:text-slate-200">Khai báo tiền mặt đầu ca</h4>
                 <p class="text-xs text-slate-500 mt-0.5">Nhập số tiền mặt có sẵn trong két để thối tiền</p>
               </div>
+            </div>
+
+            <div v-if="isAdmin">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Ca làm việc cần mở <span class="text-rose-500">*</span>
+              </label>
+              <select
+                v-model="caLamMoId"
+                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <option value="">-- Chọn ca làm việc --</option>
+                <option v-for="ca in danhSachCaMo" :key="ca.id" :value="String(ca.id)">
+                  {{ ca.ten }} ({{ ca.gioBatDau }} - {{ ca.gioKetThuc }})
+                </option>
+              </select>
+            </div>
+
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+              Được mở sớm tối đa 30 phút. Mở sau giờ bắt đầu phải nhập lý do.
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Lý do mở ca muộn / ngoại lệ
+                <span v-if="adminCanLyDoMoCa" class="text-rose-500">*</span>
+              </label>
+              <textarea
+                v-model="lyDoMoCaMuon"
+                rows="2"
+                maxlength="300"
+                placeholder="Bắt buộc khi mở sau giờ bắt đầu hoặc admin mở ngoài khung giờ..."
+                class="w-full rounded-2xl border border-slate-200 bg-transparent p-3 text-sm outline-none focus:border-amber-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              ></textarea>
             </div>
 
             <!-- Starting Cash Input -->

@@ -4,6 +4,9 @@ import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.BanGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.XacNhanBanGiaoRequest;
 import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
+import com.example.server.core.admin.nhanVien.dto.request.HuyBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.TuChoiBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.BaoCaoSuCoGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaOptionsResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
@@ -17,8 +20,6 @@ import java.util.UUID;
 public interface GiaoCaService {
 
     GiaoCaResponse layCaHoatDong(UUID nhanVienId);
-
-    void kiemTraQuyenMoCa(UUID nhanVienId);
 
     GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request);
 
@@ -34,6 +35,12 @@ public interface GiaoCaService {
     List<GiaoCaResponse> layCaChoXacNhan(UUID nhanVienId);
 
     GiaoCaResponse xacNhanBanGiao(UUID nhanVienId, UUID giaoCaId, XacNhanBanGiaoRequest request);
+
+    GiaoCaResponse huyBanGiao(UUID nhanVienId, UUID giaoCaId, HuyBanGiaoRequest request);
+
+    GiaoCaResponse tuChoiBanGiao(UUID nhanVienId, UUID giaoCaId, TuChoiBanGiaoRequest request);
+
+    void baoCaoSuCo(UUID nhanVienId, UUID giaoCaId, BaoCaoSuCoGiaoCaRequest request);
 
     void checkActiveShiftOrThrow(UUID nhanVienId);
 

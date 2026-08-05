@@ -6,6 +6,7 @@ import java.util.UUID;
 public record GiaoCaOptionsResponse(
         boolean coTheKetCa,
         String caKeTiep,
+        String lyDoKhongTheBanGiao,
         List<NhanVienNhanCaResponse> nhanVienNhanCa
 ) {
     public record NhanVienNhanCaResponse(UUID id, String ma, String hoTen, Integer vaiTro) {

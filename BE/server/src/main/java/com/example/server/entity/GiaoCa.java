@@ -35,40 +35,40 @@ public class GiaoCa {
     private NhanVien nhanVienNhan;
 
     @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "ca_lam_id", nullable = false)
+    private CaLam caLam;
+
+    @NotNull
     @Column(name = "thoi_gian_vao", nullable = false)
     private Instant thoiGianVao;
 
     @Column(name = "thoi_gian_ra")
     private Instant thoiGianRa;
 
+    @Column(name = "thoi_gian_xac_nhan")
+    private Instant thoiGianXacNhan;
+
     @NotNull
     @Column(name = "tien_dau_ca", nullable = false, precision = 18, scale = 2)
     private BigDecimal tienDauCa;
 
-    @NotNull
-    @Column(name = "tien_mat_trong_ca", nullable = false, precision = 18, scale = 2)
-    private BigDecimal tienMatTrongCa = BigDecimal.ZERO;
-
-    @NotNull
-    @Column(name = "tien_chuyen_khoan_trong_ca", nullable = false, precision = 18, scale = 2)
-    private BigDecimal tienChuyenKhoanTrongCa = BigDecimal.ZERO;
-
     @Column(name = "tien_cuoi_ca_thuc_te", precision = 18, scale = 2)
     private BigDecimal tienCuoiCaThucTe;
 
-    @Column(name = "tien_cuoi_ca_he_thong", precision = 18, scale = 2)
-    private BigDecimal tienCuoiCaHeThong;
-
-    @Column(name = "tien_chenh_lech", precision = 18, scale = 2)
-    private BigDecimal tienChenhLech;
+    @Column(name = "tien_nhan_kiem_dem", precision = 18, scale = 2)
+    private BigDecimal tienNhanKiemDem;
 
     @Column(name = "ly_do_chenh_lech", length = 255)
     private String lyDoChenhLech;
 
     @NotNull
     @Column(name = "trang_thai", nullable = false, length = 20)
-    private String trangThai; // 'MO_CA', 'CHO_BAN_GIAO', 'DA_BAN_GIAO', 'DA_KET_THUC'
+    private String trangThai;
 
-    @Column(name = "ghi_chu", length = 255)
+    @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
+
+    @Column(name = "ca_chua_ket_thuc")
+    private Integer caChuaKetThuc;
 }
