@@ -4,6 +4,9 @@ import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.BanGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.XacNhanBanGiaoRequest;
 import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
+import com.example.server.core.admin.nhanVien.dto.request.HuyBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.TuChoiBanGiaoRequest;
+import com.example.server.core.admin.nhanVien.dto.request.BaoCaoSuCoGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaOptionsResponse;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaStatsResponse;
@@ -103,13 +106,52 @@ public class GiaoCaController {
     @PostMapping("/confirm-handover/{id}")
     public ResponseEntity<ApiResponse<GiaoCaResponse>> xacNhanBanGiao(
             @PathVariable("id") UUID giaoCaId,
-            @RequestBody XacNhanBanGiaoRequest request
+            @Valid @RequestBody XacNhanBanGiaoRequest request
     ) {
         UUID nhanVienId = getPrincipal().id();
         return ResponseEntity.ok(ApiResponse.success(
                 "Xác nhận bàn giao ca và mở ca mới thành công",
                 giaoCaService.xacNhanBanGiao(nhanVienId, giaoCaId, request)
         ));
+    }
+
+    @PostMapping("/cancel-handover/{id}")
+    public ResponseEntity<ApiResponse<GiaoCaResponse>> huyBanGiao(
+            @PathVariable("id") UUID giaoCaId,
+            @Valid @RequestBody HuyBanGiaoRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đã hủy yêu cầu bàn giao và mở lại ca làm việc",
+                giaoCaService.huyBanGiao(getPrincipal().id(), giaoCaId, request)
+        ));
+    }
+
+    @PostMapping("/reject-handover/{id}")
+    public ResponseEntity<ApiResponse<GiaoCaResponse>> tuChoiBanGiao(
+            @PathVariable("id") UUID giaoCaId,
+            @Valid @RequestBody TuChoiBanGiaoRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đã từ chối nhận bàn giao",
+                giaoCaService.tuChoiBanGiao(getPrincipal().id(), giaoCaId, request)
+        ));
+    }
+
+    @PostMapping("/report-incident/{id}")
+    public ResponseEntity<ApiResponse<Void>> baoCaoSuCo(
+            @PathVariable("id") UUID giaoCaId,
+            @Valid @RequestBody BaoCaoSuCoGiaoCaRequest request
+    ) {
+        giaoCaService.baoCaoSuCo(getPrincipal().id(), giaoCaId, request);
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi báo cáo sự cố đến quản trị viên", null));
+    }
+
+    @PostMapping("/report-incident")
+    public ResponseEntity<ApiResponse<Void>> baoCaoSuCoChuaMoCa(
+            @Valid @RequestBody BaoCaoSuCoGiaoCaRequest request
+    ) {
+        giaoCaService.baoCaoSuCo(getPrincipal().id(), null, request);
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi báo cáo sự cố đến quản trị viên", null));
     }
 
     @GetMapping("/history")

@@ -5,7 +5,10 @@ import {
   banGiaoCa, 
   layCaChoXacNhan, 
   xacNhanBanGiao,
-  ketCa
+  ketCa,
+  huyBanGiao,
+  tuChoiBanGiao,
+  baoCaoSuCoGiaoCa
 } from "../services/giao-ca";
 
 const activeShift = ref(null);
@@ -35,9 +38,9 @@ async function loadPendingHandovers() {
   }
 }
 
-async function handleMoCa(tienDauCa, ghiChu) {
+async function handleMoCa(tienDauCa, ghiChu, caLamId = null, lyDoMoMuon = "") {
   try {
-    const data = await moCa({ tienDauCa, ghiChu });
+    const data = await moCa({ tienDauCa, ghiChu, caLamId, lyDoMoMuon });
     activeShift.value = data;
     return { success: true, message: "Mở ca làm việc thành công" };
   } catch (error) {
@@ -65,14 +68,44 @@ async function handleKetCa(payload) {
   }
 }
 
-async function handleConfirmHandover(id, ghiChu) {
+async function handleConfirmHandover(id, tienNhanKiemDem, ghiChu) {
   try {
-    await xacNhanBanGiao(id, { ghiChu });
+    await xacNhanBanGiao(id, { tienNhanKiemDem, ghiChu });
     await loadActiveShift();
     await loadPendingHandovers();
     return { success: true, message: "Nhận bàn giao và mở ca mới thành công" };
   } catch (error) {
     return { success: false, message: error?.message || "Xác nhận bàn giao thất bại" };
+  }
+}
+
+async function handleCancelHandover(id, lyDo) {
+  try {
+    activeShift.value = await huyBanGiao(id, { lyDo });
+    await loadPendingHandovers();
+    return { success: true, message: "Đã hủy yêu cầu bàn giao và mở lại ca làm việc" };
+  } catch (error) {
+    return { success: false, message: error?.message || "Hủy bàn giao thất bại" };
+  }
+}
+
+async function handleRejectHandover(id, lyDo) {
+  try {
+    await tuChoiBanGiao(id, { lyDo });
+    await loadActiveShift();
+    await loadPendingHandovers();
+    return { success: true, message: "Đã từ chối nhận bàn giao" };
+  } catch (error) {
+    return { success: false, message: error?.message || "Từ chối bàn giao thất bại" };
+  }
+}
+
+async function handleReportIncident(id, payload) {
+  try {
+    await baoCaoSuCoGiaoCa(id, payload);
+    return { success: true, message: "Đã gửi báo cáo sự cố đến quản trị viên" };
+  } catch (error) {
+    return { success: false, message: error?.message || "Gửi báo cáo sự cố thất bại" };
   }
 }
 
@@ -86,6 +119,9 @@ export function useGiaoCa() {
     openShift: handleMoCa,
     submitHandover: handleBanGiaoCa,
     confirmHandover: handleConfirmHandover,
-    endShift: handleKetCa
+    endShift: handleKetCa,
+    cancelHandover: handleCancelHandover,
+    rejectHandover: handleRejectHandover,
+    reportIncident: handleReportIncident
   };
 }

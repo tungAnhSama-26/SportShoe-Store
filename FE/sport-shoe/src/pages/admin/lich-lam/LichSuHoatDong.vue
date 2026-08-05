@@ -224,6 +224,11 @@ const getShiftDetails = (timeVaoStr, timeRaStr) => {
   };
 };
 
+const getShiftName = (item) => item.caLamTen || getShiftDetails(
+  item.thoiGianVao || item.thoiGianMoCa,
+  item.thoiGianRa || item.thoiGianDongCa
+).tenCa;
+
 const setNgayMacDinh = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -377,7 +382,7 @@ const onSearchInput = () => {
                       <span class="text-slate-500 font-semibold">({{ item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || 'NV0000' }})</span>
                     </div>
                     <div class="text-[12px] text-slate-400 mt-0.5">
-                      {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).tenCa }}
+                      {{ getShiftName(item) }}
                       ({{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).gioCa }})
                     </div>
                   </div>
@@ -410,6 +415,9 @@ const onSearchInput = () => {
                         class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 border border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400">
                     Ra sớm {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).earlyMin }} phút
                   </span>
+                  <span v-if="item.thoiGianXacNhan" class="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    Xác nhận: {{ formatDateTime(item.thoiGianXacNhan) }}
+                  </span>
                 </div>
                 <div v-else class="text-center text-slate-400">—</div>
               </td>
@@ -435,7 +443,11 @@ const onSearchInput = () => {
                 </span>
                 <span v-else-if="item.trangThai === 'DA_BAN_GIAO' || item.trangThai === 'HOAN_TAT' || item.trangThai === '1' || item.trangThai === 1" 
                       class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-emerald-50 border border-emerald-100 text-emerald-500 dark:bg-emerald-950/20 dark:border-emerald-900/30 dark:text-emerald-400">
-                  Đã kết ca
+                  Đã bàn giao
+                </span>
+                <span v-else-if="item.trangThai === 'DA_KET_THUC'"
+                      class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-slate-100 border border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
+                  Đã kết thúc
                 </span>
                 <span v-else-if="item.trangThai === 'CHO_BAN_GIAO' || item.trangThai === '2' || item.trangThai === 2" 
                       class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-amber-50 border border-amber-100 text-amber-500 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400">

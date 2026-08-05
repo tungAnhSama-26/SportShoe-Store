@@ -6,5 +6,7 @@ import java.math.BigDecimal;
 
 public record MoCaRequest(
         @NotNull @PositiveOrZero BigDecimal tienDauCa,
-        String ghiChu
+        String ghiChu,
+        String caLamId,
+        String lyDoMoMuon
 ) {}

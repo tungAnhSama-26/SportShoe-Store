@@ -52,6 +52,30 @@ export function xacNhanBanGiao(id, payload) {
   });
 }
 
+export function huyBanGiao(id, payload = {}) {
+  return request(`/admin/giao-ca/cancel-handover/${id}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function tuChoiBanGiao(id, payload) {
+  return request(`/admin/giao-ca/reject-handover/${id}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function baoCaoSuCoGiaoCa(id, payload) {
+  const path = id
+    ? `/admin/giao-ca/report-incident/${id}`
+    : "/admin/giao-ca/report-incident";
+  return request(path, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function layLichSuGiaoCa(filters) {
   const params = new URLSearchParams();
   if (filters?.nhanVienId) params.set("nhanVienId", filters.nhanVienId);

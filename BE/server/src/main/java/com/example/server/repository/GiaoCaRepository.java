@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
@@ -24,6 +26,12 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
     boolean existsByTrangThaiIn(List<String> trangThai);
 
     boolean existsByNhanVienTrongCaIdAndTrangThaiIn(UUID nhanVienId, List<String> trangThai);
+
+    boolean existsByCaChuaKetThuc(Integer caChuaKetThuc);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM GiaoCa g WHERE g.id = :id")
+    Optional<GiaoCa> findByIdForUpdate(@Param("id") UUID id);
 
     Optional<GiaoCa> findFirstByTrangThaiInOrderByThoiGianVaoDesc(List<String> trangThai);
 

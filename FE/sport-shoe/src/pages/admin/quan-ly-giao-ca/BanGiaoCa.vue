@@ -24,6 +24,7 @@ import { useAdminSession } from "../../../composable/useAdminSession";
 import { useGiaoCa } from "../../../composable/useGiaoCa";
 import { layThongTinGiaoCaCurrent, layTuyChonBanGiao } from "../../../services/giao-ca";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
+import { layDanhSachCaLam } from "../../../services/ca-lam";
 import ThuChiModal from "../../../components/admin/giao-ca/ThuChiModal.vue";
 
 const route = useRoute();
@@ -39,12 +40,16 @@ const {
   openShift,
   submitHandover,
   confirmHandover,
-  endShift
+  endShift,
+  cancelHandover,
+  rejectHandover,
+  reportIncident
 } = useGiaoCa();
 
 const listNhanVien = ref([]);
 const coTheKetCa = ref(false);
 const caKeTiep = ref(null);
+const lyDoKhongTheBanGiao = ref("");
 const currentStats = ref(null);
 const loadingStats = ref(false);
 const isPaidInvoicesCollapsed = ref(true);
@@ -66,6 +71,9 @@ const buocHienTai = ref(1);
 // Mở ca sáng sớm states
 const tienMoCaSángSớm = ref(500000); // Default to 500k starting cash
 const ghiChuMoCaSángSớm = ref("");
+const lyDoMoCaMuon = ref("");
+const danhSachCaMo = ref([]);
+const caLamMoId = ref("");
 
 // Báo cáo sự cố
 const showsIncidentModal = ref(false);
@@ -102,6 +110,8 @@ const ghiChu = ref("");
 
 // Receiver confirmation note
 const ghiChuNhanCa = ref("");
+const tienNhanKiemDem = ref(null);
+const lyDoTuChoi = ref("");
 
 const processing = ref(false);
 
@@ -113,6 +123,40 @@ const getLastWordOfName = computed(() => {
 const isMoCaSángSớmMode = computed(() => route.path === "/admin/mo-ca");
 
 const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const caLamDuocChon = computed(() =>
+  danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
+);
+const adminCanLyDoMoCa = computed(() => {
+  if (!isAdmin.value || !caLamDuocChon.value) return false;
+  const now = new Date();
+  const [hour, minute] = String(caLamDuocChon.value.gioBatDau).split(":").map(Number);
+  const start = new Date(now);
+  start.setHours(hour, minute, 0, 0);
+  const earliest = new Date(start.getTime() - 30 * 60 * 1000);
+  return now < earliest || now > start;
+});
+
+async function taiCaLamChoMoCa() {
+  if (!isAdmin.value) return;
+  try {
+    danhSachCaMo.value = (await layDanhSachCaLam()).filter((ca) => ca.trangThai);
+    if (!caLamMoId.value && danhSachCaMo.value.length) {
+      const now = new Date();
+      const phuHop = danhSachCaMo.value.find((ca) => {
+        const [sh, sm] = String(ca.gioBatDau).split(":").map(Number);
+        const [eh, em] = String(ca.gioKetThuc).split(":").map(Number);
+        const start = new Date(now);
+        const end = new Date(now);
+        start.setHours(sh, sm, 0, 0);
+        end.setHours(eh, em, 0, 0);
+        return now >= new Date(start.getTime() - 30 * 60 * 1000) && now < end;
+      });
+      caLamMoId.value = String((phuHop || danhSachCaMo.value[0]).id);
+    }
+  } catch (error) {
+    showError(error?.message || "Không thể tải danh sách ca làm việc");
+  }
+}
 const forceStaffViewForAdmin = ref(false);
 // Admin cũng dùng giao diện mở ca/bàn giao ca bình thường như nhân viên.
 // showAdminView chỉ true khi admin muốn xem màn chi tiết ca của người khác (không phải ca của họ)
@@ -132,12 +176,15 @@ const isMyShift = computed(() => {
   if (!displayShift.value || !adminSession.value) return false;
   return String(adminSession.value.id) === String(displayShift.value.nhanVienTrongCaId);
 });
+const isAdminSupportingShift = computed(() =>
+  isAdmin.value && Boolean(activeShift.value) && !isMyShift.value
+);
 
 const shiftTransactions = ref([]);
 const loadingTransactions = ref(false);
 
 const directDisplayInvoices = computed(() => {
-  if (isMyShift.value) {
+  if (isMyShift.value || isAdminSupportingShift.value) {
     return shiftTransactions.value;
   }
   return pendingInvoices.value;
@@ -190,10 +237,12 @@ async function taiNhanVienGiaoCa() {
     listNhanVien.value = options?.nhanVienNhanCa || [];
     coTheKetCa.value = Boolean(options?.coTheKetCa);
     caKeTiep.value = options?.caKeTiep || null;
+    lyDoKhongTheBanGiao.value = options?.lyDoKhongTheBanGiao || "";
   } catch (err) {
     console.error("Lỗi tải danh sách nhân viên:", err);
     listNhanVien.value = [];
     coTheKetCa.value = false;
+    lyDoKhongTheBanGiao.value = "";
   }
 }
 
@@ -207,7 +256,9 @@ async function syncState() {
     }
     if (activeShift.value.trangThai === "MO_CA") {
       await taiThongKeCaHienTai();
-      await taiNhanVienGiaoCa();
+      if (isMyShift.value) {
+        await taiNhanVienGiaoCa();
+      }
     }
     await loadShiftTransactions();
   } else {
@@ -223,6 +274,7 @@ async function syncState() {
 }
 
 onMounted(async () => {
+  await taiCaLamChoMoCa();
   await loadActiveShift();
   await loadPendingHandovers();
   await syncState();
@@ -330,7 +382,12 @@ async function xacNhanMoCaSángSớmBtn() {
   ).then(async (confirmed) => {
     if (confirmed) {
       processing.value = true;
-      const res = await openShift(tienMoCaSángSớm.value, ghiChuMoCaSángSớm.value);
+      const res = await openShift(
+        tienMoCaSángSớm.value,
+        ghiChuMoCaSángSớm.value,
+        isAdmin.value ? caLamMoId.value : null,
+        lyDoMoCaMuon.value.trim()
+      );
       processing.value = false;
       if (res.success) {
         showSuccess(res.message);
@@ -382,6 +439,14 @@ async function ketCaLamViecBtn() {
     showError("Số tiền chênh lệch khác 0. Vui lòng nhập lý do chênh lệch.");
     return;
   }
+  if (isAdmin.value && !caLamMoId.value) {
+    showError("Vui lòng chọn ca làm việc cần mở");
+    return;
+  }
+  if (adminCanLyDoMoCa.value && !lyDoMoCaMuon.value.trim()) {
+    showError("Vui lòng nhập lý do mở ca muộn hoặc ngoài khung giờ");
+    return;
+  }
   const confirmed = await showConfirm(
     "Đây là ca cuối trong ngày. Kết ca sẽ không mở ca mới.",
     "Xác nhận kết ca làm việc?"
@@ -405,13 +470,17 @@ async function ketCaLamViecBtn() {
 // Action: Đồng ý nhận ca
 async function dongYNhanCaBtn(id) {
   if (!id) return;
+  if (tienNhanKiemDem.value === null || Number(tienNhanKiemDem.value) < 0) {
+    showError("Vui lòng nhập số tiền thực tế bạn đã kiểm đếm.");
+    return;
+  }
   showConfirm(
     "Đồng ý nhận bàn giao ca?",
     "Bạn sẽ chính thức tiếp quản ca làm việc tiếp theo và hệ thống tự động mở ca cho bạn."
   ).then(async (confirmed) => {
     if (confirmed) {
       processing.value = true;
-      const res = await confirmHandover(id, ghiChuNhanCa.value);
+      const res = await confirmHandover(id, Number(tienNhanKiemDem.value), ghiChuNhanCa.value);
       processing.value = false;
       if (res.success) {
         showSuccess(res.message);
@@ -425,14 +494,58 @@ async function dongYNhanCaBtn(id) {
   });
 }
 
-function guiBaoCaoSuCo() {
+async function huyYeuCauBanGiaoBtn() {
+  if (!activeShift.value?.id) return;
+  const confirmed = await showConfirm(
+    "Hủy yêu cầu bàn giao?",
+    "Ca sẽ quay lại trạng thái đang mở để bạn tiếp tục làm việc và chốt lại sau."
+  );
+  if (!confirmed) return;
+  processing.value = true;
+  const res = await cancelHandover(activeShift.value.id, "Người giao chủ động hủy yêu cầu");
+  processing.value = false;
+  if (res.success) showSuccess(res.message);
+  else showError(res.message);
+}
+
+async function tuChoiNhanCaBtn(id) {
+  if (!id) return;
+  if (!lyDoTuChoi.value.trim()) {
+    showError("Vui lòng nhập lý do từ chối nhận ca.");
+    return;
+  }
+  const confirmed = await showConfirm(
+    "Từ chối nhận bàn giao?",
+    "Ca của người giao sẽ được mở lại để xử lý và chốt lại."
+  );
+  if (!confirmed) return;
+  processing.value = true;
+  const res = await rejectHandover(id, lyDoTuChoi.value.trim());
+  processing.value = false;
+  if (res.success) {
+    lyDoTuChoi.value = "";
+    showSuccess(res.message);
+  } else showError(res.message);
+}
+
+async function guiBaoCaoSuCo() {
   if (!lyDoSucos.value.trim()) {
     showError("Vui lòng mô tả tình trạng két tiền");
     return;
   }
-  showsIncidentModal.value = false;
-  showSuccess("Đã gửi báo cáo khẩn cấp đến Quản lý hệ thống thành công!");
-  lyDoSucos.value = "";
+  processing.value = true;
+  const res = await reportIncident(displayShift.value?.id || null, {
+    tienKiemDem: tienNhanKiemDem.value ?? tienThucTe.value ?? tienMoCaSángSớm.value,
+    noiDung: lyDoSucos.value.trim()
+  });
+  processing.value = false;
+  if (res.success) {
+    showsIncidentModal.value = false;
+    lyDoSucos.value = "";
+    showSuccess(res.message);
+  } else {
+    showError(res.message);
+  }
 }
 
 // Computeds for dynamic finance display
@@ -575,6 +688,22 @@ function cuongCheKetThucCa() {
 
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            Tiền thực tế bạn kiểm đếm <span class="text-rose-500">*</span>
+          </label>
+          <input
+            v-model.number="tienNhanKiemDem"
+            type="number"
+            min="0"
+            placeholder="Nhập số tiền bạn tự kiểm đếm..."
+            class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm font-bold text-blue-600 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800"
+          />
+          <p v-if="tienNhanKiemDem !== null && Number(tienNhanKiemDem) !== Number(pendingHandover.tienCuoiCaThucTe)" class="mt-1.5 text-xs font-semibold text-rose-600">
+            Chênh lệch với người giao: {{ formatVND(Number(tienNhanKiemDem) - Number(pendingHandover.tienCuoiCaThucTe || 0)) }}
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
             Ghi chú nhận ca
           </label>
           <input 
@@ -585,6 +714,20 @@ function cuongCheKetThucCa() {
           />
         </div>
 
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Lý do từ chối</label>
+          <input v-model="lyDoTuChoi" type="text" placeholder="Bắt buộc khi từ chối nhận ca..." class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-rose-400 dark:border-slate-700 dark:bg-slate-800" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          @click="tuChoiNhanCaBtn(pendingHandover.id)"
+          :disabled="processing"
+          class="w-full py-4 border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold rounded-2xl transition text-sm uppercase disabled:opacity-50"
+        >
+          Từ chối
+        </button>
         <button 
           @click="dongYNhanCaBtn(pendingHandover.id)"
           :disabled="processing"
@@ -593,6 +736,7 @@ function cuongCheKetThucCa() {
           <Check class="h-5 w-5" />
           {{ processing ? 'ĐANG XỬ LÝ...' : 'ĐỒNG Ý NHẬN CA' }}
         </button>
+        </div>
       </div>
 
       <!-- Case 3: No active ca, no pending handover - show normal starting cash declaration -->
@@ -619,6 +763,39 @@ function cuongCheKetThucCa() {
 
         <!-- Form fields -->
         <div class="space-y-5">
+          <div v-if="isAdmin">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+              Ca làm việc cần mở <span class="text-rose-500">*</span>
+            </label>
+            <select
+              v-model="caLamMoId"
+              class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400"
+            >
+              <option value="">-- Chọn ca làm việc --</option>
+              <option v-for="ca in danhSachCaMo" :key="ca.id" :value="String(ca.id)">
+                {{ ca.ten }} ({{ ca.gioBatDau }} - {{ ca.gioKetThuc }})
+              </option>
+            </select>
+          </div>
+
+          <div class="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+            Được mở sớm tối đa 30 phút. Nếu mở sau giờ bắt đầu, nhân viên phải nhập lý do mở muộn.
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+              Lý do mở ca muộn / ngoại lệ
+              <span v-if="adminCanLyDoMoCa" class="text-rose-500">*</span>
+            </label>
+            <textarea
+              v-model="lyDoMoCaMuon"
+              rows="2"
+              maxlength="300"
+              class="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-400 transition"
+              placeholder="Bắt buộc khi mở sau giờ bắt đầu hoặc admin mở ngoài khung giờ..."
+            ></textarea>
+          </div>
+
           <!-- Input tiền mặt -->
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
@@ -1110,7 +1287,7 @@ function cuongCheKetThucCa() {
               <div class="flex justify-between md:justify-start gap-4">
                 <span class="text-slate-400 min-w-[100px]">Trạng thái:</span>
                 <span class="font-semibold text-slate-700 dark:text-slate-200">
-                  {{ displayShift?.trangThai === 'MO_CA' ? 'Đang làm việc' : (displayShift?.trangThai === 'CHO_BAN_GIAO' ? 'Đang bàn giao' : (displayShift?.trangThai === 'DA_BAN_GIAO' ? 'Đã đóng ca' : 'N/A')) }}
+                  {{ displayShift?.trangThai === 'MO_CA' ? 'Đang làm việc' : (displayShift?.trangThai === 'CHO_BAN_GIAO' ? 'Đang bàn giao' : (displayShift?.trangThai === 'DA_BAN_GIAO' ? 'Đã bàn giao' : (displayShift?.trangThai === 'DA_KET_THUC' ? 'Đã kết thúc' : 'N/A'))) }}
                 </span>
               </div>
             </div>
@@ -1191,8 +1368,20 @@ function cuongCheKetThucCa() {
           <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
             <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Thông tin bàn giao</h3>
 
+            <div v-if="isAdminSupportingShift" class="space-y-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
+              <h4 class="font-bold">Admin đang hỗ trợ ca của {{ activeShift?.nhanVienTrongCaTen }}</h4>
+              <p>Bạn có thể vào bán hàng và thanh toán trong ca này. Quyền bàn giao và kết ca vẫn thuộc nhân viên mở ca.</p>
+              <button
+                type="button"
+                @click="router.push('/admin/ban-hang')"
+                class="w-full rounded-xl bg-blue-600 py-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-blue-700"
+              >
+                Đi đến bán hàng tại quầy
+              </button>
+            </div>
+
             <!-- Step 1: Đóng ca & Bàn giao -->
-            <div v-if="buocHienTai === 1" class="space-y-4">
+            <div v-else-if="buocHienTai === 1" class="space-y-4">
               <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                   Số tiền bàn giao thực tế
@@ -1240,6 +1429,9 @@ function cuongCheKetThucCa() {
                     {{ nv.hoTen }} ({{ nv.ma }}){{ nv.vaiTro === 1 ? ' - Quản trị viên' : '' }}
                   </option>
                 </select>
+                <p v-if="lyDoKhongTheBanGiao" class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold leading-5 text-amber-800">
+                  {{ lyDoKhongTheBanGiao }}
+                </p>
               </div>
 
               <!-- Lý do chênh lệch (nếu lệch tiền) -->
@@ -1276,7 +1468,7 @@ function cuongCheKetThucCa() {
               <button v-if="!coTheKetCa"
                 type="button"
                 @click="xacNhanBanGiaoCaBtn"
-                :disabled="processing"
+                :disabled="processing || listNhanVien.length === 0"
                 class="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl shadow-md transition text-xs uppercase tracking-wider disabled:opacity-50"
               >
                 {{ processing ? 'ĐANG GỬI BÀN GIAO...' : 'Gửi yêu cầu bàn giao' }}
@@ -1307,6 +1499,14 @@ function cuongCheKetThucCa() {
                   Vui lòng liên hệ người tiếp quản ca hoặc Admin nếu cần sửa đổi.
                 </div>
               </div>
+              <button
+                type="button"
+                @click="huyYeuCauBanGiaoBtn"
+                :disabled="processing"
+                class="w-full py-3 border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold rounded-xl transition text-xs uppercase tracking-wider disabled:opacity-50"
+              >
+                Hủy yêu cầu bàn giao
+              </button>
             </div>
 
             <!-- Step 3: Xác nhận nhận ca -->
@@ -1348,6 +1548,22 @@ function cuongCheKetThucCa() {
 
               <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Tiền thực tế bạn kiểm đếm <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  v-model.number="tienNhanKiemDem"
+                  type="number"
+                  min="0"
+                  placeholder="Nhập số tiền bạn tự kiểm đếm..."
+                  class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm font-bold text-blue-600 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800"
+                />
+                <p v-if="tienNhanKiemDem !== null && Number(tienNhanKiemDem) !== Number(pendingHandover?.tienCuoiCaThucTe)" class="mt-1.5 text-xs font-semibold text-rose-600">
+                  Chênh lệch với người giao: {{ formatVND(Number(tienNhanKiemDem) - Number(pendingHandover?.tienCuoiCaThucTe || 0)) }}
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                   Ghi chú nhận ca
                 </label>
                 <input 
@@ -1358,7 +1574,20 @@ function cuongCheKetThucCa() {
                 />
               </div>
 
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Lý do từ chối</label>
+                <input v-model="lyDoTuChoi" type="text" placeholder="Bắt buộc khi từ chối nhận ca..." class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-rose-400 dark:border-slate-700 dark:bg-slate-800" />
+              </div>
+
               <!-- Action Button -->
+              <button
+                type="button"
+                @click="tuChoiNhanCaBtn(pendingHandover?.id)"
+                :disabled="processing"
+                class="w-full py-3.5 border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold rounded-xl transition text-sm uppercase disabled:opacity-50"
+              >
+                Từ chối nhận ca
+              </button>
               <button 
                 @click="dongYNhanCaBtn(pendingHandover?.id)"
                 :disabled="processing"
@@ -1540,7 +1769,7 @@ function cuongCheKetThucCa() {
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Nhân viên nhận ca</p>
                 <h4 class="font-bold text-slate-700 dark:text-slate-200 mt-1">{{ displayShift?.nhanVienNhanTen || 'Chưa nhận' }}</h4>
                 <p class="text-[10px] text-slate-400 mt-0.5">
-                  Nhận ca: {{ displayShift?.thoiGianRa ? new Date(displayShift.thoiGianRa).toLocaleString('vi-VN') : 'Chưa nhận' }}
+                  Nhận ca: {{ displayShift?.thoiGianXacNhan ? new Date(displayShift.thoiGianXacNhan).toLocaleString('vi-VN') : 'Chưa nhận' }}
                 </p>
               </div>
               

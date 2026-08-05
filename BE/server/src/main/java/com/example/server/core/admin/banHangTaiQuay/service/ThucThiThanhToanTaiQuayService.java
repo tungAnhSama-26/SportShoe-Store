@@ -81,8 +81,13 @@ public class ThucThiThanhToanTaiQuayService {
         if (currentEmp == null) {
             throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
         }
-        GiaoCa activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
-                .orElseThrow(() -> new BusinessException("Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
+        GiaoCa activeShift = currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1
+                ? giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA"))
+                    .orElseThrow(() -> new BusinessException(
+                            "Cửa hàng không có ca làm việc đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."))
+                : giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
+                    .orElseThrow(() -> new BusinessException(
+                            "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
 
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
