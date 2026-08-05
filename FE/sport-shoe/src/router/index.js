@@ -134,7 +134,12 @@ const router = createRouter({
     },
     {
       path: "/",
-      redirect: "/khachhang"
+      redirect: () => {
+        if (isAdminAuthenticated()) {
+          return isAdminRole() ? "/admin/thong-ke" : "/admin/ban-hang";
+        }
+        return "/khachhang";
+      }
     },
     {
       path: "/khachhang",
@@ -527,24 +532,36 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
+  const isAuth = isAdminAuthenticated();
+  const adminTarget = isAdminRole() ? "/admin/thong-ke" : "/admin/ban-hang";
+
+  // Nếu đang là Admin/Nhân viên và cố gắng truy cập trang login admin
   if (to.name === "admin-login") {
+    if (isAuth) {
+      return adminTarget;
+    }
     return true;
   }
 
+  // Cho phép trang hiển thị lỗi
+  if (to.path.startsWith("/error")) {
+    return true;
+  }
+
+  // Cho phép truy cập các trang khách hàng / công khai (/khachhang, /login, /register, /...)
   if (!isProtectedAdminArea(to.path)) {
     return true;
   }
 
-  if (!isAdminAuthenticated()) {
+  // Nếu chưa đăng nhập Admin/Nhân viên mà vào khu vực quản trị
+  if (!isAuth) {
     return {
-      path: "/error/401",
+      path: "/admin/login",
       query: {
-        redirect: to.fullPath,
-        message: "Không tìm thấy token đăng nhập. Vui lòng đăng nhập lại."
+        redirect: to.fullPath
       }
     };
   }
-
 
   if (to.path.startsWith("/nhanvien")) {
     return isOwnEmployeeProfile(to.path) ? true : ownEmployeeProfilePath();

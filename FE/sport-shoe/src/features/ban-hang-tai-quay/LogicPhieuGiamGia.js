@@ -294,7 +294,7 @@ export function LogicPhieuGiamGia({
     
     if (currentBest) {
       const currentBestDiscount = tinhToanGiamGia(currentBest, tongTien.value);
-      const currentDiscount = phieuGiamGiaDaApDung.value ? tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value) : 0;
+      const currentDiscount = phieuGiamGiaDaApDung.value ? (Number(tienGiam.value) || 0) : 0;
       
       if (currentBestDiscount > currentDiscount && (!phieuGiamGiaDaApDung.value || phieuGiamGiaDaApDung.value.ma !== currentBest.ma)) {
         if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {

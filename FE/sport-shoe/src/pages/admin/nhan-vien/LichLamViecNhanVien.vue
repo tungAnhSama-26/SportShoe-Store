@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { layLichLamViec } from "../../../services/lich-lam.js";
 import { useAdminSession } from "../../../composable/useAdminSession.js";
+import { normalizeShiftName } from "../../../services/ca-lam.js";
 
 const { adminSession } = useAdminSession();
 const dangTai = ref(false);
@@ -29,7 +30,8 @@ const lichCuaToi = computed(() =>
 );
 
 function tenCa(ca) {
-  return { sang: "Ca sáng", chieu: "Ca chiều", toi: "Ca tối" }[ca] || ca || "Nghỉ";
+  if (!ca) return "Nghỉ";
+  return normalizeShiftName(ca, { sang: "Ca sáng", chieu: "Ca chiều", toi: "Ca tối" }[ca] || ca);
 }
 
 async function taiLich() {

@@ -326,7 +326,7 @@ async function xuatExcel() {
             </td>
             <td class="px-4 py-3 font-semibold text-slate-800"><span class="block truncate">{{ item.ma }}</span></td>
             <td class="px-4 py-3 font-medium text-gray-800"><span class="block truncate">{{ item.ten }}</span></td>
-            <td class="px-4 py-3 font-mono text-xs text-gray-500 text-center"><span class="block truncate">{{ item.maMauHex || '—' }}</span></td>
+            <td class="px-4 py-3 font-medium text-gray-600 uppercase"><span class="block truncate">{{ item.maMauHex || '—' }}</span></td>
             <td class="px-4 py-3 text-center">
               <div class="flex justify-center">
                 <DanhMucQuickStatusToggle :trang-thai="item.trangThai" :loading="updatingStatusId === item.id" />
@@ -409,7 +409,7 @@ async function xuatExcel() {
                     @input="onHexInput"
                     :disabled="modalMode === 'view'"
                     maxlength="7"
-                    class="flex-1 px-3 py-2 border rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase"
+                    class="flex-1 px-3 py-2 border rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-rose-400 uppercase"
                     :class="errors.maMauHex ? 'border-red-400' : 'border-gray-200'"
                     placeholder="#000000"
                   />

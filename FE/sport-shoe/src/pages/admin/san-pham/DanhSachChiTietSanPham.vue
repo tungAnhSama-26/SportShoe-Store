@@ -643,9 +643,9 @@ async function toggleBienTheStatus(item) {
 
     await api.doiTrangThaiBienThe(item.id, newTrangThai)
     item.kichHoat = newTrangThai
-    showToast('Cập nhật trạng thái thành công', 'success')
+    showSuccess('Cập nhật trạng thái thành công')
   } catch (error) {
-    showToast(getDisplayErrorMessage(error, 'Cập nhật trạng thái thất bại'), 'error')
+    showError(getDisplayErrorMessage(error, 'Cập nhật trạng thái thất bại'))
   } finally {
     danhSachIdDangCapNhat.delete(item.id)
   }

@@ -1529,11 +1529,11 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
             if (giayChiTiet != null) {
                 Giay giay = giayChiTiet.getGiay();
                 if (giay == null || giay.getTrangThai() == null || giay.getTrangThai() == 0) {
-                    throw new BusinessException("Sản phẩm '" + (giay != null ? giay.getTen() : "Không xác định") + "' đã ngừng bán.");
+                    throw new BusinessException("Sản phẩm '" + (giay != null ? giay.getTen() : "Không xác định") + "' đã ngừng hoạt động, vui lòng chọn sản phẩm khác.");
                 }
 
                 if (giayChiTiet.getKichHoat() == null || giayChiTiet.getKichHoat() == 0) {
-                    throw new BusinessException("Sản phẩm '" + giay.getTen() + "' đã ngừng bán.");
+                    throw new BusinessException("Sản phẩm '" + giay.getTen() + "' đã ngừng hoạt động, vui lòng chọn sản phẩm khác.");
                 }
             }
         }

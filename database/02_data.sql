@@ -4,160 +4,611 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
--- Dữ liệu seed chỉ dùng cho môi trường phát triển.
--- Mật khẩu ban đầu của nhân viên và khách hàng là 123456 ở dạng chưa băm.
--- AuthService sẽ tự chuyển mật khẩu sang BCrypt sau lần đăng nhập thành công đầu tiên.
 DECLARE @NOW DATETIME2 = SYSDATETIME();
-DECLARE @N TABLE (n INT PRIMARY KEY);
-INSERT INTO @N (n) VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
 
-INSERT INTO nhan_vien (
-    id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh,
-    dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao
-)
-SELECT
-    CONVERT(UNIQUEIDENTIFIER, CONCAT('10000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n AS VARCHAR(12)), 12))),
-    CONCAT('NV', RIGHT('0000' + CAST(n AS VARCHAR(4)), 4)),
-    CASE WHEN n = 1 THEN 'admin' ELSE CONCAT('nhanvien', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)) END,
-    CONCAT(N'Nhân viên ', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
-    CONCAT('nhanvien', RIGHT('00' + CAST(n AS VARCHAR(2)), 2), '@sportshoe.local'),
-    '123456', CONCAT('09010000', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
-    CASE WHEN n % 2 = 0 THEN N'Nữ' ELSE N'Nam' END,
-    CONCAT(N'Địa chỉ nhân viên ', n, N', Hà Nội'), CASE WHEN n = 1 THEN 1 ELSE 2 END,
-    1, 0, @NOW
-FROM @N;
+DELETE FROM phieu_giam_gia_khach_hang;
+DELETE FROM dot_giam_gia_san_pham;
+DELETE FROM danh_gia;
+DELETE FROM hinh_anh_giay;
+DELETE FROM giay_thuoc_tinh;
+DELETE FROM hoa_don_chi_tiet;
+DELETE FROM giay_chi_tiet;
+DELETE FROM giay;
+DELETE FROM kich_co;
+DELETE FROM mau_sac;
+DELETE FROM trong_luong;
+DELETE FROM cong_nghe_dem;
+DELETE FROM de_giay;
+DELETE FROM co_giay;
+DELETE FROM chat_lieu_giay;
+DELETE FROM loai_giay;
+DELETE FROM thuong_hieu;
+DELETE FROM dot_giam_gia;
+DELETE FROM phieu_giam_gia;
+DELETE FROM ca_lam;
+DELETE FROM tai_khoan_ngan_hang;
+DELETE FROM dia_chi_khach_hang;
+DELETE FROM lich_su_hoa_don;
+DELETE FROM thanh_toan;
+DELETE FROM van_chuyen;
+DELETE FROM hoa_don;
+DELETE FROM tin_nhan;
+DELETE FROM cuoc_hoi_thoai;
+DELETE FROM thong_bao_khach_hang;
+DELETE FROM lich_lam_viec;
+DELETE FROM giao_ca;
+DELETE FROM nhan_vien;
+DELETE FROM khach_hang;
+DBCC CHECKIDENT ('kich_co', RESEED, 0);
+DBCC CHECKIDENT ('mau_sac', RESEED, 0);
+DBCC CHECKIDENT ('thuong_hieu', RESEED, 0);
+DBCC CHECKIDENT ('loai_giay', RESEED, 0);
+DBCC CHECKIDENT ('de_giay', RESEED, 0);
+DBCC CHECKIDENT ('co_giay', RESEED, 0);
+DBCC CHECKIDENT ('chat_lieu_giay', RESEED, 0);
+DBCC CHECKIDENT ('trong_luong', RESEED, 0);
+DBCC CHECKIDENT ('cong_nghe_dem', RESEED, 0);
+DBCC CHECKIDENT ('dot_giam_gia', RESEED, 0);
+DBCC CHECKIDENT ('giay', RESEED, 0);
+DBCC CHECKIDENT ('giay_thuoc_tinh', RESEED, 0);
+DBCC CHECKIDENT ('giay_chi_tiet', RESEED, 0);
+DBCC CHECKIDENT ('hinh_anh_giay', RESEED, 0);
+DBCC CHECKIDENT ('dot_giam_gia_san_pham', RESEED, 0);
+DBCC CHECKIDENT ('phieu_giam_gia', RESEED, 0);
+DBCC CHECKIDENT ('phieu_giam_gia_khach_hang', RESEED, 0);
+DBCC CHECKIDENT ('hoa_don', RESEED, 0);
+DBCC CHECKIDENT ('tai_khoan_ngan_hang', RESEED, 0);
+DBCC CHECKIDENT ('dia_chi_khach_hang', RESEED, 0);
 
-INSERT INTO khach_hang (
-    id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao
-)
-SELECT
-    CONVERT(UNIQUEIDENTIFIER, CONCAT('20000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n AS VARCHAR(12)), 12))),
-    CONCAT('khachhang', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), '123456',
-    CONCAT(N'Khách hàng ', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
-    CONCAT('khachhang', RIGHT('00' + CAST(n AS VARCHAR(2)), 2), '@example.com'),
-    CONCAT('09020000', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CASE WHEN n % 2 = 0 THEN 2 ELSE 1 END, 1, @NOW
-FROM @N;
+-- NHÂN VIÊN (20)
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000001'), 'NV0001', 'admin', N'Quản Trị Viên', 'nv1@sportshoe.vn', '123456', '0901000001', N'Nam', N'Hà Nội', 1, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000002'), 'NV0002', 'nhanvien2', N'Nhân viên 2', 'nv2@sportshoe.vn', '123456', '0901000002', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000003'), 'NV0003', 'nhanvien3', N'Nhân viên 3', 'nv3@sportshoe.vn', '123456', '0901000003', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000004'), 'NV0004', 'nhanvien4', N'Nhân viên 4', 'nv4@sportshoe.vn', '123456', '0901000004', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000005'), 'NV0005', 'nhanvien5', N'Nhân viên 5', 'nv5@sportshoe.vn', '123456', '0901000005', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000006'), 'NV0006', 'nhanvien6', N'Nhân viên 6', 'nv6@sportshoe.vn', '123456', '0901000006', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000007'), 'NV0007', 'nhanvien7', N'Nhân viên 7', 'nv7@sportshoe.vn', '123456', '0901000007', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000008'), 'NV0008', 'nhanvien8', N'Nhân viên 8', 'nv8@sportshoe.vn', '123456', '0901000008', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000009'), 'NV0009', 'nhanvien9', N'Nhân viên 9', 'nv9@sportshoe.vn', '123456', '0901000009', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000010'), 'NV0010', 'nhanvien10', N'Nhân viên 10', 'nv10@sportshoe.vn', '123456', '0901000010', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000011'), 'NV0011', 'nhanvien11', N'Nhân viên 11', 'nv11@sportshoe.vn', '123456', '0901000011', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000012'), 'NV0012', 'nhanvien12', N'Nhân viên 12', 'nv12@sportshoe.vn', '123456', '0901000012', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000013'), 'NV0013', 'nhanvien13', N'Nhân viên 13', 'nv13@sportshoe.vn', '123456', '0901000013', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000014'), 'NV0014', 'nhanvien14', N'Nhân viên 14', 'nv14@sportshoe.vn', '123456', '0901000014', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000015'), 'NV0015', 'nhanvien15', N'Nhân viên 15', 'nv15@sportshoe.vn', '123456', '0901000015', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000016'), 'NV0016', 'nhanvien16', N'Nhân viên 16', 'nv16@sportshoe.vn', '123456', '0901000016', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000017'), 'NV0017', 'nhanvien17', N'Nhân viên 17', 'nv17@sportshoe.vn', '123456', '0901000017', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000018'), 'NV0018', 'nhanvien18', N'Nhân viên 18', 'nv18@sportshoe.vn', '123456', '0901000018', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000019'), 'NV0019', 'nhanvien19', N'Nhân viên 19', 'nv19@sportshoe.vn', '123456', '0901000019', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000020'), 'NV0020', 'nhanvien20', N'Nhân viên 20', 'nv20@sportshoe.vn', '123456', '0901000020', N'Nam', N'Hà Nội', 2, 1, 0, @NOW);
 
-INSERT INTO dia_chi_khach_hang (
-    khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa,
-    dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao
-)
-SELECT
-    CONVERT(UNIQUEIDENTIFIER, CONCAT('20000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n AS VARCHAR(12)), 12))),
-    CONCAT(N'Khách hàng ', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
-    CONCAT('09020000', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng',
-    CONCAT(N'Số ', n, N' đường Trần Thái Tông'), 1, 1, @NOW
-FROM @N;
+-- KHÁCH HÀNG (20)
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), 'khachhang1', '123456', N'Khách hàng 1', 'kh1@gmail.com', '0934000001', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), 'khachhang2', '123456', N'Khách hàng 2', 'kh2@gmail.com', '0934000002', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000003'), 'khachhang3', '123456', N'Khách hàng 3', 'kh3@gmail.com', '0934000003', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000004'), 'khachhang4', '123456', N'Khách hàng 4', 'kh4@gmail.com', '0934000004', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000005'), 'khachhang5', '123456', N'Khách hàng 5', 'kh5@gmail.com', '0934000005', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000006'), 'khachhang6', '123456', N'Khách hàng 6', 'kh6@gmail.com', '0934000006', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000007'), 'khachhang7', '123456', N'Khách hàng 7', 'kh7@gmail.com', '0934000007', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000008'), 'khachhang8', '123456', N'Khách hàng 8', 'kh8@gmail.com', '0934000008', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000009'), 'khachhang9', '123456', N'Khách hàng 9', 'kh9@gmail.com', '0934000009', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000010'), 'khachhang10', '123456', N'Khách hàng 10', 'kh10@gmail.com', '0934000010', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000011'), 'khachhang11', '123456', N'Khách hàng 11', 'kh11@gmail.com', '0934000011', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000012'), 'khachhang12', '123456', N'Khách hàng 12', 'kh12@gmail.com', '0934000012', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000013'), 'khachhang13', '123456', N'Khách hàng 13', 'kh13@gmail.com', '0934000013', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000014'), 'khachhang14', '123456', N'Khách hàng 14', 'kh14@gmail.com', '0934000014', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000015'), 'khachhang15', '123456', N'Khách hàng 15', 'kh15@gmail.com', '0934000015', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000016'), 'khachhang16', '123456', N'Khách hàng 16', 'kh16@gmail.com', '0934000016', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000017'), 'khachhang17', '123456', N'Khách hàng 17', 'kh17@gmail.com', '0934000017', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000018'), 'khachhang18', '123456', N'Khách hàng 18', 'kh18@gmail.com', '0934000018', 1, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000019'), 'khachhang19', '123456', N'Khách hàng 19', 'kh19@gmail.com', '0934000019', 2, 1, @NOW);
+INSERT INTO khach_hang (id, ten_dang_nhap, mat_khau, ho_ten, email, sdt, gioi_tinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000020'), 'khachhang20', '123456', N'Khách hàng 20', 'kh20@gmail.com', '0934000020', 1, 1, @NOW);
 
-INSERT INTO tai_khoan_ngan_hang (
-    khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan,
-    chi_nhanh, la_mac_dinh, deleted, ngay_tao
-)
-SELECT
-    CONVERT(UNIQUEIDENTIFIER, CONCAT('20000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n AS VARCHAR(12)), 12))),
-    N'Vietcombank', CONCAT('01234567', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
-    CONCAT('KHACH HANG ', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), N'Hà Nội', 1, 0, @NOW
-FROM @N;
+-- ĐỊA CHỈ & TÀI KHOẢN NGÂN HÀNG (20)
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), N'Khách hàng 1', '0934000001', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 1 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), N'Vietcombank', '0123456701', N'KHACH HANG 1', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), N'Khách hàng 2', '0934000002', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 2 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), N'Vietcombank', '0123456702', N'KHACH HANG 2', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000003'), N'Khách hàng 3', '0934000003', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 3 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000003'), N'Vietcombank', '0123456703', N'KHACH HANG 3', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000004'), N'Khách hàng 4', '0934000004', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 4 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000004'), N'Vietcombank', '0123456704', N'KHACH HANG 4', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000005'), N'Khách hàng 5', '0934000005', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 5 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000005'), N'Vietcombank', '0123456705', N'KHACH HANG 5', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000006'), N'Khách hàng 6', '0934000006', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 6 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000006'), N'Vietcombank', '0123456706', N'KHACH HANG 6', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000007'), N'Khách hàng 7', '0934000007', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 7 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000007'), N'Vietcombank', '0123456707', N'KHACH HANG 7', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000008'), N'Khách hàng 8', '0934000008', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 8 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000008'), N'Vietcombank', '0123456708', N'KHACH HANG 8', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000009'), N'Khách hàng 9', '0934000009', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 9 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000009'), N'Vietcombank', '0123456709', N'KHACH HANG 9', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000010'), N'Khách hàng 10', '0934000010', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 10 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000010'), N'Vietcombank', '0123456710', N'KHACH HANG 10', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000011'), N'Khách hàng 11', '0934000011', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 11 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000011'), N'Vietcombank', '0123456711', N'KHACH HANG 11', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000012'), N'Khách hàng 12', '0934000012', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 12 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000012'), N'Vietcombank', '0123456712', N'KHACH HANG 12', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000013'), N'Khách hàng 13', '0934000013', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 13 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000013'), N'Vietcombank', '0123456713', N'KHACH HANG 13', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000014'), N'Khách hàng 14', '0934000014', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 14 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000014'), N'Vietcombank', '0123456714', N'KHACH HANG 14', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000015'), N'Khách hàng 15', '0934000015', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 15 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000015'), N'Vietcombank', '0123456715', N'KHACH HANG 15', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000016'), N'Khách hàng 16', '0934000016', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 16 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000016'), N'Vietcombank', '0123456716', N'KHACH HANG 16', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000017'), N'Khách hàng 17', '0934000017', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 17 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000017'), N'Vietcombank', '0123456717', N'KHACH HANG 17', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000018'), N'Khách hàng 18', '0934000018', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 18 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000018'), N'Vietcombank', '0123456718', N'KHACH HANG 18', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000019'), N'Khách hàng 19', '0934000019', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 19 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000019'), N'Vietcombank', '0123456719', N'KHACH HANG 19', N'Hà Nội', 1, 0, @NOW);
+INSERT INTO dia_chi_khach_hang (khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa, dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000020'), N'Khách hàng 20', '0934000020', N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 20 Trần Thái Tông', 1, 1, @NOW);
+INSERT INTO tai_khoan_ngan_hang (khach_hang_id, ten_ngan_hang, so_tai_khoan, ten_chu_tai_khoan, chi_nhanh, la_mac_dinh, deleted, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000020'), N'Vietcombank', '0123456720', N'KHACH HANG 20', N'Hà Nội', 1, 0, @NOW);
 
-INSERT INTO ca_lam (id, ten, gio_bat_dau, gio_ket_thuc, trang_thai) VALUES
-('sang', N'Ca sáng', '08:00', '12:00', 1),
-('chieu', N'Ca chiều', '13:00', '17:00', 1),
-('toi', N'Ca tối', '17:30', '21:30', 1);
+-- CA LÀM
+INSERT INTO ca_lam (id, ten, gio_bat_dau, gio_ket_thuc, trang_thai) VALUES ('sang', N'Ca sáng', '08:00', '12:00', 1), ('chieu', N'Ca chiều', '13:00', '17:00', 1), ('toi', N'Ca tối', '17:30', '21:30', 1);
 
-INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao)
-SELECT CONCAT('TH', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Thương hiệu ', n),
-       CASE WHEN n <= 5 THEN N'Việt Nam' ELSE N'Quốc tế' END,
-       CONCAT(N'Thương hiệu giày thể thao số ', n), CONCAT('https://brand', n, '.example'), 1, @NOW FROM @N;
+-- THƯƠNG HIỆU (20)
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH01', N'Nike', N'Quốc tế', N'Thương hiệu Nike', 'https://nike.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH02', N'Adidas', N'Quốc tế', N'Thương hiệu Adidas', 'https://adidas.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH03', N'Puma', N'Quốc tế', N'Thương hiệu Puma', 'https://puma.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH04', N'Vans', N'Quốc tế', N'Thương hiệu Vans', 'https://vans.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH05', N'Converse', N'Quốc tế', N'Thương hiệu Converse', 'https://converse.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH06', N'Asics', N'Quốc tế', N'Thương hiệu Asics', 'https://asics.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH07', N'Mizuno', N'Quốc tế', N'Thương hiệu Mizuno', 'https://mizuno.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH08', N'New Balance', N'Quốc tế', N'Thương hiệu New Balance', 'https://newbalance.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH09', N'Reebok', N'Quốc tế', N'Thương hiệu Reebok', 'https://reebok.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH10', N'Fila', N'Quốc tế', N'Thương hiệu Fila', 'https://fila.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH11', N'Under Armour', N'Quốc tế', N'Thương hiệu Under Armour', 'https://underarmour.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH12', N'Saucony', N'Quốc tế', N'Thương hiệu Saucony', 'https://saucony.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH13', N'Skechers', N'Quốc tế', N'Thương hiệu Skechers', 'https://skechers.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH14', N'Balenciaga', N'Quốc tế', N'Thương hiệu Balenciaga', 'https://balenciaga.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH15', N'Gucci', N'Quốc tế', N'Thương hiệu Gucci', 'https://gucci.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH16', N'Dior', N'Quốc tế', N'Thương hiệu Dior', 'https://dior.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH17', N'On Running', N'Quốc tế', N'Thương hiệu On Running', 'https://onrunning.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH18', N'Salomon', N'Quốc tế', N'Thương hiệu Salomon', 'https://salomon.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH19', N'Hoka', N'Quốc tế', N'Thương hiệu Hoka', 'https://hoka.com', 1, @NOW);
+INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH20', N'Brooks', N'Quốc tế', N'Thương hiệu Brooks', 'https://brooks.com', 1, @NOW);
 
-INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao)
-SELECT CONCAT('LG', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Loại giày ', n),
-       CONCAT(N'Nhóm sản phẩm giày số ', n), CONCAT('PURPOSE_', n), CONCAT('STYLE_', n), 1, @NOW FROM @N;
+-- LOẠI GIÀY (15)
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG01', N'Running', N'Loại giày Running', 'PURPOSE_RUNNING', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG02', N'Sneakers', N'Loại giày Sneakers', 'PURPOSE_CASUAL', 'STYLE_STREET', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG03', N'Basketball', N'Loại giày Basketball', 'PURPOSE_BASKETBALL', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG04', N'Training', N'Loại giày Training', 'PURPOSE_TRAINING', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG05', N'Tennis', N'Loại giày Tennis', 'PURPOSE_TENNIS', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG06', N'Walking', N'Loại giày Walking', 'PURPOSE_WALKING', 'STYLE_CASUAL', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG07', N'Golf', N'Loại giày Golf', 'PURPOSE_GOLF', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG08', N'Skateboarding', N'Loại giày Skateboarding', 'PURPOSE_SKATE', 'STYLE_STREET', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG09', N'Volleyball', N'Loại giày Volleyball', 'PURPOSE_VOLLEYBALL', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG10', N'Football', N'Loại giày Football', 'PURPOSE_FOOTBALL', 'STYLE_SPORT', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG11', N'Hiking', N'Loại giày Hiking', 'PURPOSE_HIKING', 'STYLE_OUTDOOR', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG12', N'Dance', N'Loại giày Dance', 'PURPOSE_DANCE', 'STYLE_STREET', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG13', N'Casual', N'Loại giày Casual', 'PURPOSE_CASUAL', 'STYLE_CASUAL', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG14', N'Slip-on', N'Loại giày Slip-on', 'PURPOSE_CASUAL', 'STYLE_CASUAL', 1, @NOW);
+INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG15', N'Athleisure', N'Loại giày Athleisure', 'PURPOSE_CASUAL', 'STYLE_SPORT', 1, @NOW);
 
-INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao)
-SELECT CONCAT('CL', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Chất liệu ', n), CONCAT(N'Chất liệu giày số ', n), 1, @NOW FROM @N;
+-- CHẤT LIỆU GIÀY (15)
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL01', N'Da tự nhiên', N'Chất liệu Da tự nhiên', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL02', N'Da tổng hợp', N'Chất liệu Da tổng hợp', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL03', N'Vải Mesh', N'Chất liệu Vải Mesh', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL04', N'Primeknit', N'Chất liệu Primeknit', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL05', N'Flyknit', N'Chất liệu Flyknit', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL06', N'Canvas', N'Chất liệu Canvas', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL07', N'Da lộn (Suede)', N'Chất liệu Da lộn (Suede)', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL08', N'Vải dù', N'Chất liệu Vải dù', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL09', N'Cao su', N'Chất liệu Cao su', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL10', N'Nhựa EVA', N'Chất liệu Nhựa EVA', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL11', N'Gore-Tex', N'Chất liệu Gore-Tex', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL12', N'Denim', N'Chất liệu Denim', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL13', N'Corduroy', N'Chất liệu Corduroy', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL14', N'Nylon', N'Chất liệu Nylon', 1, @NOW);
+INSERT INTO chat_lieu_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CL15', N'Vải dệt', N'Chất liệu Vải dệt', 1, @NOW);
 
-INSERT INTO co_giay (ma, ten, mo_ta, trang_thai, ngay_tao)
-SELECT CONCAT('CG', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Cổ giày ', n), CONCAT(N'Kiểu cổ giày số ', n), 1, @NOW FROM @N;
+-- CỔ GIÀY (5)
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CG01', N'Cổ thấp', N'Cổ thấp', 1, @NOW);
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CG02', N'Cổ trung', N'Cổ trung', 1, @NOW);
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CG03', N'Cổ cao', N'Cổ cao', 1, @NOW);
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CG04', N'Cổ lửng', N'Cổ lửng', 1, @NOW);
+INSERT INTO co_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CG05', N'Cổ thun ôm chân', N'Cổ thun ôm chân', 1, @NOW);
 
-INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao)
-SELECT CONCAT('DG', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Đế giày ', n), CONCAT(N'Kiểu đế giày số ', n), 1, @NOW FROM @N;
+-- ĐẾ GIÀY (15)
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG01', N'Cao su tự nhiên', N'Cao su tự nhiên', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG02', N'Cao su tổng hợp', N'Cao su tổng hợp', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG03', N'Phylon', N'Phylon', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG04', N'EVA', N'EVA', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG05', N'TPR', N'TPR', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG06', N'TPU', N'TPU', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG07', N'Crepe', N'Crepe', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG08', N'Đế xốp', N'Đế xốp', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG09', N'Vibram', N'Vibram', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG10', N'Đế bánh mì', N'Đế bánh mì', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG11', N'Đế khí', N'Đế khí', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG12', N'Đế chống trượt', N'Đế chống trượt', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG13', N'Đế đinh', N'Đế đinh', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG14', N'Polyurethane', N'Polyurethane', 1, @NOW);
+INSERT INTO de_giay (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('DG15', N'Đế nhựa', N'Đế nhựa', 1, @NOW);
 
-INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao)
-SELECT CONCAT('CN', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Công nghệ đệm ', n), CONCAT(N'Công nghệ đệm số ', n), 1, @NOW FROM @N;
+-- CÔNG NGHỆ ĐỆM (15)
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN01', N'Air Max', N'Air Max', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN02', N'Boost', N'Boost', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN03', N'Cloudfoam', N'Cloudfoam', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN04', N'React', N'React', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN05', N'Gel', N'Gel', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN06', N'Zoom', N'Zoom', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN07', N'Bounce', N'Bounce', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN08', N'EVA', N'EVA', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN09', N'Phylon', N'Phylon', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN10', N'Lightstrike', N'Lightstrike', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN11', N'FlyteFoam', N'FlyteFoam', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN12', N'HOVR', N'HOVR', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN13', N'Floatride', N'Floatride', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN14', N'Fresh Foam', N'Fresh Foam', 1, @NOW);
+INSERT INTO cong_nghe_dem (ma, ten, mo_ta, trang_thai, ngay_tao) VALUES ('CN15', N'IGNITE', N'IGNITE', 1, @NOW);
 
-INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao)
-SELECT CONCAT('TL', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), 200 + n * 20, CONCAT(N'Trọng lượng mẫu ', n), 1, @NOW FROM @N;
+-- TRỌNG LƯỢNG (15)
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL01', 200, N'200g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL02', 220, N'220g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL03', 250, N'250g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL04', 280, N'280g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL05', 300, N'300g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL06', 320, N'320g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL07', 350, N'350g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL08', 380, N'380g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL09', 400, N'400g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL10', 420, N'420g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL11', 450, N'450g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL12', 480, N'480g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL13', 500, N'500g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL14', 550, N'550g', 1, @NOW);
+INSERT INTO trong_luong (ma, gia_tri, mo_ta, trang_thai, ngay_tao) VALUES ('TL15', 600, N'600g', 1, @NOW);
 
-INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao)
-SELECT CONCAT('MS', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Màu ', n),
-       CHOOSE(n,
-           '#111111', '#FFFFFF', '#DC2626', '#2563EB', '#16A34A',
-           '#F59E0B', '#7C3AED', '#EC4899', '#6B7280', '#92400E'
-       ), 1, @NOW
-FROM @N;
+-- MÀU SẮC (15)
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS01', N'Đen', '#000000', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS02', N'Trắng', '#FFFFFF', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS03', N'Đỏ', '#FF0000', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS04', N'Xanh dương', '#0000FF', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS05', N'Xám', '#808080', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS06', N'Vàng', '#FFFF00', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS07', N'Cam', '#FFA500', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS08', N'Tím', '#800080', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS09', N'Nâu', '#A52A2A', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS10', N'Hồng', '#FFC0CB', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS11', N'Xanh lá', '#008000', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS12', N'Bạc', '#C0C0C0', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS13', N'Vàng đồng', '#FFD700', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS14', N'Navy', '#000080', 1, @NOW);
+INSERT INTO mau_sac (ma, ten, ma_mau_hex, trang_thai, ngay_tao) VALUES ('MS15', N'Be', '#F5F5DC', 1, @NOW);
 
-INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao)
-SELECT CAST(34 + n AS NVARCHAR(20)), CONCAT(N'Kích cỡ EU ', 34 + n), 1, @NOW FROM @N;
+-- KÍCH CỠ (10)
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('36', N'Size 36', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('37', N'Size 37', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('38', N'Size 38', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('39', N'Size 39', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('40', N'Size 40', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('41', N'Size 41', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('42', N'Size 42', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('43', N'Size 43', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('44', N'Size 44', 1, @NOW);
+INSERT INTO kich_co (gia_tri, ghi_chu, trang_thai, ngay_tao) VALUES ('45', N'Size 45', 1, @NOW);
 
-INSERT INTO giay (ma, ten, mo_ta, gioi_tinh, trang_thai, thuong_hieu_id, loai_giay_id, ngay_tao)
-SELECT CONCAT('SP', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'SportShoe Mẫu ', n),
-       CONCAT(N'Sản phẩm giày cố định số ', n), 3, 1,
-       (SELECT id FROM thuong_hieu WHERE ma = CONCAT('TH', RIGHT('00' + CAST(n AS VARCHAR(2)), 2))),
-       (SELECT id FROM loai_giay WHERE ma = CONCAT('LG', RIGHT('00' + CAST(n AS VARCHAR(2)), 2))), @NOW
-FROM @N;
+-- GIÀY (20)
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP01', N'Nike Air Force 1 07', 1, 2, 3, N'Da tự nhiên', N'Sản phẩm Nike Air Force 1 07', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (1, 1, 1, 1, 1, 1, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP02', N'Adidas Ultraboost 22', 2, 1, 3, N'Da tổng hợp', N'Sản phẩm Adidas Ultraboost 22', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (2, 2, 2, 2, 2, 2, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP03', N'Vans Old Skool', 4, 8, 3, N'Vải Mesh', N'Sản phẩm Vans Old Skool', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (3, 3, 3, 3, 3, 3, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP04', N'Converse Chuck Taylor All Star', 5, 2, 3, N'Primeknit', N'Sản phẩm Converse Chuck Taylor All Star', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (4, 4, 4, 4, 4, 4, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP05', N'Nike Air Max 270', 1, 1, 3, N'Flyknit', N'Sản phẩm Nike Air Max 270', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (5, 5, 5, 5, 5, 5, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP06', N'Asics Gel-Kayano 29', 6, 1, 3, N'Canvas', N'Sản phẩm Asics Gel-Kayano 29', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (6, 6, 1, 6, 6, 6, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP07', N'Mizuno Wave Rider 26', 7, 1, 3, N'Da lộn (Suede)', N'Sản phẩm Mizuno Wave Rider 26', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (7, 7, 2, 7, 7, 7, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP08', N'New Balance 574 Core', 8, 2, 3, N'Vải dù', N'Sản phẩm New Balance 574 Core', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (8, 8, 3, 8, 8, 8, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP09', N'Reebok Club C 85', 9, 2, 3, N'Cao su', N'Sản phẩm Reebok Club C 85', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (9, 9, 4, 9, 9, 9, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP10', N'Fila Disruptor 2', 10, 2, 3, N'Nhựa EVA', N'Sản phẩm Fila Disruptor 2', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (10, 10, 5, 10, 10, 10, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP11', N'Under Armour Curry 9', 11, 3, 3, N'Gore-Tex', N'Sản phẩm Under Armour Curry 9', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (11, 11, 1, 11, 11, 11, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP12', N'Saucony Kinvara 13', 12, 1, 3, N'Denim', N'Sản phẩm Saucony Kinvara 13', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (12, 12, 2, 12, 12, 12, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP13', N'Skechers Go Walk 6', 13, 6, 3, N'Corduroy', N'Sản phẩm Skechers Go Walk 6', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (13, 13, 3, 13, 13, 13, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP14', N'Balenciaga Triple S', 14, 2, 3, N'Nylon', N'Sản phẩm Balenciaga Triple S', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (14, 14, 4, 14, 14, 14, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP15', N'Gucci Ace Sneaker', 15, 2, 3, N'Vải dệt', N'Sản phẩm Gucci Ace Sneaker', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (15, 15, 5, 15, 15, 15, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP16', N'Dior B22 Sneaker', 16, 2, 3, N'Da tự nhiên', N'Sản phẩm Dior B22 Sneaker', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (16, 1, 1, 1, 1, 1, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP17', N'On Running Cloudmonster', 17, 1, 3, N'Da tổng hợp', N'Sản phẩm On Running Cloudmonster', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (17, 2, 2, 2, 2, 2, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP18', N'Salomon Speedcross 5', 18, 11, 3, N'Vải Mesh', N'Sản phẩm Salomon Speedcross 5', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (18, 3, 3, 3, 3, 3, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP19', N'Hoka Clifton 8', 19, 1, 3, N'Primeknit', N'Sản phẩm Hoka Clifton 8', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (19, 4, 4, 4, 4, 4, 1, @NOW);
+INSERT INTO giay (ma, ten, thuong_hieu_id, loai_giay_id, gioi_tinh, chat_lieu, mo_ta, trang_thai, ngay_tao) VALUES ('SP20', N'Brooks Ghost 14', 20, 1, 3, N'Flyknit', N'Sản phẩm Brooks Ghost 14', 1, @NOW);
+INSERT INTO giay_thuoc_tinh (giay_id, de_giay_id, co_giay_id, chat_lieu_giay_id, trong_luong_id, cong_nghe_dem_id, trang_thai, ngay_tao) VALUES (20, 5, 5, 5, 5, 5, 1, @NOW);
 
-INSERT INTO giay_chi_tiet (
-    giay_id, kich_co_id, mau_sac_id, ma_bien_the, sku, gia_goc, gia_ban,
-    so_luong, kich_hoat, ngay_tao
-)
-SELECT g.id, k.id, m.id, CONCAT('BT', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2)),
-       CONCAT('SKU-SP', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2)),
-       1000000 + n.n * 100000, 900000 + n.n * 100000, 10 + n.n, 1, @NOW
-FROM @N n
-JOIN giay g ON g.ma = CONCAT('SP', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN kich_co k ON k.gia_tri = CAST(34 + n.n AS NVARCHAR(20))
-JOIN mau_sac m ON m.ma = CONCAT('MS', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2));
+-- GIÀY CHI TIẾT & HÌNH ẢNH (20 đôi, mỗi đôi 2 màu, 3 size => ~120 chi tiết)
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (1, 'VAR-SP01-BLK-36', 1, 1, 50, 1300000, 1000000, 'SKU-SP01-BLK-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (1, '/uploads/products/sku-sp01-blk-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (1, 'VAR-SP01-BLK-37', 1, 2, 50, 1300000, 1000000, 'SKU-SP01-BLK-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (2, '/uploads/products/sku-sp01-blk-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (1, 'VAR-SP01-BLK-38', 1, 3, 50, 1300000, 1000000, 'SKU-SP01-BLK-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (3, '/uploads/products/sku-sp01-blk-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (1, 'VAR-SP01-WHT-36', 2, 1, 50, 1300000, 1000000, 'SKU-SP01-WHT-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (4, '/uploads/products/sku-sp01-wht-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (1, 'VAR-SP01-WHT-37', 2, 2, 50, 1300000, 1000000, 'SKU-SP01-WHT-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (5, '/uploads/products/sku-sp01-wht-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (1, 'VAR-SP01-WHT-38', 2, 3, 50, 1300000, 1000000, 'SKU-SP01-WHT-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (6, '/uploads/products/sku-sp01-wht-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (2, 'VAR-SP02-WHT-37', 2, 2, 50, 1450000, 1150000, 'SKU-SP02-WHT-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (7, '/uploads/products/sku-sp02-wht-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (2, 'VAR-SP02-WHT-38', 2, 3, 50, 1450000, 1150000, 'SKU-SP02-WHT-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (8, '/uploads/products/sku-sp02-wht-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (2, 'VAR-SP02-WHT-39', 2, 4, 50, 1450000, 1150000, 'SKU-SP02-WHT-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (9, '/uploads/products/sku-sp02-wht-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (2, 'VAR-SP02-RED-37', 3, 2, 50, 1450000, 1150000, 'SKU-SP02-RED-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (10, '/uploads/products/sku-sp02-red-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (2, 'VAR-SP02-RED-38', 3, 3, 50, 1450000, 1150000, 'SKU-SP02-RED-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (11, '/uploads/products/sku-sp02-red-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (2, 'VAR-SP02-RED-39', 3, 4, 50, 1450000, 1150000, 'SKU-SP02-RED-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (12, '/uploads/products/sku-sp02-red-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (3, 'VAR-SP03-RED-38', 3, 3, 50, 1600000, 1300000, 'SKU-SP03-RED-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (13, '/uploads/products/sku-sp03-red-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (3, 'VAR-SP03-RED-39', 3, 4, 50, 1600000, 1300000, 'SKU-SP03-RED-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (14, '/uploads/products/sku-sp03-red-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (3, 'VAR-SP03-RED-40', 3, 5, 50, 1600000, 1300000, 'SKU-SP03-RED-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (15, '/uploads/products/sku-sp03-red-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (3, 'VAR-SP03-BLU-38', 4, 3, 50, 1600000, 1300000, 'SKU-SP03-BLU-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (16, '/uploads/products/sku-sp03-blu-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (3, 'VAR-SP03-BLU-39', 4, 4, 50, 1600000, 1300000, 'SKU-SP03-BLU-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (17, '/uploads/products/sku-sp03-blu-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (3, 'VAR-SP03-BLU-40', 4, 5, 50, 1600000, 1300000, 'SKU-SP03-BLU-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (18, '/uploads/products/sku-sp03-blu-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (4, 'VAR-SP04-BLU-39', 4, 4, 50, 1750000, 1450000, 'SKU-SP04-BLU-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (19, '/uploads/products/sku-sp04-blu-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (4, 'VAR-SP04-BLU-40', 4, 5, 50, 1750000, 1450000, 'SKU-SP04-BLU-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (20, '/uploads/products/sku-sp04-blu-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (4, 'VAR-SP04-BLU-41', 4, 6, 50, 1750000, 1450000, 'SKU-SP04-BLU-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (21, '/uploads/products/sku-sp04-blu-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (4, 'VAR-SP04-GRY-39', 5, 4, 50, 1750000, 1450000, 'SKU-SP04-GRY-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (22, '/uploads/products/sku-sp04-gry-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (4, 'VAR-SP04-GRY-40', 5, 5, 50, 1750000, 1450000, 'SKU-SP04-GRY-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (23, '/uploads/products/sku-sp04-gry-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (4, 'VAR-SP04-GRY-41', 5, 6, 50, 1750000, 1450000, 'SKU-SP04-GRY-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (24, '/uploads/products/sku-sp04-gry-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (5, 'VAR-SP05-GRY-40', 5, 5, 50, 1900000, 1600000, 'SKU-SP05-GRY-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (25, '/uploads/products/sku-sp05-gry-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (5, 'VAR-SP05-GRY-41', 5, 6, 50, 1900000, 1600000, 'SKU-SP05-GRY-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (26, '/uploads/products/sku-sp05-gry-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (5, 'VAR-SP05-GRY-42', 5, 7, 50, 1900000, 1600000, 'SKU-SP05-GRY-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (27, '/uploads/products/sku-sp05-gry-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (5, 'VAR-SP05-YEL-40', 6, 5, 50, 1900000, 1600000, 'SKU-SP05-YEL-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (28, '/uploads/products/sku-sp05-yel-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (5, 'VAR-SP05-YEL-41', 6, 6, 50, 1900000, 1600000, 'SKU-SP05-YEL-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (29, '/uploads/products/sku-sp05-yel-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (5, 'VAR-SP05-YEL-42', 6, 7, 50, 1900000, 1600000, 'SKU-SP05-YEL-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (30, '/uploads/products/sku-sp05-yel-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (6, 'VAR-SP06-YEL-41', 6, 6, 50, 2050000, 1750000, 'SKU-SP06-YEL-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (31, '/uploads/products/sku-sp06-yel-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (6, 'VAR-SP06-YEL-42', 6, 7, 50, 2050000, 1750000, 'SKU-SP06-YEL-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (32, '/uploads/products/sku-sp06-yel-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (6, 'VAR-SP06-YEL-43', 6, 8, 50, 2050000, 1750000, 'SKU-SP06-YEL-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (33, '/uploads/products/sku-sp06-yel-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (6, 'VAR-SP06-ORG-41', 7, 6, 50, 2050000, 1750000, 'SKU-SP06-ORG-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (34, '/uploads/products/sku-sp06-org-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (6, 'VAR-SP06-ORG-42', 7, 7, 50, 2050000, 1750000, 'SKU-SP06-ORG-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (35, '/uploads/products/sku-sp06-org-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (6, 'VAR-SP06-ORG-43', 7, 8, 50, 2050000, 1750000, 'SKU-SP06-ORG-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (36, '/uploads/products/sku-sp06-org-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (7, 'VAR-SP07-ORG-42', 7, 7, 50, 2200000, 1900000, 'SKU-SP07-ORG-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (37, '/uploads/products/sku-sp07-org-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (7, 'VAR-SP07-ORG-43', 7, 8, 50, 2200000, 1900000, 'SKU-SP07-ORG-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (38, '/uploads/products/sku-sp07-org-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (7, 'VAR-SP07-ORG-44', 7, 9, 50, 2200000, 1900000, 'SKU-SP07-ORG-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (39, '/uploads/products/sku-sp07-org-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (7, 'VAR-SP07-PUR-42', 8, 7, 50, 2200000, 1900000, 'SKU-SP07-PUR-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (40, '/uploads/products/sku-sp07-pur-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (7, 'VAR-SP07-PUR-43', 8, 8, 50, 2200000, 1900000, 'SKU-SP07-PUR-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (41, '/uploads/products/sku-sp07-pur-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (7, 'VAR-SP07-PUR-44', 8, 9, 50, 2200000, 1900000, 'SKU-SP07-PUR-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (42, '/uploads/products/sku-sp07-pur-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (8, 'VAR-SP08-PUR-43', 8, 8, 50, 2350000, 2050000, 'SKU-SP08-PUR-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (43, '/uploads/products/sku-sp08-pur-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (8, 'VAR-SP08-PUR-44', 8, 9, 50, 2350000, 2050000, 'SKU-SP08-PUR-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (44, '/uploads/products/sku-sp08-pur-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (8, 'VAR-SP08-PUR-45', 8, 10, 50, 2350000, 2050000, 'SKU-SP08-PUR-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (45, '/uploads/products/sku-sp08-pur-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (8, 'VAR-SP08-BRN-43', 9, 8, 50, 2350000, 2050000, 'SKU-SP08-BRN-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (46, '/uploads/products/sku-sp08-brn-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (8, 'VAR-SP08-BRN-44', 9, 9, 50, 2350000, 2050000, 'SKU-SP08-BRN-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (47, '/uploads/products/sku-sp08-brn-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (8, 'VAR-SP08-BRN-45', 9, 10, 50, 2350000, 2050000, 'SKU-SP08-BRN-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (48, '/uploads/products/sku-sp08-brn-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (9, 'VAR-SP09-BRN-44', 9, 9, 50, 2500000, 2200000, 'SKU-SP09-BRN-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (49, '/uploads/products/sku-sp09-brn-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (9, 'VAR-SP09-BRN-45', 9, 10, 50, 2500000, 2200000, 'SKU-SP09-BRN-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (50, '/uploads/products/sku-sp09-brn-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (9, 'VAR-SP09-BRN-36', 9, 1, 50, 2500000, 2200000, 'SKU-SP09-BRN-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (51, '/uploads/products/sku-sp09-brn-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (9, 'VAR-SP09-PNK-44', 10, 9, 50, 2500000, 2200000, 'SKU-SP09-PNK-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (52, '/uploads/products/sku-sp09-pnk-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (9, 'VAR-SP09-PNK-45', 10, 10, 50, 2500000, 2200000, 'SKU-SP09-PNK-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (53, '/uploads/products/sku-sp09-pnk-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (9, 'VAR-SP09-PNK-36', 10, 1, 50, 2500000, 2200000, 'SKU-SP09-PNK-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (54, '/uploads/products/sku-sp09-pnk-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (10, 'VAR-SP10-PNK-45', 10, 10, 50, 2650000, 2350000, 'SKU-SP10-PNK-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (55, '/uploads/products/sku-sp10-pnk-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (10, 'VAR-SP10-PNK-36', 10, 1, 50, 2650000, 2350000, 'SKU-SP10-PNK-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (56, '/uploads/products/sku-sp10-pnk-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (10, 'VAR-SP10-PNK-37', 10, 2, 50, 2650000, 2350000, 'SKU-SP10-PNK-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (57, '/uploads/products/sku-sp10-pnk-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (10, 'VAR-SP10-GRN-45', 11, 10, 50, 2650000, 2350000, 'SKU-SP10-GRN-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (58, '/uploads/products/sku-sp10-grn-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (10, 'VAR-SP10-GRN-36', 11, 1, 50, 2650000, 2350000, 'SKU-SP10-GRN-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (59, '/uploads/products/sku-sp10-grn-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (10, 'VAR-SP10-GRN-37', 11, 2, 50, 2650000, 2350000, 'SKU-SP10-GRN-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (60, '/uploads/products/sku-sp10-grn-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (11, 'VAR-SP11-GRN-36', 11, 1, 50, 2800000, 2500000, 'SKU-SP11-GRN-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (61, '/uploads/products/sku-sp11-grn-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (11, 'VAR-SP11-GRN-37', 11, 2, 50, 2800000, 2500000, 'SKU-SP11-GRN-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (62, '/uploads/products/sku-sp11-grn-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (11, 'VAR-SP11-GRN-38', 11, 3, 50, 2800000, 2500000, 'SKU-SP11-GRN-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (63, '/uploads/products/sku-sp11-grn-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (11, 'VAR-SP11-SIL-36', 12, 1, 50, 2800000, 2500000, 'SKU-SP11-SIL-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (64, '/uploads/products/sku-sp11-sil-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (11, 'VAR-SP11-SIL-37', 12, 2, 50, 2800000, 2500000, 'SKU-SP11-SIL-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (65, '/uploads/products/sku-sp11-sil-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (11, 'VAR-SP11-SIL-38', 12, 3, 50, 2800000, 2500000, 'SKU-SP11-SIL-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (66, '/uploads/products/sku-sp11-sil-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (12, 'VAR-SP12-SIL-37', 12, 2, 50, 2950000, 2650000, 'SKU-SP12-SIL-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (67, '/uploads/products/sku-sp12-sil-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (12, 'VAR-SP12-SIL-38', 12, 3, 50, 2950000, 2650000, 'SKU-SP12-SIL-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (68, '/uploads/products/sku-sp12-sil-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (12, 'VAR-SP12-SIL-39', 12, 4, 50, 2950000, 2650000, 'SKU-SP12-SIL-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (69, '/uploads/products/sku-sp12-sil-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (12, 'VAR-SP12-GLD-37', 13, 2, 50, 2950000, 2650000, 'SKU-SP12-GLD-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (70, '/uploads/products/sku-sp12-gld-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (12, 'VAR-SP12-GLD-38', 13, 3, 50, 2950000, 2650000, 'SKU-SP12-GLD-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (71, '/uploads/products/sku-sp12-gld-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (12, 'VAR-SP12-GLD-39', 13, 4, 50, 2950000, 2650000, 'SKU-SP12-GLD-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (72, '/uploads/products/sku-sp12-gld-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (13, 'VAR-SP13-GLD-38', 13, 3, 50, 3100000, 2800000, 'SKU-SP13-GLD-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (73, '/uploads/products/sku-sp13-gld-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (13, 'VAR-SP13-GLD-39', 13, 4, 50, 3100000, 2800000, 'SKU-SP13-GLD-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (74, '/uploads/products/sku-sp13-gld-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (13, 'VAR-SP13-GLD-40', 13, 5, 50, 3100000, 2800000, 'SKU-SP13-GLD-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (75, '/uploads/products/sku-sp13-gld-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (13, 'VAR-SP13-NVY-38', 14, 3, 50, 3100000, 2800000, 'SKU-SP13-NVY-38', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (76, '/uploads/products/sku-sp13-nvy-38.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (13, 'VAR-SP13-NVY-39', 14, 4, 50, 3100000, 2800000, 'SKU-SP13-NVY-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (77, '/uploads/products/sku-sp13-nvy-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (13, 'VAR-SP13-NVY-40', 14, 5, 50, 3100000, 2800000, 'SKU-SP13-NVY-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (78, '/uploads/products/sku-sp13-nvy-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (14, 'VAR-SP14-NVY-39', 14, 4, 50, 3250000, 2950000, 'SKU-SP14-NVY-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (79, '/uploads/products/sku-sp14-nvy-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (14, 'VAR-SP14-NVY-40', 14, 5, 50, 3250000, 2950000, 'SKU-SP14-NVY-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (80, '/uploads/products/sku-sp14-nvy-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (14, 'VAR-SP14-NVY-41', 14, 6, 50, 3250000, 2950000, 'SKU-SP14-NVY-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (81, '/uploads/products/sku-sp14-nvy-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (14, 'VAR-SP14-BGE-39', 15, 4, 50, 3250000, 2950000, 'SKU-SP14-BGE-39', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (82, '/uploads/products/sku-sp14-bge-39.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (14, 'VAR-SP14-BGE-40', 15, 5, 50, 3250000, 2950000, 'SKU-SP14-BGE-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (83, '/uploads/products/sku-sp14-bge-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (14, 'VAR-SP14-BGE-41', 15, 6, 50, 3250000, 2950000, 'SKU-SP14-BGE-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (84, '/uploads/products/sku-sp14-bge-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (15, 'VAR-SP15-BGE-40', 15, 5, 50, 3400000, 3100000, 'SKU-SP15-BGE-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (85, '/uploads/products/sku-sp15-bge-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (15, 'VAR-SP15-BGE-41', 15, 6, 50, 3400000, 3100000, 'SKU-SP15-BGE-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (86, '/uploads/products/sku-sp15-bge-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (15, 'VAR-SP15-BGE-42', 15, 7, 50, 3400000, 3100000, 'SKU-SP15-BGE-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (87, '/uploads/products/sku-sp15-bge-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (15, 'VAR-SP15-BLK-40', 1, 5, 50, 3400000, 3100000, 'SKU-SP15-BLK-40', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (88, '/uploads/products/sku-sp15-blk-40.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (15, 'VAR-SP15-BLK-41', 1, 6, 50, 3400000, 3100000, 'SKU-SP15-BLK-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (89, '/uploads/products/sku-sp15-blk-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (15, 'VAR-SP15-BLK-42', 1, 7, 50, 3400000, 3100000, 'SKU-SP15-BLK-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (90, '/uploads/products/sku-sp15-blk-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (16, 'VAR-SP16-BLK-41', 1, 6, 50, 3550000, 3250000, 'SKU-SP16-BLK-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (91, '/uploads/products/sku-sp16-blk-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (16, 'VAR-SP16-BLK-42', 1, 7, 50, 3550000, 3250000, 'SKU-SP16-BLK-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (92, '/uploads/products/sku-sp16-blk-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (16, 'VAR-SP16-BLK-43', 1, 8, 50, 3550000, 3250000, 'SKU-SP16-BLK-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (93, '/uploads/products/sku-sp16-blk-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (16, 'VAR-SP16-WHT-41', 2, 6, 50, 3550000, 3250000, 'SKU-SP16-WHT-41', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (94, '/uploads/products/sku-sp16-wht-41.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (16, 'VAR-SP16-WHT-42', 2, 7, 50, 3550000, 3250000, 'SKU-SP16-WHT-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (95, '/uploads/products/sku-sp16-wht-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (16, 'VAR-SP16-WHT-43', 2, 8, 50, 3550000, 3250000, 'SKU-SP16-WHT-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (96, '/uploads/products/sku-sp16-wht-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (17, 'VAR-SP17-WHT-42', 2, 7, 50, 3700000, 3400000, 'SKU-SP17-WHT-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (97, '/uploads/products/sku-sp17-wht-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (17, 'VAR-SP17-WHT-43', 2, 8, 50, 3700000, 3400000, 'SKU-SP17-WHT-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (98, '/uploads/products/sku-sp17-wht-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (17, 'VAR-SP17-WHT-44', 2, 9, 50, 3700000, 3400000, 'SKU-SP17-WHT-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (99, '/uploads/products/sku-sp17-wht-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (17, 'VAR-SP17-RED-42', 3, 7, 50, 3700000, 3400000, 'SKU-SP17-RED-42', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (100, '/uploads/products/sku-sp17-red-42.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (17, 'VAR-SP17-RED-43', 3, 8, 50, 3700000, 3400000, 'SKU-SP17-RED-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (101, '/uploads/products/sku-sp17-red-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (17, 'VAR-SP17-RED-44', 3, 9, 50, 3700000, 3400000, 'SKU-SP17-RED-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (102, '/uploads/products/sku-sp17-red-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (18, 'VAR-SP18-RED-43', 3, 8, 50, 3850000, 3550000, 'SKU-SP18-RED-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (103, '/uploads/products/sku-sp18-red-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (18, 'VAR-SP18-RED-44', 3, 9, 50, 3850000, 3550000, 'SKU-SP18-RED-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (104, '/uploads/products/sku-sp18-red-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (18, 'VAR-SP18-RED-45', 3, 10, 50, 3850000, 3550000, 'SKU-SP18-RED-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (105, '/uploads/products/sku-sp18-red-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (18, 'VAR-SP18-BLU-43', 4, 8, 50, 3850000, 3550000, 'SKU-SP18-BLU-43', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (106, '/uploads/products/sku-sp18-blu-43.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (18, 'VAR-SP18-BLU-44', 4, 9, 50, 3850000, 3550000, 'SKU-SP18-BLU-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (107, '/uploads/products/sku-sp18-blu-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (18, 'VAR-SP18-BLU-45', 4, 10, 50, 3850000, 3550000, 'SKU-SP18-BLU-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (108, '/uploads/products/sku-sp18-blu-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (19, 'VAR-SP19-BLU-44', 4, 9, 50, 4000000, 3700000, 'SKU-SP19-BLU-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (109, '/uploads/products/sku-sp19-blu-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (19, 'VAR-SP19-BLU-45', 4, 10, 50, 4000000, 3700000, 'SKU-SP19-BLU-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (110, '/uploads/products/sku-sp19-blu-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (19, 'VAR-SP19-BLU-36', 4, 1, 50, 4000000, 3700000, 'SKU-SP19-BLU-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (111, '/uploads/products/sku-sp19-blu-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (19, 'VAR-SP19-GRY-44', 5, 9, 50, 4000000, 3700000, 'SKU-SP19-GRY-44', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (112, '/uploads/products/sku-sp19-gry-44.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (19, 'VAR-SP19-GRY-45', 5, 10, 50, 4000000, 3700000, 'SKU-SP19-GRY-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (113, '/uploads/products/sku-sp19-gry-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (19, 'VAR-SP19-GRY-36', 5, 1, 50, 4000000, 3700000, 'SKU-SP19-GRY-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (114, '/uploads/products/sku-sp19-gry-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (20, 'VAR-SP20-GRY-45', 5, 10, 50, 4150000, 3850000, 'SKU-SP20-GRY-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (115, '/uploads/products/sku-sp20-gry-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (20, 'VAR-SP20-GRY-36', 5, 1, 50, 4150000, 3850000, 'SKU-SP20-GRY-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (116, '/uploads/products/sku-sp20-gry-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (20, 'VAR-SP20-GRY-37', 5, 2, 50, 4150000, 3850000, 'SKU-SP20-GRY-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (117, '/uploads/products/sku-sp20-gry-37.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (20, 'VAR-SP20-YEL-45', 6, 10, 50, 4150000, 3850000, 'SKU-SP20-YEL-45', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (118, '/uploads/products/sku-sp20-yel-45.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (20, 'VAR-SP20-YEL-36', 6, 1, 50, 4150000, 3850000, 'SKU-SP20-YEL-36', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (119, '/uploads/products/sku-sp20-yel-36.jpg', 1, 1, 1, @NOW);
+INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES (20, 'VAR-SP20-YEL-37', 6, 2, 50, 4150000, 3850000, 'SKU-SP20-YEL-37', 1, @NOW);
+INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES (120, '/uploads/products/sku-sp20-yel-37.jpg', 1, 1, 1, @NOW);
 
-INSERT INTO giay_thuoc_tinh (
-    giay_id, chat_lieu_giay_id, co_giay_id, cong_nghe_dem_id, de_giay_id,
-    trong_luong_id, trang_thai, ngay_tao
-)
-SELECT g.id, cl.id, cg.id, cn.id, dg.id, tl.id, 1, @NOW
-FROM @N n
-JOIN giay g ON g.ma = CONCAT('SP', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN chat_lieu_giay cl ON cl.ma = CONCAT('CL', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN co_giay cg ON cg.ma = CONCAT('CG', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN cong_nghe_dem cn ON cn.ma = CONCAT('CN', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN de_giay dg ON dg.ma = CONCAT('DG', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN trong_luong tl ON tl.ma = CONCAT('TL', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2));
+-- ĐỢT GIẢM GIÁ (2)
+INSERT INTO dot_giam_gia (ma, ten, mo_ta, loai_giam, gia_tri_giam, ngay_bat_dau, ngay_ket_thuc, kich_hoat, ngay_tao) VALUES ('DGG_SUMMER', N'Siêu sale mùa hè', N'Giảm 15%', 1, 15, CAST('2025-06-01T00:00:00' AS DATETIME2), CAST('2026-12-31T23:59:59' AS DATETIME2), 1, @NOW);
+INSERT INTO dot_giam_gia (ma, ten, mo_ta, loai_giam, gia_tri_giam, ngay_bat_dau, ngay_ket_thuc, kich_hoat, ngay_tao) VALUES ('DGG_WINTER', N'Sale mùa đông', N'Giảm 20%', 1, 20, CAST('2025-11-01T00:00:00' AS DATETIME2), CAST('2026-12-31T23:59:59' AS DATETIME2), 1, @NOW);
 
-INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao)
-SELECT id, CONCAT(N'/uploads/products/', LOWER(sku), N'.jpg'), 1, 1, 1, @NOW FROM giay_chi_tiet;
+-- ĐỢT GIẢM GIÁ SẢN PHẨM (Áp dụng cho 10 chi tiết đầu tiên)
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 1, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 2, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 3, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 4, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 5, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 6, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 7, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 8, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 9, 1, @NOW);
+INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao) VALUES (1, 10, 1, @NOW);
 
-INSERT INTO dot_giam_gia (ma, ten, mo_ta, loai_giam, gia_tri_giam, ngay_bat_dau, ngay_ket_thuc, kich_hoat, ngay_tao)
-SELECT CONCAT('DGG', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Đợt giảm giá ', n),
-       CONCAT(N'Giảm giá cố định đợt ', n), 1, 5 + n,
-       CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), 1, @NOW FROM @N;
+-- PHIẾU GIẢM GIÁ (5)
+INSERT INTO phieu_giam_gia (ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, loai_phieu, so_luong, so_luong_da_dung, trang_thai, ngay_bat_dau, ngay_ket_thuc, ngay_tao) VALUES ('VOUCHER1', N'Giảm 100K', 2, 100000, 300000, 100000, 2, 100, 0, 1, CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), @NOW);
+INSERT INTO phieu_giam_gia (ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, loai_phieu, so_luong, so_luong_da_dung, trang_thai, ngay_bat_dau, ngay_ket_thuc, ngay_tao) VALUES ('VOUCHER2', N'Giảm 200K', 2, 200000, 600000, 200000, 2, 100, 0, 1, CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), @NOW);
+INSERT INTO phieu_giam_gia (ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, loai_phieu, so_luong, so_luong_da_dung, trang_thai, ngay_bat_dau, ngay_ket_thuc, ngay_tao) VALUES ('VOUCHER3', N'Giảm 300K', 2, 300000, 900000, 300000, 2, 100, 0, 1, CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), @NOW);
+INSERT INTO phieu_giam_gia (ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, loai_phieu, so_luong, so_luong_da_dung, trang_thai, ngay_bat_dau, ngay_ket_thuc, ngay_tao) VALUES ('VOUCHER4', N'Giảm 400K', 2, 400000, 1200000, 400000, 2, 100, 0, 1, CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), @NOW);
+INSERT INTO phieu_giam_gia (ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, loai_phieu, so_luong, so_luong_da_dung, trang_thai, ngay_bat_dau, ngay_ket_thuc, ngay_tao) VALUES ('VOUCHER5', N'Giảm 500K', 2, 500000, 1500000, 500000, 2, 100, 0, 1, CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), @NOW);
 
-INSERT INTO dot_giam_gia_san_pham (dot_giam_gia_id, giay_chi_tiet_id, trang_thai, ngay_tao)
-SELECT d.id, v.id, 1, @NOW FROM @N n
-JOIN dot_giam_gia d ON d.ma = CONCAT('DGG', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2))
-JOIN giay_chi_tiet v ON v.sku = CONCAT('SKU-SP', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2));
-
-INSERT INTO phieu_giam_gia (
-    ma, ten, loai, gia_tri, gia_tri_toi_thieu, giam_toi_da, loai_phieu,
-    so_luong, so_luong_da_dung, trang_thai, ngay_bat_dau, ngay_ket_thuc, ngay_tao
-)
-SELECT CONCAT('PGG', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), CONCAT(N'Phiếu giảm giá ', n),
-       1, 5 + n, 300000 + n * 50000, 100000 + n * 10000, 2,
-       100, 0, 1, CAST('2025-01-01T00:00:00' AS DATETIME2), CAST('2035-12-31T23:59:59' AS DATETIME2), @NOW
-FROM @N;
-
-INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao)
-SELECT p.id,
-       CONVERT(UNIQUEIDENTIFIER, CONCAT('20000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n.n AS VARCHAR(12)), 12))),
-       1, @NOW
-FROM @N n
-JOIN phieu_giam_gia p ON p.ma = CONCAT('PGG', RIGHT('00' + CAST(n.n AS VARCHAR(2)), 2));
+-- PHIẾU GIẢM GIÁ KHÁCH HÀNG (Gán cho KH 1,2)
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (1, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (1, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (2, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (2, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (3, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (3, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (4, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (4, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (5, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000001'), 1, @NOW);
+INSERT INTO phieu_giam_gia_khach_hang (phieu_giam_gia_id, khach_hang_id, trang_thai, ngay_tao) VALUES (5, CONVERT(UNIQUEIDENTIFIER, '20000000-0000-0000-0000-000000000002'), 1, @NOW);
 
 COMMIT TRANSACTION;

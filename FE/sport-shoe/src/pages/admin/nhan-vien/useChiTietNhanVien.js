@@ -24,6 +24,7 @@ import {
 } from "../../../utils/validation";
 
 export function useChiTietNhanVien() {
+  const dangApDungQr = ref(false);
   // QR Scanner - dùng @zxing/browser
   const dangQuet = ref(false);
   const loiCamera = ref("");
@@ -92,7 +93,18 @@ export function useChiTietNhanVien() {
     }
   }
 
-  function xuLyKetQuaQr(raw) {
+  function normalizeString(str) {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/(tỉnh|thành phố|quận|huyện|thị xã|xã|phường|thị trấn)/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  async function xuLyKetQuaQr(raw) {
     if (daXuLyQr) return;
     daXuLyQr = true;
     dungQuet();
@@ -113,13 +125,56 @@ export function useChiTietNhanVien() {
           const gt = parts[4].trim().toLowerCase();
           form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
         }
-        if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
+        if (parts[5]) {
+          dangApDungQr.value = true;
+          const addressString = parts[5].trim();
+          const addressParts = addressString.split(",").map(p => p.trim());
+          
+          if (addressParts.length >= 3) {
+            const tinhName = addressParts[addressParts.length - 1];
+            const quanName = addressParts[addressParts.length - 2];
+            const xaName = addressParts[addressParts.length - 3];
+            const rest = addressParts.slice(0, addressParts.length - 3).join(", ");
+            
+            const tinh = dsTinhThanh.find(t => normalizeString(t.label) === normalizeString(tinhName) || normalizeString(t.label).includes(normalizeString(tinhName)));
+            
+            if (tinh) {
+              const resTinh = await fetch(`https://provinces.open-api.vn/api/p/${tinh.value}?depth=2`);
+              const dataTinh = await resTinh.json();
+              dsQuanHuyen.value = dataTinh.districts.map(d => ({ value: d.code.toString(), label: d.name }));
+              
+              const quan = dsQuanHuyen.value.find(q => normalizeString(q.label) === normalizeString(quanName) || normalizeString(q.label).includes(normalizeString(quanName)));
+              
+              if (quan) {
+                const resQuan = await fetch(`https://provinces.open-api.vn/api/d/${quan.value}?depth=2`);
+                const dataQuan = await resQuan.json();
+                dsXaPhuong.value = dataQuan.wards.map(w => ({ value: w.code.toString(), label: w.name }));
+                
+                const xa = dsXaPhuong.value.find(x => normalizeString(x.label) === normalizeString(xaName) || normalizeString(x.label).includes(normalizeString(xaName)));
+                
+                form.value.tinhThanh = tinh.value;
+                form.value.quanHuyen = quan.value;
+                if (xa) form.value.xaPhuong = xa.value;
+                form.value.diaChiCuThe = rest;
+              } else {
+                form.value.diaChiCuThe = addressString;
+              }
+            } else {
+              form.value.diaChiCuThe = addressString;
+            }
+          } else {
+            form.value.diaChiCuThe = addressString;
+          }
+          // Delay turning off the flag to prevent watcher from resetting values
+          setTimeout(() => { dangApDungQr.value = false; }, 500);
+        }
         showSuccess("Đã điền thông tin từ CCCD", "Thành công");
       } else {
         showError("Mã QR không đúng định dạng thẻ CCCD bản cứng.");
       }
     } catch {
       showError("Không thể đọc dữ liệu từ mã QR này.");
+      dangApDungQr.value = false;
     }
   }
 
@@ -360,9 +415,11 @@ export function useChiTietNhanVien() {
   watch(
     () => form.value.tinhThanh,
     async (newVal) => {
-      form.value.quanHuyen = "";
-      form.value.xaPhuong = "";
-      dsXaPhuong.value = [];
+      if (!dangApDungQr.value) {
+        form.value.quanHuyen = "";
+        form.value.xaPhuong = "";
+        dsXaPhuong.value = [];
+      }
 
       if (!newVal) {
         dsQuanHuyen.value = [];
@@ -389,7 +446,9 @@ export function useChiTietNhanVien() {
   watch(
     () => form.value.quanHuyen,
     async (newVal) => {
-      form.value.xaPhuong = "";
+      if (!dangApDungQr.value) {
+        form.value.xaPhuong = "";
+      }
       if (!newVal) {
         dsXaPhuong.value = [];
         return;
@@ -588,15 +647,15 @@ export function useChiTietNhanVien() {
 
     if (hasError) return;
 
-    if (laMoi) {
-      const confirmed = await showConfirm(
-        "Bạn có chắc chắn muốn thêm nhân viên mới này không?",
-        "Xác nhận thêm nhân viên",
-        "Thêm mới",
-        "Hủy",
-      );
-      if (!confirmed) return;
-    }
+    const confirmed = await showConfirm(
+      laMoi
+        ? "Bạn có chắc chắn muốn thêm nhân viên mới này không?"
+        : "Bạn có chắc chắn muốn lưu các thay đổi cho nhân viên này không?",
+      laMoi ? "Xác nhận thêm nhân viên" : "Xác nhận lưu thay đổi",
+      laMoi ? "Thêm mới" : "Lưu thay đổi",
+      "Hủy",
+    );
+    if (!confirmed) return;
 
     dangLuu.value = true;
     loiTrang.value = "";
@@ -697,11 +756,22 @@ export function useChiTietNhanVien() {
       showError("Bạn không thể tự khóa tài khoản của chính mình.");
       return;
     }
+
+    const message = trangThai === 1
+      ? `Bạn có chắc muốn kích hoạt lại nhân viên "${nhanVien.value?.hoTen}"?`
+      : `Bạn có chắc muốn khóa tài khoản nhân viên "${nhanVien.value?.hoTen}"?`;
+      
+    if (!(await showConfirm(message, "Xác nhận", "Đồng ý", "Hủy"))) {
+      return;
+    }
+
     try {
       const updated = await doiTrangThaiNhanVien(id, trangThai);
       nhanVien.value = updated;
       showSuccess(
-        trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.",
+        trangThai === 1
+          ? `Đã kích hoạt nhân viên "${nhanVien.value?.hoTen || ""}" thành công.`
+          : `Đã chuyển nhân viên "${nhanVien.value?.hoTen || ""}" sang trạng thái nghỉ làm thành công.`,
         "Thành công",
       );
     } catch (error) {
