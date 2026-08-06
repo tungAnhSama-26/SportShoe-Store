@@ -221,10 +221,10 @@ const formatLastUpdated = computed(() => {
       <div
         v-for="card in summaryCards.slice(0, 3)"
         :key="card.label"
-        class="min-w-0 rounded-[6px] border border-slate-100 bg-white p-5 shadow-sm"
+        class="min-w-0 rounded-[12px] border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-slate-200 cursor-pointer"
       >
         <div class="mb-4">
-          <div :class="['flex h-12 w-12 items-center justify-center rounded-2xl', card.badgeClass]">
+          <div :class="['flex h-12 w-12 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110', card.badgeClass]">
             <component :is="card.icon" :class="['h-5 w-5', card.iconClass]" />
           </div>
         </div>
@@ -242,10 +242,10 @@ const formatLastUpdated = computed(() => {
       <div
         v-for="card in summaryCards.slice(3)"
         :key="card.label"
-        class="min-w-0 rounded-[6px] border border-slate-100 bg-white p-4 shadow-sm"
+        class="min-w-0 rounded-[12px] border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-slate-200 cursor-pointer"
       >
         <div class="mb-3">
-          <div :class="['flex h-10 w-10 items-center justify-center rounded-xl', card.badgeClass]">
+          <div :class="['flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110', card.badgeClass]">
             <component :is="card.icon" :class="['h-4 w-4', card.iconClass]" />
           </div>
         </div>
@@ -258,7 +258,7 @@ const formatLastUpdated = computed(() => {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2.5fr_1fr]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
       <Card>
         <div class="mb-6 flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
@@ -303,12 +303,13 @@ const formatLastUpdated = computed(() => {
       </Card>
 
       <Card>
-        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <PieChart class="h-4 w-4 text-rose-500" />
-              Thương hiệu
-            </div>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <PieChart class="h-4 w-4 text-rose-500" />
+            Thương hiệu
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
             <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
               <button
                 type="button"
@@ -325,15 +326,16 @@ const formatLastUpdated = computed(() => {
                 Đường
               </button>
             </div>
+
+            <select
+              v-model="brandChartType"
+              class="h-8 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
+            >
+              <option value="REVENUE">Theo doanh thu</option>
+              <option value="VOLUME">Theo số lượng bán</option>
+              <option value="STOCK">Theo lượng tồn kho</option>
+            </select>
           </div>
-          <select
-            v-model="brandChartType"
-            class="h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
-          >
-            <option value="REVENUE">Theo doanh thu</option>
-            <option value="VOLUME">Theo số lượng bán</option>
-            <option value="STOCK">Theo lượng tồn kho</option>
-          </select>
         </div>
 
         <div v-if="hasBrandData" class="space-y-5">
@@ -371,7 +373,7 @@ const formatLastUpdated = computed(() => {
       </Card>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2.5fr_1fr]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
       <Card>
         <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3">
           <div>
