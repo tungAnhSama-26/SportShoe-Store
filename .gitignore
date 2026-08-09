@@ -19,3 +19,6 @@ CLAUDE.md
 
 ### Chatbot Keys (chua API key ca nhan - khong commit)
 BE/server/data/chatbot-keys.json
+BE/server/data/ghn-fee-cache.json
+BE/server/data/ghn-fee-cache.json.tmp
+implementation_plan.md

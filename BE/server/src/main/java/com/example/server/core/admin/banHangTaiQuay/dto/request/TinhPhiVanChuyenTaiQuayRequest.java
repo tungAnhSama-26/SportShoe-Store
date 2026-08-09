@@ -1,13 +1,12 @@
 package com.example.server.core.admin.banHangTaiQuay.dto.request;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record TinhPhiVanChuyenTaiQuayRequest(
-        Integer toDistrictId,
-        String toWardCode,
-        String toAddress,
+        @Valid DiaChiHaiCapRequest diaChiGiaoHang,
         Integer serviceId,
         Integer serviceTypeId,
         Integer length,

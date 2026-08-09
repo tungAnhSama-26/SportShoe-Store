@@ -39,29 +39,13 @@ public class DiaChiKhachHang {
     @Column(name = "sdt", nullable = false, length = 20)
     private String sdt;
 
-    @Size(max = 100)
-    @NotNull
-    @Nationalized
-    @Column(name = "tinh_thanh", nullable = false, length = 100)
-    private String tinhThanh;
-
-    @Size(max = 100)
-    @NotNull
-    @Nationalized
-    @Column(name = "quan_huyen", nullable = false, length = 100)
-    private String quanHuyen;
-
-    @Size(max = 100)
-    @NotNull
-    @Nationalized
-    @Column(name = "phuong_xa", nullable = false, length = 100)
-    private String phuongXa;
-
-    @Size(max = 300)
-    @NotNull
-    @Nationalized
-    @Column(name = "dia_chi_cu_the", nullable = false, length = 300)
-    private String diaChiCuThe;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "tinhThanh", column = @Column(name = "tinh_thanh", nullable = false, length = 100)),
+            @AttributeOverride(name = "phuongXa", column = @Column(name = "phuong_xa", nullable = false, length = 100)),
+            @AttributeOverride(name = "diaChiCuThe", column = @Column(name = "dia_chi_cu_the", nullable = false, length = 300))
+    })
+    private DiaChiHaiCap diaChi;
 
     @NotNull
     @ColumnDefault("0")

@@ -1,5 +1,7 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
+
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThanhToanTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.ThanhToanTaiQuayResponse;
 import com.example.server.entity.GiayChiTiet;
@@ -265,7 +267,7 @@ public class ThucThiThanhToanTaiQuayService {
                 hoaDon.getNgayLap(),
                 hoaDon.getTenNguoiNhan(),
                 hoaDon.getSdtNguoiNhan(),
-                hoaDon.getDiaChiGiaoHang(),
+                DiaChiHaiCapMapper.format(hoaDon.getDiaChiGiaoHang()),
                 hinhThuc,
                 phiShip,
                 hoaDon.getTienGiam(),

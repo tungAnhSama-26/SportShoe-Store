@@ -1,6 +1,9 @@
 package com.example.server.core.admin.quanlyhoadon.dto.responsse;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapResponse;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 
 public record TinhPhiVanChuyenGhnResponse(
         BigDecimal phiVanChuyen,
@@ -9,10 +12,11 @@ public record TinhPhiVanChuyenGhnResponse(
         Integer insuranceFee,
         Integer pickStationFee,
         Integer couponValue,
-        Integer toDistrictId,
-        String toWardCode,
-        String matchedProvinceName,
-        String matchedDistrictName,
-        String matchedWardName
+        DiaChiHaiCapResponse diaChiDaDoiSoat,
+        boolean uocTinh,
+        String nguonTinhPhi,
+        boolean giaCu,
+        Instant thoiDiemBaoGia,
+        LocalDate ngayHieuLucBangGia
 ) {
 }

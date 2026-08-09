@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
+import com.example.server.infrastructure.address.DiaChiHaiCapRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,17 +24,9 @@ public record DatHangRequest(
         @Pattern(regexp = "^\\d{10}$", message = "Số điện thoại phải gồm 10 chữ số")
         String sdtNguoiNhan,
 
-        @NotBlank(message = "Vui lòng nhập tỉnh/thành phố")
-        String tinhThanh,
-
-        @NotBlank(message = "Vui lòng nhập quận/huyện")
-        String quanHuyen,
-
-        @NotBlank(message = "Vui lòng nhập phường/xã")
-        String phuongXa,
-
-        @NotBlank(message = "Vui lòng nhập địa chỉ cụ thể")
-        String diaChiCuThe,
+        @NotNull(message = "Vui lòng nhập địa chỉ giao hàng")
+        @Valid
+        DiaChiHaiCapRequest diaChiGiaoHang,
 
         // "COD" hoặc "VNPAY" (VNPay xử lý sau).
         String hinhThucThanhToan,
@@ -41,10 +35,6 @@ public record DatHangRequest(
         String maPhieuGiamGia,
 
         String ghiChu,
-
-        // GHN: mã quận/huyện + phường/xã (để tính phí chính xác, tùy chọn).
-        Integer toDistrictId,
-        String toWardCode,
 
         // Email nhận xác nhận đơn cho khách vãng lai (không có tài khoản). Tùy chọn.
         @Email(message = "Email không hợp lệ")

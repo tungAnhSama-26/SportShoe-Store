@@ -61,11 +61,13 @@ public class HoaDon {
     private String sdtNguoiNhan;
 
 
-    @Size(max = 300)
-    @NotNull
-    @Nationalized
-    @Column(name = "dia_chi_giao_hang", nullable = false, length = 300)
-    private String diaChiGiaoHang;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "tinhThanh", column = @Column(name = "tinh_thanh_giao_hang", length = 100)),
+            @AttributeOverride(name = "phuongXa", column = @Column(name = "phuong_xa_giao_hang", length = 100)),
+            @AttributeOverride(name = "diaChiCuThe", column = @Column(name = "dia_chi_giao_hang", length = 300))
+    })
+    private DiaChiHaiCap diaChiGiaoHang;
 
     @NotNull
     @ColumnDefault("sysdatetime()")

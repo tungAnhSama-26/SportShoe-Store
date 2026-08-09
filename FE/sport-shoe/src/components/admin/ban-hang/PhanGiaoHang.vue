@@ -2,6 +2,7 @@
 import { ref, watch, computed } from "vue";
 import ChinhSuaGiaoHangModal from "../../common/ChinhSuaGiaoHangModal.vue";
 import { layDanhSachDiaChi } from "../../../services/khach-hang";
+import { dinhDangDiaChi } from "../../../utils/dia-chi";
 
 const props = defineProps({
   shippingInfo: {
@@ -60,10 +61,6 @@ const localSoDienThoai = computed({
   set: (val) => emit('update-shipping', { soDienThoaiNguoiNhan: val })
 });
 
-const localDiaChi = computed({
-  get: () => props.shippingInfo.diaChiGiaoHang || '',
-  set: (val) => emit('update-shipping', { diaChiGiaoHang: val })
-});
 </script>
 
 <template>
@@ -109,13 +106,12 @@ const localDiaChi = computed({
         
         <label class="space-y-1.5">
           <span class="block text-xs font-medium text-slate-500 dark:text-slate-400">Địa chỉ giao hàng</span>
-          <textarea
-            v-model="localDiaChi"
-            rows="2"
-            placeholder="Địa chỉ giao hàng đầy đủ"
-            class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-[13px] text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900 custom-scrollbar"
-            @blur="emit('calculate-shipping')"
-          />
+          <p class="min-h-16 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
+            {{ dinhDangDiaChi(shippingInfo.diaChiGiaoHang) || 'Chưa có địa chỉ giao hàng' }}
+          </p>
+          <p v-if="shippingInfo.moTaPhi" class="mt-1 text-[11px]" :class="shippingInfo.nguonTinhPhi === 'GHN_LIVE' ? 'text-slate-400' : 'text-amber-600'">
+            {{ shippingInfo.moTaPhi }}
+          </p>
         </label>
       </div>
     </div>

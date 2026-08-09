@@ -4,6 +4,7 @@ import com.example.server.core.admin.banHangTaiQuay.dto.response.KhachHangTaiQua
 import com.example.server.entity.DiaChiKhachHang;
 import com.example.server.repository.DiaChiKhachHangRepository;
 import com.example.server.repository.KhachHangRepository;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,8 +33,7 @@ public class KhachHangTaiQuayService {
                             .findFirstByKhachHangIdAndLaMacDinhTrue(khachHang.getId())
                             .orElseGet(() -> diaChiKhachHangRepository.findByKhachHangIdOrderByLaMacDinhDesc(khachHang.getId()).stream().findFirst().orElse(null));
                     String diaChiMacDinhText = diaChiMacDinh != null
-                            ? diaChiMacDinh.getDiaChiCuThe() + ", " + diaChiMacDinh.getPhuongXa() + ", "
-                            + diaChiMacDinh.getQuanHuyen() + ", " + diaChiMacDinh.getTinhThanh()
+                            ? DiaChiHaiCapMapper.format(diaChiMacDinh.getDiaChi())
                             : null;
                     return new KhachHangTaiQuayResponse(
                             khachHang.getId(),

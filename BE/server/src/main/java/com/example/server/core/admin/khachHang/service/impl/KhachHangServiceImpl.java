@@ -11,6 +11,7 @@ import com.example.server.core.admin.khachHang.service.KhachHangService;
 import com.example.server.entity.DiaChiKhachHang;
 import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.PasswordService;
 import com.example.server.infrastructure.service.EmailService;
@@ -336,10 +337,7 @@ public class KhachHangServiceImpl implements KhachHangService {
     private void mapDiaChi(DiaChiKhachHang dc, DiaChiRequest request) {
         dc.setHoTen(request.hoTen().trim());
         dc.setSdt(request.sdt().trim());
-        dc.setTinhThanh(request.tinhThanh().trim());
-        dc.setQuanHuyen(request.quanHuyen().trim());
-        dc.setPhuongXa(request.phuongXa().trim());
-        dc.setDiaChiCuThe(request.diaChiCuThe().trim());
+        dc.setDiaChi(DiaChiHaiCapMapper.toEntity(request.diaChi()));
         dc.setLaMacDinh(Boolean.TRUE.equals(request.laMacDinh()));
     }
 
@@ -370,8 +368,7 @@ public class KhachHangServiceImpl implements KhachHangService {
                 .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId())
                 .orElse(null);
         String diaChiMacDinhText = diaChiMacDinh != null
-                ? diaChiMacDinh.getDiaChiCuThe() + ", " + diaChiMacDinh.getPhuongXa() + ", "
-                        + diaChiMacDinh.getQuanHuyen() + ", " + diaChiMacDinh.getTinhThanh()
+                ? DiaChiHaiCapMapper.format(diaChiMacDinh.getDiaChi())
                 : null;
         String sdtMacDinh = diaChiMacDinh != null ? diaChiMacDinh.getSdt() : null;
         return new KhachHangResponse(
@@ -409,10 +406,7 @@ public class KhachHangServiceImpl implements KhachHangService {
                 dc.getId(),
                 dc.getHoTen(),
                 dc.getSdt(),
-                dc.getTinhThanh(),
-                dc.getQuanHuyen(),
-                dc.getPhuongXa(),
-                dc.getDiaChiCuThe(),
+                DiaChiHaiCapMapper.toResponse(dc.getDiaChi()),
                 dc.getLaMacDinh()
         );
     }

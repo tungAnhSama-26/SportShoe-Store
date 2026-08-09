@@ -1,6 +1,7 @@
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { tinhPhiVanChuyenTaiQuay } from "../../services/ban-hang-tai-quay";
 import { showError } from "../../utils/alert";
+import { chuanHoaDiaChi, diaChiHopLe, dinhDangDiaChi } from "../../utils/dia-chi";
 
 export function LogicGiaoHang({
   choPhepGiaoHang,
@@ -17,22 +18,24 @@ export function LogicGiaoHang({
   hoaDonChoDaChon,
   cartItems
 }) {
+  const nguonTinhPhi = ref("");
+  const moTaPhi = ref("");
   const tenNguoiNhanGiaoHangHienThi = computed(() => tenNguoiNhanGiaoHang.value ?? "");
   const soDienThoaiNguoiNhanGiaoHangHienThi = computed(() => sdtNguoiNhanGiaoHang.value ?? "");
   const phiVanChuyenHienThi = computed(() => choPhepGiaoHang.value ? phiVanChuyen.value : 0);
   const diaChiGiaoHangHienThi = computed(() => {
-    if (diaChiGiaoHang.value && typeof diaChiGiaoHang.value === 'string' && diaChiGiaoHang.value.trim()) {
-      return diaChiGiaoHang.value.trim();
+    if (diaChiHopLe(diaChiGiaoHang.value)) {
+      return chuanHoaDiaChi(diaChiGiaoHang.value);
     }
     if (khachHangDuocChon.value?.diaChiMacDinh) {
       return khachHangDuocChon.value.diaChiMacDinh;
     }
-    return "";
+    return chuanHoaDiaChi(hoaDonChoDaChon.value?.thongTinGiaoHang?.diaChiGiaoHang);
   });
   const coTheTinhPhiVanChuyen = computed(
     () => choPhepGiaoHang.value &&
       cartItems.value.length > 0 &&
-      Boolean(diaChiGiaoHangHienThi.value.trim()) &&
+      diaChiHopLe(diaChiGiaoHangHienThi.value) &&
       !dangTinhPhiVanChuyen.value
   );
   const coThongTinGiaoHangHopLe = computed(
@@ -40,7 +43,7 @@ export function LogicGiaoHang({
       (
         Boolean(tenNguoiNhanGiaoHangHienThi.value) &&
         Boolean(soDienThoaiNguoiNhanGiaoHangHienThi.value) &&
-        Boolean(diaChiGiaoHangHienThi.value.trim()) &&
+        diaChiHopLe(diaChiGiaoHangHienThi.value) &&
         daTinhPhiVanChuyen.value
       )
   );
@@ -54,6 +57,8 @@ export function LogicGiaoHang({
     diaChiDaDo: diaChiDaXacNhan.value,
     daTinhPhi: daTinhPhiVanChuyen.value,
     dangTinhPhi: dangTinhPhiVanChuyen.value,
+    nguonTinhPhi: nguonTinhPhi.value,
+    moTaPhi: moTaPhi.value,
     coTheTinhPhi: coTheTinhPhiVanChuyen.value,
     serviceTypeId: cauHinhGiaoHang.value.serviceTypeId,
     length: cauHinhGiaoHang.value.length,
@@ -69,6 +74,8 @@ export function LogicGiaoHang({
     phiVanChuyen.value = 0;
     diaChiDaXacNhan.value = "";
     daTinhPhiVanChuyen.value = false;
+    nguonTinhPhi.value = "";
+    moTaPhi.value = "";
   }
 
   function taoPayloadGiaoHang() {
@@ -87,7 +94,7 @@ export function LogicGiaoHang({
       giaoHang: true,
       tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
       soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
-      diaChiGiaoHang: diaChiGiaoHangHienThi.value.trim(),
+      diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi.value),
       phiVanChuyen: phiVanChuyen.value,
       donViVanChuyen: donViVanChuyen.value || "GHN"
     };
@@ -106,7 +113,7 @@ export function LogicGiaoHang({
     if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       choPhepGiaoHang.value = Boolean(patch.giaoHang);
       if (choPhepGiaoHang.value) {
-        if ((!diaChiGiaoHang.value || !diaChiGiaoHang.value.trim()) && khachHangDuocChon.value?.diaChiMacDinh) {
+        if (!diaChiHopLe(diaChiGiaoHang.value) && khachHangDuocChon.value?.diaChiMacDinh) {
           diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
         }
         // Tự điền tên và SDT người nhận từ khách hàng đã chọn nếu đang trống
@@ -125,7 +132,7 @@ export function LogicGiaoHang({
       sdtNguoiNhanGiaoHang.value = patch.soDienThoaiNguoiNhan ?? "";
     }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
-      diaChiGiaoHang.value = patch.diaChiGiaoHang ?? "";
+      diaChiGiaoHang.value = chuanHoaDiaChi(patch.diaChiGiaoHang);
     }
     if (Object.prototype.hasOwnProperty.call(patch, "serviceTypeId")) {
       cauHinhGiaoHang.value = {
@@ -162,6 +169,8 @@ export function LogicGiaoHang({
       phiVanChuyen.value = 0;
       diaChiDaXacNhan.value = "";
       daTinhPhiVanChuyen.value = false;
+      nguonTinhPhi.value = "";
+      moTaPhi.value = "";
       return;
     }
 
@@ -172,11 +181,13 @@ export function LogicGiaoHang({
 
   async function xuLyTinhPhiVanChuyen() {
     if (!coTheTinhPhiVanChuyen.value) {
-      if (!choPhepGiaoHang.value || !diaChiGiaoHangHienThi.value.trim()) {
+      if (!choPhepGiaoHang.value || !diaChiHopLe(diaChiGiaoHangHienThi.value)) {
         phiVanChuyen.value = 0;
         donViVanChuyen.value = "";
         daTinhPhiVanChuyen.value = true;
         dangTinhPhiVanChuyen.value = false;
+        nguonTinhPhi.value = "";
+        moTaPhi.value = "";
         return;
       }
       return;
@@ -188,7 +199,7 @@ export function LogicGiaoHang({
         soLuong: item.soLuong
       }));
       const result = await tinhPhiVanChuyenTaiQuay({
-        toAddress: diaChiGiaoHangHienThi.value,
+        diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi.value),
         serviceTypeId: cauHinhGiaoHang.value.serviceTypeId,
         length: cauHinhGiaoHang.value.length,
         width: cauHinhGiaoHang.value.width,
@@ -197,12 +208,20 @@ export function LogicGiaoHang({
         items: items
       });
       phiVanChuyen.value = result.phiVanChuyen;
-      diaChiDaXacNhan.value = result.diaChiDaDo || "";
+      diaChiDaXacNhan.value = dinhDangDiaChi(result.diaChiDaDoiSoat);
+      nguonTinhPhi.value = result.nguonTinhPhi || "GHN_LIVE";
+      moTaPhi.value = result.nguonTinhPhi === "GHN_CACHE"
+        ? (result.giaCu ? "Phí GHN từ cache cũ (ước tính)" : "Phí GHN đã lưu gần nhất (ước tính)")
+        : result.nguonTinhPhi === "GHN_PUBLIC_TARIFF"
+          ? "Phí offline ước tính theo bảng giá công khai GHN"
+          : (result.uocTinh ? "Phí GHN ước tính theo các tuyến cũ" : "Phí GHN");
       daTinhPhiVanChuyen.value = true;
     } catch (error) {
       phiVanChuyen.value = 0;
       diaChiDaXacNhan.value = "";
       daTinhPhiVanChuyen.value = false;
+      nguonTinhPhi.value = "";
+      moTaPhi.value = "";
       showError(error instanceof Error ? error.message : "Không thể tính phí vận chuyển");
     } finally {
       dangTinhPhiVanChuyen.value = false;

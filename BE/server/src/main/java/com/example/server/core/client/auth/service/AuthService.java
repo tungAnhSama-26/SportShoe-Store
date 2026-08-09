@@ -7,6 +7,7 @@ import com.example.server.core.client.auth.dto.response.CustomerLoginResponse;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.security.AdminPrincipal;
 import com.example.server.infrastructure.security.CustomerPrincipal;
 import com.example.server.infrastructure.security.JwtService;
@@ -151,7 +152,7 @@ public class AuthService {
         var diaChiMacDinhOpt = diaChiKhachHangRepository
                 .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId());
         String diaChiMacDinh = diaChiMacDinhOpt
-                .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
+                .map(dc -> DiaChiHaiCapMapper.format(dc.getDiaChi()))
                 .orElse(null);
         String sdtMacDinh = diaChiMacDinhOpt.map(dc -> dc.getSdt()).orElse(null);
 

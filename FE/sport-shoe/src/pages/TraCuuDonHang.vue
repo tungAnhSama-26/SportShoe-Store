@@ -11,6 +11,7 @@ import {
   layViTriTienTrinhDonHang,
 } from '../utils/order-status';
 import anhMacDinh from '../assets/login-shoe.png';
+import { dinhDangDiaChi } from '../utils/dia-chi';
 
 const route = useRoute();
 const maTimKiem = ref('');
@@ -256,7 +257,7 @@ onUnmounted(dungPoll);
           <h2 class="mb-3 text-base font-bold text-slate-800">Thông tin nhận hàng</h2>
           <div class="rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
             <p class="font-semibold text-slate-800">{{ don.tenNguoiNhan }} · {{ don.sdtNguoiNhan }}</p>
-            <p class="mt-1">{{ don.diaChiGiaoHang }}</p>
+            <p class="mt-1">{{ dinhDangDiaChi(don.diaChiGiaoHang) || '—' }}</p>
             <p class="mt-2 text-xs text-slate-500">Phương thức thanh toán: <span class="font-medium text-slate-700">{{ nhanHinhThuc(don.hinhThucThanhToan) }}</span></p>
           </div>
         </section>

@@ -16,6 +16,8 @@ import {
   getFieldErrors,
 } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
+import { layPhuongXaHaiCap, layTinhThanhHaiCap } from "../../../services/dia-chi";
+import { chuanHoaDiaChi, taoPayloadDiaChi, timDonViDiaChi } from "../../../utils/dia-chi";
 import {
   isValidEmail,
   isValidVnPhone,
@@ -198,7 +200,6 @@ export function useChiTietNhanVien() {
     sdt: "",
     diaChiCuThe: "",
     ngaySinh: "",
-    hinhAnh: "",
   });
 
   const form = ref({
@@ -208,13 +209,14 @@ export function useChiTietNhanVien() {
     matKhau: "",
     sdt: "",
     diaChiCuThe: "",
+    tinhThanhCode: "",
     hinhAnh: "",
     vaiTro: 2,
     gioiTinh: "Nam",
     ngaySinh: "",
     tinhThanh: "",
-    quanHuyen: "",
-    xaPhuong: "",
+    phuongXaCode: "",
+    phuongXa: "",
     faceDescriptor: "",
   });
 
@@ -223,265 +225,60 @@ export function useChiTietNhanVien() {
     { value: 2, label: "Nhân viên" },
   ];
 
-  const dsQuanHuyenTheoTinh = {
-    "ha-noi": [
-      { value: "cau-giay", label: "Cầu Giấy" },
-      { value: "dong-da", label: "Đống Đa" },
-      { value: "nam-tu-liem", label: "Nam Từ Liêm" },
-    ],
-    "ho-chi-minh": [
-      { value: "quan-1", label: "Quận 1" },
-      { value: "quan-7", label: "Quận 7" },
-      { value: "thu-duc", label: "TP Thủ Đức" },
-    ],
-    "da-nang": [
-      { value: "hai-chau", label: "Hải Châu" },
-      { value: "thanh-khe", label: "Thanh Khê" },
-      { value: "son-tra", label: "Sơn Trà" },
-    ],
-  };
-  const dsTinhThanh = [
-    { value: "01", label: "Thành phố Hà Nội" },
-    { value: "79", label: "Thành phố Hồ Chí Minh" },
-    { value: "31", label: "Thành phố Hải Phòng" },
-    { value: "48", label: "Thành phố Đà Nẵng" },
-    { value: "92", label: "Thành phố Cần Thơ" },
-    { value: "02", label: "Tỉnh Hà Giang" },
-    { value: "04", label: "Tỉnh Cao Bằng" },
-    { value: "06", label: "Tỉnh Bắc Kạn" },
-    { value: "08", label: "Tỉnh Tuyên Quang" },
-    { value: "10", label: "Tỉnh Lào Cai" },
-    { value: "11", label: "Tỉnh Điện Biên" },
-    { value: "12", label: "Tỉnh Lai Châu" },
-    { value: "14", label: "Tỉnh Sơn La" },
-    { value: "15", label: "Tỉnh Yên Bái" },
-    { value: "17", label: "Tỉnh Hoà Bình" },
-    { value: "19", label: "Tỉnh Thái Nguyên" },
-    { value: "20", label: "Tỉnh Lạng Sơn" },
-    { value: "22", label: "Tỉnh Quảng Ninh" },
-    { value: "24", label: "Tỉnh Bắc Giang" },
-    { value: "25", label: "Tỉnh Phú Thọ" },
-    { value: "26", label: "Tỉnh Vĩnh Phúc" },
-    { value: "27", label: "Tỉnh Bắc Ninh" },
-    { value: "30", label: "Tỉnh Hải Dương" },
-    { value: "33", label: "Tỉnh Hưng Yên" },
-    { value: "34", label: "Tỉnh Thái Bình" },
-    { value: "35", label: "Tỉnh Hà Nam" },
-    { value: "36", label: "Tỉnh Nam Định" },
-    { value: "37", label: "Tỉnh Ninh Bình" },
-    { value: "38", label: "Tỉnh Thanh Hóa" },
-    { value: "40", label: "Tỉnh Nghệ An" },
-    { value: "42", label: "Tỉnh Hà Tĩnh" },
-    { value: "44", label: "Tỉnh Quảng Bình" },
-    { value: "45", label: "Tỉnh Quảng Trị" },
-    { value: "46", label: "Tỉnh Thừa Thiên Huế" },
-    { value: "49", label: "Tỉnh Quảng Nam" },
-    { value: "51", label: "Tỉnh Quảng Ngãi" },
-    { value: "52", label: "Tỉnh Bình Định" },
-    { value: "54", label: "Tỉnh Phú Yên" },
-    { value: "56", label: "Tỉnh Khánh Hòa" },
-    { value: "58", label: "Tỉnh Ninh Thuận" },
-    { value: "60", label: "Tỉnh Bình Thuận" },
-    { value: "62", label: "Tỉnh Kon Tum" },
-    { value: "64", label: "Tỉnh Gia Lai" },
-    { value: "66", label: "Tỉnh Đắk Lắk" },
-    { value: "67", label: "Tỉnh Đắk Nông" },
-    { value: "68", label: "Tỉnh Lâm Đồng" },
-    { value: "70", label: "Tỉnh Bình Phước" },
-    { value: "72", label: "Tỉnh Tây Ninh" },
-    { value: "74", label: "Tỉnh Bình Dương" },
-    { value: "75", label: "Tỉnh Đồng Nai" },
-    { value: "77", label: "Tỉnh Bà Rịa - Vũng Tàu" },
-    { value: "80", label: "Tỉnh Long An" },
-    { value: "82", label: "Tỉnh Tiền Giang" },
-    { value: "83", label: "Tỉnh Bến Tre" },
-    { value: "84", label: "Tỉnh Trà Vinh" },
-    { value: "86", label: "Tỉnh Vĩnh Long" },
-    { value: "87", label: "Tỉnh Đồng Tháp" },
-    { value: "89", label: "Tỉnh An Giang" },
-    { value: "91", label: "Tỉnh Kiên Giang" },
-    { value: "93", label: "Tỉnh Hậu Giang" },
-    { value: "94", label: "Tỉnh Sóc Trăng" },
-    { value: "95", label: "Tỉnh Bạc Liêu" },
-    { value: "96", label: "Tỉnh Cà Mau" },
-  ];
-  const dsXaPhuongTheoQuan = {
-    "cau-giay": [
-      { value: "dich-vong", label: "Dịch Vọng" },
-      { value: "mai-dich", label: "Mai Dịch" },
-      { value: "nghia-tan", label: "Nghĩa Tân" },
-    ],
-    "dong-da": [
-      { value: "cat-linh", label: "Cát Linh" },
-      { value: "lang-thuong", label: "Láng Thượng" },
-      { value: "quoc-tu-giam", label: "Quốc Tử Giám" },
-    ],
-    "nam-tu-liem": [
-      { value: "my-dinh-1", label: "Mỹ Đình 1" },
-      { value: "my-dinh-2", label: "Mỹ Đình 2" },
-      { value: "trung-van", label: "Trung Văn" },
-    ],
-    "quan-1": [
-      { value: "ben-nghe", label: "Bến Nghé" },
-      { value: "ben-thanh", label: "Bến Thành" },
-      { value: "da-kao", label: "Đa Kao" },
-    ],
-    "quan-7": [
-      { value: "tan-phong", label: "Tân Phong" },
-      { value: "tan-quy", label: "Tân Quy" },
-      { value: "phu-my", label: "Phú Mỹ" },
-    ],
-    "thu-duc": [
-      { value: "an-khanh", label: "An Khánh" },
-      { value: "hiep-binh", label: "Hiệp Bình" },
-      { value: "linh-trung", label: "Linh Trung" },
-    ],
-    "hai-chau": [
-      { value: "hai-chau-1", label: "Hải Châu 1" },
-      { value: "hai-chau-2", label: "Hải Châu 2" },
-      { value: "thach-thang", label: "Thạch Thang" },
-    ],
-    "thanh-khe": [
-      { value: "tam-thuan", label: "Tam Thuận" },
-      { value: "thanh-khe-dong", label: "Thanh Khê Đông" },
-      { value: "xuan-ha", label: "Xuân Hà" },
-    ],
-    "son-tra": [
-      { value: "an-hai-bac", label: "An Hải Bắc" },
-      { value: "an-hai-dong", label: "An Hải Đông" },
-      { value: "man-thai", label: "Mân Thái" },
-    ],
-  };
-  // 1. Thêm hàm fetch dữ liệu từ API (Ví dụ dùng pro-vinces.open-api.vn)
-  const dsQuanHuyen = ref([]);
+
+  const dsTinhThanh = ref([]);
+
   const dsXaPhuong = ref([]);
 
-  // Theo dõi thay đổi Tỉnh/Thành để load Quận/Huyện
-  watch(
-    () => form.value.tinhThanh,
-    async (newVal) => {
-      form.value.quanHuyen = "";
-      form.value.xaPhuong = "";
-      dsXaPhuong.value = [];
-
-      if (!newVal) {
-        dsQuanHuyen.value = [];
-        return;
-      }
-
-      try {
-        // Đây là URL API lấy quận huyện theo mã tỉnh (newVal là mã số như '01', '79')
-        const res = await fetch(
-          `https://provinces.open-api.vn/api/p/${newVal}?depth=2`,
-        );
-        const data = await res.json();
-        dsQuanHuyen.value = data.districts.map((d) => ({
-          value: d.code.toString(),
-          label: d.name,
-        }));
-      } catch (e) {
-        console.error("Lỗi tải quận huyện", e);
-      }
-    },
-  );
-
-  // Theo dõi thay đổi Quận/Huyện để load Xã/Phường
-  watch(
-    () => form.value.quanHuyen,
-    async (newVal) => {
-      form.value.xaPhuong = "";
-      if (!newVal) {
-        dsXaPhuong.value = [];
-        return;
-      }
-
-      try {
-        const res = await fetch(
-          `https://provinces.open-api.vn/api/d/${newVal}?depth=2`,
-        );
-        const data = await res.json();
-        dsXaPhuong.value = data.wards.map((w) => ({
-          value: w.code.toString(),
-          label: w.name,
-        }));
-      } catch (e) {
-        console.error("Lỗi tải xã phường", e);
-      }
-    },
-  );
-  function layLabel(options, value) {
-    return options.find((item) => item.value == value)?.label ?? "";
+  function gopDiaChi() {
+    return taoPayloadDiaChi(form.value);
   }
 
-  function gopDiaChi() {
-    const diaChiFull = [
-      form.value.diaChiCuThe.trim(),
-      layLabel(dsXaPhuong.value, form.value.xaPhuong),
-      layLabel(dsQuanHuyen.value, form.value.quanHuyen),
-      layLabel(dsTinhThanh, form.value.tinhThanh),
-    ]
-      .filter(Boolean)
-      .join(", ");
-    return diaChiFull;
+  async function chonTinhThanhNhanVien(tinhId, giuPhuongXa = false) {
+    const maXaHienTai = giuPhuongXa ? form.value.phuongXaCode : "";
+    const tenTinhHienTai = giuPhuongXa ? form.value.tinhThanh : "";
+    const tenXaHienTai = giuPhuongXa ? form.value.phuongXa : "";
+    const tinh = timDonViDiaChi(dsTinhThanh.value, tinhId, tenTinhHienTai);
+    form.value.tinhThanhCode = tinh?.value ?? "";
+    form.value.tinhThanh = tinh?.label ?? (giuPhuongXa ? tenTinhHienTai : "");
+    form.value.phuongXaCode = "";
+    form.value.phuongXa = giuPhuongXa ? tenXaHienTai : "";
+    try {
+      dsXaPhuong.value = tinh
+        ? (await layPhuongXaHaiCap(tinh.value)).map((item) => ({
+            value: String(item.code),
+            label: item.ten,
+          }))
+        : [];
+    } catch (error) {
+      dsXaPhuong.value = [];
+      loiTrang.value = getDisplayErrorMessage(
+        error,
+        "Không thể tải danh sách xã/phường",
+      );
+      return;
+    }
+    if (giuPhuongXa) {
+      const xa = timDonViDiaChi(dsXaPhuong.value, maXaHienTai, tenXaHienTai);
+      form.value.phuongXaCode = xa?.value ?? "";
+      form.value.phuongXa = xa?.label ?? tenXaHienTai;
+    }
+  }
+
+  function chonPhuongXaNhanVien(code) {
+    const xa = dsXaPhuong.value.find((item) => item.value === String(code ?? ""));
+    form.value.phuongXaCode = xa?.value ?? "";
+    form.value.phuongXa = xa?.label ?? "";
   }
 
   async function apDungMaDiaChiDaQuet(duLieuQr) {
-    const maTinhThanh = String(duLieuQr.tinhThanh ?? "").trim();
-    const maQuanHuyen = String(duLieuQr.quanHuyen ?? "").trim();
-    const maXaPhuong = String(duLieuQr.xaPhuong ?? "").trim();
-
-    form.value.tinhThanh = maTinhThanh;
-
-    if (!maTinhThanh) {
-      form.value.quanHuyen = "";
-      form.value.xaPhuong = "";
-      dsQuanHuyen.value = [];
-      dsXaPhuong.value = [];
-      return;
-    }
-
-    try {
-      const responseTinh = await fetch(
-        `https://provinces.open-api.vn/api/p/${maTinhThanh}?depth=2`,
-      );
-      const dataTinh = await responseTinh.json();
-      dsQuanHuyen.value = Array.isArray(dataTinh.districts)
-        ? dataTinh.districts.map((district) => ({
-            value: district.code.toString(),
-            label: district.name,
-          }))
-        : [];
-    } catch (error) {
-      console.error("Không thể tải quận huyện từ dữ liệu QR", error);
-      dsQuanHuyen.value = [];
-    }
-
-    form.value.quanHuyen = maQuanHuyen;
-
-    if (!maQuanHuyen) {
-      form.value.xaPhuong = "";
-      dsXaPhuong.value = [];
-      return;
-    }
-
-    try {
-      const responseHuyen = await fetch(
-        `https://provinces.open-api.vn/api/d/${maQuanHuyen}?depth=2`,
-      );
-      const dataHuyen = await responseHuyen.json();
-      dsXaPhuong.value = Array.isArray(dataHuyen.wards)
-        ? dataHuyen.wards.map((ward) => ({
-            value: ward.code.toString(),
-            label: ward.name,
-          }))
-        : [];
-    } catch (error) {
-      console.error("Không thể tải xã phường từ dữ liệu QR", error);
-      dsXaPhuong.value = [];
-    }
-
-    form.value.xaPhuong = maXaPhuong;
+    const maTinh = String(duLieuQr.tinhThanh ?? "").trim();
+    const maXa = String(duLieuQr.xaPhuong ?? "").trim();
+    form.value.tinhThanhCode = maTinh;
+    form.value.phuongXaCode = maXa;
+    await chonTinhThanhNhanVien(maTinh, true);
   }
+
 
   async function taiChiTiet() {
     if (laMoi) return;
@@ -489,6 +286,7 @@ export function useChiTietNhanVien() {
     try {
       const data = await layChiTietNhanVien(id);
       nhanVien.value = data;
+      const diaChi = chuanHoaDiaChi(data.diaChi);
       form.value = {
         hoTen: data.hoTen ?? "",
         tenDangNhap: data.tenDangNhap ?? "",
@@ -497,12 +295,9 @@ export function useChiTietNhanVien() {
         sdt: data.sdt ?? "",
         gioiTinh: data.gioiTinh ?? "Nam",
         ngaySinh: data.ngaySinh ?? "",
-        diaChiCuThe: data.diaChi ?? "",
+        ...diaChi,
         hinhAnh: data.hinhAnh ?? "",
         vaiTro: data.vaiTro ?? 2,
-        tinhThanh: "",
-        quanHuyen: "",
-        xaPhuong: "",
       };
     } catch (error) {
       loiTrang.value = getDisplayErrorMessage(
@@ -515,7 +310,7 @@ export function useChiTietNhanVien() {
   }
 
   async function luu() {
-    loiForm.value = { hoTen: "", email: "", sdt: "", diaChiCuThe: "", ngaySinh: "", hinhAnh: "" };
+    loiForm.value = { hoTen: "", email: "", sdt: "", diaChiCuThe: "", ngaySinh: "" };
     let hasError = false;
 
     const loiHoTen = validateFullName(form.value.hoTen, "Họ và tên nhân viên");
@@ -548,11 +343,6 @@ export function useChiTietNhanVien() {
     const loiDiaChi = validateAddress(form.value.diaChiCuThe, "Địa chỉ");
     if (loiDiaChi) {
       loiForm.value.diaChiCuThe = loiDiaChi;
-      hasError = true;
-    }
-
-    if (laMoi && !form.value.hinhAnh) {
-      loiForm.value.hinhAnh = "Vui lòng tải lên hình ảnh nhân viên.";
       hasError = true;
     }
 
@@ -607,7 +397,7 @@ export function useChiTietNhanVien() {
       sdt: form.value.sdt.trim() || undefined,
       gioiTinh: form.value.gioiTinh || undefined,
       ngaySinh: form.value.ngaySinh || undefined,
-      diaChi: gopDiaChi() || form.value.diaChiCuThe.trim() || undefined,
+      diaChi: gopDiaChi(),
       hinhAnh: form.value.hinhAnh || undefined,
       vaiTro: form.value.vaiTro,
       faceDescriptor: form.value.faceDescriptor || undefined,
@@ -618,33 +408,13 @@ export function useChiTietNhanVien() {
 
     try {
       if (laMoi) {
-        const created = await taoNhanVien(payload);
+        await taoNhanVien(payload);
         if (typeof window !== "undefined") {
-          const emailGuiThanhCong = created.emailDaGuiThanhCong !== false;
-          const chiTietDangNhap = [
-            created.email
-              ? emailGuiThanhCong
-                ? `Đã gửi thông tin đăng nhập tới email: ${created.email}`
-                : `Email tài khoản: ${created.email}`
-              : "",
-            !emailGuiThanhCong && created.canhBaoEmail
-              ? created.canhBaoEmail
-              : "",
-            created.tenDangNhap ? `Tên đăng nhập: ${created.tenDangNhap}` : "",
-            created.matKhauTamThoi
-              ? `Mật khẩu tạm thời: ${created.matKhauTamThoi}`
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" | ");
-
           window.sessionStorage.setItem(
             EMPLOYEE_CREATE_TOAST_KEY,
             JSON.stringify({
-              loai: emailGuiThanhCong ? "success" : "error",
-              noiDung: emailGuiThanhCong
-                ? "Thêm nhân viên thành công"
-                : `Thêm nhân viên thành công, nhưng chưa gửi được email đăng nhập.${chiTietDangNhap ? ` ${chiTietDangNhap}` : ""}`,
+              loai: "success",
+              noiDung: "Tạo tài khoản nhân viên thành công",
             }),
           );
         }
@@ -752,8 +522,23 @@ export function useChiTietNhanVien() {
   }
 
   onMounted(async () => {
+    try {
+      const danhSachTinh = await layTinhThanhHaiCap();
+      dsTinhThanh.value = danhSachTinh.map((item) => ({
+        value: String(item.code),
+        label: item.ten,
+      }));
+    } catch (error) {
+      loiTrang.value = getDisplayErrorMessage(
+        error,
+        "Không thể tải danh sách tỉnh/thành",
+      );
+    }
     if (!laMoi) {
       await taiChiTiet();
+      if (dsTinhThanh.value.length) {
+        await chonTinhThanhNhanVien(form.value.tinhThanhCode, true);
+      }
     }
   });
 
@@ -801,13 +586,11 @@ export function useChiTietNhanVien() {
     loiForm,
     form,
     dsVaiTro,
-    dsQuanHuyenTheoTinh,
     dsTinhThanh,
-    dsXaPhuongTheoQuan,
-    dsQuanHuyen,
     dsXaPhuong,
-    layLabel,
     gopDiaChi,
+    chonTinhThanhNhanVien,
+    chonPhuongXaNhanVien,
     apDungMaDiaChiDaQuet,
     taiChiTiet,
     luu,

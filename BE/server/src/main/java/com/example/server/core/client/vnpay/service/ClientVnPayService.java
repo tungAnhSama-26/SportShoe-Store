@@ -196,12 +196,7 @@ public class ClientVnPayService {
         BigDecimal phiShip = phiVanChuyenService.tinhPhi(new TinhPhiShipRequest(
                 request.khachHangId(),
                 request.sanPhams(),
-                request.tinhThanh(),
-                request.quanHuyen(),
-                request.phuongXa(),
-                request.diaChiCuThe(),
-                request.toDistrictId(),
-                request.toWardCode()
+                request.diaChiGiaoHang()
         )).phiVanChuyen();
         if (phiShip != null && phiShip.signum() > 0) {
             tong = tong.add(phiShip);
