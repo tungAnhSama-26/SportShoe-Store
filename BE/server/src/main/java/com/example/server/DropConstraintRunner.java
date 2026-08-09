@@ -14,14 +14,14 @@ public class DropConstraintRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Tự động gỡ bỏ các Ràng buộc kiểm tra (CHECK constraints) cũ của SQL Server gây lỗi khi tạo/lưu ca làm việc
-        dropConstraint("dbo.hoa_don", "ck_hoa_don_trang_thai");
+        // Tự động gỡ bỏ các ràng buộc kiểm tra cũ gây lỗi khi tạo/lưu ca làm việc.
+        // Constraint trạng thái hóa đơn phải được quản lý bằng schema/migration, không được xóa khi khởi động.
         dropConstraint("dbo.lich_lam_viec", "ck_lich_lam_viec_ca");
         dropConstraint("dbo.ca_lam", "ck_ca_lam_gio");
         dropConstraint("dbo.ca_lam", "ck_ca_lam_gio_bat_dau");
         dropConstraint("dbo.ca_lam", "ck_ca_lam_gio_ket_thuc");
 
-        // Quét và tự động xóa tất cả ràng buộc CHECK trên các bảng ca_lam, lich_lam_viec, hoa_don
+        // Quét và tự động xóa các ràng buộc CHECK cũ chỉ trên các bảng ca làm việc.
         try {
             String sql = "DECLARE @sql NVARCHAR(MAX) = ''; " +
                     "SELECT @sql += 'ALTER TABLE ' + QUOTENAME(sys.schemas.name) + '.' + QUOTENAME(sys.objects.name) " +
@@ -29,10 +29,10 @@ public class DropConstraintRunner implements CommandLineRunner {
                     "FROM sys.check_constraints " +
                     "INNER JOIN sys.objects ON sys.check_constraints.parent_object_id = sys.objects.object_id " +
                     "INNER JOIN sys.schemas ON sys.objects.schema_id = sys.schemas.schema_id " +
-                    "WHERE sys.objects.name IN ('lich_lam_viec', 'ca_lam', 'hoa_don'); " +
+                    "WHERE sys.objects.name IN ('lich_lam_viec', 'ca_lam'); " +
                     "IF @sql <> '' EXEC sp_executesql @sql;";
             jdbcTemplate.execute(sql);
-            System.out.println("Successfully removed outdated check constraints on lich_lam_viec, ca_lam, hoa_don.");
+            System.out.println("Successfully removed outdated check constraints on lich_lam_viec and ca_lam.");
         } catch (Exception e) {
             System.out.println("Could not run dynamic constraint cleanup: " + e.getMessage());
         }
