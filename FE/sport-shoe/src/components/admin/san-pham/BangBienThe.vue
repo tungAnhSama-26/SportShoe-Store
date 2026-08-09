@@ -170,12 +170,17 @@ function quickToggleConfirmMessage(item) {
   return `Bạn có muốn chuyển CTSP "${target}" sang ${action} không?`
 }
 
+import { showWarning } from '../../../utils/alert'
+
 function handlePageSizeChange(size) {
   emit('update:page-size', size)
 }
 
 function openDiscountDetail(item) {
-  if (!item?.dotGiamGiaId) return
+  if (!item?.dotGiamGiaId) {
+    emit('edit-variant', item)
+    return
+  }
   emit('open-discount-detail', item)
 }
 
@@ -324,26 +329,16 @@ defineExpose({
               </div>
             </td>
             <td class="px-2 py-4 align-middle text-center">
-              <!-- Có campaign → clickable badge -->
               <button
-                v-if="item.dotGiamGiaId"
+                v-if="isDiscounted(item) && formatDiscountPercent(item) !== '—'"
                 type="button"
                 class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
-                :title="discountTitle(item)"
+                :title="item.dotGiamGiaId ? discountTitle(item) : 'Giá bán đang thấp hơn giá gốc'"
                 @click="openDiscountDetail(item)"
               >
                 <Tag class="h-3 w-3" />
                 {{ formatDiscountPercent(item) }}
               </button>
-              <!-- Không có campaign nhưng giá đã giảm → show badge tĩnh -->
-              <span
-                v-else-if="isDiscounted(item) && formatDiscountPercent(item) !== '—'"
-                class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500"
-                title="Giá bán thấp hơn giá gốc"
-              >
-                <Tag class="h-3 w-3" />
-                {{ formatDiscountPercent(item) }}
-              </span>
               <span v-else class="text-xs text-slate-400">—</span>
             </td>
             <td class="px-2 py-4 align-middle text-center whitespace-nowrap">

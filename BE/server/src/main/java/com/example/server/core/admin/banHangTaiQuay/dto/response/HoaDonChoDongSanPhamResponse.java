@@ -15,6 +15,7 @@ public record HoaDonChoDongSanPhamResponse(
         Integer soLuongTon,
         BigDecimal giaBan,
         BigDecimal giaGoc,
-        BigDecimal thanhTien
+        BigDecimal thanhTien,
+        Integer trangThaiSanPham
 ) {
 }

@@ -159,16 +159,16 @@ function formatDiscountPercent(product) {
               <!-- Badge Giảm giá trên ảnh -->
               <span
                 v-if="isDiscounted(chiTietDangChon)"
-                class="absolute left-3 top-3 inline-flex items-center rounded-md bg-red-500 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md"
+                class="absolute left-3 top-3 inline-flex items-center rounded-md bg-red-500 px-2.5 py-1 text-xs font-bold tracking-wide text-white shadow-md"
               >
-                Giảm giá
+                Giảm {{ formatDiscountPercent(chiTietDangChon).replace('-', '') }}
               </span>
             </div>
 
             <!-- Right: Content (Spacious flex-1 min-w-0 for table) -->
             <div class="flex flex-col p-5 md:p-6 flex-1 min-w-0 max-h-[85vh] overflow-hidden">
               <div class="shrink-0">
-                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                <p class="text-xs font-semibold tracking-widest text-slate-400">
                   Mã: {{ selectedProductDetail.maSanPham }}
                 </p>
                 <h3 class="mt-1.5 text-2xl font-bold text-slate-900 leading-tight">
@@ -242,7 +242,7 @@ function formatDiscountPercent(product) {
               <!-- Variants Table -->
               <div class="flex-1 overflow-auto min-h-[280px] border border-slate-200 rounded-lg my-2 custom-scrollbar">
                 <table class="w-full text-left text-xs text-slate-600 whitespace-nowrap">
-                  <thead class="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200 sticky top-0 z-10 text-[11px]">
+                  <thead class="bg-slate-50 text-slate-700 font-bold tracking-wider border-b border-slate-200 sticky top-0 z-10 text-[11px]">
                     <tr>
                       <th class="px-2.5 py-2.5 text-center">Hình ảnh</th>
                       <th class="px-2.5 py-2.5">Mã SKU</th>
@@ -349,7 +349,7 @@ function formatDiscountPercent(product) {
               <button
                 type="button"
                 class="w-full rounded-md py-4 text-base font-semibold text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                :class="isEditMode ? 'bg-amber-500 hover:bg-amber-600 shadow-md' : 'bg-red-500 hover:bg-red-600'"
+                :class="'bg-red-500 hover:bg-red-600 shadow-md'"
                 :disabled="!chiTietDangChon || soLuongTonKhaDungChiTiet <= 0"
                 @click="emit('add-selected-variant')"
               >

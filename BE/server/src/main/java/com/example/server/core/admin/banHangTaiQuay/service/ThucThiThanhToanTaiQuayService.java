@@ -90,7 +90,6 @@ public class ThucThiThanhToanTaiQuayService {
                 : giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
                     .orElseThrow(() -> new BusinessException(
                             "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
-
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -214,6 +213,15 @@ public class ThucThiThanhToanTaiQuayService {
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
         if (items == null || items.isEmpty()) {
             throw new BusinessException("Hóa đơn phải có ít nhất một sản phẩm để thanh toán");
+        }
+
+        for (HoaDonChiTiet item : items) {
+            GiayChiTiet gct = item.getGiayChiTiet();
+            if (gct == null || gct.getKichHoat() == null || gct.getKichHoat() != 1 ||
+                gct.getGiay() == null || gct.getGiay().getTrangThai() == null || gct.getGiay().getTrangThai() != 1) {
+                String tenGiay = gct != null && gct.getGiay() != null ? gct.getGiay().getTen() : "";
+                throw new BusinessException("Sản phẩm " + tenGiay + " đã ngừng hoạt động, vui lòng chọn sản phẩm khác");
+            }
         }
 
         KhachHang khachHang = invoiceUseCase.timKhachHang(request.khachHangId());

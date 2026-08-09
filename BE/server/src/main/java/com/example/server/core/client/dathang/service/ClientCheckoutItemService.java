@@ -77,7 +77,7 @@ public class ClientCheckoutItemService {
                 if (!Integer.valueOf(1).equals(bienThe.getKichHoat())
                         || !Integer.valueOf(1).equals(bienThe.getGiay().getTrangThai())) {
                     throw new BusinessException(
-                            "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng bán");
+                            "Sản phẩm \"" + bienThe.getGiay().getTen() + "\" đã ngừng hoạt động, vui lòng chọn sản phẩm khác");
                 }
                 tonKhoService.validateAvailable(bienThe, soLuongTheoBienThe.get(id));
             }

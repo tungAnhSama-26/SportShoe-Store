@@ -58,10 +58,10 @@ export async function layGioHang() {
 }
 
 // Đồng bộ giá giỏ với server: cập nhật giá hiện tại (sau giảm) + giá niêm yết + tồn cho từng item.
-// Dùng khi vào giỏ/thanh toán để giá luôn đúng dù đợt giảm giá thay đổi sau lúc thêm vào giỏ.
+// Tự động đẩy sản phẩm đã ngừng hoạt động ra khỏi giỏ hàng.
 export async function dongBoGiaGio() {
   const gio = docGioHangLocal();
-  if (!gio.items.length) return gio;
+  if (!gio.items.length) return { ...gio, removedNames: [] };
   const ids = gio.items.map((it) => Number(it.giayChiTietId)).filter(Boolean);
   let ds = [];
   try {
@@ -72,31 +72,36 @@ export async function dongBoGiaGio() {
       fallbackMessage: "",
     });
   } catch {
-    return taoGioHangResponse(gio.items); // lỗi mạng -> giữ giá cũ
+    return { ...taoGioHangResponse(gio.items), removedNames: [] }; // lỗi mạng -> giữ giá cũ
   }
   const theoId = new Map(
     (Array.isArray(ds) ? ds : []).map((x) => [Number(x.giayChiTietId), x]),
   );
+  const removedNames = [];
+  const validItems = [];
+
   for (const item of gio.items) {
     // "giá lúc thêm" = mốc để so sánh. Chỉ gạch giá cũ khi giá ĐỔI sau lúc thêm vào giỏ
     // (đợt giảm mới / admin đổi giá gốc), KHÔNG gạch với phần giảm vốn đã có sẵn lúc thêm.
     if (item.giaThem == null) item.giaThem = Number(item.giaBan || 0);
     const moi = theoId.get(Number(item.giayChiTietId));
-    if (!moi) {
-      // Biến thể không còn tồn tại (đã bị xóa) -> coi như ngừng bán.
-      item.conBan = false;
-      item.tonKho = 0;
+    if (!moi || moi.conBan === false) {
+      // Biến thể không còn tồn tại hoặc đã bị ngừng bán -> tự động đẩy ra khỏi giỏ hàng
+      removedNames.push(item.tenSanPham || "Sản phẩm");
       continue;
     }
     item.giaNiemYet = Number(moi.giaNiemYet ?? item.giaBan);
     item.giaBan = Number(moi.giaHienTai ?? item.giaBan); // giá hiện tại (sau đợt giảm)
     if (moi.tonKho != null) item.tonKho = Number(moi.tonKho);
-    item.conBan = moi.conBan !== false; // false = admin đã ngừng bán
+    item.conBan = true;
     if (moi.canNang != null) item.canNang = Number(moi.canNang); // cân nặng 1 SP (gram)
     if (moi.ma) item.ma = moi.ma; // mã sản phẩm để hiển thị ở giỏ
+    validItems.push(item);
   }
-  luuGioHangLocal(gio.items);
-  return taoGioHangResponse(gio.items);
+  luuGioHangLocal(validItems);
+  const resp = taoGioHangResponse(validItems);
+  resp.removedNames = removedNames;
+  return resp;
 }
 
 export async function themVaoGio(giayChiTietId, soLuong = 1, thongTin = {}) {

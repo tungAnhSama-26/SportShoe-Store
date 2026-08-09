@@ -28,7 +28,7 @@ const router = useRouter();
 
 const MAX_NHAN_VIEN_MOI_CA = 3;
 
-import { layDanhSachCaLam } from "../../../services/ca-lam.js";
+import { layDanhSachCaLam, normalizeShiftName } from "../../../services/ca-lam.js";
 
 const SHIFT_COLORS = [
   { mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700" },
@@ -43,21 +43,21 @@ const SHIFT_COLORS = [
 const DS_CA = ref([
   {
     id: "sang",
-    nhan: "Sáng",
+    nhan: "Ca sáng",
     gio: "08:00 - 12:00",
     mau: "bg-emerald-500",
     muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700",
   },
   {
     id: "chieu",
-    nhan: "Chiều",
+    nhan: "Ca chiều",
     gio: "12:00 - 17:00",
     mau: "bg-orange-400",
     muaNhat: "bg-orange-50 border-orange-200 text-orange-700",
   },
   {
     id: "toi",
-    nhan: "Tối",
+    nhan: "Ca tối",
     gio: "17:00 - 22:00",
     mau: "bg-violet-400",
     muaNhat: "bg-violet-50 border-violet-200 text-violet-700",
@@ -73,7 +73,7 @@ async function taiDanhSachCa() {
         const colorSet = SHIFT_COLORS[idx % SHIFT_COLORS.length];
         return {
           id: c.id,
-          nhan: c.ten,
+          nhan: normalizeShiftName(c.id, c.ten),
           gio: `${c.gioBatDau} - ${c.gioKetThuc}`,
           mau: colorSet.mau,
           muaNhat: colorSet.muaNhat
@@ -587,10 +587,15 @@ function xuatExcel() {
 function layThongTinCa(id) {
   if (!id) return null;
   const found = DS_CA.value.find((c) => c.id.toLowerCase() === id.toLowerCase());
-  if (found) return found;
+  if (found) {
+    return {
+      ...found,
+      nhan: normalizeShiftName(found.id, found.nhan)
+    };
+  }
   return {
     id: id,
-    nhan: id,
+    nhan: normalizeShiftName(id, id),
     gio: "—",
     mau: "bg-slate-400",
     muaNhat: "bg-slate-50 border-slate-200 text-slate-700"

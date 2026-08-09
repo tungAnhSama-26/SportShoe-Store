@@ -74,9 +74,6 @@
               <span v-else class="loader"></span>
             </button>
 
-            <router-link to="/login" class="admin-login-switch">
-              Đăng nhập tài khoản khách hàng
-            </router-link>
           </form>
         </aside>
       </div>

@@ -79,9 +79,6 @@
             </button>
 
 
-            <router-link to="/admin/login" class="admin-login-switch">
-              Đăng nhập hệ thống quản trị
-            </router-link>
 
             <p class="register-link">
               Chưa có tài khoản? <router-link to="/register">Đăng ký ngay</router-link>
