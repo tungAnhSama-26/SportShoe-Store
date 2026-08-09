@@ -378,15 +378,15 @@ export function useChiTietNhanVien() {
 
     if (hasError) return;
 
-    if (laMoi) {
-      const confirmed = await showConfirm(
-        "Bạn có chắc chắn muốn thêm nhân viên mới này không?",
-        "Xác nhận thêm nhân viên",
-        "Thêm mới",
-        "Hủy",
-      );
-      if (!confirmed) return;
-    }
+    const confirmed = await showConfirm(
+      laMoi
+        ? "Bạn có chắc chắn muốn thêm nhân viên mới này không?"
+        : "Bạn có chắc chắn muốn lưu các thay đổi cho nhân viên này không?",
+      laMoi ? "Xác nhận thêm nhân viên" : "Xác nhận lưu thay đổi",
+      laMoi ? "Thêm mới" : "Lưu thay đổi",
+      "Hủy",
+    );
+    if (!confirmed) return;
 
     dangLuu.value = true;
     loiTrang.value = "";
@@ -467,11 +467,22 @@ export function useChiTietNhanVien() {
       showError("Bạn không thể tự khóa tài khoản của chính mình.");
       return;
     }
+
+    const message = trangThai === 1
+      ? `Bạn có chắc muốn kích hoạt lại nhân viên "${nhanVien.value?.hoTen}"?`
+      : `Bạn có chắc muốn khóa tài khoản nhân viên "${nhanVien.value?.hoTen}"?`;
+
+    if (!(await showConfirm(message, "Xác nhận", "Đồng ý", "Hủy"))) {
+      return;
+    }
+
     try {
       const updated = await doiTrangThaiNhanVien(id, trangThai);
       nhanVien.value = updated;
       showSuccess(
-        trangThai === 1 ? "Đã kích hoạt tài khoản." : "Đã khóa tài khoản.",
+        trangThai === 1
+          ? `Đã kích hoạt nhân viên "${nhanVien.value?.hoTen || ""}" thành công.`
+          : `Đã chuyển nhân viên "${nhanVien.value?.hoTen || ""}" sang trạng thái nghỉ làm thành công.`,
         "Thành công",
       );
     } catch (error) {

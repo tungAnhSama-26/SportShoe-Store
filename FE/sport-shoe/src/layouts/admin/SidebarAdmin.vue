@@ -192,9 +192,9 @@ function subItemClass(active) {
     <nav class="mt-6 flex-1 space-y-1 overflow-x-hidden overflow-y-auto" :class="compactMode ? 'px-2' : 'px-4'">
 
 
-      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'Tổng quan' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
+      <router-link v-if="laAdmin" to="/admin/thong-ke" :title="compactMode ? 'Thống kê' : undefined" :class="navItemClass(isActive('/admin/thong-ke'))">
         <LayoutDashboard :class="navIconClass(isActive('/admin/thong-ke'))" />
-        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Tổng quan</span>
+        <span v-if="!compactMode" class="min-w-0 truncate text-sm leading-tight">Thống kê</span>
       </router-link>
 
       <router-link to="/admin/ban-hang" :title="compactMode ? 'B\u00e1n h\u00e0ng t\u1ea1i qu\u1ea7y' : undefined" :class="navItemClass(isActive('/admin/ban-hang'))">

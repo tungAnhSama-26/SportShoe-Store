@@ -40,7 +40,7 @@ const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên
 
 const MAX_NHAN_VIEN_MOI_CA = 3;
 
-import { layDanhSachCaLam } from "../../../services/ca-lam.js";
+import { layDanhSachCaLam, normalizeShiftName } from "../../../services/ca-lam.js";
 
 const SHIFT_COLORS = [
   { mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700" },
@@ -88,7 +88,7 @@ async function taiDanhSachCa() {
         const colorSet = SHIFT_COLORS[idx % SHIFT_COLORS.length];
         return {
           id: c.id,
-          nhan: c.ten,
+          nhan: normalizeShiftName(c.id, c.ten),
           gio: `${c.gioBatDau} - ${c.gioKetThuc}`,
           mau: colorSet.mau,
           muaNhat: colorSet.muaNhat,
@@ -830,10 +830,15 @@ function xuatExcel() {
 function layThongTinCa(id) {
   if (!id) return null;
   const found = DS_CA.value.find((c) => c.id.toLowerCase() === id.toLowerCase());
-  if (found) return found;
+  if (found) {
+    return {
+      ...found,
+      nhan: normalizeShiftName(found.id, found.nhan)
+    };
+  }
   return {
     id: id,
-    nhan: id,
+    nhan: normalizeShiftName(id, id),
     gio: "—",
     mau: "bg-slate-400",
     muaNhat: "bg-slate-50 border-slate-200 text-slate-700"

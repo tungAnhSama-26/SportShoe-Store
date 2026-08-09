@@ -237,10 +237,6 @@ export function usePhieuGiamGiaList() {
   watch(
     boLoc,
     () => {
-      const today = todayStr.value;
-      if (boLoc.value.tuNgay && boLoc.value.tuNgay > today) {
-        boLoc.value.tuNgay = today;
-      }
       if (boLoc.value.tuNgay && boLoc.value.denNgay && boLoc.value.tuNgay > boLoc.value.denNgay) {
         boLoc.value.denNgay = boLoc.value.tuNgay;
       }

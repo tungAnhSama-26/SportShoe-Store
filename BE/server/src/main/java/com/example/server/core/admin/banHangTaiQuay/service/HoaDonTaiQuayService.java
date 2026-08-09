@@ -344,6 +344,10 @@ public class HoaDonTaiQuayService {
                             if (hinhAnhs != null && !hinhAnhs.isEmpty()) {
                                 hinhAnh = hinhAnhs.get(0).getUrl();
                             }
+                            int kichHoat = item.getGiayChiTiet().getKichHoat() != null ? item.getGiayChiTiet().getKichHoat() : 1;
+                            int trangThai = item.getGiayChiTiet().getGiay().getTrangThai() != null ? item.getGiayChiTiet().getGiay().getTrangThai() : 1;
+                            int trangThaiSanPham = (kichHoat == 0 || trangThai == 0) ? 0 : 1;
+
                             return new HoaDonChoDongSanPhamResponse(
                                     item.getId(),
                                     item.getGiayChiTiet().getId(),
@@ -357,7 +361,8 @@ public class HoaDonTaiQuayService {
                                     item.getGiayChiTiet().getSoLuong(),
                                     item.getGiaDonVi(),
                                     item.getGiayChiTiet().getGiaBan(),
-                                    item.getThanhTien()
+                                    item.getThanhTien(),
+                                    trangThaiSanPham
                             );
                         })
                         .toList()

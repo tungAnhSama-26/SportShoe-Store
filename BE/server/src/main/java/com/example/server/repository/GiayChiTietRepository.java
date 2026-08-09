@@ -56,7 +56,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                 or lower(gct.sku) like lower(concat('%', :keyword, '%'))
                 or lower(gct.maBienThe) like lower(concat('%', :keyword, '%'))
               )
-            order by coalesce(gct.ngayCapNhat, gct.ngayTao) desc, g.ten asc, gct.sku asc
+            order by g.ten asc, gct.id desc
             """)
     List<GiayChiTiet> searchForCounterSale(@Param("keyword") String keyword);
 

@@ -272,7 +272,7 @@ async function xuLyDoiTrangThai(item) {
   updatingStatusIds.add(item.id);
   try {
     await api.doiTrangThai(item.id, trangThaiKeTiep(item));
-    showToast("Cập nhật trạng thái sản phẩm thành công");
+    showSuccess("Cập nhật trạng thái sản phẩm thành công");
     await loadData(currentPage.value);
   } catch (error) {
     showToast(

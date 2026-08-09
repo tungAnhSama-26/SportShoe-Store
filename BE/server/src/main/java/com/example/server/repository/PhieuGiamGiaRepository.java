@@ -98,8 +98,8 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     AND (:trangThai IS NULL OR phieuGG.trangThai = :trangThai)
     AND (:loai IS NULL OR phieuGG.loai = :loai)
     AND (:loaiPhieu IS NULL OR phieuGG.loaiPhieu = :loaiPhieu)
-    AND (CAST(:tuNgay AS timestamp) IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
-    AND (CAST(:denNgay AS timestamp) IS NULL OR phieuGG.ngayKetThuc <= :denNgay)
+    AND (:tuNgay IS NULL OR phieuGG.ngayBatDau >= :tuNgay)
+    AND (:denNgay IS NULL OR phieuGG.ngayKetThuc <= :denNgay)
     ORDER BY phieuGG.ngayTao DESC, phieuGG.id DESC
 """)
     Page<QuanLyPhieuGiamGiaResponse> timKiemVaPhanTrang(

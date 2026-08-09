@@ -54,6 +54,11 @@ export function LogicGioHang({
   }
 
   function themSanPham(product, quantity = 1, options = {}) {
+    if (product.kichHoat === 0 || product.trangThai === 0) {
+      showWarning(`Sản phẩm "${product.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác`);
+      return false;
+    }
+
     const soLuongCoTheThem = soLuongConLai(product.chiTietId, product.soLuongTon);
     if (quantity > soLuongCoTheThem) {
       showWarning(`Sản phẩm ${product.tenSanPham} đã vượt giới hạn tồn kho`);

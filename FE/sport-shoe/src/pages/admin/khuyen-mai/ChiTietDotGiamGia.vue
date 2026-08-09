@@ -270,7 +270,6 @@ const filteredSelectedVariantsTrang = computed(() => {
                   <input
                     v-model="form.ngayBatDau"
                     type="date"
-                    :max="todayStr"
                     class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
                   />
                   <p

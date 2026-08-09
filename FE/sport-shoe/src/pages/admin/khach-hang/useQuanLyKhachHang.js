@@ -213,6 +213,7 @@ export function useQuanLyKhachHang() {
       await doiTrangThaiKhachHang(kh.id, trangThaiMoi);
       kh.trangThai = trangThaiMoi;
       kh.tenTrangThai = trangThaiMoi === 1 ? "Hoạt động" : "Khóa";
+      showSuccess(`Đã ${hanhDong} khách hàng thành công.`, "Thành công");
     } catch (e) {
       loiTrang.value = getDisplayErrorMessage(
         e,

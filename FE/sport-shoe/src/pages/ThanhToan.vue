@@ -11,6 +11,7 @@ import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from
 import { getDisplayErrorMessage } from '../utils/error-message';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
+import logoVietQr from '../assets/logo/6793a971ea52dda5c8bfec82_vietqr.webp';
 
 const router = useRouter();
 
@@ -210,7 +211,14 @@ onMounted(() => {
 
 async function reSyncGio() {
   try {
-    gio.value = await dongBoGiaGio();
+    const ketQua = await dongBoGiaGio();
+    gio.value = ketQua;
+    gioHangStore.datSoLuong(gio.value.tongSoLuong);
+    if (ketQua.removedNames && ketQua.removedNames.length > 0) {
+      for (const tenSP of ketQua.removedNames) {
+        showWarning(`Sản phẩm "${tenSP}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+      }
+    }
   } catch {
     // bỏ qua lỗi mạng -> giữ giỏ hiện tại
   }
@@ -241,6 +249,12 @@ async function tai() {
       layTinhThanhHaiCap().catch(() => []),
     ]);
     gio.value = g;
+    gioHangStore.datSoLuong(g.tongSoLuong);
+    if (g.removedNames && g.removedNames.length > 0) {
+      for (const tenSP of g.removedNames) {
+        showWarning(`Sản phẩm "${tenSP}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+      }
+    }
     diaChiList.value = dc;
     dsTinh.value = tinh;
 
@@ -374,7 +388,7 @@ async function datHangMoi() {
   // Đồng bộ giỏ mới nhất để biết SP còn bán không (tránh trạng thái cũ -> báo nhầm voucher).
   try { gio.value = await dongBoGiaGio(); } catch { /* lỗi mạng -> dùng trạng thái hiện có */ }
   if (coSanPhamKhongBan()) {
-    return showError('Trong giỏ có sản phẩm đã hết hàng hoặc ngừng bán. Vui lòng quay lại giỏ hàng để xóa.');
+    return showError('Trong giỏ có sản phẩm đã ngừng hoạt động, vui lòng chọn sản phẩm khác.');
   }
   // Phiếu đang áp có thể vừa bị admin ngừng -> kiểm tra lại trước khi thanh toán.
   if (!(await kiemTraLaiVoucher())) return;
@@ -563,7 +577,7 @@ function xuLyAnhLoi(event) {
               :class="hinhThucThanhToan === 'VIETQR' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'"
             >
               <input type="radio" value="VIETQR" v-model="hinhThucThanhToan" class="text-primary focus:ring-primary/30" />
-              <img src="https://img.vietqr.io/assets/images/vietqr.png" alt="VietQR" class="h-5 object-contain shrink-0" />
+              <img :src="logoVietQr" alt="VietQR" class="h-6 object-contain shrink-0" />
             </label>
 
             <label
@@ -586,7 +600,7 @@ function xuLyAnhLoi(event) {
                 <p class="font-medium text-slate-800 line-clamp-1">{{ item.tenSanPham }}</p>
                 <p class="text-xs text-slate-400">{{ item.mauSac }} · {{ item.kichCo }} · x{{ item.soLuong }}</p>
                 <p v-if="itemKhongBan(item)" class="mt-0.5 text-[11px] font-semibold text-rose-500">
-                  {{ Number(item.tonKho) <= 0 ? 'Đã hết hàng' : 'Đã ngừng bán' }}
+                  {{ Number(item.tonKho) <= 0 ? 'Đã hết hàng' : 'Đã ngừng hoạt động' }}
                 </p>
               </div>
               <p class="text-sm font-semibold text-slate-700">{{ dinhDangTienViet(Number(item.giaBan) * Number(item.soLuong)) }}</p>
