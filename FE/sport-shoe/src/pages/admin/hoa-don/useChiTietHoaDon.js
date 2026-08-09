@@ -33,6 +33,7 @@ import {
   tinhPhiVanChuyenGhn,
   xacNhanHoanTien,
   xacNhanThanhToanCod,
+  giaoLaiDonHang,
   checkMuaLai,
 } from "../../../services/hoa-don";
 import { layDanhSachDiaChi } from "../../../services/khach-hang";
@@ -43,6 +44,12 @@ import { layDanhSachTaiKhoanNganHang } from "../../../services/client-profile";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import logoGhn from "../../../constants/logoGhn";
 import { ketNoiHoaDonRealtime } from "../../../services/hoa-don-realtime";
+import {
+  chuanHoaDiaChi,
+  diaChiHopLe,
+  dinhDangDiaChi,
+  taoPayloadDiaChi,
+} from "../../../utils/dia-chi";
 
 export function useChiTietHoaDon() {
   const route = useRoute();
@@ -51,6 +58,7 @@ export function useChiTietHoaDon() {
   const dangTai = ref(false);
   const loiTrang = ref("");
   const dangCapNhat = ref(false);
+  const dangGiaoLai = ref(false);
 
   const hienModalXacNhan = ref(false);
   const hienModalLichSu = ref(false);
@@ -83,7 +91,7 @@ export function useChiTietHoaDon() {
     tenKhachHang: "",
     soDienThoai: "",
     email: "",
-    diaChi: "",
+    diaChi: chuanHoaDiaChi(),
     loaiDon: "",
     ghiChu: "",
   });
@@ -211,12 +219,7 @@ export function useChiTietHoaDon() {
   });
 
   const laDonTaiQuay = computed(() => {
-    const diaChi = (hoaDon.value?.diaChi || "").trim().toLowerCase();
-    const coDiaChiGiao =
-      diaChi &&
-      diaChi !== "mua tại quầy" &&
-      diaChi !== "không có" &&
-      diaChi !== "—";
+    const coDiaChiGiao = diaChiHopLe(hoaDon.value?.diaChi);
     if (coDiaChiGiao) {
       return false;
     }
@@ -470,7 +473,8 @@ export function useChiTietHoaDon() {
       );
       formThongTin.value.tenKhachHang = hoaDon.value.tenKhachHang || "";
       formThongTin.value.soDienThoai = hoaDon.value.soDienThoai || "";
-      formThongTin.value.diaChi = hoaDon.value.diaChi || "";
+      formThongTin.value.email = hoaDon.value.email || payload.email || "";
+      formThongTin.value.diaChi = chuanHoaDiaChi(hoaDon.value.diaChi);
       hienModalGiaoHang.value = false;
       showSuccess("Thông tin nhận hàng đã được cập nhật.");
     } catch (error) {
@@ -1107,7 +1111,7 @@ export function useChiTietHoaDon() {
       tenKhachHang: hoaDon.value.tenKhachHang || "",
       soDienThoai: hoaDon.value.soDienThoai || "",
       email: hoaDon.value.email || "",
-      diaChi: hoaDon.value.diaChi || "",
+      diaChi: chuanHoaDiaChi(hoaDon.value.diaChi),
       loaiDon: hoaDon.value.loaiDon || "",
       ghiChu: (hoaDon.value.trangThai === "GIAO_HANG_THAT_BAI" || hoaDon.value.trangThai === "Giao hàng thất bại")
         ? (hoaDon.value.lyDoGiaoHangThatBai || "")
@@ -1163,8 +1167,8 @@ export function useChiTietHoaDon() {
           String(hoaDon.value.tenKhachHang || "").trim() ||
         formThongTin.value.soDienThoai.trim() !==
           String(hoaDon.value.soDienThoai || "").trim() ||
-        formThongTin.value.diaChi.trim() !==
-          String(hoaDon.value.diaChi || "").trim();
+        dinhDangDiaChi(formThongTin.value.diaChi) !==
+          dinhDangDiaChi(hoaDon.value.diaChi);
 
       if (thongTinGiaoHangThayDoi) {
         if (!coTheSuaThongTinGiaoHang.value) {
@@ -1176,7 +1180,7 @@ export function useChiTietHoaDon() {
           await capNhatThongTinGiaoHang(hoaDon.value.id, {
             tenNguoiNhan: formThongTin.value.tenKhachHang.trim(),
             sdtNguoiNhan: formThongTin.value.soDienThoai.trim(),
-            diaChiGiaoHang: formThongTin.value.diaChi.trim(),
+            diaChiGiaoHang: taoPayloadDiaChi(formThongTin.value.diaChi),
           }),
         );
       }
@@ -1217,7 +1221,7 @@ export function useChiTietHoaDon() {
       thongBaoDonDaHoanThanh();
       return;
     }
-    if (!formThongTin.value.diaChi.trim()) {
+    if (!diaChiHopLe(formThongTin.value.diaChi)) {
       showError("Vui lòng nhập địa chỉ người nhận để tính phí GHN.");
       return;
     }
@@ -1225,7 +1229,7 @@ export function useChiTietHoaDon() {
     dangTinhPhiGhn.value = true;
     try {
       const ketQua = await tinhPhiVanChuyenGhn(hoaDon.value.id, {
-        toAddress: formThongTin.value.diaChi.trim(),
+        diaChiGiaoHang: taoPayloadDiaChi(formThongTin.value.diaChi),
         serviceTypeId: Number(formGhn.value.serviceTypeId) || 2,
         length: Number(formGhn.value.length) || 30,
         width: Number(formGhn.value.width) || 20,
@@ -1233,13 +1237,7 @@ export function useChiTietHoaDon() {
         weight: Number(formGhn.value.weight) || 500,
         insuranceValue: Math.min(Number(tongTienHang.value) || 0, 5000000),
       });
-      diaChiGhnDaDo.value = [
-        ketQua.matchedWardName,
-        ketQua.matchedDistrictName,
-        ketQua.matchedProvinceName,
-      ]
-        .filter(Boolean)
-        .join(", ");
+      diaChiGhnDaDo.value = dinhDangDiaChi(ketQua.diaChiDaDoiSoat);
       ganHoaDonSauThaoTac(await layChiTietHoaDon(hoaDon.value.id));
       hienThiThongBao(
         "success",
@@ -1520,6 +1518,35 @@ export function useChiTietHoaDon() {
     }
   }
 
+  async function handleGiaoLaiDonHang() {
+    if (!hoaDon.value || !donGiaoThatBai.value || dangGiaoLai.value) return;
+    const daXacNhan = await showConfirm(
+      `<div style="text-align:left;line-height:1.65">
+        <p>Hệ thống sẽ tạo một lượt giao mới trên chính hóa đơn này:</p>
+        <ul style="margin:10px 0 0;padding-left:20px;list-style:disc">
+          <li>Trừ thêm tồn kho cho lô sản phẩm thay thế.</li>
+          <li>Khoản đã thanh toán sẽ được giữ lại, không hoàn tiền.</li>
+          <li>Đơn COD sẽ trở về trạng thái chờ thu tiền.</li>
+          <li>Thông tin vận chuyển cũ được đặt lại để chuẩn bị giao lại.</li>
+        </ul>
+      </div>`,
+      "Xác nhận giao lại đơn hàng",
+      "Giao lại",
+      "Hủy",
+    );
+    if (!daXacNhan) return;
+
+    dangGiaoLai.value = true;
+    try {
+      ganHoaDonSauThaoTac(await giaoLaiDonHang(hoaDon.value.id));
+      showSuccess("Đơn hàng đã chuyển về Chờ lấy hàng.", "Tạo lượt giao lại thành công");
+    } catch (error) {
+      showError(getDisplayErrorMessage(error, "Không thể tạo lượt giao lại."));
+    } finally {
+      dangGiaoLai.value = false;
+    }
+  }
+
   onBeforeUnmount(() => {
     ngatKetNoiRealtime?.();
     if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
@@ -1552,6 +1579,7 @@ export function useChiTietHoaDon() {
     Truck,
     User,
     X,
+    RefreshCw,
     Card,
     Button,
     capNhatSanPhamHoaDon,
@@ -1570,6 +1598,7 @@ export function useChiTietHoaDon() {
     dangTai,
     loiTrang,
     dangCapNhat,
+    dangGiaoLai,
     hienModalXacNhan,
     hienModalLichSu,
     hienModalSanPham,
@@ -1684,5 +1713,6 @@ export function useChiTietHoaDon() {
     lyDoHuyDon,
     laHoanThanh,
     xuLyMuaLai,
+    handleGiaoLaiDonHang,
   };
 }

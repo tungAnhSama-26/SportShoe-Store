@@ -1,13 +1,12 @@
 package com.example.server.core.client.profile.dto;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapResponse;
+
 public record ClientDiaChiResponse(
         Integer id,
         String hoTen,
         String sdt,
-        String tinhThanh,
-        String quanHuyen,
-        String phuongXa,
-        String diaChiCuThe,
+        DiaChiHaiCapResponse diaChi,
         Boolean laMacDinh
 ) {
 }

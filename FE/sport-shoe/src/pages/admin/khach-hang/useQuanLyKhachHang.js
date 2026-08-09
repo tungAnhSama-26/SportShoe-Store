@@ -32,6 +32,8 @@ import { exportRowsToExcel } from "../../../utils/export-excel";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
 import { isValidVnPhone } from "../../../utils/validation";
+import { layPhuongXaHaiCap, layTinhThanhHaiCap } from "../../../services/dia-chi";
+import { chuanHoaDiaChi, dinhDangDiaChi, doiChieuDiaChiHaiCap, layMaDonViDiaChi } from "../../../utils/dia-chi";
 
 const HO_TEN_REGEX =
   /^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]+$/;
@@ -274,8 +276,9 @@ export function useQuanLyKhachHang() {
   const formDiaChi = ref({
     hoTen: "",
     sdt: "",
+    tinhThanhCode: "",
     tinhThanh: "",
-    quanHuyen: "",
+    phuongXaCode: "",
     phuongXa: "",
     diaChiCuThe: "",
     laMacDinh: false,
@@ -283,18 +286,15 @@ export function useQuanLyKhachHang() {
 
   // Province cascade
   const dsTinh = ref([]);
-  const dsHuyen = ref([]);
   const dsXa = ref([]);
   const maTinhChon = ref(null);
-  const maHuyenChon = ref(null);
   const dangTaiDiaPhuong = ref(false);
 
   async function taiDsTinh() {
     if (dsTinh.value.length) return;
     dangTaiDiaPhuong.value = true;
     try {
-      const res = await fetch("https://provinces.open-api.vn/api/p/");
-      dsTinh.value = await res.json();
+      dsTinh.value = await layTinhThanhHaiCap();
     } catch {
       dsTinh.value = [];
     } finally {
@@ -304,66 +304,33 @@ export function useQuanLyKhachHang() {
 
   async function onTinhChange(code) {
     maTinhChon.value = code;
-    dsHuyen.value = [];
     dsXa.value = [];
-    maHuyenChon.value = null;
+    formDiaChi.value.tinhThanhCode = code ? String(code) : "";
     formDiaChi.value.tinhThanh =
-      dsTinh.value.find((t) => t.code === code)?.name ?? "";
-    formDiaChi.value.quanHuyen = "";
+      dsTinh.value.find((t) => layMaDonViDiaChi(t) === String(code))?.ten ?? "";
+    formDiaChi.value.phuongXaCode = "";
     formDiaChi.value.phuongXa = "";
     if (!code) return;
     try {
-      const res = await fetch(
-        `https://provinces.open-api.vn/api/p/${code}?depth=2`,
-      );
-      const data = await res.json();
-      dsHuyen.value = data.districts ?? [];
-    } catch {
-      dsHuyen.value = [];
-    }
-  }
-
-  async function onHuyenChange(code) {
-    maHuyenChon.value = code;
-    dsXa.value = [];
-    formDiaChi.value.quanHuyen =
-      dsHuyen.value.find((h) => h.code === code)?.name ?? "";
-    formDiaChi.value.phuongXa = "";
-    if (!code) return;
-    try {
-      const res = await fetch(
-        `https://provinces.open-api.vn/api/d/${code}?depth=2`,
-      );
-      const data = await res.json();
-      dsXa.value = data.wards ?? [];
+      dsXa.value = await layPhuongXaHaiCap(code);
     } catch {
       dsXa.value = [];
     }
   }
 
-  function onXaChange(tenXa) {
-    formDiaChi.value.phuongXa = tenXa;
+  function onXaChange(code) {
+    const item = dsXa.value.find((value) => String(value.code) === String(code));
+    formDiaChi.value.phuongXaCode = item?.code || "";
+    formDiaChi.value.phuongXa = item?.ten || "";
   }
 
   async function preFillCascadeForEdit(dc) {
     await taiDsTinh();
-    const tinh = dsTinh.value.find((t) => t.name === dc.tinhThanh);
-    if (!tinh) return;
-    maTinhChon.value = tinh.code;
     try {
-      const res = await fetch(
-        `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`,
-      );
-      const data = await res.json();
-      dsHuyen.value = data.districts ?? [];
-      const huyen = dsHuyen.value.find((h) => h.name === dc.quanHuyen);
-      if (!huyen) return;
-      maHuyenChon.value = huyen.code;
-      const res2 = await fetch(
-        `https://provinces.open-api.vn/api/d/${huyen.code}?depth=2`,
-      );
-      const data2 = await res2.json();
-      dsXa.value = data2.wards ?? [];
+      const ketQua = await doiChieuDiaChiHaiCap(dc, dsTinh.value, layPhuongXaHaiCap);
+      Object.assign(formDiaChi.value, ketQua.diaChi);
+      dsXa.value = ketQua.danhSachPhuongXa;
+      maTinhChon.value = ketQua.diaChi.tinhThanhCode || null;
     } catch {
       /* ignore */
     }
@@ -395,8 +362,6 @@ export function useQuanLyKhachHang() {
     hienFormDiaChi.value = false;
     diaChiDangSua.value = null;
     maTinhChon.value = null;
-    maHuyenChon.value = null;
-    dsHuyen.value = [];
     dsXa.value = [];
   }
 
@@ -405,15 +370,14 @@ export function useQuanLyKhachHang() {
     formDiaChi.value = {
       hoTen: khModalDiaChi.value?.hoTen ?? "",
       sdt: khModalDiaChi.value?.sdt ?? "",
+      tinhThanhCode: "",
       tinhThanh: "",
-      quanHuyen: "",
+      phuongXaCode: "",
       phuongXa: "",
       diaChiCuThe: "",
       laMacDinh: dsDiaChiModal.value.length === 0,
     };
     maTinhChon.value = null;
-    maHuyenChon.value = null;
-    dsHuyen.value = [];
     dsXa.value = [];
     hienFormDiaChi.value = true;
   }
@@ -423,15 +387,10 @@ export function useQuanLyKhachHang() {
     formDiaChi.value = {
       hoTen: dc.hoTen,
       sdt: dc.sdt,
-      tinhThanh: dc.tinhThanh,
-      quanHuyen: dc.quanHuyen,
-      phuongXa: dc.phuongXa,
-      diaChiCuThe: dc.diaChiCuThe,
+      ...chuanHoaDiaChi(dc),
       laMacDinh: dc.laMacDinh,
     };
     maTinhChon.value = null;
-    maHuyenChon.value = null;
-    dsHuyen.value = [];
     dsXa.value = [];
     await preFillCascadeForEdit(dc);
     hienFormDiaChi.value = true;
@@ -444,7 +403,6 @@ export function useQuanLyKhachHang() {
       !f.hoTen ||
       !f.sdt ||
       !f.tinhThanh ||
-      !f.quanHuyen ||
       !f.phuongXa ||
       !f.diaChiCuThe
     ) {
@@ -469,8 +427,9 @@ export function useQuanLyKhachHang() {
     const payload = {
       hoTen: hoTenNguoiNhan,
       sdt: f.sdt.trim(),
+      tinhThanhCode: f.tinhThanhCode,
       tinhThanh: f.tinhThanh.trim(),
-      quanHuyen: f.quanHuyen.trim(),
+      phuongXaCode: f.phuongXaCode,
       phuongXa: f.phuongXa.trim(),
       diaChiCuThe: f.diaChiCuThe.trim(),
       laMacDinh: Boolean(f.laMacDinh),
@@ -535,7 +494,7 @@ export function useQuanLyKhachHang() {
     const kh = (danhSach.value || []).find((k) => k.id === khId);
     if (kh) {
       kh.diaChiMacDinh = macDinh
-        ? `${macDinh.diaChiCuThe}, ${macDinh.phuongXa}, ${macDinh.quanHuyen}, ${macDinh.tinhThanh}`
+        ? dinhDangDiaChi(macDinh)
         : null;
       kh.sdtMacDinh = macDinh ? macDinh.sdt : null;
     }
@@ -631,14 +590,11 @@ export function useQuanLyKhachHang() {
     dangLuuDiaChi,
     formDiaChi,
     dsTinh,
-    dsHuyen,
     dsXa,
     maTinhChon,
-    maHuyenChon,
     dangTaiDiaPhuong,
     taiDsTinh,
     onTinhChange,
-    onHuyenChange,
     onXaChange,
     preFillCascadeForEdit,
     moModalDiaChi,

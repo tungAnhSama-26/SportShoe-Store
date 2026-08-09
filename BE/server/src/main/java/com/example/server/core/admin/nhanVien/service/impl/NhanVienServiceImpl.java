@@ -5,14 +5,16 @@ import com.example.server.core.admin.nhanVien.dto.request.DoiMatKhauRequest;
 import com.example.server.core.admin.nhanVien.dto.request.DoiTrangThaiRequest;
 import com.example.server.core.admin.nhanVien.dto.request.TaoNhanVienRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.NhanVienResponses.NhanVienResponse;
+import com.example.server.core.admin.nhanVien.event.NhanVienAccountCreatedEvent;
 import com.example.server.core.admin.nhanVien.service.NhanVienService;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.PasswordService;
-import com.example.server.infrastructure.service.EmailService;
 import com.example.server.infrastructure.service.EmailService.EmailDispatchResult;
 import com.example.server.repository.NhanVienRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,20 +30,20 @@ import java.util.UUID;
 public class NhanVienServiceImpl implements NhanVienService {
 
     private final NhanVienRepository nhanVienRepository;
-    private final EmailService emailService;
     private final PasswordService passwordService;
+    private final ApplicationEventPublisher eventPublisher;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final char[] TEMP_PASSWORD_CHARS =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789".toCharArray();
 
     public NhanVienServiceImpl(
             NhanVienRepository nhanVienRepository,
-            EmailService emailService,
-            PasswordService passwordService
+            PasswordService passwordService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.nhanVienRepository = nhanVienRepository;
-        this.emailService = emailService;
         this.passwordService = passwordService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -93,7 +95,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setSdt(normalizeOptional(request.sdt()));
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
-        nv.setDiaChi(normalizeOptional(request.diaChi()));
+        nv.setDiaChi(request.diaChi() != null ? DiaChiHaiCapMapper.toEntity(request.diaChi()) : null);
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
         nv.setFaceDescriptor(normalizeOptional(request.faceDescriptor()));
@@ -105,14 +107,14 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setHanDoiMatKhau(null);
 
         NhanVien saved = nhanVienRepository.save(nv);
-        EmailDispatchResult emailDispatchResult = emailService.trySendRegistrationEmail(
+        eventPublisher.publishEvent(new NhanVienAccountCreatedEvent(
                 saved.getEmail(),
                 saved.getHoTen(),
                 saved.getTenDangNhap(),
                 randomMatKhau
-        );
+        ));
 
-        return toItem(saved, randomMatKhau, emailDispatchResult);
+        return toItem(saved, randomMatKhau, null);
     }
 
     @Override
@@ -136,7 +138,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setSdt(normalizeOptional(request.sdt()));
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
-        nv.setDiaChi(normalizeOptional(request.diaChi()));
+        nv.setDiaChi(request.diaChi() != null ? DiaChiHaiCapMapper.toEntity(request.diaChi()) : null);
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
         if (!isStaffRole(vaiTro)) {
@@ -259,7 +261,7 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getSdt(),
                 nv.getGioiTinh(),
                 nv.getNgaySinh(),
-                nv.getDiaChi(),
+                DiaChiHaiCapMapper.toResponse(nv.getDiaChi()),
                 nv.getHinhAnh(),
                 normalizeVaiTro(nv.getVaiTro()),
                 mapVaiTro(nv.getVaiTro()),

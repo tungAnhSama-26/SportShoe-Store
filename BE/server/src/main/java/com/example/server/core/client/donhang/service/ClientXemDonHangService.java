@@ -1,5 +1,7 @@
 package com.example.server.core.client.donhang.service;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
+
 import com.example.server.core.client.donhang.dto.CapNhatSoLuongRequest;
 import com.example.server.core.client.donhang.dto.CapNhatSoLuongResponse;
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse;
@@ -290,7 +292,7 @@ public class ClientXemDonHangService {
                 hd.getId(), hd.getMa(), hd.getNgayLap(),
                 virtualStatus, virtualStatusText,
                 Boolean.TRUE.equals(hd.getDaNhanHang()),
-                hd.getTenNguoiNhan(), hd.getSdtNguoiNhan(), hd.getDiaChiGiaoHang(),
+                hd.getTenNguoiNhan(), hd.getSdtNguoiNhan(), DiaChiHaiCapMapper.toResponse(hd.getDiaChiGiaoHang()),
                 maPhieu, sanPhams,
                 tamTinh, giamDot, giamVoucher, phiVanChuyen, hd.getTongTienThanhToan(),
                 hd.getNgayCapNhat(), lichSuTrangThai,
@@ -337,6 +339,7 @@ public class ClientXemDonHangService {
             LichSuHoaDon lichSu = new LichSuHoaDon();
             lichSu.setHoaDon(hd);
             lichSu.setNhanVien(null);
+            lichSu.setNguoiThaoTac("Khách hàng");
             lichSu.setTrangThai("Hoàn thành");
             lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng và đơn đã được thanh toán");
             lichSu.setNgayTao(now);
@@ -351,6 +354,7 @@ public class ClientXemDonHangService {
             LichSuHoaDon lichSu = new LichSuHoaDon();
             lichSu.setHoaDon(hd);
             lichSu.setNhanVien(null);
+            lichSu.setNguoiThaoTac("Khách hàng");
             lichSu.setTrangThai("Đã giao hàng");
             lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng (Đang chờ xác nhận thanh toán)");
             lichSu.setNgayTao(now);
@@ -386,6 +390,7 @@ public class ClientXemDonHangService {
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hd);
         lichSu.setNhanVien(null);
+        lichSu.setNguoiThaoTac("Khách hàng");
         lichSu.setTrangThai("Hủy");
         lichSu.setGhiChu(canHoanTien
                 ? "Khách hàng hủy đơn (đã thanh toán) - cần hoàn tiền"
@@ -442,7 +447,7 @@ public class ClientXemDonHangService {
         if (!items.isEmpty()) {
             try {
                 TinhPhiVanChuyenGhnRequest ghnReq = new TinhPhiVanChuyenGhnRequest(
-                        null, null, request.diaChiGiaoHang().trim(), null, null, null, null, null, null, null, null
+                        request.diaChiGiaoHang(), null, null, null, null, null, null, null, null
                 );
                 TinhPhiVanChuyenGhnResponse phiGhn = ghnShippingService.tinhPhi(hd, items, ghnReq);
                 phiShipMoi = phiGhn.phiVanChuyen();
@@ -476,8 +481,9 @@ public class ClientXemDonHangService {
             ghiChuHistory.append("- SĐT: '").append(sdtCu).append("' -> '").append(sdtMoi).append("'\n");
         }
 
-        String dcCu = hd.getDiaChiGiaoHang() == null ? "" : hd.getDiaChiGiaoHang();
-        String dcMoi = request.diaChiGiaoHang().trim();
+        var diaChiMoi = DiaChiHaiCapMapper.toEntity(request.diaChiGiaoHang());
+        String dcCu = DiaChiHaiCapMapper.format(hd.getDiaChiGiaoHang());
+        String dcMoi = DiaChiHaiCapMapper.format(diaChiMoi);
         if (!dcCu.equals(dcMoi)) {
             ghiChuHistory.append("- Địa chỉ: '").append(dcCu).append("' -> '").append(dcMoi).append("'\n");
         }
@@ -495,7 +501,7 @@ public class ClientXemDonHangService {
 
         hd.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hd.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
-        hd.setDiaChiGiaoHang(request.diaChiGiaoHang().trim());
+        hd.setDiaChiGiaoHang(diaChiMoi);
         hd.setSoLanSuaDiaChi((hd.getSoLanSuaDiaChi() == null ? 0 : hd.getSoLanSuaDiaChi()) + 1);
 
         BigDecimal tongHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();
@@ -624,6 +630,7 @@ public class ClientXemDonHangService {
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hd);
         lichSu.setNhanVien(null);
+        lichSu.setNguoiThaoTac("Khách hàng");
         lichSu.setTrangThai("Cập nhật số lượng");
         lichSu.setGhiChu(doiGia.isEmpty()
                 ? "Khách hàng cập nhật số lượng sản phẩm"

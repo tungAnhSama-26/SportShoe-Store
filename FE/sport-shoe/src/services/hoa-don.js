@@ -107,6 +107,20 @@ export function xacNhanHoanTien(id, payload) {
   });
 }
 
+export function giaoLaiDonHang(id) {
+  return request(`/admin/hoa-don/${id}/giao-lai`, {
+    method: "POST",
+  }).then((hoaDon) => {
+    phatTinHoaDonThayDoiNoiBo({
+      hoaDonId: hoaDon?.id ?? id,
+      maHoaDon: hoaDon?.maHoaDon ?? hoaDon?.ma,
+      trangThai: hoaDon?.trangThai,
+      loaiSuKien: "GIAO_LAI",
+    });
+    return hoaDon;
+  });
+}
+
 export function checkMuaLai(id) {
   return request(`/admin/hoa-don/${id}/check-mua-lai`);
 }

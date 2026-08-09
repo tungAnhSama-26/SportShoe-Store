@@ -1,5 +1,6 @@
 package com.example.server.core.admin.quanlyhoadon.dto.responsse;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -81,7 +82,7 @@ public final class QuanLyHoaDonResponses {
             String trangThai,
             String soDienThoai,
             String email,
-            String diaChi,
+            DiaChiHaiCapResponse diaChi,
             String ghiChu,
             BigDecimal phiVanChuyen,
             String voucher,

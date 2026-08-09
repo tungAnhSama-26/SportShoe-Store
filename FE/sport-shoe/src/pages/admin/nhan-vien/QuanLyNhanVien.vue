@@ -22,6 +22,7 @@ import Table from "../../../components/ui/Table.vue";
 import Button from "../../../components/ui/Button.vue";
 import Badge from "../../../components/ui/Badge.vue";
 import { getDisplayErrorMessage } from "../../../utils/error-message";
+import { dinhDangDiaChi } from "../../../utils/dia-chi";
 
 import {
   CalendarDays,
@@ -110,17 +111,17 @@ function taiThongBaoDieuHuong() {
       showError(
         typeof payload?.noiDung === "string"
           ? payload.noiDung
-          : "Thêm nhân viên thành công, nhưng chưa gửi được email đăng nhập.",
+          : "Tạo tài khoản nhân viên thành công",
       );
     } else {
       showSuccess(
         typeof payload?.noiDung === "string"
           ? payload.noiDung
-          : "Thêm nhân viên thành công",
+          : "Tạo tài khoản nhân viên thành công",
       );
     }
   } catch {
-    showSuccess("Thêm nhân viên thành công");
+    showSuccess("Tạo tài khoản nhân viên thành công");
   }
 }
 
@@ -484,8 +485,8 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-2 py-2 text-slate-600 text-xs">
-                <div class="min-w-[180px] max-w-[320px] break-words whitespace-normal leading-normal" :title="nv.diaChi || '—'">
-                  {{ nv.diaChi || "—" }}
+                <div class="min-w-[180px] max-w-[320px] break-words whitespace-normal leading-normal" :title="dinhDangDiaChi(nv.diaChi) || '—'">
+                  {{ dinhDangDiaChi(nv.diaChi) || "—" }}
                 </div>
               </td>
               <td class="px-2 py-2 text-slate-600 text-xs">

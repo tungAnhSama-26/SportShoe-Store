@@ -1,9 +1,9 @@
 package com.example.server.core.admin.quanlyhoadon.dto.request;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapRequest;
+
 public record TinhPhiVanChuyenGhnRequest(
-        Integer toDistrictId,
-        String toWardCode,
-        String toAddress,
+        DiaChiHaiCapRequest diaChiGiaoHang,
         Integer serviceId,
         Integer serviceTypeId,
         Integer length,

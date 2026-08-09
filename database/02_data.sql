@@ -13,7 +13,8 @@ INSERT INTO @N (n) VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
 
 INSERT INTO nhan_vien (
     id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh,
-    dia_chi, vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao
+    dia_chi, tinh_thanh, phuong_xa,
+    vai_tro, trang_thai, bat_buoc_doi_mat_khau, ngay_tao
 )
 SELECT
     CONVERT(UNIQUEIDENTIFIER, CONCAT('10000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n AS VARCHAR(12)), 12))),
@@ -23,7 +24,8 @@ SELECT
     CONCAT('nhanvien', RIGHT('00' + CAST(n AS VARCHAR(2)), 2), '@sportshoe.local'),
     '123456', CONCAT('09010000', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
     CASE WHEN n % 2 = 0 THEN N'Nữ' ELSE N'Nam' END,
-    CONCAT(N'Địa chỉ nhân viên ', n, N', Hà Nội'), CASE WHEN n = 1 THEN 1 ELSE 2 END,
+    CONCAT(N'Số ', n, N' đường Trần Thái Tông'), N'Hà Nội', N'Phường Cầu Giấy',
+    CASE WHEN n = 1 THEN 1 ELSE 2 END,
     1, 0, @NOW
 FROM @N;
 
@@ -39,13 +41,13 @@ SELECT
 FROM @N;
 
 INSERT INTO dia_chi_khach_hang (
-    khach_hang_id, ho_ten, sdt, tinh_thanh, quan_huyen, phuong_xa,
+    khach_hang_id, ho_ten, sdt, tinh_thanh, phuong_xa,
     dia_chi_cu_the, la_mac_dinh, trang_thai, ngay_tao
 )
 SELECT
     CONVERT(UNIQUEIDENTIFIER, CONCAT('20000000-0000-0000-0000-', RIGHT('000000000000' + CAST(n AS VARCHAR(12)), 12))),
     CONCAT(N'Khách hàng ', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)),
-    CONCAT('09020000', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng',
+    CONCAT('09020000', RIGHT('00' + CAST(n AS VARCHAR(2)), 2)), N'Hà Nội', N'Phường Cầu Giấy',
     CONCAT(N'Số ', n, N' đường Trần Thái Tông'), 1, 1, @NOW
 FROM @N;
 
