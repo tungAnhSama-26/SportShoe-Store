@@ -544,7 +544,7 @@ CREATE TABLE hoa_don (
     trang_thai_truoc_yeu_cau_huy INT        NULL,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
-    CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6,8, 7, 9, 10)),
+    CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)),
     CONSTRAINT ck_hoa_don_tong_tien CHECK (
         tong_tien_hang >= 0 AND tien_giam >= 0 AND tong_tien_thanh_toan >= 0
     ),

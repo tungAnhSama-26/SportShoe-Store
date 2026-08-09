@@ -27,9 +27,8 @@ const danhSach = ref([]);
 const dangTai = ref(false);
 const dangXuatPdfId = ref(null);
 const loiTrang = ref("");
-const trangThaiDangChon = ref("Tất cả");
+const trangThaiDangChon = ref("Chờ xác nhận");
 const dsTrangThai = [
-  "Tất cả",
   "Hóa đơn chờ",
   "Chờ xác nhận",
   "Đã xác nhận",
@@ -142,14 +141,13 @@ const thongKeTrangThai = computed(() => {
   for (const hoaDon of danhSach.value) {
     thongKe.set(hoaDon.trangThai, (thongKe.get(hoaDon.trangThai) || 0) + 1);
   }
-  thongKe.set("Tất cả", danhSach.value.length);
   return thongKe;
 });
 
 const tongTheoTrangThai = computed(() => {
   const filteredDs = dsTrangThai.filter((trangThai) => {
     if (boLoc.value.loaiDon === "Cửa hàng") {
-      return ["Tất cả", "Hóa đơn chờ", "Hoàn thành", "Hủy"].includes(trangThai);
+      return ["Hóa đơn chờ", "Hoàn thành", "Hủy"].includes(trangThai);
     }
     if (boLoc.value.loaiDon === "Trực tuyến") {
       return trangThai !== "Hóa đơn chờ";
@@ -164,7 +162,6 @@ const tongTheoTrangThai = computed(() => {
 });
 
 const danhSachHienThi = computed(() => {
-  if (trangThaiDangChon.value === "Tất cả") return danhSach.value;
   return danhSach.value.filter(
     (hoaDon) => hoaDon.trangThai === trangThaiDangChon.value,
   );
@@ -195,13 +192,13 @@ watch(
   () => boLoc.value.loaiDon,
   (newLoaiDon) => {
     if (newLoaiDon === "Cửa hàng") {
-      const validStatuses = ["Tất cả", "Hóa đơn chờ", "Hoàn thành", "Hủy"];
+      const validStatuses = ["Hóa đơn chờ", "Hoàn thành", "Hủy"];
       if (!validStatuses.includes(trangThaiDangChon.value)) {
-        trangThaiDangChon.value = "Tất cả";
+        trangThaiDangChon.value = "Hóa đơn chờ";
       }
     } else if (newLoaiDon === "Trực tuyến") {
       if (trangThaiDangChon.value === "Hóa đơn chờ") {
-        trangThaiDangChon.value = "Tất cả";
+        trangThaiDangChon.value = "Chờ xác nhận";
       }
     }
   },
@@ -239,7 +236,7 @@ async function taiDanhSach() {
 
 function lamMoiBoLoc() {
   boLoc.value = taoBoLocMacDinh();
-  trangThaiDangChon.value = "Tất cả";
+  trangThaiDangChon.value = "Chờ xác nhận";
 }
 
 function xemChiTiet(id) {
