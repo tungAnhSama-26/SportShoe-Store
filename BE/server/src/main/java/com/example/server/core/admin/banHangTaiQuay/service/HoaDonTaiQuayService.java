@@ -1,5 +1,8 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
+import com.example.server.entity.DiaChiHaiCap;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
+
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThongTinGiaoHangTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTietResponse;
@@ -260,7 +263,7 @@ public class HoaDonTaiQuayService {
             throw new BusinessException("Vui lòng nhập số điện thoại người nhận");
         }
 
-        String diaChiGiaoHang = giaoHang ? shippingUseCase.requireDiaChiGiaoHang(thongTinGiaoHang) : DIA_CHI_TAI_QUAY;
+        DiaChiHaiCap diaChiGiaoHang = giaoHang ? shippingUseCase.requireDiaChiGiaoHang(thongTinGiaoHang) : null;
         BigDecimal phiVanChuyen = giaoHang ? shippingUseCase.resolvePhiVanChuyen(thongTinGiaoHang) : BigDecimal.ZERO;
 
         hoaDon.setTenNguoiNhan(tenNguoiNhan);
@@ -431,12 +434,12 @@ public class HoaDonTaiQuayService {
 
 
     private ThongTinGiaoHangTaiQuayResponse mapThongTinGiaoHangHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null && !laDiaChiTaiQuay(hoaDon.getDiaChiGiaoHang());
+        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null;
         return new ThongTinGiaoHangTaiQuayResponse(
                 giaoHang,
                 normalizeLegacyDisplayValue(hoaDon.getTenNguoiNhan()),
                 normalizeLegacyDisplayValue(hoaDon.getSdtNguoiNhan()),
-                giaoHang ? normalizeLegacyDisplayValue(hoaDon.getDiaChiGiaoHang()) : "",
+                giaoHang ? DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()) : null,
                 vanChuyen != null ? pricingUseCase.defaultMoney(vanChuyen.getPhiVanChuyen()) : BigDecimal.ZERO,
                 vanChuyen != null ? vanChuyen.getDonViVanChuyen() : null
         );

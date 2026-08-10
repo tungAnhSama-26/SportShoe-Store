@@ -126,6 +126,14 @@ public class QuanLyHoaDonController {
         ));
     }
 
+    @PostMapping("/{id}/giao-lai")
+    public ResponseEntity<ApiResponse<HoaDonDetailResponse>> giaoLaiDonHang(@PathVariable Integer id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tạo lượt giao lại thành công",
+                quanLyHoaDonService.giaoLaiDonHang(id)
+        ));
+    }
+
     @GetMapping("/{id}/check-mua-lai")
     public ResponseEntity<ApiResponse<com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse>> checkMuaLai(@PathVariable Integer id) {
         return ResponseEntity.ok(ApiResponse.success(

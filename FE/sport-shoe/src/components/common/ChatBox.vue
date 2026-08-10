@@ -141,8 +141,8 @@ const chatContainer = ref(null);
 let sessionSubscription = null;
 
 const promptSuggestions = [
-  "Tìm đôi giày chạy bộ màu trắng",
-  "Mẫu giày nào đang bán chạy nhất?",
+  "Xem các mẫu giày bán chạy và hot nhất",
+  "Cửa hàng đang có đợt giảm giá nào không?",
   "Tôi muốn được tư vấn chọn size giày",
   "Liên hệ trực tiếp với nhân viên"
 ];
@@ -489,11 +489,40 @@ function handleEnterKey(event) {
 
 const productDetailsMap = ref({});
 
-async function FetchProductDetail(id) {
-  if (productDetailsMap.value[id]) return;
+function extractProductId(url) {
+  if (!url) return null;
+  const cleanUrl = url.split("?")[0].replace(/\/+$/, "");
+  const parts = cleanUrl.split("/");
+  const lastPart = parts[parts.length - 1];
+  const id = parseInt(lastPart);
+  return Number.isInteger(id) ? id : null;
+}
+
+async function FetchProductDetail(id, fallbackName = "") {
+  if (!id) return;
+  if (productDetailsMap.value[id] && !productDetailsMap.value[id].isLoading) return;
+
+  if (!productDetailsMap.value[id]) {
+    productDetailsMap.value[id] = {
+      id,
+      ten: fallbackName || `Sản phẩm #${id}`,
+      hinhAnh: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      giaBan: 0,
+      giaGoc: 0,
+      coGiam: false,
+      phanTramGiam: 0,
+      isLoading: true
+    };
+  }
+
   try {
     const rawSp = await layChiTietSanPham(id);
-    if (!rawSp) return;
+    if (!rawSp) {
+      if (productDetailsMap.value[id]) {
+        productDetailsMap.value[id].isLoading = false;
+      }
+      return;
+    }
 
     const bienThe = rawSp.bienThe ?? [];
     let minVariant = null;
@@ -510,49 +539,49 @@ async function FetchProductDetail(id) {
     const phanTramGiam = coGiam ? Math.round(((giaGoc - giaBan) / giaGoc) * 100) : 0;
 
     productDetailsMap.value[id] = {
-      id: rawSp.id,
-      ten: rawSp.ten,
+      id: rawSp.id || id,
+      ten: rawSp.ten || fallbackName || `Sản phẩm #${id}`,
       hinhAnh,
       giaBan,
       giaGoc,
       coGiam,
-      phanTramGiam
+      phanTramGiam,
+      isLoading: false
     };
   } catch (e) {
     console.error("Lỗi khi tải chi tiết sản phẩm cho chatbot:", e);
+    if (productDetailsMap.value[id]) {
+      productDetailsMap.value[id].isLoading = false;
+    }
   }
 }
 
 function getProductDetail(url) {
-  const parts = url.split("/");
-  const id = parseInt(parts[parts.length - 1]);
-  return Number.isInteger(id) ? productDetailsMap.value[id] : null;
+  const id = extractProductId(url);
+  if (id === null) return null;
+  if (!productDetailsMap.value[id]) {
+    FetchProductDetail(id);
+  }
+  return productDetailsMap.value[id] || null;
 }
 
 watch(
-  () => messages.value,
+  messages,
   async (newMsgs) => {
     ResetInactivityTimer();
 
-    const productIds = [];
-    for (const msg of newMsgs) {
+    for (const msg of newMsgs || []) {
       if (msg.noiDung) {
         const segments = parseMessage(msg.noiDung);
         for (const seg of segments) {
           if (seg.type === "link" && (seg.url.includes("/san-pham/") || seg.url.includes("/product/"))) {
-            const parts = seg.url.split("/");
-            const id = parseInt(parts[parts.length - 1]);
-            if (Number.isInteger(id)) {
-              productIds.push(id);
+            const id = extractProductId(seg.url);
+            if (id !== null) {
+              await FetchProductDetail(id, seg.text);
             }
           }
         }
       }
-    }
-
-    const uniqueIds = [...new Set(productIds)];
-    for (const id of uniqueIds) {
-      await FetchProductDetail(id);
     }
   },
   { deep: true, immediate: true }
@@ -841,16 +870,17 @@ function toggleChatWithDragCheck() {
                   >
                     <!-- Product Card -->
                     <div 
-                      v-if="getProductDetail(seg.url)"
+                      v-if="getProductDetail(seg.url) && !getProductDetail(seg.url).isLoading"
                       @click="handleNavigate(seg.url)"
                       class="flex gap-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-2.5 hover:border-primary/20 dark:hover:border-primary/20 hover:shadow-md cursor-pointer transition-all relative overflow-hidden group w-full"
                     >
                       <!-- Product Image & Badge -->
                       <div class="h-16 w-16 rounded-xl overflow-hidden shrink-0 bg-slate-50 relative">
                         <img 
-                          :src="getProductDetail(seg.url).hinhAnh" 
-                          alt="Product"
+                          :src="getProductDetail(seg.url).hinhAnh || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80'" 
+                          :alt="getProductDetail(seg.url).ten" 
                           class="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                          @error="(e) => e.target.src = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80'"
                         />
                         <span 
                           v-if="getProductDetail(seg.url).coGiam"
@@ -866,8 +896,11 @@ function toggleChatWithDragCheck() {
                           {{ getProductDetail(seg.url).ten }}
                         </h6>
                         <div class="mt-1 flex items-baseline gap-1.5 flex-wrap">
-                          <span class="text-xs font-extrabold text-primary">
+                          <span v-if="getProductDetail(seg.url).giaBan > 0" class="text-xs font-extrabold text-primary">
                             {{ dinhDangTienViet(getProductDetail(seg.url).giaBan) }}
+                          </span>
+                          <span v-else class="text-[11px] font-bold text-primary">
+                            Xem chi tiết
                           </span>
                           <span 
                             v-if="getProductDetail(seg.url).coGiam"
@@ -878,7 +911,7 @@ function toggleChatWithDragCheck() {
                         </div>
                       </div>
                     </div>
-                    <!-- Skeleton Loader -->
+                    <!-- Skeleton Loader (Only when actually loading) -->
                     <div 
                       v-else 
                       class="flex gap-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl p-2.5 w-full animate-pulse"
@@ -918,6 +951,23 @@ function toggleChatWithDragCheck() {
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce"></div>
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            </div>
+          </div>
+
+          <!-- Follow-up Quick Suggestions after messages -->
+          <div v-if="sessionState === 1 && !isSending" class="pt-2 pb-1 space-y-1.5">
+            <div class="text-[10px] text-slate-400 font-medium px-1 flex items-center gap-1">
+              <span>💡 Gợi ý câu hỏi tiếp theo:</span>
+            </div>
+            <div class="space-y-1.5">
+              <button
+                v-for="prompt in promptSuggestions"
+                :key="prompt"
+                @click="GuiTinNhan(prompt)"
+                class="w-full text-left bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 hover:bg-primary/5 hover:text-primary dark:hover:bg-slate-700 hover:border-primary/20 p-2 rounded-xl text-[11px] text-slate-600 dark:text-slate-300 font-medium transition-all shadow-xs"
+              >
+                {{ prompt }}
+              </button>
             </div>
           </div>
         </template>

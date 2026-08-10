@@ -1,5 +1,6 @@
 <script setup>
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
+import { dinhDangDiaChi } from "../../../../../utils/dia-chi";
 
 const { Card, MapPin, hoaDon } = useInvoiceDetailContext();
 </script>
@@ -16,7 +17,7 @@ const { Card, MapPin, hoaDon } = useInvoiceDetailContext();
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <span class="text-slate-400">Địa Chỉ</span>
         <span class="max-w-[58%] text-right font-semibold text-slate-700">{{
-          hoaDon.diaChi || "—"
+          dinhDangDiaChi(hoaDon.diaChi) || "—"
         }}</span>
       </div>
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">

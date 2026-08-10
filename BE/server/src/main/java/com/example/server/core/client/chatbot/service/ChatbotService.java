@@ -30,10 +30,15 @@ public class ChatbotService {
     }
 
     private static final String CLIENT_SYSTEM_PROMPT = """
-            Bạn là trợ lý ảo cửa hàng SportShoe.
+            Bạn là trợ lý ảo hỗ trợ mua sắm tại cửa hàng SportShoe.
 
             # PHẠM VI HỖ TRỢ
-            - Mua sắm giày, tra cứu phiếu giảm giá, chương trình khuyến mãi, hóa đơn. Từ chối lịch sự các câu hỏi ngoài phạm vi.
+            - Tư vấn chọn mẫu giày thể thao, gợi ý size giày, xem các đợt giảm giá, khuyến mãi, mã voucher và tra cứu đơn hàng của khách.
+
+            # XỬ LÝ CÂU HỎI NGOÀI PHẠM VI
+            - Nếu khách hàng hỏi bất kỳ câu hỏi nào ngoài phạm vi mua sắm (ví dụ hỏi doanh thu nội bộ, quản trị cửa hàng, kỹ thuật lập trình, thời tiết, chuyện cá nhân,...):
+              Hãy từ chối lịch sự, thân thiện và hướng khách hàng quay lại mua sắm theo mẫu:
+              "Dạ, mình là trợ lý ảo hỗ trợ mua sắm tại SportShoe nên chỉ có thể giúp bạn tư vấn chọn mẫu giày, tìm kiếm size số, xem các đợt giảm giá khuyến mãi hoặc kiểm tra đơn hàng của bạn thôi ạ. Bạn có muốn mình gợi ý mẫu giày thể thao nào đang hot không?"
 
             # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM VÀ HÌNH ẢNH (BẮT BUỘC)
             - Mỗi khi nhắc tới, giới thiệu hoặc tìm kiếm BẤT KỲ sản phẩm nào trong cửa hàng, BẮT BUỘC phải đính kèm link chi tiết dạng:
@@ -52,9 +57,10 @@ public class ChatbotService {
             2. Nếu khách hỏi tư vấn size chung chung (chưa có chiều dài cm): Hướng dẫn cách đo chân, gửi bảng size và hỏi số đo cm. KHÔNG tự ý gọi `search_products_tool` liệt kê sản phẩm ngẫu nhiên.
             3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38/40) và mới gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
 
-            # LINK HƯỚNG DẪN
+            # LINK VÀ THÔNG TIN HƯỚNG DẪN
             - Chi tiết sản phẩm: [Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
             - Chi tiết hóa đơn: [Xem chi tiết hóa đơn](/khachhang/don-hang/ID_HOA_DON)
+            - Hotline hỗ trợ: **0965852782**
 
             # NGUYÊN TẮC
             - Trả lời bằng Tiếng Việt thân thiện, tự nhiên, ngắn gọn (Tối đa 120 từ).
@@ -95,7 +101,7 @@ public class ChatbotService {
     private boolean debugErrors;
 
     public ChatbotService(
-            ChatClient.Builder chatClientBuilder,
+            org.springframework.ai.chat.model.ChatModel chatModel,
             CuocHoiThoaiRepository cuocHoiThoaiRepository,
             TinNhanRepository tinNhanRepository,
             NhanVienRepository nhanVienRepository,
@@ -103,8 +109,8 @@ public class ChatbotService {
             ThongBaoService thongBaoService,
             FaqRuleEngine faqRuleEngine,
             ChatbotIntentRouter intentRouter) {
-        this.clientChatClient = chatClientBuilder.defaultSystem(CLIENT_SYSTEM_PROMPT).build();
-        this.adminChatClient = chatClientBuilder.defaultSystem(ADMIN_SYSTEM_PROMPT).build();
+        this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_SYSTEM_PROMPT).build();
+        this.adminChatClient = ChatClient.builder(chatModel).defaultSystem(ADMIN_SYSTEM_PROMPT).build();
 
         this.cuocHoiThoaiRepository = cuocHoiThoaiRepository;
         this.tinNhanRepository = tinNhanRepository;
@@ -454,6 +460,7 @@ public class ChatbotService {
             String[] activeTools = intentRouter.resolveClientTools(userMessage);
 
             return clientChatClient.prompt()
+                    .system(CLIENT_SYSTEM_PROMPT)
                     .user(userMessage)
                     .functions(activeTools)
                     .call()
@@ -549,6 +556,7 @@ public class ChatbotService {
             String[] activeTools = intentRouter.resolveAdminTools(userMessage);
 
             String reply = adminChatClient.prompt()
+                    .system(ADMIN_SYSTEM_PROMPT)
                     .messages(historyMsgs)
                     .functions(activeTools)
                     .call()

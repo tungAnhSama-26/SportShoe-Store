@@ -7,6 +7,7 @@ import com.example.server.core.client.auth.dto.response.CustomerLoginResponse;
 import com.example.server.entity.KhachHang;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.security.AdminPrincipal;
 import com.example.server.infrastructure.security.CustomerPrincipal;
 import com.example.server.infrastructure.security.JwtService;
@@ -37,7 +38,6 @@ public class AuthService {
 
     private static final int MAX_LOGIN_FAILED_ATTEMPTS = 5;
     private static final Duration LOGIN_ATTEMPT_TTL = Duration.ofMinutes(5);
-    private static final Duration TEMP_PASSWORD_CHANGE_DEADLINE = Duration.ofMinutes(5);
     private static final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
 
     public AuthService(
@@ -110,14 +110,15 @@ public class AuthService {
             throw new BusinessException("Tài khoản hoặc mật khẩu không chính xác");
         }
 
-        if (nhanVien.getTrangThai() == null || nhanVien.getTrangThai() != 1) {
+        if (nhanVien.getTrangThai() == null
+                || (!Integer.valueOf(1).equals(nhanVien.getTrangThai())
+                && !Integer.valueOf(2).equals(nhanVien.getTrangThai()))) {
             recordFailedLogin(attemptKey);
             throw new BusinessException("Tài khoản nhân viên đã bị khóa");
         }
 
         clearFailedLogin(attemptKey);
         migratePasswordIfNeeded(nhanVien, request.password());
-        initializeTemporaryPasswordDeadlineIfNeeded(nhanVien);
 
         Integer vaiTro = normalizeVaiTro(nhanVien.getVaiTro());
         String role = resolveAdminRole(vaiTro);
@@ -141,8 +142,7 @@ public class AuthService {
                 vaiTro,
                 isAdmin(nhanVien) ? "Quản trị viên" : "Nhân viên",
                 nhanVien.getHinhAnh(),
-                mustChangeTemporaryPassword(nhanVien),
-                mustChangeTemporaryPassword(nhanVien) ? nhanVien.getHanDoiMatKhau() : null,
+                nhanVien.getTrangThai(),
                 nhanVien.getFaceDescriptor()
         );
     }
@@ -151,7 +151,7 @@ public class AuthService {
         var diaChiMacDinhOpt = diaChiKhachHangRepository
                 .findFirstByKhachHangIdAndLaMacDinhTrue(kh.getId());
         String diaChiMacDinh = diaChiMacDinhOpt
-                .map(dc -> dc.getDiaChiCuThe() + ", " + dc.getPhuongXa() + ", " + dc.getQuanHuyen() + ", " + dc.getTinhThanh())
+                .map(dc -> DiaChiHaiCapMapper.format(dc.getDiaChi()))
                 .orElse(null);
         String sdtMacDinh = diaChiMacDinhOpt.map(dc -> dc.getSdt()).orElse(null);
 
@@ -189,24 +189,6 @@ public class AuthService {
 
     private boolean isAdmin(NhanVien nhanVien) {
         return Integer.valueOf(1).equals(nhanVien.getVaiTro());
-    }
-
-    private boolean mustChangeTemporaryPassword(NhanVien nhanVien) {
-        return !isAdmin(nhanVien)
-                && Boolean.TRUE.equals(nhanVien.getBatBuocDoiMatKhau())
-                && nhanVien.getHanDoiMatKhau() != null;
-    }
-
-    private void initializeTemporaryPasswordDeadlineIfNeeded(NhanVien nhanVien) {
-        if (isAdmin(nhanVien)
-                || !Boolean.TRUE.equals(nhanVien.getBatBuocDoiMatKhau())
-                || nhanVien.getHanDoiMatKhau() != null) {
-            return;
-        }
-        Instant now = Instant.now();
-        nhanVien.setHanDoiMatKhau(now.plus(TEMP_PASSWORD_CHANGE_DEADLINE));
-        nhanVien.setNgayCapNhat(now);
-        nhanVienRepository.save(nhanVien);
     }
 
     private String resolveAdminRole(Integer vaiTro) {

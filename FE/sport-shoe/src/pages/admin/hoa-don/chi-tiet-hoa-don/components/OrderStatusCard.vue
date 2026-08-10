@@ -9,6 +9,7 @@ const {
   History,
   TriangleAlert,
   CircleX,
+  RefreshCw,
   hoaDon,
   cacBuocHienThi,
   lopVongTrangThai,
@@ -21,6 +22,9 @@ const {
   lyDoHuyDon,
   donDaKetThuc,
   dangCapNhat,
+  dangGiaoLai,
+  donGiaoThatBai,
+  handleGiaoLaiDonHang,
   handleHuyDonTuModal,
 } = useInvoiceDetailContext();
 
@@ -120,6 +124,17 @@ const xacNhanHuy = async () => {
       </span>
     </div>
     <div class="mt-5 flex justify-end gap-3">
+      <Button
+        v-if="donGiaoThatBai"
+        :disabled="dangGiaoLai"
+        @click="handleGiaoLaiDonHang"
+        class="border-none bg-amber-500 text-white shadow-sm hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <template #prefix>
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': dangGiaoLai }" />
+        </template>
+        {{ dangGiaoLai ? "Đang tạo lượt giao..." : "Giao lại đơn hàng" }}
+      </Button>
       <Button
         v-if="hoaDon && !donDaKetThuc"
         @click="moModalHuy"

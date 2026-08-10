@@ -141,6 +141,9 @@ function laRedirectNhanVienHopLe(path) {
 }
 
 function layDuongDanSauDangNhap(user) {
+  if (Number(user?.vaiTro) === 2 && Number(user?.trangThai) === 2) {
+    return "/admin/profile";
+  }
   const redirectPath = typeof route.query.redirect === "string" ? route.query.redirect : "";
 
   if (laQuyenAdmin(user)) {

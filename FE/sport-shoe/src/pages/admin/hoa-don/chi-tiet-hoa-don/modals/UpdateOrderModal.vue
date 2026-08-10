@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
+import { dinhDangDiaChi } from "../../../../../utils/dia-chi";
 
 const {
   CircleX,
@@ -210,14 +211,9 @@ watch(
             </div>
             <input
               type="text"
-              v-model="formThongTin.diaChi"
-              :readonly="!coTheSuaThongTinGiaoHang"
-              :class="
-                coTheSuaThongTinGiaoHang
-                  ? 'bg-white focus:border-rose-300'
-                  : 'cursor-not-allowed bg-slate-100 text-slate-500'
-              "
-              class="w-full rounded-[8px] border border-slate-200 px-3 py-2.5 text-[14px] text-slate-800 outline-none transition"
+              :value="dinhDangDiaChi(formThongTin.diaChi)"
+              readonly
+              class="w-full cursor-default rounded-[8px] border border-slate-200 bg-slate-50 px-3 py-2.5 text-[14px] text-slate-700 outline-none"
             />
           </div>
           <p

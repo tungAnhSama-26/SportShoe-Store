@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ONhapMatKhau from "../../../components/common/ONhapMatKhau.vue";
 import ThanhDoManhMatKhau from "../../../components/common/ThanhDoManhMatKhau.vue";
 import {
@@ -22,15 +22,22 @@ import {
   layHoSoNhanVien,
   uploadFile,
 } from "../../../services/nhan-vien";
-import { getCurrentAdminUser } from "../../../services/auth";
+import {
+  getCurrentAdminUser,
+  mustChangeAdminPassword,
+  updateCurrentAdminUser,
+} from "../../../services/auth";
 import {
   getDisplayErrorMessage,
   getFieldErrors,
 } from "../../../utils/error-message";
 import { showSuccess } from "../../../utils/alert";
 import { useAdminSession } from "../../../composable/useAdminSession";
+import { layPhuongXaHaiCap, layTinhThanhHaiCap } from "../../../services/dia-chi";
+import { chuanHoaDiaChi, doiChieuDiaChiHaiCap, taoPayloadDiaChi } from "../../../utils/dia-chi";
 
 const router = useRouter();
+const route = useRoute();
 const { refreshAdminSession } = useAdminSession();
 
 const user = getCurrentAdminUser();
@@ -46,6 +53,7 @@ const fileInputAvatar = ref(null);
 
 const showDoiMatKhau = ref(false);
 const matKhauMoi = ref("");
+const dangBatBuocDoiMatKhau = ref(mustChangeAdminPassword());
 
 const loiForm = ref({
   hoTen: "",
@@ -59,82 +67,17 @@ const form = ref({
   email: "",
   sdt: "",
   diaChiCuThe: "",
+  tinhThanhCode: "",
+  phuongXaCode: "",
+  phuongXa: "",
   hinhAnh: "",
   vaiTro: 2,
   gioiTinh: "Nam",
   ngaySinh: "",
   tinhThanh: "",
-  quanHuyen: "",
-  xaPhuong: "",
 });
 
-const dsTinhThanh = [
-  { value: "01", label: "Thành phố Hà Nội" },
-  { value: "79", label: "Thành phố Hồ Chí Minh" },
-  { value: "31", label: "Thành phố Hải Phòng" },
-  { value: "48", label: "Thành phố Đà Nẵng" },
-  { value: "92", label: "Thành phố Cần Thơ" },
-  { value: "02", label: "Tỉnh Hà Giang" },
-  { value: "04", label: "Tỉnh Cao Bằng" },
-  { value: "06", label: "Tỉnh Bắc Kạn" },
-  { value: "08", label: "Tỉnh Tuyên Quang" },
-  { value: "10", label: "Tỉnh Lào Cai" },
-  { value: "11", label: "Tỉnh Điện Biên" },
-  { value: "12", label: "Tỉnh Lai Châu" },
-  { value: "14", label: "Tỉnh Sơn La" },
-  { value: "15", label: "Tỉnh Yên Bái" },
-  { value: "17", label: "Tỉnh Hoà Bình" },
-  { value: "19", label: "Tỉnh Thái Nguyên" },
-  { value: "20", label: "Tỉnh Lạng Sơn" },
-  { value: "22", label: "Tỉnh Quảng Ninh" },
-  { value: "24", label: "Tỉnh Bắc Giang" },
-  { value: "25", label: "Tỉnh Phú Thọ" },
-  { value: "26", label: "Tỉnh Vĩnh Phúc" },
-  { value: "27", label: "Tỉnh Bắc Ninh" },
-  { value: "30", label: "Tỉnh Hải Dương" },
-  { value: "33", label: "Tỉnh Hưng Yên" },
-  { value: "34", label: "Tỉnh Thái Bình" },
-  { value: "35", label: "Tỉnh Hà Nam" },
-  { value: "36", label: "Tỉnh Nam Định" },
-  { value: "37", label: "Tỉnh Ninh Bình" },
-  { value: "38", label: "Tỉnh Thanh Hóa" },
-  { value: "40", label: "Tỉnh Nghệ An" },
-  { value: "42", label: "Tỉnh Hà Tĩnh" },
-  { value: "44", label: "Tỉnh Quảng Bình" },
-  { value: "45", label: "Tỉnh Quảng Trị" },
-  { value: "46", label: "Tỉnh Thừa Thiên Huế" },
-  { value: "49", label: "Tỉnh Quảng Nam" },
-  { value: "51", label: "Tỉnh Quảng Ngãi" },
-  { value: "52", label: "Tỉnh Bình Định" },
-  { value: "54", label: "Tỉnh Phú Yên" },
-  { value: "56", label: "Tỉnh Khánh Hòa" },
-  { value: "58", label: "Tỉnh Ninh Thuận" },
-  { value: "60", label: "Tỉnh Bình Thuận" },
-  { value: "62", label: "Tỉnh Kon Tum" },
-  { value: "64", label: "Tỉnh Gia Lai" },
-  { value: "66", label: "Tỉnh Đắk Lắk" },
-  { value: "67", label: "Tỉnh Đắk Nông" },
-  { value: "68", label: "Tỉnh Lâm Đồng" },
-  { value: "70", label: "Tỉnh Bình Phước" },
-  { value: "72", label: "Tỉnh Tây Ninh" },
-  { value: "74", label: "Tỉnh Bình Dương" },
-  { value: "75", label: "Tỉnh Đồng Nai" },
-  { value: "77", label: "Tỉnh Bà Rịa - Vũng Tàu" },
-  { value: "80", label: "Tỉnh Long An" },
-  { value: "82", label: "Tỉnh Tiền Giang" },
-  { value: "83", label: "Tỉnh Bến Tre" },
-  { value: "84", label: "Tỉnh Trà Vinh" },
-  { value: "86", label: "Tỉnh Vĩnh Long" },
-  { value: "87", label: "Tỉnh Đồng Tháp" },
-  { value: "89", label: "Tỉnh An Giang" },
-  { value: "91", label: "Tỉnh Kiên Giang" },
-  { value: "93", label: "Tỉnh Hậu Giang" },
-  { value: "94", label: "Tỉnh Sóc Trăng" },
-  { value: "95", label: "Tỉnh Bạc Liêu" },
-  { value: "96", label: "Tỉnh Cà Mau" },
-];
-
-const dsQuanHuyen = ref([]);
+const dsTinhThanh = ref([]);
 const dsXaPhuong = ref([]);
 
 // QR Scanner
@@ -283,6 +226,7 @@ async function taiChiTiet() {
   dangTai.value = true;
   try {
     const data = await layHoSoNhanVien();
+    const diaChi = chuanHoaDiaChi(data.diaChi);
     form.value = {
       hoTen: data.hoTen ?? "",
       tenDangNhap: data.tenDangNhap ?? "",
@@ -290,12 +234,9 @@ async function taiChiTiet() {
       sdt: data.sdt ?? "",
       gioiTinh: data.gioiTinh ?? "Nam",
       ngaySinh: data.ngaySinh ?? "",
-      diaChiCuThe: data.diaChi ?? "",
+      ...diaChi,
       hinhAnh: data.hinhAnh ?? "",
       vaiTro: data.vaiTro ?? 2,
-      tinhThanh: "",
-      quanHuyen: "",
-      xaPhuong: "",
     };
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(
@@ -329,7 +270,7 @@ async function luu() {
     sdt: form.value.sdt.trim() || undefined,
     gioiTinh: form.value.gioiTinh,
     ngaySinh: form.value.ngaySinh || undefined,
-    diaChi: form.value.diaChiCuThe.trim() || undefined,
+    diaChi: taoPayloadDiaChi(form.value),
     hinhAnh: form.value.hinhAnh || undefined,
     vaiTro: form.value.vaiTro,
     tenDangNhap: form.value.tenDangNhap,
@@ -369,10 +310,16 @@ async function doiMatKhau() {
   }
   dangLuu.value = true;
   try {
-    await doiMatKhauHoSoNhanVien(matKhauMoi.value.trim());
+    const updated = await doiMatKhauHoSoNhanVien(matKhauMoi.value.trim());
+    updateCurrentAdminUser({ trangThai: updated?.trangThai ?? 1 });
+    refreshAdminSession();
+    dangBatBuocDoiMatKhau.value = false;
     showSuccess("Đổi mật khẩu thành công.", "Thành công");
     matKhauMoi.value = "";
     showDoiMatKhau.value = false;
+    if (Number(updated?.trangThai) === 1) {
+      await router.replace("/admin/ban-hang");
+    }
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể đổi mật khẩu");
   } finally {
@@ -394,12 +341,103 @@ async function xuLyUploadAnh(event) {
   }
 }
 
-onMounted(taiChiTiet);
+async function chonTinhProfile() {
+  const tinh = dsTinhThanh.value.find(
+    (item) => String(item.value) === String(form.value.tinhThanhCode),
+  );
+  form.value.tinhThanh = tinh?.label ?? "";
+  form.value.phuongXaCode = "";
+  form.value.phuongXa = "";
+  try {
+    dsXaPhuong.value = form.value.tinhThanhCode
+      ? (await layPhuongXaHaiCap(form.value.tinhThanhCode)).map((item) => ({
+          value: String(item.code),
+          label: item.ten,
+        }))
+      : [];
+  } catch (error) {
+    dsXaPhuong.value = [];
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải danh sách xã/phường",
+    );
+  }
+}
+
+function chonPhuongXaProfile() {
+  form.value.phuongXa = dsXaPhuong.value.find(
+    (item) => item.value === form.value.phuongXaCode,
+  )?.label ?? "";
+}
+
+onMounted(async () => {
+  if (dangBatBuocDoiMatKhau.value || route.query.forcePasswordChange === "1") {
+    dangBatBuocDoiMatKhau.value = true;
+    showDoiMatKhau.value = true;
+  }
+  await taiChiTiet();
+  try {
+    const danhSachTinh = await layTinhThanhHaiCap();
+    dsTinhThanh.value = danhSachTinh.map((item) => ({
+      value: String(item.code),
+      label: item.ten,
+    }));
+    const ketQua = await doiChieuDiaChiHaiCap(
+      form.value,
+      danhSachTinh,
+      layPhuongXaHaiCap,
+    );
+    Object.assign(form.value, ketQua.diaChi);
+    dsXaPhuong.value = ketQua.danhSachPhuongXa.map((item) => ({
+      value: String(item.code),
+      label: item.ten,
+    }));
+  } catch (error) {
+    loiTrang.value = getDisplayErrorMessage(
+      error,
+      "Không thể tải danh mục địa chỉ",
+    );
+  }
+});
 
 </script>
 
 <template>
   <div class="invoice-flat mx-auto max-w-5xl space-y-6 pb-12">
+    <div
+      v-if="dangBatBuocDoiMatKhau"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+          <Lock class="h-6 w-6" />
+        </div>
+        <h2 class="mt-5 text-xl font-bold text-slate-900">Yêu cầu đổi mật khẩu</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          Đây là lần đăng nhập đầu tiên. Vui lòng đổi mật khẩu tạm trước khi sử dụng các chức năng khác.
+        </p>
+        <div v-if="loiTrang" class="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          {{ loiTrang }}
+        </div>
+        <div class="mt-5 space-y-3">
+          <ONhapMatKhau
+            v-model="matKhauMoi"
+            placeholder="Mật khẩu mới (ít nhất 6 ký tự)"
+            autocomplete="new-password"
+            input-class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
+          />
+          <ThanhDoManhMatKhau :mat-khau="matKhauMoi" />
+          <button
+            type="button"
+            :disabled="dangLuu"
+            class="admin-btn-primary h-11 w-full rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+            @click="doiMatKhau"
+          >
+            {{ dangLuu ? "Đang cập nhật..." : "Đổi mật khẩu và tiếp tục" }}
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- Header -->
     <section class="flex items-center justify-between border-b border-slate-100 pb-4">
       <div class="flex items-center gap-4">
@@ -517,6 +555,7 @@ onMounted(taiChiTiet);
                     Lưu
                   </button>
                   <button
+                    v-if="!dangBatBuocDoiMatKhau"
                     @click="showDoiMatKhau = false"
                     class="admin-btn-soft h-10 rounded-xl px-4"
                   >
@@ -654,7 +693,26 @@ onMounted(taiChiTiet);
           <div class="mt-8 space-y-1.5">
             <label class="text-[13px] font-bold text-slate-600">Địa chỉ</label>
             <div class="relative">
-              <MapPin class="absolute left-4 top-4 h-4 w-4 text-slate-400" />
+              <MapPin class="absolute left-4 top-[4.75rem] h-4 w-4 text-slate-400" />
+              <div class="mb-3 grid gap-3 md:grid-cols-2">
+                <select
+                  v-model="form.tinhThanhCode"
+                  class="h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none"
+                  @change="chonTinhProfile"
+                >
+                  <option value="">-- Chọn tỉnh/thành --</option>
+                  <option v-for="item in dsTinhThanh" :key="item.value" :value="item.value">{{ item.label }}</option>
+                </select>
+                <select
+                  v-model="form.phuongXaCode"
+                  :disabled="!form.tinhThanhCode"
+                  class="h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none disabled:opacity-50"
+                  @change="chonPhuongXaProfile"
+                >
+                  <option value="">-- Chọn phường/xã --</option>
+                  <option v-for="item in dsXaPhuong" :key="item.value" :value="item.value">{{ item.label }}</option>
+                </select>
+              </div>
               <textarea
                 v-model="form.diaChiCuThe"
                 rows="3"

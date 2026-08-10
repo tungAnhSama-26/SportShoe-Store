@@ -112,9 +112,7 @@ public class BanHangTaiQuayService {
                 hoaDonTam,
                 items,
                 new TinhPhiVanChuyenGhnRequest(
-                        request.toDistrictId(),
-                        request.toWardCode(),
-                        request.toAddress(),
+                        request.diaChiGiaoHang(),
                         request.serviceId(),
                         request.serviceTypeId(),
                         request.length(),

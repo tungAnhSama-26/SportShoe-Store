@@ -1,5 +1,6 @@
 package com.example.server.core.admin.nhanVien.dto.responsse;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapResponse;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -17,7 +18,7 @@ public final class NhanVienResponses {
             String sdt,
             String gioiTinh,
             LocalDate ngaySinh,
-            String diaChi,
+            DiaChiHaiCapResponse diaChi,
             String hinhAnh,
             Integer vaiTro,
             String tenVaiTro,
@@ -27,8 +28,6 @@ public final class NhanVienResponses {
             String matKhauTamThoi,
             Boolean emailDaGuiThanhCong,
             String canhBaoEmail,
-            Boolean batBuocDoiMatKhau,
-            Instant hanDoiMatKhau,
             String faceDescriptor
     ) {}
 }

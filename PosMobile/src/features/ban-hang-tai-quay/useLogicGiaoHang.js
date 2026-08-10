@@ -1,6 +1,7 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { tinhPhiVanChuyenTaiQuay } from '../../api/dichVuBanHang';
 import { showError } from '../../utils/alert';
+import { chuanHoaDiaChi, diaChiHopLe, dinhDangDiaChi } from '../../utils/diaChi';
 
 export function useLogicGiaoHang({
   choPhepGiaoHang,
@@ -27,6 +28,8 @@ export function useLogicGiaoHang({
   hoaDonChoDaChon,
   cartItems
 }) {
+  const [nguonTinhPhi, setNguonTinhPhi] = useState('');
+  const [moTaPhi, setMoTaPhi] = useState('');
   const tenNguoiNhanGiaoHangHienThi = useMemo(() => {
     if (tenNguoiNhanGiaoHang.trim()) {
       return tenNguoiNhanGiaoHang.trim();
@@ -50,19 +53,19 @@ export function useLogicGiaoHang({
   const phiVanChuyenHienThi = useMemo(() => choPhepGiaoHang ? phiVanChuyen : 0, [choPhepGiaoHang, phiVanChuyen]);
 
   const diaChiGiaoHangHienThi = useMemo(() => {
-    if (diaChiGiaoHang && typeof diaChiGiaoHang === 'string' && diaChiGiaoHang.trim()) {
-      return diaChiGiaoHang.trim();
+    if (diaChiHopLe(diaChiGiaoHang)) {
+      return chuanHoaDiaChi(diaChiGiaoHang);
     }
     if (khachHangDuocChon?.diaChiMacDinh) {
       return khachHangDuocChon.diaChiMacDinh;
     }
-    return hoaDonChoDaChon?.thongTinGiaoHang?.diaChiGiaoHang || "";
+    return chuanHoaDiaChi(hoaDonChoDaChon?.thongTinGiaoHang?.diaChiGiaoHang);
   }, [diaChiGiaoHang, khachHangDuocChon, hoaDonChoDaChon]);
 
   const coTheTinhPhiVanChuyen = useMemo(
     () => choPhepGiaoHang &&
       cartItems.length > 0 &&
-      Boolean(diaChiGiaoHangHienThi.trim()) &&
+      diaChiHopLe(diaChiGiaoHangHienThi) &&
       !dangTinhPhiVanChuyen,
     [choPhepGiaoHang, cartItems.length, diaChiGiaoHangHienThi, dangTinhPhiVanChuyen]
   );
@@ -72,7 +75,7 @@ export function useLogicGiaoHang({
       (
         Boolean(tenNguoiNhanGiaoHangHienThi) &&
         Boolean(soDienThoaiNguoiNhanGiaoHangHienThi) &&
-        Boolean(diaChiGiaoHangHienThi.trim()) &&
+        diaChiHopLe(diaChiGiaoHangHienThi) &&
         daTinhPhiVanChuyen
       ),
     [choPhepGiaoHang, tenNguoiNhanGiaoHangHienThi, soDienThoaiNguoiNhanGiaoHangHienThi, diaChiGiaoHangHienThi, daTinhPhiVanChuyen]
@@ -88,13 +91,15 @@ export function useLogicGiaoHang({
     diaChiDaDo: diaChiDaXacNhan,
     daTinhPhi: daTinhPhiVanChuyen,
     dangTinhPhi: dangTinhPhiVanChuyen,
+    nguonTinhPhi,
+    moTaPhi,
     coTheTinhPhi: coTheTinhPhiVanChuyen,
     serviceTypeId: cauHinhGiaoHang.serviceTypeId,
     length: cauHinhGiaoHang.length,
     width: cauHinhGiaoHang.width,
     height: cauHinhGiaoHang.height,
     weight: cauHinhGiaoHang.weight
-  }), [choPhepGiaoHang, tenNguoiNhanGiaoHangHienThi, soDienThoaiNguoiNhanGiaoHangHienThi, diaChiGiaoHangHienThi, donViVanChuyen, phiVanChuyen, diaChiDaXacNhan, daTinhPhiVanChuyen, dangTinhPhiVanChuyen, coTheTinhPhiVanChuyen, cauHinhGiaoHang]);
+  }), [choPhepGiaoHang, tenNguoiNhanGiaoHangHienThi, soDienThoaiNguoiNhanGiaoHangHienThi, diaChiGiaoHangHienThi, donViVanChuyen, phiVanChuyen, diaChiDaXacNhan, daTinhPhiVanChuyen, dangTinhPhiVanChuyen, nguonTinhPhi, moTaPhi, coTheTinhPhiVanChuyen, cauHinhGiaoHang]);
 
   const danhDauCanTinhLaiPhiVanChuyen = useCallback(() => {
     if (!choPhepGiaoHang) {
@@ -103,6 +108,8 @@ export function useLogicGiaoHang({
     setPhiVanChuyen(0);
     setDiaChiDaXacNhan("");
     setDaTinhPhiVanChuyen(false);
+    setNguonTinhPhi('');
+    setMoTaPhi('');
   }, [choPhepGiaoHang, setPhiVanChuyen, setDiaChiDaXacNhan, setDaTinhPhiVanChuyen]);
 
   const taoPayloadGiaoHang = useCallback(() => {
@@ -121,7 +128,7 @@ export function useLogicGiaoHang({
       giaoHang: true,
       tenNguoiNhan: tenNguoiNhanGiaoHangHienThi,
       soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi,
-      diaChiGiaoHang: diaChiGiaoHangHienThi.trim(),
+      diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi),
       phiVanChuyen: phiVanChuyen,
       donViVanChuyen: donViVanChuyen || "GHN"
     };
@@ -147,7 +154,7 @@ export function useLogicGiaoHang({
       setSdtNguoiNhanGiaoHang(patch.soDienThoaiNguoiNhan ?? "");
     }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
-      setDiaChiGiaoHang(patch.diaChiGiaoHang ?? "");
+      setDiaChiGiaoHang(chuanHoaDiaChi(patch.diaChiGiaoHang));
     }
     
     let hasCauHinhChange = false;
@@ -199,7 +206,7 @@ export function useLogicGiaoHang({
 
   const xuLyTinhPhiVanChuyen = useCallback(async () => {
     if (!coTheTinhPhiVanChuyen) {
-      if (!choPhepGiaoHang || !diaChiGiaoHangHienThi.trim()) {
+      if (!choPhepGiaoHang || !diaChiHopLe(diaChiGiaoHangHienThi)) {
         setPhiVanChuyen(0);
         setDonViVanChuyen("");
         setDaTinhPhiVanChuyen(true);
@@ -215,7 +222,7 @@ export function useLogicGiaoHang({
         soLuong: item.soLuong
       }));
       const response = await tinhPhiVanChuyenTaiQuay({
-        toAddress: diaChiGiaoHangHienThi,
+        diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi),
         serviceTypeId: cauHinhGiaoHang.serviceTypeId,
         length: cauHinhGiaoHang.length,
         width: cauHinhGiaoHang.width,
@@ -226,12 +233,20 @@ export function useLogicGiaoHang({
       // Extract data
       const result = response?.data || response;
       setPhiVanChuyen(result.phiVanChuyen || 0);
-      setDiaChiDaXacNhan(result.diaChiDaDo || "");
+      setDiaChiDaXacNhan(dinhDangDiaChi(result.diaChiDaDoiSoat));
+      setNguonTinhPhi(result.nguonTinhPhi || 'GHN_LIVE');
+      setMoTaPhi(result.nguonTinhPhi === 'GHN_CACHE'
+        ? (result.giaCu ? 'Phí GHN từ cache cũ (ước tính)' : 'Phí GHN đã lưu gần nhất (ước tính)')
+        : result.nguonTinhPhi === 'GHN_PUBLIC_TARIFF'
+          ? 'Phí offline ước tính theo bảng giá công khai GHN'
+          : (result.uocTinh ? 'Phí GHN ước tính theo các tuyến cũ' : 'Phí GHN'));
       setDaTinhPhiVanChuyen(true);
     } catch (error) {
       setPhiVanChuyen(0);
       setDiaChiDaXacNhan("");
       setDaTinhPhiVanChuyen(false);
+      setNguonTinhPhi('');
+      setMoTaPhi('');
       showError(error instanceof Error ? error.message : "Không thể tính phí vận chuyển");
     } finally {
       setDangTinhPhiVanChuyen(false);

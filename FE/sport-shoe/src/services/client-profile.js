@@ -1,4 +1,5 @@
 import { apiRequest, API_BASE_URL, getAuthHeaders } from "./api-client";
+import { chuanHoaDiaChi, taoPayloadDiaChi } from "../utils/dia-chi";
 
 async function request(path, init) {
   return apiRequest(path, {
@@ -45,22 +46,26 @@ export function doiMatKhauProfileKhachHang(khachHangId, payload) {
 }
 
 // --- Customer Address Management ---
-export function layDanhSachDiaChiProfile(khachHangId) {
-  return request(`/client/khach-hang/${khachHangId}/dia-chi`);
+const chuanHoaBanGhiDiaChi = (record) => ({ ...record, ...chuanHoaDiaChi(record) });
+const payloadDiaChi = (record) => ({ hoTen: record.hoTen, sdt: record.sdt, diaChi: taoPayloadDiaChi(record), laMacDinh: record.laMacDinh });
+
+export async function layDanhSachDiaChiProfile(khachHangId) {
+  const data = await request(`/client/khach-hang/${khachHangId}/dia-chi`);
+  return Array.isArray(data) ? data.map(chuanHoaBanGhiDiaChi) : [];
 }
 
 export function themDiaChiProfile(khachHangId, payload) {
   return request(`/client/khach-hang/${khachHangId}/dia-chi`, {
     method: "POST",
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify(payloadDiaChi(payload)),
+  }).then(chuanHoaBanGhiDiaChi);
 }
 
 export function capNhatDiaChiProfile(khachHangId, diaChiId, payload) {
   return request(`/client/khach-hang/${khachHangId}/dia-chi/${diaChiId}`, {
     method: "PUT",
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify(payloadDiaChi(payload)),
+  }).then(chuanHoaBanGhiDiaChi);
 }
 
 export function xoaDiaChiProfile(khachHangId, diaChiId) {

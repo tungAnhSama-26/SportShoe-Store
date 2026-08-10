@@ -5,14 +5,16 @@ import com.example.server.core.admin.nhanVien.dto.request.DoiMatKhauRequest;
 import com.example.server.core.admin.nhanVien.dto.request.DoiTrangThaiRequest;
 import com.example.server.core.admin.nhanVien.dto.request.TaoNhanVienRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.NhanVienResponses.NhanVienResponse;
+import com.example.server.core.admin.nhanVien.event.NhanVienAccountCreatedEvent;
 import com.example.server.core.admin.nhanVien.service.NhanVienService;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.PasswordService;
-import com.example.server.infrastructure.service.EmailService;
 import com.example.server.infrastructure.service.EmailService.EmailDispatchResult;
 import com.example.server.repository.NhanVienRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,20 +30,20 @@ import java.util.UUID;
 public class NhanVienServiceImpl implements NhanVienService {
 
     private final NhanVienRepository nhanVienRepository;
-    private final EmailService emailService;
     private final PasswordService passwordService;
+    private final ApplicationEventPublisher eventPublisher;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final char[] TEMP_PASSWORD_CHARS =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789".toCharArray();
 
     public NhanVienServiceImpl(
             NhanVienRepository nhanVienRepository,
-            EmailService emailService,
-            PasswordService passwordService
+            PasswordService passwordService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.nhanVienRepository = nhanVienRepository;
-        this.emailService = emailService;
         this.passwordService = passwordService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -93,26 +95,23 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setSdt(normalizeOptional(request.sdt()));
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
-        nv.setDiaChi(normalizeOptional(request.diaChi()));
+        nv.setDiaChi(request.diaChi() != null ? DiaChiHaiCapMapper.toEntity(request.diaChi()) : null);
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
         nv.setFaceDescriptor(normalizeOptional(request.faceDescriptor()));
-        nv.setTrangThai(1);
+        nv.setTrangThai(isStaffRole(vaiTro) ? 2 : 1);
         Instant now = Instant.now();
         nv.setNgayTao(now);
-        boolean requiresTemporaryPasswordChange = isStaffRole(vaiTro);
-        nv.setBatBuocDoiMatKhau(requiresTemporaryPasswordChange);
-        nv.setHanDoiMatKhau(null);
 
         NhanVien saved = nhanVienRepository.save(nv);
-        EmailDispatchResult emailDispatchResult = emailService.trySendRegistrationEmail(
+        eventPublisher.publishEvent(new NhanVienAccountCreatedEvent(
                 saved.getEmail(),
                 saved.getHoTen(),
                 saved.getTenDangNhap(),
                 randomMatKhau
-        );
+        ));
 
-        return toItem(saved, randomMatKhau, emailDispatchResult);
+        return toItem(saved, randomMatKhau, null);
     }
 
     @Override
@@ -136,12 +135,11 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setSdt(normalizeOptional(request.sdt()));
         nv.setGioiTinh(normalizeOptional(request.gioiTinh()));
         nv.setNgaySinh(request.ngaySinh());
-        nv.setDiaChi(normalizeOptional(request.diaChi()));
+        nv.setDiaChi(request.diaChi() != null ? DiaChiHaiCapMapper.toEntity(request.diaChi()) : null);
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
-        if (!isStaffRole(vaiTro)) {
-            nv.setBatBuocDoiMatKhau(false);
-            nv.setHanDoiMatKhau(null);
+        if (!isStaffRole(vaiTro) && Integer.valueOf(2).equals(nv.getTrangThai())) {
+            nv.setTrangThai(1);
         }
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
@@ -164,8 +162,9 @@ public class NhanVienServiceImpl implements NhanVienService {
     public NhanVienResponse doiMatKhau(UUID id, DoiMatKhauRequest request) {
         NhanVien nv = findNhanVien(id);
         nv.setMatKhau(passwordService.hash(request.matKhauMoi()));
-        nv.setBatBuocDoiMatKhau(false);
-        nv.setHanDoiMatKhau(null);
+        if (Integer.valueOf(2).equals(nv.getTrangThai())) {
+            nv.setTrangThai(1);
+        }
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
     }
@@ -259,18 +258,16 @@ public class NhanVienServiceImpl implements NhanVienService {
                 nv.getSdt(),
                 nv.getGioiTinh(),
                 nv.getNgaySinh(),
-                nv.getDiaChi(),
+                DiaChiHaiCapMapper.toResponse(nv.getDiaChi()),
                 nv.getHinhAnh(),
                 normalizeVaiTro(nv.getVaiTro()),
                 mapVaiTro(nv.getVaiTro()),
                 nv.getTrangThai(),
-                nv.getTrangThai() == 1 ? "Đang làm" : "Nghỉ làm",
+                mapTrangThai(nv.getTrangThai()),
                 nv.getNgayTao(),
                 matKhauTamThoi,
                 emailDispatchResult != null ? emailDispatchResult.sent() : null,
                 emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null,
-                mustChangeTemporaryPassword(nv),
-                mustChangeTemporaryPassword(nv) ? nv.getHanDoiMatKhau() : null,
                 nv.getFaceDescriptor()
         );
     }
@@ -287,6 +284,16 @@ public class NhanVienServiceImpl implements NhanVienService {
             case 2 -> "Nhân viên";
             default -> "Không xác định";
         };
+    }
+
+    private String mapTrangThai(Integer trangThai) {
+        if (Integer.valueOf(1).equals(trangThai)) {
+            return "Đang làm";
+        }
+        if (Integer.valueOf(2).equals(trangThai)) {
+            return "Chờ đổi mật khẩu";
+        }
+        return "Nghỉ làm";
     }
 
     private Integer validateVaiTro(Integer vaiTro) {
@@ -318,12 +325,6 @@ public class NhanVienServiceImpl implements NhanVienService {
 
     private boolean isStaffRole(Integer vaiTro) {
         return Integer.valueOf(2).equals(normalizeVaiTro(vaiTro));
-    }
-
-    private boolean mustChangeTemporaryPassword(NhanVien nv) {
-        return isStaffRole(nv.getVaiTro())
-                && Boolean.TRUE.equals(nv.getBatBuocDoiMatKhau())
-                && nv.getHanDoiMatKhau() != null;
     }
 
     private String generateTemporaryPassword() {

@@ -1,6 +1,8 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThongTinGiaoHangTaiQuayRequest;
+import com.example.server.entity.DiaChiHaiCap;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.exception.BusinessException;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
@@ -18,12 +20,11 @@ public class GiaoHangTaiQuayService {
         return thongTinGiaoHang != null && Boolean.TRUE.equals(thongTinGiaoHang.giaoHang());
     }
 
-    public String requireDiaChiGiaoHang(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
-        String diaChi = thongTinGiaoHang != null ? thongTinGiaoHang.diaChiGiaoHang() : null;
-        if (diaChi == null || diaChi.isBlank()) {
+    public DiaChiHaiCap requireDiaChiGiaoHang(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        if (thongTinGiaoHang == null || thongTinGiaoHang.diaChiGiaoHang() == null) {
             throw new BusinessException("Vui lòng nhập địa chỉ giao hàng");
         }
-        return diaChi.trim();
+        return DiaChiHaiCapMapper.toEntity(thongTinGiaoHang.diaChiGiaoHang());
     }
 
     public BigDecimal resolvePhiVanChuyen(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {

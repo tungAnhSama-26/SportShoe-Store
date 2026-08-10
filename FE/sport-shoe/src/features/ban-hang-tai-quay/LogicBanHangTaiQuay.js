@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { chuanHoaDiaChi, DIA_CHI_RONG } from "../../utils/dia-chi";
 import { useRouter } from "vue-router";
 import {
   huyHoaDonCho,
@@ -40,7 +41,7 @@ function LogicBanHangTaiQuay() {
   const choPhepGiaoHang = ref(false);
   const tenNguoiNhanGiaoHang = ref("");
   const sdtNguoiNhanGiaoHang = ref("");
-  const diaChiGiaoHang = ref("");
+  const diaChiGiaoHang = ref({ ...DIA_CHI_RONG });
   const donViVanChuyen = ref("GHN");
   const phiVanChuyen = ref(0);
   const diaChiDaXacNhan = ref("");
@@ -294,7 +295,7 @@ function LogicBanHangTaiQuay() {
       choPhepGiaoHang.value = msg.state.choPhepGiaoHang;
       tenNguoiNhanGiaoHang.value = msg.state.tenNguoiNhanGiaoHang;
       sdtNguoiNhanGiaoHang.value = msg.state.sdtNguoiNhanGiaoHang;
-      diaChiGiaoHang.value = msg.state.diaChiGiaoHang;
+      diaChiGiaoHang.value = chuanHoaDiaChi(msg.state.diaChiGiaoHang);
       tienKhachDua.value = msg.state.tienKhachDua;
       phuongThucThanhToan.value = msg.state.phuongThucThanhToan;
       ghiChuThanhToan.value = msg.state.ghiChuThanhToan;
@@ -472,7 +473,7 @@ function LogicBanHangTaiQuay() {
     choPhepGiaoHang.value = false;
     tenNguoiNhanGiaoHang.value = "";
     sdtNguoiNhanGiaoHang.value = "";
-    diaChiGiaoHang.value = "";
+    diaChiGiaoHang.value = { ...DIA_CHI_RONG };
     donViVanChuyen.value = "GHN";
     phiVanChuyen.value = 0;
     daTinhPhiVanChuyen.value = false;
@@ -704,11 +705,11 @@ function LogicBanHangTaiQuay() {
     tenNguoiNhanGiaoHang.value = thongTinGiaoHang?.tenNguoiNhan || "";
     sdtNguoiNhanGiaoHang.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
     if (thongTinGiaoHang?.giaoHang) {
-      diaChiGiaoHang.value = thongTinGiaoHang.diaChiGiaoHang || "";
+      diaChiGiaoHang.value = chuanHoaDiaChi(thongTinGiaoHang.diaChiGiaoHang);
     } else if (!diaChiGiaoHang.value && khachHangDuocChon.value?.diaChiMacDinh) {
-      diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
+      diaChiGiaoHang.value = chuanHoaDiaChi(khachHangDuocChon.value.diaChiMacDinh);
     } else if (!thongTinGiaoHang?.giaoHang && !khachHangDuocChon.value) {
-      diaChiGiaoHang.value = "";
+      diaChiGiaoHang.value = { ...DIA_CHI_RONG };
     }
     donViVanChuyen.value = thongTinGiaoHang?.donViVanChuyen || "GHN";
     phiVanChuyen.value = Number(thongTinGiaoHang?.phiVanChuyen || 0);

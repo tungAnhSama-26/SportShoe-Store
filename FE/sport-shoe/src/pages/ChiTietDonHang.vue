@@ -25,6 +25,7 @@ import {
 } from '../services/hoa-don-realtime';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import { API_BASE_URL } from '../services/api-client';
+import { dinhDangDiaChi } from '../utils/dia-chi';
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -170,10 +171,26 @@ function chuanHoaTrangThai(value) {
   return trangThai === 'cho giao hang' ? 'dang giao hang' : trangThai;
 }
 
+const lichSuGiaoLai = computed(() => {
+  const lichSu = Array.isArray(don.value?.lichSuTrangThai) ? don.value.lichSuTrangThai : [];
+  return lichSu
+    .filter((item) => chuanHoaTrangThai(item?.trangThai) === 'tao luot giao lai')
+    .sort((a, b) => new Date(b?.ngayTao || 0) - new Date(a?.ngayTao || 0));
+});
+
+const giaoLaiMoiNhat = computed(() => lichSuGiaoLai.value[0] || null);
+
 const thongTinCacBuoc = computed(() => {
   const lichSu = Array.isArray(don.value?.lichSuTrangThai) ? don.value.lichSuTrangThai : [];
 
   return CAC_BUOC_DON_HANG.map((buoc, index) => {
+    if (chuanHoaTrangThai(buoc.ten) === 'cho lay hang' && giaoLaiMoiNhat.value) {
+      return {
+        ...buoc,
+        thoiGian: giaoLaiMoiNhat.value.ngayTao,
+      };
+    }
+
     const banGhi = lichSu.find(
       (item) => chuanHoaTrangThai(item?.trangThai) === chuanHoaTrangThai(buoc.ten),
     );
@@ -255,11 +272,18 @@ const daHoanThanh = computed(() => don.value?.trangThai === 5);
 const coTheYeuCauHuy = computed(() => don.value?.coTheHuy === true);
 const coTheSuaThongTinGiaoHang = computed(() => don.value?.coTheCapNhatGiaoHang === true);
 
-const lichSuCapNhatGiaoHang = computed(() => {
+const lichSuGiaoHang = computed(() => {
   if (!don.value || !Array.isArray(don.value.lichSuTrangThai)) return [];
-  return don.value.lichSuTrangThai.filter(item => 
-    item.trangThai === "Cập nhật thông tin giao hàng"
-  );
+  return don.value.lichSuTrangThai
+    .filter((item) => {
+      const trangThai = chuanHoaTrangThai(item?.trangThai);
+      return trangThai === 'cap nhat thong tin giao hang' || trangThai === 'tao luot giao lai';
+    })
+    .map((item) => ({
+      ...item,
+      laGiaoLai: chuanHoaTrangThai(item?.trangThai) === 'tao luot giao lai',
+    }))
+    .sort((a, b) => new Date(b?.ngayTao || 0) - new Date(a?.ngayTao || 0));
 });
 
 async function moModalSuaThongTinGiaoHang() {
@@ -468,7 +492,7 @@ function xuLyAnhLoi(event) {
           </div>
           <div class="rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
             <p class="font-semibold text-slate-800">{{ don.tenNguoiNhan }} · {{ don.sdtNguoiNhan }}</p>
-            <p class="mt-1">{{ don.diaChiGiaoHang }}</p>
+            <p class="mt-1">{{ dinhDangDiaChi(don.diaChiGiaoHang) || '—' }}</p>
           </div>
           
           <p v-if="don && don.soLanSuaDiaChi >= 1 && don.trangThai === 1 && don.hinhThucThanhToan === 'COD'" class="text-xs text-rose-500 font-medium mt-3 flex items-center gap-1.5 bg-rose-50 border border-rose-100 px-3 py-2.5 rounded-xl">
@@ -479,7 +503,7 @@ function xuLyAnhLoi(event) {
           </p>
 
           <!-- Lịch sử thay đổi thông tin giao hàng -->
-          <div v-if="lichSuCapNhatGiaoHang.length > 0" class="mt-4 border-t border-slate-100 pt-4">
+          <div v-if="lichSuGiaoHang.length > 0" class="mt-4 border-t border-slate-100 pt-4">
             <h3 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-2">
               <svg class="h-4.5 w-4.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -487,13 +511,19 @@ function xuLyAnhLoi(event) {
               Lịch sử thay đổi thông tin giao hàng
             </h3>
             <div class="space-y-3">
-              <div v-for="(log, idx) in lichSuCapNhatGiaoHang" :key="idx" class="rounded-xl border border-slate-100 bg-white p-3.5 text-xs shadow-sm">
+              <div
+                v-for="(log, idx) in lichSuGiaoHang"
+                :key="`${log.trangThai}-${log.ngayTao}-${idx}`"
+                class="rounded-xl border border-slate-100 bg-white p-3.5 text-xs shadow-sm"
+              >
                 <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100">
-                  <span class="font-semibold text-slate-700">Người thực hiện: {{ log.maNhanVien || 'Khách hàng' }}</span>
+                  <span class="font-semibold text-slate-700">
+                    Người thực hiện: {{ log.maNhanVien || (log.laGiaoLai ? 'Cửa hàng' : 'Khách hàng') }}
+                  </span>
                   <span class="text-slate-400 text-[10px]">{{ formatNgay(log.ngayTao) }}</span>
                 </div>
                 <div class="text-slate-600 whitespace-pre-line leading-relaxed text-[11px]">
-                  {{ log.ghiChu }}
+                  {{ log.laGiaoLai ? 'Cửa hàng đã tạo lượt giao lại đơn hàng.' : log.ghiChu }}
                 </div>
               </div>
             </div>

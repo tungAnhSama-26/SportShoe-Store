@@ -29,6 +29,12 @@ export function phanCa(payload) {
   });
 }
 
+export function xoaLichLamViec(id) {
+  return request(`/admin/lich-lam-viec/${id}`, {
+    method: "DELETE",
+  });
+}
+
 /**
  * Xếp ca tự động cho khoảng tuần.
  * @param {string} tuNgay  - YYYY-MM-DD

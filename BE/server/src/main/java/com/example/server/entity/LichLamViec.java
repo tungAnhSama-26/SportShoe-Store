@@ -14,7 +14,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "lich_lam_viec", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"nhan_vien_id", "ngay"})
+    @UniqueConstraint(columnNames = {"nhan_vien_id", "ngay", "ca_lam_id"})
 })
 public class LichLamViec {
     @Id
@@ -33,6 +33,7 @@ public class LichLamViec {
     private LocalDate ngay;
 
     @NotNull
-    @Column(name = "ca", nullable = false, length = 10)
-    private String ca; // 'sang', 'chieu', 'toi'
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "ca_lam_id", nullable = false)
+    private CaLam caLam;
 }

@@ -9,6 +9,7 @@ import com.example.server.core.client.profile.service.ClientProfileService;
 import com.example.server.entity.DiaChiKhachHang;
 import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.PasswordService;
 import com.example.server.repository.DiaChiKhachHangRepository;
@@ -213,10 +214,7 @@ public class ClientProfileServiceImpl implements ClientProfileService {
     ) {
         diaChi.setHoTen(request.hoTen().trim());
         diaChi.setSdt(request.sdt().trim());
-        diaChi.setTinhThanh(request.tinhThanh().trim());
-        diaChi.setQuanHuyen(request.quanHuyen().trim());
-        diaChi.setPhuongXa(request.phuongXa().trim());
-        diaChi.setDiaChiCuThe(request.diaChiCuThe().trim());
+        diaChi.setDiaChi(DiaChiHaiCapMapper.toEntity(request.diaChi()));
         diaChi.setLaMacDinh(laMacDinh);
         if (diaChi.getTrangThai() == null) {
             diaChi.setTrangThai(1);
@@ -231,10 +229,7 @@ public class ClientProfileServiceImpl implements ClientProfileService {
                 diaChi.getId(),
                 diaChi.getHoTen(),
                 diaChi.getSdt(),
-                diaChi.getTinhThanh(),
-                diaChi.getQuanHuyen(),
-                diaChi.getPhuongXa(),
-                diaChi.getDiaChiCuThe(),
+                DiaChiHaiCapMapper.toResponse(diaChi.getDiaChi()),
                 diaChi.getLaMacDinh()
         );
     }
