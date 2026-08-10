@@ -278,6 +278,18 @@ async function chonTinh(code) {
   }
 }
 
+function chonXa(code) {
+  const maPhuongXa = String(code ?? "").trim();
+  const phuongXa = dsXa.value.find(
+    (item) => layMaDonViDiaChi(item) === maPhuongXa,
+  );
+  formDiaChi.value.phuongXaCode = phuongXa ? layMaDonViDiaChi(phuongXa) : "";
+  formDiaChi.value.phuongXa = phuongXa?.ten ?? "";
+  if (phuongXa) {
+    loiDiaChi.value.phuongXa = "";
+  }
+}
+
 async function dienDanhSachDiaPhuong(diaChi) {
   await taiDanhSachTinh();
   const ketQua = await doiChieuDiaChiHaiCap(diaChi, dsTinh.value, layPhuongXaHaiCap);
@@ -1111,7 +1123,11 @@ onMounted(() => {
                   ]"
                 >
                   <option value="">-- Chọn phường/xã --</option>
-                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.code">
+                  <option
+                    v-for="xa in dsXa"
+                    :key="layMaDonViDiaChi(xa)"
+                    :value="layMaDonViDiaChi(xa)"
+                  >
                     {{ xa.ten }}
                   </option>
                 </select>
