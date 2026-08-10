@@ -273,6 +273,10 @@ watch(() => props.tienMatKetHop, (val) => {
     }
   }
 });
+function handlePayNowFromQr() {
+  emit('pay-now');
+  showLargeQr.value = false;
+}
 </script>
 
 <template>
@@ -508,7 +512,7 @@ watch(() => props.tienMatKetHop, (val) => {
 
         <div v-if="paymentMethod === 2" class="flex flex-col items-center justify-center rounded-md border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-3 shadow-sm">
           <p class="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">Quét mã QR để thanh toán</p>
-          <div v-if="timeLeft > 0">
+          <div v-if="timeLeft > 0" class="flex flex-col items-center">
             <img
               :src="sepayQrUrl"
               alt="VietQR"
@@ -519,6 +523,14 @@ watch(() => props.tienMatKetHop, (val) => {
             <p class="mt-2 text-center text-xs text-slate-500">
               QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
             </p>
+            <button
+              type="button"
+              class="mt-3 w-full rounded-md bg-red-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:text-slate-400"
+              :disabled="!canPay || payingInvoice"
+              @click="emit('pay-now')"
+            >
+              {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
+            </button>
           </div>
           <div v-else class="flex h-40 w-40 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
             <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -581,6 +593,16 @@ watch(() => props.tienMatKetHop, (val) => {
           <p class="mt-6 text-center text-base font-medium text-slate-600">
             QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
           </p>
+          <div class="mt-6 flex justify-center w-full">
+            <button
+              type="button"
+              class="w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none disabled:text-slate-400"
+              :disabled="!canPay || payingInvoice"
+              @click="handlePayNowFromQr"
+            >
+              {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
+            </button>
+          </div>
         </div>
       </div>
     </Teleport>

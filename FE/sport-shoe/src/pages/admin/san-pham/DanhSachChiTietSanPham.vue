@@ -426,20 +426,13 @@ function validateEditVariantForm() {
   clearBienTheErrors()
 
   const soLuong = parseStock(bienTheForm.soLuong)
-  const giaGoc = parsePositiveMoney(bienTheForm.giaGoc)
   const giaBan = parsePositiveMoney(bienTheForm.giaBan)
 
   if (soLuong == null) {
     bienTheErrors.soLuong = 'Số lượng phải là số nguyên không âm'
   }
-  if (giaGoc == null) {
-    bienTheErrors.giaGoc = 'Giá gốc phải lớn hơn 0'
-  }
   if (giaBan == null) {
     bienTheErrors.giaBan = 'Giá bán phải lớn hơn 0'
-  }
-  if (giaGoc != null && giaBan != null && giaGoc > giaBan) {
-    bienTheErrors.giaGoc = 'Giá gốc không được lớn hơn giá bán'
   }
   if (![1, 0].includes(Number(bienTheForm.kichHoat))) {
     bienTheErrors.kichHoat = 'Trạng thái biến thể không hợp lệ'
@@ -536,14 +529,35 @@ function handleQrPrimaryAction() {
 
 
 function triggerDownloadQr() {
-  const selectedIds = bangBienTheRef.value?.selectedVariantIds
-  if (!selectedIds || selectedIds.size === 0) {
+  const map = bangBienTheRef.value?.selectedVariantsMap
+  if (!map || map.size === 0) {
     showToast('Vui lòng chọn ít nhất 1 biến thể để tải mã QR', 'error')
     return
   }
-  const selectedItems = items.value.filter(i => selectedIds.has(i.id))
+  const selectedItems = Array.from(map.values())
   handleBulkQr(selectedItems)
-  selectedIds.clear()
+}
+
+function handleSelectAllPages() {
+  loading.value = true
+  api.layDanhSachChiTietSanPham({
+    keyword: boLoc.keyword.trim() || undefined,
+    giayId: selectedGiayId.value,
+    mauSacId: boLoc.mauSacId,
+    kichCoId: boLoc.kichCoId,
+    trangThai: boLoc.trangThai,
+    page: 0,
+    size: Math.max(totalItems.value, 1000)
+  }).then(response => {
+    if (bangBienTheRef.value && response.items) {
+      bangBienTheRef.value.addSelectedItems(response.items)
+      showToast(`Đã chọn tất cả ${response.items.length} biến thể`)
+    }
+  }).catch(error => {
+    showToast(getDisplayErrorMessage(error, 'Không thể tải toàn bộ danh sách biến thể'), 'error')
+  }).finally(() => {
+    loading.value = false
+  })
 }
 
 async function handleBulkQr(selectedItems) {
@@ -783,6 +797,7 @@ onUnmounted(() => {
       @bulk-qr="handleBulkQr"
       @refresh="loadData"
       @selection-changed="coBienTheDuocChon = $event"
+      @select-all-pages="handleSelectAllPages"
       @update:current-page="loadData"
       @update:page-size="handlePageSizeChange"
       @open-discount-detail="openDiscountDetail"

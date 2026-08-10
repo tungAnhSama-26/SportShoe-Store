@@ -279,7 +279,6 @@ onUnmounted(() => {
         <router-link :to="{ path: '/', hash: '#bo-suu-tap' }" class="shrink-0 transition hover:text-primary">Danh mục</router-link>
         <router-link :to="{ path: '/khachhang/san-pham' }" class="shrink-0 transition hover:text-primary">Sản phẩm</router-link>
         <router-link :to="{ path: '/', hash: '#noi-bat' }" class="shrink-0 transition hover:text-primary">Nổi bật</router-link>
-        <router-link :to="{ path: '/', hash: '#gia-tri' }" class="shrink-0 transition hover:text-primary">Giới thiệu</router-link>
         <router-link :to="{ path: '/khachhang/tra-cuu-don' }" class="shrink-0 transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link :to="{ path: '/khachhang/danh-gia' }" class="shrink-0 transition hover:text-primary">Đánh giá</router-link>
         <router-link :to="{ path: '/khachhang/goi-y' }" class="shrink-0 transition hover:text-primary">Gợi ý giày</router-link>
@@ -295,7 +294,9 @@ onUnmounted(() => {
               <path d="m20 20-3.5-3.5" />
             </svg>
           </button>
-          <div v-if="hienTimKiem" @click="dongTimKiem" class="fixed inset-0 z-40"></div>
+          <Teleport to="body">
+            <div v-if="hienTimKiem" @click="dongTimKiem" class="fixed inset-0 z-40 bg-transparent"></div>
+          </Teleport>
           <div v-if="hienTimKiem" class="absolute right-0 z-50 mt-3 w-80 rounded-2xl border border-slate-100 bg-white p-3 shadow-xl">
             <div class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:border-primary">
               <svg @click="timKiem" class="h-4 w-4 text-slate-400 cursor-pointer hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
@@ -348,7 +349,9 @@ onUnmounted(() => {
               <circle cx="12" cy="7" r="4" />
             </svg>
           </button>
-          <div v-if="menuTaiKhoanMo" @click="menuTaiKhoanMo = false" class="fixed inset-0 z-40"></div>
+          <Teleport to="body">
+            <div v-if="menuTaiKhoanMo" @click="menuTaiKhoanMo = false" class="fixed inset-0 z-40 bg-transparent"></div>
+          </Teleport>
           <div v-if="menuTaiKhoanMo" class="absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-2 shadow-xl">
             <template v-if="daDangNhap">
               <div class="border-b border-slate-100 px-4 py-2.5">
@@ -391,78 +394,82 @@ onUnmounted(() => {
     </div>
 
     <!-- Panel chuông thông báo (dùng chung cho nút chuông desktop + mobile) -->
-    <div v-if="moChuong" @click="moChuong = false" class="fixed inset-0 z-40"></div>
-    <div v-if="moChuong" class="fixed right-3 top-[64px] z-50 w-96 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <p class="text-sm font-bold text-slate-800">Thông báo</p>
-        <span class="text-[10px] font-medium text-slate-400">Hiển thị trong 3 ngày gần nhất</span>
-      </div>
-      <div class="max-h-[26rem] overflow-y-auto">
-        <p v-if="dangTaiThongBao" class="px-4 py-8 text-center text-sm text-slate-400">Đang tải...</p>
-        <p v-else-if="!dsThongBao.length" class="px-4 py-8 text-center text-sm text-slate-400">
-          Chưa có thông báo nào trong 3 ngày qua.
-        </p>
-        <template v-else>
-          <button
-            v-for="tb in dsThongBao"
-            :key="tb.id"
-            @click="bamThongBao(tb)"
-            :class="[
-              'flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left transition hover:bg-slate-50',
-              tb.lienKet ? 'cursor-pointer' : 'cursor-default',
-            ]"
-          >
-            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base">
-              {{ bieuTuongLoai(tb.loai) }}
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="flex items-center gap-2">
-                <span class="truncate text-sm font-semibold text-slate-800">{{ tb.tieuDe }}</span>
-                <span v-if="tb.daXem === false" class="h-2 w-2 shrink-0 rounded-full bg-primary"></span>
+    <Teleport to="body">
+      <div v-if="moChuong" @click="moChuong = false" class="fixed inset-0 z-40 bg-transparent"></div>
+      <div v-if="moChuong" class="fixed right-3 top-[64px] z-50 w-96 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <p class="text-sm font-bold text-slate-800">Thông báo</p>
+          <span class="text-[10px] font-medium text-slate-400">Hiển thị trong 3 ngày gần nhất</span>
+        </div>
+        <div class="max-h-[26rem] overflow-y-auto">
+          <p v-if="dangTaiThongBao" class="px-4 py-8 text-center text-sm text-slate-400">Đang tải...</p>
+          <p v-else-if="!dsThongBao.length" class="px-4 py-8 text-center text-sm text-slate-400">
+            Chưa có thông báo nào trong 3 ngày qua.
+          </p>
+          <template v-else>
+            <button
+              v-for="tb in dsThongBao"
+              :key="tb.id"
+              @click="bamThongBao(tb)"
+              :class="[
+                'flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3 text-left transition hover:bg-slate-50',
+                tb.lienKet ? 'cursor-pointer' : 'cursor-default',
+              ]"
+            >
+              <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base">
+                {{ bieuTuongLoai(tb.loai) }}
               </span>
-              <span v-if="tb.noiDung" class="mt-0.5 block text-xs leading-relaxed text-slate-500 line-clamp-2">{{ tb.noiDung }}</span>
-              <span class="mt-1 block text-[10px] font-medium text-slate-400">{{ thoiGianTruoc(tb.ngayTao) }}</span>
-            </span>
-          </button>
-        </template>
+              <span class="min-w-0 flex-1">
+                <span class="flex items-center gap-2">
+                  <span class="truncate text-sm font-semibold text-slate-800">{{ tb.tieuDe }}</span>
+                  <span v-if="tb.daXem === false" class="h-2 w-2 shrink-0 rounded-full bg-primary"></span>
+                </span>
+                <span v-if="tb.noiDung" class="mt-0.5 block text-xs leading-relaxed text-slate-500 line-clamp-2">{{ tb.noiDung }}</span>
+                <span class="mt-1 block text-[10px] font-medium text-slate-400">{{ thoiGianTruoc(tb.ngayTao) }}</span>
+              </span>
+            </button>
+          </template>
+        </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Modal chi tiết 1 thông báo (bấm từ chuông) -->
-    <div v-if="thongBaoDangXem" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div @click="dongChiTietThongBao" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
-      <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <div class="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl">
-            {{ bieuTuongLoai(thongBaoDangXem.loai) }}
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="text-base font-bold text-slate-800">{{ thongBaoDangXem.tieuDe }}</p>
-            <p class="mt-0.5 text-[11px] font-medium text-slate-400">{{ thoiGianTruoc(thongBaoDangXem.ngayTao) }}</p>
+    <Teleport to="body">
+      <div v-if="thongBaoDangXem" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div @click="dongChiTietThongBao" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div class="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl">
+              {{ bieuTuongLoai(thongBaoDangXem.loai) }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="text-base font-bold text-slate-800">{{ thongBaoDangXem.tieuDe }}</p>
+              <p class="mt-0.5 text-[11px] font-medium text-slate-400">{{ thoiGianTruoc(thongBaoDangXem.ngayTao) }}</p>
+            </div>
+            <button @click="dongChiTietThongBao" class="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" aria-label="Đóng">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button @click="dongChiTietThongBao" class="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" aria-label="Đóng">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="px-5 py-4">
-          <p class="whitespace-pre-line text-sm leading-relaxed text-slate-600">{{ thongBaoDangXem.noiDung || 'Không có nội dung chi tiết.' }}</p>
-        </div>
-        <div class="flex justify-end gap-3 border-t border-slate-100 px-5 py-3.5">
-          <button @click="dongChiTietThongBao" class="rounded-full bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
-            Đóng
-          </button>
-          <button
-            v-if="thongBaoDangXem.lienKet"
-            @click="diToiLienKet"
-            class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/30 transition hover:bg-rose-700"
-          >
-            Xem ngay →
-          </button>
+          <div class="px-5 py-4">
+            <p class="whitespace-pre-line text-sm leading-relaxed text-slate-600">{{ thongBaoDangXem.noiDung || 'Không có nội dung chi tiết.' }}</p>
+          </div>
+          <div class="flex justify-end gap-3 border-t border-slate-100 px-5 py-3.5">
+            <button @click="dongChiTietThongBao" class="rounded-full bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
+              Đóng
+            </button>
+            <button
+              v-if="thongBaoDangXem.lienKet"
+              @click="diToiLienKet"
+              class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/30 transition hover:bg-rose-700"
+            >
+              Xem ngay →
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Mobile Menu -->
     <div
@@ -474,7 +481,6 @@ onUnmounted(() => {
         <router-link :to="{ path: '/', hash: '#bo-suu-tap' }" @click="toggleMenu" class="transition hover:text-primary">Danh mục</router-link>
         <router-link :to="{ path: '/khachhang/san-pham' }" @click="toggleMenu" class="transition hover:text-primary">Sản phẩm</router-link>
         <router-link :to="{ path: '/', hash: '#noi-bat' }" @click="toggleMenu" class="transition hover:text-primary">Nổi bật</router-link>
-        <router-link :to="{ path: '/', hash: '#gia-tri' }" @click="toggleMenu" class="transition hover:text-primary">Giới thiệu</router-link>
         <router-link to="/khachhang/tra-cuu-don" @click="toggleMenu" class="transition hover:text-primary">Theo dõi đơn hàng</router-link>
         <router-link to="/khachhang/danh-gia" @click="toggleMenu" class="transition hover:text-primary">Đánh giá</router-link>
         <router-link to="/khachhang/goi-y" @click="toggleMenu" class="transition hover:text-primary">Gợi ý giày</router-link>
