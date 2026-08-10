@@ -48,13 +48,11 @@ CREATE TABLE nhan_vien (
     hinh_anh       NVARCHAR(500)    NULL,
     ngay_cap_nhat  DATETIME2        NULL,
     face_descriptor NVARCHAR(MAX)     NULL,
-    bat_buoc_doi_mat_khau BIT         NOT NULL CONSTRAINT df_nhan_vien_bbdmk DEFAULT 0,
-    han_doi_mat_khau DATETIME2        NULL,
     CONSTRAINT uq_nhan_vien_ma UNIQUE (ma),
     CONSTRAINT uq_nhan_vien_ten_dang_nhap UNIQUE (ten_dang_nhap),
     CONSTRAINT uq_nhan_vien_email UNIQUE (email),
     CONSTRAINT ck_nhan_vien_vai_tro CHECK (vai_tro IN (1, 2, 3)),
-    CONSTRAINT ck_nhan_vien_trang_thai CHECK (trang_thai IN (0, 1))
+    CONSTRAINT ck_nhan_vien_trang_thai CHECK (trang_thai IN (0, 1, 2))
 );
 GO
 
@@ -537,11 +535,7 @@ CREATE TABLE hoa_don (
     ghi_chu               NVARCHAR(1000)   NULL,
     ngay_tao              DATETIME2        NOT NULL CONSTRAINT df_hoa_don_ngay_tao DEFAULT SYSDATETIME(),
     ngay_cap_nhat         DATETIME2        NULL,
-    han_giu_hang           DATETIME2        NULL,
-    da_nhan_hang           BIT              NOT NULL CONSTRAINT df_hoa_don_da_nhan_hang DEFAULT 0,
     da_tru_kho             BIT              NOT NULL CONSTRAINT df_hoa_don_da_tru_kho DEFAULT 0,
-    so_lan_sua_dia_chi     INT              NOT NULL CONSTRAINT df_hoa_don_so_lan_sua_dia_chi DEFAULT 0,
-    trang_thai_truoc_yeu_cau_huy INT        NULL,
     CONSTRAINT uq_hoa_don_ma UNIQUE (ma),
     CONSTRAINT ck_hoa_don_kenh_ban CHECK (kenh_ban IN (1, 2)),
     CONSTRAINT ck_hoa_don_trang_thai CHECK (trang_thai IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)),
@@ -666,10 +660,10 @@ CREATE TABLE lich_lam_viec (
     id             UNIQUEIDENTIFIER NOT NULL CONSTRAINT pk_lich_lam_viec PRIMARY KEY DEFAULT NEWID(),
     nhan_vien_id   UNIQUEIDENTIFIER NOT NULL,
     ngay           DATE             NOT NULL,
-    ca             VARCHAR(10)      NOT NULL,
-    CONSTRAINT uq_lich_lam_viec_nv_ngay UNIQUE (nhan_vien_id, ngay),
-    CONSTRAINT ck_lich_lam_viec_ca CHECK (ca IN ('sang', 'chieu', 'toi')),
-    CONSTRAINT fk_lich_lam_viec_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id) ON DELETE CASCADE
+    ca_lam_id      VARCHAR(50)      NOT NULL,
+    CONSTRAINT uq_lich_lam_viec_nv_ngay_ca UNIQUE (nhan_vien_id, ngay, ca_lam_id),
+    CONSTRAINT fk_lich_lam_viec_nhan_vien FOREIGN KEY (nhan_vien_id) REFERENCES nhan_vien(id) ON DELETE CASCADE,
+    CONSTRAINT fk_lich_lam_viec_ca_lam FOREIGN KEY (ca_lam_id) REFERENCES ca_lam(id)
 );
 GO
 
@@ -707,7 +701,7 @@ CREATE INDEX ix_hoa_don_nhan_vien ON hoa_don(nhan_vien_id);
 CREATE INDEX ix_hoa_don_giao_ca ON hoa_don(giao_ca_id);
 CREATE INDEX ix_hoa_don_kenh_ban ON hoa_don(kenh_ban);
 CREATE INDEX ix_hoa_don_trang_thai ON hoa_don(trang_thai);
-CREATE INDEX ix_ls_hd_hoa_don ON lich_su_hoa_don(hoa_don_id);
+CREATE INDEX ix_ls_hd_su_kien ON lich_su_hoa_don(hoa_don_id, trang_thai, ngay_tao DESC, id DESC);
 CREATE INDEX ix_hdct_hoa_don ON hoa_don_chi_tiet(hoa_don_id);
 CREATE INDEX ix_hdct_gct ON hoa_don_chi_tiet(giay_chi_tiet_id);
 CREATE INDEX ix_vc_hoa_don ON van_chuyen(hoa_don_id);
@@ -716,5 +710,5 @@ CREATE INDEX ix_tt_giao_dich_goc ON thanh_toan(giao_dich_goc_id);
 CREATE INDEX ix_danh_gia_giay ON danh_gia(giay_id);
 CREATE INDEX ix_danh_gia_khach_hang ON danh_gia(khach_hang_id);
 CREATE INDEX ix_danh_gia_hdct ON danh_gia(hoa_don_chi_tiet_id);
-CREATE INDEX ix_lich_lam_viec_ngay_ca ON lich_lam_viec(ngay, ca);
+CREATE INDEX ix_lich_lam_viec_ngay_ca ON lich_lam_viec(ngay, ca_lam_id);
 GO

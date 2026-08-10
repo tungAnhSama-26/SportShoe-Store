@@ -10,6 +10,7 @@ import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.DongSan
 import com.example.server.core.client.donhang.dto.DonHangChiTietResponse.LichSuTrangThai;
 import com.example.server.core.client.donhang.dto.DonHangTomTatResponse;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.hoadon.LichSuHoaDonEvent;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.DanhGia;
 import com.example.server.entity.GiayChiTiet;
@@ -257,7 +258,7 @@ public class ClientXemDonHangService {
                 .findByHoaDonIdOrderByNgayTaoDesc(hd.getId())
                 .stream()
                 .map(lichSu -> new LichSuTrangThai(
-                        lichSu.getTrangThai(),
+                        LichSuHoaDonEvent.nhanHienThi(lichSu.getTrangThai()),
                         lichSu.getNgayTao(),
                         lichSu.getNhanVien() != null ? lichSu.getNhanVien().getMa() + " - " + lichSu.getNhanVien().getHoTen() : (lichSu.getNguoiThaoTac() != null ? lichSu.getNguoiThaoTac() : "Khách hàng"),
                         lichSu.getGhiChu()))
@@ -266,7 +267,9 @@ public class ClientXemDonHangService {
         boolean laCK = laChuyenKhoan(hd.getId());
         boolean dangChoXacNhan = hd.getTrangThai() != null
                 && hd.getTrangThai() == TRANG_THAI_CHO_XAC_NHAN;
-        boolean coTheSua = dangChoXacNhan && !laCK && (hd.getSoLanSuaDiaChi() == null || hd.getSoLanSuaDiaChi() < 1);
+        boolean daSuaDiaChi = daCoSuKien(hd.getId(), LichSuHoaDonEvent.KHACH_SUA_DIA_CHI);
+        boolean coTheSua = dangChoXacNhan && !laCK && !daSuaDiaChi;
+        boolean daNhanHang = daCoSuKien(hd.getId(), LichSuHoaDonEvent.KHACH_DA_NHAN_HANG);
 
         int virtualStatus = hd.getTrangThai();
         String virtualStatusText = nhanTrangThai(hd.getTrangThai());
@@ -291,7 +294,7 @@ public class ClientXemDonHangService {
         return new DonHangChiTietResponse(
                 hd.getId(), hd.getMa(), hd.getNgayLap(),
                 virtualStatus, virtualStatusText,
-                Boolean.TRUE.equals(hd.getDaNhanHang()),
+                daNhanHang,
                 hd.getTenNguoiNhan(), hd.getSdtNguoiNhan(), DiaChiHaiCapMapper.toResponse(hd.getDiaChiGiaoHang()),
                 maPhieu, sanPhams,
                 tamTinh, giamDot, giamVoucher, phiVanChuyen, hd.getTongTienThanhToan(),
@@ -299,7 +302,7 @@ public class ClientXemDonHangService {
                 laCK ? "CHUYEN_KHOAN" : "COD",
                 // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
                 dangChoXacNhan, coTheSua, false, ngayGiao,
-                hd.getSoLanSuaDiaChi() != null ? hd.getSoLanSuaDiaChi() : 0);
+                daSuaDiaChi ? 1 : 0);
     }
 
     private boolean coThanhToanThanhCong(HoaDon hoaDon) {
@@ -316,17 +319,25 @@ public class ClientXemDonHangService {
     /** Khách xác nhận đã nhận hàng (đơn phải ở trạng thái Đã giao hàng). */
     @Transactional
     public void xacNhanDaNhanHang(UUID khachHangId, Integer id) {
-        HoaDon hd = hoaDonRepository.findById(id)
+        HoaDon hd = hoaDonRepository.findDetailByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
         if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
+        }
+        if (daCoSuKien(hd.getId(), LichSuHoaDonEvent.KHACH_DA_NHAN_HANG)) {
+            return;
         }
         if (hd.getTrangThai() == null || hd.getTrangThai() != TRANG_THAI_DA_GIAO_HANG) {
             throw new BusinessException("Đơn hàng chưa ở trạng thái đã giao hàng, chưa thể xác nhận đã nhận hàng");
         }
         
         Instant now = Instant.now();
-        hd.setDaNhanHang(true);
+        ghiLichSuKhachHang(
+                hd,
+                LichSuHoaDonEvent.KHACH_DA_NHAN_HANG,
+                "Khách hàng xác nhận đã nhận hàng",
+                now
+        );
         
         // Kiểm tra xem đơn đã có giao dịch thanh toán thành công hay chưa
         boolean daThanhToan = coThanhToanThanhCong(hd);
@@ -340,7 +351,7 @@ public class ClientXemDonHangService {
             lichSu.setHoaDon(hd);
             lichSu.setNhanVien(null);
             lichSu.setNguoiThaoTac("Khách hàng");
-            lichSu.setTrangThai("Hoàn thành");
+            lichSu.setTrangThai(LichSuHoaDonEvent.HOAN_THANH.ma());
             lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng và đơn đã được thanh toán");
             lichSu.setNgayTao(now);
             lichSuHoaDonRepository.save(lichSu);
@@ -355,7 +366,7 @@ public class ClientXemDonHangService {
             lichSu.setHoaDon(hd);
             lichSu.setNhanVien(null);
             lichSu.setNguoiThaoTac("Khách hàng");
-            lichSu.setTrangThai("Đã giao hàng");
+            lichSu.setTrangThai(LichSuHoaDonEvent.DA_GIAO_HANG.ma());
             lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng (Đang chờ xác nhận thanh toán)");
             lichSu.setNgayTao(now);
             lichSuHoaDonRepository.save(lichSu);
@@ -371,7 +382,7 @@ public class ClientXemDonHangService {
      */
     @Transactional
     public void huyDon(UUID khachHangId, Integer id) {
-        HoaDon hd = hoaDonRepository.findById(id)
+        HoaDon hd = hoaDonRepository.findDetailByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
         if (hd.getKhachHang() == null || !hd.getKhachHang().getId().equals(khachHangId)) {
             throw new BusinessException("Bạn không có quyền thao tác đơn hàng này");
@@ -391,7 +402,7 @@ public class ClientXemDonHangService {
         lichSu.setHoaDon(hd);
         lichSu.setNhanVien(null);
         lichSu.setNguoiThaoTac("Khách hàng");
-        lichSu.setTrangThai("Hủy");
+        lichSu.setTrangThai(LichSuHoaDonEvent.HUY.ma());
         lichSu.setGhiChu(canHoanTien
                 ? "Khách hàng hủy đơn (đã thanh toán) - cần hoàn tiền"
                 : "Khách hàng hủy đơn");
@@ -432,7 +443,7 @@ public class ClientXemDonHangService {
             throw new BusinessException(
                     "Chỉ có thể cập nhật thông tin giao hàng khi đơn đang chờ xác nhận");
         }
-        if (hd.getSoLanSuaDiaChi() != null && hd.getSoLanSuaDiaChi() >= 1) {
+        if (daCoSuKien(hd.getId(), LichSuHoaDonEvent.KHACH_SUA_DIA_CHI)) {
             throw new BusinessException("Bạn chỉ được phép chỉnh sửa thông tin giao hàng tối đa 1 lần.");
         }
 
@@ -502,8 +513,6 @@ public class ClientXemDonHangService {
         hd.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hd.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
         hd.setDiaChiGiaoHang(diaChiMoi);
-        hd.setSoLanSuaDiaChi((hd.getSoLanSuaDiaChi() == null ? 0 : hd.getSoLanSuaDiaChi()) + 1);
-
         BigDecimal tongHang = hd.getTongTienHang() == null ? BigDecimal.ZERO : hd.getTongTienHang();
         BigDecimal tienGiam = hd.getTienGiam() == null ? BigDecimal.ZERO : hd.getTienGiam();
         hd.setTongTienThanhToan(tongHang.add(phiShipMoi).subtract(tienGiam).max(BigDecimal.ZERO));
@@ -515,7 +524,7 @@ public class ClientXemDonHangService {
         lichSu.setHoaDon(hd);
         lichSu.setNhanVien(null);
         lichSu.setNguoiThaoTac("Khách hàng");
-        lichSu.setTrangThai("Cập nhật thông tin giao hàng");
+        lichSu.setTrangThai(LichSuHoaDonEvent.KHACH_SUA_DIA_CHI.ma());
         lichSu.setGhiChu(finalGhiChu);
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
@@ -640,6 +649,26 @@ public class ClientXemDonHangService {
 
         hoaDonRealtimePublisher.publishAfterCommit(hd, "SAN_PHAM");
         return new CapNhatSoLuongResponse(chiTiet(khachHangId, id), doiGia);
+    }
+
+    private boolean daCoSuKien(Integer hoaDonId, LichSuHoaDonEvent event) {
+        return lichSuHoaDonRepository.existsByHoaDonIdAndTrangThai(hoaDonId, event.ma());
+    }
+
+    private void ghiLichSuKhachHang(
+            HoaDon hoaDon,
+            LichSuHoaDonEvent event,
+            String ghiChu,
+            Instant ngayTao
+    ) {
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hoaDon);
+        lichSu.setNhanVien(null);
+        lichSu.setNguoiThaoTac("Khách hàng");
+        lichSu.setTrangThai(event.ma());
+        lichSu.setGhiChu(ghiChu);
+        lichSu.setNgayTao(ngayTao);
+        lichSuHoaDonRepository.save(lichSu);
     }
 
     private String tien(BigDecimal v) {
