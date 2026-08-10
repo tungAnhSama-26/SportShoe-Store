@@ -141,8 +141,8 @@ const chatContainer = ref(null);
 let sessionSubscription = null;
 
 const promptSuggestions = [
-  "Tìm đôi giày chạy bộ màu trắng",
-  "Mẫu giày nào đang bán chạy nhất?",
+  "Xem các mẫu giày bán chạy và hot nhất",
+  "Cửa hàng đang có đợt giảm giá nào không?",
   "Tôi muốn được tư vấn chọn size giày",
   "Liên hệ trực tiếp với nhân viên"
 ];
@@ -918,6 +918,23 @@ function toggleChatWithDragCheck() {
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce"></div>
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
               <div class="h-1.5 w-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            </div>
+          </div>
+
+          <!-- Follow-up Quick Suggestions after messages -->
+          <div v-if="sessionState === 1 && !isSending" class="pt-2 pb-1 space-y-1.5">
+            <div class="text-[10px] text-slate-400 font-medium px-1 flex items-center gap-1">
+              <span>💡 Gợi ý câu hỏi tiếp theo:</span>
+            </div>
+            <div class="space-y-1.5">
+              <button
+                v-for="prompt in promptSuggestions"
+                :key="prompt"
+                @click="GuiTinNhan(prompt)"
+                class="w-full text-left bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 hover:bg-primary/5 hover:text-primary dark:hover:bg-slate-700 hover:border-primary/20 p-2 rounded-xl text-[11px] text-slate-600 dark:text-slate-300 font-medium transition-all shadow-xs"
+              >
+                {{ prompt }}
+              </button>
             </div>
           </div>
         </template>
