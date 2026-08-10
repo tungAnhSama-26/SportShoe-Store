@@ -46,54 +46,6 @@ public class DropConstraintRunner implements CommandLineRunner {
             System.out.println("Could not update ca_lam names: " + e.getMessage());
         }
 
-        // Tự động xóa khách hàng trùng lặp số 2 (Trần Vũ Tùng Anh không có ảnh đại diện)
-        try {
-            jdbcTemplate.execute("""
-                DELETE FROM dbo.dia_chi_khach_hang WHERE khach_hang_id IN (
-                    SELECT id FROM dbo.khach_hang 
-                    WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                      AND (hinh_anh IS NULL OR hinh_anh = '')
-                );
-                DELETE FROM dbo.phieu_giam_gia_khach_hang WHERE khach_hang_id IN (
-                    SELECT id FROM dbo.khach_hang 
-                    WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                      AND (hinh_anh IS NULL OR hinh_anh = '')
-                );
-                DELETE FROM dbo.tai_khoan_ngan_hang WHERE khach_hang_id IN (
-                    SELECT id FROM dbo.khach_hang 
-                    WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                      AND (hinh_anh IS NULL OR hinh_anh = '')
-                );
-                DELETE FROM dbo.thong_bao_khach_hang WHERE khach_hang_id IN (
-                    SELECT id FROM dbo.khach_hang 
-                    WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                      AND (hinh_anh IS NULL OR hinh_anh = '')
-                );
-                DELETE FROM dbo.gio_hang_chi_tiet WHERE gio_hang_id IN (
-                    SELECT id FROM dbo.gio_hang WHERE id_khach_hang IN (
-                        SELECT id FROM dbo.khach_hang 
-                        WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                          AND (hinh_anh IS NULL OR hinh_anh = '')
-                    )
-                );
-                DELETE FROM dbo.gio_hang WHERE id_khach_hang IN (
-                    SELECT id FROM dbo.khach_hang 
-                    WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                      AND (hinh_anh IS NULL OR hinh_anh = '')
-                );
-                UPDATE dbo.hoa_don SET id_khach_hang = NULL WHERE id_khach_hang IN (
-                    SELECT id FROM dbo.khach_hang 
-                    WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                      AND (hinh_anh IS NULL OR hinh_anh = '')
-                );
-                DELETE FROM dbo.khach_hang 
-                WHERE (email LIKE 'tunganht26%' OR sdt = '0383854485' OR ho_ten LIKE N'%Trần Vũ Tùng%')
-                  AND (hinh_anh IS NULL OR hinh_anh = '');
-            """);
-            System.out.println("Successfully removed duplicate customer #2 without avatar.");
-        } catch (Exception e) {
-            System.out.println("Could not remove duplicate customer: " + e.getMessage());
-        }
     }
 
     private void dropConstraint(String table, String constraint) {
