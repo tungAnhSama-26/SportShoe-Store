@@ -1,6 +1,8 @@
 package com.example.server.core.admin.nhanVien.dto.request;
 
 import com.example.server.infrastructure.validation.ValidationPatterns;
+import com.example.server.infrastructure.address.DiaChiHaiCapRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,7 +27,7 @@ public record CapNhatNhanVienRequest(
         String sdt,
         @Size(max = 10) String gioiTinh,
         @Past(message = "Ngày sinh không được là ngày trong tương lai") LocalDate ngaySinh,
-        @Size(max = 200) String diaChi,
+        @Valid DiaChiHaiCapRequest diaChi,
         String hinhAnh,
         @NotNull Integer vaiTro
 ) {}

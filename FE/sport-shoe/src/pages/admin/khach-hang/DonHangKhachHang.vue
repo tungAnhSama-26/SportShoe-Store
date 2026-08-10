@@ -200,7 +200,7 @@ onMounted(taiDuLieu);
                 >
                 <span class="text-slate-600 text-[12px] leading-relaxed">
                   {{ diaChiMacDinh.diaChiCuThe }}, {{ diaChiMacDinh.phuongXa }},
-                  {{ diaChiMacDinh.quanHuyen }}, {{ diaChiMacDinh.tinhThanh }}
+                  {{ diaChiMacDinh.tinhThanh }}
                 </span>
               </div>
             </div>

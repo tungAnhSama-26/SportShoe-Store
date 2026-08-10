@@ -37,6 +37,8 @@ import {
   datMacDinhTaiKhoanNganHang,
 } from "../services/client-profile";
 import { API_BASE_URL } from "../services/api-client";
+import { layPhuongXaHaiCap, layTinhThanhHaiCap } from "../services/dia-chi";
+import { chuanHoaDiaChi, doiChieuDiaChiHaiCap, layMaDonViDiaChi } from "../utils/dia-chi";
 import { getDisplayErrorMessage, getFieldErrors } from "../utils/error-message";
 import { showConfirm, showSuccess, showError } from "../utils/alert";
 import { resolveHinhAnh } from "../utils/resolve-image";
@@ -141,15 +143,14 @@ const dangLuuDiaChi = ref(false);
 const hienFormDiaChi = ref(false);
 const diaChiDangSua = ref(null);
 const dsTinh = ref([]);
-const dsHuyen = ref([]);
 const dsXa = ref([]);
 const maTinhChon = ref(null);
-const maHuyenChon = ref(null);
 const formDiaChi = ref({
   hoTen: "",
   sdt: "",
+  tinhThanhCode: "",
   tinhThanh: "",
-  quanHuyen: "",
+  phuongXaCode: "",
   phuongXa: "",
   diaChiCuThe: "",
   laMacDinh: false,
@@ -158,7 +159,6 @@ const loiDiaChi = ref({
   hoTen: "",
   sdt: "",
   tinhThanh: "",
-  quanHuyen: "",
   phuongXa: "",
   diaChiCuThe: "",
 });
@@ -253,8 +253,7 @@ async function taiDanhSachDiaChi() {
 async function taiDanhSachTinh() {
   if (dsTinh.value.length) return;
   try {
-    const response = await fetch("https://provinces.open-api.vn/api/p/");
-    dsTinh.value = await response.json();
+    dsTinh.value = await layTinhThanhHaiCap();
   } catch {
     dsTinh.value = [];
     showError("Không thể tải danh sách tỉnh/thành phố. Vui lòng thử lại.");
@@ -263,68 +262,40 @@ async function taiDanhSachTinh() {
 
 async function chonTinh(code) {
   maTinhChon.value = code;
-  maHuyenChon.value = null;
-  dsHuyen.value = [];
   dsXa.value = [];
+  formDiaChi.value.tinhThanhCode = code ? String(code) : "";
   formDiaChi.value.tinhThanh =
-    dsTinh.value.find((item) => item.code === code)?.name ?? "";
-  formDiaChi.value.quanHuyen = "";
+    dsTinh.value.find((item) => layMaDonViDiaChi(item) === String(code))?.ten ?? "";
+  formDiaChi.value.phuongXaCode = "";
   formDiaChi.value.phuongXa = "";
   if (!code) return;
 
   try {
-    const response = await fetch(
-      `https://provinces.open-api.vn/api/p/${code}?depth=2`,
-    );
-    const data = await response.json();
-    dsHuyen.value = data.districts ?? [];
-  } catch {
-    dsHuyen.value = [];
-    showError("Không thể tải danh sách quận/huyện. Vui lòng thử lại.");
-  }
-}
-
-async function chonHuyen(code) {
-  maHuyenChon.value = code;
-  dsXa.value = [];
-  formDiaChi.value.quanHuyen =
-    dsHuyen.value.find((item) => item.code === code)?.name ?? "";
-  formDiaChi.value.phuongXa = "";
-  if (!code) return;
-
-  try {
-    const response = await fetch(
-      `https://provinces.open-api.vn/api/d/${code}?depth=2`,
-    );
-    const data = await response.json();
-    dsXa.value = data.wards ?? [];
+    dsXa.value = await layPhuongXaHaiCap(code);
   } catch {
     dsXa.value = [];
     showError("Không thể tải danh sách phường/xã. Vui lòng thử lại.");
   }
 }
 
+function chonXa(code) {
+  const maPhuongXa = String(code ?? "").trim();
+  const phuongXa = dsXa.value.find(
+    (item) => layMaDonViDiaChi(item) === maPhuongXa,
+  );
+  formDiaChi.value.phuongXaCode = phuongXa ? layMaDonViDiaChi(phuongXa) : "";
+  formDiaChi.value.phuongXa = phuongXa?.ten ?? "";
+  if (phuongXa) {
+    loiDiaChi.value.phuongXa = "";
+  }
+}
+
 async function dienDanhSachDiaPhuong(diaChi) {
   await taiDanhSachTinh();
-  const tinh = dsTinh.value.find((item) => item.name === diaChi.tinhThanh);
-  if (!tinh) return;
-
-  maTinhChon.value = tinh.code;
-  const tinhResponse = await fetch(
-    `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`,
-  );
-  const tinhData = await tinhResponse.json();
-  dsHuyen.value = tinhData.districts ?? [];
-
-  const huyen = dsHuyen.value.find((item) => item.name === diaChi.quanHuyen);
-  if (!huyen) return;
-
-  maHuyenChon.value = huyen.code;
-  const huyenResponse = await fetch(
-    `https://provinces.open-api.vn/api/d/${huyen.code}?depth=2`,
-  );
-  const huyenData = await huyenResponse.json();
-  dsXa.value = huyenData.wards ?? [];
+  const ketQua = await doiChieuDiaChiHaiCap(diaChi, dsTinh.value, layPhuongXaHaiCap);
+  Object.assign(formDiaChi.value, ketQua.diaChi);
+  dsXa.value = ketQua.danhSachPhuongXa;
+  maTinhChon.value = ketQua.diaChi.tinhThanhCode || null;
 }
 
 function resetLoiDiaChi() {
@@ -332,7 +303,6 @@ function resetLoiDiaChi() {
     hoTen: "",
     sdt: "",
     tinhThanh: "",
-    quanHuyen: "",
     phuongXa: "",
     diaChiCuThe: "",
   };
@@ -343,16 +313,15 @@ async function moThemDiaChi() {
   formDiaChi.value = {
     hoTen: form.value.hoTen || "",
     sdt: form.value.sdt || "",
+    tinhThanhCode: "",
     tinhThanh: "",
-    quanHuyen: "",
+    phuongXaCode: "",
     phuongXa: "",
     diaChiCuThe: "",
     laMacDinh: dsDiaChi.value.length === 0,
   };
   resetLoiDiaChi();
   maTinhChon.value = null;
-  maHuyenChon.value = null;
-  dsHuyen.value = [];
   dsXa.value = [];
   hienFormDiaChi.value = true;
   await taiDanhSachTinh();
@@ -363,10 +332,7 @@ async function moSuaDiaChi(diaChi) {
   formDiaChi.value = {
     hoTen: diaChi.hoTen ?? "",
     sdt: diaChi.sdt ?? "",
-    tinhThanh: diaChi.tinhThanh ?? "",
-    quanHuyen: diaChi.quanHuyen ?? "",
-    phuongXa: diaChi.phuongXa ?? "",
-    diaChiCuThe: diaChi.diaChiCuThe ?? "",
+    ...chuanHoaDiaChi(diaChi),
     laMacDinh: Boolean(diaChi.laMacDinh),
   };
   resetLoiDiaChi();
@@ -401,10 +367,6 @@ function validateDiaChi() {
     loiDiaChi.value.tinhThanh = "Vui lòng chọn tỉnh/thành phố.";
     hopLe = false;
   }
-  if (!diaChi.quanHuyen) {
-    loiDiaChi.value.quanHuyen = "Vui lòng chọn quận/huyện.";
-    hopLe = false;
-  }
   if (!diaChi.phuongXa) {
     loiDiaChi.value.phuongXa = "Vui lòng chọn phường/xã.";
     hopLe = false;
@@ -420,8 +382,9 @@ function taoPayloadDiaChi() {
   return {
     hoTen: formDiaChi.value.hoTen.trim(),
     sdt: formDiaChi.value.sdt.trim(),
+    tinhThanhCode: formDiaChi.value.tinhThanhCode,
     tinhThanh: formDiaChi.value.tinhThanh,
-    quanHuyen: formDiaChi.value.quanHuyen,
+    phuongXaCode: formDiaChi.value.phuongXaCode,
     phuongXa: formDiaChi.value.phuongXa,
     diaChiCuThe: formDiaChi.value.diaChiCuThe.trim(),
     laMacDinh: Boolean(formDiaChi.value.laMacDinh),
@@ -1122,7 +1085,7 @@ onMounted(() => {
                 >
                 <select
                   :value="maTinhChon ?? ''"
-                  @change="chonTinh(Number(($event.target).value) || null)"
+                  @change="chonTinh(($event.target).value || null)"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white',
                     loiDiaChi.tinhThanh
@@ -1133,10 +1096,10 @@ onMounted(() => {
                   <option value="">-- Chọn tỉnh/thành --</option>
                   <option
                     v-for="tinh in dsTinh"
-                    :key="tinh.code"
-                    :value="tinh.code"
+                    :key="layMaDonViDiaChi(tinh)"
+                    :value="layMaDonViDiaChi(tinh)"
                   >
-                    {{ tinh.name }}
+                    {{ tinh.ten }}
                   </option>
                 </select>
                 <p v-if="loiDiaChi.tinhThanh" class="text-xs text-rose-500">
@@ -1146,40 +1109,12 @@ onMounted(() => {
 
               <label class="space-y-1.5">
                 <span class="text-[13px] font-bold text-slate-600"
-                  >Quận/Huyện <span class="text-rose-500">*</span></span
-                >
-                <select
-                  :value="maHuyenChon ?? ''"
-                  :disabled="!maTinhChon"
-                  @change="chonHuyen(Number(($event.target).value) || null)"
-                  :class="[
-                    'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50',
-                    loiDiaChi.quanHuyen
-                      ? 'border-rose-500'
-                      : 'border-slate-200 focus:border-rose-300',
-                  ]"
-                >
-                  <option value="">-- Chọn quận/huyện --</option>
-                  <option
-                    v-for="huyen in dsHuyen"
-                    :key="huyen.code"
-                    :value="huyen.code"
-                  >
-                    {{ huyen.name }}
-                  </option>
-                </select>
-                <p v-if="loiDiaChi.quanHuyen" class="text-xs text-rose-500">
-                  {{ loiDiaChi.quanHuyen }}
-                </p>
-              </label>
-
-              <label class="space-y-1.5">
-                <span class="text-[13px] font-bold text-slate-600"
                   >Phường/Xã <span class="text-rose-500">*</span></span
                 >
                 <select
-                  v-model="formDiaChi.phuongXa"
-                  :disabled="!maHuyenChon"
+                  :value="formDiaChi.phuongXaCode"
+                  :disabled="!maTinhChon"
+                  @change="chonXa(($event.target).value || null)"
                   :class="[
                     'h-11 w-full rounded-2xl border bg-slate-50 px-4 text-sm outline-none transition focus:bg-white disabled:cursor-not-allowed disabled:opacity-50',
                     loiDiaChi.phuongXa
@@ -1188,8 +1123,12 @@ onMounted(() => {
                   ]"
                 >
                   <option value="">-- Chọn phường/xã --</option>
-                  <option v-for="xa in dsXa" :key="xa.code" :value="xa.name">
-                    {{ xa.name }}
+                  <option
+                    v-for="xa in dsXa"
+                    :key="layMaDonViDiaChi(xa)"
+                    :value="layMaDonViDiaChi(xa)"
+                  >
+                    {{ xa.ten }}
                   </option>
                 </select>
                 <p v-if="loiDiaChi.phuongXa" class="text-xs text-rose-500">
@@ -1308,7 +1247,7 @@ onMounted(() => {
                   </div>
                   <p class="mt-4 text-sm leading-6 text-slate-600">
                     {{ diaChi.diaChiCuThe }}, {{ diaChi.phuongXa }},
-                    {{ diaChi.quanHuyen }}, {{ diaChi.tinhThanh }}
+                    {{ diaChi.tinhThanh }}
                   </p>
                 </div>
 

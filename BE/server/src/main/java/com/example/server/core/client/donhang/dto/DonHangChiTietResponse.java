@@ -1,5 +1,6 @@
 package com.example.server.core.client.donhang.dto;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +18,7 @@ public record DonHangChiTietResponse(
         boolean daNhanHang,
         String tenNguoiNhan,
         String sdtNguoiNhan,
-        String diaChiGiaoHang,
+        DiaChiHaiCapResponse diaChiGiaoHang,
         String maPhieuGiamGia,
         List<DongSanPham> sanPhams,
         BigDecimal tamTinh,

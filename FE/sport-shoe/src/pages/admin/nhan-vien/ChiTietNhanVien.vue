@@ -6,7 +6,7 @@ import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 import { showSuccess, showError } from "../../../utils/alert";
 
-const { nextTick, onMounted, onUnmounted, watch, useRoute, useRouter, ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, zxingReader, daXuLyQr, batDauQuet, xuLyKetQuaQr, isVneIdSecureQr, formatNgaySinh, dungQuet, route, router, id, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsQuanHuyenTheoTinh, dsTinhThanh, dsXaPhuongTheoQuan, dsQuanHuyen, dsXaPhuong, layLabel, gopDiaChi, apDungMaDiaChiDaQuet, taiChiTiet, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
+const { ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, batDauQuet, dungQuet, router, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsTinhThanh, dsXaPhuong, chonTinhThanhNhanVien, chonPhuongXaNhanVien, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
 
 function taoChuCaiDaiDien(value) {
   return String(value || "NV")
@@ -53,7 +53,6 @@ function taoChuCaiDaiDien(value) {
                 type="button"
                 @click="fileInputAvatar?.click()"
                 class="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-center text-[42px] font-light text-slate-500 transition hover:bg-slate-200"
-                :class="{'ring-2 ring-rose-400': loiForm.hinhAnh}"
               >
                 <img
                   v-if="form.hinhAnh"
@@ -80,13 +79,12 @@ function taoChuCaiDaiDien(value) {
 
             <h2 class="mt-5 text-base font-bold text-slate-900">{{ form.hoTen || "Nhân viên mới" }}</h2>
             <p class="mt-1 text-sm text-slate-400">{{ form.email || "Chưa cập nhật email" }}</p>
-            <p v-if="loiForm.hinhAnh" class="mt-2 text-xs text-rose-500 font-medium px-4">{{ loiForm.hinhAnh }}</p>
             <div v-if="!laMoi" class="mt-3">
               <span
                 class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                :class="nhanVien?.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+                :class="nhanVien?.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : (nhanVien?.trangThai === 2 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')"
               >
-                {{ nhanVien?.trangThai === 1 ? "Hoạt động" : "Khóa" }}
+                {{ nhanVien?.trangThai === 1 ? "Hoạt động" : (nhanVien?.trangThai === 2 ? "Chờ đổi mật khẩu" : "Khóa") }}
               </span>
             </div>
             <p v-else class="mt-3 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
@@ -117,7 +115,7 @@ function taoChuCaiDaiDien(value) {
             <Card class="space-y-2 !bg-white shadow-sm">
               <h3 class="mb-3 text-sm font-bold text-slate-800">Trạng thái tài khoản</h3>
               <Button
-                v-if="nhanVien?.trangThai === 1"
+                v-if="nhanVien?.trangThai !== 0"
                 variant="soft"
                 class="w-full justify-center bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="laChinhMinh"
@@ -316,7 +314,8 @@ function taoChuCaiDaiDien(value) {
             <label class="space-y-2">
               <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
               <select
-                v-model="form.tinhThanh"
+                v-model="form.tinhThanhCode"
+                @change="chonTinhThanhNhanVien(form.tinhThanhCode)"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               >
                 <option value="">Chọn tỉnh thành</option>
@@ -325,20 +324,10 @@ function taoChuCaiDaiDien(value) {
             </label>
 
             <label class="space-y-2">
-              <span class="text-[13px] font-semibold text-slate-500">Quận/Huyện <span class="text-rose-500">*</span></span>
-              <select
-                v-model="form.quanHuyen"
-                class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
-              >
-                <option value="">Chọn quận huyện</option>
-                <option v-for="item in dsQuanHuyen" :key="item.value" :value="item.value">{{ item.label }}</option>
-              </select>
-            </label>
-
-            <label class="space-y-2">
               <span class="text-[13px] font-semibold text-slate-500">Xã/Phường/Thị trấn <span class="text-rose-500">*</span></span>
               <select
-                v-model="form.xaPhuong"
+                v-model="form.phuongXaCode"
+                @change="chonPhuongXaNhanVien(form.phuongXaCode)"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10"
               >
                 <option value="">Chọn xã phường</option>

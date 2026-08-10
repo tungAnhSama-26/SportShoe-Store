@@ -1,6 +1,9 @@
 package com.example.server.entity;
 
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -63,10 +66,13 @@ public class NhanVien {
     @Column(name = "ngay_sinh")
     private LocalDate ngaySinh;
 
-    @Size(max = 200)
-    @Nationalized
-    @Column(name = "dia_chi", length = 200)
-    private String diaChi;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "tinhThanh", column = @Column(name = "tinh_thanh", length = 100)),
+            @AttributeOverride(name = "phuongXa", column = @Column(name = "phuong_xa", length = 100)),
+            @AttributeOverride(name = "diaChiCuThe", column = @Column(name = "dia_chi", length = 200))
+    })
+    private DiaChiHaiCap diaChi;
 
     @NotNull
     @ColumnDefault("2")
@@ -89,14 +95,6 @@ public class NhanVien {
 
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
-
-    @NotNull
-    @ColumnDefault("0")
-    @Column(name = "bat_buoc_doi_mat_khau", nullable = false)
-    private Boolean batBuocDoiMatKhau = false;
-
-    @Column(name = "han_doi_mat_khau")
-    private Instant hanDoiMatKhau;
 
     @Column(name = "face_descriptor", columnDefinition = "NVARCHAR(MAX)")
     private String faceDescriptor;

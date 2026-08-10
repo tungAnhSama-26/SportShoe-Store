@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { showError } from '../../utils/alert';
 import { timKhachHangTheoSoDienThoai } from '../../api/dichVuBanHang';
 import { KHACH_VANG_LAI, AN_THONG_TIN, CHUA_CHON_KHACH, CHON_KHACH_HOAC_VANG_LAI } from './HangSo';
+import { chuanHoaDiaChi, diaChiHopLe } from '../../utils/diaChi';
 
 export function useLogicKhachHang({
   hoaDonChoDaChon,
@@ -63,8 +64,8 @@ export function useLogicKhachHang({
     
     if (setDiaChiGiaoHang && customer.diaChiMacDinh) {
       setDiaChiGiaoHang(prev => {
-        if (!prev || (typeof prev === 'string' && !prev.trim())) {
-          return customer.diaChiMacDinh;
+        if (!diaChiHopLe(prev)) {
+          return chuanHoaDiaChi(customer.diaChiMacDinh);
         }
         return prev;
       });

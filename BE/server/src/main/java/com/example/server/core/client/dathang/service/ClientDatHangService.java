@@ -19,6 +19,7 @@ import com.example.server.repository.KhachHangRepository;
 import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.service.EmailService;
 import java.math.BigDecimal;
@@ -137,24 +138,12 @@ public class ClientDatHangService {
         hoaDon.setNgayLap(now);
         hoaDon.setNgayTao(now);
         hoaDon.setNgayCapNhat(now);
-        hoaDon.setDaNhanHang(false);
         // Đơn QR đã giữ chỗ tồn -> đánh dấu đã trừ kho để nhân viên xác nhận không trừ trùng.
         hoaDon.setDaTruKho(daGiuCho);
 
-        String diaChi = Stream.of(
-                        request.diaChiCuThe(),
-                        request.phuongXa(),
-                        request.quanHuyen(),
-                        request.tinhThanh()
-                )
-                .filter(s -> s != null && !s.isBlank())
-                .map(String::trim)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-
         hoaDon.setTenNguoiNhan(request.tenNguoiNhan().trim());
         hoaDon.setSdtNguoiNhan(request.sdtNguoiNhan().trim());
-        hoaDon.setDiaChiGiaoHang(diaChi);
+        hoaDon.setDiaChiGiaoHang(DiaChiHaiCapMapper.toEntity(request.diaChiGiaoHang()));
         String rawGhiChu = request.ghiChu() != null ? request.ghiChu().trim() : "";
         if (khachHang == null && request.emailNguoiNhan() != null && !request.emailNguoiNhan().isBlank()) {
             rawGhiChu = "[GuestEmail:" + request.emailNguoiNhan().trim() + "] " + rawGhiChu;
@@ -263,7 +252,7 @@ public class ClientDatHangService {
                 hoaDon.getNgayLap(),
                 hoaDon.getTenNguoiNhan(),
                 hoaDon.getSdtNguoiNhan(),
-                hoaDon.getDiaChiGiaoHang(),
+                DiaChiHaiCapMapper.format(hoaDon.getDiaChiGiaoHang()),
                 hinhThuc,
                 phiShip,
                 hoaDon.getTienGiam(),
@@ -278,12 +267,7 @@ public class ClientDatHangService {
         BigDecimal phi = phiVanChuyenService.tinhPhi(new TinhPhiShipRequest(
                 request.khachHangId(),
                 request.sanPhams(),
-                request.tinhThanh(),
-                request.quanHuyen(),
-                request.phuongXa(),
-                request.diaChiCuThe(),
-                request.toDistrictId(),
-                request.toWardCode()
+                request.diaChiGiaoHang()
         )).phiVanChuyen();
         return phi == null ? BigDecimal.ZERO : phi.max(BigDecimal.ZERO);
     }

@@ -87,6 +87,17 @@ export function getCurrentAdminUser() {
   return user ? JSON.parse(user) : null;
 }
 
+export function updateCurrentAdminUser(patch) {
+  const currentUser = getCurrentAdminUser();
+  if (!currentUser || !patch || typeof patch !== "object") {
+    return currentUser;
+  }
+  const updatedUser = { ...currentUser, ...patch };
+  localStorage.setItem("adminUser", JSON.stringify(updatedUser));
+  localStorage.setItem("sport-shoe-admin-session", JSON.stringify(updatedUser));
+  return updatedUser;
+}
+
 export function getAdminToken() {
   return localStorage.getItem("adminToken") ?? "";
 }
@@ -114,6 +125,5 @@ export function hasRequiredAdminCccd() {
 export function mustChangeAdminPassword() {
   const user = getCurrentAdminUser();
   return Number(user?.vaiTro) === 2
-    && user?.batBuocDoiMatKhau === true
-    && Boolean(user?.hanDoiMatKhau);
+    && Number(user?.trangThai) === 2;
 }

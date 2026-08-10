@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Switch } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Switch, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { suDungBanHang } from '../ngu-canh/NguCanhBanHang';
+import { chuanHoaDiaChi, dinhDangDiaChi, layMaDonViDiaChi, timDonViDiaChi } from '../utils/diaChi';
+import { layPhuongXaHaiCap, layTinhThanhHaiCap } from '../api/diaChi';
 
 export default function PhanGiaoHang() {
   const logic = suDungBanHang();
@@ -19,7 +21,7 @@ export default function PhanGiaoHang() {
 
   const tenNguoiNhanGiaoHang = thongTinGiaoHang.tenNguoiNhan || '';
   const sdtNguoiNhanGiaoHang = thongTinGiaoHang.soDienThoaiNguoiNhan || '';
-  const diaChiGiaoHang = thongTinGiaoHang.diaChiGiaoHang || '';
+  const diaChiGiaoHang = chuanHoaDiaChi(thongTinGiaoHang.diaChiGiaoHang);
   const phiGiaoHang = thongTinGiaoHang.phiVanChuyen || 0;
 
   const setTenNguoiNhanGiaoHang = (val) => capNhatThongTinGiaoHang?.({ tenNguoiNhan: val });
@@ -30,12 +32,100 @@ export default function PhanGiaoHang() {
   const [isModalVisible, setModalVisible] = useState(false);
   const [tempName, setTempName] = useState(tenNguoiNhanGiaoHang);
   const [tempPhone, setTempPhone] = useState(sdtNguoiNhanGiaoHang);
-  const [tempAddress, setTempAddress] = useState(diaChiGiaoHang);
+  const [tempAddress, setTempAddress] = useState(chuanHoaDiaChi(diaChiGiaoHang));
+  const [dsTinh, setDsTinh] = useState([]);
+  const [dsPhuongXa, setDsPhuongXa] = useState([]);
+  const [loaiDanhSach, setLoaiDanhSach] = useState(null);
 
-  const openModal = () => {
+  useEffect(() => {
+    layTinhThanhHaiCap()
+      .then((data) => setDsTinh(Array.isArray(data) ? data : []))
+      .catch(() => setDsTinh([]));
+  }, []);
+
+  useEffect(() => {
+    if (!dsTinh.length || !diaChiGiaoHang.tinhThanh) return undefined;
+    if (diaChiGiaoHang.tinhThanhCode && diaChiGiaoHang.phuongXaCode) return undefined;
+    let active = true;
+    const recoverCodes = async () => {
+      const tinh = timDonViDiaChi(dsTinh, diaChiGiaoHang.tinhThanhCode, diaChiGiaoHang.tinhThanh);
+      if (!tinh) return;
+      const tinhThanhCode = layMaDonViDiaChi(tinh);
+      try {
+        const data = await layPhuongXaHaiCap(tinhThanhCode);
+        if (!active) return;
+        const danhSachPhuongXa = Array.isArray(data) ? data : [];
+        const phuongXa = timDonViDiaChi(danhSachPhuongXa, diaChiGiaoHang.phuongXaCode, diaChiGiaoHang.phuongXa);
+        setDsPhuongXa(danhSachPhuongXa);
+        setDiaChiGiaoHang({
+          ...diaChiGiaoHang,
+          tinhThanhCode,
+          tinhThanh: tinh.ten,
+          phuongXaCode: phuongXa ? layMaDonViDiaChi(phuongXa) : '',
+          phuongXa: phuongXa?.ten || diaChiGiaoHang.phuongXa,
+        });
+      } catch {
+        // Giữ tên địa chỉ để người dùng có thể chọn lại khi danh mục khả dụng.
+      }
+    };
+    recoverCodes();
+    return () => { active = false; };
+  }, [dsTinh, diaChiGiaoHang.tinhThanhCode, diaChiGiaoHang.tinhThanh, diaChiGiaoHang.phuongXaCode, diaChiGiaoHang.phuongXa]);
+
+  const chonTinh = async (tinh) => {
+    setTempAddress((current) => ({ ...current, tinhThanhCode: String(tinh.code), tinhThanh: tinh.ten, phuongXaCode: '', phuongXa: '' }));
+    setLoaiDanhSach(null);
+    try {
+      const data = await layPhuongXaHaiCap(tinh.code);
+      setDsPhuongXa(Array.isArray(data) ? data : []);
+    } catch {
+      setDsPhuongXa([]);
+    }
+  };
+
+  const chonPhuongXa = (item) => {
+    setTempAddress((current) => ({ ...current, phuongXaCode: String(item.code), phuongXa: item.ten }));
+    setLoaiDanhSach(null);
+  };
+
+  const openModal = async () => {
     setTempName(tenNguoiNhanGiaoHang);
     setTempPhone(sdtNguoiNhanGiaoHang);
-    setTempAddress(diaChiGiaoHang);
+    const diaChiHienTai = chuanHoaDiaChi(diaChiGiaoHang);
+    let danhSachTinh = dsTinh;
+    if (!danhSachTinh.length) {
+      try {
+        const data = await layTinhThanhHaiCap();
+        danhSachTinh = Array.isArray(data) ? data : [];
+        setDsTinh(danhSachTinh);
+      } catch {
+        danhSachTinh = [];
+      }
+    }
+    const tinh = timDonViDiaChi(danhSachTinh, diaChiHienTai.tinhThanhCode, diaChiHienTai.tinhThanh);
+    if (!tinh) {
+      setTempAddress({ ...diaChiHienTai, tinhThanhCode: '', phuongXaCode: '' });
+      setDsPhuongXa([]);
+      setModalVisible(true);
+      return;
+    }
+    const tinhThanhCode = layMaDonViDiaChi(tinh);
+    try {
+      const data = await layPhuongXaHaiCap(tinhThanhCode);
+      const danhSachPhuongXa = Array.isArray(data) ? data : [];
+      const phuongXa = timDonViDiaChi(danhSachPhuongXa, diaChiHienTai.phuongXaCode, diaChiHienTai.phuongXa);
+      setDsPhuongXa(danhSachPhuongXa);
+      setTempAddress({
+        ...diaChiHienTai,
+        tinhThanhCode,
+        tinhThanh: tinh.ten,
+        phuongXaCode: phuongXa ? layMaDonViDiaChi(phuongXa) : '',
+        phuongXa: phuongXa?.ten || diaChiHienTai.phuongXa,
+      });
+    } catch {
+      setDsPhuongXa([]);
+      setTempAddress({ ...diaChiHienTai, tinhThanhCode, tinhThanh: tinh.ten, phuongXaCode: '' });
+    }
     setModalVisible(true);
   };
 
@@ -76,7 +166,7 @@ export default function PhanGiaoHang() {
             {tenNguoiNhanGiaoHang || sdtNguoiNhanGiaoHang ? (
               <View style={styles.addressInfo}>
                 <Text style={styles.textBold}>{tenNguoiNhanGiaoHang} - {sdtNguoiNhanGiaoHang}</Text>
-                <Text style={styles.textMuted}>{diaChiGiaoHang || "Chưa có địa chỉ cụ thể"}</Text>
+                <Text style={styles.textMuted}>{dinhDangDiaChi(diaChiGiaoHang) || "Chưa có địa chỉ cụ thể"}</Text>
               </View>
             ) : (
               <Text style={styles.textEmpty}>Chưa có thông tin nhận hàng</Text>
@@ -95,6 +185,11 @@ export default function PhanGiaoHang() {
                 setPhiGiaoHang(isNaN(numeric) ? 0 : numeric);
               }}
             />
+            {thongTinGiaoHang.moTaPhi ? (
+              <Text style={thongTinGiaoHang.nguonTinhPhi === 'GHN_LIVE' ? styles.liveFeeNote : styles.offlineFeeNote}>
+                {thongTinGiaoHang.moTaPhi}
+              </Text>
+            ) : null}
           </View>
         </View>
       )}
@@ -127,11 +222,29 @@ export default function PhanGiaoHang() {
               keyboardType="phone-pad"
             />
 
+            <Text style={styles.label}>Tỉnh/Thành phố</Text>
+            <TextInput
+              style={styles.input}
+              value={tempAddress.tinhThanh}
+              editable={false}
+              onPressIn={() => setLoaiDanhSach('tinh')}
+              placeholder="Nhập tỉnh/thành phố"
+            />
+
+            <Text style={styles.label}>Phường/Xã</Text>
+            <TextInput
+              style={styles.input}
+              value={tempAddress.phuongXa}
+              editable={false}
+              onPressIn={() => tempAddress.tinhThanhCode && setLoaiDanhSach('phuongXa')}
+              placeholder="Nhập phường/xã"
+            />
+
             <Text style={styles.label}>Địa chỉ cụ thể</Text>
             <TextInput
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-              value={tempAddress}
-              onChangeText={setTempAddress}
+              value={tempAddress.diaChiCuThe}
+              onChangeText={(value) => setTempAddress((current) => ({ ...current, diaChiCuThe: value }))}
               placeholder="Nhập địa chỉ nhận hàng"
               multiline
             />
@@ -144,6 +257,27 @@ export default function PhanGiaoHang() {
                 <Text style={styles.txtBtnSave}>Lưu</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={Boolean(loaiDanhSach)} animationType="slide" transparent onRequestClose={() => setLoaiDanhSach(null)}>
+        <View style={styles.modalBackground}>
+          <View style={styles.listContainer}>
+            <Text style={styles.modalTitle}>{loaiDanhSach === 'tinh' ? 'Chọn tỉnh/thành phố' : 'Chọn phường/xã'}</Text>
+            <ScrollView>
+              {(loaiDanhSach === 'tinh' ? dsTinh : dsPhuongXa).map((item) => (
+                <TouchableOpacity
+                  key={String(item.code)}
+                  style={styles.listItem}
+                  onPress={() => loaiDanhSach === 'tinh' ? chonTinh(item) : chonPhuongXa(item)}
+                >
+                  <Text>{item.ten}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.btnCancel} onPress={() => setLoaiDanhSach(null)}>
+              <Text style={styles.txtBtnCancel}>Đóng</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -216,6 +350,7 @@ const styles = StyleSheet.create({
   },
   feeBox: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -237,6 +372,18 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     width: 120,
     textAlign: 'right',
+  },
+  liveFeeNote: {
+    width: '100%',
+    marginTop: 6,
+    fontSize: 11,
+    color: '#94a3b8',
+  },
+  offlineFeeNote: {
+    width: '100%',
+    marginTop: 6,
+    fontSize: 11,
+    color: '#d97706',
   },
   modalBackground: {
     flex: 1,
@@ -272,6 +419,19 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 14,
     backgroundColor: '#f8fafc',
+  },
+  listContainer: {
+    backgroundColor: '#fff',
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '75%',
+    borderRadius: 16,
+    padding: 20,
+  },
+  listItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
   modalActions: {
     flexDirection: 'row',

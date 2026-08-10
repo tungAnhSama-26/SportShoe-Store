@@ -328,7 +328,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 .filter(this::dangHoatDong)
                 .filter(nhanVien -> !nhanVien.getId().equals(giaoCa.getNhanVienTrongCa().getId()))
                 .filter(nhanVien -> laAdmin(nhanVien)
-                        || lichLamViecRepository.existsByNhanVienIdAndNgayAndCa(
+                        || lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
                                 nhanVien.getId(), ngay, caKeTiep.getId()))
                 .filter(nhanVien -> !giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(
                         nhanVien.getId(), TRANG_THAI_CHUA_KET_THUC))
@@ -349,11 +349,35 @@ public class GiaoCaServiceImpl implements GiaoCaService {
             String caLamId,
             String lyDoMoMuon) {
         if (!laAdmin(nhanVien)) {
-            LichLamViec lich = lichLamViecRepository.findByNhanVienIdAndNgay(nhanVien.getId(), ngay)
-                    .orElseThrow(() -> new BusinessException("Bạn không có lịch làm việc hôm nay."));
-            CaLam ca = caLamRepository.findById(lich.getCa())
-                    .filter(item -> Boolean.TRUE.equals(item.getTrangThai()))
-                    .orElseThrow(() -> new BusinessException("Ca làm việc trong lịch không còn hoạt động."));
+            List<LichLamViec> lichTrongNgay = lichLamViecRepository.findByNhanVienIdAndNgay(nhanVien.getId(), ngay);
+            if (lichTrongNgay.isEmpty()) {
+                throw new BusinessException("Bạn không có lịch làm việc hôm nay.");
+            }
+            CaLam ca;
+            if (caLamId != null && !caLamId.isBlank()) {
+                ca = lichTrongNgay.stream()
+                        .map(LichLamViec::getCaLam)
+                        .filter(item -> item.getId().equalsIgnoreCase(caLamId.trim()))
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessException("Ca được chọn không thuộc lịch làm việc của bạn hôm nay."));
+            } else {
+                List<CaLam> caPhuHop = lichTrongNgay.stream()
+                        .map(LichLamViec::getCaLam)
+                        .filter(item -> Boolean.TRUE.equals(item.getTrangThai()))
+                        .filter(item -> {
+                            LocalTime batDau = LocalTime.parse(item.getGioBatDau()).minusMinutes(PHUT_CHO_PHEP_MO_CA);
+                            LocalTime ketThuc = LocalTime.parse(item.getGioKetThuc());
+                            return !hienTai.isBefore(batDau) && hienTai.isBefore(ketThuc);
+                        })
+                        .toList();
+                if (caPhuHop.size() != 1) {
+                    throw new BusinessException("Bạn có nhiều ca trong ngày. Vui lòng chọn ca làm việc cần mở.");
+                }
+                ca = caPhuHop.get(0);
+            }
+            if (!Boolean.TRUE.equals(ca.getTrangThai())) {
+                throw new BusinessException("Ca làm việc trong lịch không còn hoạt động.");
+            }
             kiemTraKhungMoCaNhanVien(ca, hienTai, lyDoMoMuon);
             return ca;
         }
@@ -422,7 +446,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private void kiemTraNguoiNhanThuocCa(NhanVien nhanVien, CaLam caLam, LocalDate ngay) {
         if (laAdmin(nhanVien)) return;
-        if (!lichLamViecRepository.existsByNhanVienIdAndNgayAndCa(nhanVien.getId(), ngay, caLam.getId())) {
+        if (!lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(nhanVien.getId(), ngay, caLam.getId())) {
             throw new BusinessException("Bạn không còn thuộc lịch làm việc của ca tiếp theo.");
         }
     }

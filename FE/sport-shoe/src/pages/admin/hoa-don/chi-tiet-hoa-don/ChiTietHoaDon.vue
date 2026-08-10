@@ -87,6 +87,7 @@ const {
       :initial-data="{
         tenNguoiNhan: formThongTin.tenKhachHang,
         sdtNguoiNhan: formThongTin.soDienThoai,
+        email: formThongTin.email,
         diaChiGiaoHang: formThongTin.diaChi,
       }"
       :saved-addresses="diaChiDaLuu"

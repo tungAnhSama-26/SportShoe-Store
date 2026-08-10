@@ -3,22 +3,25 @@ package com.example.server.core.admin.nhanVien.service.impl;
 import com.example.server.core.admin.nhanVien.dto.request.PhanCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.LichLamViecResponse;
 import com.example.server.core.admin.nhanVien.service.LichLamViecService;
+import com.example.server.entity.CaLam;
 import com.example.server.entity.LichLamViec;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.repository.CaLamRepository;
 import com.example.server.repository.LichLamViecRepository;
 import com.example.server.repository.NhanVienRepository;
-import com.example.server.repository.CaLamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class LichLamViecServiceImpl implements LichLamViecService {
@@ -29,7 +32,11 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     private final NhanVienRepository nhanVienRepository;
     private final CaLamRepository caLamRepository;
 
-    public LichLamViecServiceImpl(LichLamViecRepository lichLamViecRepository, NhanVienRepository nhanVienRepository, CaLamRepository caLamRepository) {
+    public LichLamViecServiceImpl(
+            LichLamViecRepository lichLamViecRepository,
+            NhanVienRepository nhanVienRepository,
+            CaLamRepository caLamRepository
+    ) {
         this.lichLamViecRepository = lichLamViecRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.caLamRepository = caLamRepository;
@@ -39,7 +46,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     @Transactional(readOnly = true)
     public List<LichLamViecResponse> layLichLamViecTheoTuan(LocalDate tuNgay, LocalDate denNgay) {
         return lichLamViecRepository.findByNgayBetween(tuNgay, denNgay).stream()
-                .map(l -> new LichLamViecResponse(l.getId(), l.getNhanVien().getId(), l.getNgay(), l.getCa()))
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -48,113 +55,116 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     public LichLamViecResponse phanCa(PhanCaRequest request) {
         NhanVien nhanVien = nhanVienRepository.findById(request.nhanVienId())
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
-
-        if (nhanVien.getTrangThai() != 1) {
+        if (!Integer.valueOf(1).equals(nhanVien.getTrangThai())) {
             throw new BusinessException("Không thể phân ca cho nhân viên đã nghỉ việc");
         }
 
-        Optional<LichLamViec> optLich = lichLamViecRepository.findByNhanVienIdAndNgay(request.nhanVienId(), request.ngay());
+        String caLamId = request.caLamId().trim();
+        CaLam caLam = caLamRepository.findByIdForUpdate(caLamId)
+                .or(() -> caLamRepository.findByIdForUpdate(caLamId.toLowerCase()))
+                .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
+                .orElseThrow(() -> new BusinessException("Ca làm việc không tồn tại hoặc đã ngừng hoạt động"));
 
-        if (request.ca() == null || request.ca().trim().isEmpty()) {
-            // Delete schedule
-            if (optLich.isPresent()) {
-                LichLamViec lichLamViec = optLich.get();
-                lichLamViecRepository.delete(lichLamViec);
-            }
-            return new LichLamViecResponse(null, request.nhanVienId(), request.ngay(), null);
+        if (lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
+                request.nhanVienId(), request.ngay(), caLam.getId())) {
+            throw new BusinessException("Nhân viên đã được phân vào ca này trong ngày đã chọn");
         }
 
-        String ca = request.ca().trim();
-        if (!caLamRepository.existsById(ca) && !caLamRepository.existsById(ca.toLowerCase())) {
-            throw new BusinessException("Ca làm việc không hợp lệ.");
-        }
-        if (caLamRepository.existsById(ca.toLowerCase())) {
-            ca = ca.toLowerCase();
-        }
-
-        // Validate max people per shift rule:
-        // If the employee is not already scheduled for this shift on this day, we must check the capacity.
-        boolean isAlreadyAssignedToThisShift = lichLamViecRepository.existsByNhanVienIdAndNgayAndCa(request.nhanVienId(), request.ngay(), ca);
-        if (!isAlreadyAssignedToThisShift) {
-            long count = lichLamViecRepository.countByNgayAndCa(request.ngay(), ca);
-            if (count >= MAX_NHAN_VIEN_MOI_CA) {
-                String tenCa = mapCaName(ca);
-                String formatNgay = request.ngay().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                throw new BusinessException("Ca " + tenCa + " ngay " + formatNgay + " da dat so luong toi da " + MAX_NHAN_VIEN_MOI_CA + " nguoi!");
-            }
+        long soNhanVien = lichLamViecRepository.countByNgayAndCaLamId(request.ngay(), caLam.getId());
+        if (soNhanVien >= MAX_NHAN_VIEN_MOI_CA) {
+            String ngay = request.ngay().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            throw new BusinessException("Ca " + caLam.getTen() + " ngày " + ngay
+                    + " đã đạt số lượng tối đa " + MAX_NHAN_VIEN_MOI_CA + " người");
         }
 
-        LichLamViec lich = optLich.orElse(new LichLamViec());
+        kiemTraKhongChongGio(
+                lichLamViecRepository.findByNhanVienIdAndNgay(request.nhanVienId(), request.ngay()),
+                caLam
+        );
+
+        LichLamViec lich = new LichLamViec();
         lich.setNhanVien(nhanVien);
         lich.setNgay(request.ngay());
-        lich.setCa(ca);
+        lich.setCaLam(caLam);
+        return toResponse(lichLamViecRepository.save(lich));
+    }
 
-        LichLamViec saved = lichLamViecRepository.save(lich);
-        return new LichLamViecResponse(saved.getId(), saved.getNhanVien().getId(), saved.getNgay(), saved.getCa());
+    @Override
+    @Transactional
+    public void xoaLich(UUID id) {
+        LichLamViec lich = lichLamViecRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lịch làm việc không tồn tại"));
+        lichLamViecRepository.delete(lich);
     }
 
     @Override
     @Transactional
     public void xepCaTuDong(LocalDate tuNgay, LocalDate denNgay) {
         if (tuNgay == null || denNgay == null || tuNgay.isAfter(denNgay)) {
-            throw new BusinessException("Khoang thoi gian khong hop le");
+            throw new BusinessException("Khoảng thời gian không hợp lệ");
         }
 
-        // Delete existing shifts in the date range
+        List<CaLam> cacCa = caLamRepository.findAll().stream()
+                .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
+                .sorted(Comparator.comparing(ca -> LocalTime.parse(ca.getGioBatDau())))
+                .toList();
+        if (cacCa.isEmpty()) {
+            throw new BusinessException("Chưa có ca làm việc đang hoạt động");
+        }
+
         lichLamViecRepository.deleteByNgayBetween(tuNgay, denNgay);
         lichLamViecRepository.flush();
 
-        // Fetch active employees (Only STAFF, VaiTro = 2)
-        List<NhanVien> activeEmployees = nhanVienRepository.findAll().stream()
-                .filter(nv -> nv.getTrangThai() == 1 && nv.getVaiTro() != null && nv.getVaiTro() == 2)
+        List<NhanVien> nhanViens = nhanVienRepository.findAll().stream()
+                .filter(nv -> Integer.valueOf(1).equals(nv.getTrangThai()))
+                .filter(nv -> Integer.valueOf(2).equals(nv.getVaiTro()))
                 .toList();
 
-        if (activeEmployees.isEmpty()) {
-            return;
-        }
-
-        String[] caTypes = {"sang", "chieu", "toi", null}; // null is off day
-
-        for (LocalDate date = tuNgay; !date.isAfter(denNgay); date = date.plusDays(1)) {
-            // Use date's hash or day of year to shift assignments so different days rotate roles
-            int dayOffset = date.getDayOfYear();
-
-            int countSang = 0;
-            int countChieu = 0;
-            int countToi = 0;
-
-            for (int i = 0; i < activeEmployees.size(); i++) {
-                NhanVien nv = activeEmployees.get(i);
-                int shiftIndex = (i + dayOffset) % caTypes.length;
-                String ca = caTypes[shiftIndex];
-
-                if (ca != null) {
-                    if ("sang".equals(ca) && countSang < MAX_NHAN_VIEN_MOI_CA) {
-                        saveLich(nv, date, ca);
-                        countSang++;
-                    } else if ("chieu".equals(ca) && countChieu < MAX_NHAN_VIEN_MOI_CA) {
-                        saveLich(nv, date, ca);
-                        countChieu++;
-                    } else if ("toi".equals(ca) && countToi < MAX_NHAN_VIEN_MOI_CA) {
-                        saveLich(nv, date, ca);
-                        countToi++;
-                    }
+        int chuKy = cacCa.size() + 1; // thêm một lượt nghỉ để duy trì xoay ca an toàn
+        for (LocalDate ngay = tuNgay; !ngay.isAfter(denNgay); ngay = ngay.plusDays(1)) {
+            Map<String, Integer> soNguoiTheoCa = new HashMap<>();
+            for (int i = 0; i < nhanViens.size(); i++) {
+                int viTri = (i + ngay.getDayOfYear()) % chuKy;
+                if (viTri == cacCa.size()) {
+                    continue;
+                }
+                CaLam caLam = cacCa.get(viTri);
+                int soNguoi = soNguoiTheoCa.getOrDefault(caLam.getId(), 0);
+                if (soNguoi < MAX_NHAN_VIEN_MOI_CA) {
+                    saveLich(nhanViens.get(i), ngay, caLam);
+                    soNguoiTheoCa.put(caLam.getId(), soNguoi + 1);
                 }
             }
         }
     }
 
-    private void saveLich(NhanVien nv, LocalDate date, String ca) {
+    private void kiemTraKhongChongGio(List<LichLamViec> lichTrongNgay, CaLam caMoi) {
+        LocalTime batDauMoi = LocalTime.parse(caMoi.getGioBatDau());
+        LocalTime ketThucMoi = LocalTime.parse(caMoi.getGioKetThuc());
+        for (LichLamViec lich : lichTrongNgay) {
+            CaLam caCu = lich.getCaLam();
+            LocalTime batDauCu = LocalTime.parse(caCu.getGioBatDau());
+            LocalTime ketThucCu = LocalTime.parse(caCu.getGioKetThuc());
+            if (batDauMoi.isBefore(ketThucCu) && batDauCu.isBefore(ketThucMoi)) {
+                throw new BusinessException("Ca " + caMoi.getTen() + " bị chồng giờ với " + caCu.getTen());
+            }
+        }
+    }
+
+    private void saveLich(NhanVien nhanVien, LocalDate ngay, CaLam caLam) {
         LichLamViec lich = new LichLamViec();
-        lich.setNhanVien(nv);
-        lich.setNgay(date);
-        lich.setCa(ca);
+        lich.setNhanVien(nhanVien);
+        lich.setNgay(ngay);
+        lich.setCaLam(caLam);
         lichLamViecRepository.save(lich);
     }
 
-    private String mapCaName(String ca) {
-        return caLamRepository.findById(ca)
-                .map(com.example.server.entity.CaLam::getTen)
-                .orElse(ca);
+    private LichLamViecResponse toResponse(LichLamViec lich) {
+        return new LichLamViecResponse(
+                lich.getId(),
+                lich.getNhanVien().getId(),
+                lich.getNgay(),
+                lich.getCaLam().getId()
+        );
     }
 }

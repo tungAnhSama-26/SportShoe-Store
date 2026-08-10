@@ -23,6 +23,7 @@ import { layDanhSachNhanVien } from "../../../services/nhan-vien.js";
 import {
   layLichLamViec,
   phanCa,
+  xoaLichLamViec,
   xepCaTuDong,
 } from "../../../services/lich-lam.js";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
@@ -182,9 +183,7 @@ function nhanVienCoLichTrongNgay(d) {
   const dateStr = formatISODate(d);
   const result = [];
   danhSachLocVaiTro.value.forEach(nv => {
-    if (nv.lich[dateStr]) {
-      result.push({ nv, ca: nv.lich[dateStr] });
-    }
+    (nv.lich[dateStr] || []).forEach((lich) => result.push({ nv, ca: lich.ca, id: lich.id }));
   });
   return result;
 }
@@ -277,15 +276,16 @@ async function taiDuLieuLich() {
     danhSachNV.value.forEach((nv) => {
       // Xóa lịch cũ
       nv.lich = {};
-      let countCa = 0;
-      
       const lichNhanVien = lichData.filter(l => String(l.nhanVienId) === String(nv.id));
       lichNhanVien.forEach(l => {
-        nv.lich[l.ngay] = l.ca;
-        countCa++;
+        if (!nv.lich[l.ngay]) nv.lich[l.ngay] = [];
+        nv.lich[l.ngay].push({ id: l.id, ca: l.ca });
       });
 
-      nv.tongGio = countCa * 4;
+      nv.tongGio = Object.values(nv.lich).flat().reduce(
+        (tong, item) => tong + soGioCa(item.ca),
+        0,
+      );
       nv.overtime = nv.tongGio > 20 ? nv.tongGio - 20 : 0;
     });
   } catch (e) {
@@ -383,8 +383,8 @@ const lichBoard = computed(() => {
       ngayStr: ngayStr,
       thu: NHAN_TUAN[ngayIndex],
       cas: activeCas.map((caInfo) => {
-        const nhanViens = danhSachLocVaiTro.value.filter(
-          (nv) => nv.lich[ngayStr] && nv.lich[ngayStr].toLowerCase() === caInfo.id.toLowerCase()
+        const nhanViens = danhSachLocVaiTro.value.filter((nv) =>
+          (nv.lich[ngayStr] || []).some((item) => item.ca.toLowerCase() === caInfo.id.toLowerCase())
         );
         return {
           ...caInfo,
@@ -414,17 +414,19 @@ const danhSachCaLamBang = computed(() => {
   danhSachLocVaiTro.value.forEach((nv) => {
     cacNgayTrongTuan.value.forEach((d) => {
       const ngayStr = formatISODate(d);
-      const caId = nv.lich[ngayStr];
-      if (caId && ngayStr <= todayStr) {
-        const caInfo = layThongTinCa(caId);
+      (nv.lich[ngayStr] || []).forEach((lich) => {
+      if (lich.ca && ngayStr <= todayStr) {
+        const caInfo = layThongTinCa(lich.ca);
         result.push({
           nv,
-          caId,
+          lichId: lich.id,
+          caId: lich.ca,
           caInfo,
           ngay: d,
           ngayStr,
         });
       }
+      });
     });
   });
   // Sắp xếp theo ngày giảm dần, rồi đến giờ ca làm bắt đầu sớm hơn lên trước
@@ -498,7 +500,9 @@ function xemChiTietCaTuBang(item) {
   const ca = day.cas?.find((caInfo) => String(caInfo.id).toLowerCase() === String(item.caInfo.id).toLowerCase()) || {
     ...item.caInfo,
     nhanViens: danhSachLocVaiTro.value.filter(
-      (nv) => String(nv.lich[item.ngayStr] || "").toLowerCase() === String(item.caInfo.id).toLowerCase(),
+      (nv) => (nv.lich[item.ngayStr] || []).some(
+        (lich) => String(lich.ca).toLowerCase() === String(item.caInfo.id).toLowerCase(),
+      ),
     ),
   };
   xemChiTietCa(day, ca);
@@ -563,7 +567,9 @@ function moModalThemCaThang(ngay) {
     // Ngày quá khứ: mở modal xem danh sách nhân viên nhóm theo ca
     const thuIdx = (ngay.getDay() + 6) % 7;
     const caGroups = DS_CA.value.map(caInfo => {
-      const nhanViens = danhSachLocVaiTro.value.filter(nv => nv.lich[ngayStr] === caInfo.id);
+      const nhanViens = danhSachLocVaiTro.value.filter((nv) =>
+        (nv.lich[ngayStr] || []).some((lich) => lich.ca === caInfo.id)
+      );
       return { ...caInfo, nhanViens };
     }).filter(g => g.nhanViens.length > 0);
 
@@ -615,20 +621,19 @@ function huyThemCa() {
 }
 
 const nhanVienKhaDung = computed(() => {
-  if (!currentChiTietCa.value && !isThemCaThang.value) {
-    return danhSachLocVaiTro.value;
-  }
-  
   if (currentChiTietCa.value) {
-    const { ca } = currentChiTietCa.value;
-    return danhSachLocVaiTro.value.filter(
-      (nv) => !ca.nhanViens.some((nvInCa) => nvInCa.id === nv.id)
+    const { day, ca } = currentChiTietCa.value;
+    return danhSachLocVaiTro.value.filter((nv) =>
+      !nhanVienDaCoHoacChongCa(nv, day.ngayStr, ca.id)
     );
   }
 
-  // Nếu là Thêm Ca Tháng: Lọc những nhân viên CHƯA có ca trong ngày đó
   const ngayCheck = chonNgayVal.value;
-  return danhSachLocVaiTro.value.filter(nv => !nv.lich[ngayCheck]);
+  const caCheck = chonCaVal.value;
+  if (!ngayCheck || !caCheck) return danhSachLocVaiTro.value;
+  return danhSachLocVaiTro.value.filter((nv) =>
+    !nhanVienDaCoHoacChongCa(nv, ngayCheck, caCheck)
+  );
 });
 
 async function luuCa() {
@@ -653,7 +658,9 @@ async function luuCa() {
     caId = chonCaVal.value;
     
     // Đếm số người đã có trong ca này
-    const dem = danhSachLocVaiTro.value.filter(nv => nv.lich[ngayStr] === caId).length;
+    const dem = danhSachLocVaiTro.value.filter((nv) =>
+      (nv.lich[ngayStr] || []).some((lich) => lich.ca === caId)
+    ).length;
     if (dem + danhSachChonNhanVienIds.value.length > MAX_NHAN_VIEN_MOI_CA) {
       showError(`Ca này chỉ còn nhận thêm tối đa ${MAX_NHAN_VIEN_MOI_CA - dem} nhân viên.`);
       return;
@@ -666,7 +673,7 @@ async function luuCa() {
       phanCa({
         nhanVienId: nvId,
         ngay: ngayStr,
-        ca: caId,
+        caLamId: caId,
       })
     );
     await Promise.all(promises);
@@ -707,11 +714,11 @@ async function xoaCa(nhanVien) {
   
   dangTai.value = true;
   try {
-    await phanCa({
-      nhanVienId: nhanVien.id,
-      ngay: day.ngayStr,
-      ca: null,
-    });
+    const lichCanXoa = (nhanVien.lich[day.ngayStr] || []).find(
+      (lich) => lich.ca.toLowerCase() === ca.id.toLowerCase(),
+    );
+    if (!lichCanXoa?.id) throw new Error("Không tìm thấy lịch làm việc cần xóa");
+    await xoaLichLamViec(lichCanXoa.id);
     showSuccess("Xóa ca làm việc thành công!");
     
     await taiDuLieuLich();
@@ -739,11 +746,11 @@ async function xoaCaTuBang(nv, ngayStr, caInfo) {
   
   dangTai.value = true;
   try {
-    await phanCa({
-      nhanVienId: nv.id,
-      ngay: ngayStr,
-      ca: null,
-    });
+    const lichCanXoa = (nv.lich[ngayStr] || []).find(
+      (lich) => lich.ca.toLowerCase() === caInfo.id.toLowerCase(),
+    );
+    if (!lichCanXoa?.id) throw new Error("Không tìm thấy lịch làm việc cần xóa");
+    await xoaLichLamViec(lichCanXoa.id);
     showSuccess("Xóa ca làm việc thành công!");
     await taiDuLieuLich();
     
@@ -781,9 +788,12 @@ async function xepCaDong() {
   }
 }
 
-function tenCaXuatExcel(ca) {
-  const thongTinCa = layThongTinCa(ca);
-  return thongTinCa ? `${thongTinCa.nhan} (${thongTinCa.gio})` : "Nghỉ";
+function tenCaXuatExcel(dsLich) {
+  if (!Array.isArray(dsLich) || dsLich.length === 0) return "Nghỉ";
+  return dsLich.map((item) => {
+    const thongTinCa = layThongTinCa(item.ca);
+    return thongTinCa ? `${thongTinCa.nhan} (${thongTinCa.gio})` : item.ca;
+  }).join("; ");
 }
 
 function tenFileXuatExcel() {
@@ -808,7 +818,7 @@ function xuatExcel() {
       { label: "Vai trò", value: (row) => row.chucVu },
       ...cacNgayTrongTuan.value.map((ngay, index) => ({
         label: `${NHAN_TUAN[index]} ${formatNgay(ngay)}`,
-        value: (row) => tenCaXuatExcel(row.lich[index]),
+        value: (row) => tenCaXuatExcel(row.lich[formatISODate(ngay)]),
       })),
       { label: "Tổng giờ", value: (row) => `${row.tongGio}h` },
       {
@@ -843,6 +853,36 @@ function layThongTinCa(id) {
     mau: "bg-slate-400",
     muaNhat: "bg-slate-50 border-slate-200 text-slate-700"
   };
+}
+
+function soGioCa(id) {
+  const ca = layThongTinCa(id);
+  if (!ca?.gio || !ca.gio.includes("-")) return 0;
+  const [batDau, ketThuc] = ca.gio.split("-").map((value) => value.trim());
+  const [gioDau, phutDau] = batDau.split(":").map(Number);
+  const [gioCuoi, phutCuoi] = ketThuc.split(":").map(Number);
+  return Math.max(0, gioCuoi + phutCuoi / 60 - gioDau - phutDau / 60);
+}
+
+function caChongGio(caThuNhatId, caThuHaiId) {
+  const caThuNhat = layThongTinCa(caThuNhatId);
+  const caThuHai = layThongTinCa(caThuHaiId);
+  if (!caThuNhat?.gio?.includes("-") || !caThuHai?.gio?.includes("-")) return false;
+
+  const doiSangPhut = (giaTri) => {
+    const [gio, phut] = giaTri.trim().split(":").map(Number);
+    return gio * 60 + phut;
+  };
+  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map(doiSangPhut);
+  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map(doiSangPhut);
+  return batDauMot < ketThucHai && batDauHai < ketThucMot;
+}
+
+function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
+  return (nhanVien.lich[ngayStr] || []).some((lich) =>
+    String(lich.ca).toLowerCase() === String(caLamId).toLowerCase()
+      || caChongGio(lich.ca, caLamId)
+  );
 }
 
 </script>

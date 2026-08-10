@@ -1,6 +1,9 @@
 package com.example.server.core.admin.quanlyhoadon.dto.request;
 
+import com.example.server.infrastructure.address.DiaChiHaiCapRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -20,8 +23,8 @@ public record CapNhatThongTinGiaoHangRequest(
         )
         String sdtNguoiNhan,
 
-        @NotBlank(message = "Địa chỉ giao hàng không được để trống")
-        @Size(max = 300, message = "Địa chỉ giao hàng không được vượt quá 300 ký tự")
-        String diaChiGiaoHang
+        @NotNull(message = "Địa chỉ giao hàng không được để trống")
+        @Valid
+        DiaChiHaiCapRequest diaChiGiaoHang
 ) {
 }

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { getCurrentAdminUser, isAdminAuthenticated, isAdminRole } from "../services/auth";
+import { getCurrentAdminUser, isAdminAuthenticated, isAdminRole, mustChangeAdminPassword } from "../services/auth";
 
 const TrangMacDinh = () => import("../layouts/TrangMacDinh.vue");
 const TrangChu = () => import("../pages/TrangChu.vue");
@@ -533,7 +533,10 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const isAuth = isAdminAuthenticated();
-  const adminTarget = isAdminRole() ? "/admin/thong-ke" : "/admin/ban-hang";
+  const mustChangePassword = isAuth && mustChangeAdminPassword();
+  const adminTarget = mustChangePassword
+    ? "/admin/profile"
+    : (isAdminRole() ? "/admin/thong-ke" : "/admin/ban-hang");
 
   // Nếu đang là Admin/Nhân viên và cố gắng truy cập trang login admin
   if (to.name === "admin-login") {
@@ -561,6 +564,10 @@ router.beforeEach((to) => {
         redirect: to.fullPath
       }
     };
+  }
+
+  if (mustChangePassword && !isOwnEmployeeProfile(to.path)) {
+    return "/admin/profile";
   }
 
   if (to.path.startsWith("/nhanvien")) {

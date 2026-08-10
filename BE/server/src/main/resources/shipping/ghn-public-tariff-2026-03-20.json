@@ -1,0 +1,21 @@
+{
+  "version": "2026-03-20",
+  "effectiveDate": "2026-03-20",
+  "sourceUrl": "https://ghn.vn/pages/bang-gia-moi-sieu-tiet-kiem",
+  "volumetricDivisor": 5000,
+  "fuelSurchargeRate": 0.10,
+  "insuranceFreeThreshold": 1000000,
+  "insuranceRate": 0.005,
+  "sameProvinceConservative": {
+    "baseWeightGrams": 3000,
+    "baseFee": 29000,
+    "incrementWeightGrams": 500,
+    "incrementFee": 2500
+  },
+  "differentProvinceConservative": {
+    "baseWeightGrams": 500,
+    "baseFee": 39000,
+    "incrementWeightGrams": 500,
+    "incrementFee": 5000
+  }
+}

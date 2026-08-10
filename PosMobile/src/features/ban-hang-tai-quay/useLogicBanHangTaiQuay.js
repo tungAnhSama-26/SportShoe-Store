@@ -10,6 +10,7 @@ import { useLogicSanPham } from './useLogicSanPham';
 import { useLogicGiaoHang } from './useLogicGiaoHang';
 import { showError, showToastSuccess, toastSwal, showConfirm } from '../../utils/alert';
 import { useRealtime } from '../../hooks/useRealtime';
+import { chuanHoaDiaChi, diaChiHopLe, DIA_CHI_RONG } from '../../utils/diaChi';
 
 export function useLogicBanHangTaiQuay() {
   const [danhSachHoaDonCho, setDanhSachHoaDonCho] = useState([]);
@@ -24,7 +25,7 @@ export function useLogicBanHangTaiQuay() {
   const [choPhepGiaoHang, setChoPhepGiaoHang] = useState(false);
   const [tenNguoiNhanGiaoHang, setTenNguoiNhanGiaoHang] = useState("");
   const [sdtNguoiNhanGiaoHang, setSdtNguoiNhanGiaoHang] = useState("");
-  const [diaChiGiaoHang, setDiaChiGiaoHang] = useState("");
+  const [diaChiGiaoHang, setDiaChiGiaoHang] = useState({ tinhThanhCode: '', tinhThanh: '', phuongXaCode: '', phuongXa: '', diaChiCuThe: '' });
   const [donViVanChuyen, setDonViVanChuyen] = useState("GHN");
   const [phiVanChuyen, setPhiVanChuyen] = useState(0);
   const [diaChiDaXacNhan, setDiaChiDaXacNhan] = useState("");
@@ -210,7 +211,7 @@ export function useLogicBanHangTaiQuay() {
     setChoPhepGiaoHang(false);
     setTenNguoiNhanGiaoHang("");
     setSdtNguoiNhanGiaoHang("");
-    setDiaChiGiaoHang("");
+    setDiaChiGiaoHang({ ...DIA_CHI_RONG });
     setDonViVanChuyen("GHN");
     setPhiVanChuyen(0);
     setDaTinhPhiVanChuyen(false);
@@ -297,11 +298,11 @@ export function useLogicBanHangTaiQuay() {
     setSdtNguoiNhanGiaoHang(thongTinGiaoHang?.soDienThoaiNguoiNhan || "");
     
     if (thongTinGiaoHang?.giaoHang) {
-      setDiaChiGiaoHang(thongTinGiaoHang.diaChiGiaoHang || "");
-    } else if (!diaChiGiaoHang && khachHangLogic.khachHangDuocChon?.diaChiMacDinh) {
-      setDiaChiGiaoHang(khachHangLogic.khachHangDuocChon.diaChiMacDinh);
+      setDiaChiGiaoHang(chuanHoaDiaChi(thongTinGiaoHang.diaChiGiaoHang));
+    } else if (!diaChiHopLe(diaChiGiaoHang) && khachHangLogic.khachHangDuocChon?.diaChiMacDinh) {
+      setDiaChiGiaoHang(chuanHoaDiaChi(khachHangLogic.khachHangDuocChon.diaChiMacDinh));
     } else if (!thongTinGiaoHang?.giaoHang && !khachHangLogic.khachHangDuocChon) {
-      setDiaChiGiaoHang("");
+      setDiaChiGiaoHang({ ...DIA_CHI_RONG });
     }
     setDonViVanChuyen(thongTinGiaoHang?.donViVanChuyen || "GHN");
     setPhiVanChuyen(Number(thongTinGiaoHang?.phiVanChuyen || 0));
@@ -796,7 +797,7 @@ export function useLogicBanHangTaiQuay() {
           latestRef.current.setChoPhepGiaoHang(msg.state.choPhepGiaoHang);
           latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);
           latestRef.current.setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang);
-          latestRef.current.setDiaChiGiaoHang(msg.state.diaChiGiaoHang);
+          latestRef.current.setDiaChiGiaoHang(chuanHoaDiaChi(msg.state.diaChiGiaoHang));
           latestRef.current.thanhToanLogic.setTienKhachDua(msg.state.tienKhachDua);
           latestRef.current.thanhToanLogic.setPhuongThucThanhToan(msg.state.phuongThucThanhToan);
           latestRef.current.thanhToanLogic.setGhiChuThanhToan(msg.state.ghiChuThanhToan);

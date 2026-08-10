@@ -310,10 +310,7 @@ public class ChatbotTools {
                                 .setParameter("giayId", giayId)
                                 .getSingleResult();
 
-                        String url = "/admin/san-pham";
-                        try {
-                            url = "/admin/san-pham?search=" + java.net.URLEncoder.encode(ten, java.nio.charset.StandardCharsets.UTF_8.name());
-                        } catch (Exception ex) {}
+                        String url = "/khachhang/san-pham/" + giayId;
 
                         sb.append(String.format("```product\n{\"name\":\"%s (Đã bán: %d)\",\"image\":\"%s\",\"price\":%s,\"originalPrice\":%s,\"color\":\"Bán chạy\",\"size\":\"Nhiều size\",\"stock\":%d,\"url\":\"%s\"}\n```\n",
                                 cleanJsonString(ten),

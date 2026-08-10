@@ -1,4 +1,5 @@
 import { apiRequest, uploadFileRequest } from "./api-client";
+import { chuanHoaDiaChi, taoPayloadDiaChi } from "../utils/dia-chi";
 
 async function request(path, init) {
   return apiRequest(path, {
@@ -54,22 +55,26 @@ export function xoaKhachHang(id) {
 
 // --- Address Management ---
 
-export function layDanhSachDiaChi(khachHangId) {
-  return request(`/admin/khach-hang/${khachHangId}/dia-chi`);
+const chuanHoaBanGhiDiaChi = (record) => ({ ...record, ...chuanHoaDiaChi(record) });
+const payloadDiaChi = (record) => ({ hoTen: record.hoTen, sdt: record.sdt, diaChi: taoPayloadDiaChi(record), laMacDinh: record.laMacDinh });
+
+export async function layDanhSachDiaChi(khachHangId) {
+  const data = await request(`/admin/khach-hang/${khachHangId}/dia-chi`);
+  return Array.isArray(data) ? data.map(chuanHoaBanGhiDiaChi) : [];
 }
 
 export function themDiaChi(khachHangId, payload) {
   return request(`/admin/khach-hang/${khachHangId}/dia-chi`, {
     method: "POST",
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify(payloadDiaChi(payload)),
+  }).then(chuanHoaBanGhiDiaChi);
 }
 
 export function capNhatDiaChi(diaChiId, payload) {
   return request(`/admin/khach-hang/dia-chi/${diaChiId}`, {
     method: "PUT",
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify(payloadDiaChi(payload)),
+  }).then(chuanHoaBanGhiDiaChi);
 }
 
 export function xoaDiaChi(diaChiId) {

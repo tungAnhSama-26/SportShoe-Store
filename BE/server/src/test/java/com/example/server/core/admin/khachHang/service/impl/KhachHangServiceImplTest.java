@@ -9,7 +9,9 @@ import com.example.server.core.admin.khachHang.dto.request.TaoKhachHangRequest;
 import com.example.server.core.admin.khachHang.dto.responsse.DiaChiResponse;
 import com.example.server.core.admin.khachHang.dto.responsse.KhachHangResponse;
 import com.example.server.entity.DiaChiKhachHang;
+import com.example.server.entity.DiaChiHaiCap;
 import com.example.server.entity.KhachHang;
+import com.example.server.infrastructure.address.DiaChiHaiCapRequest;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.security.PasswordService;
@@ -79,10 +81,11 @@ class KhachHangServiceImplTest {
         dc.setKhachHang(kh);
         dc.setHoTen("Nguyen Van A");
         dc.setSdt("0912345678");
-        dc.setTinhThanh("Hà Nội");
-        dc.setQuanHuyen("Cầu Giấy");
-        dc.setPhuongXa("Dịch Vọng");
-        dc.setDiaChiCuThe("Số 1 Đường ABC");
+        DiaChiHaiCap diaChi = new DiaChiHaiCap();
+        diaChi.setTinhThanh("Hà Nội");
+        diaChi.setPhuongXa("Dịch Vọng");
+        diaChi.setDiaChiCuThe("Số 1 Đường ABC");
+        dc.setDiaChi(diaChi);
         dc.setLaMacDinh(laMacDinh);
         dc.setTrangThai(1);
         dc.setNgayTao(Instant.now());
@@ -90,7 +93,12 @@ class KhachHangServiceImplTest {
     }
 
     private DiaChiRequest buildDiaChiRequest(boolean laMacDinh) {
-        return new DiaChiRequest("Nguyen Van B", "0987654321", "Hồ Chí Minh", "Quận 1", "Bến Nghé", "Số 2 Đường XYZ", laMacDinh);
+        return new DiaChiRequest(
+                "Nguyen Van B",
+                "0987654321",
+                new DiaChiHaiCapRequest(null, "Hồ Chí Minh", null, "Bến Nghé", "Số 2 Đường XYZ"),
+                laMacDinh
+        );
     }
 
     // ===== taoKhachHang =====
@@ -613,16 +621,18 @@ class KhachHangServiceImplTest {
         when(diaChiKhachHangRepository.save(any(DiaChiKhachHang.class))).thenAnswer(inv -> inv.getArgument(0));
 
         DiaChiRequest request = new DiaChiRequest(
-                "Le Van B", "0987000000", "Đà Nẵng", "Hải Châu", "Thạch Thang", "12 Trần Phú", false
+                "Le Van B",
+                "0987000000",
+                new DiaChiHaiCapRequest(null, "Đà Nẵng", null, "Thạch Thang", "12 Trần Phú"),
+                false
         );
         DiaChiResponse response = khachHangService.capNhatDiaChi(1, request);
 
         assertThat(response.hoTen()).isEqualTo("Le Van B");
         assertThat(response.sdt()).isEqualTo("0987000000");
-        assertThat(response.tinhThanh()).isEqualTo("Đà Nẵng");
-        assertThat(response.quanHuyen()).isEqualTo("Hải Châu");
-        assertThat(response.phuongXa()).isEqualTo("Thạch Thang");
-        assertThat(response.diaChiCuThe()).isEqualTo("12 Trần Phú");
+        assertThat(response.diaChi().tinhThanh()).isEqualTo("Đà Nẵng");
+        assertThat(response.diaChi().phuongXa()).isEqualTo("Thạch Thang");
+        assertThat(response.diaChi().diaChiCuThe()).isEqualTo("12 Trần Phú");
         assertThat(dc.getNgayCapNhat()).isNotNull();
     }
 
