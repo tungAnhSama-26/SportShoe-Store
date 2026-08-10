@@ -82,9 +82,9 @@ function taoChuCaiDaiDien(value) {
             <div v-if="!laMoi" class="mt-3">
               <span
                 class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                :class="nhanVien?.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+                :class="nhanVien?.trangThai === 1 ? 'bg-emerald-50 text-emerald-600' : (nhanVien?.trangThai === 2 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')"
               >
-                {{ nhanVien?.trangThai === 1 ? "Hoạt động" : "Khóa" }}
+                {{ nhanVien?.trangThai === 1 ? "Hoạt động" : (nhanVien?.trangThai === 2 ? "Chờ đổi mật khẩu" : "Khóa") }}
               </span>
             </div>
             <p v-else class="mt-3 text-xs text-slate-400">(Bấm vào ảnh để chọn avatar)</p>
@@ -115,7 +115,7 @@ function taoChuCaiDaiDien(value) {
             <Card class="space-y-2 !bg-white shadow-sm">
               <h3 class="mb-3 text-sm font-bold text-slate-800">Trạng thái tài khoản</h3>
               <Button
-                v-if="nhanVien?.trangThai === 1"
+                v-if="nhanVien?.trangThai !== 0"
                 variant="soft"
                 class="w-full justify-center bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="laChinhMinh"

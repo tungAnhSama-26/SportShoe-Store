@@ -2,6 +2,7 @@ package com.example.server.core.client.donhang.scheduler;
 
 import com.example.server.core.client.thongbao.service.ClientThongBaoService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.hoadon.LichSuHoaDonEvent;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.LichSuHoaDon;
 import com.example.server.repository.HoaDonRepository;
@@ -48,16 +49,25 @@ public class TuDongNhanHangScheduler {
                 hoaDonRepository.findDonDaGiaoDaThanhToanQuaHan(moc);
         for (HoaDon hd : dsHoaDon) {
             Instant now = Instant.now();
-            hd.setDaNhanHang(true);
             hd.setTrangThai(TRANG_THAI_HOAN_THANH);
             hd.setNgayCapNhat(now);
             hoaDonRepository.save(hd);
+
+            LichSuHoaDon daNhanHang = new LichSuHoaDon();
+            daNhanHang.setHoaDon(hd);
+            daNhanHang.setNhanVien(null);
+            daNhanHang.setNguoiThaoTac("Hệ thống");
+            daNhanHang.setTrangThai(LichSuHoaDonEvent.KHACH_DA_NHAN_HANG.ma());
+            daNhanHang.setGhiChu("Hệ thống tự động xác nhận khách đã nhận hàng sau 3 ngày");
+            daNhanHang.setNgayTao(now);
+            lichSuHoaDonRepository.save(daNhanHang);
 
             // Ghi lịch sử hóa đơn
             LichSuHoaDon lichSu = new LichSuHoaDon();
             lichSu.setHoaDon(hd);
             lichSu.setNhanVien(null);
-            lichSu.setTrangThai("Hoàn thành");
+            lichSu.setNguoiThaoTac("Hệ thống");
+            lichSu.setTrangThai(LichSuHoaDonEvent.HOAN_THANH.ma());
             lichSu.setGhiChu("Tự động hoàn thành sau 3 ngày giao hàng thành công");
             lichSu.setNgayTao(now);
             lichSuHoaDonRepository.save(lichSu);

@@ -60,7 +60,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             ParsedAdminToken parsedToken = jwtService.parseAdminToken(token);
             AdminPrincipal principal = parsedToken.principal();
             Optional<NhanVien> nhanVienOpt = nhanVienRepository.findById(principal.id());
-            if (nhanVienOpt.isEmpty() || nhanVienOpt.get().getTrangThai() != 1) {
+            if (nhanVienOpt.isEmpty()
+                    || (nhanVienOpt.get().getTrangThai() != 1
+                    && nhanVienOpt.get().getTrangThai() != 2)) {
                 SecurityContextHolder.clearContext();
             } else {
                 NhanVien nhanVien = nhanVienOpt.get();

@@ -96,14 +96,6 @@ public class NhanVien {
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
-    @NotNull
-    @ColumnDefault("0")
-    @Column(name = "bat_buoc_doi_mat_khau", nullable = false)
-    private Boolean batBuocDoiMatKhau = false;
-
-    @Column(name = "han_doi_mat_khau")
-    private Instant hanDoiMatKhau;
-
     @Column(name = "face_descriptor", columnDefinition = "NVARCHAR(MAX)")
     private String faceDescriptor;
 

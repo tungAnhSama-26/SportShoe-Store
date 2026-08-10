@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ONhapMatKhau from "../../../components/common/ONhapMatKhau.vue";
 import ThanhDoManhMatKhau from "../../../components/common/ThanhDoManhMatKhau.vue";
 import {
@@ -22,7 +22,11 @@ import {
   layHoSoNhanVien,
   uploadFile,
 } from "../../../services/nhan-vien";
-import { getCurrentAdminUser } from "../../../services/auth";
+import {
+  getCurrentAdminUser,
+  mustChangeAdminPassword,
+  updateCurrentAdminUser,
+} from "../../../services/auth";
 import {
   getDisplayErrorMessage,
   getFieldErrors,
@@ -33,6 +37,7 @@ import { layPhuongXaHaiCap, layTinhThanhHaiCap } from "../../../services/dia-chi
 import { chuanHoaDiaChi, doiChieuDiaChiHaiCap, taoPayloadDiaChi } from "../../../utils/dia-chi";
 
 const router = useRouter();
+const route = useRoute();
 const { refreshAdminSession } = useAdminSession();
 
 const user = getCurrentAdminUser();
@@ -48,6 +53,7 @@ const fileInputAvatar = ref(null);
 
 const showDoiMatKhau = ref(false);
 const matKhauMoi = ref("");
+const dangBatBuocDoiMatKhau = ref(mustChangeAdminPassword());
 
 const loiForm = ref({
   hoTen: "",
@@ -304,10 +310,16 @@ async function doiMatKhau() {
   }
   dangLuu.value = true;
   try {
-    await doiMatKhauHoSoNhanVien(matKhauMoi.value.trim());
+    const updated = await doiMatKhauHoSoNhanVien(matKhauMoi.value.trim());
+    updateCurrentAdminUser({ trangThai: updated?.trangThai ?? 1 });
+    refreshAdminSession();
+    dangBatBuocDoiMatKhau.value = false;
     showSuccess("Đổi mật khẩu thành công.", "Thành công");
     matKhauMoi.value = "";
     showDoiMatKhau.value = false;
+    if (Number(updated?.trangThai) === 1) {
+      await router.replace("/admin/ban-hang");
+    }
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(error, "Không thể đổi mật khẩu");
   } finally {
@@ -359,6 +371,10 @@ function chonPhuongXaProfile() {
 }
 
 onMounted(async () => {
+  if (dangBatBuocDoiMatKhau.value || route.query.forcePasswordChange === "1") {
+    dangBatBuocDoiMatKhau.value = true;
+    showDoiMatKhau.value = true;
+  }
   await taiChiTiet();
   try {
     const danhSachTinh = await layTinhThanhHaiCap();
@@ -388,6 +404,40 @@ onMounted(async () => {
 
 <template>
   <div class="invoice-flat mx-auto max-w-5xl space-y-6 pb-12">
+    <div
+      v-if="dangBatBuocDoiMatKhau"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+          <Lock class="h-6 w-6" />
+        </div>
+        <h2 class="mt-5 text-xl font-bold text-slate-900">Yêu cầu đổi mật khẩu</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          Đây là lần đăng nhập đầu tiên. Vui lòng đổi mật khẩu tạm trước khi sử dụng các chức năng khác.
+        </p>
+        <div v-if="loiTrang" class="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          {{ loiTrang }}
+        </div>
+        <div class="mt-5 space-y-3">
+          <ONhapMatKhau
+            v-model="matKhauMoi"
+            placeholder="Mật khẩu mới (ít nhất 6 ký tự)"
+            autocomplete="new-password"
+            input-class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-300 focus:bg-white"
+          />
+          <ThanhDoManhMatKhau :mat-khau="matKhauMoi" />
+          <button
+            type="button"
+            :disabled="dangLuu"
+            class="admin-btn-primary h-11 w-full rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+            @click="doiMatKhau"
+          >
+            {{ dangLuu ? "Đang cập nhật..." : "Đổi mật khẩu và tiếp tục" }}
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- Header -->
     <section class="flex items-center justify-between border-b border-slate-100 pb-4">
       <div class="flex items-center gap-4">
@@ -505,6 +555,7 @@ onMounted(async () => {
                     Lưu
                   </button>
                   <button
+                    v-if="!dangBatBuocDoiMatKhau"
                     @click="showDoiMatKhau = false"
                     class="admin-btn-soft h-10 rounded-xl px-4"
                   >

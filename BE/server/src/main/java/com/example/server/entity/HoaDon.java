@@ -81,10 +81,6 @@ public class HoaDon {
     @Column(name = "trang_thai", nullable = false)
     private Integer trangThai;
 
-    /** Trạng thái trước khi khách gửi yêu cầu hủy, dùng để khôi phục khi admin từ chối. */
-    @Column(name = "trang_thai_truoc_yeu_cau_huy")
-    private Integer trangThaiTruocYeuCauHuy;
-
     @NotNull
     @Column(name = "tong_tien_hang", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTienHang;
@@ -111,23 +107,10 @@ public class HoaDon {
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
-    /** Hạn giữ hàng tạm khi khách vào thanh toán (null = không giữ). */
-    @Column(name = "han_giu_hang")
-    private Instant hanGiuHang;
-
-    /** Khách đã xác nhận nhận hàng (cho phép đánh giá). */
-    @ColumnDefault("0")
-    @Column(name = "da_nhan_hang", nullable = false)
-    private Boolean daNhanHang = false;
-
     /** Đơn đã bị trừ tồn kho chưa (online: chỉ trừ khi nhân viên xác nhận đơn). */
     @ColumnDefault("0")
     @Column(name = "da_tru_kho", nullable = false)
     private Boolean daTruKho = false;
-
-    @ColumnDefault("0")
-    @Column(name = "so_lan_sua_dia_chi", nullable = false)
-    private Integer soLanSuaDiaChi = 0;
 
     public void setNgayTao(Instant ngayTao) {
         this.ngayTao = ngayTao;

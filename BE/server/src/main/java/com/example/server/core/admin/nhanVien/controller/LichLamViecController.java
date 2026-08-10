@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/lich-lam-viec")
@@ -46,6 +47,13 @@ public class LichLamViecController {
                 "Phân ca thành công",
                 lichLamViecService.phanCa(request)
         ));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> xoaLich(@PathVariable UUID id) {
+        assertIsAdmin();
+        lichLamViecService.xoaLich(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa ca làm việc thành công", null));
     }
 
     @PostMapping("/auto-assign")

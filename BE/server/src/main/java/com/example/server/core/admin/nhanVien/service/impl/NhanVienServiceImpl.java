@@ -99,12 +99,9 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
         nv.setFaceDescriptor(normalizeOptional(request.faceDescriptor()));
-        nv.setTrangThai(1);
+        nv.setTrangThai(isStaffRole(vaiTro) ? 2 : 1);
         Instant now = Instant.now();
         nv.setNgayTao(now);
-        boolean requiresTemporaryPasswordChange = isStaffRole(vaiTro);
-        nv.setBatBuocDoiMatKhau(requiresTemporaryPasswordChange);
-        nv.setHanDoiMatKhau(null);
 
         NhanVien saved = nhanVienRepository.save(nv);
         eventPublisher.publishEvent(new NhanVienAccountCreatedEvent(
@@ -141,9 +138,8 @@ public class NhanVienServiceImpl implements NhanVienService {
         nv.setDiaChi(request.diaChi() != null ? DiaChiHaiCapMapper.toEntity(request.diaChi()) : null);
         nv.setHinhAnh(normalizeOptional(request.hinhAnh()));
         nv.setVaiTro(vaiTro);
-        if (!isStaffRole(vaiTro)) {
-            nv.setBatBuocDoiMatKhau(false);
-            nv.setHanDoiMatKhau(null);
+        if (!isStaffRole(vaiTro) && Integer.valueOf(2).equals(nv.getTrangThai())) {
+            nv.setTrangThai(1);
         }
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
@@ -166,8 +162,9 @@ public class NhanVienServiceImpl implements NhanVienService {
     public NhanVienResponse doiMatKhau(UUID id, DoiMatKhauRequest request) {
         NhanVien nv = findNhanVien(id);
         nv.setMatKhau(passwordService.hash(request.matKhauMoi()));
-        nv.setBatBuocDoiMatKhau(false);
-        nv.setHanDoiMatKhau(null);
+        if (Integer.valueOf(2).equals(nv.getTrangThai())) {
+            nv.setTrangThai(1);
+        }
         nv.setNgayCapNhat(Instant.now());
         return toItem(nhanVienRepository.save(nv));
     }
@@ -266,13 +263,11 @@ public class NhanVienServiceImpl implements NhanVienService {
                 normalizeVaiTro(nv.getVaiTro()),
                 mapVaiTro(nv.getVaiTro()),
                 nv.getTrangThai(),
-                nv.getTrangThai() == 1 ? "Đang làm" : "Nghỉ làm",
+                mapTrangThai(nv.getTrangThai()),
                 nv.getNgayTao(),
                 matKhauTamThoi,
                 emailDispatchResult != null ? emailDispatchResult.sent() : null,
                 emailDispatchResult != null && !emailDispatchResult.sent() ? emailDispatchResult.warningMessage() : null,
-                mustChangeTemporaryPassword(nv),
-                mustChangeTemporaryPassword(nv) ? nv.getHanDoiMatKhau() : null,
                 nv.getFaceDescriptor()
         );
     }
@@ -289,6 +284,16 @@ public class NhanVienServiceImpl implements NhanVienService {
             case 2 -> "Nhân viên";
             default -> "Không xác định";
         };
+    }
+
+    private String mapTrangThai(Integer trangThai) {
+        if (Integer.valueOf(1).equals(trangThai)) {
+            return "Đang làm";
+        }
+        if (Integer.valueOf(2).equals(trangThai)) {
+            return "Chờ đổi mật khẩu";
+        }
+        return "Nghỉ làm";
     }
 
     private Integer validateVaiTro(Integer vaiTro) {
@@ -320,12 +325,6 @@ public class NhanVienServiceImpl implements NhanVienService {
 
     private boolean isStaffRole(Integer vaiTro) {
         return Integer.valueOf(2).equals(normalizeVaiTro(vaiTro));
-    }
-
-    private boolean mustChangeTemporaryPassword(NhanVien nv) {
-        return isStaffRole(nv.getVaiTro())
-                && Boolean.TRUE.equals(nv.getBatBuocDoiMatKhau())
-                && nv.getHanDoiMatKhau() != null;
     }
 
     private String generateTemporaryPassword() {

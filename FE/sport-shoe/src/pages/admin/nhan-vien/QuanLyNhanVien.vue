@@ -59,13 +59,14 @@ const dsVaiTro = [
 const dsTrangThai = [
   { label: "Tất cả", value: "" },
   { label: "Hoạt động", value: "1", color: "bg-emerald-50 text-emerald-600" },
+  { label: "Chờ đổi mật khẩu", value: "2", color: "bg-amber-50 text-amber-600" },
   { label: "Khóa", value: "0", color: "bg-rose-50 text-rose-600" },
 ];
 
 function mauTrangThai(trangThai) {
-  return trangThai === 1
-    ? "bg-emerald-50 text-emerald-600"
-    : "bg-rose-50 text-rose-600";
+  if (Number(trangThai) === 1) return "bg-emerald-50 text-emerald-600";
+  if (Number(trangThai) === 2) return "bg-amber-50 text-amber-600";
+  return "bg-rose-50 text-rose-600";
 }
 
 function dinhDangNgay(ngay) {
@@ -158,6 +159,9 @@ function hienThiTrangThai(nv) {
   }
   if (normalizedStatus.includes("khoa") || Number(nv?.trangThai) === 0) {
     return "Khóa";
+  }
+  if (normalizedStatus.includes("cho doi mat khau") || Number(nv?.trangThai) === 2) {
+    return "Chờ đổi mật khẩu";
   }
   return nv?.tenTrangThai || "—";
 }
@@ -274,14 +278,14 @@ async function capNhatTrangThai(nv) {
   }
 
   const message =
-    nv.trangThai === 1
+    nv.trangThai !== 0
       ? `Bạn có chắc muốn cho nhân viên "${nv.hoTen}" nghỉ làm?`
       : `Bạn có chắc muốn kích hoạt lại nhân viên "${nv.hoTen}"?`;
 
   if (!(await showConfirm(message))) return;
 
   dangDoiTrangThai.value = nv.id;
-  const newStatus = nv.trangThai === 1 ? 0 : 1;
+  const newStatus = nv.trangThai !== 0 ? 0 : 1;
   try {
     await doiTrangThaiNhanVien(nv.id, newStatus);
     showSuccess(
@@ -502,7 +506,7 @@ onUnmounted(() => {
                 </div>
               </td>
               <td class="px-2 py-2 text-xs">
-                <Badge :variant="nv.trangThai === 1 ? 'success' : 'danger'" class="text-xs">
+                <Badge :variant="nv.trangThai === 1 ? 'success' : (nv.trangThai === 2 ? 'warning' : 'danger')" class="text-xs">
                   {{ hienThiTrangThai(nv) }}
                 </Badge>
               </td>
@@ -517,8 +521,8 @@ onUnmounted(() => {
                         ? 'Bạn không thể tự khóa tài khoản của chính mình'
                         : 'Không thể đổi trạng thái Admin'
                     "
-                    :action-label="nv.trangThai === 1 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
-                    :intent="nv.trangThai === 1 ? 'deactivate' : 'activate'"
+                    :action-label="nv.trangThai !== 0 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
+                    :intent="nv.trangThai !== 0 ? 'deactivate' : 'activate'"
                     @toggle="capNhatTrangThai(nv)"
                   />
                   

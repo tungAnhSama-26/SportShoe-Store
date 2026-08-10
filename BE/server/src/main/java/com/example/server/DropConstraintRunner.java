@@ -16,7 +16,6 @@ public class DropConstraintRunner implements CommandLineRunner {
     public void run(String... args) {
         // Tự động gỡ bỏ các ràng buộc kiểm tra cũ gây lỗi khi tạo/lưu ca làm việc.
         // Constraint trạng thái hóa đơn phải được quản lý bằng schema/migration, không được xóa khi khởi động.
-        dropConstraint("dbo.lich_lam_viec", "ck_lich_lam_viec_ca");
         dropConstraint("dbo.ca_lam", "ck_ca_lam_gio");
         dropConstraint("dbo.ca_lam", "ck_ca_lam_gio_bat_dau");
         dropConstraint("dbo.ca_lam", "ck_ca_lam_gio_ket_thuc");
@@ -29,10 +28,10 @@ public class DropConstraintRunner implements CommandLineRunner {
                     "FROM sys.check_constraints " +
                     "INNER JOIN sys.objects ON sys.check_constraints.parent_object_id = sys.objects.object_id " +
                     "INNER JOIN sys.schemas ON sys.objects.schema_id = sys.schemas.schema_id " +
-                    "WHERE sys.objects.name IN ('lich_lam_viec', 'ca_lam'); " +
+                    "WHERE sys.objects.name = 'ca_lam'; " +
                     "IF @sql <> '' EXEC sp_executesql @sql;";
             jdbcTemplate.execute(sql);
-            System.out.println("Successfully removed outdated check constraints on lich_lam_viec and ca_lam.");
+            System.out.println("Successfully removed outdated check constraints on ca_lam.");
         } catch (Exception e) {
             System.out.println("Could not run dynamic constraint cleanup: " + e.getMessage());
         }

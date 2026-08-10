@@ -138,7 +138,6 @@ public class ClientDatHangService {
         hoaDon.setNgayLap(now);
         hoaDon.setNgayTao(now);
         hoaDon.setNgayCapNhat(now);
-        hoaDon.setDaNhanHang(false);
         // Đơn QR đã giữ chỗ tồn -> đánh dấu đã trừ kho để nhân viên xác nhận không trừ trùng.
         hoaDon.setDaTruKho(daGiuCho);
 

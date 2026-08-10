@@ -16,6 +16,7 @@ import { layDanhSachNhanVien } from "../../../services/nhan-vien.js";
 import {
   layLichLamViec,
   phanCa,
+  xoaLichLamViec,
   xepCaTuDong,
 } from "../../../services/lich-lam.js";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
@@ -183,13 +184,11 @@ async function taiDuLieuLich() {
     danhSachNV.value.forEach((nv) => {
       nv.lich = cacNgayTrongTuan.value.map((date) => {
         const dateStr = formatISODate(date);
-        const item = lichData.find(
+        return lichData.filter(
           (l) => String(l.nhanVienId) === String(nv.id) && l.ngay === dateStr,
-        );
-        return item ? item.ca : null;
+        ).map((item) => ({ id: item.id, ca: item.ca }));
       });
-      const countCa = nv.lich.filter((c) => c !== null).length;
-      nv.tongGio = countCa * 4;
+      nv.tongGio = nv.lich.flat().reduce((tong, item) => tong + soGioCa(item.ca), 0);
       nv.overtime = nv.tongGio > 20 ? nv.tongGio - 20 : 0;
     });
   } catch (e) {
@@ -213,7 +212,7 @@ async function taiNhanVien() {
       vaiTro: Number(nv.vaiTro) === 1 ? 1 : 2,
       hinhAnh: nv.hinhAnh ?? "",
       mauNen: mauNenNV(Number(nv.vaiTro) === 1 ? 1 : 2),
-      lich: Array(7).fill(null),
+      lich: Array.from({ length: 7 }, () => []),
       tongGio: 0,
       overtime: 0,
       gioiHanOT: 5,
@@ -268,8 +267,8 @@ const lichBoard = computed(() => {
       ngayStr: formatISODate(ngay),
       thu: NHAN_TUAN[ngayIndex],
       cas: DS_CA.value.map((caInfo) => {
-        const nhanViens = danhSachLocVaiTro.value.filter(
-          (nv) => nv.lich[ngayIndex] && nv.lich[ngayIndex].toLowerCase() === caInfo.id.toLowerCase()
+        const nhanViens = danhSachLocVaiTro.value.filter((nv) =>
+          nv.lich[ngayIndex]?.some((item) => item.ca.toLowerCase() === caInfo.id.toLowerCase())
         );
         return {
           ...caInfo,
@@ -408,12 +407,11 @@ function huyThemCa() {
 }
 
 const nhanVienKhaDung = computed(() => {
-  if (!currentChiTietCa.value) {
-    return danhSachLocVaiTro.value;
-  }
-  const { ca } = currentChiTietCa.value;
-  return danhSachLocVaiTro.value.filter(
-    (nv) => !ca.nhanViens.some((nvInCa) => nvInCa.id === nv.id)
+  const ngayStr = currentChiTietCa.value?.day?.ngayStr || chonNgayVal.value;
+  const caId = currentChiTietCa.value?.ca?.id || chonCaVal.value;
+  if (!ngayStr || !caId) return danhSachLocVaiTro.value;
+  return danhSachLocVaiTro.value.filter((nv) =>
+    !nhanVienDaCoHoacChongCa(nv, ngayStr, caId)
   );
 });
 
@@ -440,7 +438,9 @@ async function luuCa() {
     // Đếm số lượng nhân viên đã xếp ca này vào ngày này
     const ngayIdx = cacNgayTrongTuan.value.findIndex(d => formatISODate(d) === ngayStr);
     if (ngayIdx >= 0) {
-      const dem = danhSachLocVaiTro.value.filter(nv => nv.lich[ngayIdx] && nv.lich[ngayIdx].toLowerCase() === caId.toLowerCase()).length;
+      const dem = danhSachLocVaiTro.value.filter((nv) =>
+        nv.lich[ngayIdx]?.some((item) => item.ca.toLowerCase() === caId.toLowerCase())
+      ).length;
       if (dem >= MAX_NHAN_VIEN_MOI_CA) {
         showError(`Ca này đã đủ tối đa ${MAX_NHAN_VIEN_MOI_CA} nhân viên.`);
         return;
@@ -455,7 +455,7 @@ async function luuCa() {
     await phanCa({
       nhanVienId: chonNhanVienId.value,
       ngay: ngayStr,
-      ca: caId,
+      caLamId: caId,
     });
     showSuccess("Thêm nhân viên vào ca thành công!");
     
@@ -494,11 +494,14 @@ async function xoaCa(nhanVien) {
   
   dangTai.value = true;
   try {
-    await phanCa({
-      nhanVienId: nhanVien.id,
-      ngay: day.ngayStr,
-      ca: null,
-    });
+    const ngayIndex = cacNgayTrongTuan.value.findIndex((ngay) => formatISODate(ngay) === day.ngayStr);
+    const lichCanXoa = nhanVien.lich[ngayIndex]?.find(
+      (item) => item.ca.toLowerCase() === ca.id.toLowerCase(),
+    );
+    if (!lichCanXoa?.id) {
+      throw new Error("Không tìm thấy lịch làm việc cần xóa");
+    }
+    await xoaLichLamViec(lichCanXoa.id);
     showSuccess("Xóa ca làm việc thành công!");
     
     await taiDuLieuLich();
@@ -538,9 +541,12 @@ async function xepCaDong() {
   }
 }
 
-function tenCaXuatExcel(ca) {
-  const thongTinCa = layThongTinCa(ca);
-  return thongTinCa ? `${thongTinCa.nhan} (${thongTinCa.gio})` : "Nghỉ";
+function tenCaXuatExcel(dsLich) {
+  if (!Array.isArray(dsLich) || dsLich.length === 0) return "Nghỉ";
+  return dsLich.map((item) => {
+    const thongTinCa = layThongTinCa(item.ca);
+    return thongTinCa ? `${thongTinCa.nhan} (${thongTinCa.gio})` : item.ca;
+  }).join("; ");
 }
 
 function tenFileXuatExcel() {
@@ -602,6 +608,38 @@ function layThongTinCa(id) {
   };
 }
 
+function soGioCa(id) {
+  const ca = layThongTinCa(id);
+  if (!ca?.gio || !ca.gio.includes("-")) return 0;
+  const [batDau, ketThuc] = ca.gio.split("-").map((value) => value.trim());
+  const [gioDau, phutDau] = batDau.split(":").map(Number);
+  const [gioCuoi, phutCuoi] = ketThuc.split(":").map(Number);
+  return Math.max(0, gioCuoi + phutCuoi / 60 - gioDau - phutDau / 60);
+}
+
+function caChongGio(caThuNhatId, caThuHaiId) {
+  const caThuNhat = layThongTinCa(caThuNhatId);
+  const caThuHai = layThongTinCa(caThuHaiId);
+  if (!caThuNhat?.gio?.includes("-") || !caThuHai?.gio?.includes("-")) return false;
+
+  const doiSangPhut = (giaTri) => {
+    const [gio, phut] = giaTri.trim().split(":").map(Number);
+    return gio * 60 + phut;
+  };
+  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map(doiSangPhut);
+  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map(doiSangPhut);
+  return batDauMot < ketThucHai && batDauHai < ketThucMot;
+}
+
+function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
+  const ngayIndex = cacNgayTrongTuan.value.findIndex((ngay) => formatISODate(ngay) === ngayStr);
+  if (ngayIndex < 0) return false;
+  return (nhanVien.lich[ngayIndex] || []).some((lich) =>
+    String(lich.ca).toLowerCase() === String(caLamId).toLowerCase()
+      || caChongGio(lich.ca, caLamId)
+  );
+}
+
 function mauOvertimeBar(nv) {
   const pct = nv.overtime / nv.gioiHanOT;
   if (pct >= 0.9) return "bg-rose-500";
@@ -614,11 +652,11 @@ function phanTramOT(nv) {
 }
 
 const nvTruc = computed(
-  () => danhSachNV.value.filter((nv) => nv.lich.some((c) => c !== null)).length,
+  () => danhSachNV.value.filter((nv) => nv.lich.some((dsCa) => dsCa.length > 0)).length,
 );
 const caUnassigned = computed(
   () =>
-    danhSachNV.value.filter((nv) => nv.lich.every((c) => c === null)).length,
+    danhSachNV.value.filter((nv) => nv.lich.every((dsCa) => dsCa.length === 0)).length,
 );
 </script>
 

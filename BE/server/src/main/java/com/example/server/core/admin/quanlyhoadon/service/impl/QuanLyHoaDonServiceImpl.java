@@ -3,6 +3,7 @@ package com.example.server.core.admin.quanlyhoadon.service.impl;
 import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
 
 import com.example.server.core.admin.quanlyhoadon.domain.TrangThaiHoaDon;
+import com.example.server.core.hoadon.LichSuHoaDonEvent;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatSanPhamHoaDonRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatThongTinGiaoHangRequest;
 import com.example.server.core.admin.quanlyhoadon.dto.request.CapNhatTrangThaiHoaDonRequest;
@@ -284,10 +285,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         TrangThaiHoaDon trangThaiHienTai = TrangThaiHoaDon.tuMa(hoaDon.getTrangThai());
         TrangThaiHoaDon trangThaiMoi = TrangThaiHoaDon.tuNhan(normalizeLabel(request.trangThai()));
 
-        if (trangThaiHienTai == TrangThaiHoaDon.YEU_CAU_HUY
-                && trangThaiMoi == TrangThaiHoaDon.CHO_XAC_NHAN
-                && hoaDon.getTrangThaiTruocYeuCauHuy() != null) {
-            trangThaiMoi = TrangThaiHoaDon.tuMa(hoaDon.getTrangThaiTruocYeuCauHuy());
+        boolean dangXuLyYeuCauHuy = trangThaiHienTai == TrangThaiHoaDon.YEU_CAU_HUY;
+        if (dangXuLyYeuCauHuy && trangThaiMoi == TrangThaiHoaDon.CHO_XAC_NHAN) {
+            trangThaiMoi = timTrangThaiTruocYeuCauHuy(hoaDon.getId());
         }
         trangThaiHienTai.kiemTraCoTheChuyenSang(trangThaiMoi, isTaiQuay(hoaDon));
         
@@ -369,14 +369,14 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 hoaDon.setTrangThai(TRANG_THAI_HUY);
             }
             case "Yêu cầu hủy" -> {
-                hoaDon.setTrangThaiTruocYeuCauHuy(trangThaiHienTai.getMa());
+                ghiLichSuHoaDon(
+                        hoaDon,
+                        LichSuHoaDonEvent.tuTrangThaiHoaDon(trangThaiHienTai.getMa()).ma(),
+                        "Trạng thái trước khi khách hàng gửi yêu cầu hủy"
+                );
                 hoaDon.setTrangThai(TRANG_THAI_YEU_CAU_HUY);
             }
             default -> throw new BusinessException("Trạng thái hóa đơn không hợp lệ");
-        }
-        if (trangThaiHienTai == TrangThaiHoaDon.YEU_CAU_HUY
-                && trangThaiMoi != TrangThaiHoaDon.YEU_CAU_HUY) {
-            hoaDon.setTrangThaiTruocYeuCauHuy(null);
         }
 
         if (request.ghiChu() != null && !request.ghiChu().isBlank() 
@@ -391,6 +391,12 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             vanChuyenRepository.save(vanChuyen);
         }
 
+        if (dangXuLyYeuCauHuy && trangThaiMoi != TrangThaiHoaDon.YEU_CAU_HUY) {
+            LichSuHoaDonEvent ketQuaYeuCauHuy = trangThaiMoi == TrangThaiHoaDon.HUY
+                    ? LichSuHoaDonEvent.CHAP_NHAN_YEU_CAU_HUY
+                    : LichSuHoaDonEvent.TU_CHOI_YEU_CAU_HUY;
+            ghiLichSuHoaDon(hoaDon, ketQuaYeuCauHuy.ma(), request.ghiChu());
+        }
         ghiLichSuHoaDon(hoaDon, resolveTrangThaiHoaDon(hoaDon, vanChuyen), request.ghiChu());
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRANG_THAI");
         guiEmailCapNhatTrangThai(hoaDon, trangThaiMoi.getTen(), vanChuyen);
@@ -619,7 +625,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDonRepository.save(hoaDon);
         ghiLichSuHoaDon(hoaDon, "Xác nhận thanh toán COD", thanhToan.getGhiChu());
 
-        if (Boolean.TRUE.equals(hoaDon.getDaNhanHang())) {
+        if (daCoSuKien(hoaDon.getId(), LichSuHoaDonEvent.KHACH_DA_NHAN_HANG)) {
             hoaDon.setTrangThai(TRANG_THAI_HOAN_THANH);
             hoaDon.setNgayCapNhat(now);
             hoaDonRepository.save(hoaDon);
@@ -978,7 +984,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 lichSu.getId(),
                 actorCode,
                 actorName,
-                normalizeLegacyDisplayValue(lichSu.getTrangThai()),
+                normalizeLegacyDisplayValue(LichSuHoaDonEvent.nhanHienThi(lichSu.getTrangThai())),
                 lichSu.getNgayTao(),
                 normalizeLegacyDisplayValue(lichSu.getGhiChu())
         );
@@ -1029,6 +1035,24 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         return "Khách hàng";
     }
 
+    private boolean daCoSuKien(Integer hoaDonId, LichSuHoaDonEvent event) {
+        return lichSuHoaDonRepository.existsByHoaDonIdAndTrangThai(hoaDonId, event.ma());
+    }
+
+    private TrangThaiHoaDon timTrangThaiTruocYeuCauHuy(Integer hoaDonId) {
+        return lichSuHoaDonRepository
+                .findFirstByHoaDonIdAndTrangThaiInOrderByNgayTaoDescIdDesc(
+                        hoaDonId,
+                        LichSuHoaDonEvent.maTrangThaiOnDinh()
+                )
+                .flatMap(lichSu -> LichSuHoaDonEvent.timTheoGiaTri(lichSu.getTrangThai()))
+                .flatMap(LichSuHoaDonEvent::trangThaiHoaDon)
+                .map(TrangThaiHoaDon::tuMa)
+                .orElseThrow(() -> new BusinessException(
+                        "Không tìm thấy trạng thái hóa đơn trước yêu cầu hủy"
+                ));
+    }
+
     private void ghiLichSuHoaDon(HoaDon hoaDon, String trangThai, String ghiChu) {
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
@@ -1039,7 +1063,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         } else {
             lichSu.setNguoiThaoTac("Hệ thống");
         }
-        lichSu.setTrangThai(trangThai);
+        lichSu.setTrangThai(LichSuHoaDonEvent.chuanHoaMa(trangThai));
         lichSu.setGhiChu(ghiChu);
         lichSu.setNgayTao(Instant.now());
         lichSuHoaDonRepository.save(lichSu);
