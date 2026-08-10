@@ -14,6 +14,13 @@ public class FaqRuleEngine {
 
         String query = message.toLowerCase(Locale.ROOT).trim();
 
+        // 0. Chào hỏi / Khởi động hội thoại
+        if (query.equals("xin chào") || query.equals("chào") || query.equals("chào shop") || query.equals("hello") ||
+            query.equals("hi") || query.equals("chào bạn") || query.equals("shop ơi") || query.equals("ad ơi") ||
+            query.startsWith("xin chào") || query.startsWith("chào shop")) {
+            return "Xin chào bạn! Mình là trợ lý ảo của SportShoe. Mình có thể giúp bạn tìm kiếm các mẫu giày hot trend, tư vấn chọn size chuẩn, xem các đợt giảm giá khuyến mãi hoặc tra cứu đơn hàng. Bạn cần mình hỗ trợ gì ạ?";
+        }
+
         // 1. Địa chỉ / Vị trí cửa hàng
         if (query.contains("địa chỉ") || query.contains("shop ở đâu") || query.contains("cửa hàng ở đâu") || query.contains("vị trí shop")) {
             return "Cửa hàng SportShoe hân hạnh đón tiếp bạn tại địa chỉ: **Số 123 Đường Cầu Giấy, Quận Cầu Giấy, Hà Nội**. Cửa hàng có chỗ đỗ xe ô tô và xe máy miễn phí cho khách hàng nhé!";
@@ -24,10 +31,15 @@ public class FaqRuleEngine {
             return "SportShoe mở cửa đón khách tất cả các ngày trong tuần (kể cả Thứ 7, Chủ Nhật & Ngày lễ) từ **08:00 sáng đến 22:00 tối** nhé!";
         }
 
+        // 3. Chính sách đổi trả / Bảo hành
+        if (query.contains("đổi trả") || query.contains("chính sách đổi") || query.contains("đổi hàng") || query.contains("bảo hành")) {
+            return "Để được hỗ trợ chi tiết và chính xác nhất về quy định đổi trả hoặc bảo hành sản phẩm, bạn vui lòng bấm nút **Gặp nhân viên** bên dưới hoặc liên hệ Hotline **0965852782** để được nhân viên tư vấn hỗ trợ trực tiếp nhé!";
+        }
+
         // 4. Hotline / Liên hệ
         if (query.contains("hotline") || query.contains("số điện thoại") || query.contains("liên hệ nhân viên") || query.contains("tổng đài")) {
             return "Bạn có thể liên hệ trực tiếp với bộ phận chăm sóc khách hàng của SportShoe qua:\n" +
-                   "- Hotline: **1900 6868** (8:00 - 22:00)\n" +
+                   "- Hotline: **0965852782** (8:00 - 22:00)\n" +
                    "- Email: cskh@sportshoe.vn\n" +
                    "- Hoặc bấm nút **Gặp nhân viên** bên dưới để được nhân viên tư vấn trực tiếp qua chat nhé!";
         }
