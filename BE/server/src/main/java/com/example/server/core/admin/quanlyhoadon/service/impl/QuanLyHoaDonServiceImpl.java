@@ -1185,7 +1185,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         String normalized = loaiDon.trim();
         return mapLoaiDon(hoaDon).equalsIgnoreCase(normalized)
                 || (("Offline".equalsIgnoreCase(normalized) || "Tại cửa hàng".equalsIgnoreCase(normalized))
-                && isTaiQuay(hoaDon) && !isDonGiaoHang(hoaDon))
+                && isTaiQuay(hoaDon))
                 || ("Online".equalsIgnoreCase(normalized) && !isTaiQuay(hoaDon));
     }
 
@@ -1210,7 +1210,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
 private String mapLoaiDon(HoaDon hoaDon) {
-    return isTaiQuay(hoaDon) && !isDonGiaoHang(hoaDon) ? "Cửa hàng" : "Trực tuyến";
+    return isTaiQuay(hoaDon) ? "Cửa hàng" : "Trực tuyến";
 }
 
 private boolean isTaiQuay(HoaDon hoaDon) {

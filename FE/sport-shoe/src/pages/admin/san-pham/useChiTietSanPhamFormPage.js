@@ -671,7 +671,7 @@ export function useChiTietSanPhamFormPage() {
         mauSacId: variant.mauSacId,
         kichCoId: variant.kichCoId,
         soLuong: variant.soLuong,
-        giaGoc: variant.giaGoc,
+        giaGoc: variant.giaBan,
         giaBan: variant.giaBan
       }))
       let variantsResult

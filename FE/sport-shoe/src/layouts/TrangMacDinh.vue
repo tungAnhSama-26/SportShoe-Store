@@ -1,8 +1,19 @@
 <script setup>
+import { ref } from "vue";
+import { showSuccess } from "../utils/alert";
 import logoChinh from "../assets/logo/delete-background-logo.png";
 import ChatBox from "../components/common/ChatBox.vue";
 import KhungDauTrang from "../components/trang-chu/KhungDauTrang.vue";
 import { cuaHangUngDung } from "../stores/ung-dung";
+
+const emailBanTin = ref("");
+
+function xuLyDangKyBanTin() {
+  if (emailBanTin.value) {
+    showSuccess("Đăng ký nhận bản tin thành công!", "Cảm ơn bạn");
+    emailBanTin.value = "";
+  }
+}
 
 const nhomLienKet = [
   {
@@ -82,28 +93,28 @@ const nhomLienKet = [
             Điểm đến dành cho những ai yêu giày chất lượng. Tự tin bước vào phong cách của riêng bạn.
           </p>
           <div class="mt-6 flex items-center gap-4 text-[#91918c]">
-            <span aria-label="Facebook" title="Facebook">
+            <a href="https://www.facebook.com/profile.php?id=61588337362695" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook" class="transition-colors hover:text-primary">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
               </svg>
-            </span>
-            <span aria-label="Instagram" title="Instagram">
+            </a>
+            <a href="#" aria-label="Instagram" title="Instagram" class="transition-colors hover:text-primary">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                 <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
               </svg>
-            </span>
-            <span aria-label="Twitter" title="Twitter">
+            </a>
+            <a href="#" aria-label="Twitter" title="Twitter" class="transition-colors hover:text-primary">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
               </svg>
-            </span>
-            <span aria-label="TikTok" title="TikTok">
+            </a>
+            <a href="https://www.tiktok.com/@pekor266?_r=1&_t=ZS-98dFglK6GZh" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok" class="transition-colors hover:text-primary">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
               </svg>
-            </span>
+            </a>
           </div>
         </div>
 
@@ -126,20 +137,22 @@ const nhomLienKet = [
           <p class="mt-4 text-xs leading-6 text-[#62625b]">
             Đăng ký để nhận ưu đãi và cập nhật mới nhất.
           </p>
-          <div class="mt-4 flex gap-2">
+          <form @submit.prevent="xuLyDangKyBanTin" class="mt-4 flex gap-2">
             <input
               type="email"
+              v-model="emailBanTin"
+              required
               placeholder="Email của bạn"
               aria-label="Email đăng ký nhận bản tin"
               class="w-full min-w-0 rounded-2xl border border-[#91918c] bg-white px-3 py-2 text-xs text-black outline-none placeholder:text-[#91918c] focus:border-black focus:ring-2 focus:ring-[#435ee5]"
             />
             <button
-              type="button"
+              type="submit"
               class="rounded-2xl bg-primary px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-primary-hover"
             >
               Đăng ký
             </button>
-          </div>
+          </form>
         </div>
       </div>
 

@@ -99,19 +99,6 @@ const defaultFieldErrors = computed(() => {
       "Số lượng mặc định",
       props.variantBuilder.soLuong,
     ),
-    giaGoc: (() => {
-      const priceError = buildNumberFieldError(
-        "Giá gốc mặc định",
-        props.variantBuilder.giaGoc,
-        { allowZero: false },
-      );
-      if (priceError) return priceError;
-      const giaGoc = parseNumericValue(props.variantBuilder.giaGoc);
-      const giaBan = parseNumericValue(props.variantBuilder.giaBan);
-      return giaGoc > 0 && giaBan > 0 && giaGoc > giaBan
-        ? "Giá gốc mặc định không được lớn hơn giá bán mặc định"
-        : "";
-    })(),
     giaBan: (() => {
       const priceError = buildNumberFieldError(
         "Giá bán mặc định",
@@ -129,12 +116,9 @@ const generatedVariantFieldErrors = computed(() =>
       if (!showErrors.value || item.selected === false) {
         return [
           item.key,
-          { soLuong: "", giaGoc: "", giaBan: "" }
+          { soLuong: "", giaBan: "" }
         ];
       }
-      const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, {
-        allowZero: false,
-      });
       const giaBanError = buildNumberFieldError("Giá bán", item.giaBan, {
         allowZero: false,
       });
@@ -143,13 +127,6 @@ const generatedVariantFieldErrors = computed(() =>
         item.key,
         {
           soLuong: buildNumberFieldError("Số lượng", item.soLuong),
-          giaGoc:
-            giaGocError ||
-            (parseNumericValue(item.giaGoc) > 0 &&
-            parseNumericValue(item.giaBan) > 0 &&
-            parseNumericValue(item.giaGoc) > parseNumericValue(item.giaBan)
-              ? "Giá gốc không được lớn hơn giá bán"
-              : ""),
           giaBan: giaBanError,
         },
       ];
@@ -226,27 +203,15 @@ function getDetailedValidationMessages() {
 
   const defaultErrorsRaw = {
     soLuong: buildNumberFieldError("Số lượng mặc định", props.variantBuilder.soLuong),
-    giaGoc: (() => {
-      const priceError = buildNumberFieldError("Giá gốc mặc định", props.variantBuilder.giaGoc, { allowZero: false });
-      if (priceError) return priceError;
-      const giaGoc = parseNumericValue(props.variantBuilder.giaGoc);
-      const giaBan = parseNumericValue(props.variantBuilder.giaBan);
-      return giaGoc > 0 && giaBan > 0 && giaGoc > giaBan ? "Giá gốc mặc định không được lớn hơn giá bán mặc định" : "";
-    })(),
     giaBan: buildNumberFieldError("Giá bán mặc định", props.variantBuilder.giaBan, { allowZero: false })
   };
 
   if (defaultErrorsRaw.soLuong) messages.push(defaultErrorsRaw.soLuong);
-  if (defaultErrorsRaw.giaGoc) messages.push(defaultErrorsRaw.giaGoc);
   if (defaultErrorsRaw.giaBan) messages.push(defaultErrorsRaw.giaBan);
 
   props.generatedVariants.filter(item => item.selected !== false).forEach((item) => {
-    const giaGocError = buildNumberFieldError("Giá gốc", item.giaGoc, { allowZero: false });
     const giaBanError = buildNumberFieldError("Giá bán", item.giaBan, { allowZero: false });
     const soLuongError = buildNumberFieldError("Số lượng", item.soLuong);
-    const priceCompareError = parseNumericValue(item.giaGoc) > 0 && parseNumericValue(item.giaBan) > 0 && parseNumericValue(item.giaGoc) > parseNumericValue(item.giaBan)
-      ? "Giá gốc không được lớn hơn giá bán"
-      : "";
 
     const formatColorName = (value) => {
       const normalized = String(value || "").trim().toLocaleLowerCase("vi-VN");
@@ -257,8 +222,6 @@ function getDetailedValidationMessages() {
     const variantName = `Biến thể Size ${item.kichCo} - ${formatColorName(item.mauSac)}`;
 
     if (soLuongError) messages.push(`${variantName}: ${soLuongError}`);
-    if (giaGocError) messages.push(`${variantName}: ${giaGocError}`);
-    else if (priceCompareError) messages.push(`${variantName}: ${priceCompareError}`);
     if (giaBanError) messages.push(`${variantName}: ${giaBanError}`);
   });
 
@@ -314,7 +277,6 @@ function handleApplyDefaults() {
   if (hasDefaultFieldErrors.value) {
     const messages = [];
     if (defaultFieldErrors.value.soLuong) messages.push(defaultFieldErrors.value.soLuong);
-    if (defaultFieldErrors.value.giaGoc) messages.push(defaultFieldErrors.value.giaGoc);
     if (defaultFieldErrors.value.giaBan) messages.push(defaultFieldErrors.value.giaBan);
     const detailMessage = messages.join("; ");
     emit(
