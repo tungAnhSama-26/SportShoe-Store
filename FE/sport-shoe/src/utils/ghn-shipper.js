@@ -30,6 +30,7 @@ export function laTrangThaiCoShipperGhn(value) {
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
+    .replace(/đ/g, "d")
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -40,5 +41,31 @@ export function laTrangThaiCoShipperGhn(value) {
     "dang giao hang",
     "dang van chuyen",
     "cho van chuyen",
+    "da giao hang",
+    "giao hang that bai",
+    "hoan thanh",
   ].includes(trangThai);
+}
+
+export function hoaDonDaCoShipperGhn(hoaDon) {
+  if (!hoaDon) return false;
+
+  const maTrangThai = Number(hoaDon.trangThai);
+  if ([2, 3, 4, 5, 10].includes(maTrangThai)) return true;
+
+  if (
+    laTrangThaiCoShipperGhn(hoaDon.trangThai) ||
+    laTrangThaiCoShipperGhn(hoaDon.trangThaiText)
+  ) {
+    return true;
+  }
+
+  const lichSu = [
+    ...(Array.isArray(hoaDon.lichSuHoaDon) ? hoaDon.lichSuHoaDon : []),
+    ...(Array.isArray(hoaDon.lichSuTrangThai) ? hoaDon.lichSuTrangThai : []),
+  ];
+
+  return lichSu.some((item) =>
+    laTrangThaiCoShipperGhn(item?.trangThai ?? item?.trangThaiText),
+  );
 }

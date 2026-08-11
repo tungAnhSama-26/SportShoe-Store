@@ -27,7 +27,7 @@ import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import { API_BASE_URL } from '../services/api-client';
 import { dinhDangDiaChi } from '../utils/dia-chi';
 import {
-  laTrangThaiCoShipperGhn,
+  hoaDonDaCoShipperGhn,
   layShipperGhnTheoHoaDon,
 } from '../utils/ghn-shipper';
 
@@ -167,12 +167,9 @@ const cauHinhTrangThai = computed(() => layCauHinhTrangThaiDonHang(don.value?.tr
 
 const thongTinShipper = computed(() => {
   if (!don.value) return null;
-  const maTrangThai = Number(don.value.trangThai);
-  const dangTrongQuaTrinhGiao =
-    [2, 3].includes(maTrangThai) ||
-    laTrangThaiCoShipperGhn(don.value.trangThaiText);
-
-  return dangTrongQuaTrinhGiao ? layShipperGhnTheoHoaDon(don.value) : null;
+  return hoaDonDaCoShipperGhn(don.value)
+    ? layShipperGhnTheoHoaDon(don.value)
+    : null;
 });
 
 function chuanHoaTrangThai(value) {
