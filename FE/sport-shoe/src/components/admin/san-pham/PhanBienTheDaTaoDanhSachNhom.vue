@@ -77,7 +77,6 @@ function toggleGroupAll(group, selected) {
             <th class="bg-slate-100 px-4 py-3 w-[60px] text-center">STT</th>
             <th class="bg-slate-100 px-4 py-3">Kích cỡ</th>
             <th class="bg-slate-100 px-4 py-3">Số lượng</th>
-            <th class="bg-slate-100 px-4 py-3">Giá gốc</th>
             <th class="bg-slate-100 px-4 py-3">Giá bán</th>
             <th class="rounded-r-md bg-slate-100 px-4 py-3 text-right">Xóa</th>
           </tr>
@@ -111,18 +110,8 @@ function toggleGroupAll(group, selected) {
             </td>
             <td class="px-4 py-4">
               <AdminFormattedNumberInput
-                v-model="item.giaGoc"
-                :min="0"
-                class="h-10 w-36 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
-                :class="fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaGoc)"
-              />
-              <p v-if="generatedVariantFieldErrors[item.key]?.giaGoc" class="mt-1 text-xs text-rose-500">
-                {{ generatedVariantFieldErrors[item.key].giaGoc }}
-              </p>
-            </td>
-            <td class="px-4 py-4">
-              <AdminFormattedNumberInput
                 v-model="item.giaBan"
+                @update:modelValue="item.giaGoc = item.giaBan"
                 :min="0"
                 class="h-10 w-36 rounded-md border px-3 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-300"
                 :class="fieldErrorClass(generatedVariantFieldErrors[item.key]?.giaBan)"

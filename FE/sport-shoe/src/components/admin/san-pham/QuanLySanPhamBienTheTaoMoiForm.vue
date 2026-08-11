@@ -95,7 +95,6 @@ function buildNumericError(label, value) {
 
 const bulkDefaultErrors = computed(() => ({
   soLuong: buildNumericError('Số lượng mặc định', props.bulkBienTheForm.soLuong),
-  giaGoc: buildNumericError('Giá gốc mặc định', props.bulkBienTheForm.giaGoc),
   giaBan: buildNumericError('Giá bán mặc định', props.bulkBienTheForm.giaBan)
 }))
 
@@ -105,7 +104,6 @@ const generatedBulkFieldErrors = computed(() =>
       item.key,
       {
         soLuong: buildNumericError('Số lượng', item.soLuong),
-        giaGoc: buildNumericError('Giá gốc', item.giaGoc),
         giaBan: buildNumericError('Giá bán', item.giaBan)
       }
     ])
@@ -173,8 +171,8 @@ function applyGeneratedDefaults() {
   delete props.bulkBienTheErrors.generated
   props.generatedBulkBienThes.forEach((item) => {
     item.soLuong = Number(props.bulkBienTheForm.soLuong || 0)
-    item.giaGoc = Number(props.bulkBienTheForm.giaGoc || 0)
     item.giaBan = Number(props.bulkBienTheForm.giaBan || 0)
+    item.giaGoc = Number(props.bulkBienTheForm.giaBan || 0)
   })
 }
 
@@ -418,17 +416,6 @@ onBeforeUnmount(() => {
               </div>
 
               <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700">Giá gốc mặc định</label>
-                <AdminFormattedNumberInput
-                  v-model="bulkBienTheForm.giaGoc"
-                  :min="0"
-                  class="w-full rounded-md border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  :class="inputErrorClass(resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc))"
-                />
-                <p v-if="resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc)" class="mt-1 text-xs text-red-500">{{ resolveFieldError(bulkDefaultErrors.giaGoc, bulkBienTheErrors.giaGoc) }}</p>
-              </div>
-
-              <div>
                 <label class="mb-1 block text-xs font-medium text-gray-700">Giá bán mặc định</label>
                 <AdminFormattedNumberInput
                   v-model="bulkBienTheForm.giaBan"
@@ -457,7 +444,6 @@ onBeforeUnmount(() => {
                     <th class="px-3 py-2 text-left font-semibold">Màu sắc</th>
                     <th class="px-3 py-2 text-left font-semibold">Kích cỡ</th>
                     <th class="px-3 py-2 text-left font-semibold">Số lượng</th>
-                    <th class="px-3 py-2 text-left font-semibold">Giá gốc</th>
                     <th class="px-3 py-2 text-left font-semibold">Giá bán</th>
                     <th class="px-3 py-2 text-center font-semibold">Xóa</th>
                   </tr>
@@ -481,16 +467,8 @@ onBeforeUnmount(() => {
                     </td>
                     <td class="px-3 py-2">
                       <AdminFormattedNumberInput
-                        v-model="item.giaGoc"
-                        :min="0"
-                        class="w-32 rounded-md border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-                        :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.giaGoc)"
-                      />
-                      <p v-if="generatedBulkFieldErrors[item.key]?.giaGoc" class="mt-1 text-xs text-red-500">{{ generatedBulkFieldErrors[item.key].giaGoc }}</p>
-                    </td>
-                    <td class="px-3 py-2">
-                      <AdminFormattedNumberInput
                         v-model="item.giaBan"
+                        @update:modelValue="item.giaGoc = item.giaBan"
                         :min="0"
                         class="w-32 rounded-md border px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
                         :class="inputErrorClass(generatedBulkFieldErrors[item.key]?.giaBan)"

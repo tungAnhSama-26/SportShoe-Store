@@ -63,8 +63,6 @@ export function useVariantBuilder() {
       variantErrors.giaGoc = 'Giá gốc mặc định không được âm'
     } else if (numGiaGoc > 999000000000) {
       variantErrors.giaGoc = 'Giá gốc mặc định không được vượt quá 999.000.000.000'
-    } else if (requirePrices && numGiaGoc <= 0) {
-      variantErrors.giaGoc = 'Giá gốc mặc định phải lớn hơn 0'
     }
 
     if (numGiaBan < 0) {
@@ -197,7 +195,7 @@ export function useVariantBuilder() {
 
   function applyGeneratedDefaults() {
     assignVariantDefaultFieldErrors({ requirePrices: true })
-    if (variantErrors.soLuong || variantErrors.giaGoc || variantErrors.giaBan) {
+    if (variantErrors.soLuong || variantErrors.giaBan) {
       variantErrors.generated = 'Vui lòng sửa số lượng và giá mặc định trước khi áp dụng'
       return
     }

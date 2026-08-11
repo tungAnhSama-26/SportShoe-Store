@@ -91,28 +91,8 @@ function giaHienThi(item) {
   return formatPriceRange(item.giaMin, item.giaMax)
 }
 
-function giaGocHienThi(item) {
-  return formatPriceRange(item.giaGocMin, item.giaGocMax)
-}
-
 function giaTrongBang(item) {
   return formatPriceParts(item.giaMin, item.giaMax)
-}
-
-function giaGocTrongBang(item) {
-  return formatPriceParts(item.giaGocMin, item.giaGocMax)
-}
-
-function hasOriginalPrice(item) {
-  if (!item?.coGiamGia) return false
-  if (item.giaGocMin == null && item.giaGocMax == null) return false
-
-  const currentMin = Number(item.giaMin ?? 0)
-  const currentMax = Number(item.giaMax ?? item.giaMin ?? 0)
-  const originalMin = Number(item.giaGocMin ?? 0)
-  const originalMax = Number(item.giaGocMax ?? item.giaGocMin ?? 0)
-
-  return originalMin !== currentMin || originalMax !== currentMax
 }
 
 function trangThaiLabel(value) {
@@ -240,13 +220,6 @@ function handlePageSizeChange(size) {
                     <span class="whitespace-nowrap">{{ giaTrongBang(item).start }}</span>
                     <span v-if="giaTrongBang(item).isRange" class="text-slate-400 font-normal mx-0.5">-</span>
                     <span v-if="giaTrongBang(item).isRange" class="whitespace-nowrap">{{ giaTrongBang(item).end }}</span>
-                  </div>
-                </div>
-                <div v-if="hasOriginalPrice(item)">
-                  <div class="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs font-medium text-slate-400 line-through">
-                    <span class="whitespace-nowrap">{{ giaGocTrongBang(item).start }}</span>
-                    <span v-if="giaGocTrongBang(item).isRange" class="mx-0.5">-</span>
-                    <span v-if="giaGocTrongBang(item).isRange" class="whitespace-nowrap">{{ giaGocTrongBang(item).end }}</span>
                   </div>
                 </div>
               </div>
