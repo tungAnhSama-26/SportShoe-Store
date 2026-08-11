@@ -26,6 +26,10 @@ import {
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import { API_BASE_URL } from '../services/api-client';
 import { dinhDangDiaChi } from '../utils/dia-chi';
+import {
+  laTrangThaiCoShipperGhn,
+  layShipperGhnTheoHoaDon,
+} from '../utils/ghn-shipper';
 
 const apiOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
@@ -160,6 +164,16 @@ async function taiChiTiet(amThang = false) {
 
 const viTriHienTai = computed(() => layViTriTienTrinhDonHang(don.value?.trangThai));
 const cauHinhTrangThai = computed(() => layCauHinhTrangThaiDonHang(don.value?.trangThai));
+
+const thongTinShipper = computed(() => {
+  if (!don.value) return null;
+  const maTrangThai = Number(don.value.trangThai);
+  const dangTrongQuaTrinhGiao =
+    [2, 3].includes(maTrangThai) ||
+    laTrangThaiCoShipperGhn(don.value.trangThaiText);
+
+  return dangTrongQuaTrinhGiao ? layShipperGhnTheoHoaDon(don.value) : null;
+});
 
 function chuanHoaTrangThai(value) {
   const trangThai = String(value || '')
@@ -447,6 +461,36 @@ function xuLyAnhLoi(event) {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          v-if="thongTinShipper"
+          class="mt-6 overflow-hidden rounded-3xl border border-orange-100 bg-white p-5 shadow-sm lg:p-6"
+        >
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-sm">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+              </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Người giao hàng</p>
+              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p class="font-bold text-slate-800">{{ thongTinShipper.hoTen }}</p>
+                <span class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-700">
+                  {{ thongTinShipper.donVi }}
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ thongTinShipper.ma }} · {{ thongTinShipper.soDienThoaiHienThi }}
+              </p>
+            </div>
+            <div class="hidden rounded-2xl bg-orange-50 px-4 py-2 text-right sm:block">
+              <p class="text-xs font-semibold text-orange-700">Đang phụ trách đơn</p>
+              <p class="mt-0.5 text-[11px] text-orange-500">GHN Express</p>
             </div>
           </div>
         </section>
