@@ -26,7 +26,7 @@ const danhSachHienThi = computed(() => {
   const lowerNoSpace = q.replace(/\s+/g, "");
 
   return danhSachLichSu.value.filter((item) => {
-    const shiftDetails = getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa);
+    const shiftDetails = getShiftDetails(item);
     const tenNhanVien = (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || "").toLowerCase();
     const maNhanVien = (item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || "").toLowerCase();
     const maCa = (item.ma || "").toLowerCase();
@@ -157,8 +157,8 @@ const formatDateTime = (timeStr) => {
   }
 };
 
-const getShiftDetails = (timeVaoStr, timeRaStr) => {
-  if (!timeVaoStr) {
+const getShiftDetails = (item) => {
+  if (!item) {
     return {
       tenCa: "Ca làm việc",
       gioCa: "—",
@@ -167,67 +167,79 @@ const getShiftDetails = (timeVaoStr, timeRaStr) => {
     };
   }
 
-  const dateVao = new Date(timeVaoStr);
-  const hourVao = dateVao.getHours();
-  const minVao = dateVao.getMinutes();
+  const timeVaoStr = item.thoiGianVao || item.thoiGianMoCa;
+  const timeRaStr = item.thoiGianRa || item.thoiGianDongCa;
 
-  let tenCa = "";
+  let tenCa = item.caLamTen || "";
   let gioCa = "";
-  let startHour = 0;
+  let startHour = null;
   let startMin = 0;
-  let endHour = 0;
+  let endHour = null;
   let endMin = 0;
 
-  if (hourVao < 13) {
-    tenCa = "Ca Sáng";
-    gioCa = "08:00 - 13:00";
-    startHour = 8;
-    startMin = 0;
-    endHour = 13;
-    endMin = 0;
-  } else if (hourVao < 18) {
-    tenCa = "Ca Chiều";
-    gioCa = "13:00 - 18:00";
-    startHour = 13;
-    startMin = 0;
-    endHour = 18;
-    endMin = 0;
-  } else {
-    tenCa = "Ca Tối";
-    gioCa = "19:00 - 23:00";
-    startHour = 19;
-    startMin = 0;
-    endHour = 23;
-    endMin = 0;
+  if (item.gioBatDau && item.gioKetThuc) {
+    gioCa = `${item.gioBatDau} - ${item.gioKetThuc}`;
+    const [sH, sM] = item.gioBatDau.split(":").map(Number);
+    const [eH, eM] = item.gioKetThuc.split(":").map(Number);
+    startHour = sH;
+    startMin = sM || 0;
+    endHour = eH;
+    endMin = eM || 0;
   }
 
-  const actualVaoMinutes = hourVao * 60 + minVao;
-  const targetVaoMinutes = startHour * 60 + startMin;
-  const lateMin = Math.max(0, actualVaoMinutes - targetVaoMinutes);
+  // Fallback nếu không có gioBatDau/gioKetThuc và có timeVaoStr
+  if (startHour === null && timeVaoStr) {
+    const dateVao = new Date(timeVaoStr);
+    const hourVao = dateVao.getHours();
+    if (hourVao < 13) {
+      if (!tenCa) tenCa = "Ca Sáng";
+      gioCa = "08:00 - 12:00";
+      startHour = 8;
+      startMin = 0;
+      endHour = 12;
+      endMin = 0;
+    } else if (hourVao < 18) {
+      if (!tenCa) tenCa = "Ca Chiều";
+      gioCa = "13:00 - 17:00";
+      startHour = 13;
+      startMin = 0;
+      endHour = 17;
+      endMin = 0;
+    } else {
+      if (!tenCa) tenCa = "Ca Tối";
+      gioCa = "17:30 - 21:30";
+      startHour = 17;
+      startMin = 30;
+      endHour = 21;
+      endMin = 30;
+    }
+  }
+
+  let lateMin = 0;
+  if (timeVaoStr && startHour !== null) {
+    const dateVao = new Date(timeVaoStr);
+    const actualVaoMinutes = dateVao.getHours() * 60 + dateVao.getMinutes();
+    const targetVaoMinutes = startHour * 60 + startMin;
+    lateMin = Math.max(0, actualVaoMinutes - targetVaoMinutes);
+  }
 
   let earlyMin = 0;
-  if (timeRaStr) {
+  if (timeRaStr && endHour !== null) {
     const dateRa = new Date(timeRaStr);
-    const hourRa = dateRa.getHours();
-    const minRa = dateRa.getMinutes();
-
-    const actualRaMinutes = hourRa * 60 + minRa;
+    const actualRaMinutes = dateRa.getHours() * 60 + dateRa.getMinutes();
     const targetRaMinutes = endHour * 60 + endMin;
     earlyMin = Math.max(0, targetRaMinutes - actualRaMinutes);
   }
 
   return {
-    tenCa,
-    gioCa,
+    tenCa: tenCa || "Ca làm việc",
+    gioCa: gioCa || "—",
     lateMin,
     earlyMin
   };
 };
 
-const getShiftName = (item) => item.caLamTen || getShiftDetails(
-  item.thoiGianVao || item.thoiGianMoCa,
-  item.thoiGianRa || item.thoiGianDongCa
-).tenCa;
+const getShiftName = (item) => item.caLamTen || getShiftDetails(item).tenCa;
 
 const setNgayMacDinh = () => {
   const today = new Date();
@@ -383,7 +395,7 @@ const onSearchInput = () => {
                     </div>
                     <div class="text-[12px] text-slate-400 mt-0.5">
                       {{ getShiftName(item) }}
-                      ({{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).gioCa }})
+                      ({{ getShiftDetails(item).gioCa }})
                     </div>
                   </div>
                 </div>
@@ -396,9 +408,9 @@ const onSearchInput = () => {
                     <LogIn class="w-4 h-4 text-emerald-500" />
                     <span>{{ formatDateTime(item.thoiGianVao || item.thoiGianMoCa) }}</span>
                   </div>
-                  <span v-if="getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).lateMin > 0" 
+                  <span v-if="getShiftDetails(item).lateMin > 0" 
                         class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 border border-rose-100 text-rose-500 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400">
-                    Đi muộn {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).lateMin }} phút
+                    Đi muộn {{ getShiftDetails(item).lateMin }} phút
                   </span>
                 </div>
                 <div v-else class="text-center text-slate-400">—</div>
@@ -411,9 +423,9 @@ const onSearchInput = () => {
                     <LogOut class="w-4 h-4 text-amber-500" />
                     <span>{{ formatDateTime(item.thoiGianRa || item.thoiGianDongCa) }}</span>
                   </div>
-                  <span v-if="getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).earlyMin > 0" 
+                  <span v-if="getShiftDetails(item).earlyMin > 0" 
                         class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 border border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400">
-                    Ra sớm {{ getShiftDetails(item.thoiGianVao || item.thoiGianMoCa, item.thoiGianRa || item.thoiGianDongCa).earlyMin }} phút
+                    Ra sớm {{ getShiftDetails(item).earlyMin }} phút
                   </span>
                   <span v-if="item.thoiGianXacNhan" class="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
                     Xác nhận: {{ formatDateTime(item.thoiGianXacNhan) }}

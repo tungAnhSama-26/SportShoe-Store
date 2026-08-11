@@ -9,6 +9,8 @@ public record GiaoCaResponse(
         String ma,
         String caLamId,
         String caLamTen,
+        String gioBatDau,
+        String gioKetThuc,
         UUID nhanVienTrongCaId,
         String nhanVienTrongCaTen,
         String nhanVienTrongCaMa,

@@ -52,4 +52,6 @@ public interface GiaoCaService {
             String keyword,
             Pageable pageable
     );
+
+    void tuDongKetCaChuaDong();
 }

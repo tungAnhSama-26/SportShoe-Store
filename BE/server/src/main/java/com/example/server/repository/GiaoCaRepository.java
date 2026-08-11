@@ -25,6 +25,8 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     boolean existsByTrangThaiIn(List<String> trangThai);
 
+    List<GiaoCa> findByTrangThaiIn(List<String> trangThai);
+
     boolean existsByNhanVienTrongCaIdAndTrangThaiIn(UUID nhanVienId, List<String> trangThai);
 
     boolean existsByCaChuaKetThuc(Integer caChuaKetThuc);

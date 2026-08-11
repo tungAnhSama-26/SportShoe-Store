@@ -429,6 +429,26 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private Optional<CaLam> timCaKeTiep(CaLam caHienTai) {
         List<CaLam> cacCa = cacCaHoatDong();
+        if (cacCa.isEmpty()) {
+            return Optional.empty();
+        }
+
+        LocalTime hienTai = LocalTime.now(MUI_GIO);
+
+        // 1. Dựa theo thời gian thực tế: Tìm ca có giờ kết thúc sau thời điểm hiện tại và khác ca hiện tại
+        Optional<CaLam> caTheoThoiGian = cacCa.stream()
+                .filter(ca -> !ca.getId().equals(caHienTai.getId()))
+                .filter(ca -> {
+                    LocalTime gioKetThuc = LocalTime.parse(ca.getGioKetThuc());
+                    return gioKetThuc.isAfter(hienTai);
+                })
+                .min(Comparator.comparing(ca -> LocalTime.parse(ca.getGioBatDau())));
+
+        if (caTheoThoiGian.isPresent()) {
+            return caTheoThoiGian;
+        }
+
+        // 2. Fallback: Nếu không tìm thấy theo giờ thực tế, lấy theo thứ tự ca liền kề
         for (int i = 0; i < cacCa.size() - 1; i++) {
             if (cacCa.get(i).getId().equals(caHienTai.getId())) {
                 return Optional.of(cacCa.get(i + 1));
@@ -577,19 +597,49 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         }
     }
 
+    @Override
+    @Transactional
+    public void tuDongKetCaChuaDong() {
+        List<GiaoCa> caChuaDong = giaoCaRepository.findByTrangThaiIn(
+                List.of(TrangThaiGiaoCa.MO_CA.ma(), TrangThaiGiaoCa.CHO_BAN_GIAO.ma(), "0"));
+
+        if (caChuaDong.isEmpty()) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        for (GiaoCa giaoCa : caChuaDong) {
+            try {
+                BigDecimal tienMat = tinhTienMat(giaoCa.getId());
+                BigDecimal tienHeThong = (giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO).add(tienMat);
+
+                giaoCa.setThoiGianRa(now);
+                giaoCa.setTienCuoiCaThucTe(tienHeThong);
+                giaoCa.setTrangThai(TrangThaiGiaoCa.DA_KET_THUC.ma());
+                giaoCa.setCaChuaKetThuc(null);
+                giaoCa.setGhiChu(ghepGhiChu(giaoCa.getGhiChu(), "Hệ thống tự động kết ca lúc 00:00 do nhân viên chưa đóng ca."));
+                giaoCaRepository.save(giaoCa);
+            } catch (Exception ex) {
+                System.err.println("[TuDongKetCa] Lỗi khi tự động kết ca " + giaoCa.getMa() + ": " + ex.getMessage());
+            }
+        }
+    }
+
     private GiaoCaResponse mapToResponse(GiaoCa giaoCa) {
         if (giaoCa == null) return null;
         BigDecimal tienMat = tinhTienMat(giaoCa.getId());
         BigDecimal tienChuyenKhoan = tinhTienChuyenKhoan(giaoCa.getId());
-        BigDecimal tienHeThong = giaoCa.getTienDauCa().add(tienMat);
+        BigDecimal tienHeThong = (giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO).add(tienMat);
         BigDecimal chenhLech = giaoCa.getTienCuoiCaThucTe() == null
                 ? null : giaoCa.getTienCuoiCaThucTe().subtract(tienHeThong);
 
         return new GiaoCaResponse(
                 giaoCa.getId(),
                 giaoCa.getMa(),
-                giaoCa.getCaLam().getId(),
-                giaoCa.getCaLam().getTen(),
+                giaoCa.getCaLam() != null ? giaoCa.getCaLam().getId() : null,
+                giaoCa.getCaLam() != null ? giaoCa.getCaLam().getTen() : null,
+                giaoCa.getCaLam() != null ? giaoCa.getCaLam().getGioBatDau() : null,
+                giaoCa.getCaLam() != null ? giaoCa.getCaLam().getGioKetThuc() : null,
                 giaoCa.getNhanVienTrongCa().getId(),
                 giaoCa.getNhanVienTrongCa().getHoTen(),
                 giaoCa.getNhanVienTrongCa().getMa(),
