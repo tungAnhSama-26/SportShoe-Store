@@ -1,10 +1,6 @@
 <script setup>
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
-import {
-  laTrangThaiCoShipperGhn,
-  layShipperGhnTheoHoaDon,
-} from "../../../../../utils/ghn-shipper";
 
 const {
   Card,
@@ -28,25 +24,12 @@ const {
   dangCapNhat,
   dangGiaoLai,
   donGiaoThatBai,
-  laDonTaiQuay,
   handleGiaoLaiDonHang,
   handleHuyDonTuModal,
 } = useInvoiceDetailContext();
 
 const hienModalLyDoHuy = ref(false);
 const lyDoHuy = ref("");
-
-const thongTinShipper = computed(() => {
-  if (
-    !hoaDon.value ||
-    laDonTaiQuay.value ||
-    !laTrangThaiCoShipperGhn(hoaDon.value.trangThai)
-  ) {
-    return null;
-  }
-
-  return layShipperGhnTheoHoaDon(hoaDon.value);
-});
 
 const moModalHuy = () => {
   lyDoHuy.value = "";
@@ -119,32 +102,6 @@ const xacNhanHuy = async () => {
             </p>
           </div>
         </div>
-      </div>
-    </div>
-    <div
-      v-if="thongTinShipper"
-      class="mx-auto mt-5 flex w-full max-w-xl items-center gap-4 rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-white px-4 py-3.5"
-    >
-      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-sm">
-        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
-        </svg>
-      </div>
-      <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p class="font-semibold text-slate-800">{{ thongTinShipper.hoTen }}</p>
-          <span class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-700">
-            {{ thongTinShipper.donVi }}
-          </span>
-        </div>
-        <p class="mt-1 text-xs text-slate-500">
-          {{ thongTinShipper.ma }} · {{ thongTinShipper.soDienThoaiHienThi }}
-        </p>
-      </div>
-      <div class="hidden text-right sm:block">
-        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Người giao hàng</p>
-        <p class="mt-1 text-xs font-medium text-orange-600">Đang phụ trách đơn</p>
       </div>
     </div>
     <div
