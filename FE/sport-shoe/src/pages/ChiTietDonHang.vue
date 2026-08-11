@@ -465,36 +465,6 @@ function xuLyAnhLoi(event) {
           </div>
         </section>
 
-        <section
-          v-if="thongTinShipper"
-          class="mt-6 overflow-hidden rounded-3xl border border-orange-100 bg-white p-5 shadow-sm lg:p-6"
-        >
-          <div class="flex items-center gap-4">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-sm">
-              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
-              </svg>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Người giao hàng</p>
-              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <p class="font-bold text-slate-800">{{ thongTinShipper.hoTen }}</p>
-                <span class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-700">
-                  {{ thongTinShipper.donVi }}
-                </span>
-              </div>
-              <p class="mt-1 text-sm text-slate-500">
-                {{ thongTinShipper.ma }} · {{ thongTinShipper.soDienThoaiHienThi }}
-              </p>
-            </div>
-            <div class="hidden rounded-2xl bg-orange-50 px-4 py-2 text-right sm:block">
-              <p class="text-xs font-semibold text-orange-700">Đang phụ trách đơn</p>
-              <p class="mt-0.5 text-[11px] text-orange-500">GHN Express</p>
-            </div>
-          </div>
-        </section>
-
         <section v-if="coTheYeuCauHuy" class="mt-6 flex flex-wrap gap-3 items-center">
           <button
             @click="guiYeuCauHuy"
@@ -537,6 +507,35 @@ function xuLyAnhLoi(event) {
           <div class="rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
             <p class="font-semibold text-slate-800">{{ don.tenNguoiNhan }} · {{ don.sdtNguoiNhan }}</p>
             <p class="mt-1">{{ dinhDangDiaChi(don.diaChiGiaoHang) || '—' }}</p>
+            <div
+              v-if="thongTinShipper"
+              class="mt-4 flex items-center gap-3 border-t border-slate-200 pt-4"
+            >
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-sm">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p class="font-bold text-slate-800">{{ thongTinShipper.hoTen }}</p>
+                  <span class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-700">
+                    {{ thongTinShipper.donVi }}
+                  </span>
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Mã shipper: {{ thongTinShipper.ma }}</p>
+              </div>
+              <a
+                :href="`tel:${thongTinShipper.soDienThoai}`"
+                class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-orange-200 bg-white px-3 py-2 text-xs font-bold text-orange-600 shadow-sm transition hover:bg-orange-50"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z" />
+                </svg>
+                {{ thongTinShipper.soDienThoai }}
+              </a>
+            </div>
           </div>
           
           <p v-if="don && don.soLanSuaDiaChi >= 1 && don.trangThai === 1 && don.hinhThucThanhToan === 'COD'" class="text-xs text-rose-500 font-medium mt-3 flex items-center gap-1.5 bg-rose-50 border border-rose-100 px-3 py-2.5 rounded-xl">

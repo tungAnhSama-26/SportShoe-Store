@@ -13,12 +13,6 @@ function bamChuoi(value) {
   );
 }
 
-function cheSoDienThoai(value) {
-  const soDienThoai = String(value || "");
-  if (soDienThoai.length < 7) return soDienThoai;
-  return `${soDienThoai.slice(0, 4)} *** ${soDienThoai.slice(-3)}`;
-}
-
 export function layShipperGhnTheoHoaDon(hoaDon) {
   if (!hoaDon) return null;
 
@@ -27,7 +21,6 @@ export function layShipperGhnTheoHoaDon(hoaDon) {
 
   return {
     ...shipper,
-    soDienThoaiHienThi: cheSoDienThoai(shipper.soDienThoai),
     donVi: "GHN Express",
   };
 }
