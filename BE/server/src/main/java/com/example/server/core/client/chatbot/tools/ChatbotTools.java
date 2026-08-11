@@ -367,19 +367,44 @@ public class ChatbotTools {
             String trangThaiText
     ) {}
 
+    private boolean isGenericPromotionKeyword(String kw) {
+        if (kw == null) return true;
+        String clean = kw.trim().toLowerCase(java.util.Locale.ROOT);
+        if (clean.isBlank()) return true;
+        List<String> genericTerms = List.of(
+                "giảm giá", "giam gia", "đợt giảm giá", "dot giam gia", "chương trình giảm giá", "chuong trinh giam gia",
+                "khuyến mãi", "khuyen mai", "chương trình", "chuong trinh", "sale", "sales", "ưu đãi", "uu dai",
+                "voucher", "vouchers", "mã giảm giá", "ma giam gia", "mã giảm", "ma giam", "coupon", "coupons",
+                "cửa hàng", "cua hang", "shop", "có gì", "co gi", "tất cả", "tat ca", "all", "hiện tại", "hien tai",
+                "đang có", "dang co", "mới nhất", "moi nhat", "hot"
+        );
+        for (String term : genericTerms) {
+            if (clean.equals(term) || clean.contains(term)) {
+                String without = clean.replace(term, "").trim();
+                if (without.length() <= 3) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Bean("search_coupons_tool")
-    @Description("Tìm kiếm các phiếu giảm giá (vouchers/coupons) còn hoạt động hoặc sắp diễn ra dựa trên từ khóa hoặc lấy tất cả nếu không truyền từ khóa")
+    @Description("Tìm kiếm các phiếu giảm giá (vouchers/coupons) còn hoạt động hoặc sắp diễn ra. Không truyền keyword hoặc truyền chuỗi rỗng để lấy tất cả voucher hiện có.")
     public Function<CouponSearchRequest, List<CouponDto>> searchCouponsTool() {
         return new Function<CouponSearchRequest, List<CouponDto>>() {
             @Override
             public List<CouponDto> apply(CouponSearchRequest request) {
                 try {
-                    StringBuilder jpql = new StringBuilder("SELECT p FROM PhieuGiamGia p WHERE p.trangThai IN (1, 4) ");
+                    String kw = request != null && request.keyword() != null ? request.keyword().trim() : null;
+                    boolean isGeneric = isGenericPromotionKeyword(kw);
+
+                    StringBuilder jpql = new StringBuilder("SELECT p FROM PhieuGiamGia p WHERE (p.trangThai IN (1, 4) OR (p.trangThai != 0 AND (p.ngayKetThuc IS NULL OR p.ngayKetThuc >= CURRENT_TIMESTAMP))) ");
                     Map<String, Object> params = new HashMap<>();
 
-                    if (request.keyword() != null && !request.keyword().isBlank()) {
+                    if (kw != null && !kw.isBlank() && !isGeneric) {
                         jpql.append("AND (LOWER(p.ma) LIKE :keyword OR LOWER(p.ten) LIKE :keyword) ");
-                        params.put("keyword", "%" + request.keyword().toLowerCase().trim() + "%");
+                        params.put("keyword", "%" + kw.toLowerCase().trim() + "%");
                     }
                     jpql.append("ORDER BY p.ngayTao DESC");
 
@@ -387,6 +412,13 @@ public class ChatbotTools {
                     params.forEach(query::setParameter);
                     query.setMaxResults(10);
                     List<com.example.server.entity.PhieuGiamGia> coupons = query.getResultList();
+
+                    // Fallback: Nếu lọc theo từ khóa cụ thể không thấy, lấy tất cả phiếu giảm giá đang hoạt động
+                    if (coupons.isEmpty() && kw != null && !kw.isBlank() && !isGeneric) {
+                        coupons = entityManager.createQuery("SELECT p FROM PhieuGiamGia p WHERE (p.trangThai IN (1, 4) OR (p.trangThai != 0 AND (p.ngayKetThuc IS NULL OR p.ngayKetThuc >= CURRENT_TIMESTAMP))) ORDER BY p.ngayTao DESC", com.example.server.entity.PhieuGiamGia.class)
+                                .setMaxResults(10)
+                                .getResultList();
+                    }
 
                     List<CouponDto> result = new ArrayList<>();
                     for (com.example.server.entity.PhieuGiamGia p : coupons) {
@@ -417,18 +449,21 @@ public class ChatbotTools {
     }
 
     @Bean("search_promotions_tool")
-    @Description("Tìm kiếm các chương trình/đợt giảm giá (sales/promotions) đang diễn ra hoặc sắp diễn ra dựa trên từ khóa hoặc lấy tất cả nếu không truyền từ khóa")
+    @Description("Tìm kiếm các chương trình/đợt giảm giá (sales/promotions) đang diễn ra hoặc sắp diễn ra. Không truyền keyword hoặc truyền chuỗi rỗng để lấy tất cả đợt giảm giá hiện có.")
     public Function<PromotionSearchRequest, List<PromotionDto>> searchPromotionsTool() {
         return new Function<PromotionSearchRequest, List<PromotionDto>>() {
             @Override
             public List<PromotionDto> apply(PromotionSearchRequest request) {
                 try {
-                    StringBuilder jpql = new StringBuilder("SELECT d FROM DotGiamGia d WHERE d.kichHoat IN (1, 4) ");
+                    String kw = request != null && request.keyword() != null ? request.keyword().trim() : null;
+                    boolean isGeneric = isGenericPromotionKeyword(kw);
+
+                    StringBuilder jpql = new StringBuilder("SELECT d FROM DotGiamGia d WHERE (d.kichHoat IN (1, 4) OR (d.kichHoat != 0 AND (d.ngayKetThuc IS NULL OR d.ngayKetThuc >= CURRENT_DATE))) ");
                     Map<String, Object> params = new HashMap<>();
 
-                    if (request.keyword() != null && !request.keyword().isBlank()) {
+                    if (kw != null && !kw.isBlank() && !isGeneric) {
                         jpql.append("AND (LOWER(d.ma) LIKE :keyword OR LOWER(d.ten) LIKE :keyword OR LOWER(d.moTa) LIKE :keyword) ");
-                        params.put("keyword", "%" + request.keyword().toLowerCase().trim() + "%");
+                        params.put("keyword", "%" + kw.toLowerCase().trim() + "%");
                     }
                     jpql.append("ORDER BY d.ngayTao DESC");
 
@@ -437,11 +472,18 @@ public class ChatbotTools {
                     query.setMaxResults(10);
                     List<com.example.server.entity.DotGiamGia> promos = query.getResultList();
 
+                    // Fallback: Nếu lọc theo từ khóa cụ thể không thấy, lấy tất cả đợt giảm giá đang hoạt động
+                    if (promos.isEmpty() && kw != null && !kw.isBlank() && !isGeneric) {
+                        promos = entityManager.createQuery("SELECT d FROM DotGiamGia d WHERE (d.kichHoat IN (1, 4) OR (d.kichHoat != 0 AND (d.ngayKetThuc IS NULL OR d.ngayKetThuc >= CURRENT_DATE))) ORDER BY d.ngayTao DESC", com.example.server.entity.DotGiamGia.class)
+                                .setMaxResults(10)
+                                .getResultList();
+                    }
+
                     List<PromotionDto> result = new ArrayList<>();
                     for (com.example.server.entity.DotGiamGia d : promos) {
                         String loaiGiamText = (d.getLoaiGiam() != null && d.getLoaiGiam() == 1) ? "Phần trăm" : "Tiền mặt";
                         String trangThaiText = "Hoạt động";
-                        if (d.getKichHoat() == 4) {
+                        if (d.getKichHoat() == 4 || (d.getNgayBatDau() != null && d.getNgayBatDau().isAfter(java.time.LocalDate.now()))) {
                             trangThaiText = "Sắp diễn ra";
                         }
 

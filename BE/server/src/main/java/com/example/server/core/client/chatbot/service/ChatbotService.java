@@ -57,6 +57,11 @@ public class ChatbotService {
             2. Nếu khách hỏi tư vấn size chung chung (chưa có chiều dài cm): Hướng dẫn cách đo chân, gửi bảng size và hỏi số đo cm. KHÔNG tự ý gọi `search_products_tool` liệt kê sản phẩm ngẫu nhiên.
             3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38/40) và mới gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
 
+            # HƯỚNG DẪN TƯ VẤN KHUYẾN MÃI VÀ VOUCHER (QUAN TRỌNG)
+            - Khi khách hàng hỏi về đợt giảm giá, chương trình khuyến mãi, sale, ưu đãi, voucher hay mã giảm giá:
+              BẮT BUỘC gọi `search_promotions_tool` hoặc `search_coupons_tool` (không truyền keyword hoặc truyền chuỗi rỗng để lấy toàn bộ chương trình đang có).
+              Sau khi nhận kết quả, hãy liệt kê rõ ràng cho khách hàng: Tên chương trình, Mức giảm giá (ví dụ: Giảm 20% hoặc Giảm 50.000đ), Thời gian áp dụng và lưu ý (nếu có).
+
             # LINK VÀ THÔNG TIN HƯỚNG DẪN
             - Chi tiết sản phẩm: [Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
             - Chi tiết hóa đơn: [Xem chi tiết hóa đơn](/khachhang/don-hang/ID_HOA_DON)
