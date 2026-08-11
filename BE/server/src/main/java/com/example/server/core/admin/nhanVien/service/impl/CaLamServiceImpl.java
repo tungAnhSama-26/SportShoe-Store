@@ -36,6 +36,7 @@ public class CaLamServiceImpl implements CaLamService {
         }
 
         validateGioCa(request.gioBatDau(), request.gioKetThuc());
+        validateTrungKhoangGio(request.id(), request.gioBatDau(), request.gioKetThuc(), request.trangThai());
         
         CaLam caLam = new CaLam();
         String id = request.id();
@@ -68,6 +69,7 @@ public class CaLamServiceImpl implements CaLamService {
                 .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc"));
 
         validateGioCa(request.gioBatDau(), request.gioKetThuc());
+        validateTrungKhoangGio(id, request.gioBatDau(), request.gioKetThuc(), request.trangThai());
 
         caLam.setTen(request.ten());
         caLam.setGioBatDau(request.gioBatDau());
@@ -104,6 +106,44 @@ public class CaLamServiceImpl implements CaLamService {
             }
         } catch (java.time.format.DateTimeParseException ex) {
             throw new BusinessException("Định dạng giờ không hợp lệ!");
+        }
+    }
+
+    private void validateTrungKhoangGio(String idHienTai, String gioBatDau, String gioKetThuc, Boolean trangThai) {
+        if (!Boolean.TRUE.equals(trangThai)) {
+            return;
+        }
+        if (gioBatDau == null || gioKetThuc == null || gioBatDau.isBlank() || gioKetThuc.isBlank()) {
+            return;
+        }
+
+        try {
+            String s = gioBatDau.trim();
+            String e = gioKetThuc.trim();
+            java.time.LocalTime startMoi = java.time.LocalTime.parse(s.length() == 5 ? s + ":00" : s);
+            java.time.LocalTime endMoi = java.time.LocalTime.parse(e.length() == 5 ? e + ":00" : e);
+
+            List<CaLam> cacCaHoatDong = caLamRepository.findAll().stream()
+                    .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
+                    .filter(ca -> idHienTai == null || !ca.getId().equalsIgnoreCase(idHienTai.trim()))
+                    .toList();
+
+            for (CaLam ca : cacCaHoatDong) {
+                if (ca.getGioBatDau() == null || ca.getGioKetThuc() == null) continue;
+                String cs = ca.getGioBatDau().trim();
+                String ce = ca.getGioKetThuc().trim();
+                java.time.LocalTime startCu = java.time.LocalTime.parse(cs.length() == 5 ? cs + ":00" : cs);
+                java.time.LocalTime endCu = java.time.LocalTime.parse(ce.length() == 5 ? ce + ":00" : ce);
+
+                // Hai khoảng thời gian giao nhau: startMoi < endCu && startCu < endMoi
+                if (startMoi.isBefore(endCu) && startCu.isBefore(endMoi)) {
+                    throw new BusinessException(
+                            "Khoảng thời gian (" + s + " - " + e + ") bị trùng với ca đang hoạt động: "
+                                    + ca.getTen() + " (" + cs + " - " + ce + "). "
+                                    + "Vui lòng tắt ca bị trùng hoặc chỉnh sửa lại thời gian của ca.");
+                }
+            }
+        } catch (java.time.format.DateTimeParseException ignored) {
         }
     }
 

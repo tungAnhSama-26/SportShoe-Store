@@ -57,7 +57,37 @@ function lamMoi() {
   filters.value = { timKiem: '', gioBatDau: '', gioKetThuc: '', trangThai: 'all' };
 }
 
+function timCaTrungGio(gioBatDau, gioKetThuc, excludeId = null) {
+  if (!gioBatDau || !gioKetThuc) return null;
+  const startMoi = gioBatDau.trim();
+  const endMoi = gioKetThuc.trim();
+
+  for (const ca of danhSachCaLam.value) {
+    if (!ca.trangThai) continue;
+    if (excludeId && String(ca.id).toLowerCase() === String(excludeId).toLowerCase()) continue;
+    if (!ca.gioBatDau || !ca.gioKetThuc) continue;
+
+    const startCu = ca.gioBatDau.trim();
+    const endCu = ca.gioKetThuc.trim();
+
+    // 2 khoảng thời gian giao nhau: startMoi < endCu && startCu < endMoi
+    if (startMoi < endCu && startCu < endMoi) {
+      return ca;
+    }
+  }
+  return null;
+}
+
 async function toggleTrangThai(ca) {
+  const seBat = !ca.trangThai;
+  if (seBat) {
+    const caTrung = timCaTrungGio(ca.gioBatDau, ca.gioKetThuc, ca.id);
+    if (caTrung) {
+      showError(`Không thể bật ca "${ca.ten}" do khoảng thời gian (${ca.gioBatDau} - ${ca.gioKetThuc}) bị trùng với ca đang hoạt động: "${caTrung.ten}" (${caTrung.gioBatDau} - ${caTrung.gioKetThuc}). Vui lòng tắt ca bị trùng hoặc chỉnh sửa lại thời gian.`);
+      return;
+    }
+  }
+
   const confirmed = await showConfirm(`Bạn có chắc chắn muốn thay đổi trạng thái ca ${ca.ten}?`, "Xác nhận");
   if (!confirmed) return;
 
@@ -66,7 +96,7 @@ async function toggleTrangThai(ca) {
       ten: ca.ten,
       gioBatDau: ca.gioBatDau,
       gioKetThuc: ca.gioKetThuc,
-      trangThai: !ca.trangThai
+      trangThai: seBat
     });
     showSuccess(`Đã thay đổi trạng thái ca ${ca.ten}`);
     await taiDanhSach();
@@ -87,7 +117,8 @@ const formTaoCa = ref({
 const formErrors = ref({
   tenCa: "",
   gioBatDau: "",
-  gioKetThuc: ""
+  gioKetThuc: "",
+  trungCa: ""
 });
 
 function moModalTaoCa() {
@@ -98,7 +129,7 @@ function moModalTaoCa() {
     gioKetThuc: "",
     moTa: ""
   };
-  formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "" };
+  formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "", trungCa: "" };
   showModalTaoCa.value = true;
 }
 
@@ -111,7 +142,7 @@ function moModalSuaCa(ca) {
     gioKetThuc: ca.gioKetThuc,
     moTa: ""
   };
-  formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "" };
+  formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "", trungCa: "" };
   showModalTaoCa.value = true;
 }
 
@@ -121,7 +152,7 @@ function huyTaoCa() {
 
 async function luuTaoCa() {
   let isValid = true;
-  formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "" };
+  formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "", trungCa: "" };
   const tenCaRaw = String(formTaoCa.value.tenCa ?? "");
   const tenCa = tenCaRaw.trim();
 
@@ -159,6 +190,13 @@ async function luuTaoCa() {
     } else if (start > end) {
       formErrors.value.gioKetThuc = "Giờ kết thúc phải lớn hơn giờ bắt đầu (Ví dụ: 08:00 - 12:00).";
       isValid = false;
+    } else {
+      // Kiểm tra trùng khoảng thời gian với các ca đang hoạt động
+      const caTrung = timCaTrungGio(start, end, isEdit.value ? formTaoCa.value.id : null);
+      if (caTrung) {
+        formErrors.value.trungCa = `Khoảng thời gian (${start} - ${end}) bị trùng với ca đang hoạt động: "${caTrung.ten}" (${caTrung.gioBatDau} - ${caTrung.gioKetThuc}). Vui lòng tắt ca bị trùng hoặc chỉnh sửa lại thời gian của ca.`;
+        isValid = false;
+      }
     }
   }
 
@@ -393,11 +431,17 @@ async function luuTaoCa() {
                   type="time" 
                   v-model="formTaoCa.gioKetThuc" 
                   class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white" 
-                  :class="{'border-rose-500 focus:border-rose-500': formErrors.gioKetThuc}"
-                  @input="formErrors.gioKetThuc = ''"
+                  :class="{'border-rose-500 focus:border-rose-500': formErrors.gioKetThuc || formErrors.trungCa}"
+                  @input="formErrors.gioKetThuc = ''; formErrors.trungCa = ''"
                 />
                 <p v-if="formErrors.gioKetThuc" class="text-[12px] text-rose-500 mt-1">{{ formErrors.gioKetThuc }}</p>
               </div>
+            </div>
+
+            <!-- Cảnh báo trùng ca làm việc -->
+            <div v-if="formErrors.trungCa" class="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5">
+              <div class="h-2 w-2 rounded-full bg-rose-500 mt-1.5 shrink-0"></div>
+              <p class="text-[13px] text-rose-600 leading-snug">{{ formErrors.trungCa }}</p>
             </div>
 
             <div class="space-y-1.5">
