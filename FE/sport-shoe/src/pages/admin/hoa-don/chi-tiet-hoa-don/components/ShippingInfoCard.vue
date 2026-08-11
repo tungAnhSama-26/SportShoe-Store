@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
 import { dinhDangDiaChi } from "../../../../../utils/dia-chi";
 import {
-  laTrangThaiCoShipperGhn,
+  hoaDonDaCoShipperGhn,
   layShipperGhnTheoHoaDon,
 } from "../../../../../utils/ghn-shipper";
 
@@ -13,7 +13,7 @@ const thongTinShipper = computed(() => {
   if (
     !hoaDon.value ||
     laDonTaiQuay.value ||
-    !laTrangThaiCoShipperGhn(hoaDon.value.trangThai)
+    !hoaDonDaCoShipperGhn(hoaDon.value)
   ) {
     return null;
   }
