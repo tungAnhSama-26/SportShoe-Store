@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Eye, Images, Layers3, Pencil, Tag, RefreshCw } from 'lucide-vue-next'
 import AdminQuickStatusAction from '../../../components/common/AdminQuickStatusAction.vue'
 import AdminTableFooter from '../../../components/common/AdminTableFooter.vue'
@@ -56,7 +56,8 @@ const emit = defineEmits([
   'refresh',
   'update:current-page',
   'update:page-size',
-  'selection-changed'
+  'selection-changed',
+  'select-all-pages'
 ])
 
 function isUpdatingStatus(id) {
@@ -90,9 +91,6 @@ function giaGachNgang(item) {
   if (item?.dotGiamGiaId && giaSauDotGiam(item) < Number(item?.giaBan || 0)) {
     return Number(item?.giaBan || 0)
   }
-  if (Number(item?.giaBan || 0) < Number(item?.giaGoc || 0)) {
-    return Number(item?.giaGoc || 0)
-  }
   return null
 }
 
@@ -110,7 +108,6 @@ function formatPercentValue(value) {
 function formatDiscountPercent(item) {
   const loaiGiam = Number(item?.loaiGiam || 0)
   const giaTriGiam = Number(item?.giaTriGiam || 0)
-  const giaGoc = Number(item?.giaGoc || 0)
   const giaBan = Number(item?.giaBan || 0)
 
   if (giaTriGiam > 0) {
@@ -123,9 +120,7 @@ function formatDiscountPercent(item) {
     }
   }
 
-  if (giaGoc <= 0 || giaBan >= giaGoc) return '—'
-
-  return formatPercentValue(((giaGoc - giaBan) / giaGoc) * 100)
+  return '—'
 }
 
 function discountTitle(item) {
@@ -184,37 +179,54 @@ function openDiscountDetail(item) {
   emit('open-discount-detail', item)
 }
 
-const selectedVariantIds = ref(new Set())
+const selectedVariantsMap = ref(new Map())
 
 function toggleSelectAll(event) {
   if (event.target.checked) {
-    props.items.forEach(item => selectedVariantIds.value.add(item.id))
+    emit('select-all-pages')
   } else {
-    selectedVariantIds.value.clear()
+    selectedVariantsMap.value.clear()
   }
 }
 
-function toggleSelectVariant(id) {
-  if (selectedVariantIds.value.has(id)) {
-    selectedVariantIds.value.delete(id)
+function toggleSelectVariant(item) {
+  if (selectedVariantsMap.value.has(item.id)) {
+    selectedVariantsMap.value.delete(item.id)
   } else {
-    selectedVariantIds.value.add(id)
+    selectedVariantsMap.value.set(item.id, item)
   }
 }
 
-watch(() => selectedVariantIds.value.size, (newSize) => {
+const isAllCurrentPageSelected = computed(() => {
+  if (!props.items.length) return false;
+  return props.items.every(item => selectedVariantsMap.value.has(item.id));
+});
+
+const isAllPagesSelected = computed(() => {
+  return props.totalItems > 0 && selectedVariantsMap.value.size === props.totalItems;
+});
+
+watch(() => selectedVariantsMap.value.size, (newSize) => {
   emit('selection-changed', newSize > 0)
 })
 
 function handleBulkQr() {
-  const selectedItems = props.items.filter(i => selectedVariantIds.value.has(i.id))
+  const selectedItems = Array.from(selectedVariantsMap.value.values())
   if (!selectedItems.length) return
   emit('bulk-qr', selectedItems)
-  selectedVariantIds.value.clear()
+  selectedVariantsMap.value.clear()
+}
+
+// Cho phép parent set selected items khi fetch all
+function addSelectedItems(itemsToAdd) {
+  itemsToAdd.forEach(item => {
+    selectedVariantsMap.value.set(item.id, item)
+  })
 }
 
 defineExpose({
-  selectedVariantIds
+  selectedVariantsMap,
+  addSelectedItems
 })
 </script>
 
@@ -241,7 +253,7 @@ defineExpose({
           <tr class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-3">
             <th class="rounded-tl-md bg-slate-100 text-center">
               <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500" 
-                     :checked="items.length > 0 && selectedVariantIds.size === items.length"
+                     :checked="isAllPagesSelected || (items.length > 0 && isAllCurrentPageSelected)"
                      @change="toggleSelectAll" />
             </th>
             <th class="bg-slate-100">STT</th>
@@ -274,8 +286,8 @@ defineExpose({
           >
             <td class="rounded-l-md px-2.5 py-4 align-middle text-center">
               <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
-                     :checked="selectedVariantIds.has(item.id)"
-                     @change="toggleSelectVariant(item.id)" />
+                     :checked="selectedVariantsMap.has(item.id)"
+                     @change="toggleSelectVariant(item)" />
             </td>
             <td class="px-2.5 py-4 align-middle font-semibold text-slate-500 whitespace-nowrap">
               {{ currentPage * pageSize + index + 1 }}
@@ -333,7 +345,7 @@ defineExpose({
                 v-if="isDiscounted(item) && formatDiscountPercent(item) !== '—'"
                 type="button"
                 class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-600 transition hover:bg-emerald-100"
-                :title="item.dotGiamGiaId ? discountTitle(item) : 'Giá bán đang thấp hơn giá gốc'"
+                :title="item.dotGiamGiaId ? discountTitle(item) : 'Đang giảm giá'"
                 @click="openDiscountDetail(item)"
               >
                 <Tag class="h-3 w-3" />
