@@ -2,6 +2,8 @@ package com.example.server.core.client.chatbot.tools;
 
 import com.example.server.core.client.chatbot.dto.ProductDto;
 import com.example.server.core.admin.quanlyhoadon.domain.TrangThaiHoaDon;
+import com.example.server.core.admin.quanlydanhgia.dto.XepHangDanhGiaResponse;
+import com.example.server.core.admin.quanlydanhgia.service.DanhGiaXepHangService;
 import jakarta.persistence.EntityManager;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
@@ -23,17 +25,20 @@ public class ChatbotTools {
     private final com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService;
     private final com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService quanLySanPhamService;
     private final com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService;
+    private final DanhGiaXepHangService danhGiaXepHangService;
 
     public ChatbotTools(
             EntityManager entityManager,
             com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService quanLyHoaDonService,
             com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService quanLySanPhamService,
-            com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService
+            com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService phieuGiamGiaService,
+            DanhGiaXepHangService danhGiaXepHangService
     ) {
         this.entityManager = entityManager;
         this.quanLyHoaDonService = quanLyHoaDonService;
         this.quanLySanPhamService = quanLySanPhamService;
         this.phieuGiamGiaService = phieuGiamGiaService;
+        this.danhGiaXepHangService = danhGiaXepHangService;
     }
 
     public record SearchRequest(
@@ -844,52 +849,25 @@ public class ChatbotTools {
             @Override
             public String apply(AdminTopReviewsRequest request) {
                 try {
-                    List<Object[]> stats = entityManager.createQuery(
-                            "SELECT d.giay.id, d.giay.ten, AVG(CAST(d.soSao as double)), COUNT(d.id) " +
-                            "FROM DanhGia d WHERE d.trangThai = 1 " +
-                            "GROUP BY d.giay.id, d.giay.ten", Object[].class)
-                            .getResultList();
-                    
-                    if (stats.isEmpty()) {
+                    var thongKe = danhGiaXepHangService.thongKeTopVaThap();
+                    if (thongKe.caoNhat().isEmpty()) {
                         return "Chưa có sản phẩm nào nhận được đánh giá trong hệ thống.";
                     }
-                    
-                    List<Object[]> topPositive = new ArrayList<>(stats);
-                    topPositive.sort((a, b) -> Double.compare((Double) b[2], (Double) a[2]));
-                    
-                    List<Object[]> topNegative = new ArrayList<>(stats);
-                    topNegative.sort((a, b) -> Double.compare((Double) a[2], (Double) b[2]));
-                    
+
                     StringBuilder sb = new StringBuilder("Thống kê sản phẩm được đánh giá cao nhất và thấp nhất:\n\n");
-                    
+
                     sb.append("🏆 **Top 5 sản phẩm đánh giá cao nhất:**\n");
-                    int limitPos = Math.min(5, topPositive.size());
-                    for (int i = 0; i < limitPos; i++) {
-                        Object[] row = topPositive.get(i);
-                        Integer giayId = (Integer) row[0];
-                        Double avg = (Double) row[2];
-                        Long cnt = (Long) row[3];
-                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
-                        if (g != null && g.getTrangThai() == 1) {
-                            String badge = String.format("%.1f ⭐ (%d đánh giá)", avg, cnt);
-                            sb.append(formatProductBlock(g, badge, ""));
-                        }
+                    for (XepHangDanhGiaResponse item : thongKe.caoNhat()) {
+                        String badge = String.format("%.1f ⭐ (%d đánh giá)", item.diemTrungBinh(), item.soDanhGia());
+                        sb.append(formatProductBlock(item.giay(), badge, ""));
                     }
-                    
+
                     sb.append("\n⚠️ **Top 5 sản phẩm điểm đánh giá thấp nhất:**\n");
-                    int limitNeg = Math.min(5, topNegative.size());
-                    for (int i = 0; i < limitNeg; i++) {
-                        Object[] row = topNegative.get(i);
-                        Integer giayId = (Integer) row[0];
-                        Double avg = (Double) row[2];
-                        Long cnt = (Long) row[3];
-                        com.example.server.entity.Giay g = entityManager.find(com.example.server.entity.Giay.class, giayId);
-                        if (g != null && g.getTrangThai() == 1) {
-                            String badge = String.format("%.1f ⭐ (%d đánh giá)", avg, cnt);
-                            sb.append(formatProductBlock(g, badge, ""));
-                        }
+                    for (XepHangDanhGiaResponse item : thongKe.thapNhat()) {
+                        String badge = String.format("%.1f ⭐ (%d đánh giá)", item.diemTrungBinh(), item.soDanhGia());
+                        sb.append(formatProductBlock(item.giay(), badge, ""));
                     }
-                    
+
                     return sb.toString();
                 } catch (Exception e) {
                     e.printStackTrace();

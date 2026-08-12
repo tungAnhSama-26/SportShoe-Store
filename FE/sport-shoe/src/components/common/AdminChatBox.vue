@@ -80,7 +80,7 @@ const promptSuggestions = [
   { label: "Doanh thu hôm nay", text: "Thống kê doanh thu hôm nay", icon: TrendingUp },
   { label: "Sản phẩm sắp hết hàng", text: "Sản phẩm sắp hết hàng", icon: AlertTriangle },
   { label: "Sản phẩm bán chạy", text: "Sản phẩm bán chạy nhất", icon: Zap },
-  { label: "Đánh giá tốt nhất", text: "Thống kê những sản phẩm được đánh giá tốt nhất và tệ nhất", icon: Sparkles }
+  { label: "Đánh giá tốt nhất", text: "Lấy top 5 sản phẩm có điểm đánh giá cao nhất và thấp nhất", icon: Sparkles }
 ];
 
 function parseMessage(text) {

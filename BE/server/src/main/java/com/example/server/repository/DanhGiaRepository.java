@@ -67,6 +67,19 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
             """)
     List<Object[]> thongKeSanPhamCoDanhGia(@Param("keyword") String keyword);
 
+    /**
+     * Thống kê xếp hạng đánh giá cho các sản phẩm đang hoạt động.
+     * Chỉ đánh giá đang hiển thị mới được tính vào điểm và số lượt đánh giá.
+     */
+    @Query("""
+            select g, avg(dg.soSao), count(dg)
+            from DanhGia dg
+            join dg.giay g
+            where dg.trangThai = 1 and g.trangThai = 1
+            group by g
+            """)
+    List<Object[]> thongKeXepHangDanhGia();
+
     /** Tổng số đánh giá đang hiển thị mà admin chưa xem (cho chuông thông báo). */
     @Query("select count(dg) from DanhGia dg where dg.trangThai = 1 and dg.daXem = false")
     long demChuaXem();
