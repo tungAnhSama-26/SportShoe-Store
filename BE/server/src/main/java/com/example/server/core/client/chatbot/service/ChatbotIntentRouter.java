@@ -59,14 +59,14 @@ public class ChatbotIntentRouter {
         List<String> tools = new ArrayList<>();
 
         boolean isRevenue = query.contains("doanh thu") || query.contains("doanh số") || query.contains("tiền") ||
-                            query.contains("báo cáo") || query.contains("csv") || query.contains("thống kê");
+                            query.contains("báo cáo bán hàng") || query.contains("csv");
         boolean isInventory = query.contains("tồn kho") || query.contains("hết hàng") || query.contains("cảnh báo") ||
                              query.contains("kho") || query.contains("số lượng") || query.contains("cập nhật tồn");
         boolean isInvoice = query.contains("hóa đơn") || query.contains("đơn hàng") || query.contains("xác nhận") ||
                             query.contains("hủy đơn") || query.contains("trạng thái");
-        boolean isProduct = query.contains("giày") || query.contains("sản phẩm") || query.contains("bán chạy") ||
-                            query.contains("best seller");
         boolean isReview = query.contains("đánh giá") || query.contains("nhận xét") || query.contains("sao") || query.contains("review");
+        boolean isProduct = query.contains("giày") || query.contains("bán chạy") || query.contains("best seller") ||
+                            (query.contains("sản phẩm") && !isReview);
         boolean isVoucher = query.contains("voucher") || query.contains("mã giảm") || query.contains("tạo mã");
         boolean isChart = query.contains("vẽ") || query.contains("biểu đồ") || query.contains("chart");
 
