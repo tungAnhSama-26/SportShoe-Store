@@ -88,6 +88,14 @@ export function useChiTietDotGiamGia() {
     return `${year}-${month}-${date}`;
   });
 
+  const isNgayBatDauReadOnly = computed(() => {
+    if (isReadOnly.value) return true;
+    if (!laMoi && form.ngayBatDau && form.ngayBatDau <= todayStr.value) {
+      return true;
+    }
+    return false;
+  });
+
   const searchSP = ref("");
   const danhSachSP = ref([]);
   const selectedVariants = ref([]);
@@ -171,7 +179,7 @@ export function useChiTietDotGiamGia() {
   });
 
   function getToday() {
-    return new Date().toISOString().slice(0, 10);
+    return todayStr.value;
   }
 
   function resetErrors() {
@@ -451,7 +459,7 @@ export function useChiTietDotGiamGia() {
         return;
       }
       delete formErrors.ngayBatDau;
-      if (laMoi && newVal < getToday()) {
+      if (!isNgayBatDauReadOnly.value && newVal < getToday()) {
         formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
       }
       if (form.ngayKetThuc && newVal > form.ngayKetThuc) {
@@ -672,7 +680,7 @@ export function useChiTietDotGiamGia() {
     if (!form.ngayBatDau) {
       formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
       isValid = false;
-    } else if (laMoi && form.ngayBatDau < getToday()) {
+    } else if (!isNgayBatDauReadOnly.value && form.ngayBatDau < getToday()) {
       formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
       isValid = false;
     }
@@ -779,5 +787,5 @@ export function useChiTietDotGiamGia() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc, todayStr };
+  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, isNgayBatDauReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc, todayStr };
 }

@@ -86,6 +86,7 @@ const {
   danhMuc,
   danhSachSPSauKhiLoc,
   todayStr,
+  isNgayBatDauReadOnly,
 } = useChiTietDotGiamGia();
 
 const searchSelectedText = ref("");
@@ -270,8 +271,18 @@ const filteredSelectedVariantsTrang = computed(() => {
                   <input
                     v-model="form.ngayBatDau"
                     type="date"
-                    class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+                    :min="isNgayBatDauReadOnly ? undefined : todayStr"
+                    :readonly="isNgayBatDauReadOnly"
+                    class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
+                    :class="
+                      isNgayBatDauReadOnly
+                        ? 'cursor-not-allowed bg-slate-100 text-slate-500'
+                        : 'bg-slate-50'
+                    "
                   />
+                  <p v-if="isNgayBatDauReadOnly && !laMoi" class="mt-1 text-xs text-amber-600 font-medium">
+                    Đợt giảm giá đang hoạt động không thể thay đổi ngày bắt đầu
+                  </p>
                   <p
                     v-if="formErrors.ngayBatDau"
                     class="text-xs text-rose-500 mt-1"
