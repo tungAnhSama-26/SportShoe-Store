@@ -335,6 +335,7 @@ const {
                     <button
                       @click="openEditModal('phieu', item)"
                       class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
+                      title="Xem chi tiết"
                     >
                       <Eye class="h-5 w-5" />
                     </button>
@@ -427,6 +428,7 @@ const {
                     <button
                       @click="openEditModal('khach-hang', item)"
                       class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-rose-500"
+                      title="Xem chi tiết"
                     >
                       <Eye class="h-5 w-5" />
                     </button>
