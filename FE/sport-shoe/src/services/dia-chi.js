@@ -55,3 +55,13 @@ export async function layPhuongXaHaiCap(tinhThanhCode) {
   }
   return phuongXaCache.get(key);
 }
+
+export async function doiChieuDiaChiCuCccd(diaChiCu, signal) {
+  return apiRequest("/client/dia-chi/doi-chieu-dia-chi-cu", {
+    method: "POST",
+    body: JSON.stringify({ diaChiCu: String(diaChiCu ?? "").trim() }),
+    signal,
+    authScope: "admin",
+    fallbackMessage: "Không thể chuyển đổi địa chỉ trên CCCD",
+  });
+}

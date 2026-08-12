@@ -16,7 +16,11 @@ import {
   getFieldErrors,
 } from "../../../utils/error-message";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert";
-import { layPhuongXaHaiCap, layTinhThanhHaiCap } from "../../../services/dia-chi";
+import {
+  doiChieuDiaChiCuCccd,
+  layPhuongXaHaiCap,
+  layTinhThanhHaiCap,
+} from "../../../services/dia-chi";
 import { chuanHoaDiaChi, taoPayloadDiaChi, timDonViDiaChi } from "../../../utils/dia-chi";
 import {
   isValidEmail,
@@ -32,9 +36,13 @@ export function useChiTietNhanVien() {
   const videoRef = ref(null);
   const dangQuetFile = ref(false);
   const thongBaoQrOk = ref("");
+  const dangDoiChieuDiaChi = ref(false);
+  const thongBaoAnhXaDiaChi = ref("");
+  const anhXaDiaChiThanhCong = ref(false);
   let zxingReader = null;
   let BrowserMultiFormatReaderCtor = null;
   let daXuLyQr = false;
+  let lanDoiChieuDiaChi = 0;
 
   async function layBrowserMultiFormatReader() {
     if (!BrowserMultiFormatReaderCtor) {
@@ -94,7 +102,7 @@ export function useChiTietNhanVien() {
     }
   }
 
-  function xuLyKetQuaQr(raw) {
+  async function xuLyKetQuaQr(raw) {
     if (daXuLyQr) return;
     daXuLyQr = true;
     dungQuet();
@@ -108,15 +116,22 @@ export function useChiTietNhanVien() {
 
       // Format CCCD QR: số_cccd|số_cmnd_cũ|họ_tên|ngày_sinh|giới_tính|địa_chỉ|ngày_cấp|nơi_cấp
       const parts = resolvedRaw.split("|");
-      if (parts.length >= 3) {
+      if (parts.length >= 6 && /^\d{12}$/.test(parts[0]?.trim() ?? "")) {
         if (parts[2]) form.value.hoTen = parts[2].trim();
         if (parts[3]) form.value.ngaySinh = formatNgaySinh(parts[3].trim());
         if (parts[4]) {
           const gt = parts[4].trim().toLowerCase();
           form.value.gioiTinh = gt === "nam" || gt === "0" ? "Nam" : "Nữ";
         }
-        if (parts[5]) form.value.diaChiCuThe = parts[5].trim();
-        showSuccess("Đã điền thông tin từ CCCD", "Thành công");
+        if (parts[5]) {
+          await doiChieuDiaChiSauKhiQuet(parts[5].trim());
+        }
+        showSuccess(
+          anhXaDiaChiThanhCong.value
+            ? "Đã điền thông tin và chuyển địa chỉ CCCD sang 2 cấp"
+            : "Đã điền thông tin từ CCCD",
+          "Thành công",
+        );
       } else {
         showError("Mã QR không đúng định dạng thẻ CCCD bản cứng.");
       }
@@ -126,9 +141,13 @@ export function useChiTietNhanVien() {
   }
 
   function isVneIdSecureQr(raw) {
+    const parts = String(raw ?? "").split("|");
+    const laQrCccdVatLy = parts.length >= 6 && /^\d{12}$/.test(parts[0]?.trim() ?? "");
     return (
-      /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw) ||
-      raw.length > 100
+      !laQrCccdVatLy && (
+        /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(raw) ||
+        raw.length > 100
+      )
     );
   }
 
@@ -234,7 +253,74 @@ export function useChiTietNhanVien() {
     return taoPayloadDiaChi(form.value);
   }
 
-  async function chonTinhThanhNhanVien(tinhId, giuPhuongXa = false) {
+  async function doiChieuDiaChiSauKhiQuet(diaChiCu) {
+    const requestId = ++lanDoiChieuDiaChi;
+    const diaChiTruocKhiQuet = {
+      tinhThanhCode: form.value.tinhThanhCode,
+      tinhThanh: form.value.tinhThanh,
+      phuongXaCode: form.value.phuongXaCode,
+      phuongXa: form.value.phuongXa,
+      diaChiCuThe: form.value.diaChiCuThe,
+    };
+    dangDoiChieuDiaChi.value = true;
+    anhXaDiaChiThanhCong.value = false;
+    thongBaoAnhXaDiaChi.value = "Đang chuyển đổi địa chỉ CCCD sang địa chỉ 2 cấp...";
+
+    try {
+      const ketQua = await doiChieuDiaChiCuCccd(diaChiCu);
+      if (requestId !== lanDoiChieuDiaChi) return;
+      if (!ketQua?.daAnhXa) {
+        if (!diaChiTruocKhiQuet.diaChiCuThe && ketQua?.diaChiCuThe) {
+          form.value.diaChiCuThe = ketQua.diaChiCuThe;
+        }
+        thongBaoAnhXaDiaChi.value = ketQua?.thongBao
+          || "Không xác định chắc chắn được địa chỉ mới. Vui lòng chọn tỉnh và phường/xã thủ công.";
+        return;
+      }
+
+      if (!dsTinhThanh.value.length) {
+        const danhSachTinh = await layTinhThanhHaiCap();
+        if (requestId !== lanDoiChieuDiaChi) return;
+        dsTinhThanh.value = danhSachTinh.map((item) => ({
+          value: String(item.code),
+          label: item.ten,
+        }));
+      }
+      await chonTinhThanhNhanVien(ketQua.tinhThanhCode, false, true);
+      if (requestId !== lanDoiChieuDiaChi) return;
+      const phuongXa = dsXaPhuong.value.find(
+        (item) => item.value === String(ketQua.phuongXaCode ?? ""),
+      );
+      if (!phuongXa) {
+        throw new Error("Phường/xã được ánh xạ không thuộc tỉnh/thành hiện tại");
+      }
+
+      form.value.tinhThanhCode = String(ketQua.tinhThanhCode ?? "");
+      form.value.tinhThanh = ketQua.tinhThanh ?? "";
+      chonPhuongXaNhanVien(ketQua.phuongXaCode, true);
+      form.value.diaChiCuThe = ketQua.diaChiCuThe ?? "";
+      anhXaDiaChiThanhCong.value = true;
+      thongBaoAnhXaDiaChi.value = `${ketQua.thongBao}: ${ketQua.phuongXa}, ${ketQua.tinhThanh}`;
+    } catch (error) {
+      if (requestId !== lanDoiChieuDiaChi) return;
+      form.value.tinhThanhCode = diaChiTruocKhiQuet.tinhThanhCode;
+      form.value.tinhThanh = diaChiTruocKhiQuet.tinhThanh;
+      form.value.phuongXaCode = diaChiTruocKhiQuet.phuongXaCode;
+      form.value.phuongXa = diaChiTruocKhiQuet.phuongXa;
+      form.value.diaChiCuThe = diaChiTruocKhiQuet.diaChiCuThe || diaChiCu;
+      thongBaoAnhXaDiaChi.value = getDisplayErrorMessage(
+        error,
+        "Không thể tự chuyển đổi địa chỉ. Vui lòng chọn tỉnh và phường/xã thủ công.",
+      );
+    } finally {
+      if (requestId === lanDoiChieuDiaChi) {
+        dangDoiChieuDiaChi.value = false;
+      }
+    }
+  }
+
+  async function chonTinhThanhNhanVien(tinhId, giuPhuongXa = false, tuDongAnhXa = false) {
+    if (!tuDongAnhXa) huyAnhXaDangCho();
     const maXaHienTai = giuPhuongXa ? form.value.phuongXaCode : "";
     const tenTinhHienTai = giuPhuongXa ? form.value.tinhThanh : "";
     const tenXaHienTai = giuPhuongXa ? form.value.phuongXa : "";
@@ -265,7 +351,8 @@ export function useChiTietNhanVien() {
     }
   }
 
-  function chonPhuongXaNhanVien(code) {
+  function chonPhuongXaNhanVien(code, tuDongAnhXa = false) {
+    if (!tuDongAnhXa) huyAnhXaDangCho();
     const xa = dsXaPhuong.value.find((item) => item.value === String(code ?? ""));
     form.value.phuongXaCode = xa?.value ?? "";
     form.value.phuongXa = xa?.label ?? "";
@@ -277,6 +364,15 @@ export function useChiTietNhanVien() {
     form.value.tinhThanhCode = maTinh;
     form.value.phuongXaCode = maXa;
     await chonTinhThanhNhanVien(maTinh, true);
+  }
+
+  function huyAnhXaDangCho() {
+    if (dangDoiChieuDiaChi.value) {
+      lanDoiChieuDiaChi += 1;
+      dangDoiChieuDiaChi.value = false;
+    }
+    thongBaoAnhXaDiaChi.value = "";
+    anhXaDiaChiThanhCong.value = false;
   }
 
 
@@ -554,6 +650,7 @@ export function useChiTietNhanVien() {
   });
 
   onUnmounted(() => {
+    lanDoiChieuDiaChi += 1;
     dungQuet();
   });
 
@@ -575,6 +672,9 @@ export function useChiTietNhanVien() {
     videoRef,
     dangQuetFile,
     thongBaoQrOk,
+    dangDoiChieuDiaChi,
+    thongBaoAnhXaDiaChi,
+    anhXaDiaChiThanhCong,
     zxingReader,
     daXuLyQr,
     batDauQuet,

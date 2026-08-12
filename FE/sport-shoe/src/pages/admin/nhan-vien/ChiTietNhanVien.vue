@@ -6,7 +6,7 @@ import Card from "../../../components/ui/Card.vue";
 import Button from "../../../components/ui/Button.vue";
 import { showSuccess, showError } from "../../../utils/alert";
 
-const { ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, batDauQuet, dungQuet, router, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsTinhThanh, dsXaPhuong, chonTinhThanhNhanVien, chonPhuongXaNhanVien, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu } = useChiTietNhanVien();
+const { ArrowLeft, Camera, Save, ScanLine, X, dangQuet, loiCamera, videoRef, dangQuetFile, batDauQuet, dungQuet, router, laMoi, dangTai, dangLuu, dangUpload, loiTrang, nhanVien, fileInputAvatar, matKhauMoi, showDoiMatKhau, loiForm, form, dsVaiTro, dsTinhThanh, dsXaPhuong, chonTinhThanhNhanVien, chonPhuongXaNhanVien, luu, doiMatKhau, doiTrangThai, xoaNhanVienHienTai, xuLyUploadAnh, laChinhMinh, ngaySinhToiDa, ngaySinhToiThieu, dangDoiChieuDiaChi, thongBaoAnhXaDiaChi, anhXaDiaChiThanhCong } = useChiTietNhanVien();
 
 function taoChuCaiDaiDien(value) {
   return String(value || "NV")
@@ -310,6 +310,18 @@ function taoChuCaiDaiDien(value) {
             </div>
           </div>
 
+          <div
+            v-if="thongBaoAnhXaDiaChi"
+            class="rounded-2xl border px-4 py-3 text-sm font-medium"
+            :class="dangDoiChieuDiaChi
+              ? 'border-sky-200 bg-sky-50 text-sky-700'
+              : anhXaDiaChiThanhCong
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-amber-200 bg-amber-50 text-amber-700'"
+          >
+            {{ thongBaoAnhXaDiaChi }}
+          </div>
+
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="space-y-2">
               <span class="text-[13px] font-semibold text-slate-500">Tỉnh/Thành phố <span class="text-rose-500">*</span></span>
@@ -353,11 +365,11 @@ function taoChuCaiDaiDien(value) {
             <button
               type="button"
               @click="luu"
-              :disabled="dangLuu"
+              :disabled="dangLuu || dangDoiChieuDiaChi"
               class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 text-sm font-bold text-white shadow-[0_14px_30px_rgba(239,68,68,0.28)] transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-red-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save class="h-4 w-4" />
-              {{ dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
+              {{ dangDoiChieuDiaChi ? "Đang chuyển địa chỉ..." : dangLuu ? "Đang lưu..." : laMoi ? "Tạo nhân viên" : "Lưu thay đổi" }}
             </button>
             <button
               type="button"
