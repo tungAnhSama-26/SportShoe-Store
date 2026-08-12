@@ -59,6 +59,7 @@ const {
   mauTrangThai,
   parseVndNumber,
   todayStr,
+  isNgayBatDauReadOnly,
 } = useChiTietPhieuGiamGia();
 </script>
 
@@ -327,14 +328,18 @@ const {
             <input
               v-model="form.ngayBatDau"
               type="date"
-              :readonly="isReadOnly"
+              :min="isNgayBatDauReadOnly ? undefined : todayStr"
+              :readonly="isNgayBatDauReadOnly"
               class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition focus:border-rose-300 focus:bg-white"
               :class="
-                isReadOnly
+                isNgayBatDauReadOnly
                   ? 'cursor-not-allowed bg-slate-100 text-slate-500'
                   : 'bg-slate-50'
               "
             />
+            <p v-if="isNgayBatDauReadOnly && !laMoi" class="mt-1 text-xs text-amber-600 font-medium">
+              Phiếu giảm giá đang hoạt động không thể thay đổi ngày bắt đầu
+            </p>
             <p v-if="formErrors.ngayBatDau" class="mt-1 text-xs text-rose-500">
               {{ formErrors.ngayBatDau }}
             </p>

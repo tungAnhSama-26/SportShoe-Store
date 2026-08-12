@@ -142,6 +142,14 @@ export function useChiTietPhieuGiamGia() {
     return `${year}-${month}-${date}`;
   });
 
+  const isNgayBatDauReadOnly = computed(() => {
+    if (isReadOnly.value) return true;
+    if (!laMoi && form.ngayBatDau && form.ngayBatDau <= todayStr.value) {
+      return true;
+    }
+    return false;
+  });
+
   // Computed cho giá trị giảm (% hoặc VNĐ)
   const giaTriDisplay = computed({
     get() {
@@ -208,7 +216,7 @@ export function useChiTietPhieuGiamGia() {
   });
 
   function getToday() {
-    return new Date().toISOString().slice(0, 10);
+    return todayStr.value;
   }
 
   function parseVndNumber(value) {
@@ -396,7 +404,7 @@ export function useChiTietPhieuGiamGia() {
         return;
       }
       delete formErrors.ngayBatDau;
-      if (laMoi && newVal < getToday()) {
+      if (!isNgayBatDauReadOnly.value && newVal < getToday()) {
         formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
       }
       if (form.ngayKetThuc && newVal > form.ngayKetThuc) {
@@ -763,7 +771,7 @@ export function useChiTietPhieuGiamGia() {
     if (!form.ngayBatDau) {
       formErrors.ngayBatDau = "Vui lòng chọn ngày bắt đầu áp dụng";
       isValid = false;
-    } else if (laMoi && form.ngayBatDau < getToday()) {
+    } else if (!isNgayBatDauReadOnly.value && form.ngayBatDau < getToday()) {
       formErrors.ngayBatDau = "Ngày bắt đầu không được ở trong quá khứ";
       isValid = false;
     }
@@ -1031,5 +1039,6 @@ export function useChiTietPhieuGiamGia() {
     xemChiTietHoaDon,
     mauTrangThai,
     todayStr,
+    isNgayBatDauReadOnly,
   };
 }
