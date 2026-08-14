@@ -117,6 +117,9 @@ const bienTheReNhat = computed(() => {
   return min;
 });
 
+// Khi chưa chọn đủ màu/kích cỡ, hiển thị nhất quán theo biến thể rẻ nhất như card sản phẩm.
+const bienTheGiaHienThi = computed(() => bienTheChon.value || bienTheReNhat.value);
+
 // Ảnh theo màu đang chọn (khi chưa chọn đủ size): lấy biến thể đầu tiên của màu đó có ảnh.
 const anhTheoMau = computed(() => {
   if (!mauChon.value) return null;
@@ -134,21 +137,17 @@ const anhHienThi = computed(() =>
 );
 
 const giaHienThi = computed(() => {
-  if (bienTheChon.value) return dinhDangTienViet(bienTheChon.value.giaBan);
-  const gia = bienThe.value.map((b) => Number(b.giaBan)).filter((n) => Number.isFinite(n));
-  if (!gia.length) return '—';
-  const min = Math.min(...gia);
-  const max = Math.max(...gia);
-  return min === max ? dinhDangTienViet(min) : `${dinhDangTienViet(min)} - ${dinhDangTienViet(max)}`;
+  const b = bienTheGiaHienThi.value;
+  return b ? dinhDangTienViet(b.giaBan) : '—';
 });
 
-// Có đang giảm giá ở biến thể đã chọn (giá niêm yết > giá hiện tại).
+// Có giảm giá ở biến thể đã chọn, hoặc biến thể rẻ nhất khi người dùng chưa chọn đủ.
 const coGiamChon = computed(() => {
-  const b = bienTheChon.value;
+  const b = bienTheGiaHienThi.value;
   return b && Number(b.giaGoc) > Number(b.giaBan);
 });
 const phanTramGiamChon = computed(() => {
-  const b = bienTheChon.value;
+  const b = bienTheGiaHienThi.value;
   if (!coGiamChon.value) return 0;
   return Math.round(((Number(b.giaGoc) - Number(b.giaBan)) / Number(b.giaGoc)) * 100);
 });
@@ -338,7 +337,7 @@ function xuLyAnhLoi(event) {
             <p v-if="gioiTinhNhan" class="mt-1 text-sm text-slate-400">Giới tính: {{ gioiTinhNhan }}</p>
             <div class="mt-5 flex items-end gap-3">
               <p class="text-3xl font-bold text-primary">{{ giaHienThi }}</p>
-              <p v-if="coGiamChon" class="pb-1 text-lg text-slate-400 line-through">{{ dinhDangTienViet(bienTheChon.giaGoc) }}</p>
+              <p v-if="coGiamChon" class="pb-1 text-lg text-slate-400 line-through">{{ dinhDangTienViet(bienTheGiaHienThi.giaGoc) }}</p>
               <span v-if="coGiamChon" class="mb-1.5 rounded-md bg-red-600 px-2 py-0.5 text-xs font-extrabold text-white">-{{ phanTramGiamChon }}%</span>
             </div>
 

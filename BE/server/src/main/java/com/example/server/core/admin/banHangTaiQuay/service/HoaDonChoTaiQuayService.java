@@ -147,18 +147,13 @@ public class HoaDonChoTaiQuayService {
                     }
                     giayChiTietRepository.save(giayChiTiet);
 
-                    oldItem.setSoLuong(newQty);
-                    BigDecimal giaDonVi = (reqItem.giaBan() != null) ? reqItem.giaBan() : oldItem.getGiaDonVi();
-                    oldItem.setGiaDonVi(giaDonVi);
-                    oldItem.setThanhTien(giaDonVi.multiply(BigDecimal.valueOf(newQty)));
-                } else {
-                    // Update price if it has changed
-                    BigDecimal giaDonVi = (reqItem.giaBan() != null) ? reqItem.giaBan() : oldItem.getGiaDonVi();
-                    if (giaDonVi.compareTo(oldItem.getGiaDonVi()) != 0) {
-                        oldItem.setGiaDonVi(giaDonVi);
-                        oldItem.setThanhTien(giaDonVi.multiply(BigDecimal.valueOf(oldQty)));
-                    }
                 }
+
+                // Reprice every existing line, even when its quantity did not change.
+                BigDecimal giaDonVi = productUseCase.layGiaBanThucTe(giayChiTiet);
+                oldItem.setSoLuong(newQty);
+                oldItem.setGiaDonVi(giaDonVi);
+                oldItem.setThanhTien(giaDonVi.multiply(BigDecimal.valueOf(newQty)));
 
                 chiTietCanLuu.add(hoaDonChiTietRepository.save(oldItem));
                 processedChiTietIds.add(chiTietId);

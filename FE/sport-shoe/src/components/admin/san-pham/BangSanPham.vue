@@ -95,6 +95,22 @@ function giaTrongBang(item) {
   return formatPriceParts(item.giaMin, item.giaMax)
 }
 
+function giaGocTrongBang(item) {
+  return formatPriceParts(item.giaGocMin, item.giaGocMax)
+}
+
+function coGiaGocTrongBang(item) {
+  if (!item?.coGiamGia) return false
+  if (item.giaGocMin == null && item.giaGocMax == null) return false
+
+  const giaMin = Number(item.giaMin ?? item.giaMax)
+  const giaMax = Number(item.giaMax ?? item.giaMin)
+  const giaGocMin = Number(item.giaGocMin ?? item.giaGocMax)
+  const giaGocMax = Number(item.giaGocMax ?? item.giaGocMin)
+
+  return giaGocMin !== giaMin || giaGocMax !== giaMax
+}
+
 function trangThaiLabel(value) {
   if (value === 1) return 'Kinh doanh'
   if (value === 2) return 'Hết hàng'
@@ -215,11 +231,20 @@ function handlePageSizeChange(size) {
               <div class="flex min-h-[56px] flex-col justify-center gap-1.5 leading-5">
                 <div>
                   <div
-                    class="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] font-semibold text-slate-800"
+                    class="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] font-semibold"
+                    :class="coGiaGocTrongBang(item) ? 'text-rose-600' : 'text-slate-800'"
                   >
                     <span class="whitespace-nowrap">{{ giaTrongBang(item).start }}</span>
                     <span v-if="giaTrongBang(item).isRange" class="text-slate-400 font-normal mx-0.5">-</span>
                     <span v-if="giaTrongBang(item).isRange" class="whitespace-nowrap">{{ giaTrongBang(item).end }}</span>
+                  </div>
+                  <div
+                    v-if="coGiaGocTrongBang(item)"
+                    class="mt-1 flex flex-wrap items-center gap-x-1 text-xs font-normal text-slate-400 line-through"
+                  >
+                    <span class="whitespace-nowrap">{{ giaGocTrongBang(item).start }}</span>
+                    <span v-if="giaGocTrongBang(item).isRange" class="mx-0.5">-</span>
+                    <span v-if="giaGocTrongBang(item).isRange" class="whitespace-nowrap">{{ giaGocTrongBang(item).end }}</span>
                   </div>
                 </div>
               </div>

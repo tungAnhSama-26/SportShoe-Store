@@ -44,6 +44,7 @@ public class ThucThiThanhToanTaiQuayService {
     private final GiaoCaRepository giaoCaRepository;
     private final TonKhoTaiQuayService inventoryUseCase;
     private final GiayChiTietRepository giayChiTietRepository;
+    private final SanPhamTaiQuayService productUseCase;
 
     public ThucThiThanhToanTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -57,7 +58,8 @@ public class ThucThiThanhToanTaiQuayService {
             PhieuGiamGiaTaiQuayService voucherUseCase,
             GiaoCaRepository giaoCaRepository,
             TonKhoTaiQuayService inventoryUseCase,
-            GiayChiTietRepository giayChiTietRepository
+            GiayChiTietRepository giayChiTietRepository,
+            SanPhamTaiQuayService productUseCase
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -71,6 +73,7 @@ public class ThucThiThanhToanTaiQuayService {
         this.giaoCaRepository = giaoCaRepository;
         this.inventoryUseCase = inventoryUseCase;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.productUseCase = productUseCase;
     }
 
     @Transactional
@@ -199,7 +202,7 @@ public class ThucThiThanhToanTaiQuayService {
     }
 
     private HoaDon thanhToanHoaDonCho(ThanhToanTaiQuayRequest request) {
-        HoaDon hoaDon = hoaDonRepository.findById(request.hoaDonId())
+        HoaDon hoaDon = hoaDonRepository.findDetailByIdForUpdate(request.hoaDonId())
                 .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại"));
 
         if (!invoiceStateUseCase.kenhBanTaiQuay(hoaDon.getKenhBan())) {
@@ -216,13 +219,27 @@ public class ThucThiThanhToanTaiQuayService {
         }
 
         for (HoaDonChiTiet item : items) {
-            GiayChiTiet gct = item.getGiayChiTiet();
+            GiayChiTiet gct = giayChiTietRepository.findByIdForUpdate(item.getGiayChiTiet().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm chi tiết không tồn tại"));
+            item.setGiayChiTiet(gct);
             if (gct == null || gct.getKichHoat() == null || gct.getKichHoat() != 1 ||
                 gct.getGiay() == null || gct.getGiay().getTrangThai() == null || gct.getGiay().getTrangThai() != 1) {
                 String tenGiay = gct != null && gct.getGiay() != null ? gct.getGiay().getTen() : "";
                 throw new BusinessException("Sản phẩm " + tenGiay + " đã ngừng hoạt động, vui lòng chọn sản phẩm khác");
             }
         }
+
+        BigDecimal tongTienHang = items.stream()
+                .map(item -> {
+                    BigDecimal giaHienHanh = productUseCase.layGiaBanThucTe(item.getGiayChiTiet());
+                    item.setGiaDonVi(giaHienHanh);
+                    item.setThanhTien(giaHienHanh.multiply(BigDecimal.valueOf(item.getSoLuong().longValue())));
+                    hoaDonChiTietRepository.save(item);
+                    return item.getThanhTien();
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        hoaDon.setTongTienHang(tongTienHang);
+        hoaDon.setTongTienThanhToan(tongTienHang);
 
         KhachHang khachHang = invoiceUseCase.timKhachHang(request.khachHangId());
         String tenKhachHang = invoiceUseCase.layTenKhachHang(khachHang, request.tenKhachHang());
@@ -231,7 +248,7 @@ public class ThucThiThanhToanTaiQuayService {
         if (hoaDon.getPhieuGiamGia() != null) {
             voucherUseCase.giaiPhongPhieuGiamGia(hoaDon.getPhieuGiamGia(), hoaDon.getKhachHang());
         }
-        voucherUseCase.ganPhieuGiamGiaChoHoaDon(hoaDon, request.maPhieuGiamGia(), khachHang, hoaDon.getTongTienHang());
+        voucherUseCase.ganPhieuGiamGiaChoHoaDon(hoaDon, request.maPhieuGiamGia(), khachHang, tongTienHang);
         hoaDon.setKhachHang(khachHang);
         invoiceUseCase.apDungThongTinGiaoHangChoHoaDon(hoaDon, request.thongTinGiaoHang(), tenKhachHang, soDienThoai);
         hoaDon.setGhiChu(request.ghiChu());

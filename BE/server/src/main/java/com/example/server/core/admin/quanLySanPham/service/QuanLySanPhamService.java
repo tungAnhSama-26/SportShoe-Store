@@ -77,6 +77,16 @@ public class QuanLySanPhamService {
             BigDecimal giaSauGiam
     ) {}
 
+    private record ProductListAggregate(
+            BigDecimal giaMin,
+            BigDecimal giaMax,
+            BigDecimal giaGocMin,
+            BigDecimal giaGocMax,
+            Long tongBienThe,
+            Long tongSoLuong,
+            boolean coGiamGia
+    ) {}
+
     private final GiayRepository giayRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
@@ -245,19 +255,80 @@ public class QuanLySanPhamService {
         }
 
         List<Integer> ids = page.map(Giay::getId).getContent();
-        Map<Integer, Object[]> aggMap = buildAggregateMap(ids);
+        Map<Integer, ProductListAggregate> aggMap = buildAggregateMap(ids);
         Map<Integer, String> imgMap = buildImageMap(ids);
         Map<Integer, GiayThuocTinh> thuocTinhMap = buildThuocTinhMap(ids);
 
         return PageResponse.from(page.map(g -> toListItem(g, aggMap, imgMap, thuocTinhMap)));
     }
 
-    private Map<Integer, Object[]> buildAggregateMap(Collection<Integer> ids) {
-        Map<Integer, Object[]> map = new HashMap<>();
+    private Map<Integer, ProductListAggregate> buildAggregateMap(Collection<Integer> ids) {
+        Map<Integer, Object[]> rawAggregateMap = new HashMap<>();
         for (Object[] row : giayChiTietRepository.aggregateByGiayIds(ids)) {
-            map.put((Integer) row[0], row);
+            rawAggregateMap.put((Integer) row[0], row);
+        }
+
+        List<GiayChiTiet> activeVariants = giayChiTietRepository.findActiveByGiayIds(ids);
+        Map<Integer, ActiveDiscountInfo> discountMap = buildActiveDiscountInfoMap(activeVariants);
+        Map<Integer, List<GiayChiTiet>> variantsByProduct = new HashMap<>();
+        for (GiayChiTiet variant : activeVariants) {
+            variantsByProduct.computeIfAbsent(variant.getGiay().getId(), ignored -> new ArrayList<>()).add(variant);
+        }
+
+        Map<Integer, ProductListAggregate> map = new HashMap<>();
+        for (Integer id : ids) {
+            Object[] raw = rawAggregateMap.get(id);
+            List<GiayChiTiet> variants = variantsByProduct.getOrDefault(id, List.of());
+
+            BigDecimal currentMin = null;
+            BigDecimal currentMax = null;
+            BigDecimal originalMin = null;
+            BigDecimal originalMax = null;
+            boolean discounted = false;
+
+            for (GiayChiTiet variant : variants) {
+                ActiveDiscountInfo discount = discountMap.get(variant.getId());
+                BigDecimal currentPrice = discount != null ? discount.giaSauGiam() : variant.getGiaBan();
+                BigDecimal originalPrice = discount != null
+                        ? variant.getGiaBan()
+                        : maxMoney(variant.getGiaGoc(), variant.getGiaBan());
+
+                currentMin = minMoney(currentMin, currentPrice);
+                currentMax = maxMoney(currentMax, currentPrice);
+                originalMin = minMoney(originalMin, originalPrice);
+                originalMax = maxMoney(originalMax, originalPrice);
+                discounted = discounted || originalPrice.compareTo(currentPrice) > 0;
+            }
+
+            if (variants.isEmpty() && raw != null) {
+                currentMin = (BigDecimal) raw[1];
+                currentMax = (BigDecimal) raw[4];
+                originalMin = (BigDecimal) raw[6];
+                originalMax = (BigDecimal) raw[7];
+                discounted = ((Long) raw[5]) > 0L;
+            }
+
+            map.put(id, new ProductListAggregate(
+                    currentMin,
+                    currentMax,
+                    originalMin,
+                    originalMax,
+                    raw != null ? (Long) raw[2] : 0L,
+                    raw != null ? (Long) raw[3] : 0L,
+                    discounted
+            ));
         }
         return map;
+    }
+
+    private BigDecimal minMoney(BigDecimal current, BigDecimal candidate) {
+        if (candidate == null) return current;
+        return current == null || candidate.compareTo(current) < 0 ? candidate : current;
+    }
+
+    private BigDecimal maxMoney(BigDecimal current, BigDecimal candidate) {
+        if (candidate == null) return current;
+        return current == null || candidate.compareTo(current) > 0 ? candidate : current;
     }
 
     private Map<Integer, String> buildImageMap(Collection<Integer> ids) {
@@ -281,19 +352,18 @@ public class QuanLySanPhamService {
 
     private GiayListItemResponse toListItem(
             Giay g,
-            Map<Integer, Object[]> aggMap,
+            Map<Integer, ProductListAggregate> aggMap,
             Map<Integer, String> imgMap,
             Map<Integer, GiayThuocTinh> thuocTinhMap
     ) {
-        Object[] agg = aggMap.get(g.getId());
+        ProductListAggregate agg = aggMap.get(g.getId());
         GiayThuocTinh gtt = thuocTinhMap.get(g.getId());
-        BigDecimal giaMin = agg != null ? (BigDecimal) agg[1] : null;
-        Long tongBienThe = agg != null ? (Long) agg[2] : 0L;
-        Long tongSoLuong = agg != null ? (Long) agg[3] : 0L;
-        BigDecimal giaMax = agg != null ? (BigDecimal) agg[4] : null;
-        Long countGiamGia = agg != null ? (Long) agg[5] : 0L;
-        BigDecimal giaGocMin = agg != null ? (BigDecimal) agg[6] : null;
-        BigDecimal giaGocMax = agg != null ? (BigDecimal) agg[7] : null;
+        BigDecimal giaMin = agg != null ? agg.giaMin() : null;
+        Long tongBienThe = agg != null ? agg.tongBienThe() : 0L;
+        Long tongSoLuong = agg != null ? agg.tongSoLuong() : 0L;
+        BigDecimal giaMax = agg != null ? agg.giaMax() : null;
+        BigDecimal giaGocMin = agg != null ? agg.giaGocMin() : null;
+        BigDecimal giaGocMax = agg != null ? agg.giaGocMax() : null;
         return new GiayListItemResponse(
                 g.getId(), g.getMa(), g.getTen(),
                 g.getLoaiGiay().getTen(), g.getThuongHieu().getTen(),
@@ -306,7 +376,7 @@ public class QuanLySanPhamService {
                 imgMap.get(g.getId()),
                 giaMin, giaMax, giaGocMin, giaGocMax, tongBienThe, tongSoLuong,
                 g.getNgayTao(),
-                countGiamGia > 0
+                agg != null && agg.coGiamGia()
         );
     }
 
