@@ -230,11 +230,6 @@ function LogicBanHangTaiQuay() {
     xuLyInHoaDonTaiQuay
   } = LogicInHoaDon();
 
-  const {
-    chiTietIdThemMoi,
-    ketQuaBienTheSanPham
-  } = LogicSanPham({ thongBaoLoi });
-
   const { subscribeTopic, publishMessage } = useRealtime();
 
   const sessionId = Math.random().toString(36).substring(2, 15);
@@ -341,6 +336,7 @@ function LogicBanHangTaiQuay() {
     bienTheDaChon,
     chiTietDangChon,
     hinhAnhDangChon,
+    ketQuaBienTheSanPham,
     soLuongTonKhaDungChiTiet,
     soLuongTonSauKhiChon,
     taiSanPham,
@@ -374,18 +370,27 @@ function LogicBanHangTaiQuay() {
 
       dangLuuNoiBo = true;
       try {
-        await taiSanPham(undefined, true);
+        // Repricing needs the complete catalogue, not only the current search result.
+        await taiSanPham("", true);
         await taiDanhSachHoaDonCho();
         if (hoaDonChoDaChon.value) {
           const stillExists = danhSachHoaDonCho.value.find(hd => hd.id === hoaDonChoDaChon.value.id);
           if (stillExists) {
             const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-            chuyenHoaDonThanhBanNhap(detail);
+            const giaDaThayDoi = chuyenHoaDonThanhBanNhap(detail);
+            if (giaDaThayDoi) {
+              showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
+              await luuHoaDonHienTai(true);
+            }
           } else {
             hoaDonChoDaChon.value = danhSachHoaDonCho.value.length > 0 ? danhSachHoaDonCho.value[0] : null;
             if (hoaDonChoDaChon.value) {
               const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-              chuyenHoaDonThanhBanNhap(detail);
+              const giaDaThayDoi = chuyenHoaDonThanhBanNhap(detail);
+              if (giaDaThayDoi) {
+                showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
+                await luuHoaDonHienTai(true);
+              }
             } else {
               cartItems.value = [];
               khachHangDuocChon.value = null;
@@ -395,20 +400,37 @@ function LogicBanHangTaiQuay() {
             }
           }
         } else if (cartItems.value.length > 0) {
-          const activeIds = new Set((ketQuaBienTheSanPham.value || []).map(p => p.chiTietId));
+          const sanPhamTheoChiTietId = new Map(
+            (ketQuaBienTheSanPham.value || []).map((product) => [Number(product.chiTietId), product])
+          );
           const removedItems = [];
           const remainingItems = [];
+          let giaDaThayDoi = false;
           for (const item of cartItems.value) {
-            if (!activeIds.has(item.chiTietId)) {
+            const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
+            if (!sanPhamMoi) {
               removedItems.push(item);
             } else {
-              remainingItems.push(item);
+              if (Number(item.giaBan) !== Number(sanPhamMoi.giaBan)) {
+                giaDaThayDoi = true;
+              }
+              remainingItems.push({
+                ...item,
+                giaBan: sanPhamMoi.giaBan,
+                giaGoc: sanPhamMoi.giaGoc,
+                soLuongTon: sanPhamMoi.soLuongTon
+              });
             }
           }
-          if (removedItems.length > 0) {
+          if (removedItems.length > 0 || giaDaThayDoi) {
             cartItems.value = remainingItems;
             for (const item of removedItems) {
               showWarning(`Sản phẩm "${item.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+            }
+            if (giaDaThayDoi) {
+              danhDauCanApDungLaiPhieu();
+              capNhatTienKhachThanhToan(false);
+              showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
             }
           }
         }
@@ -642,7 +664,7 @@ function LogicBanHangTaiQuay() {
     isSyncingUI = true;
     skipNextAutosave = true;
     const thongTinTheoChiTietId = new Map(
-      ketQuaBienTheSanPham.value.map((product) => [product.chiTietId, product])
+      ketQuaBienTheSanPham.value.map((product) => [Number(product.chiTietId), product])
     );
     const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
 
@@ -659,9 +681,10 @@ function LogicBanHangTaiQuay() {
       : null;
     dangLuuNoiBo = true;
     let hasRemovedInactive = false;
+    let hasPriceChanged = false;
     cartItems.value = invoice.items
       .filter((item) => {
-        const thongTin = thongTinTheoChiTietId.get(item.chiTietId);
+        const thongTin = thongTinTheoChiTietId.get(Number(item.chiTietId));
         const isInactive = item.trangThaiSanPham === 0
           || item.trangThai === 0
           || item.kichHoat === 0
@@ -676,7 +699,11 @@ function LogicBanHangTaiQuay() {
         return true;
       })
       .map((item) => {
-        const thongTinSanPham = thongTinTheoChiTietId.get(item.chiTietId);
+        const thongTinSanPham = thongTinTheoChiTietId.get(Number(item.chiTietId));
+        const giaHienHanh = thongTinSanPham?.giaBan ?? item.giaBan;
+        if (Number(giaHienHanh) !== Number(item.giaBan)) {
+          hasPriceChanged = true;
+        }
         return {
           cartItemId: Date.now().toString() + Math.random().toString(),
           hoaDonChiTietId: item.hoaDonChiTietId || item.id || null,
@@ -689,7 +716,7 @@ function LogicBanHangTaiQuay() {
           hinhAnh: item.hinhAnh || thongTinSanPham?.hinhAnh || "",
           soLuong: item.soLuong,
           soLuongBanDau: item.soLuong,
-          giaBan: item.giaBan,
+          giaBan: giaHienHanh,
           giaGoc: item.giaGoc || thongTinSanPham?.giaGoc || null,
           soLuongTon: item.soLuongTon
         };
@@ -740,6 +767,10 @@ function LogicBanHangTaiQuay() {
     ketQuaTimKiemPhieu.value = [];
     hienThiDanhSachPhieu.value = false;
     capNhatTienKhachThanhToan(false);
+    if (hasPriceChanged) {
+      danhDauCanApDungLaiPhieu();
+    }
+    return hasPriceChanged;
   }
 
   async function luuHoaDonHienTai(force = false) {

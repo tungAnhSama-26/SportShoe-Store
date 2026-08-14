@@ -283,9 +283,8 @@ public class HoaDonTaiQuayService {
         inventoryUseCase.deductStock(giayChiTiet, itemRequest.soLuong(), bypassActiveCheck);
         giayChiTietRepository.save(giayChiTiet);
 
-        // Use the price sent from the frontend (may be the locked old price if variant's price changed)
-        BigDecimal giaThucTe = productUseCase.layGiaBanThucTe(giayChiTiet);
-        BigDecimal giaDonVi = (itemRequest.giaBan() != null) ? itemRequest.giaBan() : giaThucTe;
+        // The backend is the source of truth for prices. Never trust a price cached by the POS client.
+        BigDecimal giaDonVi = productUseCase.layGiaBanThucTe(giayChiTiet);
 
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
@@ -311,8 +310,7 @@ public class HoaDonTaiQuayService {
 
     private HoaDonChiTiet taoDongHoaDonTam(TaoHoaDonChoItemRequest item) {
         GiayChiTiet giayChiTiet = layGiayChiTietHopLe(item.chiTietId(), item.soLuong());
-        BigDecimal giaThucTe = productUseCase.layGiaBanThucTe(giayChiTiet);
-        BigDecimal giaDonVi = (item.giaBan() != null) ? item.giaBan() : giaThucTe;
+        BigDecimal giaDonVi = productUseCase.layGiaBanThucTe(giayChiTiet);
 
         HoaDonChiTiet hoaDonChiTiet = new HoaDonChiTiet();
         hoaDonChiTiet.setGiayChiTiet(giayChiTiet);
