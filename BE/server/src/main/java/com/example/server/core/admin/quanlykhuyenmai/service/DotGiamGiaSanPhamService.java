@@ -193,6 +193,10 @@ public class DotGiamGiaSanPhamService {
     }
 
     public void updateGiaBanForGiayChiTiet(Integer giayChiTietId) {
+        updateGiaBanForGiayChiTiet(giayChiTietId, true);
+    }
+
+    void updateGiaBanForGiayChiTiet(Integer giayChiTietId, boolean publishRealtime) {
         GiayChiTiet gct = giayChiTietRepository.findById(giayChiTietId).orElse(null);
         if (gct == null)
             return;
@@ -200,6 +204,8 @@ public class DotGiamGiaSanPhamService {
         gct.setNgayCapNhat(Instant.now());
         giayChiTietRepository.save(gct);
         // Báo realtime để giỏ hàng khách tự đồng bộ lại giá khi đợt giảm thay đổi.
-        sanPhamRealtimePublisher.phatSauCommit("DOT_GIAM_GIA");
+        if (publishRealtime) {
+            sanPhamRealtimePublisher.phatSauCommit("DOT_GIAM_GIA");
+        }
     }
 }

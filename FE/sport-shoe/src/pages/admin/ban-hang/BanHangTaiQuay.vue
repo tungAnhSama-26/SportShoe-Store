@@ -143,23 +143,6 @@ const {
 } = LogicBanHangTaiQuay();
 
 import { onBeforeRouteLeave } from "vue-router";
-import { useRealtime } from "../../../composables/useRealtime";
-
-const { subscribeTopic } = useRealtime();
-
-subscribeTopic('/topic/admin/san-pham', async (message) => {
-  console.log("Realtime update: Product changed", message);
-  taiSanPham();
-
-  if (cartItems.value && cartItems.value.length > 0) {
-    // Không tự động cập nhật giá trong giỏ hàng nữa theo yêu cầu của user
-  }
-});
-
-subscribeTopic('/topic/admin/thuoc-tinh', (message) => {
-  console.log("Realtime update: Attribute changed", message);
-  taiSanPham();
-});
 
 onBeforeRouteLeave(async (to, from, next) => {
   if (cartItems.value && cartItems.value.length > 0 && !hoaDonChoDaChon.value) {
