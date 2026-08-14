@@ -28,6 +28,7 @@ public class DotGiamGiaService {
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
     private final DotGiamGiaSanPhamService dotGiamGiaSanPhamService;
     private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public java.util.Map<String, Boolean> checkTenTrung(String ten, Integer id) {
         boolean exists = false;
@@ -62,7 +63,10 @@ public class DotGiamGiaService {
         }
         dotGiamGiaRepository.deleteById(id);
         for (DotGiamGiaSanPham link : links) {
-            dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
+            dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId(), false);
+        }
+        if (!links.isEmpty()) {
+            sanPhamRealtimePublisher.phatSauCommit("DOT_GIAM_GIA");
         }
     }
 
@@ -82,6 +86,7 @@ public class DotGiamGiaService {
         return saved;
     }
 
+    @Transactional
     public DotGiamGia update(Integer id, DotGiamGiaRequest request) {
         DotGiamGia dotGiamGia = dotGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt giảm giá"));
@@ -92,13 +97,15 @@ public class DotGiamGiaService {
 
         mapRequestToEntity(request, dotGiamGia);
         DotGiamGia saved = dotGiamGiaRepository.save(dotGiamGia);
+        dotGiamGiaRepository.flush();
 
         // Sau khi update thông tin (% giảm, ngày...), cần cập nhật lại gia_ban cho các
         // biến thể liên kết
         List<DotGiamGiaSanPham> links = dotGiamGiaSanPhamRepository.findByDotGiamGiaId(id);
         for (DotGiamGiaSanPham link : links) {
-            dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId());
+            dotGiamGiaSanPhamService.updateGiaBanForGiayChiTiet(link.getGiayChiTiet().getId(), false);
         }
+        sanPhamRealtimePublisher.phatSauCommit("DOT_GIAM_GIA");
 
         return saved;
     }

@@ -363,84 +363,136 @@ function LogicBanHangTaiQuay() {
     thongBaoThanhCong
   });
 
-  subscribeTopic('/topic/admin/san-pham', async (message) => {
-    const msgType = message?.type || message?.payload?.loaiSuKien || message?.payload?.type;
-    if (!msgType || ['PRODUCT_CHANGED', 'PRODUCT_UPDATED', 'DOI_TRANG_THAI_BIEN_THE', 'DOI_TRANG_THAI_GIAY', 'XOA_BIEN_THE', 'CAP_NHAT_BIEN_THE', 'DOT_GIAM_GIA', 'PHIEU_GIAM_GIA'].includes(msgType)) {
-      if (dangLuuNoiBo || dangLuuHoaDonCho.value || dangThanhToan.value) return;
+  const CAC_SU_KIEN_CAN_DONG_BO_GIA = new Set([
+    'PRODUCT_CHANGED',
+    'PRODUCT_UPDATED',
+    'DOI_TRANG_THAI_BIEN_THE',
+    'DOI_TRANG_THAI_GIAY',
+    'XOA_BIEN_THE',
+    'CAP_NHAT_BIEN_THE',
+    'DOT_GIAM_GIA',
+    'PHIEU_GIAM_GIA'
+  ]);
+  let dongBoGiaRealtimeDangChay = false;
+  let dongBoGiaRealtimeDangCho = false;
+  let boDemDongBoGiaRealtime = null;
 
-      dangLuuNoiBo = true;
-      try {
-        // Repricing needs the complete catalogue, not only the current search result.
-        await taiSanPham("", true);
-        await taiDanhSachHoaDonCho();
-        if (hoaDonChoDaChon.value) {
-          const stillExists = danhSachHoaDonCho.value.find(hd => hd.id === hoaDonChoDaChon.value.id);
-          if (stillExists) {
-            const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-            const giaDaThayDoi = chuyenHoaDonThanhBanNhap(detail);
-            if (giaDaThayDoi) {
-              showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
-              await luuHoaDonHienTai(true);
-            }
-          } else {
-            hoaDonChoDaChon.value = danhSachHoaDonCho.value.length > 0 ? danhSachHoaDonCho.value[0] : null;
-            if (hoaDonChoDaChon.value) {
-              const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-              const giaDaThayDoi = chuyenHoaDonThanhBanNhap(detail);
-              if (giaDaThayDoi) {
-                showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
-                await luuHoaDonHienTai(true);
-              }
-            } else {
-              cartItems.value = [];
-              khachHangDuocChon.value = null;
-              tuKhoaKhachHang.value = "";
-              choPhepGiaoHang.value = false;
-              phieuGiamGiaDaApDung.value = null;
-            }
-          }
-        } else if (cartItems.value.length > 0) {
-          const sanPhamTheoChiTietId = new Map(
-            (ketQuaBienTheSanPham.value || []).map((product) => [Number(product.chiTietId), product])
-          );
-          const removedItems = [];
-          const remainingItems = [];
-          let giaDaThayDoi = false;
-          for (const item of cartItems.value) {
-            const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
-            if (!sanPhamMoi) {
-              removedItems.push(item);
-            } else {
-              if (Number(item.giaBan) !== Number(sanPhamMoi.giaBan)) {
-                giaDaThayDoi = true;
-              }
-              remainingItems.push({
-                ...item,
-                giaBan: sanPhamMoi.giaBan,
-                giaGoc: sanPhamMoi.giaGoc,
-                soLuongTon: sanPhamMoi.soLuongTon
-              });
-            }
-          }
-          if (removedItems.length > 0 || giaDaThayDoi) {
-            cartItems.value = remainingItems;
-            for (const item of removedItems) {
-              showWarning(`Sản phẩm "${item.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
-            }
-            if (giaDaThayDoi) {
-              danhDauCanApDungLaiPhieu();
-              capNhatTienKhachThanhToan(false);
-              showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
-            }
-          }
+  function posDangBanKhongTheDongBoGia() {
+    return dangLuuNoiBo || dangLuuHoaDonCho.value || dangThanhToan.value;
+  }
+
+  function lenLichDongBoGiaRealtime(delay = 80) {
+    dongBoGiaRealtimeDangCho = true;
+    if (boDemDongBoGiaRealtime) clearTimeout(boDemDongBoGiaRealtime);
+    boDemDongBoGiaRealtime = setTimeout(() => {
+      boDemDongBoGiaRealtime = null;
+      void thucHienDongBoGiaRealtime();
+    }, delay);
+  }
+
+  async function dongBoGiaGioHangTheoCatalog() {
+    // Luôn tải toàn bộ biến thể để đối chiếu được cả sản phẩm không nằm trong từ khóa tìm kiếm hiện tại.
+    await taiSanPham("", true);
+
+    if (hoaDonChoDaChon.value) {
+      const selectedInvoiceId = hoaDonChoDaChon.value.id;
+      await taiDanhSachHoaDonCho();
+      const stillExists = danhSachHoaDonCho.value.find((invoice) => invoice.id === selectedInvoiceId);
+      if (!stillExists) {
+        hoaDonChoDaChon.value = danhSachHoaDonCho.value[0] ?? null;
+        if (!hoaDonChoDaChon.value) {
+          cartItems.value = [];
+          khachHangDuocChon.value = null;
+          tuKhoaKhachHang.value = "";
+          choPhepGiaoHang.value = false;
+          phieuGiamGiaDaApDung.value = null;
+          return;
         }
-      } catch (e) {
-        console.error("Lỗi khi tải lại dữ liệu realtime:", e);
-      } finally {
-        setTimeout(() => { dangLuuNoiBo = false; }, 50);
       }
+
+      const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
+      const giaDaThayDoi = chuyenHoaDonThanhBanNhap(detail);
+      if (giaDaThayDoi) {
+        showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
+        await luuHoaDonHienTai(true);
+      }
+      return;
+    }
+
+    if (cartItems.value.length === 0) return;
+
+    const sanPhamTheoChiTietId = new Map(
+      (ketQuaBienTheSanPham.value || []).map((product) => [Number(product.chiTietId), product])
+    );
+    const removedItems = [];
+    const remainingItems = [];
+    let giaDaThayDoi = false;
+    for (const item of cartItems.value) {
+      const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
+      if (!sanPhamMoi) {
+        removedItems.push(item);
+        continue;
+      }
+      if (Number(item.giaBan) !== Number(sanPhamMoi.giaBan)) {
+        giaDaThayDoi = true;
+      }
+      remainingItems.push({
+        ...item,
+        giaBan: sanPhamMoi.giaBan,
+        giaGoc: sanPhamMoi.giaGoc,
+        soLuongTon: sanPhamMoi.soLuongTon
+      });
+    }
+
+    if (removedItems.length === 0 && !giaDaThayDoi) return;
+
+    cartItems.value = remainingItems;
+    for (const item of removedItems) {
+      showWarning(`Sản phẩm "${item.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+    }
+    if (giaDaThayDoi) {
+      danhDauCanApDungLaiPhieu();
+      capNhatTienKhachThanhToan(false);
+      showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
+    }
+  }
+
+  async function thucHienDongBoGiaRealtime() {
+    if (!dongBoGiaRealtimeDangCho || dongBoGiaRealtimeDangChay) return;
+    if (posDangBanKhongTheDongBoGia()) {
+      lenLichDongBoGiaRealtime(150);
+      return;
+    }
+
+    dongBoGiaRealtimeDangCho = false;
+    dongBoGiaRealtimeDangChay = true;
+    try {
+      await dongBoGiaGioHangTheoCatalog();
+    } catch (error) {
+      dongBoGiaRealtimeDangCho = true;
+      console.error("Lỗi khi đồng bộ giá realtime POS:", error);
+    } finally {
+      dongBoGiaRealtimeDangChay = false;
+      if (dongBoGiaRealtimeDangCho) lenLichDongBoGiaRealtime(150);
+    }
+  }
+
+  subscribeTopic('/topic/admin/san-pham', (message) => {
+    const msgType = message?.type || message?.payload?.loaiSuKien || message?.payload?.type;
+    if (!msgType || CAC_SU_KIEN_CAN_DONG_BO_GIA.has(msgType)) {
+      lenLichDongBoGiaRealtime();
     }
   });
+
+  subscribeTopic('/topic/admin/thuoc-tinh', () => {
+    lenLichDongBoGiaRealtime();
+  });
+
+  function dongBoGiaKhiQuayLaiTab() {
+    if (document.visibilityState === 'visible') {
+      lenLichDongBoGiaRealtime(0);
+    }
+  }
 
   function xoaPhanHoi() {
     thongBaoLoi.value = "";
@@ -1205,6 +1257,8 @@ function LogicBanHangTaiQuay() {
   };
 
   onMounted(async () => {
+    document.addEventListener('visibilitychange', dongBoGiaKhiQuayLaiTab);
+    window.addEventListener('focus', dongBoGiaKhiQuayLaiTab);
     await taiSanPham("");
     await taiDanhSachHoaDonCho();
 
@@ -1248,6 +1302,9 @@ function LogicBanHangTaiQuay() {
   });
 
   onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', dongBoGiaKhiQuayLaiTab);
+    window.removeEventListener('focus', dongBoGiaKhiQuayLaiTab);
+    if (boDemDongBoGiaRealtime) clearTimeout(boDemDongBoGiaRealtime);
     xoaCacBoDem();
   });
 

@@ -11,9 +11,6 @@ import PhanThanhToan from "../../../components/admin/ban-hang/PhanThanhToan.vue"
 import ModalSanPham from "../../../components/admin/ban-hang/ModalSanPham.vue";
 import ModalQuetQR from "../../../components/admin/ban-hang/ModalQuetQR.vue";
 import { LogicBanHangTaiQuay } from "../../../composable/LogicBanHangTaiQuay";
-import { useRealtime } from "../../../composables/useRealtime";
-
-const { subscribeTopic } = useRealtime();
 
 const {
   TOI_DA_HOA_DON_CHO,
@@ -159,21 +156,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
 });
-
-subscribeTopic('/topic/admin/san-pham', async (message) => {
-  console.log("Realtime update (iPad): Product changed", message);
-  taiSanPham();
-
-  if (cartItems.value && cartItems.value.length > 0) {
-    // Không tự động cập nhật giá trong giỏ hàng nữa theo yêu cầu của user
-  }
-});
-
-subscribeTopic('/topic/admin/thuoc-tinh', (message) => {
-  console.log("Realtime update (iPad): Attribute changed", message);
-  taiSanPham();
-});
-
 
 onBeforeRouteLeave(async (to, from, next) => {
   if (cartItems.value && cartItems.value.length > 0 && !hoaDonChoDaChon.value) {
