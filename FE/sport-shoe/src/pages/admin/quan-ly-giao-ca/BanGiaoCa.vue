@@ -70,6 +70,21 @@ const buocHienTai = ref(1);
 
 // Mở ca sáng sớm states
 const tienMoCaSángSớm = ref(500000); // Default to 500k starting cash
+
+const tienMoCaSángSớmFormatted = computed({
+  get() {
+    return tienMoCaSángSớm.value ? new Intl.NumberFormat('en-US').format(tienMoCaSángSớm.value) : '';
+  },
+  set(newValue) {
+    if (!newValue) {
+      tienMoCaSángSớm.value = 0;
+      return;
+    }
+    const cleanValue = newValue.toString().replace(/[^\d]/g, '');
+    tienMoCaSángSớm.value = Number(cleanValue) || 0;
+  }
+});
+
 const ghiChuMoCaSángSớm = ref("");
 const lyDoMoCaMuon = ref("");
 const danhSachCaMo = ref([]);
@@ -744,10 +759,10 @@ function cuongCheKetThucCa() {
         <!-- Header -->
         <div class="text-center space-y-2">
           <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">
-            MỞ CA LÀM VIỆC - CA MỚI ({{ currentDateFormatted }})
+            Mở ca làm việc - ca mới ({{ currentDateFormatted }})
           </h2>
           <div class="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Thu ngân: <span class="text-slate-800 dark:text-white font-bold">{{ adminSession.hoTen }}</span>
+            Nhân viên: <span class="text-slate-800 dark:text-white font-bold">{{ adminSession.hoTen }}</span>
           </div>
           <div>
             <button 
@@ -755,8 +770,6 @@ function cuongCheKetThucCa() {
               @click="showsIncidentModal = true" 
               class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline inline-flex items-center gap-1 transition-colors mt-1"
             >
-              <AlertTriangle class="h-4 w-4" />
-              Cảnh báo: Két sắt có dấu hiệu bị cạy phá
             </button>
           </div>
         </div>
@@ -771,20 +784,18 @@ function cuongCheKetThucCa() {
               v-model="caLamMoId"
               class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400"
             >
-              <option value="">-- Chọn ca làm việc --</option>
+              <option value="">Chọn ca làm việc</option>
               <option v-for="ca in danhSachCaMo" :key="ca.id" :value="String(ca.id)">
                 {{ ca.ten }} ({{ ca.gioBatDau }} - {{ ca.gioKetThuc }})
               </option>
             </select>
           </div>
 
-          <div class="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-            Được mở sớm tối đa 30 phút. Nếu mở sau giờ bắt đầu, nhân viên phải nhập lý do mở muộn.
-          </div>
+
 
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Lý do mở ca muộn / ngoại lệ
+              Lý do mở ca muộn
               <span v-if="adminCanLyDoMoCa" class="text-rose-500">*</span>
             </label>
             <textarea
@@ -792,7 +803,7 @@ function cuongCheKetThucCa() {
               rows="2"
               maxlength="300"
               class="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-400 transition"
-              placeholder="Bắt buộc khi mở sau giờ bắt đầu hoặc admin mở ngoài khung giờ..."
+              placeholder="Lý do..."
             ></textarea>
           </div>
 
@@ -805,8 +816,8 @@ function cuongCheKetThucCa() {
             <div class="flex items-center gap-3">
               <div class="relative flex-1">
                 <input 
-                  type="number"
-                  v-model.number="tienMoCaSángSớm"
+                  type="text"
+                  v-model="tienMoCaSángSớmFormatted"
                   min="0"
                   placeholder="Nhập số tiền mặt có trong két..."
                   class="w-full h-12 pl-4 pr-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-transparent text-lg font-bold text-slate-800 dark:text-white focus:outline-none focus:border-rose-400 transition"

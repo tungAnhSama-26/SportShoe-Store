@@ -240,7 +240,7 @@ export function useChiTietNhanVien() {
   });
 
   const dsVaiTro = [
-    { value: 1, label: "Admin" },
+    { value: 1, label: "Quản lý" },
     { value: 2, label: "Nhân viên" },
   ];
 
@@ -332,9 +332,9 @@ export function useChiTietNhanVien() {
     try {
       dsXaPhuong.value = tinh
         ? (await layPhuongXaHaiCap(tinh.value)).map((item) => ({
-            value: String(item.code),
-            label: item.ten,
-          }))
+          value: String(item.code),
+          label: item.ten,
+        }))
         : [];
     } catch (error) {
       dsXaPhuong.value = [];
