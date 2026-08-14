@@ -433,9 +433,32 @@ export function useChiTietDotGiamGia() {
     trangBienThe.value = 1;
   });
 
+  function onlyAllowDigitsKey(event) {
+    if ([
+      "Backspace", "Delete", "Tab", "Escape", "Enter",
+      "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+      "Home", "End"
+    ].includes(event.key)) {
+      return;
+    }
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+    if (!/^\d$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
   watch(
     () => form.giaTriGiam,
     (newVal) => {
+      if (newVal !== "" && newVal !== null && newVal !== undefined) {
+        const clean = String(newVal).replace(/[^\d]/g, "");
+        if (clean !== String(newVal)) {
+          form.giaTriGiam = clean;
+          return;
+        }
+      }
       if (newVal === "" || newVal === null || newVal === undefined) {
         delete formErrors.giaTriGiam;
         return;
@@ -787,5 +810,5 @@ export function useChiTietDotGiamGia() {
 
   onMounted(taiChiTiet);
 
-  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, isNgayBatDauReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc, todayStr };
+  return { computed, onMounted, reactive, ref, watch, useRoute, useRouter, ArrowLeft, ArrowUpRight, CheckCircle2, CheckSquare, CircleX, RefreshCcw, Save, Search, Square, Tag, X, AdminTableFooter, createDotGiamGia, getDotGiamGiaDetail, updateDotGiamGia, getDotGiamGiaSanPhamList, syncDotGiamGiaSanPham, chiTietGiay, layDanhSachGiay, layBienThe, getDisplayErrorMessage, route, router, id, laMoi, dangTai, dangTaiSP, saving, loiTrang, hienThiThongBao, formErrors, form, isReadOnly, isNgayBatDauReadOnly, searchSP, danhSachSP, danhSachSPSauKhiLoc, spTrang, selectedVariants, blockedVariantIds, trangBienThe, soHangMoiTrang, pageSizeOptions, tatCaBienThe, tongSoTrang, bienTheTrang, getToday, resetErrors, formatCurrency, resolveProductImage, normalizeVariantForSelection, hopNhatBienThe, dedupeSelectedVariants, dongBoBienTheDaChonTheoDanhSachSanPham, taiSanPhamDaChonConThieu, tinhGiaGiam, taoMaNgauNhien, taiDanhSachSP, searchTimer, isVariantSelected, isVariantBlocked, tatCaCoTheChon, tatCaDaChon, motSoDaChon, isProductBlocked, getProductSelectState, toggleProduct, toggleChonTatCa, toggleVariant, removeSelectedVariant, expandedProducts, toggleProductExpansion, taiChiTiet, submitForm, filterMauSac, filterKichCo, danhMuc, todayStr, onlyAllowDigitsKey };
 }
