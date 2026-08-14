@@ -9,6 +9,7 @@ import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import { traCuuDonHangTheoMa } from '../services/don-hang';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import logoVietQr from '../assets/logo/6793a971ea52dda5c8bfec82_vietqr.webp';
@@ -360,14 +361,37 @@ function hopLeThongTin() {
   return true;
 }
 
-async function hoanTatDatHang(maHoaDon) {
+async function hoanTatDatHang(maHoaDon, hoaDonId = null) {
   daDatHang.value = true;
   xoaGioHang();
   gioHangStore.datSoLuong(0);
   // Popup to giữa màn báo đặt hàng thành công (giống các màn khác), popup sống qua điều hướng.
   showBigSuccess(`Mã đơn hàng của bạn: <b>${maHoaDon}</b>`, 'Đặt hàng thành công!');
-  // Thay vì về trang sản phẩm -> sang màn cảm ơn + tra cứu đơn (hiện mã đơn + chi tiết hóa đơn).
-  router.push({ path: '/khachhang/tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
+
+  // Khách có tài khoản xem đơn trong "Đơn hàng của tôi"; khách vãng lai dùng màn tra cứu công khai.
+  if (daDangNhap.value) {
+    let idDonHang = Number(hoaDonId);
+
+    // COD trả sẵn ID. VietQR hiện chỉ trả mã hóa đơn khi polling nên tra lại để lấy ID.
+    if (!Number.isInteger(idDonHang) || idDonHang <= 0) {
+      try {
+        const donVuaTao = await traCuuDonHangTheoMa(maHoaDon);
+        idDonHang = Number(donVuaTao?.id);
+      } catch {
+        idDonHang = 0;
+      }
+    }
+
+    if (Number.isInteger(idDonHang) && idDonHang > 0) {
+      await router.push({ name: 'don-hang-chi-tiet', params: { id: idDonHang } });
+    } else {
+      // Lỗi mạng tạm thời vẫn giữ khách trong khu vực đơn hàng của tài khoản.
+      await router.push({ name: 'don-hang' });
+    }
+    return;
+  }
+
+  await router.push({ name: 'tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
 }
 
 // 1 item đã ngừng bán (admin ngừng SP/biến thể) hoặc hết hàng.
@@ -406,7 +430,7 @@ async function datHangMoi() {
   dangDat.value = true;
   try {
     const kq = await datHang(taoPayload());
-    await hoanTatDatHang(kq.maHoaDon);
+    await hoanTatDatHang(kq.maHoaDon, kq.hoaDonId);
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể đặt hàng. Vui lòng thử lại.'));
   } finally {
