@@ -36,7 +36,7 @@ const emit = defineEmits(["select-invoice", "create-empty-invoice"]);
       <div class="flex items-center gap-3">
         <button
           type="button"
-          class="flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-slate-700 dark:text-slate-300 transition hover:border-red-300 dark:hover:border-red-400 hover:text-red-500 dark:hover:text-red-400 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-900/50 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:border-slate-200 dark:disabled:border-slate-700/50 disabled:hover:text-slate-400 dark:disabled:hover:text-slate-500"
+          class="flex h-9 items-center justify-center gap-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-slate-700 dark:text-slate-300 transition hover:border-red-300 dark:hover:border-red-400 hover:text-red-500 dark:hover:text-red-400 disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-500 disabled:border-slate-300 dark:disabled:border-slate-600 disabled:hover:text-slate-500 dark:disabled:hover:text-slate-500 disabled:hover:border-slate-300 dark:disabled:hover:border-slate-600"
           title="Thêm hóa đơn chờ"
           :disabled="pendingInvoiceLimitReached"
           @click="emit('create-empty-invoice')"

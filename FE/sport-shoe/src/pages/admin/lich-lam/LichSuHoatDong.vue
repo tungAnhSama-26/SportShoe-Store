@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw } from "lucide-vue-next";
+import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw, ChevronDown, Download } from "lucide-vue-next";
 import { layLichSuGiaoCa } from "../../../services/giao-ca.js";
+import { layDanhSachCaLam } from "../../../services/ca-lam.js";
 import { dinhDangTienViet } from "../../../utils/dinhDangTien.js";
 import { showError } from "../../../utils/alert.js";
+import { exportRowsToExcel } from "../../../utils/export-excel.js";
 import { getDisplayErrorMessage } from "../../../utils/error-message.js";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import Button from "../../../components/ui/Button.vue";
@@ -16,16 +18,48 @@ const danhSachLichSu = ref([]);
 const tuNgay = ref("");
 const denNgay = ref("");
 const searchQuery = ref("");
+const selectedCaLam = ref("");
+const selectedVaiTro = ref("");
+const danhSachCaLam = ref([]);
 
 // Danh sách hiển thị tự động lọc từ khóa (Client & Server dual-filter)
 const danhSachHienThi = computed(() => {
-  if (!searchQuery.value || !searchQuery.value.trim()) {
-    return danhSachLichSu.value;
-  }
-  const q = searchQuery.value.trim().toLowerCase();
+  const q = searchQuery.value.toLowerCase().trim();
   const lowerNoSpace = q.replace(/\s+/g, "");
 
   return danhSachLichSu.value.filter((item) => {
+    // Lọc theo ca làm việc (Shift filter)
+    let isShiftMatch = true;
+    if (selectedCaLam.value) {
+      const selected = danhSachCaLam.value.find(c => String(c.id) === String(selectedCaLam.value));
+      if (selected) {
+        const caLamName = (item.caLamTen || getShiftDetails(item).tenCa || "").toLowerCase();
+        isShiftMatch = caLamName.includes(selected.ten.toLowerCase()) || 
+                       (item.caLamId && String(item.caLamId) === String(selectedCaLam.value));
+      }
+    }
+
+    if (!isShiftMatch) return false;
+
+    // Lọc theo vai trò (Role filter)
+    let isRoleMatch = true;
+    if (selectedVaiTro.value) {
+      const v = parseInt(selectedVaiTro.value);
+      const role = item.nhanVienTrongCaVaiTro || item.nhanVien?.vaiTro;
+      // Note: If backend hasn't restarted, role might be undefined.
+      // We assume 1 is Quản lý, others are Nhân viên.
+      if (v === 1) {
+        isRoleMatch = role === 1;
+      } else if (v === 2) {
+        isRoleMatch = role !== 1;
+      }
+    }
+
+    if (!isRoleMatch) return false;
+
+    if (!q) {
+      return true;
+    }
     const shiftDetails = getShiftDetails(item);
     const tenNhanVien = (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || "").toLowerCase();
     const maNhanVien = (item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || "").toLowerCase();
@@ -109,8 +143,35 @@ const fetchLichSu = async () => {
 const handleRefresh = () => {
   setNgayMacDinh();
   searchQuery.value = "";
+  selectedCaLam.value = "";
+  selectedVaiTro.value = "";
   currentPage.value = 0;
   fetchLichSu();
+};
+
+const xuatExcel = () => {
+  if (!danhSachHienThi.value.length) {
+    showError("Không có dữ liệu để xuất Excel.");
+    return;
+  }
+
+  exportRowsToExcel({
+    filename: "lich-su-hoat-dong",
+    sheetName: "LichSu",
+    columns: [
+      { label: "STT", value: (_, index) => currentPage.value * pageSize.value + index + 1 },
+      { label: "Mã nhân viên", value: (row) => row.nhanVienTrongCaMa || row.nhanVien?.ma || row.maNhanVien || "NV0000" },
+      { label: "Tên nhân viên", value: (row) => row.nhanVienTrongCaTen || row.nhanVien?.tenNhanVien || row.nhanVien?.hoTen || row.tenTaiKhoan || "Chưa xác định" },
+      { label: "Vai trò", value: (row) => (row.nhanVienTrongCaVaiTro === 1 || row.nhanVien?.vaiTro === 1) ? "Quản lý" : "Nhân viên" },
+      { label: "Ca làm việc", value: (row) => getShiftName(row) },
+      { label: "Thời gian vào", value: (row) => formatDateTime(row.thoiGianVao || row.thoiGianMoCa) || "—" },
+      { label: "Thời gian ra", value: (row) => formatDateTime(row.thoiGianRa || row.thoiGianDongCa) || "—" },
+      { label: "Doanh thu", value: (row) => dinhDangTienViet(row.tienCuoiCaThucTe || 0) },
+      { label: "Trạng thái", value: (row) => hienThiTrangThai(row) },
+      { label: "Ghi chú", value: (row) => row.ghiChu || "Không có" },
+    ],
+    rows: danhSachHienThi.value,
+  });
 };
 
 const handlePageChange = (newPage) => {
@@ -252,8 +313,9 @@ const setNgayMacDinh = () => {
   denNgay.value = todayStr;
 };
 
-onMounted(() => {
+onMounted(async () => {
   setNgayMacDinh();
+  danhSachCaLam.value = await layDanhSachCaLam();
   fetchLichSu();
 });
 
@@ -271,17 +333,11 @@ const onSearchInput = () => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div>
-      <h1 class="text-[20px] font-bold text-slate-800">Lịch sử hoạt động</h1>
-      <p class="text-[13px] text-slate-500 mt-1">Theo dõi lịch sử đóng/mở ca và dòng tiền mặt trong két</p>
-    </div>
-
     <!-- Filter Section -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 md:p-5 flex flex-col md:flex-row items-end gap-4">
       
       <!-- Tìm kiếm -->
-      <div class="flex-1 w-full">
+      <div class="flex-1 w-full md:min-w-[250px]">
         <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">Tìm kiếm</label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -297,13 +353,47 @@ const onSearchInput = () => {
         </div>
       </div>
 
+      <!-- Lọc ca làm việc -->
+      <div class="w-full md:w-40">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">Ca làm việc</label>
+        <div class="relative">
+          <select 
+            v-model="selectedCaLam"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all bg-slate-50 focus:bg-white appearance-none"
+          >
+            <option value="">Tất cả</option>
+            <option v-for="ca in danhSachCaLam" :key="ca.id" :value="ca.id">
+              {{ ca.ten }}
+            </option>
+          </select>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <ChevronDown class="w-4 h-4 text-slate-400" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Lọc vai trò -->
+      <div class="w-full md:w-36">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">Vai trò</label>
+        <div class="relative">
+          <select 
+            v-model="selectedVaiTro"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all bg-slate-50 focus:bg-white appearance-none"
+          >
+            <option value="">Tất cả</option>
+            <option value="1">Quản lý</option>
+            <option value="2">Nhân viên</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <ChevronDown class="w-4 h-4 text-slate-400" />
+          </div>
+        </div>
+      </div>
+
       <!-- Từ ngày -->
-      <div class="w-full md:w-48">
+      <div class="w-full md:w-40">
         <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">Từ ngày:</label>
         <div class="relative">
-          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <CalendarIcon class="w-4 h-4 text-slate-400" />
-          </div>
           <input 
             type="date" 
             v-model="tuNgay"
@@ -313,12 +403,9 @@ const onSearchInput = () => {
       </div>
 
       <!-- Đến ngày -->
-      <div class="w-full md:w-48">
+      <div class="w-full md:w-40">
         <label class="block text-xs font-bold text-slate-600 mb-1.5 ml-1">Đến ngày:</label>
         <div class="relative">
-          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <CalendarIcon class="w-4 h-4 text-slate-400" />
-          </div>
           <input 
             type="date" 
             v-model="denNgay"
@@ -327,11 +414,20 @@ const onSearchInput = () => {
         </div>
       </div>
 
-      <!-- Nút đặt lại bộ lọc -->
-      <Button variant="soft" @click="handleRefresh">
-        <template #prefix><RotateCcw class="h-4 w-4" /></template>
-        Đặt lại bộ lọc
-      </Button>
+      <!-- Nút đặt lại bộ lọc & Xuất Excel -->
+      <div class="flex items-center gap-2">
+        <Button variant="soft" @click="handleRefresh">
+          <template #prefix><RotateCcw class="h-4 w-4" /></template>
+          Đặt lại bộ lọc
+        </Button>
+        <button 
+          @click="xuatExcel"
+          class="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-sm font-semibold transition-colors border border-emerald-100"
+        >
+          <Download class="w-4 h-4" />
+          Xuất Excel
+        </button>
+      </div>
 
     </div>
 
@@ -359,20 +455,22 @@ const onSearchInput = () => {
           <thead>
             <tr class="bg-slate-50/50 border-b border-slate-100 text-slate-500 text-[13px] font-semibold">
               <th class="py-3 px-4 w-16 text-center">STT</th>
-              <th class="py-3 px-4 min-w-[220px]">Nhân viên / Ca làm việc</th>
-              <th class="py-3 px-4 text-center">Vào ca</th>
-              <th class="py-3 px-4 text-center">Ra ca</th>
-              <th class="py-3 px-4 text-right">Doanh thu ca</th>
-              <th class="py-3 px-4 text-center">Trạng thái</th>
-              <th class="py-3 px-4 min-w-[150px]">Ghi chú</th>
+              <th class="py-3 px-4 text-center">Mã nhân viên</th>
+              <th class="py-3 px-4">Tên nhân viên</th>
+              <th class="py-3 px-4 text-center">Vai trò</th>
+              <th class="py-3 px-4 text-center">Ca làm việc</th>
+              <th class="py-3 px-4 text-center">Thời gian</th>
+              <th class="py-3 px-4 text-right">Doanh thu</th>
+              <th class="py-3 px-4 text-center whitespace-nowrap">Trạng thái</th>
+              <th class="py-3 px-4">Ghi chú</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai" class="border-b border-slate-100">
-              <td colspan="7" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="9" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="danhSachHienThi.length === 0" class="border-b border-slate-100">
-              <td colspan="7" class="py-8 text-center">
+              <td colspan="9" class="py-8 text-center">
                 <div class="flex flex-col items-center justify-center text-slate-400">
                   <FileText class="w-10 h-10 mb-2 opacity-50" />
                   <span class="text-sm">Không tìm thấy dữ liệu lịch sử hoạt động</span>
@@ -382,56 +480,45 @@ const onSearchInput = () => {
             <tr v-else v-for="(item, idx) in danhSachHienThi" :key="item.id || idx" class="border-b border-slate-100 hover:bg-slate-50/50 transition">
               <td class="py-4 px-4 text-[13px] text-slate-500 text-center">{{ currentPage * pageSize + idx + 1 }}</td>
               
-              <!-- NHÂN VIÊN / CA LÀM VIỆC -->
+              <!-- MÃ NHÂN VIÊN -->
+              <td class="py-4 px-4 text-center">
+                <span class="text-slate-500 font-semibold">{{ item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || 'NV0000' }}</span>
+              </td>
+
+              <!-- TÊN NHÂN VIÊN -->
               <td class="py-4 px-4">
                 <div class="flex items-center gap-3">
-                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 font-bold text-sm border border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/30">
-                    {{ (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || 'A')[0].toUpperCase() }}
+                  <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-slate-600 font-bold text-sm border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                    <img v-if="item.nhanVienTrongCaAnh || item.nhanVien?.anhDaiDien" :src="item.nhanVienTrongCaAnh || item.nhanVien?.anhDaiDien" class="h-full w-full object-cover" />
+                    <span v-else>{{ (item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || 'A')[0].toUpperCase() }}</span>
                   </div>
-                  <div>
-                    <div class="text-[14px] font-bold text-slate-700 dark:text-slate-200">
-                      {{ item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || 'Chưa xác định' }}
-                      <span class="text-slate-500 font-semibold">({{ item.nhanVienTrongCaMa || item.nhanVien?.ma || item.maNhanVien || 'NV0000' }})</span>
-                    </div>
-                    <div class="text-[12px] text-slate-400 mt-0.5">
-                      {{ getShiftName(item) }}
-                      ({{ getShiftDetails(item).gioCa }})
-                    </div>
+                  <div class="text-[14px] font-bold text-slate-700 dark:text-slate-200">
+                    {{ item.nhanVienTrongCaTen || item.nhanVien?.tenNhanVien || item.nhanVien?.hoTen || item.tenTaiKhoan || 'Chưa xác định' }}
                   </div>
                 </div>
               </td>
 
-              <!-- VÀO CA -->
-              <td class="py-4 px-4">
-                <div v-if="item.thoiGianVao || item.thoiGianMoCa" class="flex flex-col items-center justify-center text-center">
-                  <div class="flex items-center gap-1.5 text-[13px] text-slate-700 dark:text-slate-300 font-medium">
-                    <LogIn class="w-4 h-4 text-emerald-500" />
-                    <span>{{ formatDateTime(item.thoiGianVao || item.thoiGianMoCa) }}</span>
-                  </div>
-                  <span v-if="getShiftDetails(item).lateMin > 0" 
-                        class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 border border-rose-100 text-rose-500 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400">
-                    Đi muộn {{ getShiftDetails(item).lateMin }} phút
-                  </span>
-                </div>
-                <div v-else class="text-center text-slate-400">—</div>
+              <!-- VAI TRÒ -->
+              <td class="py-4 px-4 text-center text-slate-600 font-medium">
+                <span v-if="item.nhanVienTrongCaVaiTro === 1 || item.nhanVien?.vaiTro === 1">Quản lý</span>
+                <span v-else>Nhân viên</span>
               </td>
 
-              <!-- RA CA -->
+              <!-- CA LÀM VIỆC -->
+              <td class="py-4 px-4 text-center text-slate-600 font-medium">
+                {{ getShiftName(item) }}
+              </td>
+
+              <!-- THỜI GIAN -->
               <td class="py-4 px-4">
-                <div v-if="item.thoiGianRa || item.thoiGianDongCa" class="flex flex-col items-center justify-center text-center">
-                  <div class="flex items-center gap-1.5 text-[13px] text-slate-700 dark:text-slate-300 font-medium">
-                    <LogOut class="w-4 h-4 text-amber-500" />
-                    <span>{{ formatDateTime(item.thoiGianRa || item.thoiGianDongCa) }}</span>
+                <div class="flex flex-col items-center justify-center text-[13px] text-slate-600">
+                  <div class="flex items-center justify-center gap-1.5 mb-1 w-full">
+                    <span>{{ formatDateTime(item.thoiGianVao || item.thoiGianMoCa) || '—' }}</span>
                   </div>
-                  <span v-if="getShiftDetails(item).earlyMin > 0" 
-                        class="mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 border border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400">
-                    Ra sớm {{ getShiftDetails(item).earlyMin }} phút
-                  </span>
-                  <span v-if="item.thoiGianXacNhan" class="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    Xác nhận: {{ formatDateTime(item.thoiGianXacNhan) }}
-                  </span>
+                  <div class="flex items-center justify-center gap-1.5 w-full">
+                    <span>{{ formatDateTime(item.thoiGianRa || item.thoiGianDongCa) || '—' }}</span>
+                  </div>
                 </div>
-                <div v-else class="text-center text-slate-400">—</div>
               </td>
 
               <!-- DOANH THU CA -->
@@ -439,16 +526,10 @@ const onSearchInput = () => {
                 <div class="text-[14px] font-bold text-slate-800 dark:text-slate-200">
                   {{ dinhDangTienViet((item.tienMatTrongCa || item.tienMatGiaoCa || 0) + (item.tienChuyenKhoanTrongCa || 0)) }}
                 </div>
-                <div class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  Tiền mặt: {{ dinhDangTienViet(item.tienMatTrongCa || item.tienMatGiaoCa || 0) }}
-                </div>
-                <div class="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5">
-                  Chuyển khoản: {{ dinhDangTienViet(item.tienChuyenKhoanTrongCa || 0) }}
-                </div>
               </td>
 
               <!-- TRẠNG THÁI -->
-              <td class="py-4 px-4 text-center">
+              <td class="py-4 px-4 text-center whitespace-nowrap">
                 <span v-if="item.trangThai === 'MO_CA' || item.trangThai === 'DANG_LAM' || item.trangThai === '0' || item.trangThai === 0" 
                       class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-orange-50 border border-orange-100 text-orange-500 dark:bg-orange-950/20 dark:border-orange-900/30 dark:text-orange-400">
                   Đang làm
@@ -472,9 +553,11 @@ const onSearchInput = () => {
 
               <!-- GHI CHÚ -->
               <td class="py-4 px-4 text-[13px] text-slate-500 dark:text-slate-400">
-                <span :class="!item.ghiChu ? 'italic text-slate-400' : ''">
-                  {{ item.ghiChu || 'Không có' }}
-                </span>
+                <div :title="item.ghiChu">
+                  <span :class="!item.ghiChu ? 'italic text-slate-400' : ''">
+                    {{ item.ghiChu || 'Không có' }}
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>

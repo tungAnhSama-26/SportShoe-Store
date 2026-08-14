@@ -60,14 +60,12 @@ export function LogicKhachHang({
   function chonKhachHang(customer) {
     khachHangDuocChon.value = customer;
     tuKhoaKhachHang.value = customer.hoTen;
-    if (!tenNguoiNhanGiaoHang.value.trim()) {
-      tenNguoiNhanGiaoHang.value = customer.hoTen || "";
-    }
-    if (!sdtNguoiNhanGiaoHang.value.trim()) {
-      sdtNguoiNhanGiaoHang.value = customer.sdt || "";
-    }
-    if (diaChiGiaoHang && !diaChiHopLe(diaChiGiaoHang.value) && customer.diaChiMacDinh) {
+    if (tenNguoiNhanGiaoHang) tenNguoiNhanGiaoHang.value = customer.hoTen || "";
+    if (sdtNguoiNhanGiaoHang) sdtNguoiNhanGiaoHang.value = customer.sdt || "";
+    if (diaChiGiaoHang && customer.diaChiMacDinh) {
       diaChiGiaoHang.value = chuanHoaDiaChi(customer.diaChiMacDinh);
+    } else if (diaChiGiaoHang) {
+      diaChiGiaoHang.value = { ...DIA_CHI_RONG };
     }
     ketQuaTimKiemKhachHang.value = [];
     hienThiDanhSachKhachHang.value = false;

@@ -351,7 +351,7 @@ watch(ngayDauTuan, async () => {
 const boLocVaiTro = ref(0); // 0 = tất cả
 const dsVaiTro = [
   { value: 0, label: "Tất cả" },
-  { value: 1, label: "Admin" },
+  { value: 1, label: "Quản trị viên" },
   { value: 2, label: "Nhân viên" },
 ];
 
