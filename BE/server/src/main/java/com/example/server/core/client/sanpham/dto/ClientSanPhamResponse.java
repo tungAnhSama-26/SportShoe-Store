@@ -12,6 +12,7 @@ public record ClientSanPhamResponse(
         GiayListItemResponse thongTin,
         String hinhAnhSanPham,
         BigDecimal giaHienThiMin,
+        BigDecimal giaNiemYetHienThi,
         boolean coGiam,
         List<String> mauSac,
         List<String> kichCo,

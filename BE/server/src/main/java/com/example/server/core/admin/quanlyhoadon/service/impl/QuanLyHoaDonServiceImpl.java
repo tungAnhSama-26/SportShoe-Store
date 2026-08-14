@@ -1222,29 +1222,26 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
         String tenDotGiamGia = null;
         BigDecimal giaTriGiamDotGiamGia = null;
+        Integer loaiGiamDotGiamGia = null;
+        BigDecimal giaBanChiTiet = item.getGiayChiTiet() != null
+                ? defaultMoney(item.getGiayChiTiet().getGiaBan())
+                : defaultMoney(item.getGiaDonVi());
 
-        if (giayChiTietId != null && item.getGiayChiTiet().getGiaBan() != null && item.getGiayChiTiet().getGiaBan().compareTo(item.getGiaDonVi()) > 0) {
+        if (giayChiTietId != null && giaBanChiTiet.compareTo(item.getGiaDonVi()) > 0) {
             LocalDate ngayTaoHD = LocalDate.ofInstant(item.getHoaDon().getNgayTao(), MUI_GIO_HOA_DON);
             List<DotGiamGiaSanPham> activeDiscounts = dotGiamGiaSanPhamRepository.findAllByGiayChiTietId(giayChiTietId);
-            if (activeDiscounts != null) {
-                for (DotGiamGiaSanPham link : activeDiscounts) {
-                    DotGiamGia dgg = link.getDotGiamGia();
-                    if (dgg != null) {
-                        LocalDate start = dgg.getNgayBatDau();
-                        LocalDate end = dgg.getNgayKetThuc();
-                        boolean fitDate = (start == null || !ngayTaoHD.isBefore(start))
-                                && (end == null || !ngayTaoHD.isAfter(end));
-                        if (fitDate) {
-                            tenDotGiamGia = dgg.getTen();
-                            giaTriGiamDotGiamGia = dgg.getGiaTriGiam();
-                            break;
-                        }
-                    }
-                }
+            ProductDiscountDisplay discountDisplay = selectProductDiscount(
+                    giaBanChiTiet,
+                    item.getGiaDonVi(),
+                    ngayTaoHD,
+                    activeDiscounts
+            );
+            if (discountDisplay != null) {
+                tenDotGiamGia = discountDisplay.discount().getTen();
+                giaTriGiamDotGiamGia = discountDisplay.discount().getGiaTriGiam();
+                loaiGiamDotGiamGia = discountDisplay.discount().getLoaiGiam();
             }
         }
-
-        BigDecimal giaBanChiTiet = item.getGiayChiTiet() != null ? defaultMoney(item.getGiayChiTiet().getGiaBan()) : defaultMoney(item.getGiaDonVi());
 
         return new HoaDonProductResponse(
                 item.getId(),
@@ -1260,9 +1257,64 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 defaultMoney(item.getThanhTien()),
                 giayChiTietId != null ? hinhAnhMap.getOrDefault(giayChiTietId, "") : "",
                 tenDotGiamGia,
-                giaTriGiamDotGiamGia
+                giaTriGiamDotGiamGia,
+                loaiGiamDotGiamGia
         );
     }
+
+    static ProductDiscountDisplay selectProductDiscount(
+            BigDecimal originalPrice,
+            BigDecimal invoicePrice,
+            LocalDate invoiceDate,
+            List<DotGiamGiaSanPham> discountLinks
+    ) {
+        if (originalPrice == null || invoicePrice == null || invoiceDate == null || discountLinks == null) {
+            return null;
+        }
+
+        ProductDiscountDisplay selected = null;
+        boolean selectedMatchesInvoicePrice = false;
+        for (DotGiamGiaSanPham link : discountLinks) {
+            DotGiamGia discount = link != null ? link.getDotGiamGia() : null;
+            if (discount == null) continue;
+
+            LocalDate start = discount.getNgayBatDau();
+            LocalDate end = discount.getNgayKetThuc();
+            boolean fitsDate = (start == null || !invoiceDate.isBefore(start))
+                    && (end == null || !invoiceDate.isAfter(end));
+            if (!fitsDate) continue;
+
+            BigDecimal discountedPrice = calculateProductDiscountPrice(originalPrice, discount);
+            boolean matchesInvoicePrice = discountedPrice.compareTo(invoicePrice) == 0;
+            boolean shouldSelect = selected == null
+                    || (matchesInvoicePrice && !selectedMatchesInvoicePrice)
+                    || (matchesInvoicePrice == selectedMatchesInvoicePrice
+                        && discountedPrice.compareTo(selected.discountedPrice()) < 0);
+            if (shouldSelect) {
+                selected = new ProductDiscountDisplay(discount, discountedPrice);
+                selectedMatchesInvoicePrice = matchesInvoicePrice;
+            }
+        }
+        return selected;
+    }
+
+    private static BigDecimal calculateProductDiscountPrice(BigDecimal originalPrice, DotGiamGia discount) {
+        if (originalPrice == null || discount == null || discount.getGiaTriGiam() == null) {
+            return originalPrice == null ? BigDecimal.ZERO : originalPrice;
+        }
+
+        BigDecimal discountedPrice = originalPrice;
+        if (Integer.valueOf(1).equals(discount.getLoaiGiam())) {
+            BigDecimal discountAmount = originalPrice.multiply(discount.getGiaTriGiam())
+                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            discountedPrice = originalPrice.subtract(discountAmount);
+        } else if (Integer.valueOf(2).equals(discount.getLoaiGiam())) {
+            discountedPrice = originalPrice.subtract(discount.getGiaTriGiam());
+        }
+        return discountedPrice.max(BigDecimal.ZERO);
+    }
+
+    record ProductDiscountDisplay(DotGiamGia discount, BigDecimal discountedPrice) {}
 
     private VanChuyen upsertVanChuyen(
             HoaDon hoaDon,
