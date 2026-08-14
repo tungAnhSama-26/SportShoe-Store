@@ -238,8 +238,19 @@ const {
         <div class="overflow-x-auto admin-table-scroll">
           <table
             v-if="activeTab === 'phieu'"
-            class="w-full border-collapse text-left text-sm text-slate-600"
+            class="w-full min-w-[1050px] table-fixed border-collapse text-left text-sm text-slate-600"
           >
+            <colgroup>
+              <col class="w-[5%]" />
+              <col class="w-[11%]" />
+              <col class="w-[18%]" />
+              <col class="w-[11%]" />
+              <col class="w-[10%]" />
+              <col class="w-[11%]" />
+              <col class="w-[11%]" />
+              <col class="w-[13%]" />
+              <col class="w-[10%]" />
+            </colgroup>
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
               <tr
                 class="text-left text-sm font-bold text-slate-950 [&>th]:whitespace-nowrap"
@@ -280,7 +291,14 @@ const {
                 <td class="px-4 py-3 font-semibold text-slate-900">
                   {{ item.ma }}
                 </td>
-                <td class="px-4 py-3 text-slate-900">{{ item.ten }}</td>
+                <td class="px-4 py-3 align-middle">
+                  <div
+                    class="w-full max-w-full break-words whitespace-normal font-semibold leading-snug text-slate-900"
+                    :title="item.ten"
+                  >
+                    {{ item.ten }}
+                  </div>
+                </td>
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold"
@@ -347,8 +365,18 @@ const {
 
           <table
             v-else
-            class="min-w-[1100px] w-full border-collapse text-left text-sm text-slate-600"
+            class="w-full min-w-[1100px] table-fixed border-collapse text-left text-sm text-slate-600"
           >
+            <colgroup>
+              <col class="w-[5%]" />
+              <col class="w-[12%]" />
+              <col class="w-[18%]" />
+              <col class="w-[18%]" />
+              <col class="w-[11%]" />
+              <col class="w-[11%]" />
+              <col class="w-[13%]" />
+              <col class="w-[12%]" />
+            </colgroup>
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
               <tr class="text-left text-sm font-bold text-slate-950">
                 <th class="px-4 py-3">STT</th>
@@ -386,11 +414,21 @@ const {
                 <td class="px-4 py-3 font-semibold text-slate-900">
                   {{ item.maPhieuGiamGia }}
                 </td>
-                <td class="px-4 py-3 text-slate-900">
-                  {{ item.tenPhieuGiamGia }}
+                <td class="px-4 py-3 align-middle">
+                  <div
+                    class="w-full max-w-full break-words whitespace-normal font-semibold leading-snug text-slate-900"
+                    :title="item.tenPhieuGiamGia"
+                  >
+                    {{ item.tenPhieuGiamGia }}
+                  </div>
                 </td>
-                <td class="px-4 py-3">
-                  {{ item.tenKhachHang }}
+                <td class="px-4 py-3 align-middle">
+                  <div
+                    class="w-full max-w-full break-words whitespace-normal font-medium leading-snug text-slate-700"
+                    :title="item.tenKhachHang"
+                  >
+                    {{ item.tenKhachHang }}
+                  </div>
                 </td>
                 <td class="px-4 py-3">
                   {{ toDisplayDate(item.ngayTao) }}

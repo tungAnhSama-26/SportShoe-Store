@@ -157,7 +157,7 @@ export function useChiTietPhieuGiamGia() {
     },
     set(value) {
       if (form.loai === "1") {
-        form.giaTri = value;
+        form.giaTri = String(value ?? "").replace(/[^\d]/g, "");
       } else {
         form.giaTri = formatVndNumber(value);
       }
@@ -220,13 +220,32 @@ export function useChiTietPhieuGiamGia() {
   }
 
   function parseVndNumber(value) {
-    const rawValue = String(value ?? "").replace(/[^\d]/g, "");
+    if (value === "" || value == null) return 0;
+    const rawValue = String(value).replace(/[^\d]/g, "");
     return rawValue ? Number(rawValue) : 0;
   }
 
   function formatVndNumber(value) {
-    const numberValue = parseVndNumber(value);
-    return numberValue ? numberValue.toLocaleString("vi-VN") : "0";
+    if (value === "" || value == null) return "";
+    const rawDigits = String(value).replace(/[^\d]/g, "");
+    if (!rawDigits) return "";
+    return Number(rawDigits).toLocaleString("vi-VN");
+  }
+
+  function onlyAllowDigitsKey(event) {
+    if ([
+      "Backspace", "Delete", "Tab", "Escape", "Enter",
+      "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+      "Home", "End"
+    ].includes(event.key)) {
+      return;
+    }
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+    if (!/^\d$/.test(event.key)) {
+      event.preventDefault();
+    }
   }
 
   function handleVndInput(field, event) {
@@ -1040,5 +1059,6 @@ export function useChiTietPhieuGiamGia() {
     mauTrangThai,
     todayStr,
     isNgayBatDauReadOnly,
+    onlyAllowDigitsKey,
   };
 }

@@ -87,6 +87,7 @@ const {
   danhSachSPSauKhiLoc,
   todayStr,
   isNgayBatDauReadOnly,
+  onlyAllowDigitsKey,
 } = useChiTietDotGiamGia();
 
 const searchSelectedText = ref("");
@@ -240,9 +241,9 @@ const filteredSelectedVariantsTrang = computed(() => {
                   <div class="relative">
                     <input
                       v-model="form.giaTriGiam"
-                      type="number"
-                      min="1"
-                      max="100"
+                      type="text"
+                      inputmode="numeric"
+                      @keydown="onlyAllowDigitsKey"
                       class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
                       placeholder="0"
                     />

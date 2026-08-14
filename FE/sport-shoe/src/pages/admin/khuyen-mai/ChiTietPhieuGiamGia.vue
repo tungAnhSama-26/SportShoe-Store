@@ -60,6 +60,7 @@ const {
   parseVndNumber,
   todayStr,
   isNgayBatDauReadOnly,
+  onlyAllowDigitsKey,
 } = useChiTietPhieuGiamGia();
 </script>
 
@@ -214,9 +215,9 @@ const {
             <div class="relative">
               <input
                 v-model="giaTriDisplay"
-                :type="form.loai === '1' ? 'number' : 'text'"
-                :min="form.loai === '1' ? '1' : undefined"
-                :max="form.loai === '1' ? '100' : undefined"
+                type="text"
+                inputmode="numeric"
+                @keydown="onlyAllowDigitsKey"
                 class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
                 placeholder="0"
               />
@@ -241,7 +242,10 @@ const {
             <input
               v-model="giaTriToiThieuVnd"
               type="text"
+              inputmode="numeric"
+              @keydown="onlyAllowDigitsKey"
               class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white"
+              placeholder="0"
             />
             <p
               v-if="formErrors.giaTriToiThieu"
@@ -259,9 +263,12 @@ const {
             <input
               v-model="giamToiDaVnd"
               type="text"
+              inputmode="numeric"
+              @keydown="onlyAllowDigitsKey"
               :disabled="Number(form.loai) === 1 && Number(form.giaTri) === 100"
               class="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm font-normal text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:bg-white disabled:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
               :class="Number(form.loai) === 1 && Number(form.giaTri) === 100 ? '' : 'bg-slate-50'"
+              placeholder="0"
             />
             <p v-if="Number(form.loai) === 1 && Number(form.giaTri) === 100" class="text-xs text-slate-400">
               Không cần giảm tối đa khi giảm 100%
@@ -284,6 +291,7 @@ const {
                 v-model="soLuongDisplay"
                 type="text"
                 inputmode="numeric"
+                @keydown="onlyAllowDigitsKey"
                 @keydown.enter.prevent="handleSoLuongEnter"
                 :readonly="form.loaiPhieu === '2' || soLuongVoHan"
                 :disabled="soLuongVoHan"

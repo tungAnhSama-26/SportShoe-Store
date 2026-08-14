@@ -497,17 +497,17 @@ onMounted(() => {
       <div class="w-full overflow-hidden rounded-[6px] border border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto admin-table-scroll">
           <table
-            class="w-full min-w-[900px] table-fixed border-collapse text-left text-sm text-slate-600"
+            class="w-full min-w-[980px] table-fixed border-collapse text-left text-sm text-slate-600"
           >
             <colgroup>
               <col class="w-[5%]" />
+              <col class="w-[12%]" />
+              <col class="w-[18%]" />
+              <col class="w-[8%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+              <col class="w-[18%]" />
               <col class="w-[15%]" />
-              <col class="w-[25%]" />
-              <col class="w-[10%]" />
-              <col class="w-[13%]" />
-              <col class="w-[13%]" />
-              <col class="w-[140px]" />
-              <col class="w-[14%]" />
             </colgroup>
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
               <tr
@@ -548,9 +548,10 @@ onMounted(() => {
                 <td class="px-4 py-3 font-bold tracking-tight text-slate-900">
                   {{ item.ma }}
                 </td>
-                <td class="px-4 py-3 align-top">
+                <td class="px-4 py-3 align-middle">
                   <div
-                    class="w-full whitespace-normal break-words font-bold leading-6 text-slate-900"
+                    class="w-full max-w-full break-words whitespace-normal font-bold leading-snug text-slate-900"
+                    :title="item.ten"
                   >
                     {{ item.ten }}
                   </div>
