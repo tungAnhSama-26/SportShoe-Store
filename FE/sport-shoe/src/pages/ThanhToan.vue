@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
+import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, coPhienKhachHang, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
 import { layPhuongXaHaiCap, layTinhThanhHaiCap } from '../services/dia-chi';
 import { chuanHoaDiaChi, dinhDangDiaChi, doiChieuDiaChiHaiCap, taoPayloadDiaChi } from '../utils/dia-chi';
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
@@ -20,7 +20,8 @@ const gio = ref({ id: null, items: [], tongSoLuong: 0, tongTien: 0 });
 const diaChiList = ref([]);
 const diaChiChonId = ref(null);
 const dangTai = ref(true);
-const daDangNhap = computed(() => Boolean(layKhachId()));
+const khachHangIdPhien = ref(coPhienKhachHang() ? layKhachId() : null);
+const daDangNhap = computed(() => Boolean(khachHangIdPhien.value));
 
 const form = ref({
   hoTen: '',
@@ -361,7 +362,7 @@ function hopLeThongTin() {
   return true;
 }
 
-async function hoanTatDatHang(maHoaDon, hoaDonId = null) {
+async function hoanTatDatHang(maHoaDon, hoaDonId = null, khachHangIdKhiDat = null) {
   daDatHang.value = true;
   xoaGioHang();
   gioHangStore.datSoLuong(0);
@@ -369,7 +370,7 @@ async function hoanTatDatHang(maHoaDon, hoaDonId = null) {
   showBigSuccess(`Mã đơn hàng của bạn: <b>${maHoaDon}</b>`, 'Đặt hàng thành công!');
 
   // Khách có tài khoản xem đơn trong "Đơn hàng của tôi"; khách vãng lai dùng màn tra cứu công khai.
-  if (daDangNhap.value) {
+  if (khachHangIdKhiDat) {
     let idDonHang = Number(hoaDonId);
 
     // COD trả sẵn ID. VietQR hiện chỉ trả mã hóa đơn khi polling nên tra lại để lấy ID.
@@ -424,13 +425,16 @@ async function datHangMoi() {
     'Hủy',
   );
   if (!xacNhan) return;
+  // Chốt chủ đơn ngay trước lúc gửi request để không phụ thuộc localStorage thay đổi trong khi chờ thanh toán.
+  const khachHangIdKhiDat = coPhienKhachHang() ? layKhachId() : null;
+  khachHangIdPhien.value = khachHangIdKhiDat;
   if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
-    return moThanhToanVnPay();
+    return moThanhToanVnPay(khachHangIdKhiDat);
   }
   dangDat.value = true;
   try {
     const kq = await datHang(taoPayload());
-    await hoanTatDatHang(kq.maHoaDon, kq.hoaDonId);
+    await hoanTatDatHang(kq.maHoaDon, kq.hoaDonId, khachHangIdKhiDat);
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể đặt hàng. Vui lòng thử lại.'));
   } finally {
@@ -439,9 +443,12 @@ async function datHangMoi() {
 }
 
 // --- VNPay: hiện QR hoặc link redirect ---
-async function moThanhToanVnPay() {
+const khachHangIdPhienThanhToan = ref(null);
+
+async function moThanhToanVnPay(khachHangIdKhiDat = null) {
   dangDat.value = true;
   try {
+    khachHangIdPhienThanhToan.value = khachHangIdKhiDat;
     qrVnPay.value = await taoMaVnPay(taoPayload());
     if (qrVnPay.value && qrVnPay.value.qrData && qrVnPay.value.qrData.startsWith('http') && !qrVnPay.value.qrData.includes('qr.sepay.vn')) {
       window.open(qrVnPay.value.qrData, '_blank');
@@ -469,7 +476,7 @@ function batDauPoll() {
         dungPoll();
         const ma = tt.maHoaDon;
         qrVnPay.value = null;
-        await hoanTatDatHang(ma);
+        await hoanTatDatHang(ma, null, khachHangIdPhienThanhToan.value);
       } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
         ngatHetHan();
       }
