@@ -1042,13 +1042,6 @@ function toggleChatWithDragCheck() {
         <MessageCircle v-else class="h-6 w-6" />
       </button>
       
-      <!-- Notification Badge (Messenger-like) -->
-      <span 
-        v-show="!isOpen"
-        class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm z-20 animate-bounce"
-      >
-        1
-      </span>
     </div>
 
     <!-- Inactivity Overlay Modal in the Middle of Screen -->

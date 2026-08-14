@@ -8,7 +8,7 @@ import {
   yeuCauHuyDonHang,
 } from '../services/don-hang';
 import { layDanhSachDiaChiProfile } from '../services/client-profile';
-import { layKhachId } from '../services/gio-hang';
+import { layKhachId, layThongTinKhach } from '../services/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
@@ -240,6 +240,12 @@ function formatNgay(iso) {
   }
 }
 
+function nhanHinhThucThanhToan(hinhThuc) {
+  return hinhThuc === 'CHUYEN_KHOAN'
+    ? 'Chuyển khoản (VietQR/VNPAY)'
+    : 'Thanh toán khi nhận hàng (COD)';
+}
+
 function formatGioBuoc(iso) {
   if (!iso) return '';
   return new Intl.DateTimeFormat('vi-VN', {
@@ -282,6 +288,7 @@ const daHoanThanh = computed(() => don.value?.trangThai === 5);
 // Quyền hủy/sửa do backend quyết định theo hình thức thanh toán + trạng thái.
 const coTheYeuCauHuy = computed(() => don.value?.coTheHuy === true);
 const coTheSuaThongTinGiaoHang = computed(() => don.value?.coTheCapNhatGiaoHang === true);
+const emailKhachHang = ref('');
 
 const lichSuGiaoHang = computed(() => {
   if (!don.value || !Array.isArray(don.value.lichSuTrangThai)) return [];
@@ -299,6 +306,7 @@ const lichSuGiaoHang = computed(() => {
 
 async function moModalSuaThongTinGiaoHang() {
   const khachHangId = layKhachId();
+  emailKhachHang.value = layThongTinKhach()?.email || '';
   diaChiDaLuu.value = [];
   if (khachHangId) {
     try {
@@ -504,6 +512,10 @@ function xuLyAnhLoi(event) {
           <div class="rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
             <p class="font-semibold text-slate-800">{{ don.tenNguoiNhan }} · {{ don.sdtNguoiNhan }}</p>
             <p class="mt-1">{{ dinhDangDiaChi(don.diaChiGiaoHang) || '—' }}</p>
+            <p class="mt-2 text-xs text-slate-500">
+              Phương thức thanh toán:
+              <span class="font-medium text-slate-700">{{ nhanHinhThucThanhToan(don.hinhThucThanhToan) }}</span>
+            </p>
             <div
               v-if="thongTinShipper"
               class="mt-4 flex items-center gap-3 border-t border-slate-200 pt-4"
@@ -634,6 +646,7 @@ function xuLyAnhLoi(event) {
       :initial-data="{
         tenNguoiNhan: don?.tenNguoiNhan,
         sdtNguoiNhan: don?.sdtNguoiNhan,
+        email: emailKhachHang,
         diaChiGiaoHang: don?.diaChiGiaoHang,
       }"
       :saved-addresses="diaChiDaLuu"
