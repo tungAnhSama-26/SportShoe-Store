@@ -2,12 +2,41 @@ import { apiRequest } from "./api-client";
 
 // Lấy id khách hàng từ phiên đăng nhập (giỏ hàng server-side cần đăng nhập).
 export function layKhachId() {
+  const token = localStorage.getItem("customerToken");
+  if (!token) return null;
+
+  let tokenKhachHangId = null;
   try {
-    const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw)?.id ?? null : null;
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const claims = JSON.parse(atob(padded));
+    const hetHan = Number(claims?.exp || 0) * 1000;
+
+    if (claims?.role !== "CUSTOMER" || !claims?.sub || hetHan <= Date.now()) {
+      return null;
+    }
+    tokenKhachHangId = claims.sub;
   } catch {
     return null;
   }
+
+  try {
+    const raw = localStorage.getItem("user");
+    const userId = raw ? JSON.parse(raw)?.id : null;
+    return userId && String(userId) === String(tokenKhachHangId)
+      ? userId
+      : tokenKhachHangId;
+  } catch {
+    // Object user có thể chưa đồng bộ; ID trong JWT là nguồn dự phòng của cùng phiên đăng nhập.
+    return tokenKhachHangId;
+  }
+}
+
+export function coPhienKhachHang() {
+  return Boolean(localStorage.getItem("customerToken") && layKhachId());
 }
 
 const GIO_RONG = { id: null, items: [], tongSoLuong: 0, tongTien: 0 };
