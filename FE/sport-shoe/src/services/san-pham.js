@@ -17,10 +17,10 @@ async function laySanPhamNoiBat(limit = 8) {
 const NHAN_GIOI_TINH = { 1: "Nam", 2: "Nữ", 3: "Unisex" };
 
 // Map đầy đủ thuộc tính cho trang danh sách sản phẩm (để lọc theo nhiều tiêu chí).
-// item = ClientSanPhamResponse { thongTin, hinhAnhSanPham, giaHienThiMin, coGiam, mauSac, kichCo }
+// item = ClientSanPhamResponse { thongTin, hinhAnhSanPham, giaHienThiMin, giaNiemYetHienThi, coGiam, mauSac, kichCo }
 function mapSanPhamDayDu(item) {
   const g = item.thongTin ?? item;
-  const giaNiemYet = Number(g.giaMin ?? g.giaMax ?? 0);
+  const giaNiemYet = Number(item.giaNiemYetHienThi ?? g.giaGocMin ?? g.giaMin ?? g.giaMax ?? 0);
   // Có đợt giảm giá khi giá hiển thị (sau giảm) thấp hơn giá niêm yết.
   const giaHienThi = item.giaHienThiMin != null ? Number(item.giaHienThiMin) : giaNiemYet;
   const coGiam = Boolean(item.coGiam) && giaHienThi < giaNiemYet;

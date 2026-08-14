@@ -31,6 +31,14 @@ const {
   dinhDangNgay,
   dinhDangTien,
 } = useInvoiceDetailContext();
+
+function nhanGiamGia(item) {
+  if (!item?.giaTriGiamDotGiamGia) return "";
+  if (Number(item.loaiGiamDotGiamGia) === 2) {
+    return `-${dinhDangTien(item.giaTriGiamDotGiamGia)}`;
+  }
+  return `-${item.giaTriGiamDotGiamGia}%`;
+}
 </script>
 
 <template>
@@ -206,7 +214,7 @@ const {
                   class="inline-flex items-center gap-1 rounded bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600"
                   :title="item.tenDotGiamGia"
                 >
-                  -{{ item.giaTriGiamDotGiamGia }}%
+                  {{ nhanGiamGia(item) }}
                 </span>
                 <span v-else class="text-slate-400">—</span>
               </td>

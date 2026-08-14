@@ -63,7 +63,8 @@ public final class QuanLyHoaDonResponses {
             BigDecimal thanhTien,
             String hinhAnh,
             String tenDotGiamGia,
-            BigDecimal giaTriGiamDotGiamGia
+            BigDecimal giaTriGiamDotGiamGia,
+            Integer loaiGiamDotGiamGia
     ) {
     }
 

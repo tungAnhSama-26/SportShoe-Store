@@ -100,6 +100,7 @@ public class ClientSanPhamController {
         List<GiayChiTiet> allCts = ids.isEmpty() ? List.of() : giayChiTietRepository.findActiveByGiayIds(ids);
         Map<Integer, BigDecimal> giaSauGiamMap = service.layGiaSauGiam(allCts);
         Map<Integer, BigDecimal> giaHienThiMinMap = new HashMap<>();
+        Map<Integer, BigDecimal> giaNiemYetHienThiMap = new HashMap<>();
         Map<Integer, Boolean> coGiamMap = new HashMap<>();
         Map<Integer, Integer> bienTheReNhatMap = new HashMap<>(); // giayId -> id biến thể giá thấp nhất
         for (GiayChiTiet gct : allCts) {
@@ -108,6 +109,7 @@ public class ClientSanPhamController {
             BigDecimal min = giaHienThiMinMap.get(giayId);
             if (min == null || gia.compareTo(min) < 0) {
                 giaHienThiMinMap.put(giayId, gia);
+                giaNiemYetHienThiMap.put(giayId, gct.getGiaBan());
                 bienTheReNhatMap.put(giayId, gct.getId());
             }
             if (giaSauGiamMap.containsKey(gct.getId())) {
@@ -156,6 +158,7 @@ public class ClientSanPhamController {
                         it,
                         anhMap.get(it.id()),
                         giaHienThiMinMap.get(it.id()),
+                        giaNiemYetHienThiMap.get(it.id()),
                         coGiamMap.getOrDefault(it.id(), false),
                         mauMap.getOrDefault(it.id(), List.of()),
                         sizeMap.getOrDefault(it.id(), List.of()),
