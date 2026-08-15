@@ -4,6 +4,7 @@ import com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService;
 import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.client.thongbao.service.ClientThongBaoService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
 import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.DiaChiHaiCap;
 import com.example.server.entity.Giay;
@@ -58,6 +59,7 @@ class QuanLyHoaDonServiceImplGiaoLaiTest {
     @Mock private GhnShippingService ghnShippingService;
     @Mock private RefundBankAccountResolver refundBankAccountResolver;
     @Mock private HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    @Mock private SanPhamRealtimePublisher sanPhamRealtimePublisher;
     @Mock private EmailService emailService;
     @Mock private QuanLySanPhamService quanLySanPhamService;
     @Mock private DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
@@ -79,6 +81,7 @@ class QuanLyHoaDonServiceImplGiaoLaiTest {
                 ghnShippingService,
                 refundBankAccountResolver,
                 hoaDonRealtimePublisher,
+                sanPhamRealtimePublisher,
                 emailService,
                 quanLySanPhamService,
                 dotGiamGiaSanPhamRepository,

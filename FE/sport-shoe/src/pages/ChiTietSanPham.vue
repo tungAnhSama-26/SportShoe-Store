@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { layChiTietSanPham, layDanhGia, layTatCaSanPham } from '../services/san-pham';
 import { themVaoGio as apiThemGio } from '../services/gio-hang';
@@ -10,6 +10,7 @@ import { getDisplayErrorMessage } from '../utils/error-message';
 import DanhGiaMedia from '../components/DanhGiaMedia.vue';
 import anhMacDinh from '../assets/login-shoe.png';
 import { resolveHinhAnh } from '../utils/resolve-image';
+import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 
 const route = useRoute();
 const router = useRouter();
@@ -28,7 +29,21 @@ const soLuongMua = ref(1);
 // Đánh giá (chỉ hiển thị - khách đánh giá qua trang Đơn hàng sau khi nhận hàng).
 const danhGia = ref({ diemTrungBinh: 0, soLuong: 0, danhSach: [] });
 
-onMounted(taiTatCa);
+let ngatRealtime = null;
+let timerRealtime = null;
+onMounted(() => {
+  taiTatCa();
+  ngatRealtime = ketNoiSanPhamRealtime({
+    onSanPhamThayDoi: () => {
+      if (timerRealtime) clearTimeout(timerRealtime);
+      timerRealtime = setTimeout(() => taiChiTiet(), 180);
+    },
+  });
+});
+onUnmounted(() => {
+  ngatRealtime?.();
+  if (timerRealtime) clearTimeout(timerRealtime);
+});
 watch(() => route.params.id, taiTatCa);
 
 async function taiTatCa() {

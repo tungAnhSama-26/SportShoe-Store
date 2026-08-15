@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, coPhienKhachHang, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
+import { dongBoGiaGio, layDiaChiKhachHang, layThongTinKhach, layKhachId, coPhienKhachHang, datHang, xoaGioHang, kiemTraVoucher, layVoucherKhaDung, taoMaVnPay, trangThaiVnPay, huyVnPay, tinhPhiVanChuyen } from '../services/gio-hang';
 import { layPhuongXaHaiCap, layTinhThanhHaiCap } from '../services/dia-chi';
 import { chuanHoaDiaChi, dinhDangDiaChi, doiChieuDiaChiHaiCap, taoPayloadDiaChi } from '../utils/dia-chi';
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
@@ -139,8 +139,15 @@ async function chonVoucher(v) {
 }
 
 // VNPay (giả lập)
-const qrVnPay = ref(null); // { token, qrData, maGiaoDich }
+const qrVnPay = ref(null); // { token, qrData, maGiaoDich, hetHanLuc }
 let pollTimer = null;
+let countdownTimer = null;
+const soGiayQrConLai = ref(0);
+const thoiGianQrConLai = computed(() => {
+  const phut = Math.floor(soGiayQrConLai.value / 60);
+  const giay = soGiayQrConLai.value % 60;
+  return `${String(phut).padStart(2, '0')}:${String(giay).padStart(2, '0')}`;
+});
 
 // Phí vận chuyển (GHN) - tính lại mỗi khi địa chỉ thay đổi.
 const phiShip = ref(null); // { phiVanChuyen, uocTinh, moTa, nguonTinhPhi, giaCu }
@@ -231,6 +238,9 @@ async function reSyncGio() {
 }
 
 onUnmounted(() => {
+  if (qrVnPay.value?.token) {
+    huyVnPay(qrVnPay.value.token);
+  }
   dungPoll();
   ngatRealtimeSP?.();
   if (timerDongBoSP) clearTimeout(timerDongBoSP);
@@ -239,6 +249,9 @@ onUnmounted(() => {
 });
 
 onBeforeRouteLeave(() => {
+  if (qrVnPay.value?.token) {
+    huyVnPay(qrVnPay.value.token);
+  }
   return true;
 });
 
@@ -413,7 +426,7 @@ async function datHangMoi() {
   // Đồng bộ giỏ mới nhất để biết SP còn bán không (tránh trạng thái cũ -> báo nhầm voucher).
   try { gio.value = await dongBoGiaGio(); } catch { /* lỗi mạng -> dùng trạng thái hiện có */ }
   if (coSanPhamKhongBan()) {
-    return showError('Trong giỏ có sản phẩm đã ngừng hoạt động, vui lòng chọn sản phẩm khác.');
+    return showError('Trong giỏ có sản phẩm đã hết hàng hoặc ngừng hoạt động, vui lòng kiểm tra lại giỏ hàng.');
   }
   // Phiếu đang áp có thể vừa bị admin ngừng -> kiểm tra lại trước khi thanh toán.
   if (!(await kiemTraLaiVoucher())) return;
@@ -466,8 +479,13 @@ const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
 function batDauPoll() {
   dungPoll();
-  // Không còn đếm ngược: mã QR sống đến khi khách thanh toán hoặc tự hủy
-  // (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn nên không cần hết hạn).
+  const capNhatDemNguoc = () => {
+    const hetHan = qrVnPay.value?.hetHanLuc ? new Date(qrVnPay.value.hetHanLuc).getTime() : 0;
+    soGiayQrConLai.value = Math.max(0, Math.ceil((hetHan - Date.now()) / 1000));
+    if (hetHan && soGiayQrConLai.value <= 0) ngatHetHan();
+  };
+  capNhatDemNguoc();
+  countdownTimer = setInterval(capNhatDemNguoc, 1000);
   pollTimer = setInterval(async () => {
     if (!qrVnPay.value) return;
     try {
@@ -478,7 +496,7 @@ function batDauPoll() {
         qrVnPay.value = null;
         await hoanTatDatHang(ma, null, khachHangIdPhienThanhToan.value);
       } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
-        ngatHetHan();
+        await ngatHetHan();
       }
     } catch {
       // bỏ qua, thử lại lần poll sau
@@ -486,10 +504,11 @@ function batDauPoll() {
   }, 2000);
 }
 
-function ngatHetHan() {
+async function ngatHetHan() {
   dungPoll();
   qrVnPay.value = null;
   showError('Phiên thanh toán không còn hiệu lực, vui lòng đặt lại đơn.');
+  await reSyncGio();
 }
 
 function dungPoll() {
@@ -497,11 +516,23 @@ function dungPoll() {
     clearInterval(pollTimer);
     pollTimer = null;
   }
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
 }
 
-function dongVnPay() {
+async function dongVnPay() {
+  const token = qrVnPay.value?.token;
   dungPoll();
   qrVnPay.value = null;
+  try {
+    await huyVnPay(token);
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, 'Không thể hủy phiên thanh toán'));
+  } finally {
+    await reSyncGio();
+  }
 }
 
 function xuLyAnhLoi(event) {
@@ -719,9 +750,16 @@ function xuLyAnhLoi(event) {
               <span class="text-xl font-bold text-primary">{{ dinhDangTienViet(tongThanhToan) }}</span>
             </div>
           </div>
-          <button @click="datHangMoi" :disabled="dangDat" class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0">
+          <button
+            @click="datHangMoi"
+            :disabled="dangDat || coSanPhamKhongBan()"
+            class="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+          >
             {{ dangDat ? 'Đang xử lý...' : (hinhThucThanhToan !== 'COD' ? 'Thanh toán' : 'Đặt hàng') }}
           </button>
+          <p v-if="coSanPhamKhongBan()" class="mt-2 text-center text-xs font-medium text-rose-500">
+            Có sản phẩm đã hết hàng hoặc ngừng hoạt động. Vui lòng quay lại giỏ hàng để kiểm tra.
+          </p>
           <router-link to="/khachhang/gio-hang" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Quay lại giỏ hàng</router-link>
         </aside>
       </div>
@@ -754,8 +792,9 @@ function xuLyAnhLoi(event) {
           <div class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
             <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             Đang chờ thanh toán...
+            <span v-if="soGiayQrConLai > 0" class="font-mono font-bold text-rose-500">({{ thoiGianQrConLai }})</span>
           </div>
-          <p class="mt-2 text-center text-[11px] text-slate-400">Mã QR có hiệu lực đến khi bạn thanh toán hoặc nhấn Hủy.</p>
+          <p class="mt-2 text-center text-[11px] text-slate-400">Mã QR giữ tồn kho trong 5 phút. Vui lòng thanh toán trước khi hết hạn.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>

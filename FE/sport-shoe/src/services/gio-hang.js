@@ -297,6 +297,15 @@ export async function trangThaiVnPay(token) {
   });
 }
 
+export async function huyVnPay(token) {
+  if (!token) return;
+  return apiRequest(`/client/vnpay/huy/${token}`, {
+    method: "POST",
+    authenticated: false,
+    fallbackMessage: "Không thể hủy phiên thanh toán",
+  });
+}
+
 // Tính phí vận chuyển (GHN) cho giỏ hiện tại tới địa chỉ nhận.
 // Trả về { phiVanChuyen, uocTinh, moTa } hoặc null nếu chưa đăng nhập.
 export async function tinhPhiVanChuyen(diaChiGiaoHang) {

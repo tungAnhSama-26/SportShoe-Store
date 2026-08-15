@@ -75,4 +75,28 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
             group by ct.giayChiTiet.giay.id
             """)
     List<Object[]> tongDaBanTheoGiay(@Param("giayIds") Collection<Integer> giayIds);
+
+    /**
+     * Số lượng biến thể đang được đơn online giữ nhưng chưa trừ khỏi tồn kho thực tế.
+     * Hóa đơn QR trạng thái 11 chỉ giữ hàng trong thời hạn 5 phút.
+     */
+    @Query("""
+            select ct.giayChiTiet.id, coalesce(sum(ct.soLuong), 0)
+            from HoaDonChiTiet ct
+            join ct.hoaDon hd
+            where ct.giayChiTiet.id in :giayChiTietIds
+              and hd.kenhBan = 2
+              and hd.daTruKho = false
+              and (
+                    hd.trangThai in (1, 7)
+                    or (hd.trangThai = 11 and hd.ngayTao >= :mocQrConHan)
+              )
+              and (:loaiTruHoaDonId is null or hd.id <> :loaiTruHoaDonId)
+            group by ct.giayChiTiet.id
+            """)
+    List<Object[]> tongSoLuongDangGiuTheoBienThe(
+            @Param("giayChiTietIds") Collection<Integer> giayChiTietIds,
+            @Param("mocQrConHan") Instant mocQrConHan,
+            @Param("loaiTruHoaDonId") Integer loaiTruHoaDonId
+    );
 }

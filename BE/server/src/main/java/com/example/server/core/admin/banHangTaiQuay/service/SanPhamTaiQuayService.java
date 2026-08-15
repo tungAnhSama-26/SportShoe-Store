@@ -24,15 +24,18 @@ public class SanPhamTaiQuayService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
+    private final TonKhoTaiQuayService tonKhoTaiQuayService;
 
     public SanPhamTaiQuayService(
             GiayChiTietRepository giayChiTietRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
-            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository
+            DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
+            TonKhoTaiQuayService tonKhoTaiQuayService
     ) {
         this.giayChiTietRepository = giayChiTietRepository;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
+        this.tonKhoTaiQuayService = tonKhoTaiQuayService;
     }
 
     public List<SanPhamTaiQuayResponse> timSanPham(String keyword) {
@@ -49,7 +52,7 @@ public class SanPhamTaiQuayService {
                         chiTiet.getGiay().getTen(),
                         chiTiet.getSku(),
                         chiTiet.getMaBienThe(),
-                        chiTiet.getSoLuong(),
+                        tonKhoTaiQuayService.soLuongKhaDung(chiTiet),
                         chiTiet.getGiaBan(),
                         layGiaBanThucTe(chiTiet),
                         hinhAnhMap.get(chiTiet.getId()),

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft,
@@ -17,7 +17,8 @@ import {
   Upload,
   Filter,
   Table as TableIcon,
-  Eye
+  Eye,
+  RotateCcw
 } from "lucide-vue-next";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien.js";
 import {
@@ -25,6 +26,7 @@ import {
   phanCa,
   xoaLichLamViec,
   xepCaTuDong,
+  datLaiLichLamViec,
 } from "../../../services/lich-lam.js";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { getDisplayErrorMessage } from "../../../utils/error-message.js";
@@ -32,6 +34,7 @@ import { exportRowsToExcel } from "../../../utils/export-excel.js";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { useAdminSession } from "../../../composable/useAdminSession.js";
 import LichLamViecNhanVien from "./LichLamViecNhanVien.vue";
+import { useRealtime } from "../../../composables/useRealtime.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -39,61 +42,45 @@ const router = useRouter();
 const { adminSession } = useAdminSession();
 const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 
-const MAX_NHAN_VIEN_MOI_CA = 3;
-
 import { layDanhSachCaLam, normalizeShiftName } from "../../../services/ca-lam.js";
 
 const SHIFT_COLORS = [
-  { mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-  { mau: "bg-orange-400", muaNhat: "bg-orange-50 border-orange-200 text-orange-700" },
-  { mau: "bg-violet-400", muaNhat: "bg-violet-50 border-violet-200 text-violet-700" },
-  { mau: "bg-blue-400", muaNhat: "bg-blue-50 border-blue-200 text-blue-700" },
-  { mau: "bg-rose-400", muaNhat: "bg-rose-50 border-rose-200 text-rose-700" },
-  { mau: "bg-amber-400", muaNhat: "bg-amber-50 border-amber-200 text-amber-700" },
-  { mau: "bg-teal-400", muaNhat: "bg-teal-50 border-teal-200 text-teal-700" }
+  { mau: "bg-emerald-500", muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700", nut: "border-emerald-500 text-emerald-600 hover:bg-emerald-50" },
+  { mau: "bg-orange-400", muaNhat: "bg-orange-50 border-orange-200 text-orange-700", nut: "border-orange-400 text-orange-600 hover:bg-orange-50" },
+  { mau: "bg-violet-400", muaNhat: "bg-violet-50 border-violet-200 text-violet-700", nut: "border-violet-400 text-violet-600 hover:bg-violet-50" },
+  { mau: "bg-blue-500", muaNhat: "bg-blue-50 border-blue-200 text-blue-700", nut: "border-blue-500 text-blue-600 hover:bg-blue-50" },
+  { mau: "bg-rose-500", muaNhat: "bg-rose-50 border-rose-200 text-rose-700", nut: "border-rose-500 text-rose-600 hover:bg-rose-50" },
+  { mau: "bg-amber-500", muaNhat: "bg-amber-50 border-amber-200 text-amber-700", nut: "border-amber-500 text-amber-600 hover:bg-amber-50" },
+  { mau: "bg-teal-500", muaNhat: "bg-teal-50 border-teal-200 text-teal-700", nut: "border-teal-500 text-teal-600 hover:bg-teal-50" }
 ];
 
-const DS_CA = ref([
-  {
-    id: "sang",
-    nhan: "Ca sáng",
-    gio: "08:00 - 12:00",
-    mau: "bg-emerald-500",
-    muaNhat: "bg-emerald-50 border-emerald-200 text-emerald-700",
-    gioBatDau: "08:00",
-  },
-  {
-    id: "chieu",
-    nhan: "Ca chiều",
-    gio: "12:00 - 17:00",
-    mau: "bg-orange-400",
-    muaNhat: "bg-orange-50 border-orange-200 text-orange-700",
-    gioBatDau: "12:00",
-  },
-  {
-    id: "toi",
-    nhan: "Ca tối",
-    gio: "17:00 - 22:00",
-    mau: "bg-violet-400",
-    muaNhat: "bg-violet-50 border-violet-200 text-violet-700",
-    gioBatDau: "17:00",
-  },
-]);
+const DS_CA = ref([]);
+const TAT_CA = ref([]);
+
+function mauOnDinhTheoCa(id) {
+  const key = String(id || "ca");
+  let hash = 0;
+  for (let index = 0; index < key.length; index++) {
+    hash = ((hash << 5) - hash + key.charCodeAt(index)) | 0;
+  }
+  return SHIFT_COLORS[Math.abs(hash) % SHIFT_COLORS.length];
+}
 
 async function taiDanhSachCa() {
   try {
     const list = await layDanhSachCaLam();
-    const activeList = list.filter(c => c.trangThai);
-    if (activeList.length > 0) {
-      const mapped = activeList.map((c, idx) => {
-        const colorSet = SHIFT_COLORS[idx % SHIFT_COLORS.length];
+    if (list.length > 0) {
+      const mapped = list.map((c) => {
+        const colorSet = mauOnDinhTheoCa(c.id);
         return {
           id: c.id,
           nhan: normalizeShiftName(c.id, c.ten),
           gio: `${c.gioBatDau} - ${c.gioKetThuc}`,
           mau: colorSet.mau,
           muaNhat: colorSet.muaNhat,
+          nut: colorSet.nut,
           gioBatDau: c.gioBatDau,
+          trangThai: Boolean(c.trangThai),
         };
       });
       mapped.sort((a, b) => {
@@ -101,12 +88,37 @@ async function taiDanhSachCa() {
         const tB = b.gioBatDau || "00:00";
         return tA.localeCompare(tB);
       });
-      DS_CA.value = mapped;
+      TAT_CA.value = mapped;
+      DS_CA.value = mapped.filter((ca) => ca.trangThai);
     } else {
+      TAT_CA.value = [];
       DS_CA.value = [];
     }
   } catch (e) {
     console.error("Không thể tải danh sách ca làm việc", e);
+  }
+}
+
+const { subscribeTopic } = useRealtime();
+let boDemDongBoLich = null;
+
+function lenLichDongBoCaVaLich(delay = 100) {
+  if (!laAdmin.value) return;
+  if (boDemDongBoLich) clearTimeout(boDemDongBoLich);
+  boDemDongBoLich = setTimeout(async () => {
+    boDemDongBoLich = null;
+    await taiDanhSachCa();
+    await taiDuLieuLich();
+  }, delay);
+}
+
+subscribeTopic('/topic/admin/lich-lam-viec', () => {
+  lenLichDongBoCaVaLich();
+});
+
+function dongBoKhiQuayLaiTab() {
+  if (document.visibilityState === 'visible') {
+    lenLichDongBoCaVaLich(0);
   }
 }
 
@@ -179,11 +191,20 @@ const cacNgayTrongThang = computed(() => {
   return weeks;
 });
 
+function laCaDangHoatDong(caId) {
+  if (!caId) return false;
+  return DS_CA.value.some((c) => String(c.id).toLowerCase() === String(caId).toLowerCase());
+}
+
 function nhanVienCoLichTrongNgay(d) {
   const dateStr = formatISODate(d);
   const result = [];
   danhSachLocVaiTro.value.forEach(nv => {
-    (nv.lich[dateStr] || []).forEach((lich) => result.push({ nv, ca: lich.ca, id: lich.id }));
+    (nv.lich[dateStr] || []).forEach((lich) => {
+      if (lich.ca && laCaDangHoatDong(lich.ca)) {
+        result.push({ nv, ca: lich.ca, id: lich.id });
+      }
+    });
   });
   return result;
 }
@@ -223,22 +244,20 @@ function tuanSau() {
   ngayHienTai.value = d;
 }
 
-// Khi thay đổi mode, tải lại dữ liệu vì chu kỳ thời gian thay đổi
 watch(calendarMode, () => {
   if (laAdmin.value) {
     taiDuLieuLich();
   }
 });
 
-// Màu avatar theo vai trò
 const MAU_VAI_TRO = {
   1: "bg-primary",
   2: "bg-emerald-500",
 };
+
 function mauNenNV(vaiTro) {
   return MAU_VAI_TRO[vaiTro] ?? "bg-slate-400";
 }
-
 // Tạo viết tắt từ họ tên
 function taoVietTat(hoTen) {
   const parts = (hoTen ?? "").trim().split(/\s+/);
@@ -279,7 +298,7 @@ async function taiDuLieuLich() {
       const lichNhanVien = lichData.filter(l => String(l.nhanVienId) === String(nv.id));
       lichNhanVien.forEach(l => {
         if (!nv.lich[l.ngay]) nv.lich[l.ngay] = [];
-        nv.lich[l.ngay].push({ id: l.id, ca: l.ca });
+        nv.lich[l.ngay].push({ id: l.id, ca: l.caLamId ?? l.ca });
       });
 
       nv.tongGio = Object.values(nv.lich).flat().reduce(
@@ -326,9 +345,17 @@ async function taiNhanVien() {
 }
 
 onMounted(() => {
+  document.addEventListener('visibilitychange', dongBoKhiQuayLaiTab);
+  window.addEventListener('focus', dongBoKhiQuayLaiTab);
   if (laAdmin.value) {
     taiNhanVien();
   }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', dongBoKhiQuayLaiTab);
+  window.removeEventListener('focus', dongBoKhiQuayLaiTab);
+  if (boDemDongBoLich) clearTimeout(boDemDongBoLich);
 });
 
 watch(() => ngayHienTai.value.getMonth(), async () => {
@@ -409,29 +436,31 @@ const viewMode = ref('bang'); // 'bang' hoặc 'lich'
 
 const danhSachCaLamBang = computed(() => {
   const result = [];
-  const todayStr = formatISODate(new Date());
+  const days = calendarMode.value === 'thang'
+    ? cacNgayTrongThang.value.flat()
+    : (calendarMode.value === 'ngay' ? [ngayHienTai.value] : cacNgayTrongTuan.value);
 
   danhSachLocVaiTro.value.forEach((nv) => {
-    cacNgayTrongTuan.value.forEach((d) => {
+    days.forEach((d) => {
       const ngayStr = formatISODate(d);
       (nv.lich[ngayStr] || []).forEach((lich) => {
-      if (lich.ca && ngayStr <= todayStr) {
-        const caInfo = layThongTinCa(lich.ca);
-        result.push({
-          nv,
-          lichId: lich.id,
-          caId: lich.ca,
-          caInfo,
-          ngay: d,
-          ngayStr,
-        });
-      }
+        if (lich.ca) {
+          const caInfo = layThongTinCa(lich.ca);
+          result.push({
+            nv,
+            lichId: lich.id,
+            caId: lich.ca,
+            caInfo,
+            ngay: d,
+            ngayStr,
+          });
+        }
       });
     });
   });
-  // Sắp xếp theo ngày giảm dần, rồi đến giờ ca làm bắt đầu sớm hơn lên trước
+  // Sắp xếp theo ngày tăng dần, rồi đến giờ ca làm bắt đầu sớm hơn lên trước
   result.sort((a, b) => {
-    if (a.ngayStr !== b.ngayStr) return b.ngayStr.localeCompare(a.ngayStr);
+    if (a.ngayStr !== b.ngayStr) return a.ngayStr.localeCompare(b.ngayStr);
     const gioA = a.caInfo?.gioBatDau || "00:00";
     const gioB = b.caInfo?.gioBatDau || "00:00";
     if (gioA !== gioB) return gioA.localeCompare(gioB);
@@ -512,14 +541,14 @@ function xemChiTietCaTuBang(item) {
 const showModalThemCa = ref(false);
 const chonNhanVienId = ref("");
 const chonNgayVal = ref("");
-const chonCaVal = ref("sang");
+const chonCaVal = ref("");
 
 // Giờ bắt đầu của mỗi ca
 const GIO_BAT_DAU_CA = computed(() => {
   const map = {};
   DS_CA.value.forEach(c => {
-    const startHourStr = c.gio.split("-")[0].trim().split(":")[0];
-    map[c.id] = parseInt(startHourStr, 10) || 8;
+    const [gio, phut] = c.gio.split("-")[0].trim().split(":").map(Number);
+    map[c.id] = Number.isFinite(gio) && Number.isFinite(phut) ? gio * 60 + phut : 8 * 60;
   });
   return map;
 });
@@ -537,11 +566,21 @@ function laCaDaKhoa(ngay, caId) {
 
   // Ngày hôm nay → kiểm tra ca đã bắt đầu chưa
   if (date.getTime() === today.getTime() && caId) {
-    const gioBatDau = GIO_BAT_DAU_CA.value[caId];
-    if (gioBatDau !== undefined && now.getHours() >= gioBatDau) return true;
+    const phutBatDau = GIO_BAT_DAU_CA.value[caId];
+    const phutHienTai = now.getHours() * 60 + now.getMinutes();
+    if (phutBatDau !== undefined && phutHienTai >= phutBatDau) return true;
   }
 
   return false;
+}
+
+function laNgayQuaKhu(ngay) {
+  if (!ngay) return false;
+  const date = new Date(ngay);
+  date.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
 }
 
 // Computed: ca hiện tại trong modal có bị khóa không
@@ -560,31 +599,15 @@ const xemNgayData = ref(null);
 
 function moModalThemCaThang(ngay) {
   const ngayStr = formatISODate(ngay);
-  const defaultCaId = DS_CA.value[0]?.id || 'sang';
+  const defaultCaId = DS_CA.value[0]?.id || '';
   const isPast = laCaDaKhoa(ngay, defaultCaId);
 
   if (isPast) {
-    // Ngày quá khứ: mở modal xem danh sách nhân viên nhóm theo ca
-    const thuIdx = (ngay.getDay() + 6) % 7;
-    const caGroups = DS_CA.value.map(caInfo => {
-      const nhanViens = danhSachLocVaiTro.value.filter((nv) =>
-        (nv.lich[ngayStr] || []).some((lich) => lich.ca === caInfo.id)
-      );
-      return { ...caInfo, nhanViens };
-    }).filter(g => g.nhanViens.length > 0);
-
-    xemNgayData.value = {
-      ngay,
-      ngayStr,
-      thu: NHAN_TUAN[thuIdx],
-      caGroups
-    };
-    showModalXemNgay.value = true;
     return;
   }
 
   chonNgayVal.value = ngayStr;
-  chonCaVal.value = DS_CA.value[0]?.id || "sang";
+  chonCaVal.value = DS_CA.value[0]?.id || "";
   danhSachChonNhanVienIds.value = [];
   currentChiTietCa.value = null;
   isThemCaThang.value = true;
@@ -599,7 +622,7 @@ function moModalThemCa() {
     chonNgayVal.value = currentChiTietCa.value.day.ngayStr;
     chonCaVal.value = currentChiTietCa.value.ca.id;
   } else {
-    const defaultCaId = DS_CA.value[0]?.id || 'sang';
+    const defaultCaId = DS_CA.value[0]?.id || '';
     const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, defaultCaId)) || cacNgayTrongTuan.value[0];
     chonNgayVal.value = formatISODate(firstAvailableDay);
     chonCaVal.value = defaultCaId;
@@ -649,22 +672,9 @@ async function luuCa() {
     const { day, ca } = currentChiTietCa.value;
     ngayStr = day.ngayStr;
     caId = ca.id;
-    if (ca.nhanViens.length + danhSachChonNhanVienIds.value.length > MAX_NHAN_VIEN_MOI_CA) {
-      showError(`Ca này chỉ còn nhận thêm tối đa ${MAX_NHAN_VIEN_MOI_CA - ca.nhanViens.length} nhân viên.`);
-      return;
-    }
   } else {
     ngayStr = chonNgayVal.value;
     caId = chonCaVal.value;
-    
-    // Đếm số người đã có trong ca này
-    const dem = danhSachLocVaiTro.value.filter((nv) =>
-      (nv.lich[ngayStr] || []).some((lich) => lich.ca === caId)
-    ).length;
-    if (dem + danhSachChonNhanVienIds.value.length > MAX_NHAN_VIEN_MOI_CA) {
-      showError(`Ca này chỉ còn nhận thêm tối đa ${MAX_NHAN_VIEN_MOI_CA - dem} nhân viên.`);
-      return;
-    }
   }
 
   dangTai.value = true;
@@ -769,20 +779,68 @@ async function xoaCaTuBang(nv, ngayStr, caInfo) {
 }
 
 async function xepCaDong() {
-  const tuNgay = formatISODate(cacNgayTrongTuan.value[0]);
-  const denNgay = formatISODate(cacNgayTrongTuan.value[6]);
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const batDau = cacNgayTrongTuan.value.find((ngay) => ngay >= tomorrow);
+  if (!batDau) {
+    showError("Tuần đang xem không còn ngày tương lai để xếp ca.");
+    return;
+  }
+  const ketThuc = cacNgayTrongTuan.value[6];
+  const tuNgay = formatISODate(batDau);
+  const denNgay = formatISODate(ketThuc);
   const xacNhan = await showConfirm(
-    `Bạn có chắc muốn tự động xếp ca cho tuần từ ngày ${formatNgay(cacNgayTrongTuan.value[0])} đến ${formatNgay(cacNgayTrongTuan.value[6])}? Các ca làm hiện tại trong tuần này sẽ bị ghi đè.`,
+    `Tự động tạo một nhân viên khung cho mỗi ca từ ${formatNgay(batDau)} đến ${formatNgay(ketThuc)}? Chỉ lịch tương lai trong phạm vi này bị ghi đè.`,
     "Xác nhận xếp ca tự động",
   );
   if (!xacNhan) return;
   dangTai.value = true;
   try {
-    await xepCaTuDong(tuNgay, denNgay);
-    showSuccess("Xếp ca tự động thành công!");
+    const result = await xepCaTuDong(tuNgay, denNgay);
+    const canhBao = result?.soCaChuaCoNhanVien > 0
+      ? ` Còn ${result.soCaChuaCoNhanVien} ca chưa có nhân viên do thiếu người.`
+      : "";
+    showSuccess(`Đã tạo ${result?.soLichDaTao ?? 0} lịch khung, mỗi ca một nhân viên.${canhBao}`);
     await taiDuLieuLich();
   } catch (e) {
     showError(getDisplayErrorMessage(e, "Không thể xếp ca tự động"));
+  } finally {
+    dangTai.value = false;
+  }
+}
+
+const coNgayTuongLaiTrongTuan = computed(() => {
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return cacNgayTrongTuan.value.some((ngay) => ngay >= tomorrow);
+});
+
+async function datLaiLichTuongLai() {
+  if (!coNgayTuongLaiTrongTuan.value) {
+    showError("Tuần đang xem không còn ngày tương lai để đặt lại.");
+    return;
+  }
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const batDau = cacNgayTrongTuan.value.find((ngay) => ngay >= tomorrow);
+  const ketThuc = cacNgayTrongTuan.value[6];
+  const tuNgay = formatISODate(batDau);
+  const denNgay = formatISODate(ketThuc);
+  const xacNhan = await showConfirm(
+    `Đặt lại lịch từ ${formatNgay(batDau)} đến ${formatNgay(ketThuc)}? Lịch hôm nay và quá khứ được giữ nguyên.`,
+    "Xác nhận đặt lại lịch làm việc",
+  );
+  if (!xacNhan) return;
+  dangTai.value = true;
+  try {
+    const result = await datLaiLichLamViec(tuNgay, denNgay);
+    showSuccess(`Đã đặt lại ${result?.soLichDaXoa ?? 0} lịch làm việc trong tương lai.`);
+    await taiDuLieuLich();
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, "Không thể đặt lại lịch làm việc"));
   } finally {
     dangTai.value = false;
   }
@@ -839,7 +897,7 @@ function xuatExcel() {
 // ───────── Helpers ─────────
 function layThongTinCa(id) {
   if (!id) return null;
-  const found = DS_CA.value.find((c) => c.id.toLowerCase() === id.toLowerCase());
+  const found = TAT_CA.value.find((c) => c.id.toLowerCase() === id.toLowerCase());
   if (found) {
     return {
       ...found,
@@ -929,9 +987,13 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
         <!-- Actions -->
         <div class="flex items-center gap-2">
           <!-- Xếp ca tự động (Duy trì chức năng cũ) -->
-          <button @click="xepCaDong" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-medium transition shadow-sm">
+          <button @click="xepCaDong" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Tạo một lịch khung cho mỗi ca trong tương lai' : 'Không còn ngày tương lai để xếp ca'" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-medium transition shadow-sm disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-slate-100">
             <Shuffle class="w-4 h-4" />
             <span>Xếp ca tự động</span>
+          </button>
+          <button @click="datLaiLichTuongLai" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Xóa lịch từ ngày mai đến cuối tuần đang xem' : 'Không còn ngày tương lai để đặt lại'" class="h-9 px-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-[13px] font-medium transition disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-white">
+            <RotateCcw class="w-4 h-4" />
+            <span>Đặt lại lịch</span>
           </button>
           <!-- Tải template button (red) -->
           <button @click="xuatExcel" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
@@ -1027,10 +1089,10 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                 <td class="py-2.5 px-3 text-[12px] text-slate-600 text-center">{{ formatNgay(item.ngay) }}/{{ item.ngay.getFullYear() }}</td>
                 <td class="py-2.5 px-3 text-center whitespace-nowrap">
                   <div class="flex items-center justify-center gap-2">
-                    <button @click="xemChiTietCaTuBang(item)" class="admin-table-action text-slate-600 hover:text-slate-900" title="Xem chi tiết">
+                    <button @click="xemChiTietCaTuBang(item)" :disabled="laCaDaKhoa(item.ngay, item.caId)" class="admin-table-action text-slate-600 hover:text-slate-900 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-slate-600" :title="laCaDaKhoa(item.ngay, item.caId) ? 'Lịch đã khóa' : 'Xem chi tiết'">
                       <Eye :size="14" />
                     </button>
-                    <button @click="xoaCaTuBang(item.nv, item.ngayStr, item.caInfo)" class="admin-table-action text-rose-500 hover:text-rose-700" title="Xóa ca">
+                    <button @click="xoaCaTuBang(item.nv, item.ngayStr, item.caInfo)" :disabled="laCaDaKhoa(item.ngay, item.caId)" class="admin-table-action text-rose-500 hover:text-rose-700 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-rose-500" :title="laCaDaKhoa(item.ngay, item.caId) ? 'Lịch đã khóa, chỉ được xem' : 'Xóa ca'">
                       <Trash2 :size="14" />
                     </button>
                   </div>
@@ -1105,7 +1167,10 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                 <div v-for="(tuan, tuanIdx) in cacNgayTrongThang" :key="'w-'+tuanIdx" class="grid grid-cols-7 border-b border-slate-200">
                   <div v-for="(ngay, ngayIdx) in tuan" :key="'d-'+ngayIdx" 
                        class="min-h-[110px] p-2 border-r border-slate-200 relative group transition cursor-pointer flex flex-col"
-                       :class="ngay.getMonth() !== ngayHienTai.getMonth() ? 'bg-slate-50/50' : 'bg-white hover:bg-slate-50/70'"
+                       :class="[
+                         ngay.getMonth() !== ngayHienTai.getMonth() ? 'bg-slate-50/50' : 'bg-white hover:bg-slate-50/70',
+                         laNgayQuaKhu(ngay) ? 'schedule-past-cell cursor-not-allowed' : ''
+                       ]"
                        @click="moModalThemCaThang(ngay)">
                     
                     <!-- Header ô: Ngày -->
@@ -1124,11 +1189,8 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                       <div v-if="nhanVienCoLichTrongNgay(ngay).length > 0" class="flex flex-wrap gap-1 mb-2 justify-center">
                          <div v-for="(item, idx) in nhanVienCoLichTrongNgay(ngay).slice(0, 4)" :key="idx" 
                               class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-1 ring-white"
-                              :class="[
-                                item.ca === 'sang' ? 'bg-emerald-500' :
-                                item.ca === 'chieu' ? 'bg-orange-400' : 'bg-violet-500'
-                              ]"
-                              :title="`${item.nv.ten} - Ca ${item.ca}`">
+                              :class="layThongTinCa(item.ca)?.mau || 'bg-slate-400'"
+                              :title="`${item.nv.ten} - ${layThongTinCa(item.ca)?.nhan || item.ca}`">
                             {{ item.nv.vieTat }}
                          </div>
                          <div v-if="nhanVienCoLichTrongNgay(ngay).length > 4" class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm ring-1 ring-white">
@@ -1137,7 +1199,7 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                       </div>
                       <!-- Nút + -->
                       <div class="w-7 h-7 rounded-full flex items-center justify-center shadow-md transition hover:scale-110"
-                           :class="laCaDaKhoa(ngay, 'sang') ? 'bg-slate-400' : 'bg-rose-500 hover:bg-rose-600'">
+                           :class="laCaDaKhoa(ngay, DS_CA[0]?.id) ? 'bg-slate-400' : 'bg-rose-500 hover:bg-rose-600'">
                         <Plus class="w-4 h-4 text-white" />
                       </div>
                     </div>
@@ -1174,7 +1236,10 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                     <!-- Các cột ngày -->
                     <td v-for="day in lichBoard" :key="day.ngayStr + '-' + caInfo.id" 
                         class="border-b border-r border-slate-200 p-1.5 align-top min-w-[120px] transition group relative bg-white"
-                        :class="calendarMode === 'ngay' && day.ngayStr !== formatISODate(ngayHienTai) ? 'opacity-20 cursor-not-allowed pointer-events-none' : 'hover:bg-slate-50'">
+                        :class="[
+                          calendarMode === 'ngay' && day.ngayStr !== formatISODate(ngayHienTai) ? 'opacity-20 cursor-not-allowed pointer-events-none' : 'hover:bg-slate-50',
+                          laNgayQuaKhu(day.ngay) ? 'schedule-past-cell pointer-events-none cursor-not-allowed' : ''
+                        ]">
                       
                       <div v-if="calendarMode === 'tuan' || day.ngayStr === formatISODate(ngayHienTai)" class="flex flex-col gap-1.5 min-h-[50px]">
                         
@@ -1183,13 +1248,9 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                           <div style="font-size: 13px;" class="font-bold">{{ caInfo.nhan }}</div>
                           <div style="font-size: 10px;" class="opacity-70 mt-0.5">{{ caInfo.gio }}</div>
                           <div style="font-size: 12px;" class="mt-1 font-medium text-slate-700">
-                            {{ day.cas.find(c => c.id === caInfo.id)?.nhanViens.length || 0 }}/{{ MAX_NHAN_VIEN_MOI_CA }} Nhân viên
+                            {{ day.cas.find(c => c.id === caInfo.id)?.nhanViens.length || 0 }} Nhân viên
                           </div>
-                          <button @click="xemChiTietCa(day, day.cas.find(c => c.id === caInfo.id))" style="font-size: 12px;" class="mt-2 px-3 py-1 rounded-full border bg-white font-medium transition hover:shadow-sm" :class="[
-                              caInfo.id === 'sang' ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50' : 
-                              caInfo.id === 'chieu' ? 'border-orange-400 text-orange-600 hover:bg-orange-50' : 
-                              'border-violet-400 text-violet-600 hover:bg-violet-50'
-                            ]">
+                          <button @click="xemChiTietCa(day, day.cas.find(c => c.id === caInfo.id))" style="font-size: 12px;" class="mt-2 px-3 py-1 rounded-full border bg-white font-medium transition hover:shadow-sm" :class="caInfo.nut">
                             Xem thêm
                           </button>
                         </div>
@@ -1318,6 +1379,7 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
               <input 
                 type="date" 
                 v-model="chonNgayVal" 
+                :min="formatISODate(new Date())"
                 class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-slate-400 transition"
               />
             </div>
@@ -1367,13 +1429,9 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
               Không có nhân viên nào được phân ca trong ngày này.
             </div>
 
-            <div v-for="group in xemNgayData.caGroups" :key="group.id" class="rounded-xl border overflow-hidden" :class="[
-              group.id === 'sang' ? 'border-emerald-200' : group.id === 'chieu' ? 'border-orange-200' : 'border-violet-200'
-            ]">
+            <div v-for="group in xemNgayData.caGroups" :key="group.id" class="rounded-xl border overflow-hidden" :class="group.muaNhat">
               <!-- Ca Header -->
-              <div class="flex items-center gap-2 px-4 py-2.5" :class="[
-                group.id === 'sang' ? 'bg-emerald-50 text-emerald-700' : group.id === 'chieu' ? 'bg-orange-50 text-orange-700' : 'bg-violet-50 text-violet-700'
-              ]">
+              <div class="flex items-center gap-2 px-4 py-2.5" :class="group.muaNhat">
                 <div class="w-2.5 h-2.5 rounded-full" :class="group.mau"></div>
                 <span class="text-sm font-bold">{{ group.nhan }}</span>
                 <span class="text-xs opacity-70">{{ group.gio }}</span>
@@ -1409,3 +1467,17 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.schedule-past-cell {
+  opacity: 0.52;
+  background-color: rgb(248 250 252);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(148, 163, 184, 0.12) 8px,
+    rgba(148, 163, 184, 0.12) 10px
+  );
+}
+</style>

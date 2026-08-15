@@ -2,6 +2,7 @@ package com.example.server.core.admin.nhanVien.controller;
 
 import com.example.server.core.admin.nhanVien.dto.request.PhanCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.LichLamViecResponse;
+import com.example.server.core.admin.nhanVien.dto.responsse.CapNhatLichLamViecResponse;
 import com.example.server.core.admin.nhanVien.service.LichLamViecService;
 import com.example.server.infrastructure.api.ApiResponse;
 import com.example.server.infrastructure.security.AdminPrincipal;
@@ -57,13 +58,23 @@ public class LichLamViecController {
     }
 
     @PostMapping("/auto-assign")
-    public ResponseEntity<ApiResponse<Void>> xepCaTuDong(
+    public ResponseEntity<ApiResponse<CapNhatLichLamViecResponse>> xepCaTuDong(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay
     ) {
         assertIsAdmin();
-        lichLamViecService.xepCaTuDong(tuNgay, denNgay);
-        return ResponseEntity.ok(ApiResponse.success("Xếp ca tự động thành công", null));
+        CapNhatLichLamViecResponse result = lichLamViecService.xepCaTuDong(tuNgay, denNgay);
+        return ResponseEntity.ok(ApiResponse.success("Xếp ca tự động thành công", result));
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<ApiResponse<CapNhatLichLamViecResponse>> datLaiLich(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay
+    ) {
+        assertIsAdmin();
+        CapNhatLichLamViecResponse result = lichLamViecService.datLaiLich(tuNgay, denNgay);
+        return ResponseEntity.ok(ApiResponse.success("Đặt lại lịch làm việc thành công", result));
     }
 
     private void assertIsAdmin() {

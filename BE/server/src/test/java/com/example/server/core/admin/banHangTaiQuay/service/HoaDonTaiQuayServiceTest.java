@@ -53,7 +53,7 @@ class HoaDonTaiQuayServiceTest {
         bienThe.setSoLuong(20);
         bienThe.setKichHoat(1);
 
-        when(giayChiTietRepository.findById(15)).thenReturn(Optional.of(bienThe));
+        when(giayChiTietRepository.findByIdForUpdate(15)).thenReturn(Optional.of(bienThe));
         when(productUseCase.layGiaBanThucTe(bienThe)).thenReturn(new BigDecimal("1000000"));
 
         TaoHoaDonChoItemRequest request = new TaoHoaDonChoItemRequest(

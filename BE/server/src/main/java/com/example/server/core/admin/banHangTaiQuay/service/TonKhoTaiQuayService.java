@@ -1,5 +1,6 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
+import com.example.server.core.inventory.TonKhoKhaDungService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.infrastructure.exception.BusinessException;
 import java.time.Instant;
@@ -7,6 +8,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TonKhoTaiQuayService {
+
+    private final TonKhoKhaDungService tonKhoKhaDungService;
+
+    public TonKhoTaiQuayService(TonKhoKhaDungService tonKhoKhaDungService) {
+        this.tonKhoKhaDungService = tonKhoKhaDungService;
+    }
 
     public void validateAvailable(GiayChiTiet giayChiTiet, Integer soLuong) {
         validateAvailable(giayChiTiet, soLuong, false);
@@ -21,9 +28,17 @@ public class TonKhoTaiQuayService {
             }
         }
 
-        if (giayChiTiet.getSoLuong() == null || giayChiTiet.getSoLuong() < soLuong) {
-            throw new BusinessException("Số lượng tồn kho không đủ cho sản phẩm " + giayChiTiet.getGiay().getTen());
+        int khaDung = tonKhoKhaDungService.laySoLuongKhaDung(java.util.List.of(giayChiTiet))
+                .getOrDefault(giayChiTiet.getId(), 0);
+        if (khaDung < soLuong) {
+            throw new BusinessException("Số lượng có thể bán không đủ cho sản phẩm "
+                    + giayChiTiet.getGiay().getTen() + " (còn " + khaDung + ")");
         }
+    }
+
+    public int soLuongKhaDung(GiayChiTiet giayChiTiet) {
+        return tonKhoKhaDungService.laySoLuongKhaDung(java.util.List.of(giayChiTiet))
+                .getOrDefault(giayChiTiet.getId(), 0);
     }
 
     public void deductStock(GiayChiTiet giayChiTiet, Integer soLuong) {

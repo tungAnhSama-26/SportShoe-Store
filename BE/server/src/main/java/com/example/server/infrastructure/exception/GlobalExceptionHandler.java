@@ -43,6 +43,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(exception.getErrorCode(), exception.getMessage()));
     }
 
+    @ExceptionHandler(InventoryConflictException.class)
+    public ResponseEntity<ErrorResponse> handleInventoryConflict(InventoryConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(
+                        ErrorCode.BUSINESS_ERROR,
+                        exception.getMessage(),
+                        exception.getDetails()
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception) {
         Map<String, String> errors = exception.getBindingResult()
