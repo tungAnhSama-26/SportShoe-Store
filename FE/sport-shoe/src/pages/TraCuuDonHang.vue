@@ -65,6 +65,28 @@ function formatNgayBuoc(iso) {
   }).format(new Date(iso));
 }
 
+const lyDoHuyDon = computed(() => {
+  if (!don.value || !Array.isArray(don.value.lichSuTrangThai)) return '';
+  const itemHuy = don.value.lichSuTrangThai.find((item) => {
+    const tt = chuanHoaTrangThai(item?.trangThai);
+    return (
+      tt === 'huy' ||
+      tt === 'da huy' ||
+      tt === 'chap nhan yeu cau huy' ||
+      tt === 'yeu cau huy' ||
+      tt === 'hoan tien' ||
+      tt === 'giao hang that bai'
+    ) && item?.ghiChu && item.ghiChu.trim() !== '';
+  });
+  if (itemHuy?.ghiChu) return itemHuy.ghiChu.trim();
+  if ([6, 7, 8, 10].includes(don.value.trangThai)) {
+    const firstWithNote = don.value.lichSuTrangThai.find((item) => item?.ghiChu && item.ghiChu.trim() !== '');
+    if (firstWithNote?.ghiChu) return firstWithNote.ghiChu.trim();
+    if (don.value.ghiChu && don.value.ghiChu.trim() !== '') return don.value.ghiChu.trim();
+  }
+  return '';
+});
+
 function nhanHinhThuc(ht) {
   return ht === 'CHUYEN_KHOAN' ? 'Chuyển khoản (VietQR/VNPAY)' : 'Thanh toán khi nhận hàng (COD)';
 }
@@ -105,6 +127,7 @@ async function lamMoiNgam() {
 
 async function traCuu(maInput) {
   const ma = String(maInput ?? maTimKiem.value).trim();
+
   if (!ma) {
     loi.value = 'Vui lòng nhập mã hóa đơn.';
     return;
@@ -198,13 +221,17 @@ onUnmounted(dungPoll);
           <!-- Trạng thái đặc biệt (đã hủy / cần hoàn tiền...) -->
           <div
             v-if="!cauHinhTrangThai.hienStepper"
-            class="mt-5 flex items-center gap-3 rounded-2xl px-5 py-4"
+            class="mt-5 flex items-start gap-3.5 rounded-2xl px-5 py-4"
             :class="cauHinhTrangThai.lopMau"
           >
-            <svg class="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
-            <div>
-              <p class="font-bold">{{ cauHinhTrangThai.tieuDe || don.trangThaiText }}</p>
-              <p v-if="cauHinhTrangThai.moTa" class="text-sm opacity-75">{{ cauHinhTrangThai.moTa }}</p>
+            <svg class="h-6 w-6 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+            <div class="space-y-1">
+              <p class="font-bold text-base">{{ cauHinhTrangThai.tieuDe || don.trangThaiText }}</p>
+              <p v-if="cauHinhTrangThai.moTa" class="text-sm opacity-90">{{ cauHinhTrangThai.moTa }}</p>
+              <div v-if="lyDoHuyDon" class="mt-2.5 pt-2 border-t border-rose-200/60 dark:border-rose-800/60 text-sm">
+                <span class="font-semibold text-rose-950 dark:text-rose-100">Lý do hủy: </span>
+                <span class="font-medium text-rose-800 dark:text-rose-200">{{ lyDoHuyDon }}</span>
+              </div>
             </div>
           </div>
 

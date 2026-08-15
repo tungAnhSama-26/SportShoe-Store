@@ -240,6 +240,32 @@ function formatNgay(iso) {
   }
 }
 
+const lyDoHuyDon = computed(() => {
+  if (!don.value || !Array.isArray(don.value.lichSuTrangThai)) return '';
+  // Tìm sự kiện liên quan đến hủy trong lịch sử có ghi chú
+  const itemHuy = don.value.lichSuTrangThai.find((item) => {
+    const tt = chuanHoaTrangThai(item?.trangThai);
+    return (
+      tt === 'huy' ||
+      tt === 'da huy' ||
+      tt === 'chap nhan yeu cau huy' ||
+      tt === 'yeu cau huy' ||
+      tt === 'hoan tien' ||
+      tt === 'giao hang that bai'
+    ) && item?.ghiChu && item.ghiChu.trim() !== '';
+  });
+  if (itemHuy?.ghiChu) {
+    return itemHuy.ghiChu.trim();
+  }
+  // Nếu đơn ở trạng thái đã hủy hoặc đặc biệt, lấy ghi chú gần nhất
+  if ([6, 7, 8, 10].includes(don.value.trangThai)) {
+    const firstWithNote = don.value.lichSuTrangThai.find((item) => item?.ghiChu && item.ghiChu.trim() !== '');
+    if (firstWithNote?.ghiChu) return firstWithNote.ghiChu.trim();
+    if (don.value.ghiChu && don.value.ghiChu.trim() !== '') return don.value.ghiChu.trim();
+  }
+  return '';
+});
+
 function nhanHinhThucThanhToan(hinhThuc) {
   return hinhThuc === 'CHUYEN_KHOAN'
     ? 'Chuyển khoản (VietQR/VNPAY)'
@@ -418,13 +444,17 @@ function xuLyAnhLoi(event) {
 
           <div
             v-if="!cauHinhTrangThai.hienStepper"
-            class="mt-5 flex items-center gap-3 rounded-2xl px-5 py-4"
+            class="mt-5 flex items-start gap-3.5 rounded-2xl px-5 py-4"
             :class="cauHinhTrangThai.lopMau"
           >
-            <svg class="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
-            <div>
-              <p class="font-bold">{{ cauHinhTrangThai.tieuDe }}</p>
-              <p class="text-sm opacity-75">{{ cauHinhTrangThai.moTa }}</p>
+            <svg class="h-6 w-6 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+            <div class="space-y-1">
+              <p class="font-bold text-base">{{ cauHinhTrangThai.tieuDe }}</p>
+              <p class="text-sm opacity-90">{{ cauHinhTrangThai.moTa }}</p>
+              <div v-if="lyDoHuyDon" class="mt-2.5 pt-2 border-t border-rose-200/60 dark:border-rose-800/60 text-sm">
+                <span class="font-semibold text-rose-950 dark:text-rose-100">Lý do hủy: </span>
+                <span class="font-medium text-rose-800 dark:text-rose-200">{{ lyDoHuyDon }}</span>
+              </div>
             </div>
           </div>
 
