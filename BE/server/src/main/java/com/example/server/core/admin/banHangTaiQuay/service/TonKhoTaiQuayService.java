@@ -28,17 +28,15 @@ public class TonKhoTaiQuayService {
             }
         }
 
-        int khaDung = tonKhoKhaDungService.laySoLuongKhaDung(java.util.List.of(giayChiTiet))
-                .getOrDefault(giayChiTiet.getId(), 0);
-        if (khaDung < soLuong) {
-            throw new BusinessException("Số lượng có thể bán không đủ cho sản phẩm "
-                    + giayChiTiet.getGiay().getTen() + " (còn " + khaDung + ")");
+        int tonThucTe = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
+        if (tonThucTe < soLuong) {
+            throw new BusinessException("Số lượng tồn kho không đủ cho sản phẩm "
+                    + giayChiTiet.getGiay().getTen() + " (còn " + tonThucTe + ")");
         }
     }
 
     public int soLuongKhaDung(GiayChiTiet giayChiTiet) {
-        return tonKhoKhaDungService.laySoLuongKhaDung(java.util.List.of(giayChiTiet))
-                .getOrDefault(giayChiTiet.getId(), 0);
+        return giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
     }
 
     public void deductStock(GiayChiTiet giayChiTiet, Integer soLuong) {
