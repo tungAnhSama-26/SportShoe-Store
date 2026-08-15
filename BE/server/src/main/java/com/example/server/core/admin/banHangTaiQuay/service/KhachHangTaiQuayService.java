@@ -32,15 +32,15 @@ public class KhachHangTaiQuayService {
                     DiaChiKhachHang diaChiMacDinh = diaChiKhachHangRepository
                             .findFirstByKhachHangIdAndLaMacDinhTrue(khachHang.getId())
                             .orElseGet(() -> diaChiKhachHangRepository.findByKhachHangIdOrderByLaMacDinhDesc(khachHang.getId()).stream().findFirst().orElse(null));
-                    String diaChiMacDinhText = diaChiMacDinh != null
-                            ? DiaChiHaiCapMapper.format(diaChiMacDinh.getDiaChi())
+                    com.example.server.entity.DiaChiHaiCap diaChiMacDinhObj = diaChiMacDinh != null
+                            ? diaChiMacDinh.getDiaChi()
                             : null;
                     return new KhachHangTaiQuayResponse(
                             khachHang.getId(),
                             khachHang.getHoTen(),
                             khachHang.getSdt(),
                             khachHang.getEmail(),
-                            diaChiMacDinhText
+                            diaChiMacDinhObj
                     );
                 })
                 .toList();

@@ -52,7 +52,7 @@ let toastTimer = null;
 
 const dsVaiTro = [
   { label: "Tất cả vai trò", value: "" },
-  { label: "Admin", value: "1" },
+  { label: "Quản trị viên", value: "1" },
   { label: "Nhân viên", value: "2" },
 ];
 
@@ -138,7 +138,7 @@ function chuanHoaChuoi(value) {
 function hienThiVaiTro(nv) {
   const normalizedRole = chuanHoaChuoi(nv?.tenVaiTro);
   if (normalizedRole.includes("admin") || normalizedRole.includes("quan tri")) {
-    return "Admin";
+    return "Quản trị viên";
   }
   if (
     normalizedRole.includes("ban hang") ||
@@ -518,8 +518,8 @@ onUnmounted(() => {
                     :disabled="nv.tenVaiTro === 'Admin' || nv.id === adminSession.id"
                     :disabled-title="
                       nv.id === adminSession.id
-                        ? 'Bạn không thể tự khóa tài khoản của chính mình'
-                        : 'Không thể đổi trạng thái Admin'
+                        ? 'Không thể đổi trạng thái chính mình'
+                        : 'Không thể đổi trạng thái Quản trị viên'
                     "
                     :action-label="nv.trangThai !== 0 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
                     :intent="nv.trangThai !== 0 ? 'deactivate' : 'activate'"

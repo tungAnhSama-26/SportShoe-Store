@@ -643,6 +643,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 giaoCa.getNhanVienTrongCa().getId(),
                 giaoCa.getNhanVienTrongCa().getHoTen(),
                 giaoCa.getNhanVienTrongCa().getMa(),
+                giaoCa.getNhanVienTrongCa().getHinhAnh(),
+                giaoCa.getNhanVienTrongCa().getVaiTro(),
                 giaoCa.getNhanVienNhan() != null ? giaoCa.getNhanVienNhan().getId() : null,
                 giaoCa.getNhanVienNhan() != null ? giaoCa.getNhanVienNhan().getHoTen() : null,
                 giaoCa.getNhanVienNhan() != null ? giaoCa.getNhanVienNhan().getMa() : null,
