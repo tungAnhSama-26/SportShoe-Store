@@ -2,7 +2,9 @@ package com.example.server.core.admin.nhanVien.service.impl;
 
 import com.example.server.core.admin.nhanVien.dto.request.PhanCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.LichLamViecResponse;
+import com.example.server.core.admin.nhanVien.dto.responsse.CapNhatLichLamViecResponse;
 import com.example.server.core.admin.nhanVien.service.LichLamViecService;
+import com.example.server.core.realtime.lichlamviec.LichLamViecRealtimePublisher;
 import com.example.server.entity.CaLam;
 import com.example.server.entity.LichLamViec;
 import com.example.server.entity.NhanVien;
@@ -16,30 +18,32 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class LichLamViecServiceImpl implements LichLamViecService {
 
-    private static final int MAX_NHAN_VIEN_MOI_CA = 3;
+    private static final ZoneId MUI_GIO = ZoneId.of("Asia/Bangkok");
 
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanVienRepository nhanVienRepository;
     private final CaLamRepository caLamRepository;
+    private final LichLamViecRealtimePublisher realtimePublisher;
 
     public LichLamViecServiceImpl(
             LichLamViecRepository lichLamViecRepository,
             NhanVienRepository nhanVienRepository,
-            CaLamRepository caLamRepository
+            CaLamRepository caLamRepository,
+            LichLamViecRealtimePublisher realtimePublisher
     ) {
         this.lichLamViecRepository = lichLamViecRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.caLamRepository = caLamRepository;
+        this.realtimePublisher = realtimePublisher;
     }
 
     @Override
@@ -65,16 +69,11 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
                 .orElseThrow(() -> new BusinessException("Ca làm việc không tồn tại hoặc đã ngừng hoạt động"));
 
+        kiemTraCoTheChinhSua(request.ngay(), caLam);
+
         if (lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
                 request.nhanVienId(), request.ngay(), caLam.getId())) {
             throw new BusinessException("Nhân viên đã được phân vào ca này trong ngày đã chọn");
-        }
-
-        long soNhanVien = lichLamViecRepository.countByNgayAndCaLamId(request.ngay(), caLam.getId());
-        if (soNhanVien >= MAX_NHAN_VIEN_MOI_CA) {
-            String ngay = request.ngay().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            throw new BusinessException("Ca " + caLam.getTen() + " ngày " + ngay
-                    + " đã đạt số lượng tối đa " + MAX_NHAN_VIEN_MOI_CA + " người");
         }
 
         kiemTraKhongChongGio(
@@ -86,7 +85,9 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         lich.setNhanVien(nhanVien);
         lich.setNgay(request.ngay());
         lich.setCaLam(caLam);
-        return toResponse(lichLamViecRepository.save(lich));
+        LichLamViecResponse response = toResponse(lichLamViecRepository.save(lich));
+        realtimePublisher.phatSauCommit("PHAN_CA");
+        return response;
     }
 
     @Override
@@ -94,15 +95,19 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     public void xoaLich(UUID id) {
         LichLamViec lich = lichLamViecRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lịch làm việc không tồn tại"));
+        kiemTraCoTheChinhSua(lich.getNgay(), lich.getCaLam());
         lichLamViecRepository.delete(lich);
+        realtimePublisher.phatSauCommit("XOA_LICH");
     }
 
     @Override
     @Transactional
-    public void xepCaTuDong(LocalDate tuNgay, LocalDate denNgay) {
+    public CapNhatLichLamViecResponse xepCaTuDong(LocalDate tuNgay, LocalDate denNgay) {
         if (tuNgay == null || denNgay == null || tuNgay.isAfter(denNgay)) {
             throw new BusinessException("Khoảng thời gian không hợp lệ");
         }
+
+        LocalDate tuNgayThucTe = ngayMaiHoacSau(tuNgay, denNgay);
 
         List<CaLam> cacCa = caLamRepository.findAll().stream()
                 .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
@@ -112,30 +117,52 @@ public class LichLamViecServiceImpl implements LichLamViecService {
             throw new BusinessException("Chưa có ca làm việc đang hoạt động");
         }
 
-        lichLamViecRepository.deleteByNgayBetween(tuNgay, denNgay);
+        long soLichDaXoa = lichLamViecRepository.countByNgayBetween(tuNgayThucTe, denNgay);
+        lichLamViecRepository.deleteByNgayBetween(tuNgayThucTe, denNgay);
         lichLamViecRepository.flush();
 
         List<NhanVien> nhanViens = nhanVienRepository.findAll().stream()
                 .filter(nv -> Integer.valueOf(1).equals(nv.getTrangThai()))
                 .filter(nv -> Integer.valueOf(2).equals(nv.getVaiTro()))
+                .sorted(Comparator.comparing(
+                        NhanVien::getMa,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
                 .toList();
 
-        int chuKy = cacCa.size() + 1; // thêm một lượt nghỉ để duy trì xoay ca an toàn
-        for (LocalDate ngay = tuNgay; !ngay.isAfter(denNgay); ngay = ngay.plusDays(1)) {
-            Map<String, Integer> soNguoiTheoCa = new HashMap<>();
-            for (int i = 0; i < nhanViens.size(); i++) {
-                int viTri = (i + ngay.getDayOfYear()) % chuKy;
-                if (viTri == cacCa.size()) {
-                    continue;
-                }
-                CaLam caLam = cacCa.get(viTri);
-                int soNguoi = soNguoiTheoCa.getOrDefault(caLam.getId(), 0);
-                if (soNguoi < MAX_NHAN_VIEN_MOI_CA) {
-                    saveLich(nhanViens.get(i), ngay, caLam);
-                    soNguoiTheoCa.put(caLam.getId(), soNguoi + 1);
-                }
+        int soLichDaTao = 0;
+        int soCaChuaCoNhanVien = 0;
+        int soNgayDaXuLy = 0;
+        for (LocalDate ngay = tuNgayThucTe; !ngay.isAfter(denNgay); ngay = ngay.plusDays(1)) {
+            int soCaCoThePhu = Math.min(cacCa.size(), nhanViens.size());
+            int viTriNhanVienBatDau = nhanViens.isEmpty() ? 0 : soNgayDaXuLy % nhanViens.size();
+            int viTriCaBatDau = soNgayDaXuLy % cacCa.size();
+            for (int i = 0; i < soCaCoThePhu; i++) {
+                NhanVien nhanVien = nhanViens.get((viTriNhanVienBatDau + i) % nhanViens.size());
+                CaLam caLam = cacCa.get((viTriCaBatDau + i) % cacCa.size());
+                saveLich(nhanVien, ngay, caLam);
+                soLichDaTao++;
             }
+            soCaChuaCoNhanVien += cacCa.size() - soCaCoThePhu;
+            soNgayDaXuLy++;
         }
+
+        realtimePublisher.phatSauCommit("XEP_CA_TU_DONG");
+        return new CapNhatLichLamViecResponse(
+                tuNgayThucTe, denNgay, soLichDaXoa, soLichDaTao, soCaChuaCoNhanVien);
+    }
+
+    @Override
+    @Transactional
+    public CapNhatLichLamViecResponse datLaiLich(LocalDate tuNgay, LocalDate denNgay) {
+        if (tuNgay == null || denNgay == null || tuNgay.isAfter(denNgay)) {
+            throw new BusinessException("Khoảng thời gian không hợp lệ");
+        }
+        LocalDate tuNgayThucTe = ngayMaiHoacSau(tuNgay, denNgay);
+        long soLichDaXoa = lichLamViecRepository.countByNgayBetween(tuNgayThucTe, denNgay);
+        lichLamViecRepository.deleteByNgayBetween(tuNgayThucTe, denNgay);
+        realtimePublisher.phatSauCommit("DAT_LAI_LICH");
+        return new CapNhatLichLamViecResponse(tuNgayThucTe, denNgay, soLichDaXoa, 0, 0);
     }
 
     private void kiemTraKhongChongGio(List<LichLamViec> lichTrongNgay, CaLam caMoi) {
@@ -157,6 +184,28 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         lich.setNgay(ngay);
         lich.setCaLam(caLam);
         lichLamViecRepository.save(lich);
+    }
+
+    private LocalDate ngayMaiHoacSau(LocalDate tuNgay, LocalDate denNgay) {
+        LocalDate ngayMai = LocalDate.now(MUI_GIO).plusDays(1);
+        LocalDate tuNgayThucTe = tuNgay.isBefore(ngayMai) ? ngayMai : tuNgay;
+        if (tuNgayThucTe.isAfter(denNgay)) {
+            throw new BusinessException("Khoảng đã chọn không còn ngày tương lai để thực hiện");
+        }
+        return tuNgayThucTe;
+    }
+
+    private void kiemTraCoTheChinhSua(LocalDate ngay, CaLam caLam) {
+        ZonedDateTime hienTai = ZonedDateTime.now(MUI_GIO);
+        if (ngay.isBefore(hienTai.toLocalDate())) {
+            throw new BusinessException("Không thể thay đổi lịch làm việc trong quá khứ");
+        }
+        if (ngay.equals(hienTai.toLocalDate())) {
+            LocalTime gioBatDau = LocalTime.parse(caLam.getGioBatDau());
+            if (!hienTai.toLocalTime().isBefore(gioBatDau)) {
+                throw new BusinessException("Ca làm việc đã bắt đầu nên chỉ được xem lịch sử");
+            }
+        }
     }
 
     private LichLamViecResponse toResponse(LichLamViec lich) {

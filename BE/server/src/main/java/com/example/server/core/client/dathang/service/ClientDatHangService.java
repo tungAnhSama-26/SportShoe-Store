@@ -6,6 +6,8 @@ import com.example.server.core.client.vanchuyen.dto.TinhPhiShipRequest;
 import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenService;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
+import com.example.server.core.inventory.TonKhoKhaDungService;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
@@ -60,6 +62,8 @@ public class ClientDatHangService {
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
     private final ThongBaoService thongBaoService;
+    private final TonKhoKhaDungService tonKhoKhaDungService;
+    private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public ClientDatHangService(
             ClientCheckoutItemService checkoutItemService,
@@ -72,7 +76,9 @@ public class ClientDatHangService {
             VanChuyenRepository vanChuyenRepository,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
-            ThongBaoService thongBaoService
+            ThongBaoService thongBaoService,
+            TonKhoKhaDungService tonKhoKhaDungService,
+            SanPhamRealtimePublisher sanPhamRealtimePublisher
     ) {
         this.emailService = emailService;
         this.checkoutItemService = checkoutItemService;
@@ -85,6 +91,8 @@ public class ClientDatHangService {
         this.vanChuyenRepository = vanChuyenRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.thongBaoService = thongBaoService;
+        this.tonKhoKhaDungService = tonKhoKhaDungService;
+        this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
     }
 
     @Transactional
@@ -116,6 +124,32 @@ public class ClientDatHangService {
     @Transactional
     public DatHangResponse datHang(
             DatHangRequest request, String maGiaoDich, KhoaThanhToan khoa, boolean daGiuCho) {
+        return taoHoaDon(request, maGiaoDich, null, khoa, daGiuCho, TRANG_THAI_CHO_XAC_NHAN, true);
+    }
+
+    /** Tạo hóa đơn online chờ thanh toán làm bản ghi giữ hàng bền vững cho phiên QR. */
+    @Transactional
+    public DatHangResponse taoHoaDonChoThanhToan(
+            DatHangRequest request,
+            String maGiaoDich,
+            String token,
+            KhoaThanhToan khoa
+    ) {
+        return taoHoaDon(request, maGiaoDich, token, khoa, false, 11, false);
+    }
+
+    private DatHangResponse taoHoaDon(
+            DatHangRequest request,
+            String maGiaoDich,
+            String tokenThanhToan,
+            KhoaThanhToan khoa,
+            boolean daGiuCho,
+            int trangThaiHoaDon,
+            boolean kichHoatDon
+    ) {
+        if (!daGiuCho) {
+            tonKhoKhaDungService.khoaVaKiemTra(request.sanPhams(), null);
+        }
         Map<Integer, BigDecimal> giaKhoa = khoa == null ? null : khoa.giaSanPham();
         ClientCheckoutItemService.KetQua checkout =
                 checkoutItemService.chuanBi(request.sanPhams(), giaKhoa, daGiuCho);
@@ -131,7 +165,7 @@ public class ClientDatHangService {
         hoaDon.setMa(taoMaHoaDon());
         hoaDon.setKenhBan(KENH_BAN_ONLINE);
         hoaDon.setKhachHang(khachHang);
-        hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
+        hoaDon.setTrangThai(trangThaiHoaDon);
         hoaDon.setTongTienHang(checkout.tongTienHang());
         hoaDon.setTienGiam(BigDecimal.ZERO);
         hoaDon.setTongTienThanhToan(checkout.tongTienHang());
@@ -183,7 +217,7 @@ public class ClientDatHangService {
                 tongTienHang.subtract(tienGiam).max(BigDecimal.ZERO).add(phiShip));
 
         String hinhThuc = chuanHoaHinhThucThanhToan(request.hinhThucThanhToan());
-        if ("VNPAY".equals(hinhThuc)) {
+        if (kichHoatDon && "VNPAY".equals(hinhThuc)) {
             hoaDon.setNgayThanhToan(now);
         }
         hoaDonRepository.save(hoaDon);
@@ -192,23 +226,31 @@ public class ClientDatHangService {
         }
         hoaDonChiTietRepository.saveAll(dong);
         luuVanChuyen(hoaDon, phiShip, now);
-        taoGiaoDichThanhToan(hoaDon, hinhThuc, maGiaoDich, now);
-        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
+        taoGiaoDichThanhToan(
+                hoaDon, hinhThuc, maGiaoDich, tokenThanhToan, kichHoatDon, now);
+        sanPhamRealtimePublisher.phatSauCommit(kichHoatDon ? "DON_ONLINE_GIU_HANG" : "QR_GIU_HANG");
+        if (kichHoatDon) {
+            hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
+        }
 
         // Trigger notification for new online order:
-        thongBaoService.taoThongBao(
-                "Đơn hàng online mới",
-                "Có đơn hàng mới #" + hoaDon.getMa() + " từ khách hàng " + (khachHang != null ? khachHang.getHoTen() : hoaDon.getTenNguoiNhan()) + ". Tổng tiền: " + String.format("%,.0f", hoaDon.getTongTienThanhToan()) + "đ",
-                "ORDER",
-                "/admin/hoa-don/" + hoaDon.getId()
-        );
+        if (kichHoatDon) {
+            thongBaoService.taoThongBao(
+                    "Đơn hàng online mới",
+                    "Có đơn hàng mới #" + hoaDon.getMa() + " từ khách hàng " + (khachHang != null ? khachHang.getHoTen() : hoaDon.getTenNguoiNhan()) + ". Tổng tiền: " + String.format("%,.0f", hoaDon.getTongTienThanhToan()) + "đ",
+                    "ORDER",
+                    "/admin/hoa-don/" + hoaDon.getId()
+            );
+        }
 
         // Email xác nhận: khách có tài khoản -> email tài khoản; khách vãng lai -> email tự nhập (nếu có).
         String emailNhan = khachHang != null && khachHang.getEmail() != null && !khachHang.getEmail().isBlank()
                 ? khachHang.getEmail()
                 : request.emailNguoiNhan();
         String tenNhan = khachHang != null ? khachHang.getHoTen() : hoaDon.getTenNguoiNhan();
-        guiEmailXacNhanDon(hoaDon, emailNhan, tenNhan, dong, hinhThuc, phiShip);
+        if (kichHoatDon) {
+            guiEmailXacNhanDon(hoaDon, emailNhan, tenNhan, dong, hinhThuc, phiShip);
+        }
 
         return new DatHangResponse(
                 hoaDon.getId(),
@@ -217,6 +259,71 @@ public class ClientDatHangService {
                 hoaDon.getTrangThai(),
                 hinhThuc
         );
+    }
+
+    /**
+     * Chuyển hóa đơn QR đã giữ hàng sang Chờ xác nhận. Không trừ tồn kho;
+     * nhân viên xác nhận đơn mới thực hiện trừ kho như luồng hiện tại.
+     */
+    @Transactional
+    public String xacNhanHoaDonChoThanhToan(String token) {
+        ThanhToan thamChieu = thanhToanRepository
+                .findByNoiDungCkAndLoaiGiaoDich(token, LOAI_GIAO_DICH_THANH_TOAN)
+                .orElseThrow(() -> new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn"));
+        HoaDon hoaDon = hoaDonRepository.findDetailByIdForUpdate(thamChieu.getHoaDon().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn giữ hàng không tồn tại"));
+        ThanhToan thanhToan = thanhToanRepository.findByTokenForUpdate(token)
+                .orElseThrow(() -> new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn"));
+
+        if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == TRANG_THAI_DA_THANH_TOAN) {
+            return hoaDon.getMa();
+        }
+        if (hoaDon.getTrangThai() == null || hoaDon.getTrangThai() != 11
+                || thanhToan.getTrangThai() == null || thanhToan.getTrangThai() != TRANG_THAI_CHO_THANH_TOAN) {
+            throw new BusinessException("Phiên thanh toán không còn hiệu lực");
+        }
+        Instant now = Instant.now();
+        if (hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR).isBefore(now)) {
+            throw new BusinessException("Phiên thanh toán đã hết hạn giữ hàng");
+        }
+
+        hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
+        hoaDon.setNgayThanhToan(now);
+        hoaDon.setNgayCapNhat(now);
+        thanhToan.setTrangThai(TRANG_THAI_DA_THANH_TOAN);
+        thanhToan.setNgayThanhToan(now);
+        thanhToan.setGhiChu("Khách hàng đã thanh toán trực tuyến");
+        thanhToanRepository.save(thanhToan);
+        hoaDonRepository.save(hoaDon);
+
+        hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TAO_MOI");
+        sanPhamRealtimePublisher.phatSauCommit("QR_DA_THANH_TOAN");
+        thongBaoService.taoThongBao(
+                "Đơn hàng online mới",
+                "Có đơn hàng mới #" + hoaDon.getMa() + " từ khách hàng "
+                        + (hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getHoTen() : hoaDon.getTenNguoiNhan())
+                        + ". Tổng tiền: " + String.format("%,.0f", hoaDon.getTongTienThanhToan()) + "đ",
+                "ORDER",
+                "/admin/hoa-don/" + hoaDon.getId()
+        );
+
+        List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        String emailNhan = hoaDon.getKhachHang() != null
+                ? hoaDon.getKhachHang().getEmail() : layGuestEmail(hoaDon.getGhiChu());
+        String tenNhan = hoaDon.getKhachHang() != null
+                ? hoaDon.getKhachHang().getHoTen() : hoaDon.getTenNguoiNhan();
+        BigDecimal phiShip = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                .map(VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
+        guiEmailXacNhanDon(hoaDon, emailNhan, tenNhan, dong, "VNPAY", phiShip);
+        return hoaDon.getMa();
+    }
+
+    private String layGuestEmail(String ghiChu) {
+        if (ghiChu == null || !ghiChu.startsWith("[GuestEmail:")) {
+            return null;
+        }
+        int ketThuc = ghiChu.indexOf(']');
+        return ketThuc > 12 ? ghiChu.substring(12, ketThuc).trim() : null;
     }
 
     /** Gửi email xác nhận đơn hàng cho khách (chạy ở luồng nền, lỗi không chặn đặt hàng). */
@@ -309,6 +416,8 @@ public class ClientDatHangService {
             HoaDon hoaDon,
             String hinhThuc,
             String maGiaoDich,
+            String tokenThanhToan,
+            boolean daThanhToan,
             Instant now
     ) {
         BigDecimal soTien = hoaDon.getTongTienThanhToan() == null
@@ -327,14 +436,17 @@ public class ClientDatHangService {
         thanhToan.setHinhThuc(laVnPay ? HINH_THUC_VNPAY : HINH_THUC_COD);
         thanhToan.setSoTien(soTien);
         thanhToan.setCongThanhToan(laVnPay ? "VNPay" : "COD");
-        thanhToan.setNoiDungCk((laVnPay ? "Thanh toán VNPay " : "Thanh toán COD ") + hoaDon.getMa());
-        thanhToan.setTrangThai(laVnPay ? TRANG_THAI_DA_THANH_TOAN : TRANG_THAI_CHO_THANH_TOAN);
+        thanhToan.setNoiDungCk(tokenThanhToan != null && !tokenThanhToan.isBlank()
+                ? tokenThanhToan.trim()
+                : (laVnPay ? "Thanh toán VNPay " : "Thanh toán COD ") + hoaDon.getMa());
+        thanhToan.setTrangThai(laVnPay && daThanhToan
+                ? TRANG_THAI_DA_THANH_TOAN : TRANG_THAI_CHO_THANH_TOAN);
         thanhToan.setLoaiGiaoDich(LOAI_GIAO_DICH_THANH_TOAN);
-        thanhToan.setNgayThanhToan(laVnPay ? now : null);
+        thanhToan.setNgayThanhToan(laVnPay && daThanhToan ? now : null);
         thanhToan.setNgayTao(now);
-        thanhToan.setGhiChu(laVnPay
+        thanhToan.setGhiChu(laVnPay && daThanhToan
                 ? "Khách hàng đã thanh toán trực tuyến qua VNPay"
-                : "Chờ thanh toán khi nhận hàng");
+                : (laVnPay ? "Chờ thanh toán trực tuyến" : "Chờ thanh toán khi nhận hàng"));
         thanhToanRepository.save(thanhToan);
     }
 }

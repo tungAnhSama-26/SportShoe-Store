@@ -21,6 +21,7 @@ import com.example.server.core.admin.quanlyhoadon.service.GhnShippingService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import org.springframework.context.annotation.Lazy;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
+import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
 import com.example.server.core.refund.RefundBankAccountResolver;
 import com.example.server.entity.Giay;
 import com.example.server.entity.GiayChiTiet;
@@ -119,6 +120,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private final GhnShippingService ghnShippingService;
     private final RefundBankAccountResolver refundBankAccountResolver;
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
+    private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
     private final EmailService emailService;
     private final QuanLySanPhamService quanLySanPhamService;
     private final DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository;
@@ -136,6 +138,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             GhnShippingService ghnShippingService,
             RefundBankAccountResolver refundBankAccountResolver,
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
+            SanPhamRealtimePublisher sanPhamRealtimePublisher,
             EmailService emailService,
             @Lazy QuanLySanPhamService quanLySanPhamService,
             DotGiamGiaSanPhamRepository dotGiamGiaSanPhamRepository,
@@ -155,6 +158,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         this.ghnShippingService = ghnShippingService;
         this.refundBankAccountResolver = refundBankAccountResolver;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
+        this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
         this.dotGiamGiaSanPhamRepository = dotGiamGiaSanPhamRepository;
     }
 
@@ -399,6 +403,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         }
         ghiLichSuHoaDon(hoaDon, resolveTrangThaiHoaDon(hoaDon, vanChuyen), request.ghiChu());
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "TRANG_THAI");
+        sanPhamRealtimePublisher.phatSauCommit("DON_HANG_THAY_DOI_TON_KHA_DUNG");
         guiEmailCapNhatTrangThai(hoaDon, trangThaiMoi.getTen(), vanChuyen);
         // Báo vào chuông thông báo của khách (đơn online có tài khoản).
         if (hoaDon.getKhachHang() != null) {
@@ -1478,24 +1483,27 @@ private boolean isTaiQuay(Integer kenhBan) {
             return;
         }
         List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        java.util.Map<Integer, Integer> soLuongTheoBienThe = new java.util.TreeMap<>();
         for (HoaDonChiTiet ct : dong) {
-            GiayChiTiet giayChiTiet = giayChiTietRepository.findByIdForUpdate(ct.getGiayChiTiet().getId())
+            soLuongTheoBienThe.merge(ct.getGiayChiTiet().getId(), ct.getSoLuong(), Integer::sum);
+        }
+        java.util.Map<Integer, GiayChiTiet> bienTheDaKhoa = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<Integer, Integer> entry : soLuongTheoBienThe.entrySet()) {
+            GiayChiTiet giayChiTiet = giayChiTietRepository.findByIdForUpdate(entry.getKey())
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy biến thể sản phẩm: " + ct.getGiayChiTiet().getId()
+                            "Không tìm thấy biến thể sản phẩm: " + entry.getKey()
                     ));
+            bienTheDaKhoa.put(entry.getKey(), giayChiTiet);
             int ton = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
-            if (ton < ct.getSoLuong()) {
+            if (ton < entry.getValue()) {
                 throw new BusinessException(
                         "Số lượng tồn không đủ cho sản phẩm: " + giayChiTiet.getGiay().getTen());
             }
         }
         java.util.Set<Integer> giayIds = new java.util.HashSet<>();
-        for (HoaDonChiTiet ct : dong) {
-            GiayChiTiet giayChiTiet = giayChiTietRepository.findByIdForUpdate(ct.getGiayChiTiet().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy biến thể sản phẩm: " + ct.getGiayChiTiet().getId()
-                    ));
-            giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() - ct.getSoLuong());
+        for (java.util.Map.Entry<Integer, Integer> entry : soLuongTheoBienThe.entrySet()) {
+            GiayChiTiet giayChiTiet = bienTheDaKhoa.get(entry.getKey());
+            giayChiTiet.setSoLuong(giayChiTiet.getSoLuong() - entry.getValue());
             giayChiTietRepository.save(giayChiTiet);
             if (giayChiTiet.getGiay() != null) {
                 giayIds.add(giayChiTiet.getGiay().getId());

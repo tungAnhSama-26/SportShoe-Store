@@ -28,6 +28,38 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("moc") Instant moc
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select distinct hd from HoaDon hd
+            join ThanhToan t on t.hoaDon.id = hd.id
+            left join fetch hd.khachHang
+            left join fetch hd.phieuGiamGia
+            where hd.kenhBan = 2
+              and hd.trangThai = 11
+              and t.trangThai = 0
+              and t.loaiGiaoDich = 1
+              and hd.ngayTao < :moc
+            """)
+    List<HoaDon> findExpiredOnlineQrForUpdate(@Param("moc") Instant moc);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select distinct hd from HoaDon hd
+            join ThanhToan t on t.hoaDon.id = hd.id
+            left join fetch hd.khachHang
+            left join fetch hd.phieuGiamGia
+            where hd.kenhBan = 2
+              and hd.trangThai = 11
+              and t.trangThai = 0
+              and t.loaiGiaoDich = 1
+              and ((:khachHangId is not null and hd.khachHang.id = :khachHangId)
+                   or (:khachHangId is null and hd.khachHang is null and hd.sdtNguoiNhan = :sdt))
+            """)
+    List<HoaDon> findOnlineQrChoTheoChuSoHuuForUpdate(
+            @Param("khachHangId") UUID khachHangId,
+            @Param("sdt") String sdt
+    );
+
     /** Đơn đã giao và thanh toán thành công nhưng chưa bấm nhận quá 3 ngày kể từ khi THỎA MÃN CẢ HAI điều kiện. */
     @Query("""
             select hd from HoaDon hd
@@ -74,6 +106,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
               and (:trangThai is null or hd.trangThai = :trangThai)
               and (:tuNgay is null or hd.ngayTao >= :tuNgay)
               and (:denNgay is null or hd.ngayTao <= :denNgay)
+              and not (hd.kenhBan = 2 and hd.trangThai = 11)
             order by hd.ngayTao asc, hd.id asc
             """)
     List<HoaDon> searchInvoices(
@@ -122,6 +155,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             left join fetch hd.nhanVien nv
             left join fetch hd.phieuGiamGia pgg
             where kh.id = :khachHangId
+              and not (hd.kenhBan = 2 and hd.trangThai = 11)
             order by hd.ngayTao desc
             """)
     List<HoaDon> findByKhachHangId(@Param("khachHangId") UUID khachHangId);

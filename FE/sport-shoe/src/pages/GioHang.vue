@@ -39,11 +39,22 @@ onMounted(() => {
       timerDongBo = setTimeout(() => taiGio(true), 300); // gom nhiều ping thành 1 lần
     },
   });
+  window.addEventListener('focus', onFocusTab);
+  document.addEventListener('visibilitychange', onFocusTab);
 });
+
+function onFocusTab() {
+  if (document.visibilityState === 'visible') {
+    if (timerDongBo) clearTimeout(timerDongBo);
+    timerDongBo = setTimeout(() => taiGio(true), 200);
+  }
+}
 
 onUnmounted(() => {
   ngatRealtime?.();
   if (timerDongBo) clearTimeout(timerDongBo);
+  window.removeEventListener('focus', onFocusTab);
+  document.removeEventListener('visibilitychange', onFocusTab);
 });
 
 // amTham=true: đồng bộ ngầm (không hiện spinner) khi nhận realtime.
@@ -145,9 +156,9 @@ function thanhTien(item) {
                       <span v-else class="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">Giá đã tăng</span>
                     </template>
                   </div>
-                  <p v-if="item.conBan === false" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm đã ngừng hoạt động, vui lòng chọn sản phẩm khác</p>
-                  <p v-else-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">⚠ Sản phẩm này đã hết hàng</p>
-                  <p v-else-if="item.soLuong > item.tonKho" class="mt-1 text-xs font-semibold text-amber-600">⚠ Chỉ còn {{ item.tonKho }} sản phẩm</p>
+                  <p v-if="item.conBan === false" class="mt-1 text-xs font-semibold text-rose-500">Sản phẩm đã ngừng hoạt động, vui lòng chọn sản phẩm khác</p>
+                  <p v-else-if="item.tonKho <= 0" class="mt-1 text-xs font-semibold text-rose-500">Sản phẩm đã hết hàng, vui lòng chọn sản phẩm khác</p>
+                  <p v-else-if="item.soLuong > item.tonKho" class="mt-1 text-xs font-semibold text-amber-600">Chỉ còn {{ item.tonKho }} sản phẩm</p>
                 </div>
                 <button @click="xoa(item)" class="text-slate-300 hover:text-rose-500 transition" aria-label="Xóa">
                   <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
@@ -184,9 +195,6 @@ function thanhTien(item) {
           >
             Tiến hành thanh toán
           </button>
-          <p v-if="coSanPhamKhongBan" class="mt-2 text-center text-xs font-medium text-rose-500">
-            Có sản phẩm đã hết hàng hoặc ngừng hoạt động. Vui lòng kiểm tra lại giỏ hàng.
-          </p>
           <router-link to="/khachhang/san-pham" class="mt-3 block text-center text-sm font-medium text-slate-500 hover:text-primary">Tiếp tục mua sắm</router-link>
         </aside>
       </div>

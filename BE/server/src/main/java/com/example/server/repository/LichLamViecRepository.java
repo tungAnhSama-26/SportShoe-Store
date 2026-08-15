@@ -12,7 +12,8 @@ import java.util.UUID;
 public interface LichLamViecRepository extends JpaRepository<LichLamViec, UUID> {
     List<LichLamViec> findByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
     List<LichLamViec> findByNhanVienIdAndNgay(UUID nhanVienId, LocalDate ngay);
-    long countByNgayAndCaLamId(LocalDate ngay, String caLamId);
     boolean existsByNhanVienIdAndNgayAndCaLamId(UUID nhanVienId, LocalDate ngay, String caLamId);
+    boolean existsByCaLamIdAndNgayGreaterThanEqual(String caLamId, LocalDate ngay);
+    long countByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
     void deleteByNgayBetween(LocalDate tuNgay, LocalDate denNgay);
 }

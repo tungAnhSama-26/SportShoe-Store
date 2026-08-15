@@ -231,7 +231,7 @@ public class HoaDonChoTaiQuayService {
             }
         }
 
-        GiayChiTiet bienTheMoi = giayChiTietRepository.findById(request.giayChiTietMoiId())
+        GiayChiTiet bienTheMoi = giayChiTietRepository.findByIdForUpdate(request.giayChiTietMoiId())
                 .orElseThrow(() -> new ResourceNotFoundException("Biến thể mới không tồn tại"));
 
         int soLuong = (request.soLuong() != null && request.soLuong() > 0) ? request.soLuong() : oldItem.getSoLuong();

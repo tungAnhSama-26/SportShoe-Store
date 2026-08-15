@@ -76,6 +76,12 @@ public class ClientVnPayController {
         return ResponseEntity.ok(ApiResponse.success("OK", service.trangThai(token)));
     }
 
+    @PostMapping("/huy/{token}")
+    public ResponseEntity<ApiResponse<Void>> huy(@PathVariable String token) {
+        service.huy(token);
+        return ResponseEntity.ok(ApiResponse.success("Đã hủy phiên thanh toán", null));
+    }
+
     /** Callback handler for VNPAY Redirect */
     @GetMapping("/callback")
     public ResponseEntity<String> callback(@RequestParam Map<String, String> params) {

@@ -356,7 +356,7 @@ public class HoaDonTaiQuayService {
                                     item.getGiayChiTiet().getSku(),
                                     hinhAnh,
                                     item.getSoLuong(),
-                                    item.getGiayChiTiet().getSoLuong(),
+                                    inventoryUseCase.soLuongKhaDung(item.getGiayChiTiet()),
                                     item.getGiaDonVi(),
                                     item.getGiayChiTiet().getGiaBan(),
                                     item.getThanhTien(),
@@ -422,7 +422,7 @@ public class HoaDonTaiQuayService {
     }
 
     private GiayChiTiet layGiayChiTietHopLe(Integer chiTietId, Integer soLuong, java.util.Set<Integer> bypassActiveCheckIds) {
-        GiayChiTiet giayChiTiet = giayChiTietRepository.findById(chiTietId)
+        GiayChiTiet giayChiTiet = giayChiTietRepository.findByIdForUpdate(chiTietId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm chi tiết không tồn tại"));
 
         boolean bypassActiveCheck = bypassActiveCheckIds != null && bypassActiveCheckIds.contains(chiTietId);

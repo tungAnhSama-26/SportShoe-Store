@@ -51,6 +51,7 @@ public class ClientSanPhamController {
     private final HinhAnhGiayRepository hinhAnhGiayRepository;
     private final DanhGiaRepository danhGiaRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final com.example.server.core.inventory.TonKhoKhaDungService tonKhoKhaDungService;
 
     public ClientSanPhamController(
             QuanLySanPhamService service,
@@ -58,7 +59,8 @@ public class ClientSanPhamController {
             GiayRepository giayRepository,
             HinhAnhGiayRepository hinhAnhGiayRepository,
             DanhGiaRepository danhGiaRepository,
-            HoaDonChiTietRepository hoaDonChiTietRepository
+            HoaDonChiTietRepository hoaDonChiTietRepository,
+            com.example.server.core.inventory.TonKhoKhaDungService tonKhoKhaDungService
     ) {
         this.service = service;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -66,6 +68,7 @@ public class ClientSanPhamController {
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
         this.danhGiaRepository = danhGiaRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.tonKhoKhaDungService = tonKhoKhaDungService;
     }
 
     /** Tất cả sản phẩm đang bán cho trang danh sách sản phẩm (public), kèm màu sắc & kích cỡ để lọc. */
@@ -201,6 +204,7 @@ public class ClientSanPhamController {
 
         // giaBan của BienTheItem = giá hiện tại (sau giảm); giaGoc = giá niêm yết trước giảm.
         Map<Integer, BigDecimal> giaSauGiamMap = service.layGiaSauGiam(bienThes);
+        Map<Integer, Integer> tonKhaDungMap = tonKhoKhaDungService.laySoLuongKhaDung(bienThes);
         List<BienTheItem> items = bienThes.stream()
                 .map(gct -> {
                     BigDecimal niemYet = gct.getGiaBan();
@@ -212,7 +216,7 @@ public class ClientSanPhamController {
                             gct.getKichCo().getGiaTri(),
                             giaHienThi,
                             niemYet,
-                            gct.getSoLuong(),
+                            tonKhaDungMap.getOrDefault(gct.getId(), 0),
                             anhBienThe.get(gct.getId()));
                 })
                 .toList();
@@ -250,12 +254,13 @@ public class ClientSanPhamController {
         }
         List<GiayChiTiet> bienThes = giayChiTietRepository.findAllById(ids);
         Map<Integer, BigDecimal> giaSauGiamMap = service.layGiaSauGiam(bienThes);
+        Map<Integer, Integer> tonKhaDungMap = tonKhoKhaDungService.laySoLuongKhaDung(bienThes);
         List<GiaBienTheGioResponse> data = bienThes.stream()
                 .map(gct -> new GiaBienTheGioResponse(
                         gct.getId(),
                         gct.getGiaBan(),
                         giaSauGiamMap.getOrDefault(gct.getId(), gct.getGiaBan()),
-                        gct.getSoLuong(),
+                        tonKhaDungMap.getOrDefault(gct.getId(), 0),
                         coTheBan(gct),
                         layCanNangSanPham(gct),
                         gct.getGiay().getMa()))

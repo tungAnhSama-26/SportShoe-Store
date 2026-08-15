@@ -190,6 +190,36 @@ public class ClientVoucherService {
         return tienGiamDaKhoa == null ? BigDecimal.ZERO : tienGiamDaKhoa;
     }
 
+    /** Trả lượt voucher của hóa đơn QR hết hạn/chưa thanh toán; gọi đúng một lần trước khi bỏ liên kết. */
+    @Transactional
+    public void hoanVoucherHoaDonCho(HoaDon hoaDon) {
+        if (hoaDon == null || hoaDon.getPhieuGiamGia() == null) {
+            return;
+        }
+        PhieuGiamGia phieu = phieuGiamGiaRepository
+                .findByIdForUpdate(hoaDon.getPhieuGiamGia().getId())
+                .orElse(null);
+        if (phieu == null) {
+            hoaDon.setPhieuGiamGia(null);
+            return;
+        }
+        int daDung = phieu.getSoLuongDaDung() == null ? 0 : phieu.getSoLuongDaDung();
+        phieu.setSoLuongDaDung(Math.max(daDung - 1, 0));
+        phieuGiamGiaRepository.save(phieu);
+
+        if (phieu.getLoaiPhieu() != null && phieu.getLoaiPhieu() == LOAI_PHIEU_CA_NHAN
+                && hoaDon.getKhachHang() != null) {
+            phieuGiamGiaKhachHangRepository
+                    .findByPhieuGiamGiaIdAndKhachHangId(phieu.getId(), hoaDon.getKhachHang().getId())
+                    .ifPresent(pggh -> {
+                        pggh.setTrangThai(PHIEU_KH_CHUA_DUNG);
+                        pggh.setNgaySuDung(null);
+                        phieuGiamGiaKhachHangRepository.save(pggh);
+                    });
+        }
+        hoaDon.setPhieuGiamGia(null);
+    }
+
     private PhieuGiamGia timVaValidate(String maPhieu, UUID khachHangId, BigDecimal tongTienHang, boolean kiemTraLuot) {
         if (maPhieu == null || maPhieu.isBlank()) {
             throw new BusinessException("Vui lòng nhập mã giảm giá");

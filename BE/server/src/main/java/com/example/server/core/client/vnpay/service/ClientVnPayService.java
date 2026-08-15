@@ -9,8 +9,15 @@ import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenServic
 import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
+import com.example.server.core.inventory.TonKhoKhaDungService;
+import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
+import com.example.server.entity.ThanhToan;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.repository.HoaDonChiTietRepository;
+import com.example.server.repository.HoaDonRepository;
+import com.example.server.repository.ThanhToanRepository;
+import com.example.server.repository.VanChuyenRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -18,7 +25,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
@@ -29,14 +35,15 @@ import java.util.Iterator;
 import java.util.List;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.time.Instant;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Thanh toán bằng chuyển khoản thật qua VietQR + SePay.
+ * Thanh toán bằng VietQR/SePay hoặc VNPAY với phiên giữ hàng bền vững trong database.
  *
- * <p>Luồng: tạo phiên (mã QR VietQR với số tiền + nội dung CK duy nhất) -&gt; khách
- * chuyển khoản thật -&gt; SePay phát hiện tiền vào, gọi webhook -&gt; khớp nội dung +
- * số tiền -&gt; mới tạo đơn. Phiên lưu tạm trong bộ nhớ. Tồn kho/đơn chỉ thay đổi khi
- * thanh toán được xác nhận (tái dùng {@link ClientDatHangService}).</p>
+ * <p>Luồng: tạo hóa đơn chờ và giao dịch chờ trong cùng transaction -&gt; giữ số lượng
+ * khả dụng trong 5 phút nhưng chưa trừ tồn thực tế -&gt; xác nhận thanh toán chuyển hóa
+ * đơn sang Chờ xác nhận. Tồn thực tế chỉ giảm khi nhân viên xác nhận đơn.</p>
  */
 @Service
 public class ClientVnPayService {
@@ -45,15 +52,15 @@ public class ClientVnPayService {
     public static final String TRANG_THAI_DA_THANH_TOAN = "DA_THANH_TOAN";
     public static final String TRANG_THAI_KHONG_TON_TAI = "KHONG_TON_TAI";
 
-    /** Dọn phiên ĐÃ THANH TOÁN khỏi bộ nhớ sau 15 phút (tránh rò rỉ). Phiên chờ KHÔNG hết hạn. */
-    private static final long PHIEN_DON_SAU_MS = 900_000L;
-
     private final ClientDatHangService datHangService;
     private final ClientCheckoutItemService checkoutItemService;
     private final ClientVoucherService voucherService;
     private final ClientPhiVanChuyenService phiVanChuyenService;
     private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
-    private final Map<String, Phien> phienMap = new ConcurrentHashMap<>();
+    private final HoaDonRepository hoaDonRepository;
+    private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final ThanhToanRepository thanhToanRepository;
+    private final VanChuyenRepository vanChuyenRepository;
 
     private final String sepayBank;
     private final String sepayAccount;
@@ -77,6 +84,10 @@ public class ClientVnPayService {
             ClientVoucherService voucherService,
             ClientPhiVanChuyenService phiVanChuyenService,
             SanPhamRealtimePublisher sanPhamRealtimePublisher,
+            HoaDonRepository hoaDonRepository,
+            HoaDonChiTietRepository hoaDonChiTietRepository,
+            ThanhToanRepository thanhToanRepository,
+            VanChuyenRepository vanChuyenRepository,
             @Value("${sepay.bank:}") String sepayBank,
             @Value("${sepay.account-number:}") String sepayAccount,
             @Value("${sepay.prefix:SHOE}") String sepayPrefix
@@ -86,32 +97,17 @@ public class ClientVnPayService {
         this.voucherService = voucherService;
         this.phiVanChuyenService = phiVanChuyenService;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
+        this.hoaDonRepository = hoaDonRepository;
+        this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.thanhToanRepository = thanhToanRepository;
+        this.vanChuyenRepository = vanChuyenRepository;
         this.sepayBank = sepayBank;
         this.sepayAccount = sepayAccount;
         this.sepayPrefix = (sepayPrefix == null || sepayPrefix.isBlank()) ? "SHOE" : sepayPrefix;
     }
 
-    private static class Phien {
-        final DatHangRequest request;
-        final String maThanhToan;   // nội dung chuyển khoản, dùng để khớp đơn + lưu làm mã giao dịch
-        final long soTienKyVong;    // số tiền khách phải chuyển
-        final ClientDatHangService.KhoaThanhToan khoa; // giá SP + tiền giảm voucher đã khóa lúc tạo QR
-        final Map<Integer, Integer> giuCho;            // tồn đã giữ chỗ (biến thể -> số lượng)
-        final long thoiDiemTao = System.currentTimeMillis();
-        volatile String trangThai = TRANG_THAI_CHO;
-        volatile String maHoaDon;
-
-        Phien(DatHangRequest request, String maThanhToan, long soTienKyVong,
-                ClientDatHangService.KhoaThanhToan khoa, Map<Integer, Integer> giuCho) {
-            this.request = request;
-            this.maThanhToan = maThanhToan;
-            this.soTienKyVong = soTienKyVong;
-            this.khoa = khoa;
-            this.giuCho = giuCho;
-        }
-    }
-
-    /** Tạo phiên thanh toán + ảnh QR VietQR (SePay) hoặc link VNPAY Sandbox. Chưa tạo đơn. */
+    /** Tạo hóa đơn chờ giữ hàng và trả ảnh VietQR (SePay) hoặc link VNPAY Sandbox. */
+    @Transactional
     public TaoMaVnPayResponse taoMa(DatHangRequest request) {
         // Mỗi khách chỉ giữ 1 phiên QR đang CHỜ: huỷ phiên chờ cũ của cùng khách trước khi tạo phiên mới
         // (tránh khoá cùng 1 voucher ở nhiều QR rồi thanh toán nhiều lần -> dùng voucher quá số lượt).
@@ -129,8 +125,12 @@ public class ClientVnPayService {
         ClientDatHangService.KhoaThanhToan khoa =
                 new ClientDatHangService.KhoaThanhToan(giaKhoa, tienGiamKhoa);
         long soTien = tinhSoTienPhaiTra(request, checkout.tongTienHang(), tienGiamKhoa);
-        // KHÔNG giữ chỗ tồn lúc tạo QR -> tồn chỉ bị trừ khi nhân viên xác nhận đơn (giống COD).
-        phienMap.put(token, new Phien(request, maThanhToan, soTien, khoa, java.util.Map.of()));
+        // Hóa đơn chờ + chi tiết là bản ghi giữ hàng bền vững; tồn thực tế chưa bị trừ.
+        DatHangResponse hoaDonCho = datHangService.taoHoaDonChoThanhToan(
+                request, maThanhToan, token, khoa);
+        HoaDon hoaDon = hoaDonRepository.findById(hoaDonCho.hoaDonId())
+                .orElseThrow(() -> new BusinessException("Không thể tạo phiên giữ hàng"));
+        Instant hetHanLuc = hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR);
 
         String qrData;
         if ("VNPAY".equalsIgnoreCase(request.hinhThucThanhToan())
@@ -146,29 +146,35 @@ public class ClientVnPayService {
                     + "&des=" + maThanhToan
                     + "&template=compact";
         }
-        return new TaoMaVnPayResponse(token, qrData, maThanhToan);
+        return new TaoMaVnPayResponse(token, qrData, maThanhToan, hetHanLuc);
     }
 
     /** Huỷ các phiên QR đang CHỜ của cùng khách (theo khachHangId; khách vãng lai dùng SĐT người nhận). */
     private void huyPhienChoCu(DatHangRequest request) {
-        String key = khoaChuSoHuu(request);
-        if (key == null) {
-            return;
+        List<HoaDon> phienCu = hoaDonRepository.findOnlineQrChoTheoChuSoHuuForUpdate(
+                request.khachHangId(), request.sdtNguoiNhan());
+        for (HoaDon hoaDon : phienCu) {
+            huyHoaDonCho(hoaDon, "Khách tạo phiên QR mới");
         }
-        phienMap.values().removeIf(p ->
-                TRANG_THAI_CHO.equals(p.trangThai) && key.equals(khoaChuSoHuu(p.request)));
     }
 
-    /** Khoá định danh chủ phiên: ưu tiên khachHangId; khách vãng lai dùng SĐT người nhận. */
-    private String khoaChuSoHuu(DatHangRequest req) {
-        if (req == null) {
-            return null;
+    private void huyHoaDonCho(HoaDon hoaDon, String lyDo) {
+        if (hoaDon == null || hoaDon.getTrangThai() == null || hoaDon.getTrangThai() != 11) {
+            return;
         }
-        if (req.khachHangId() != null) {
-            return "kh:" + req.khachHangId();
+        voucherService.hoanVoucherHoaDonCho(hoaDon);
+        List<ThanhToan> thanhToans = thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
+        if (!thanhToans.isEmpty()) {
+            thanhToanRepository.deleteAll(thanhToans);
         }
-        String sdt = req.sdtNguoiNhan();
-        return (sdt != null && !sdt.isBlank()) ? "sdt:" + sdt.trim() : null;
+        vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                .ifPresent(vanChuyenRepository::delete);
+        List<HoaDonChiTiet> chiTiets = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        if (!chiTiets.isEmpty()) {
+            hoaDonChiTietRepository.deleteAll(chiTiets);
+        }
+        hoaDonRepository.delete(hoaDon);
+        sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
     }
 
     /** Tiền giảm voucher đã khóa lúc tạo QR: mã còn hợp lệ -> chốt tiền giảm; không hợp lệ -> 0. */
@@ -204,69 +210,88 @@ public class ClientVnPayService {
         return tong.setScale(0, RoundingMode.HALF_UP).longValue();
     }
 
-    /** Đã xác nhận thanh toán: tạo đơn (1 lần, lưu mã giao dịch) và đánh dấu đã thanh toán. */
-    public synchronized String xacNhan(String token) {
-        Phien phien = phienMap.get(token);
-        if (phien == null) {
-            throw new BusinessException("Mã thanh toán không tồn tại hoặc đã hết hạn");
-        }
-        if (!TRANG_THAI_DA_THANH_TOAN.equals(phien.trangThai)) {
-            // Tạo đơn theo GIÁ + VOUCHER ĐÃ KHÓA. KHÔNG trừ kho ở đây -> nhân viên xác nhận mới trừ.
-            DatHangResponse ketQua = datHangService.datHang(
-                    phien.request, phien.maThanhToan, phien.khoa, false);
-            phien.maHoaDon = ketQua.maHoaDon();
-            phien.trangThai = TRANG_THAI_DA_THANH_TOAN;
-        }
-        return phien.maHoaDon;
+    /** Xác nhận thanh toán idempotent từ phiên đã lưu trong database. */
+    @Transactional
+    public String xacNhan(String token) {
+        return datHangService.xacNhanHoaDonChoThanhToan(token);
     }
 
-    /**
-     * Dọn bộ nhớ phiên QR: chỉ xóa phiên ĐÃ THANH TOÁN sau một thời gian (tránh rò rỉ).
-     * Phiên đang chờ KHÔNG còn bị hết hạn -> khách chuyển khoản lúc nào cũng được
-     * (tồn kho chỉ trừ khi nhân viên/admin xác nhận đơn).
-     */
     @Scheduled(fixedRate = 60_000L)
-    public synchronized void donPhien() {
-        long now = System.currentTimeMillis();
-        phienMap.entrySet().removeIf(e ->
-                !TRANG_THAI_CHO.equals(e.getValue().trangThai)
-                        && now - e.getValue().thoiDiemTao > PHIEN_DON_SAU_MS);
+    @Transactional
+    public void donPhien() {
+        Instant moc = Instant.now().minus(TonKhoKhaDungService.THOI_GIAN_GIU_QR);
+        for (HoaDon hoaDon : hoaDonRepository.findExpiredOnlineQrForUpdate(moc)) {
+            huyHoaDonCho(hoaDon, "Phiên QR hết hạn sau 5 phút");
+        }
     }
 
     /**
      * SePay webhook gọi khi có tiền vào: tìm phiên theo nội dung chuyển khoản, kiểm tra
      * số tiền rồi tạo đơn. Trả mã hóa đơn nếu khớp; null nếu không khớp hoặc chuyển thiếu.
      */
-    public synchronized String xacNhanTheoChuyenKhoan(String noiDung, long soTien) {
+    @Transactional
+    public String xacNhanTheoChuyenKhoan(String noiDung, long soTien) {
         if (noiDung == null || noiDung.isBlank()) {
             return null;
         }
         String content = noiDung.toUpperCase(Locale.ROOT);
-        for (Map.Entry<String, Phien> entry : phienMap.entrySet()) {
-            Phien phien = entry.getValue();
-            if (content.contains(phien.maThanhToan)) {
-                if (phien.soTienKyVong > 0 && soTien < phien.soTienKyVong) {
+        for (ThanhToan thanhToan : thanhToanRepository.findByTrangThaiAndLoaiGiaoDich(0, 1)) {
+            if (thanhToan.getMaGiaoDich() != null
+                    && content.contains(thanhToan.getMaGiaoDich().toUpperCase(Locale.ROOT))) {
+                long soTienKyVong = thanhToan.getSoTien() == null
+                        ? 0L : thanhToan.getSoTien().setScale(0, RoundingMode.HALF_UP).longValue();
+                if (soTienKyVong > 0 && soTien < soTienKyVong) {
                     return null; // chuyển thiếu tiền -> không tạo đơn
                 }
-                return xacNhan(entry.getKey());
+                return xacNhan(thanhToan.getNoiDungCk());
             }
         }
         return null;
     }
 
     /** FE poll trạng thái phiên thanh toán + mã hóa đơn nếu đã tạo. */
+    @Transactional(readOnly = true)
     public Map<String, String> trangThai(String token) {
-        Phien phien = phienMap.get(token);
         Map<String, String> result = new HashMap<>();
-        if (phien == null) {
+        ThanhToan thanhToan = thanhToanRepository
+                .findByNoiDungCkAndLoaiGiaoDich(token, 1).orElse(null);
+        if (thanhToan == null) {
             result.put("trangThai", TRANG_THAI_KHONG_TON_TAI);
             return result;
         }
-        result.put("trangThai", phien.trangThai);
-        if (phien.maHoaDon != null) {
-            result.put("maHoaDon", phien.maHoaDon);
+        HoaDon hoaDon = thanhToan.getHoaDon();
+        Instant hetHanLuc = hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR);
+        result.put("hetHanLuc", hetHanLuc.toString());
+        if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == 1) {
+            result.put("trangThai", TRANG_THAI_DA_THANH_TOAN);
+            result.put("maHoaDon", hoaDon.getMa());
+        } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == 11
+                && !hetHanLuc.isBefore(Instant.now())) {
+            result.put("trangThai", TRANG_THAI_CHO);
+        } else {
+            result.put("trangThai", "HET_HAN");
         }
         return result;
+    }
+
+    @Transactional
+    public void huy(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        String key = token.trim();
+        ThanhToan thamChieu = thanhToanRepository
+                .findByNoiDungCkAndLoaiGiaoDich(key, 1)
+                .or(() -> thanhToanRepository.findByMaGiaoDichForUpdate(key))
+                .orElse(null);
+        if (thamChieu == null) {
+            return;
+        }
+        HoaDon hoaDon = hoaDonRepository.findDetailByIdForUpdate(thamChieu.getHoaDon().getId())
+                .orElse(null);
+        if (hoaDon != null && hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == 11) {
+            huyHoaDonCho(hoaDon, "Khách hủy phiên QR");
+        }
     }
 
     private String urlEncode(String value) {
@@ -322,7 +347,7 @@ public class ClientVnPayService {
         vnp_Params.put("vnp_IpAddr", clientIp != null ? clientIp : "127.0.0.1");
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
         
-        java.time.ZonedDateTime expireGmt7 = nowGmt7.plusMinutes(15);
+        java.time.ZonedDateTime expireGmt7 = nowGmt7.plusMinutes(5);
         String vnp_ExpireDate = expireGmt7.format(formatter);
         vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 

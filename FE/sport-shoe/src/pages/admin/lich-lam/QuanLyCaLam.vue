@@ -4,6 +4,7 @@ import {
   Filter, Plus, RotateCcw, Clock, Eye, X, Search
 } from 'lucide-vue-next';
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
+import { getDisplayErrorMessage } from '../../../utils/error-message.js';
 import TimePicker24h from "../../../components/common/TimePicker24h.vue";
 import { layDanhSachCaLam, taoCaLam, capNhatCaLam } from '../../../services/ca-lam.js';
 
@@ -101,7 +102,7 @@ async function toggleTrangThai(ca) {
     showSuccess(`Đã thay đổi trạng thái ca ${ca.ten}`);
     await taiDanhSach();
   } catch (e) {
-    showError(e.message || "Không thể thay đổi trạng thái ca làm việc");
+    showError(getDisplayErrorMessage(e, "Không thể thay đổi trạng thái ca làm việc"));
   }
 }
 
@@ -228,7 +229,7 @@ async function luuTaoCa() {
     await taiDanhSach();
     showModalTaoCa.value = false;
   } catch (e) {
-    showError(e.message || "Có lỗi xảy ra khi lưu ca làm việc");
+    showError(getDisplayErrorMessage(e, "Có lỗi xảy ra khi lưu ca làm việc"));
   }
 }
 </script>

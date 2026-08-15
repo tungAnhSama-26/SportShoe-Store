@@ -47,3 +47,10 @@ export function xepCaTuDong(tuNgay, denNgay) {
   );
 }
 
+export function datLaiLichLamViec(tuNgay, denNgay) {
+  return request(
+    `/admin/lich-lam-viec/reset?tuNgay=${tuNgay}&denNgay=${denNgay}`,
+    { method: "POST" }
+  );
+}
+
