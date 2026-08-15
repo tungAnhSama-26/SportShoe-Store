@@ -185,7 +185,7 @@ function taoChuCaiDaiDien(value) {
 
                 <!-- Lỗi chung -->
                 <div v-if="loiCamera" class="mt-4 rounded-[14px] bg-rose-50 px-4 py-3 text-[13px] font-medium text-rose-600">
-                  ⚠️ {{ loiCamera }}
+                   {{ loiCamera }}
                 </div>
               </div>
             </div>
@@ -306,21 +306,10 @@ function taoChuCaiDaiDien(value) {
             </div>
             <div>
               <h2 class="text-base font-bold text-slate-800">Địa chỉ</h2>
-              <p class="text-sm text-slate-400">Khu vực làm việc hoặc địa chỉ liên hệ của nhân viên.</p>
             </div>
           </div>
 
-          <div
-            v-if="thongBaoAnhXaDiaChi"
-            class="rounded-2xl border px-4 py-3 text-sm font-medium"
-            :class="dangDoiChieuDiaChi
-              ? 'border-sky-200 bg-sky-50 text-sky-700'
-              : anhXaDiaChiThanhCong
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-amber-200 bg-amber-50 text-amber-700'"
-          >
-            {{ thongBaoAnhXaDiaChi }}
-          </div>
+        
 
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="space-y-2">

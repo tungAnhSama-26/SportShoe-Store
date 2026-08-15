@@ -82,7 +82,7 @@ let suppressGiayIdWatch = false
 const selectedGiayId = computed(() => {
   const raw = Array.isArray(route.query.giayId) ? route.query.giayId[0] : route.query.giayId
   const parsed = Number(raw)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
 })
 
 const focusedChiTietId = computed(() => {

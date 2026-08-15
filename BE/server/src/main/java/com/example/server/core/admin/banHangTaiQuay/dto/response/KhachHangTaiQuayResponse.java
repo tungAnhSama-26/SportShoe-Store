@@ -7,6 +7,6 @@ public record KhachHangTaiQuayResponse(
         String hoTen,
         String sdt,
         String email,
-        String diaChiMacDinh
+        com.example.server.entity.DiaChiHaiCap diaChiMacDinh
 ) {
 }

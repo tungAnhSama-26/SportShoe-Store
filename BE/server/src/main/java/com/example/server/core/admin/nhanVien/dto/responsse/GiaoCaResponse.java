@@ -14,6 +14,8 @@ public record GiaoCaResponse(
         UUID nhanVienTrongCaId,
         String nhanVienTrongCaTen,
         String nhanVienTrongCaMa,
+        String nhanVienTrongCaAnh,
+        Integer nhanVienTrongCaVaiTro,
         UUID nhanVienNhanId,
         String nhanVienNhanTen,
         String nhanVienNhanMa,
