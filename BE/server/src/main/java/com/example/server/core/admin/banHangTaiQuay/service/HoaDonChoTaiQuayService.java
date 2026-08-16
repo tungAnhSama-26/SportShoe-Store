@@ -116,25 +116,40 @@ public class HoaDonChoTaiQuayService {
             bypassActiveCheckIds.add(item.getGiayChiTiet().getId());
         }
 
-        // Map request items by chiTietId for easy lookup
-        Map<Integer, com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest> requestedItemsMap = new HashMap<>();
-        if (request.items() != null) {
-            for (var itemReq : request.items()) {
-                requestedItemsMap.put(itemReq.chiTietId(), itemReq);
-            }
-        }
+        // 1. Group request items by chiTietId to support multiple prices
+        List<com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest> reqItems = 
+                request.items() != null ? request.items() : new ArrayList<>();
 
         List<HoaDonChiTiet> chiTietCanLuu = new ArrayList<>();
-        Set<Integer> processedChiTietIds = new HashSet<>();
+        Set<com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest> processedReqItems = new HashSet<>();
 
         // 2. Process existing items (update quantity and stock, or delete)
         for (HoaDonChiTiet oldItem : oldItems) {
             Integer chiTietId = oldItem.getGiayChiTiet().getId();
             GiayChiTiet giayChiTiet = oldItem.getGiayChiTiet();
+            BigDecimal oldGia = oldItem.getGiaDonVi();
 
-            if (requestedItemsMap.containsKey(chiTietId)) {
-                var reqItem = requestedItemsMap.get(chiTietId);
-                int newQty = reqItem.soLuong();
+            com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest matchedReq = null;
+            for (var req : reqItems) {
+                if (!processedReqItems.contains(req) && req.chiTietId().equals(chiTietId)) {
+                    if (req.giaBan() != null && oldGia != null && req.giaBan().compareTo(oldGia) == 0) {
+                        matchedReq = req;
+                        break;
+                    }
+                }
+            }
+            if (matchedReq == null) {
+                for (var req : reqItems) {
+                    if (!processedReqItems.contains(req) && req.chiTietId().equals(chiTietId)) {
+                        matchedReq = req;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedReq != null) {
+                processedReqItems.add(matchedReq);
+                int newQty = matchedReq.soLuong();
                 int oldQty = oldItem.getSoLuong();
                 int diff = newQty - oldQty;
 
@@ -146,17 +161,14 @@ public class HoaDonChoTaiQuayService {
                         inventoryUseCase.restoreStock(giayChiTiet, -diff);
                     }
                     giayChiTietRepository.save(giayChiTiet);
-
                 }
 
-                // Reprice every existing line, even when its quantity did not change.
-                BigDecimal giaDonVi = productUseCase.layGiaBanThucTe(giayChiTiet);
+                BigDecimal giaDonVi = matchedReq.giaBan() != null ? matchedReq.giaBan() : productUseCase.layGiaBanThucTe(giayChiTiet);
                 oldItem.setSoLuong(newQty);
                 oldItem.setGiaDonVi(giaDonVi);
                 oldItem.setThanhTien(giaDonVi.multiply(BigDecimal.valueOf(newQty)));
 
                 chiTietCanLuu.add(hoaDonChiTietRepository.save(oldItem));
-                processedChiTietIds.add(chiTietId);
             } else {
                 // Item was removed from cart, restore stock and delete
                 inventoryUseCase.restoreStock(giayChiTiet, oldItem.getSoLuong());
@@ -166,13 +178,11 @@ public class HoaDonChoTaiQuayService {
         }
 
         // 3. Add new items
-        if (request.items() != null) {
-            for (var reqItem : request.items()) {
-                if (!processedChiTietIds.contains(reqItem.chiTietId())) {
-                    HoaDonChiTiet newItem = invoiceUseCase.taoDongHoaDon(reqItem, null);
-                    newItem.setHoaDon(hoaDon);
-                    chiTietCanLuu.add(hoaDonChiTietRepository.save(newItem));
-                }
+        for (var reqItem : reqItems) {
+            if (!processedReqItems.contains(reqItem)) {
+                HoaDonChiTiet newItem = invoiceUseCase.taoDongHoaDon(reqItem, null);
+                newItem.setHoaDon(hoaDon);
+                chiTietCanLuu.add(hoaDonChiTietRepository.save(newItem));
             }
         }
 

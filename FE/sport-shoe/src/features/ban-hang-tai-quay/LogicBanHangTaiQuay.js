@@ -411,11 +411,7 @@ function LogicBanHangTaiQuay() {
       }
 
       const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-      const giaDaThayDoi = chuyenHoaDonThanhBanNhap(detail);
-      if (giaDaThayDoi) {
-        showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
-        await luuHoaDonHienTai(true);
-      }
+      chuyenHoaDonThanhBanNhap(detail);
       return;
     }
 
@@ -433,27 +429,17 @@ function LogicBanHangTaiQuay() {
         removedItems.push(item);
         continue;
       }
-      if (Number(item.giaBan) !== Number(sanPhamMoi.giaBan)) {
-        giaDaThayDoi = true;
-      }
       remainingItems.push({
         ...item,
-        giaBan: sanPhamMoi.giaBan,
-        giaGoc: sanPhamMoi.giaGoc,
         soLuongTon: sanPhamMoi.soLuongTon
       });
     }
 
-    if (removedItems.length === 0 && !giaDaThayDoi) return;
+    if (removedItems.length === 0) return;
 
     cartItems.value = remainingItems;
     for (const item of removedItems) {
       showWarning(`Sản phẩm "${item.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
-    }
-    if (giaDaThayDoi) {
-      danhDauCanApDungLaiPhieu();
-      capNhatTienKhachThanhToan(false);
-      showWarning("Giá sản phẩm và tổng tiền đã được cập nhật theo chương trình giảm giá hiện hành.");
     }
   }
 
@@ -733,7 +719,6 @@ function LogicBanHangTaiQuay() {
       : null;
     dangLuuNoiBo = true;
     let hasRemovedInactive = false;
-    let hasPriceChanged = false;
     cartItems.value = invoice.items
       .filter((item) => {
         const thongTin = thongTinTheoChiTietId.get(Number(item.chiTietId));
@@ -752,9 +737,8 @@ function LogicBanHangTaiQuay() {
       })
       .map((item) => {
         const thongTinSanPham = thongTinTheoChiTietId.get(Number(item.chiTietId));
-        const giaHienHanh = thongTinSanPham?.giaBan ?? item.giaBan;
-        if (Number(giaHienHanh) !== Number(item.giaBan)) {
-          hasPriceChanged = true;
+        if (thongTinSanPham && typeof item.soLuongTon !== 'undefined') {
+          thongTinSanPham.soLuongTon = item.soLuongTon;
         }
         return {
           cartItemId: Date.now().toString() + Math.random().toString(),
@@ -768,7 +752,7 @@ function LogicBanHangTaiQuay() {
           hinhAnh: item.hinhAnh || thongTinSanPham?.hinhAnh || "",
           soLuong: item.soLuong,
           soLuongBanDau: item.soLuong,
-          giaBan: giaHienHanh,
+          giaBan: item.giaBan,
           giaGoc: item.giaGoc || thongTinSanPham?.giaGoc || null,
           soLuongTon: item.soLuongTon
         };
@@ -819,10 +803,7 @@ function LogicBanHangTaiQuay() {
     ketQuaTimKiemPhieu.value = [];
     hienThiDanhSachPhieu.value = false;
     capNhatTienKhachThanhToan(false);
-    if (hasPriceChanged) {
-      danhDauCanApDungLaiPhieu();
-    }
-    return hasPriceChanged;
+    return false;
   }
 
   async function luuHoaDonHienTai(force = false) {

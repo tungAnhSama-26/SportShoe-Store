@@ -1,6 +1,6 @@
 package com.example.server.repository;
 
-import com.example.server.entity.ThanhToan;
+import com.example.server.entity    .ThanhToan;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

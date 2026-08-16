@@ -231,9 +231,7 @@ public class ThucThiThanhToanTaiQuayService {
 
         BigDecimal tongTienHang = items.stream()
                 .map(item -> {
-                    BigDecimal giaHienHanh = productUseCase.layGiaBanThucTe(item.getGiayChiTiet());
-                    item.setGiaDonVi(giaHienHanh);
-                    item.setThanhTien(giaHienHanh.multiply(BigDecimal.valueOf(item.getSoLuong().longValue())));
+                    item.setThanhTien(item.getGiaDonVi().multiply(BigDecimal.valueOf(item.getSoLuong().longValue())));
                     hoaDonChiTietRepository.save(item);
                     return item.getThanhTien();
                 })

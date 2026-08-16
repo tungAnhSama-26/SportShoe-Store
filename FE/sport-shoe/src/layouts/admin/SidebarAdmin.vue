@@ -396,17 +396,17 @@ function subItemClass(active) {
           />
         </button>
         <div v-show="openLichLam" class="space-y-1 overflow-hidden transition-all duration-300" :class="compactMode ? 'px-0 py-1' : 'pr-4 pl-[36px]'">
-          <router-link to="/admin/lich-lam-viec" :title="compactMode ? 'L\u1ecbch l\u00e0m vi\u1ec7c' : undefined" :class="subItemClass(isActive('/admin/lich-lam-viec'))">
+          <router-link to="/admin/lich-lam-viec" :title="compactMode ? 'Lịch làm việc' : undefined" :class="subItemClass(isActive('/admin/lich-lam-viec'))">
             <CalendarDays class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-lam-viec') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
-            <span v-if="!compactMode" class="leading-tight">L&#7883;ch l&#224;m vi&#7879;c</span>
+            <span v-if="!compactMode" class="whitespace-nowrap leading-tight">Lịch làm việc</span>
           </router-link>
-          <router-link to="/admin/lich-ca-lam" :title="compactMode ? 'L\u1ecbch ca l\u00e0m' : undefined" :class="subItemClass(isActive('/admin/lich-ca-lam'))">
+          <router-link to="/admin/lich-ca-lam" :title="compactMode ? 'Lịch ca làm' : undefined" :class="subItemClass(isActive('/admin/lich-ca-lam'))">
             <CalendarDays class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-ca-lam') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
-            <span v-if="!compactMode" class="leading-tight">L&#7883;ch ca l&#224;m</span>
+            <span v-if="!compactMode" class="whitespace-nowrap leading-tight">Lịch ca làm</span>
           </router-link>
-          <router-link to="/admin/lich-su-hoat-dong" :title="compactMode ? 'L\u1ecbch s\u1eed ho\u1ea1t \u0111\u1ed9ng' : undefined" :class="subItemClass(isActive('/admin/lich-su-hoat-dong'))">
+          <router-link to="/admin/lich-su-hoat-dong" :title="compactMode ? 'Lịch sử hoạt động' : undefined" :class="subItemClass(isActive('/admin/lich-su-hoat-dong'))">
             <History class="h-4 w-4 shrink-0" :class="[compactMode ? '' : 'mr-3', isActive('/admin/lich-su-hoat-dong') ? 'text-primary' : 'text-gray-400 dark:text-gray-500']" />
-            <span v-if="!compactMode" class="leading-tight">Lịch sử hoạt động</span>
+            <span v-if="!compactMode" class="whitespace-nowrap leading-tight">Lịch sử hoạt động</span>
           </router-link>
         </div>
       </div>

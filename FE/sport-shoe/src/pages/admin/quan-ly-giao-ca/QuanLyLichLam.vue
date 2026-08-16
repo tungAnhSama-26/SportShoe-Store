@@ -1058,7 +1058,7 @@ const caUnassigned = computed(
                 </option>
               </select>
               <div v-if="nhanVienKhaDung.length === 0" class="text-xs text-rose-500 mt-1">
-                Không còn nhân viên nào khả dụng để thêm.
+                Không còn nhân viên nào  để thêm.
               </div>
             </div>
 
