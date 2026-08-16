@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   FileText,
   Filter,
+  Loader2,
   RotateCcw,
   Search,
 } from "lucide-vue-next";

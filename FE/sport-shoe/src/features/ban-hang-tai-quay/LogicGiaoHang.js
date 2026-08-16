@@ -30,7 +30,7 @@ export function LogicGiaoHang({
     if (khachHangDuocChon.value?.diaChiMacDinh) {
       return khachHangDuocChon.value.diaChiMacDinh;
     }
-    return chuanHoaDiaChi(hoaDonChoDaChon.value?.thongTinGiaoHang?.diaChiGiaoHang);
+    return null;
   });
   const coTheTinhPhiVanChuyen = computed(
     () => choPhepGiaoHang.value &&
@@ -237,12 +237,10 @@ export function LogicGiaoHang({
       cauHinhGiaoHang.value
     ],
     () => {
-      if (coTheTinhPhiVanChuyen.value) {
-        if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
-        phiVanChuyenTimeout = setTimeout(() => {
-          xuLyTinhPhiVanChuyen().catch(() => {});
-        }, 800);
-      }
+      if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
+      phiVanChuyenTimeout = setTimeout(() => {
+        xuLyTinhPhiVanChuyen().catch(() => {});
+      }, 800);
     },
     { deep: true }
   );

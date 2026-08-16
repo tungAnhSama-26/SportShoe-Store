@@ -113,6 +113,12 @@ watch(() => form.value.diaChiId, async (id) => {
   const selected = props.savedAddresses.find((item) => item.id === id);
   if (!selected) {
     diaChiDaDoiChieu.value = null;
+    form.value.tinhThanhCode = "";
+    form.value.tinhThanh = "";
+    form.value.phuongXaCode = "";
+    form.value.phuongXa = "";
+    form.value.diaChiCuThe = "";
+    dsPhuongXa.value = [];
     return;
   }
   form.value.tenNguoiNhan = selected.hoTen || form.value.tenNguoiNhan;
