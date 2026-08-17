@@ -270,6 +270,11 @@ public class ClientXemDonHangService {
         boolean daSuaDiaChi = daCoSuKien(hd.getId(), LichSuHoaDonEvent.KHACH_SUA_DIA_CHI);
         boolean coTheSua = dangChoXacNhan && !laCK && !daSuaDiaChi;
         boolean daNhanHang = daCoSuKien(hd.getId(), LichSuHoaDonEvent.KHACH_DA_NHAN_HANG);
+        boolean daThanhToan = laCK || coThanhToanThanhCong(hd);
+        boolean coTheNhanHang = hd.getTrangThai() != null
+                && hd.getTrangThai() == TRANG_THAI_DA_GIAO_HANG
+                && daThanhToan
+                && !daNhanHang;
 
         int virtualStatus = hd.getTrangThai();
         String virtualStatusText = nhanTrangThai(hd.getTrangThai());
@@ -302,7 +307,9 @@ public class ClientXemDonHangService {
                 laCK ? "CHUYEN_KHOAN" : "COD",
                 // Khách KHÔNG được phép sửa số lượng sản phẩm (chỉ còn sửa thông tin giao hàng + hủy).
                 dangChoXacNhan, coTheSua, false, ngayGiao,
-                daSuaDiaChi ? 1 : 0);
+                daSuaDiaChi ? 1 : 0,
+                daThanhToan,
+                coTheNhanHang);
     }
 
     private boolean coThanhToanThanhCong(HoaDon hoaDon) {
@@ -316,7 +323,7 @@ public class ClientXemDonHangService {
                 );
     }
 
-    /** Khách xác nhận đã nhận hàng (đơn phải ở trạng thái Đã giao hàng). */
+    /** Khách xác nhận đã nhận hàng (đơn phải ở trạng thái Đã giao hàng và đã thanh toán). */
     @Transactional
     public void xacNhanDaNhanHang(UUID khachHangId, Integer id) {
         HoaDon hd = hoaDonRepository.findDetailByIdForUpdate(id)
@@ -331,6 +338,12 @@ public class ClientXemDonHangService {
             throw new BusinessException("Đơn hàng chưa ở trạng thái đã giao hàng, chưa thể xác nhận đã nhận hàng");
         }
         
+        boolean laCK = laChuyenKhoan(hd.getId());
+        boolean daThanhToan = laCK || coThanhToanThanhCong(hd);
+        if (!daThanhToan) {
+            throw new BusinessException("Đơn hàng COD chưa hoàn tất thanh toán, chưa thể xác nhận đã nhận hàng");
+        }
+        
         Instant now = Instant.now();
         ghiLichSuKhachHang(
                 hd,
@@ -339,39 +352,21 @@ public class ClientXemDonHangService {
                 now
         );
         
-        // Kiểm tra xem đơn đã có giao dịch thanh toán thành công hay chưa
-        boolean daThanhToan = coThanhToanThanhCong(hd);
-        if (daThanhToan) {
-            hd.setTrangThai(TRANG_THAI_HOAN_THANH);
-            hd.setNgayCapNhat(now);
-            hoaDonRepository.save(hd);
-            
-            // Ghi lịch sử hóa đơn: Hoàn thành
-            LichSuHoaDon lichSu = new LichSuHoaDon();
-            lichSu.setHoaDon(hd);
-            lichSu.setNhanVien(null);
-            lichSu.setNguoiThaoTac("Khách hàng");
-            lichSu.setTrangThai(LichSuHoaDonEvent.HOAN_THANH.ma());
-            lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng và đơn đã được thanh toán");
-            lichSu.setNgayTao(now);
-            lichSuHoaDonRepository.save(lichSu);
-            
-            hoaDonRealtimePublisher.publishAfterCommit(hd, "TRANG_THAI");
-        } else {
-            hd.setNgayCapNhat(now);
-            hoaDonRepository.save(hd);
-            
-            // Ghi lịch sử hóa đơn: Khách hàng xác nhận nhận hàng, chờ thanh toán
-            LichSuHoaDon lichSu = new LichSuHoaDon();
-            lichSu.setHoaDon(hd);
-            lichSu.setNhanVien(null);
-            lichSu.setNguoiThaoTac("Khách hàng");
-            lichSu.setTrangThai(LichSuHoaDonEvent.DA_GIAO_HANG.ma());
-            lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng (Đang chờ xác nhận thanh toán)");
-            lichSu.setNgayTao(now);
-            lichSuHoaDonRepository.save(lichSu);
-        }
+        hd.setTrangThai(TRANG_THAI_HOAN_THANH);
+        hd.setNgayCapNhat(now);
+        hoaDonRepository.save(hd);
         
+        // Ghi lịch sử hóa đơn: Hoàn thành
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hd);
+        lichSu.setNhanVien(null);
+        lichSu.setNguoiThaoTac("Khách hàng");
+        lichSu.setTrangThai(LichSuHoaDonEvent.HOAN_THANH.ma());
+        lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng và hoàn tất đơn hàng");
+        lichSu.setNgayTao(now);
+        lichSuHoaDonRepository.save(lichSu);
+        
+        hoaDonRealtimePublisher.publishAfterCommit(hd, "TRANG_THAI");
         hoaDonRealtimePublisher.publishAfterCommit(hd, "DA_NHAN_HANG");
     }
 

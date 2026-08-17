@@ -7,7 +7,7 @@ import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenServic
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
-import com.example.server.core.inventory.TonKhoKhaDungService;
+
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
@@ -22,6 +22,13 @@ import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
+import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
+import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.service.EmailService;
 import java.math.BigDecimal;
@@ -62,7 +69,6 @@ public class ClientDatHangService {
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
     private final ThongBaoService thongBaoService;
-    private final TonKhoKhaDungService tonKhoKhaDungService;
     private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public ClientDatHangService(
@@ -77,7 +83,6 @@ public class ClientDatHangService {
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
             ThongBaoService thongBaoService,
-            TonKhoKhaDungService tonKhoKhaDungService,
             SanPhamRealtimePublisher sanPhamRealtimePublisher
     ) {
         this.emailService = emailService;
@@ -91,7 +96,6 @@ public class ClientDatHangService {
         this.vanChuyenRepository = vanChuyenRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.thongBaoService = thongBaoService;
-        this.tonKhoKhaDungService = tonKhoKhaDungService;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
     }
 
@@ -105,10 +109,6 @@ public class ClientDatHangService {
         return datHang(request, maGiaoDich, null);
     }
 
-    /**
-     * Snapshot KHÓA lúc tạo mã QR (VNPAY/VietQR): giá sản phẩm theo biến thể + tiền giảm voucher
-     * đã chốt. Khi tạo đơn dùng đúng snapshot này, không tính lại theo trạng thái hiện tại.
-     */
     public record KhoaThanhToan(Map<Integer, BigDecimal> giaSanPham, BigDecimal tienGiamVoucher) {}
 
     @Transactional
@@ -147,9 +147,6 @@ public class ClientDatHangService {
             int trangThaiHoaDon,
             boolean kichHoatDon
     ) {
-        if (!daGiuCho) {
-            tonKhoKhaDungService.khoaVaKiemTra(request.sanPhams(), null);
-        }
         Map<Integer, BigDecimal> giaKhoa = khoa == null ? null : khoa.giaSanPham();
         ClientCheckoutItemService.KetQua checkout =
                 checkoutItemService.chuanBi(request.sanPhams(), giaKhoa, daGiuCho);
@@ -283,8 +280,8 @@ public class ClientDatHangService {
             throw new BusinessException("Phiên thanh toán không còn hiệu lực");
         }
         Instant now = Instant.now();
-        if (hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR).isBefore(now)) {
-            throw new BusinessException("Phiên thanh toán đã hết hạn giữ hàng");
+        if (hoaDon.getNgayTao().plus(java.time.Duration.ofMinutes(15)).isBefore(now)) {
+            throw new BusinessException("Phiên thanh toán đã hết hạn");
         }
 
         hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
