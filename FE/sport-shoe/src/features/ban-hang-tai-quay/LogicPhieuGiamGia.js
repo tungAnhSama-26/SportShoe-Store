@@ -366,10 +366,7 @@ export function LogicPhieuGiamGia({
       if (currentBest) {
           if (!phieuGiamGiaDaApDung.value) {
               if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
-                  maPhieuGiamGia.value = currentBest.ma;
-                  if (!dangApDungPhieu.value) {
-                      void xuLyApDungPhieu();
-                  }
+                  phieuTotHonDeXuat.value = currentBest;
               }
           } else if (phieuGiamGiaDaApDung.value.ma !== currentBest.ma) {
               const currentDiscount = tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
