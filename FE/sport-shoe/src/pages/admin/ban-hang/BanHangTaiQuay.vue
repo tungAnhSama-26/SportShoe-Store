@@ -38,9 +38,9 @@ const {
   boLocDanhMucDaChon,
   boLocMauSacDaChon,
   boLocKichCoDaChon,
-  giaToiThieuDaChon,
-  giaToiDaDaChon,
-  giaToiDaCoSan,
+  giaThapNhatDaChon,
+  giaCaoNhatDaChon,
+  giaCaoNhatCoSan,
   thuongHieuCoSan,
   danhMucCoSan,
   mauSacCoSan,
@@ -163,8 +163,8 @@ const datBoLocThuongHieu = (val) => { boLocThuongHieuDaChon.value = val; };
 const datBoLocDanhMuc = (val) => { boLocDanhMucDaChon.value = val; };
 const datBoLocMauSac = (val) => { boLocMauSacDaChon.value = val; };
 const datBoLocKichCo = (val) => { boLocKichCoDaChon.value = val; };
-const datGiaToiThieu = (val) => { giaToiThieuDaChon.value = val; };
-const datGiaToiDa = (val) => { giaToiDaDaChon.value = val; };
+const datGiaToiThieu = (val) => { giaThapNhatDaChon.value = val; };
+const datGiaToiDa = (val) => { giaCaoNhatDaChon.value = val; };
 const datMaPhieuGiamGia = (val) => { maPhieuGiamGia.value = val; };
 const datPhuongThucThanhToan = (val) => { phuongThucThanhToan.value = val; };
 const datGhiChuThanhToan = (val) => { ghiChuThanhToan.value = val; };
@@ -250,9 +250,9 @@ function xuLyThemKhachHang(khachHangMoi) {
                 :selected-category-filter="boLocDanhMucDaChon"
                 :selected-color-filter="boLocMauSacDaChon"
                 :selected-size-filter="boLocKichCoDaChon"
-                :selected-min-price="giaToiThieuDaChon"
-                :selected-max-price="giaToiDaDaChon"
-                :max-available-price="giaToiDaCoSan"
+                :selected-min-price="giaThapNhatDaChon"
+                :selected-max-price="giaCaoNhatDaChon"
+                :max-available-price="giaCaoNhatCoSan"
                 :available-brands="thuongHieuCoSan"
                 :available-categories="danhMucCoSan"
                 :available-colors="mauSacCoSan"
