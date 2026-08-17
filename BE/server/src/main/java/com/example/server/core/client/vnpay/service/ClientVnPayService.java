@@ -9,7 +9,7 @@ import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenServic
 import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
-import com.example.server.core.inventory.TonKhoKhaDungService;
+
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.ThanhToan;
@@ -47,6 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ClientVnPayService {
+
+    public static final java.time.Duration THOI_GIAN_HIEU_LUC_QR = java.time.Duration.ofMinutes(15);
 
     public static final String TRANG_THAI_CHO = "CHO";
     public static final String TRANG_THAI_DA_THANH_TOAN = "DA_THANH_TOAN";
@@ -130,7 +132,7 @@ public class ClientVnPayService {
                 request, maThanhToan, token, khoa);
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonCho.hoaDonId())
                 .orElseThrow(() -> new BusinessException("Không thể tạo phiên giữ hàng"));
-        Instant hetHanLuc = hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR);
+        Instant hetHanLuc = hoaDon.getNgayTao().plus(THOI_GIAN_HIEU_LUC_QR);
 
         String qrData;
         if ("VNPAY".equalsIgnoreCase(request.hinhThucThanhToan())
@@ -219,7 +221,7 @@ public class ClientVnPayService {
     @Scheduled(fixedRate = 60_000L)
     @Transactional
     public void donPhien() {
-        Instant moc = Instant.now().minus(TonKhoKhaDungService.THOI_GIAN_GIU_QR);
+        Instant moc = Instant.now().minus(THOI_GIAN_HIEU_LUC_QR);
         for (HoaDon hoaDon : hoaDonRepository.findExpiredOnlineQrForUpdate(moc)) {
             huyHoaDonCho(hoaDon, "Phiên QR hết hạn sau 5 phút");
         }
@@ -260,7 +262,7 @@ public class ClientVnPayService {
             return result;
         }
         HoaDon hoaDon = thanhToan.getHoaDon();
-        Instant hetHanLuc = hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR);
+        Instant hetHanLuc = hoaDon.getNgayTao().plus(THOI_GIAN_HIEU_LUC_QR);
         result.put("hetHanLuc", hetHanLuc.toString());
         if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == 1) {
             result.put("trangThai", TRANG_THAI_DA_THANH_TOAN);

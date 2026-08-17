@@ -37,7 +37,11 @@ public record DonHangChiTietResponse(
         /** Khách được sửa số lượng sản phẩm (COD + chờ xác nhận). */
         boolean coTheCapNhatSoLuong,
         Instant ngayGiao,
-        Integer soLanSuaDiaChi
+        Integer soLanSuaDiaChi,
+        /** Đơn hàng đã hoàn tất thanh toán (Chuyển khoản hoặc COD đã thu tiền). */
+        boolean daThanhToan,
+        /** Khách được phép bấm xác nhận đã nhận hàng (Đã giao hàng + đã thanh toán + chưa xác nhận nhận hàng). */
+        boolean coTheNhanHang
 ) {
     public record LichSuTrangThai(
             String trangThai,
