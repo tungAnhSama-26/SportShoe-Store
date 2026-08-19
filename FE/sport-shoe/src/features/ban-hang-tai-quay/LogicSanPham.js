@@ -442,7 +442,6 @@ export function LogicSanPham({
   watch(tuKhoaSanPham, (value) => {
     xoaBoDemThoiGianSanPham();
     trangHienTai.value = 1;
-    hienThiDanhSachSanPham.value = value.trim().length > 0;
     boDemThoiGianSanPham = window.setTimeout(() => {
       void taiSanPham(value);
     }, 250);

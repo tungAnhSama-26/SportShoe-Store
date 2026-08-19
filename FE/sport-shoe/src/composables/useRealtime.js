@@ -58,8 +58,7 @@ export function useRealtime() {
     const componentSubscriptions = []; // Local to the component using this composable
 
     const subscribeTopic = (topic, callback) => {
-        // Use SSE for heavy topics
-        const useSSE = topic === '/topic/admin/san-pham' || topic === '/topic/admin/thuoc-tinh' || topic === '/topic/admin/pos-sync';
+        const useSSE = topic === '/topic/admin/san-pham' || topic === '/topic/admin/thuoc-tinh';
 
         if (useSSE) {
             const sub = { topic, callback, isSSE: true };

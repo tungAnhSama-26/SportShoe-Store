@@ -308,7 +308,7 @@ public class HoaDonChoTaiQuayService {
 
         hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HUY);
         hoaDon.setNgayCapNhat(Instant.now());
-        hoaDon.setGhiChu("Hoa don cho da bi huy");
+        hoaDon.setGhiChu("Hóa đơn chờ đã bị hủy");
         hoaDon.setNhanVien(invoiceUseCase.resolveNhanVienDangDangNhap());
         hoaDonRepository.save(hoaDon);
         invoiceUseCase.luuLichSuHoaDon(hoaDon, TRANG_THAI_HOA_DON_HUY, hoaDon.getGhiChu());
