@@ -47,7 +47,6 @@ watch(hienModalGiaoHang, async (newVal) => {
 
 function handleSaveModal(data) {
   emit("update-shipping", data);
-  emit("calculate-shipping");
   hienModalGiaoHang.value = false;
 }
 
@@ -88,7 +87,6 @@ const localSoDienThoai = computed({
               type="text"
               placeholder="Tên người nhận"
               class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-[13px] text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900"
-              @blur="emit('calculate-shipping')"
             />
           </label>
           <label class="space-y-1.5">
@@ -99,7 +97,6 @@ const localSoDienThoai = computed({
               inputmode="numeric"
               placeholder="Số điện thoại"
               class="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-[13px] text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900"
-              @blur="emit('calculate-shipping')"
             />
           </label>
         </div>

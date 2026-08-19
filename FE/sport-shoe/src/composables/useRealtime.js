@@ -43,6 +43,15 @@ const client = new Client({
                 sub.stompSubscription = null;
             }
         });
+    },
+    onWebSocketClose: () => {
+        console.log('WebSocket connection closed');
+        isConnected.value = false;
+        subscriptions.forEach(sub => {
+            if (!sub.isSSE) {
+                sub.stompSubscription = null;
+            }
+        });
     }
 });
 

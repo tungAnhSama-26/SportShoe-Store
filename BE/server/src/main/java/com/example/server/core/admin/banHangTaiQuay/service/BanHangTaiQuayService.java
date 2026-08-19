@@ -19,6 +19,8 @@ import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -160,7 +162,7 @@ public class BanHangTaiQuayService {
     }
 
     private void phatRealtimeHoaDonCho(String action, Integer hoaDonId) {
-        webSocketNotificationService.sendToTopic(
+        Runnable publish = () -> webSocketNotificationService.sendToTopic(
                 POS_SYNC_TOPIC,
                 "POS_INVOICE_CHANGED",
                 Map.of(
@@ -168,6 +170,19 @@ public class BanHangTaiQuayService {
                         "invoiceId", hoaDonId
                 )
         );
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()
+                && TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish.run();
+                }
+            });
+            return;
+        }
+
+        publish.run();
     }
 
     @Transactional(readOnly = true)
