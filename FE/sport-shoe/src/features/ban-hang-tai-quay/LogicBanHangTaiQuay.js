@@ -230,20 +230,17 @@ function LogicBanHangTaiQuay() {
     xuLyInHoaDonTaiQuay
   } = LogicInHoaDon();
 
-  const { subscribeTopic, publishMessage } = useRealtime();
+  const { isConnected, subscribeTopic, publishMessage } = useRealtime();
 
   const sessionId = Math.random().toString(36).substring(2, 15);
   let isSyncingUI = false;
-  let lastLocalSaveTime = 0;
 
   subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
     const msg = rawMsg?.payload ?? rawMsg;
     if (msg.sender === sessionId) return;
 
     if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
-      if (Date.now() - lastLocalSaveTime < 2500 && (msg.action === 'UPDATED' || msg.action === 'CREATED')) {
-        return;
-      }
+      isSyncingUI = true;
       try {
         await taiDanhSachHoaDonCho();
         if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
@@ -262,6 +259,8 @@ function LogicBanHangTaiQuay() {
         }
       } catch (e) {
         console.error("Lỗi khi đồng bộ realtime POS:", e);
+      } finally {
+        isSyncingUI = false;
       }
       return;
     }
@@ -269,6 +268,10 @@ function LogicBanHangTaiQuay() {
     if (msg.action === 'CHON_HOA_DON') {
       isSyncingUI = true;
       try {
+        if (msg.invoiceId == null) {
+          xoaBanNhap();
+          return;
+        }
         await taiDanhSachHoaDonCho();
         const invoice = danhSachHoaDonCho.value.find(hd => hd.id === msg.invoiceId);
         if (invoice) {
@@ -307,6 +310,28 @@ function LogicBanHangTaiQuay() {
         isSyncingUI = false;
         dangLuuNoiBo = false;
       }, 50);
+    }
+  });
+
+  watch(isConnected, async (connected) => {
+    if (!connected) return;
+
+    isSyncingUI = true;
+    try {
+      const currentInvoiceId = hoaDonChoDaChon.value?.id;
+      await taiDanhSachHoaDonCho();
+      if (!currentInvoiceId) return;
+
+      const currentInvoice = danhSachHoaDonCho.value.find((invoice) => invoice.id === currentInvoiceId);
+      if (currentInvoice) {
+        await chonHoaDonCho(currentInvoice);
+      } else {
+        xoaBanNhap();
+      }
+    } catch (e) {
+      console.error("Lỗi tải lại POS sau khi kết nối realtime:", e);
+    } finally {
+      isSyncingUI = false;
     }
   });
 
@@ -833,7 +858,6 @@ function LogicBanHangTaiQuay() {
     
     try {
       while (true) {
-        lastLocalSaveTime = Date.now();
         const currentInvoiceId = hoaDonChoDaChon.value.id;
         const payload = {
           tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
@@ -1047,7 +1071,6 @@ function LogicBanHangTaiQuay() {
       return;
     }
     dangLuuHoaDonCho.value = true;
-    lastLocalSaveTime = Date.now();
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
     try {
