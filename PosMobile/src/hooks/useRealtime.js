@@ -40,6 +40,11 @@ function getClient() {
         console.log('Disconnected from WebSocket');
         globalIsConnected = false;
         globalSubscriptions.forEach(sub => sub.stompSubscription = null);
+      },
+      onWebSocketClose: () => {
+        console.log('WebSocket connection closed (React Native)');
+        globalIsConnected = false;
+        globalSubscriptions.forEach(sub => sub.stompSubscription = null);
       }
     });
   }

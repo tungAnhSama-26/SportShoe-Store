@@ -3,6 +3,15 @@ import { tinhPhiVanChuyenTaiQuay } from "../../services/ban-hang-tai-quay";
 import { showError } from "../../utils/alert";
 import { chuanHoaDiaChi, diaChiHopLe, dinhDangDiaChi } from "../../utils/dia-chi";
 
+function layDiaChiDungDeTinhPhi(value) {
+  const diaChi = chuanHoaDiaChi(value);
+  return {
+    tinhThanh: diaChi.tinhThanh,
+    phuongXa: diaChi.phuongXa,
+    diaChiCuThe: diaChi.diaChiCuThe
+  };
+}
+
 export function LogicGiaoHang({
   choPhepGiaoHang,
   tenNguoiNhanGiaoHang,
@@ -101,14 +110,7 @@ export function LogicGiaoHang({
   }
 
   function capNhatThongTinGiaoHang(patch) {
-    const canTinhLai = [
-      "diaChiGiaoHang",
-      "serviceTypeId",
-      "length",
-      "width",
-      "height",
-      "weight"
-    ].some((key) => Object.prototype.hasOwnProperty.call(patch, key));
+    const khoaTinhPhiTruocKhiCapNhat = taoKhoaTinhPhiVanChuyen();
 
     if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       choPhepGiaoHang.value = Boolean(patch.giaoHang);
@@ -183,12 +185,37 @@ export function LogicGiaoHang({
       return;
     }
 
-    if (canTinhLai) {
+    if (khoaTinhPhiTruocKhiCapNhat !== taoKhoaTinhPhiVanChuyen()) {
       danhDauCanTinhLaiPhiVanChuyen();
     }
   }
 
-  async function xuLyTinhPhiVanChuyen() {
+  let khoaYeuCauPhiDangChay = "";
+  let khoaYeuCauPhiGanNhat = "";
+
+  function taoKhoaTinhPhiVanChuyen() {
+    return JSON.stringify({
+      diaChi: layDiaChiDungDeTinhPhi(diaChiGiaoHangHienThi.value),
+      items: cartItems.value
+        .map(item => ({ id: String(item.chiTietId), sl: Number(item.soLuong) }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
+      giaoHang: Boolean(choPhepGiaoHang.value),
+      cauHinh: {
+        serviceTypeId: Number(cauHinhGiaoHang.value.serviceTypeId),
+        length: Number(cauHinhGiaoHang.value.length),
+        width: Number(cauHinhGiaoHang.value.width),
+        height: Number(cauHinhGiaoHang.value.height),
+        weight: Number(cauHinhGiaoHang.value.weight)
+      }
+    });
+  }
+
+  async function xuLyTinhPhiVanChuyen(options = {}) {
+    const force = Boolean(options?.force);
+    const khoaYeuCau = taoKhoaTinhPhiVanChuyen();
+    if (khoaYeuCauPhiDangChay || (!force && khoaYeuCau === khoaYeuCauPhiGanNhat)) {
+      return;
+    }
     if (!coTheTinhPhiVanChuyen.value) {
       if (!choPhepGiaoHang.value || !diaChiHopLe(diaChiGiaoHangHienThi.value)) {
         phiVanChuyen.value = 0;
@@ -201,6 +228,8 @@ export function LogicGiaoHang({
       }
       return;
     }
+    khoaYeuCauPhiDangChay = khoaYeuCau;
+    khoaYeuCauPhiGanNhat = khoaYeuCau;
     dangTinhPhiVanChuyen.value = true;
     try {
       const items = cartItems.value.map(item => ({
@@ -233,26 +262,34 @@ export function LogicGiaoHang({
       moTaPhi.value = "";
       showError(error instanceof Error ? error.message : "Không thể tính phí vận chuyển");
     } finally {
+      khoaYeuCauPhiDangChay = "";
       dangTinhPhiVanChuyen.value = false;
     }
   }
 
-  const dependenciesTinhPhi = computed(() => {
-    return JSON.stringify({
-      diaChi: diaChiGiaoHangHienThi.value,
-      items: cartItems.value.map(item => ({ id: item.chiTietId, sl: item.soLuong })),
-      giaoHang: choPhepGiaoHang.value,
-      cauHinh: cauHinhGiaoHang.value
-    });
-  });
+  const dependenciesTinhPhi = computed(taoKhoaTinhPhiVanChuyen);
 
   let phiVanChuyenTimeout = null;
   watch(
     dependenciesTinhPhi,
     (newVal, oldVal) => {
       if (newVal === oldVal) return;
+      if (!choPhepGiaoHang.value || !cartItems.value.length || !diaChiHopLe(diaChiGiaoHangHienThi.value)) {
+        khoaYeuCauPhiGanNhat = "";
+        if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
+        phiVanChuyenTimeout = null;
+        return;
+      }
+      if (daTinhPhiVanChuyen.value) {
+        if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
+        phiVanChuyenTimeout = null;
+        return;
+      }
+      if (newVal === khoaYeuCauPhiGanNhat || newVal === khoaYeuCauPhiDangChay) return;
       if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
       phiVanChuyenTimeout = setTimeout(() => {
+        phiVanChuyenTimeout = null;
+        if (newVal !== dependenciesTinhPhi.value) return;
         xuLyTinhPhiVanChuyen().catch(() => {});
       }, 800);
     }

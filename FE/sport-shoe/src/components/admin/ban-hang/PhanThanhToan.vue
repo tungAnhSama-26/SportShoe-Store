@@ -396,7 +396,7 @@ function handlePayNowFromQr() {
               type="button"
               title="Tính phí vận chuyển"
               class="flex h-7 w-7 items-center justify-center rounded-md border border-orange-200 dark:border-orange-800/50 bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400 transition hover:bg-orange-100 dark:hover:bg-orange-900/40 active:scale-95"
-              @click="emit('calculate-shipping')"
+              @click="emit('calculate-shipping', { force: true })"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"/>
