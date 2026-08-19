@@ -36,6 +36,24 @@ export default function PhanGiaoHang() {
   const [dsTinh, setDsTinh] = useState([]);
   const [dsPhuongXa, setDsPhuongXa] = useState([]);
   const [loaiDanhSach, setLoaiDanhSach] = useState(null);
+  const [phiNhapTay, setPhiNhapTay] = useState(String(phiGiaoHang));
+  const [dangSuaPhi, setDangSuaPhi] = useState(false);
+
+  useEffect(() => {
+    if (!dangSuaPhi) {
+      setPhiNhapTay(String(phiGiaoHang));
+    }
+  }, [phiGiaoHang, dangSuaPhi]);
+
+  const luuPhiNhapTay = () => {
+    const numeric = parseInt(phiNhapTay.replace(/[^0-9]/g, ''), 10);
+    const phiMoi = Number.isNaN(numeric) ? 0 : numeric;
+    setDangSuaPhi(false);
+    setPhiNhapTay(String(phiMoi));
+    if (phiMoi !== phiGiaoHang) {
+      setPhiGiaoHang(phiMoi);
+    }
+  };
 
   useEffect(() => {
     layTinhThanhHaiCap()
@@ -179,11 +197,11 @@ export default function PhanGiaoHang() {
               style={styles.feeInput}
               keyboardType="numeric"
               placeholder="Nhập phí..."
-              value={(phiGiaoHang !== undefined && phiGiaoHang !== null) ? phiGiaoHang.toString() : ""}
-              onChangeText={(text) => {
-                const numeric = parseInt(text.replace(/[^0-9]/g, ''), 10);
-                setPhiGiaoHang(isNaN(numeric) ? 0 : numeric);
-              }}
+              value={phiNhapTay}
+              onFocus={() => setDangSuaPhi(true)}
+              onChangeText={(text) => setPhiNhapTay(text.replace(/[^0-9]/g, ''))}
+              onBlur={luuPhiNhapTay}
+              onSubmitEditing={luuPhiNhapTay}
             />
             {thongTinGiaoHang.moTaPhi ? (
               <Text style={thongTinGiaoHang.nguonTinhPhi === 'GHN_LIVE' ? styles.liveFeeNote : styles.offlineFeeNote}>

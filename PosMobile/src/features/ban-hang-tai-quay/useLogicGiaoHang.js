@@ -3,6 +3,25 @@ import { tinhPhiVanChuyenTaiQuay } from '../../api/dichVuBanHang';
 import { showError } from '../../utils/alert';
 import { chuanHoaDiaChi, diaChiHopLe, dinhDangDiaChi } from '../../utils/diaChi';
 
+function taoKhoaNoiDungDiaChi(value) {
+  const diaChi = chuanHoaDiaChi(value);
+  const chuanHoaChuoi = (text) => String(text || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi-VN');
+  return JSON.stringify([
+    chuanHoaChuoi(diaChi.tinhThanh),
+    chuanHoaChuoi(diaChi.phuongXa),
+    chuanHoaChuoi(diaChi.diaChiCuThe)
+  ]);
+}
+
+function layDiaChiDungDeTinhPhi(value) {
+  const diaChi = chuanHoaDiaChi(value);
+  return {
+    tinhThanh: diaChi.tinhThanh,
+    phuongXa: diaChi.phuongXa,
+    diaChiCuThe: diaChi.diaChiCuThe
+  };
+}
+
 export function useLogicGiaoHang({
   choPhepGiaoHang,
   setChoPhepGiaoHang,
@@ -26,7 +45,8 @@ export function useLogicGiaoHang({
   setCauHinhGiaoHang,
   khachHangDuocChon,
   hoaDonChoDaChon,
-  cartItems
+  cartItems,
+  onPhiVanChuyenDaTinh
 }) {
   const [nguonTinhPhi, setNguonTinhPhi] = useState('');
   const [moTaPhi, setMoTaPhi] = useState('');
@@ -62,13 +82,14 @@ export function useLogicGiaoHang({
     return chuanHoaDiaChi(hoaDonChoDaChon?.thongTinGiaoHang?.diaChiGiaoHang);
   }, [diaChiGiaoHang, khachHangDuocChon, hoaDonChoDaChon]);
 
-  const coTheTinhPhiVanChuyen = useMemo(
+  const duDieuKienTinhPhiVanChuyen = useMemo(
     () => choPhepGiaoHang &&
       cartItems.length > 0 &&
-      diaChiHopLe(diaChiGiaoHangHienThi) &&
-      !dangTinhPhiVanChuyen,
-    [choPhepGiaoHang, cartItems.length, diaChiGiaoHangHienThi, dangTinhPhiVanChuyen]
+      diaChiHopLe(diaChiGiaoHangHienThi),
+    [choPhepGiaoHang, cartItems.length, diaChiGiaoHangHienThi]
   );
+
+  const coTheTinhPhiVanChuyen = duDieuKienTinhPhiVanChuyen && !dangTinhPhiVanChuyen;
 
   const coThongTinGiaoHangHopLe = useMemo(
     () => !choPhepGiaoHang ||
@@ -110,7 +131,8 @@ export function useLogicGiaoHang({
     setDaTinhPhiVanChuyen(false);
     setNguonTinhPhi('');
     setMoTaPhi('');
-  }, [choPhepGiaoHang, setPhiVanChuyen, setDiaChiDaXacNhan, setDaTinhPhiVanChuyen]);
+    onPhiVanChuyenDaTinh?.(null);
+  }, [choPhepGiaoHang, setPhiVanChuyen, setDiaChiDaXacNhan, setDaTinhPhiVanChuyen, onPhiVanChuyenDaTinh]);
 
   const taoPayloadGiaoHang = useCallback(() => {
     if (!choPhepGiaoHang) {
@@ -135,14 +157,7 @@ export function useLogicGiaoHang({
   }, [choPhepGiaoHang, tenNguoiNhanGiaoHangHienThi, soDienThoaiNguoiNhanGiaoHangHienThi, diaChiGiaoHangHienThi, phiVanChuyen, donViVanChuyen]);
 
   const capNhatThongTinGiaoHang = useCallback((patch) => {
-    const canTinhLai = [
-      "diaChiGiaoHang",
-      "serviceTypeId",
-      "length",
-      "width",
-      "height",
-      "weight"
-    ].some((key) => Object.prototype.hasOwnProperty.call(patch, key));
+    let canTinhLai = false;
 
     if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       setChoPhepGiaoHang(Boolean(patch.giaoHang));
@@ -155,7 +170,11 @@ export function useLogicGiaoHang({
     }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
       const newDiaChi = chuanHoaDiaChi(patch.diaChiGiaoHang);
-      setDiaChiGiaoHang(prev => JSON.stringify(prev) !== JSON.stringify(newDiaChi) ? newDiaChi : prev);
+      const diaChiHienTai = chuanHoaDiaChi(diaChiGiaoHang);
+      if (JSON.stringify(diaChiHienTai) !== JSON.stringify(newDiaChi)) {
+        canTinhLai = taoKhoaNoiDungDiaChi(diaChiHienTai) !== taoKhoaNoiDungDiaChi(newDiaChi);
+        setDiaChiGiaoHang(newDiaChi);
+      }
     }
     
     let hasCauHinhChange = false;
@@ -181,20 +200,24 @@ export function useLogicGiaoHang({
       if (newCauHinh.weight !== cauHinhGiaoHang.weight) hasCauHinhChange = true;
     }
     if (hasCauHinhChange) {
+      canTinhLai = true;
       setCauHinhGiaoHang(newCauHinh);
     }
     
     if (Object.prototype.hasOwnProperty.call(patch, "phiVanChuyen")) {
-      setPhiVanChuyen(Number(patch.phiVanChuyen) || 0);
+      const phiMoi = Number(patch.phiVanChuyen) || 0;
+      setPhiVanChuyen(phiMoi);
       setDaTinhPhiVanChuyen(true);
       setNguonTinhPhi("MANUAL");
       setMoTaPhi("Phí giao hàng được nhập thủ công");
+      onPhiVanChuyenDaTinh?.(phiMoi);
     }
 
     if (!patch.giaoHang && Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       setPhiVanChuyen(0);
       setDiaChiDaXacNhan("");
       setDaTinhPhiVanChuyen(false);
+      onPhiVanChuyenDaTinh?.(null);
       return;
     }
 
@@ -204,21 +227,27 @@ export function useLogicGiaoHang({
          setPhiVanChuyen(0);
          setDiaChiDaXacNhan("");
          setDaTinhPhiVanChuyen(false);
+         onPhiVanChuyenDaTinh?.(null);
       }
     }
-  }, [choPhepGiaoHang, cauHinhGiaoHang, setChoPhepGiaoHang, setTenNguoiNhanGiaoHang, setSdtNguoiNhanGiaoHang, setDiaChiGiaoHang, setCauHinhGiaoHang, setPhiVanChuyen, setDiaChiDaXacNhan, setDaTinhPhiVanChuyen]);
+  }, [choPhepGiaoHang, diaChiGiaoHang, cauHinhGiaoHang, setChoPhepGiaoHang, setTenNguoiNhanGiaoHang, setSdtNguoiNhanGiaoHang, setDiaChiGiaoHang, setCauHinhGiaoHang, setPhiVanChuyen, setDiaChiDaXacNhan, setDaTinhPhiVanChuyen, onPhiVanChuyenDaTinh]);
+
+  const feeRequestInFlightRef = useRef(false);
 
   const xuLyTinhPhiVanChuyen = useCallback(async () => {
+    if (feeRequestInFlightRef.current) return;
     if (!coTheTinhPhiVanChuyen) {
       if (!choPhepGiaoHang || !diaChiHopLe(diaChiGiaoHangHienThi)) {
         setPhiVanChuyen(0);
         setDonViVanChuyen("");
         setDaTinhPhiVanChuyen(true);
         setDangTinhPhiVanChuyen(false);
+        onPhiVanChuyenDaTinh?.(null);
         return;
       }
       return;
     }
+    feeRequestInFlightRef.current = true;
     setDangTinhPhiVanChuyen(true);
     try {
       const items = cartItems.map(item => ({
@@ -236,7 +265,9 @@ export function useLogicGiaoHang({
       });
       // Extract data
       const result = response?.data || response;
-      setPhiVanChuyen(result.phiVanChuyen || 0);
+      const phiMoi = Number(result.phiVanChuyen ?? result.total ?? 0);
+      setPhiVanChuyen(phiMoi);
+      onPhiVanChuyenDaTinh?.(phiMoi);
       setDiaChiDaXacNhan(dinhDangDiaChi(result.diaChiDaDoiSoat));
       setNguonTinhPhi(result.nguonTinhPhi || 'GHN_LIVE');
       setMoTaPhi(result.nguonTinhPhi === 'GHN_CACHE'
@@ -251,23 +282,33 @@ export function useLogicGiaoHang({
       setDaTinhPhiVanChuyen(false);
       setNguonTinhPhi('');
       setMoTaPhi('');
+      onPhiVanChuyenDaTinh?.(null);
       showError(error instanceof Error ? error.message : "Không thể tính phí vận chuyển");
     } finally {
+      feeRequestInFlightRef.current = false;
       setDangTinhPhiVanChuyen(false);
     }
-  }, [coTheTinhPhiVanChuyen, choPhepGiaoHang, diaChiGiaoHangHienThi, setPhiVanChuyen, setDonViVanChuyen, setDaTinhPhiVanChuyen, setDangTinhPhiVanChuyen, cartItems, cauHinhGiaoHang]);
+  }, [coTheTinhPhiVanChuyen, choPhepGiaoHang, diaChiGiaoHangHienThi, setPhiVanChuyen, setDonViVanChuyen, setDaTinhPhiVanChuyen, setDangTinhPhiVanChuyen, cartItems, cauHinhGiaoHang, onPhiVanChuyenDaTinh]);
 
   const timeoutRef = useRef(null);
+  const lastAutoFeeKeyRef = useRef("");
 
   const dependenciesTinhPhi = useMemo(() => {
     return JSON.stringify({
-      diaChi: diaChiGiaoHangHienThi,
-      items: cartItems.map(item => ({ id: item.chiTietId, sl: item.soLuong })),
+      diaChi: layDiaChiDungDeTinhPhi(diaChiGiaoHangHienThi),
+      items: cartItems
+        .map(item => ({ id: item.chiTietId, sl: item.soLuong }))
+        .sort((a, b) => String(a.id).localeCompare(String(b.id))),
       giaoHang: choPhepGiaoHang,
-      cauHinh: cauHinhGiaoHang,
-      coThe: coTheTinhPhiVanChuyen
+      cauHinh: {
+        serviceTypeId: cauHinhGiaoHang.serviceTypeId,
+        length: cauHinhGiaoHang.length,
+        width: cauHinhGiaoHang.width,
+        height: cauHinhGiaoHang.height,
+        weight: cauHinhGiaoHang.weight
+      }
     });
-  }, [diaChiGiaoHangHienThi, cartItems, choPhepGiaoHang, cauHinhGiaoHang, coTheTinhPhiVanChuyen]);
+  }, [diaChiGiaoHangHienThi, cartItems, choPhepGiaoHang, cauHinhGiaoHang]);
 
   const latestXuLyTinhPhiRef = useRef(xuLyTinhPhiVanChuyen);
   useEffect(() => {
@@ -275,16 +316,29 @@ export function useLogicGiaoHang({
   }, [xuLyTinhPhiVanChuyen]);
 
   useEffect(() => {
-    if (coTheTinhPhiVanChuyen) {
+    if (!duDieuKienTinhPhiVanChuyen) {
+      lastAutoFeeKeyRef.current = "";
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        latestXuLyTinhPhiRef.current().catch(() => {});
-      }, 800);
+      return undefined;
     }
+
+    if (daTinhPhiVanChuyen) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      return undefined;
+    }
+
+    if (lastAutoFeeKeyRef.current === dependenciesTinhPhi) return undefined;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      if (lastAutoFeeKeyRef.current === dependenciesTinhPhi) return;
+      lastAutoFeeKeyRef.current = dependenciesTinhPhi;
+      latestXuLyTinhPhiRef.current().catch(() => {});
+    }, 800);
+
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [dependenciesTinhPhi, coTheTinhPhiVanChuyen]);
+  }, [dependenciesTinhPhi, duDieuKienTinhPhiVanChuyen, daTinhPhiVanChuyen]);
 
   return {
     tenNguoiNhanGiaoHangHienThi,
