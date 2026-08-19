@@ -261,7 +261,11 @@ export function useLogicBanHangTaiQuay() {
     );
     const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
 
-    khachHangLogic.setTuKhoaKhachHang(invoice.tenKhachHang || invoice.soDienThoai || "");
+    if (hoaDonChoDaChon?.id === invoice.id && !invoice.khachHangId && !invoice.tenKhachHang) {
+      // Giữ nguyên tuKhoaKhachHang để không bị mất chữ khi người dùng đang gõ
+    } else {
+      khachHangLogic.setTuKhoaKhachHang(invoice.tenKhachHang || invoice.soDienThoai || "");
+    }
     khachHangLogic.setKhachHangDuocChon(invoice.khachHangId
       ? (khachHangLogic.khachHangDuocChon?.id === invoice.khachHangId
           ? { ...khachHangLogic.khachHangDuocChon, hoTen: invoice.tenKhachHang, sdt: invoice.soDienThoai }
@@ -336,40 +340,65 @@ export function useLogicBanHangTaiQuay() {
   }, [sanPhamLogic, khachHangLogic, gioHangLogic, phieuGiamGiaLogic, thanhToanLogic]);
 
   const dangLuuNoiBoRef = useRef(false);
+  const dangLuuAPIRef = useRef(false);
+  const pendingSaveRef = useRef(false);
+
+  const latestStateRef = useRef({ khachHangLogic, tenNguoiNhanGiaoHang, sdtNguoiNhanGiaoHang, phieuGiamGiaLogic, choPhepGiaoHang, giaoHangLogic, gioHangLogic, hoaDonChoDaChon });
+  latestStateRef.current = { khachHangLogic, tenNguoiNhanGiaoHang, sdtNguoiNhanGiaoHang, phieuGiamGiaLogic, choPhepGiaoHang, giaoHangLogic, gioHangLogic, hoaDonChoDaChon };
 
   const luuHoaDonHienTai = useCallback(async (force = false) => {
+    const { hoaDonChoDaChon } = latestStateRef.current;
     if (!hoaDonChoDaChon) return;
     if (dangThanhToan && !force) return;
-    lastLocalSaveTime.current = Date.now();
+    
+    if (dangLuuAPIRef.current) {
+      pendingSaveRef.current = true;
+      return;
+    }
+    
+    dangLuuAPIRef.current = true;
+    pendingSaveRef.current = false;
+    
     try {
-      const payload = {
-        tenKhachHang: khachHangLogic.khachHangDuocChon?.hoTen || tenNguoiNhanGiaoHang || (khachHangLogic.laKhachVangLai ? KHACH_VANG_LAI : ""),
-        soDienThoai: khachHangLogic.khachHangDuocChon?.sdt || sdtNguoiNhanGiaoHang || "",
-        ghiChu: "",
-        khachHangId: khachHangLogic.khachHangDuocChon?.id || null,
-        maPhieuGiamGia: phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma || null,
-        thongTinGiaoHang: choPhepGiaoHang ? giaoHangLogic.taoPayloadGiaoHang() : null,
-        items: gioHangLogic.cartItems.map(item => ({
-          chiTietId: item.chiTietId,
-          soLuong: item.soLuong,
-          giaBan: item.giaBan
-        })),
-      };
-      const response = await capNhatHoaDonCho(hoaDonChoDaChon.id, payload);
-      
-      dangLuuNoiBoRef.current = true;
-      const responseData = response?.data || response;
-      if (responseData) {
-        // Cập nhật lại danh sách hóa đơn chờ để có giá trị mới nhất
-        setDanhSachHoaDonCho(prev => prev.map(hd => hd.id === hoaDonChoDaChon.id ? responseData : hd));
-        setHoaDonChoDaChon(responseData);
+      while (true) {
+        lastLocalSaveTime.current = Date.now();
+        const currentInvoiceId = latestStateRef.current.hoaDonChoDaChon.id;
+        const currentLogic = latestStateRef.current;
+        const payload = {
+          tenKhachHang: currentLogic.khachHangLogic.khachHangDuocChon?.hoTen || currentLogic.tenNguoiNhanGiaoHang || (currentLogic.khachHangLogic.laKhachVangLai ? KHACH_VANG_LAI : ""),
+          soDienThoai: currentLogic.khachHangLogic.khachHangDuocChon?.sdt || currentLogic.sdtNguoiNhanGiaoHang || "",
+          ghiChu: "",
+          khachHangId: currentLogic.khachHangLogic.khachHangDuocChon?.id || null,
+          maPhieuGiamGia: currentLogic.phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma || null,
+          thongTinGiaoHang: currentLogic.choPhepGiaoHang ? currentLogic.giaoHangLogic.taoPayloadGiaoHang() : null,
+          items: currentLogic.gioHangLogic.cartItems.map(item => ({
+            chiTietId: item.chiTietId,
+            soLuong: item.soLuong,
+            giaBan: item.giaBan
+          })),
+        };
+        const response = await capNhatHoaDonCho(currentInvoiceId, payload);
+        
+        dangLuuNoiBoRef.current = true;
+        const responseData = response?.data || response;
+        if (responseData) {
+          setDanhSachHoaDonCho(prev => prev.map(hd => hd.id === currentInvoiceId ? responseData : hd));
+          setHoaDonChoDaChon(responseData);
+        }
+        
+        // Use the function callback to get latest cart items when setting
+        currentLogic.gioHangLogic.setCartItems(prev => prev.map(item => ({
+          ...item,
+          soLuongBanDau: item.soLuong
+        })));
+        setTimeout(() => { dangLuuNoiBoRef.current = false; }, 50);
+
+        if (pendingSaveRef.current) {
+          pendingSaveRef.current = false;
+        } else {
+          break;
+        }
       }
-      
-      gioHangLogic.setCartItems(prev => prev.map(item => ({
-        ...item,
-        soLuongBanDau: item.soLuong
-      })));
-      setTimeout(() => { dangLuuNoiBoRef.current = false; }, 50);
     } catch (error) {
       console.error("Lỗi khi lưu hóa đơn chờ:", error);
       const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
@@ -387,8 +416,6 @@ export function useLogicBanHangTaiQuay() {
         
         if (maLoi) {
           setThongBaoLoi(`Phiếu giảm giá ${maLoi} không còn hợp lệ. Hệ thống đang tự động tìm phiếu giảm giá thay thế...`);
-          // Note: we can't easily call tuDongApDungVaDeXuatHangMucTiepTheo directly here as it's not exported. 
-          // It will trigger on re-render though.
         }
       }
 
@@ -403,6 +430,8 @@ export function useLogicBanHangTaiQuay() {
       }
 
       throw error;
+    } finally {
+      dangLuuAPIRef.current = false;
     }
   }, [hoaDonChoDaChon, khachHangLogic, tenNguoiNhanGiaoHang, sdtNguoiNhanGiaoHang, phieuGiamGiaLogic, choPhepGiaoHang, giaoHangLogic, gioHangLogic, chuyenHoaDonThanhBanNhap, dangThanhToan]);
 
@@ -474,6 +503,7 @@ export function useLogicBanHangTaiQuay() {
     thanhToanLogic.phuongThucThanhToan,
     thanhToanLogic.ghiChuThanhToan,
     khachHangLogic.tuKhoaKhachHang,
+    khachHangLogic.khachHangDuocChon,
     hoaDonChoDaChon,
     publishMessage,
     dangTaiChiTietHoaDon
@@ -573,6 +603,15 @@ export function useLogicBanHangTaiQuay() {
       return;
     }
     if (!coTheThanhToan) {
+      if (choPhepGiaoHang && !giaoHangLogic.daTinhPhiVanChuyen) {
+        showError("Vui lòng nhập phí giao hàng trước khi thanh toán (hoặc điền 0).");
+      } else if (choPhepGiaoHang && !giaoHangLogic.diaChiHopLe(giaoHangLogic.diaChiGiaoHangHienThi)) {
+        showError("Vui lòng nhập đầy đủ địa chỉ giao hàng.");
+      } else if (thanhToanLogic.thongBaoLoiThanhToan) {
+        showError(thanhToanLogic.thongBaoLoiThanhToan);
+      } else {
+        showError("Không thể thanh toán. Vui lòng kiểm tra lại thông tin.");
+      }
       return;
     }
 
@@ -580,7 +619,7 @@ export function useLogicBanHangTaiQuay() {
     if (betterCouponInfo) {
       // Because we are porting Vue's SweetAlert which awaits, we would need to mock or handle showPaymentConfirmWithCoupon
       // I'll skip the SweetAlert logic for now, or just show standard confirm
-      const choice = window.confirm(`Phiếu giảm giá ${betterCouponInfo.coupon.ma} tiết kiệm hơn. Bạn có muốn sử dụng không?`);
+      const choice = await showConfirm(`Phiếu giảm giá ${betterCouponInfo.coupon.ma} tiết kiệm hơn. Bạn có muốn sử dụng không?`);
       if (choice) {
         phieuGiamGiaLogic.setMaPhieuGiamGia(betterCouponInfo.coupon.ma);
         await phieuGiamGiaLogic.xuLyApDungPhieu(true, betterCouponInfo.coupon.ma);
@@ -609,13 +648,15 @@ export function useLogicBanHangTaiQuay() {
       }
 
       const payload = {
-        hoaDonChoId: hoaDonChoDaChon?.id ?? null,
+        hoaDonId: hoaDonChoDaChon?.id ?? null,
         khachHangId: layIdKhachHangHienTai(),
         tenKhachHang: khachHangLogic.khachHangDuocChon?.hoTen || (khachHangLogic.laKhachVangLai ? KHACH_VANG_LAI : ""),
         soDienThoai: khachHangLogic.khachHangDuocChon?.sdt || "",
         maPhieuGiamGia: phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma ?? null,
-        phuongThucThanhToan: thanhToanLogic.phuongThucThanhToan,
-        tienKhachDua: thanhToanLogic.tienKhachThanhToan,
+        hinhThucThanhToan: thanhToanLogic.phuongThucThanhToan,
+        tienKhachDua: thanhToanLogic.phuongThucThanhToan === 1 ? thanhToanLogic.tienKhachThanhToan : khachCanTra,
+        tienMat: null,
+        tienChuyenKhoan: null,
         ghiChu: thanhToanLogic.ghiChuThanhToan,
         thongTinGiaoHang: choPhepGiaoHang ? giaoHangLogic.taoPayloadGiaoHang() : null,
         items: gioHangLogic.taoDanhSachSanPhamThanhToan()
@@ -755,7 +796,9 @@ export function useLogicBanHangTaiQuay() {
 
           const invoice = newDanhSach.find((hd) => hd.id === msg.invoiceId);
           if (invoice) {
+            isSyncingUIRef.current = true;
             await latestRef.current.chonHoaDonCho(invoice);
+            setTimeout(() => { isSyncingUIRef.current = false; }, 50);
           }
         } catch (e) {
           console.error("Lỗi tải lại realtime POS:", e);
@@ -792,7 +835,10 @@ export function useLogicBanHangTaiQuay() {
           dangLuuNoiBoRef.current = true;
           skipNextAutosave.current = true;
           
-          lastReceivedSyncState.current = msg.state;
+          lastReceivedSyncState.current = {
+            ...msg.state,
+            diaChiGiaoHang: chuanHoaDiaChi(msg.state.diaChiGiaoHang)
+          };
 
           latestRef.current.setChoPhepGiaoHang(msg.state.choPhepGiaoHang);
           latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);

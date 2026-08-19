@@ -951,25 +951,26 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
   <div v-else class="schedule-page space-y-5">
 
     <!-- ───── HEADER TÙY CHỌN ───── -->
-    <div class="bg-white rounded-[16px] border border-slate-200 p-5 shadow-sm">
+    <div class="bg-white rounded-[16px] border border-slate-200 p-5 shadow-sm mb-6">
       <div class="flex items-center gap-3 mb-4">
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
           <Filter class="h-5 w-5" />
         </div>
         <h2 class="admin-section-title">Bộ lọc</h2>
       </div>
-      <div class="flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex flex-wrap items-center gap-4">
         <!-- Filters -->
-        <div class="flex items-center gap-4">
+        <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-2">
-            <span class="text-[13px] font-medium text-slate-700">Nhân viên <span class="text-rose-500"></span></span>
-            <div class="relative w-48">
-              <input v-model="timKiemNhanVien" type="text" placeholder="Tìm kiếm nhân viên..." class="w-full h-9 pl-3 pr-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition" />
+            <span class="text-[13px] font-medium text-slate-700">Nhân viên</span>
+            <div class="relative w-40">
+              <input v-model="timKiemNhanVien" type="text" placeholder="Tìm kiếm..." class="w-full h-9 pl-3 pr-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition" />
             </div>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-[13px] font-medium text-slate-700">Ca làm:</span>
-            <div class="relative w-40">
+            <div class="relative w-32">
               <select v-model="boLocCaLam" class="w-full h-9 px-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition bg-white cursor-pointer">
                 <option value="">Tất cả ca</option>
                 <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id">{{ ca.nhan }}</option>
@@ -979,36 +980,36 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
           <div class="flex items-center gap-2">
             <span class="text-[13px] font-medium text-slate-700">Ngày làm:</span>
             <div class="relative flex items-center h-9 border border-slate-200 rounded-lg bg-white overflow-hidden focus-within:border-rose-400 transition">
-              <input type="date" v-model="ngayLocSelect" class="w-36 h-full px-3 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
+              <input type="date" v-model="ngayLocSelect" class="w-32 h-full px-3 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
             </div>
           </div>
         </div>
-        
+
         <!-- Actions -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2 ml-auto">
           <!-- Xếp ca tự động (Duy trì chức năng cũ) -->
-          <button @click="xepCaDong" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Tạo một lịch khung cho mỗi ca trong tương lai' : 'Không còn ngày tương lai để xếp ca'" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-medium transition shadow-sm disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-slate-100">
+          <button @click="xepCaDong" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Tạo một lịch khung cho mỗi ca trong tương lai' : 'Không còn ngày tương lai để xếp ca'" class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-medium transition shadow-sm disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-slate-100">
             <Shuffle class="w-4 h-4" />
-            <span>Xếp ca tự động</span>
+            <span>Xếp tự động</span>
           </button>
-          <button @click="datLaiLichTuongLai" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Xóa lịch từ ngày mai đến cuối tuần đang xem' : 'Không còn ngày tương lai để đặt lại'" class="h-9 px-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-[13px] font-medium transition disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-white">
+          <button @click="datLaiLichTuongLai" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Xóa lịch từ ngày mai đến cuối tuần đang xem' : 'Không còn ngày tương lai để đặt lại'" class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-[13px] font-medium transition disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-white">
             <RotateCcw class="w-4 h-4" />
-            <span>Đặt lại lịch</span>
+            <span>Đặt lại</span>
           </button>
           <!-- Tải template button (red) -->
-          <button @click="xuatExcel" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
+          <button @click="xuatExcel" class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
             <Download class="w-4 h-4" />
-            <span>Tải template</span>
+            <span>Tải mẫu</span>
           </button>
           <!-- Import Excel button (dark navy) -->
-          <button class="h-9 px-4 flex items-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-medium transition shadow-sm">
+          <button class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-medium transition shadow-sm">
             <Upload class="w-4 h-4" />
-            <span>Import Excel</span>
+            <span>Import</span>
           </button>
           <!-- Thêm mới lịch làm việc -->
-          <button @click="moModalThemCaTuHeader" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
+          <button @click="moModalThemCaTuHeader" class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
             <Plus class="w-4 h-4" />
-            <span>Thêm mới lịch làm việc</span>
+            <span>Thêm lịch</span>
           </button>
         </div>
       </div>

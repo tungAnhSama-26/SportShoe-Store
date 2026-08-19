@@ -285,12 +285,18 @@ function LogicBanHangTaiQuay() {
       dangLuuNoiBo = true;
       skipNextAutosave = true;
 
-      lastReceivedSyncState = msg.state;
+      lastReceivedSyncState = {
+        ...msg.state,
+        diaChiGiaoHang: chuanHoaDiaChi(msg.state.diaChiGiaoHang)
+      };
 
       choPhepGiaoHang.value = msg.state.choPhepGiaoHang;
       tenNguoiNhanGiaoHang.value = msg.state.tenNguoiNhanGiaoHang;
       sdtNguoiNhanGiaoHang.value = msg.state.sdtNguoiNhanGiaoHang;
-      diaChiGiaoHang.value = chuanHoaDiaChi(msg.state.diaChiGiaoHang);
+      const newDiaChi = chuanHoaDiaChi(msg.state.diaChiGiaoHang);
+      if (JSON.stringify(diaChiGiaoHang.value) !== JSON.stringify(newDiaChi)) {
+        diaChiGiaoHang.value = newDiaChi;
+      }
       tienKhachDua.value = msg.state.tienKhachDua;
       phuongThucThanhToan.value = msg.state.phuongThucThanhToan;
       ghiChuThanhToan.value = msg.state.ghiChuThanhToan;
@@ -706,7 +712,11 @@ function LogicBanHangTaiQuay() {
     );
     const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
 
-    tuKhoaKhachHang.value = invoice.tenKhachHang || invoice.soDienThoai || "";
+    if (hoaDonChoDaChon.value?.id === invoice.id && !invoice.khachHangId && !invoice.tenKhachHang) {
+      // Giữ nguyên tuKhoaKhachHang để không bị mất chữ khi người dùng đang gõ
+    } else {
+      tuKhoaKhachHang.value = invoice.tenKhachHang || invoice.soDienThoai || "";
+    }
     khachHangDuocChon.value = invoice.khachHangId
       ? (khachHangDuocChon.value?.id === invoice.khachHangId
           ? { ...khachHangDuocChon.value, hoTen: invoice.tenKhachHang, sdt: invoice.soDienThoai }
@@ -806,32 +816,54 @@ function LogicBanHangTaiQuay() {
     return false;
   }
 
+  let dangLuuAPI = false;
+  let pendingSave = false;
+
   async function luuHoaDonHienTai(force = false) {
     if (!hoaDonChoDaChon.value) return;
     if (dangThanhToan.value && !force) return;
-    lastLocalSaveTime = Date.now();
+    
+    if (dangLuuAPI) {
+      pendingSave = true;
+      return;
+    }
+    
+    dangLuuAPI = true;
+    pendingSave = false;
+    
     try {
-      const payload = {
-        tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
-        soDienThoai: khachHangDuocChon.value?.sdt || sdtNguoiNhanGiaoHang.value || "",
-        ghiChu: "",
-        khachHangId: khachHangDuocChon.value?.id || null,
-        maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma || null,
-        thongTinGiaoHang: (choPhepGiaoHang.value && coThongTinGiaoHangHopLe.value) ? taoPayloadGiaoHang() : null,
-        items: cartItems.value.map(item => ({
-          chiTietId: item.chiTietId,
-          soLuong: item.soLuong,
-          giaBan: item.giaBan
-        })),
-      };
-      const response = await capNhatHoaDonCho(hoaDonChoDaChon.value.id, payload);
-      // Cập nhật lại soLuongBanDau vì backend đã trừ tồn kho
-      dangLuuNoiBo = true;
-      cartItems.value = cartItems.value.map(item => ({
-        ...item,
-        soLuongBanDau: item.soLuong
-      }));
-      setTimeout(() => { dangLuuNoiBo = false; }, 50);
+      while (true) {
+        lastLocalSaveTime = Date.now();
+        const currentInvoiceId = hoaDonChoDaChon.value.id;
+        const payload = {
+          tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
+          soDienThoai: khachHangDuocChon.value?.sdt || sdtNguoiNhanGiaoHang.value || "",
+          ghiChu: "",
+          khachHangId: khachHangDuocChon.value?.id || null,
+          maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma || null,
+          thongTinGiaoHang: choPhepGiaoHang.value ? taoPayloadGiaoHang() : null,
+          items: cartItems.value.map(item => ({
+            chiTietId: item.chiTietId,
+            soLuong: item.soLuong,
+            giaBan: item.giaBan
+          })),
+        };
+        const response = await capNhatHoaDonCho(currentInvoiceId, payload);
+        
+        dangLuuNoiBo = true;
+        cartItems.value = cartItems.value.map(item => ({
+          ...item,
+          soLuongBanDau: item.soLuong
+        }));
+        setTimeout(() => { dangLuuNoiBo = false; }, 50);
+
+        if (pendingSave) {
+          pendingSave = false;
+          // loop again to save the latest state
+        } else {
+          break;
+        }
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
       if (msg.includes("Chỉ được cập nhật") || msg.includes("trạng thái chờ")) {
@@ -891,6 +923,8 @@ function LogicBanHangTaiQuay() {
       }
 
       throw error;
+    } finally {
+      dangLuuAPI = false;
     }
   }
   
@@ -940,7 +974,8 @@ function LogicBanHangTaiQuay() {
     tienKhachDua.value,
     phuongThucThanhToan.value,
     ghiChuThanhToan.value,
-    tuKhoaKhachHang.value
+    tuKhoaKhachHang.value,
+    khachHangDuocChon.value
   ], () => {
     if (isSyncingUI || dangTaiChiTietHoaDon.value) return;
     if (hoaDonChoDaChon.value) {

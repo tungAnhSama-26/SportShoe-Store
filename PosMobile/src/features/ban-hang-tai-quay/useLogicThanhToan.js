@@ -7,11 +7,13 @@ import { PHUONG_THUC_THANH_TOAN } from './Enum';
 export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
   const [phuongThucThanhToan, setPhuongThucThanhToan] = useState(PHUONG_THUC_THANH_TOAN.TIEN_MAT);
   const [tienKhachDua, setTienKhachDua] = useState("");
+  const [daSuaTienKhachDua, setDaSuaTienKhachDua] = useState(false);
   const [ghiChuThanhToan, setGhiChuThanhToan] = useState("");
 
   useEffect(() => {
     setPhuongThucThanhToan(PHUONG_THUC_THANH_TOAN.TIEN_MAT);
     setTienKhachDua("");
+    setDaSuaTienKhachDua(false);
     setGhiChuThanhToan("");
   }, [hoaDonChoDaChon?.id]);
 
@@ -54,9 +56,12 @@ export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     }
     
     if (force || isPaymentMethodChange) {
-      setTienKhachDua("");
+      setDaSuaTienKhachDua(false);
+      setTienKhachDua(dinhDangSo(khachCanTra));
+    } else if (!daSuaTienKhachDua) {
+      setTienKhachDua(dinhDangSo(khachCanTra));
     }
-  }, [cartItems.length, phuongThucThanhToan, khachCanTra]);
+  }, [cartItems.length, phuongThucThanhToan, khachCanTra, daSuaTienKhachDua]);
 
   const kiemTraLoiThanhToan = useCallback(() => {
     return validateThanhToan(phuongThucThanhToan, tienKhachDua, thongBaoLoiThanhToan);
@@ -71,6 +76,7 @@ export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
   }, [phuongThucThanhToan, khachCanTra]);
 
   const xuLyTienKhachDuaInput = useCallback((value) => {
+    setDaSuaTienKhachDua(true);
     setTienKhachDua(value);
     dinhDangTienKhachDua(value);
   }, [dinhDangTienKhachDua]);

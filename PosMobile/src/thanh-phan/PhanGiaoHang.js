@@ -179,7 +179,7 @@ export default function PhanGiaoHang() {
               style={styles.feeInput}
               keyboardType="numeric"
               placeholder="Nhập phí..."
-              value={phiGiaoHang ? phiGiaoHang.toString() : ""}
+              value={(phiGiaoHang !== undefined && phiGiaoHang !== null) ? phiGiaoHang.toString() : ""}
               onChangeText={(text) => {
                 const numeric = parseInt(text.replace(/[^0-9]/g, ''), 10);
                 setPhiGiaoHang(isNaN(numeric) ? 0 : numeric);

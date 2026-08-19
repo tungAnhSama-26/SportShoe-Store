@@ -126,9 +126,9 @@ export function useLogicGiaoHang({
 
     return {
       giaoHang: true,
-      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi,
-      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi,
-      diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi),
+      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi || null,
+      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi || null,
+      diaChiGiaoHang: diaChiHopLe(diaChiGiaoHangHienThi) ? chuanHoaDiaChi(diaChiGiaoHangHienThi) : null,
       phiVanChuyen: phiVanChuyen,
       donViVanChuyen: donViVanChuyen || "GHN"
     };
@@ -154,30 +154,31 @@ export function useLogicGiaoHang({
       setSdtNguoiNhanGiaoHang(patch.soDienThoaiNguoiNhan ?? "");
     }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
-      setDiaChiGiaoHang(chuanHoaDiaChi(patch.diaChiGiaoHang));
+      const newDiaChi = chuanHoaDiaChi(patch.diaChiGiaoHang);
+      setDiaChiGiaoHang(prev => JSON.stringify(prev) !== JSON.stringify(newDiaChi) ? newDiaChi : prev);
     }
     
     let hasCauHinhChange = false;
     let newCauHinh = { ...cauHinhGiaoHang };
     if (Object.prototype.hasOwnProperty.call(patch, "serviceTypeId")) {
       newCauHinh.serviceTypeId = Number(patch.serviceTypeId) || 2;
-      hasCauHinhChange = true;
+      if (newCauHinh.serviceTypeId !== cauHinhGiaoHang.serviceTypeId) hasCauHinhChange = true;
     }
     if (Object.prototype.hasOwnProperty.call(patch, "length")) {
       newCauHinh.length = Number(patch.length) || 30;
-      hasCauHinhChange = true;
+      if (newCauHinh.length !== cauHinhGiaoHang.length) hasCauHinhChange = true;
     }
     if (Object.prototype.hasOwnProperty.call(patch, "width")) {
       newCauHinh.width = Number(patch.width) || 20;
-      hasCauHinhChange = true;
+      if (newCauHinh.width !== cauHinhGiaoHang.width) hasCauHinhChange = true;
     }
     if (Object.prototype.hasOwnProperty.call(patch, "height")) {
       newCauHinh.height = Number(patch.height) || 12;
-      hasCauHinhChange = true;
+      if (newCauHinh.height !== cauHinhGiaoHang.height) hasCauHinhChange = true;
     }
     if (Object.prototype.hasOwnProperty.call(patch, "weight")) {
       newCauHinh.weight = Number(patch.weight) || 500;
-      hasCauHinhChange = true;
+      if (newCauHinh.weight !== cauHinhGiaoHang.weight) hasCauHinhChange = true;
     }
     if (hasCauHinhChange) {
       setCauHinhGiaoHang(newCauHinh);
@@ -185,6 +186,9 @@ export function useLogicGiaoHang({
     
     if (Object.prototype.hasOwnProperty.call(patch, "phiVanChuyen")) {
       setPhiVanChuyen(Number(patch.phiVanChuyen) || 0);
+      setDaTinhPhiVanChuyen(true);
+      setNguonTinhPhi("MANUAL");
+      setMoTaPhi("Phí giao hàng được nhập thủ công");
     }
 
     if (!patch.giaoHang && Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
@@ -255,17 +259,32 @@ export function useLogicGiaoHang({
 
   const timeoutRef = useRef(null);
 
+  const dependenciesTinhPhi = useMemo(() => {
+    return JSON.stringify({
+      diaChi: diaChiGiaoHangHienThi,
+      items: cartItems.map(item => ({ id: item.chiTietId, sl: item.soLuong })),
+      giaoHang: choPhepGiaoHang,
+      cauHinh: cauHinhGiaoHang,
+      coThe: coTheTinhPhiVanChuyen
+    });
+  }, [diaChiGiaoHangHienThi, cartItems, choPhepGiaoHang, cauHinhGiaoHang, coTheTinhPhiVanChuyen]);
+
+  const latestXuLyTinhPhiRef = useRef(xuLyTinhPhiVanChuyen);
+  useEffect(() => {
+    latestXuLyTinhPhiRef.current = xuLyTinhPhiVanChuyen;
+  }, [xuLyTinhPhiVanChuyen]);
+
   useEffect(() => {
     if (coTheTinhPhiVanChuyen) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
-        xuLyTinhPhiVanChuyen().catch(() => {});
+        latestXuLyTinhPhiRef.current().catch(() => {});
       }, 800);
     }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [diaChiGiaoHangHienThi, cartItems, choPhepGiaoHang, cauHinhGiaoHang, coTheTinhPhiVanChuyen]);
+  }, [dependenciesTinhPhi, coTheTinhPhiVanChuyen]);
 
   return {
     tenNguoiNhanGiaoHangHienThi,

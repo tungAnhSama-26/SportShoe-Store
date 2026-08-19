@@ -18,6 +18,18 @@ defineProps({
 
 const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remove-item"]);
 
+function isDiscounted(item) {
+  return Number(item?.giaBan || 0) < Number(item?.giaGoc || 0);
+}
+
+function formatDiscountPercent(item) {
+  const giaGoc = Number(item?.giaGoc || 0);
+  const giaBan = Number(item?.giaBan || 0);
+  if (giaGoc <= 0 || giaBan >= giaGoc) return "";
+  const pct = ((giaGoc - giaBan) / giaGoc) * 100;
+  return pct % 1 === 0 ? `-${pct.toFixed(0)}%` : `-${pct.toFixed(1)}%`;
+}
+
 </script>
 
 <template>
@@ -44,6 +56,9 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
               <div class="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[linear-gradient(135deg,#fff1eb_0%,#ffe4dc_100%)] dark:bg-[linear-gradient(135deg,#4a1c1c_0%,#2d1111_100%)] text-xs font-bold text-red-400 dark:text-red-300">
                 <img v-if="item.hinhAnh" :src="resolveHinhAnh(item.hinhAnh)" alt="" class="h-full w-full object-cover" />
                 <span v-else>{{ item.tenSanPham?.slice(0, 1) }}</span>
+                <span v-if="isDiscounted(item)" class="absolute top-0 left-0 origin-top-left scale-[0.6] rounded-br-md bg-rose-500 px-1 py-0.5 text-[10px] leading-none font-bold text-white shadow-sm z-10">
+                  {{ formatDiscountPercent(item) }}
+                </span>
               </div>
               <div>
                 <p class="font-medium text-slate-900 dark:text-slate-100 line-clamp-2">{{ item.tenSanPham }}</p>
@@ -82,9 +97,12 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
               </button>
             </div>
           </td>
-          <td class="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
-            <div class="flex flex-col">
-              <span>{{ dinhDangTien(item.giaBan) }}</span>
+          <td class="px-3 py-2 font-medium">
+            <div class="flex flex-col items-start">
+              <span class="text-slate-900 dark:text-slate-100">{{ dinhDangTien(item.giaBan) }}</span>
+              <div v-if="isDiscounted(item)" class="flex items-center gap-1 mt-0.5">
+                <span class="text-[11px] text-slate-400 line-through">{{ dinhDangTien(item.giaGoc) }}</span>
+              </div>
             </div>
           </td>
           <td class="px-3 py-2">

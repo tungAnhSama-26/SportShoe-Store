@@ -376,14 +376,19 @@ function handlePayNowFromQr() {
             </svg>
 
             <!-- Fee amount box -->
-            <span
-              class="inline-flex min-w-[72px] items-center justify-end rounded-md border bg-white dark:bg-slate-800 px-2.5 py-1 text-sm font-semibold"
+            <input
+              v-if="!shippingInfo.dangTinhPhi"
+              type="text"
+              inputmode="numeric"
+              title="Phí vận chuyển (có thể chỉnh sửa)"
+              class="inline-flex min-w-[72px] w-[95px] items-center justify-end rounded-md border bg-white dark:bg-slate-800 px-2.5 py-1 text-sm font-semibold text-right outline-none focus:border-red-400"
               :class="shippingInfo.daTinhPhi && shippingInfo.phiVanChuyen > 0
                 ? 'border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400'
                 : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'"
-            >
-              {{ shippingInfo.dangTinhPhi ? '...' : dinhDangTien(shippingInfo.phiVanChuyen || 0) }}
-            </span>
+              :value="shippingInfo.phiVanChuyen ? dinhDangTien(shippingInfo.phiVanChuyen).replace(/ đ/g, '') : ''"
+              @input="emit('update-shipping', { phiVanChuyen: Number($event.target.value.replace(/\D/g, '')) })"
+            />
+            <span v-else class="inline-flex min-w-[72px] items-center justify-end rounded-md border border-slate-200 bg-white px-2.5 py-1 text-sm font-semibold text-slate-400">...</span>
 
             <!-- Calculate icon button -->
             <button

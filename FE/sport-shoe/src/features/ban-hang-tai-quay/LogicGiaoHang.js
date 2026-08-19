@@ -92,9 +92,9 @@ export function LogicGiaoHang({
 
     return {
       giaoHang: true,
-      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
-      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
-      diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi.value),
+      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value || null,
+      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value || null,
+      diaChiGiaoHang: diaChiHopLe(diaChiGiaoHangHienThi.value) ? chuanHoaDiaChi(diaChiGiaoHangHienThi.value) : null,
       phiVanChuyen: phiVanChuyen.value,
       donViVanChuyen: donViVanChuyen.value || "GHN"
     };
@@ -132,37 +132,46 @@ export function LogicGiaoHang({
       sdtNguoiNhanGiaoHang.value = patch.soDienThoaiNguoiNhan ?? "";
     }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
-      diaChiGiaoHang.value = chuanHoaDiaChi(patch.diaChiGiaoHang);
+      const newDiaChi = chuanHoaDiaChi(patch.diaChiGiaoHang);
+      if (JSON.stringify(diaChiGiaoHang.value) !== JSON.stringify(newDiaChi)) {
+        diaChiGiaoHang.value = newDiaChi;
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "serviceTypeId")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        serviceTypeId: Number(patch.serviceTypeId) || 2
-      };
+      const newVal = Number(patch.serviceTypeId) || 2;
+      if (cauHinhGiaoHang.value.serviceTypeId !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, serviceTypeId: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "length")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        length: Number(patch.length) || 30
-      };
+      const newVal = Number(patch.length) || 30;
+      if (cauHinhGiaoHang.value.length !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, length: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "width")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        width: Number(patch.width) || 20
-      };
+      const newVal = Number(patch.width) || 20;
+      if (cauHinhGiaoHang.value.width !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, width: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "height")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        height: Number(patch.height) || 12
-      };
+      const newVal = Number(patch.height) || 12;
+      if (cauHinhGiaoHang.value.height !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, height: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "weight")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        weight: Number(patch.weight) || 500
-      };
+      const newVal = Number(patch.weight) || 500;
+      if (cauHinhGiaoHang.value.weight !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, weight: newVal };
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "phiVanChuyen")) {
+      phiVanChuyen.value = Number(patch.phiVanChuyen) || 0;
+      daTinhPhiVanChuyen.value = true;
+      nguonTinhPhi.value = "MANUAL";
+      moTaPhi.value = "Phí giao hàng được nhập thủ công";
     }
 
     if (!choPhepGiaoHang.value) {
@@ -228,21 +237,25 @@ export function LogicGiaoHang({
     }
   }
 
+  const dependenciesTinhPhi = computed(() => {
+    return JSON.stringify({
+      diaChi: diaChiGiaoHangHienThi.value,
+      items: cartItems.value.map(item => ({ id: item.chiTietId, sl: item.soLuong })),
+      giaoHang: choPhepGiaoHang.value,
+      cauHinh: cauHinhGiaoHang.value
+    });
+  });
+
   let phiVanChuyenTimeout = null;
   watch(
-    () => [
-      diaChiGiaoHangHienThi.value,
-      cartItems.value,
-      choPhepGiaoHang.value,
-      cauHinhGiaoHang.value
-    ],
-    () => {
+    dependenciesTinhPhi,
+    (newVal, oldVal) => {
+      if (newVal === oldVal) return;
       if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
       phiVanChuyenTimeout = setTimeout(() => {
         xuLyTinhPhiVanChuyen().catch(() => {});
       }, 800);
-    },
-    { deep: true }
+    }
   );
 
   return {
