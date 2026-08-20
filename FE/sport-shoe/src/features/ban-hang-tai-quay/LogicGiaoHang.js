@@ -24,6 +24,7 @@ export function LogicGiaoHang({
   dangTinhPhiVanChuyen,
   cauHinhGiaoHang,
   khachHangDuocChon,
+  tuKhoaKhachHang,
   hoaDonChoDaChon,
   cartItems
 }) {
@@ -80,9 +81,9 @@ export function LogicGiaoHang({
     if (!choPhepGiaoHang.value) {
       return;
     }
+    daTinhPhiVanChuyen.value = false;
     phiVanChuyen.value = 0;
     diaChiDaXacNhan.value = "";
-    daTinhPhiVanChuyen.value = false;
     nguonTinhPhi.value = "";
     moTaPhi.value = "";
   }
@@ -119,11 +120,25 @@ export function LogicGiaoHang({
           diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
         }
         // Tự điền tên và SDT người nhận từ khách hàng đã chọn nếu đang trống
-        if (!tenNguoiNhanGiaoHang.value.trim() && khachHangDuocChon.value?.hoTen) {
-          tenNguoiNhanGiaoHang.value = khachHangDuocChon.value.hoTen;
+        if (!tenNguoiNhanGiaoHang.value?.trim()) {
+          if (khachHangDuocChon.value?.hoTen) {
+            tenNguoiNhanGiaoHang.value = khachHangDuocChon.value.hoTen;
+          } else if (tuKhoaKhachHang?.value?.trim() && tuKhoaKhachHang.value.trim() !== "Khách lẻ" && tuKhoaKhachHang.value.trim() !== "Khách vãng lai") {
+            const raw = tuKhoaKhachHang.value.trim();
+            if (!/^[0-9+ ]{8,15}$/.test(raw)) {
+              tenNguoiNhanGiaoHang.value = raw;
+            }
+          }
         }
-        if (!sdtNguoiNhanGiaoHang.value.trim() && khachHangDuocChon.value?.sdt) {
-          sdtNguoiNhanGiaoHang.value = khachHangDuocChon.value.sdt;
+        if (!sdtNguoiNhanGiaoHang.value?.trim()) {
+          if (khachHangDuocChon.value?.sdt) {
+            sdtNguoiNhanGiaoHang.value = khachHangDuocChon.value.sdt;
+          } else if (tuKhoaKhachHang?.value?.trim()) {
+            const raw = tuKhoaKhachHang.value.trim();
+            if (/^[0-9+ ]{8,15}$/.test(raw)) {
+              sdtNguoiNhanGiaoHang.value = raw;
+            }
+          }
         }
       }
     }
