@@ -1,5 +1,6 @@
 package com.example.server.core.client.sepay.controller;
 
+import com.example.server.core.admin.banHangTaiQuay.service.BanHangTaiQuayService;
 import com.example.server.core.client.vnpay.service.ClientVnPayService;
 import java.util.Locale;
 import java.util.Map;
@@ -17,9 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Nhận webhook từ SePay khi có chuyển khoản vào tài khoản ngân hàng.
  *
  * <p>SePay gửi POST kèm header {@code Authorization: Apikey <key>}. Sau khi xác thực,
- * khớp nội dung chuyển khoản + số tiền với phiên thanh toán đang chờ rồi tạo đơn
- * (tái dùng {@link ClientVnPayService#xacNhanTheoChuyenKhoan}). Đây là nơi DUY NHẤT
- * được phép xác nhận thanh toán thật - không tin tưởng phía client.</p>
+ * khớp nội dung chuyển khoản + số tiền với phiên thanh toán Online hoặc Hóa đơn chờ tại quầy (POS).
+ * Luôn trả 200 OK để SePay không gửi lại.</p>
  */
 @RestController
 @RequestMapping("/api/v1/client/sepay")
@@ -27,14 +27,17 @@ public class ClientSePayController {
 
     private static final Logger log = LoggerFactory.getLogger(ClientSePayController.class);
 
-    private final ClientVnPayService service;
+    private final ClientVnPayService clientVnPayService;
+    private final BanHangTaiQuayService banHangTaiQuayService;
     private final String apiKey;
 
     public ClientSePayController(
-            ClientVnPayService service,
+            ClientVnPayService clientVnPayService,
+            BanHangTaiQuayService banHangTaiQuayService,
             @Value("${sepay.api-key:}") String apiKey
     ) {
-        this.service = service;
+        this.clientVnPayService = clientVnPayService;
+        this.banHangTaiQuayService = banHangTaiQuayService;
         this.apiKey = apiKey;
     }
 
@@ -56,13 +59,40 @@ public class ClientSePayController {
 
         // 3. Lấy nội dung CK (ưu tiên mã SePay đã bóc tách) + số tiền.
         Object code = body.get("code");
-        String noiDung = (code != null && !String.valueOf(code).isBlank())
-                ? String.valueOf(code)
-                : String.valueOf(body.getOrDefault("content", ""));
+        Object content = body.get("content");
+        Object description = body.get("description");
+
+        StringBuilder fullContent = new StringBuilder();
+        if (code != null && !String.valueOf(code).isBlank()) {
+            fullContent.append(code).append(" ");
+        }
+        if (content != null && !String.valueOf(content).isBlank()) {
+            fullContent.append(content).append(" ");
+        }
+        if (description != null && !String.valueOf(description).isBlank()) {
+            fullContent.append(description);
+        }
+        String noiDung = fullContent.toString().trim();
+
         long soTien = body.get("transferAmount") instanceof Number n ? n.longValue() : 0L;
 
-        // 4. Khớp đơn + tạo đơn (idempotent). Luôn trả 200 để SePay không gửi lại.
-        service.xacNhanTheoChuyenKhoan(noiDung, soTien);
+        log.info("SePay webhook nhan thong tin chuyen khoan: noiDung='{}', soTien={}", noiDung, soTien);
+
+        // 4.1. Khớp đơn Online (Web Khách hàng)
+        String onlineMa = clientVnPayService.xacNhanTheoChuyenKhoan(noiDung, soTien);
+        if (onlineMa != null) {
+            log.info("SePay webhook xac nhan thanh toan don hang Online thanh cong: {}", onlineMa);
+            return ResponseEntity.ok(Map.of("success", true, "orderCode", onlineMa, "type", "ONLINE"));
+        }
+
+        // 4.2. Khớp đơn Bán hàng tại quầy (POS)
+        String posMa = banHangTaiQuayService.xacNhanThanhToanSePay(noiDung, soTien);
+        if (posMa != null) {
+            log.info("SePay webhook xac nhan thanh toan don hang Tai Quay (POS) thanh cong: {}", posMa);
+            return ResponseEntity.ok(Map.of("success", true, "orderCode", posMa, "type", "POS"));
+        }
+
+        log.info("SePay webhook nhan thong tin nhung khong khop hoa don nao dang cho.");
         return ResponseEntity.ok(Map.of("success", true));
     }
 

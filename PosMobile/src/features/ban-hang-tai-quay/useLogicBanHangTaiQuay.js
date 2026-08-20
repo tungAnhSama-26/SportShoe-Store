@@ -857,7 +857,12 @@ export function useLogicBanHangTaiQuay() {
 
           if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
             if (latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId) {
+              if (msg.action === 'PAID') {
+                showToastSuccess(msg.message || `Hóa đơn ${msg.maHoaDon || ''} đã thanh toán thành công!`);
+              }
               latestRef.current.xoaBanNhap();
+            } else if (msg.action === 'PAID') {
+              showToastSuccess(msg.message || `Hóa đơn ${msg.maHoaDon || ''} đã thanh toán thành công!`);
             }
             return;
           }

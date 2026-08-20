@@ -23,7 +23,8 @@ public final class QuanLyHoaDonResponses {
             String trangThai,
             String maPhieuGiamGia,
             String emailKhachHang,
-            String phuongThucThanhToan
+            String phuongThucThanhToan,
+            Boolean coGiaoHang
     ) {
     }
 

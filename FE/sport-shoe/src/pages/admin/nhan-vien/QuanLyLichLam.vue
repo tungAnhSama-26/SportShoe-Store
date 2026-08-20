@@ -40,7 +40,7 @@ const route = useRoute();
 const router = useRouter();
 
 const { adminSession } = useAdminSession();
-const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 
 import { layDanhSachCaLam, normalizeShiftName } from "../../../services/ca-lam.js";
 
@@ -378,7 +378,7 @@ watch(ngayDauTuan, async () => {
 const boLocVaiTro = ref(0); // 0 = tất cả
 const dsVaiTro = [
   { value: 0, label: "Tất cả" },
-  { value: 1, label: "Quản trị viên" },
+  { value: 1, label: "Quản lý" },
   { value: 2, label: "Nhân viên" },
 ];
 

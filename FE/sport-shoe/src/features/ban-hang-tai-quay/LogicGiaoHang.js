@@ -173,7 +173,7 @@ export function LogicGiaoHang({
       phiVanChuyen.value = Number(patch.phiVanChuyen) || 0;
       daTinhPhiVanChuyen.value = true;
       nguonTinhPhi.value = "MANUAL";
-      moTaPhi.value = "Phí giao hàng được nhập thủ công";
+      moTaPhi.value = "";
     }
 
     if (!choPhepGiaoHang.value) {

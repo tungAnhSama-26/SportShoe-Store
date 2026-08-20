@@ -1,16 +1,17 @@
-const ROLE_ADMIN = 'Quản trị viên';
+const ROLE_ADMIN = 'Quản lý';
 const ROLE_STAFF = 'Nhân viên';
 
 function normalizeRole(role) {
   if (!role) return ROLE_STAFF;
   const normalized = String(role).trim().toUpperCase();
-  if (normalized === '1' || normalized === 'ADMIN' || normalized === 'ROLE_ADMIN') return ROLE_ADMIN;
+  if (normalized === '1' || normalized === 'ADMIN' || normalized === 'ROLE_ADMIN' || normalized === 'QUẢN LÝ' || normalized === 'QUẢN TRỊ VIÊN') return ROLE_ADMIN;
   if (normalized === '2' || normalized === 'STAFF' || normalized === 'EMPLOYEE' || normalized === 'ROLE_STAFF') return ROLE_STAFF;
   return role;
 }
 
 function isAdminRole(role) {
-  return normalizeRole(role) === ROLE_ADMIN;
+  const norm = normalizeRole(role);
+  return norm === ROLE_ADMIN || norm === 'Quản trị viên' || norm === 'Admin';
 }
 
 function buildThuChiRecord(formData, context = {}) {

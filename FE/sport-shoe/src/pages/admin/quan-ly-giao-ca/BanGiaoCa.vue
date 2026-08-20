@@ -137,7 +137,7 @@ const getLastWordOfName = computed(() => {
 
 const isMoCaSángSớmMode = computed(() => route.path === "/admin/mo-ca");
 
-const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const isAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 const caLamDuocChon = computed(() =>
   danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
 );
@@ -1437,7 +1437,7 @@ function cuongCheKetThucCa() {
                     :key="nv.id" 
                     :value="nv.id"
                   >
-                    {{ nv.hoTen }} ({{ nv.ma }}){{ nv.vaiTro === 1 ? ' - Quản trị viên' : '' }}
+                    {{ nv.hoTen }} ({{ nv.ma }}){{ nv.vaiTro === 1 ? ' - Quản lý' : '' }}
                   </option>
                 </select>
                 <p v-if="lyDoKhongTheBanGiao" class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold leading-5 text-amber-800">

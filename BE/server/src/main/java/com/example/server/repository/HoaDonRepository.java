@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
+    List<HoaDon> findByKenhBanAndTrangThai(Integer kenhBan, Integer trangThai);
+
+    List<HoaDon> findByTrangThai(Integer trangThai);
+
     List<HoaDon> findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(Integer kenhBan, Integer trangThai);
 
     long countByKenhBanAndTrangThai(Integer kenhBan, Integer trangThai);

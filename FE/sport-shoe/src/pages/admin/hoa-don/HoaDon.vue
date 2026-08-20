@@ -147,9 +147,6 @@ const thongKeTrangThai = computed(() => {
 
 const tongTheoTrangThai = computed(() => {
   const filteredDs = dsTrangThai.filter((trangThai) => {
-    if (boLoc.value.loaiDon === "Cửa hàng") {
-      return ["Hóa đơn chờ", "Hoàn thành", "Hủy"].includes(trangThai);
-    }
     if (boLoc.value.loaiDon === "Trực tuyến") {
       return trangThai !== "Hóa đơn chờ";
     }
@@ -192,12 +189,7 @@ watch(soPhanTuMotTrang, () => {
 watch(
   () => boLoc.value.loaiDon,
   (newLoaiDon) => {
-    if (newLoaiDon === "Cửa hàng") {
-      const validStatuses = ["Hóa đơn chờ", "Hoàn thành", "Hủy"];
-      if (!validStatuses.includes(trangThaiDangChon.value)) {
-        trangThaiDangChon.value = "Hóa đơn chờ";
-      }
-    } else if (newLoaiDon === "Trực tuyến") {
+    if (newLoaiDon === "Trực tuyến") {
       if (trangThaiDangChon.value === "Hóa đơn chờ") {
         trangThaiDangChon.value = "Chờ xác nhận";
       }
@@ -261,7 +253,7 @@ function xuatExcel() {
       { label: "Số điện thoại", value: (row) => row.soDienThoai || "—" },
       { label: "Tổng tiền", value: (row) => dinhDangTien(row.tongTien) },
       { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
-      { label: "Loại đơn", value: (row) => row.loaiDon || "—" },
+      { label: "Loại đơn", value: (row) => row.coGiaoHang && (row.loaiDon === 'Cửa hàng' || row.loaiDon === 'Tại quầy') ? 'Giao hàng' : (row.loaiDon === 'Cửa hàng' ? 'Tại quầy' : (row.loaiDon || '—')) },
       { label: "Trạng thái", value: (row) => row.trangThai || "—" },
     ],
     rows: danhSachHienThi.value,
@@ -431,6 +423,7 @@ onBeforeUnmount(() => {
           >
             <option value="">Tất cả loại đơn</option>
             <option value="Cửa hàng">Cửa hàng</option>
+            <option value="Giao hàng">Giao hàng</option>
             <option value="Trực tuyến">Trực tuyến</option>
           </select>
         </label>
@@ -552,7 +545,26 @@ onBeforeUnmount(() => {
                   {{ dinhDangTien(hoaDon.tongTien) }}
                 </td>
                 <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
-                <td class="px-3 py-3.5">{{ hoaDon.loaiDon }}</td>
+                <td class="px-3 py-3.5">
+                  <span
+                    v-if="hoaDon.coGiaoHang && (hoaDon.loaiDon === 'Cửa hàng' || hoaDon.loaiDon === 'Tại quầy')"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80"
+                  >
+                    Giao hàng
+                  </span>
+                  <span
+                    v-else-if="hoaDon.loaiDon === 'Cửa hàng' || hoaDon.loaiDon === 'Tại quầy'"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80"
+                  >
+                    Tại quầy
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200/80"
+                  >
+                    {{ hoaDon.loaiDon || 'Trực tuyến' }}
+                  </span>
+                </td>
                 <td class="px-3 py-3.5 text-center">
                   <span
                     class="inline-flex min-w-max items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-semibold"

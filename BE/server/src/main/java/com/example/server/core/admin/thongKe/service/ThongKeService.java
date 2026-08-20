@@ -351,11 +351,13 @@ public class ThongKeService {
             UUID nhanVienId = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getId() : null;
             String maNhanVien = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getMa() : null;
             String tenNhanVien = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getHoTen() : NHAN_VIEN_MAC_DINH;
+            Integer rawVaiTro = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getVaiTro() : null;
+            String vaiTro = rawVaiTro == null ? "Đơn chưa gán nhân viên" : (Integer.valueOf(1).equals(rawVaiTro) ? "Quản lý" : "Nhân viên");
             String key = nhanVienId != null ? nhanVienId.toString() : NHAN_VIEN_MAC_DINH;
 
             NhanVienThongKe thongKe = thongKeNhanVienMap.computeIfAbsent(
                     key,
-                    ignored -> new NhanVienThongKe(nhanVienId, maNhanVien, tenNhanVien)
+                    ignored -> new NhanVienThongKe(nhanVienId, maNhanVien, tenNhanVien, vaiTro)
             );
             thongKe.ghiNhanHoaDon(hoaDon.getId());
             thongKe.congSanPhamDaBan(safeLong(dong.getSoLuong()));
@@ -377,6 +379,7 @@ public class ThongKeService {
                     nhanVien.nhanVienId(),
                     nhanVien.maNhanVien(),
                     nhanVien.tenNhanVien(),
+                    nhanVien.vaiTro(),
                     nhanVien.tongDonHang(),
                     nhanVien.sanPhamDaBan(),
                     nhanVien.doanhThu()
@@ -637,6 +640,7 @@ public class ThongKeService {
         private final UUID nhanVienId;
         private final String maNhanVien;
         private final String tenNhanVien;
+        private final String vaiTro;
         private final Set<Integer> hoaDonIds = new LinkedHashSet<>();
         private long sanPhamDaBan;
         private BigDecimal doanhThu = BigDecimal.ZERO;
@@ -644,11 +648,13 @@ public class ThongKeService {
         private NhanVienThongKe(
                 UUID nhanVienId,
                 String maNhanVien,
-                String tenNhanVien
+                String tenNhanVien,
+                String vaiTro
         ) {
             this.nhanVienId = nhanVienId;
             this.maNhanVien = maNhanVien;
             this.tenNhanVien = tenNhanVien;
+            this.vaiTro = vaiTro;
         }
 
         private void ghiNhanHoaDon(Integer hoaDonId) {
@@ -675,6 +681,10 @@ public class ThongKeService {
 
         private String tenNhanVien() {
             return tenNhanVien;
+        }
+
+        private String vaiTro() {
+            return vaiTro;
         }
 
         private long tongDonHang() {

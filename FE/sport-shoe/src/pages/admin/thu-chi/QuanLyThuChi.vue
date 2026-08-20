@@ -48,7 +48,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
 ];
 const DEFAULT_INCOME_CATEGORIES = ["Thu khác", "Thu tiền bán phế liệu"];
 
-const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const isAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 const currentShiftId = computed(() => activeShift.value?.id || activeShift.value?.ma || "");
 const currentShiftLabel = computed(() => activeShift.value?.ma || "Chưa mở ca");
 const currentUser = computed(() => ({

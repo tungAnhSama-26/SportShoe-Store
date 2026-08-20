@@ -70,6 +70,7 @@ public class ClientDatHangService {
     private final EmailService emailService;
     private final ThongBaoService thongBaoService;
     private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
+    private final com.example.server.repository.GiayChiTietRepository giayChiTietRepository;
 
     public ClientDatHangService(
             ClientCheckoutItemService checkoutItemService,
@@ -83,7 +84,8 @@ public class ClientDatHangService {
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
             ThongBaoService thongBaoService,
-            SanPhamRealtimePublisher sanPhamRealtimePublisher
+            SanPhamRealtimePublisher sanPhamRealtimePublisher,
+            com.example.server.repository.GiayChiTietRepository giayChiTietRepository
     ) {
         this.emailService = emailService;
         this.checkoutItemService = checkoutItemService;
@@ -97,6 +99,7 @@ public class ClientDatHangService {
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.thongBaoService = thongBaoService;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
+        this.giayChiTietRepository = giayChiTietRepository;
     }
 
     @Transactional
@@ -284,6 +287,38 @@ public class ClientDatHangService {
             throw new BusinessException("Phiên thanh toán đã hết hạn");
         }
 
+        // KIỂM TRA TỒN KHO VÀ TRẠNG THÁI SẢN PHẨM TẠI THỜI ĐIỂM XÁC NHẬN THANH TOÁN
+        List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        for (HoaDonChiTiet ct : dong) {
+            com.example.server.entity.GiayChiTiet gct = giayChiTietRepository.findByIdForUpdate(ct.getGiayChiTiet().getId())
+                    .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại trong hệ thống"));
+
+            if (gct.getKichHoat() == null || gct.getKichHoat() != 1
+                    || gct.getGiay() == null || gct.getGiay().getTrangThai() == null || gct.getGiay().getTrangThai() != 1) {
+                hoaDon.setTrangThai(6); // Hủy đơn
+                thanhToan.setTrangThai(2); // Thất bại
+                String msg = "Sản phẩm \"" + (gct.getGiay() != null ? gct.getGiay().getTen() : "") + "\" đã ngừng kinh doanh. Đơn hàng đã bị hủy.";
+                thanhToan.setGhiChu(msg);
+                thanhToanRepository.save(thanhToan);
+                hoaDonRepository.save(hoaDon);
+                sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
+                throw new BusinessException(msg);
+            }
+
+            int tonThucTe = gct.getSoLuong() == null ? 0 : gct.getSoLuong();
+            int soLuongMua = ct.getSoLuong() == null ? 0 : ct.getSoLuong();
+            if (tonThucTe < soLuongMua) {
+                hoaDon.setTrangThai(6); // Hủy đơn
+                thanhToan.setTrangThai(2); // Thất bại
+                String msg = "Số lượng sản phẩm không đủ.";
+                thanhToan.setGhiChu(msg);
+                thanhToanRepository.save(thanhToan);
+                hoaDonRepository.save(hoaDon);
+                sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
+                throw new BusinessException(msg);
+            }
+        }
+
         hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
         hoaDon.setNgayThanhToan(now);
         hoaDon.setNgayCapNhat(now);
@@ -304,7 +339,6 @@ public class ClientDatHangService {
                 "/admin/hoa-don/" + hoaDon.getId()
         );
 
-        List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
         String emailNhan = hoaDon.getKhachHang() != null
                 ? hoaDon.getKhachHang().getEmail() : layGuestEmail(hoaDon.getGhiChu());
         String tenNhan = hoaDon.getKhachHang() != null

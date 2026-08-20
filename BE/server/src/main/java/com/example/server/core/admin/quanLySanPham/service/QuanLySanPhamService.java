@@ -208,31 +208,35 @@ public class QuanLySanPhamService {
 
     @Transactional(readOnly = true)
     public DanhMucSanPhamResponse layDanhMuc() {
-        var loaiGiay = loaiGiayRepository.findAll().stream()
+        var sort = org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Direction.DESC, "ngayTao")
+                .and(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"));
+
+        var loaiGiay = loaiGiayRepository.findAll(sort).stream()
                 .filter(l -> l.getTrangThai() != null && l.getTrangThai() == 1)
                 .map(l -> new LoaiGiayOption(l.getId(), l.getTen())).toList();
-        var thuongHieu = thuongHieuRepository.findAll().stream()
+        var thuongHieu = thuongHieuRepository.findAll(sort).stream()
                 .filter(t -> t.getTrangThai() != null && t.getTrangThai() == 1)
                 .map(t -> new ThuongHieuOption(t.getId(), t.getTen(), t.getLogoUrl())).toList();
-        var mauSac = mauSacRepository.findAll().stream()
+        var mauSac = mauSacRepository.findAll(sort).stream()
                 .filter(m -> m.getTrangThai() != null && m.getTrangThai() == 1)
                 .map(m -> new MauSacOption(m.getId(), m.getTen(), m.getMaMauHex())).toList();
-        var kichCo = kichCoRepository.findAll().stream()
+        var kichCo = kichCoRepository.findAll(sort).stream()
                 .filter(k -> k.getTrangThai() != null && k.getTrangThai() == 1)
                 .map(k -> new KichCoOption(k.getId(), k.getGiaTri())).toList();
-        var deGiay = deGiayRepository.findAll().stream()
+        var deGiay = deGiayRepository.findAll(sort).stream()
                 .filter(d -> d.getTrangThai() != null && d.getTrangThai() == 1)
                 .map(d -> new DeGiayOption(d.getId(), d.getTen())).toList();
-        var coGiay = coGiayRepository.findAll().stream()
+        var coGiay = coGiayRepository.findAll(sort).stream()
                 .filter(c -> c.getTrangThai() != null && c.getTrangThai() == 1)
                 .map(c -> new CoGiayOption(c.getId(), c.getTen())).toList();
-        var chatLieuGiay = chatLieuGiayRepository.findAll().stream()
+        var chatLieuGiay = chatLieuGiayRepository.findAll(sort).stream()
                 .filter(c -> c.getTrangThai() != null && c.getTrangThai() == 1)
                 .map(c -> new ChatLieuGiayOption(c.getId(), c.getTen())).toList();
-        var trongLuong = trongLuongRepository.findAll().stream()
+        var trongLuong = trongLuongRepository.findAll(sort).stream()
                 .filter(t -> t.getTrangThai() != null && t.getTrangThai() == 1)
                 .map(t -> new TrongLuongOption(t.getId(), t.getMa(), t.getGiaTri())).toList();
-        var congNgheDem = congNgheDemRepository.findAll().stream()
+        var congNgheDem = congNgheDemRepository.findAll(sort).stream()
                 .filter(c -> c.getTrangThai() != null && c.getTrangThai() == 1)
                 .map(c -> new CongNgheDemOption(c.getId(), c.getTen())).toList();
         return new DanhMucSanPhamResponse(loaiGiay, thuongHieu, mauSac, kichCo, deGiay, coGiay, chatLieuGiay, trongLuong, congNgheDem);
