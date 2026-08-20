@@ -68,11 +68,8 @@ const {
       <div v-if="laHoanThanh" class="mt-4 pt-4 border-t border-slate-100">
         <button
           @click="xuLyMuaLai"
-          class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#B82220] text-white py-2.5 px-4 text-sm font-semibold hover:bg-[#B82220]/95 transition duration-200"
+          class="w-full flex items-center justify-center rounded-xl bg-[#B82220] text-white py-2.5 px-4 text-sm font-semibold hover:bg-[#B82220]/95 transition duration-200"
         >
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18" />
-          </svg>
           Mua lại
         </button>
       </div>

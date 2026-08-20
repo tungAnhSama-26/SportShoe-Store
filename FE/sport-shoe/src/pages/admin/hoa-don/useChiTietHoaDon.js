@@ -1478,7 +1478,16 @@ export function useChiTietHoaDon() {
     });
   });
 
-  const laHoanThanh = computed(() => hoaDon.value?.trangThai === 5);
+  const laHoanThanh = computed(() => {
+    const stt = String(hoaDon.value?.trangThai || "").toLowerCase().trim();
+    return (
+      stt === "hoàn thành" ||
+      stt === "đã hoàn thành" ||
+      stt === "hoan_thanh" ||
+      hoaDon.value?.trangThai === 5 ||
+      hoaDon.value?.trangThai === "5"
+    );
+  });
 
   async function xuLyMuaLai() {
     if (!hoaDon.value) return;
