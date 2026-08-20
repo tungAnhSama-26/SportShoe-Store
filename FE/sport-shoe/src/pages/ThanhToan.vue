@@ -10,6 +10,7 @@ import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import { traCuuDonHangTheoMa } from '../services/don-hang';
+import { resolveHinhAnh } from '../utils/resolve-image';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import logoVietQr from '../assets/logo/6793a971ea52dda5c8bfec82_vietqr.webp';
@@ -662,7 +663,7 @@ function xuLyAnhLoi(event) {
           <h2 class="text-base font-bold text-slate-900 mb-4">Đơn hàng ({{ gio.tongSoLuong }} sản phẩm)</h2>
           <div class="space-y-3 max-h-72 overflow-y-auto pr-1">
             <div v-for="item in gio.items" :key="item.id" class="flex gap-3" :class="{ 'opacity-60': itemKhongBan(item) }">
-              <img :src="item.hinhAnh || anhMacDinh" :alt="item.tenSanPham" class="h-14 w-14 shrink-0 rounded-lg object-cover bg-slate-50" :class="{ grayscale: itemKhongBan(item) }" @error="xuLyAnhLoi" />
+              <img :src="resolveHinhAnh(item.hinhAnh) || anhMacDinh" :alt="item.tenSanPham" class="h-14 w-14 shrink-0 rounded-lg object-cover bg-slate-50" :class="{ grayscale: itemKhongBan(item) }" @error="xuLyAnhLoi" />
               <div class="flex-1 text-sm">
                 <p class="font-medium text-slate-800 line-clamp-1">{{ item.tenSanPham }}</p>
                 <p class="text-xs text-slate-400">{{ item.mauSac }} · {{ item.kichCo }} · x{{ item.soLuong }}</p>
