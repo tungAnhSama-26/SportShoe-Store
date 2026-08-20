@@ -180,10 +180,26 @@ async function capNhatPhiShip() {
   dangTinhPhi.value = true;
   loiPhiShip.value = '';
   try {
-    phiShip.value = await tinhPhiVanChuyen(taoPayloadDiaChi(f));
+    const res = await tinhPhiVanChuyen(taoPayloadDiaChi(f));
+    if (res && res.phiVanChuyen != null) {
+      phiShip.value = res;
+    } else {
+      phiShip.value = {
+        phiVanChuyen: 35000,
+        uocTinh: false,
+        moTa: '',
+        nguonTinhPhi: 'DEFAULT_FALLBACK',
+      };
+    }
   } catch (error) {
-    phiShip.value = null;
-    loiPhiShip.value = getDisplayErrorMessage(error, 'GHN chưa hỗ trợ tuyến giao hàng này.');
+    // Khi API GHN bị lỗi hoặc tắt mạng trên máy local -> đặt phí mặc định 35k và ẩn logo GHN
+    phiShip.value = {
+      phiVanChuyen: 35000,
+      uocTinh: false,
+      moTa: '',
+      nguonTinhPhi: 'DEFAULT_FALLBACK',
+    };
+    loiPhiShip.value = '';
   } finally {
     dangTinhPhi.value = false;
   }
@@ -739,8 +755,7 @@ function xuLyAnhLoi(event) {
             <div class="flex items-center justify-between text-sm text-slate-500">
               <span class="flex items-center gap-1.5">
                 Phí vận chuyển
-                <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
-                <span v-if="phiShip?.uocTinh" class="text-xs text-slate-400">(ước tính)</span>
+                <img v-if="phiShip && phiShip.nguonTinhPhi === 'GHN_LIVE'" :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
               </span>
               <span v-if="dangTinhPhi" class="text-slate-400">Đang tính...</span>
               <span v-else-if="phiShip" class="font-semibold text-slate-700">{{ dinhDangTienViet(phiShipSo) }}</span>
@@ -748,9 +763,6 @@ function xuLyAnhLoi(event) {
                 {{ loiPhiShip || 'Nhập địa chỉ để tính' }}
               </span>
             </div>
-            <p v-if="phiShip?.moTa" class="text-right text-[11px]" :class="phiShip.nguonTinhPhi === 'GHN_LIVE' ? 'text-slate-400' : 'text-amber-600'">
-              {{ phiShip.moTa }}
-            </p>
             <div class="flex items-center justify-between pt-1">
               <span class="text-sm font-semibold text-slate-700">Tổng cộng</span>
               <span class="text-xl font-bold text-primary">{{ dinhDangTienViet(tongThanhToan) }}</span>
