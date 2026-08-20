@@ -156,6 +156,7 @@ function LogicBanHangTaiQuay() {
     dangTinhPhiVanChuyen,
     cauHinhGiaoHang,
     khachHangDuocChon,
+    tuKhoaKhachHang,
     hoaDonChoDaChon,
     cartItems,
     thongBaoLoi
