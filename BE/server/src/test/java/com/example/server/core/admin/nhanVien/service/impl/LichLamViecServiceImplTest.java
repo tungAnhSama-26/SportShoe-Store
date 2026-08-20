@@ -17,8 +17,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -180,6 +183,54 @@ class LichLamViecServiceImplTest {
         ))).isInstanceOf(BusinessException.class);
 
         verify(lichLamViecRepository, never()).save(any());
+    }
+
+    @Test
+    void phanCaChoCaDangDienRaTrongHomNay() {
+        ZonedDateTime now = ZonedDateTime.of(2026, 8, 20, 10, 0, 0, 0, MUI_GIO);
+        service = serviceVoiDongHo(now.toInstant());
+        UUID employeeId = UUID.randomUUID();
+        NhanVien employee = nhanVien(employeeId);
+        CaLam shift = ca("sang", "08:00", "12:00");
+        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee));
+        when(caLamRepository.findByIdForUpdate("sang")).thenReturn(Optional.of(shift));
+        when(lichLamViecRepository.save(any(LichLamViec.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.phanCa(new PhanCaRequest(employeeId, now.toLocalDate(), "sang"));
+
+        verify(lichLamViecRepository).save(any(LichLamViec.class));
+        verify(realtimePublisher).phatSauCommit("PHAN_CA");
+    }
+
+    @Test
+    void phanCaChoCaHomNayDaKetThucBiTuChoi() {
+        ZonedDateTime now = ZonedDateTime.of(2026, 8, 20, 13, 0, 0, 0, MUI_GIO);
+        service = serviceVoiDongHo(now.toInstant());
+        UUID employeeId = UUID.randomUUID();
+        NhanVien employee = nhanVien(employeeId);
+        CaLam shift = ca("sang", "08:00", "12:00");
+        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee));
+        when(caLamRepository.findByIdForUpdate("sang")).thenReturn(Optional.of(shift));
+
+        assertThatThrownBy(() -> service.phanCa(new PhanCaRequest(
+                employeeId,
+                now.toLocalDate(),
+                "sang"
+        ))).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("đã kết thúc");
+
+        verify(lichLamViecRepository, never()).save(any());
+    }
+
+    private LichLamViecServiceImpl serviceVoiDongHo(Instant instant) {
+        return new LichLamViecServiceImpl(
+                Clock.fixed(instant, MUI_GIO),
+                lichLamViecRepository,
+                nhanVienRepository,
+                caLamRepository,
+                realtimePublisher
+        );
     }
 
     private CaLam ca(String id, String batDau, String ketThuc) {

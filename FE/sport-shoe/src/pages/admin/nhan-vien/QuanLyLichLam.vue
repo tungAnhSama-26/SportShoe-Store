@@ -80,6 +80,7 @@ async function taiDanhSachCa() {
           muaNhat: colorSet.muaNhat,
           nut: colorSet.nut,
           gioBatDau: c.gioBatDau,
+          gioKetThuc: c.gioKetThuc,
           trangThai: Boolean(c.trangThai),
         };
       });
@@ -543,20 +544,43 @@ const chonNhanVienId = ref("");
 const chonNgayVal = ref("");
 const chonCaVal = ref("");
 
-// Giờ bắt đầu của mỗi ca
-const GIO_BAT_DAU_CA = computed(() => {
+function taoNgayLocal(value) {
+  if (value instanceof Date) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+  }
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function doiGioSangPhut(value) {
+  if (!value || typeof value !== "string") return null;
+  const [gio, phut] = value.trim().split(":").map(Number);
+  if (!Number.isFinite(gio) || !Number.isFinite(phut)) return null;
+  return gio * 60 + phut;
+}
+
+const THOI_GIAN_CA = computed(() => {
   const map = {};
-  DS_CA.value.forEach(c => {
-    const [gio, phut] = c.gio.split("-")[0].trim().split(":").map(Number);
-    map[c.id] = Number.isFinite(gio) && Number.isFinite(phut) ? gio * 60 + phut : 8 * 60;
+  TAT_CA.value.forEach(c => {
+    const [batDauText = "", ketThucText = ""] = (c.gio || "").split("-").map((value) => value.trim());
+    const batDau = doiGioSangPhut(c.gioBatDau || batDauText);
+    const ketThuc = doiGioSangPhut(c.gioKetThuc || ketThucText);
+    if (batDau !== null && ketThuc !== null) {
+      map[String(c.id).toLowerCase()] = { batDau, ketThuc };
+    }
   });
   return map;
 });
 
 function laCaDaKhoa(ngay, caId) {
   if (!ngay) return false;
-  const date = new Date(ngay);
-  date.setHours(0, 0, 0, 0);
+  const date = taoNgayLocal(ngay);
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
@@ -564,11 +588,21 @@ function laCaDaKhoa(ngay, caId) {
   // Ngày quá khứ → khóa
   if (date < today) return true;
 
-  // Ngày hôm nay → kiểm tra ca đã bắt đầu chưa
+  // Ngày hôm nay → khóa khi ca đã kết thúc, ca đang diễn ra vẫn được chỉnh
   if (date.getTime() === today.getTime() && caId) {
-    const phutBatDau = GIO_BAT_DAU_CA.value[caId];
-    const phutHienTai = now.getHours() * 60 + now.getMinutes();
-    if (phutBatDau !== undefined && phutHienTai >= phutBatDau) return true;
+    const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+    if (!thoiGian) return false;
+    const thoiDiemKetThuc = new Date(date);
+    thoiDiemKetThuc.setHours(
+      Math.floor(thoiGian.ketThuc / 60),
+      thoiGian.ketThuc % 60,
+      0,
+      0,
+    );
+    if (thoiGian.ketThuc <= thoiGian.batDau) {
+      thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
+    }
+    return now >= thoiDiemKetThuc;
   }
 
   return false;
@@ -590,8 +624,32 @@ const caHienTaiBiKhoa = computed(() => {
   return laCaDaKhoa(day.ngay, ca.id);
 });
 
+function caDauTienCoTheThem(ngay) {
+  return DS_CA.value.find((ca) => !laCaDaKhoa(ngay, ca.id));
+}
+
+function coCaChuaKhoaTrongNgay(ngay) {
+  return Boolean(caDauTienCoTheThem(ngay));
+}
+
 const danhSachChonNhanVienIds = ref([]);
 const isThemCaThang = ref(false);
+
+const caDangChonBiKhoa = computed(() => {
+  const ngay = currentChiTietCa.value?.day?.ngayStr || chonNgayVal.value;
+  const caId = currentChiTietCa.value?.ca?.id || chonCaVal.value;
+  return Boolean(ngay && caId && laCaDaKhoa(ngay, caId));
+});
+
+watch([chonNgayVal, DS_CA], () => {
+  if (!chonNgayVal.value || !DS_CA.value.length) return;
+  if (!chonCaVal.value || laCaDaKhoa(chonNgayVal.value, chonCaVal.value)) {
+    const caKhaDung = caDauTienCoTheThem(chonNgayVal.value);
+    if (caKhaDung) {
+      chonCaVal.value = caKhaDung.id;
+    }
+  }
+});
 
 // Modal xem lịch theo ngày (quá khứ)
 const showModalXemNgay = ref(false);
@@ -599,15 +657,14 @@ const xemNgayData = ref(null);
 
 function moModalThemCaThang(ngay) {
   const ngayStr = formatISODate(ngay);
-  const defaultCaId = DS_CA.value[0]?.id || '';
-  const isPast = laCaDaKhoa(ngay, defaultCaId);
+  const caMacDinh = caDauTienCoTheThem(ngay);
 
-  if (isPast) {
+  if (!caMacDinh) {
     return;
   }
 
   chonNgayVal.value = ngayStr;
-  chonCaVal.value = DS_CA.value[0]?.id || "";
+  chonCaVal.value = caMacDinh.id;
   danhSachChonNhanVienIds.value = [];
   currentChiTietCa.value = null;
   isThemCaThang.value = true;
@@ -622,10 +679,10 @@ function moModalThemCa() {
     chonNgayVal.value = currentChiTietCa.value.day.ngayStr;
     chonCaVal.value = currentChiTietCa.value.ca.id;
   } else {
-    const defaultCaId = DS_CA.value[0]?.id || '';
-    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, defaultCaId)) || cacNgayTrongTuan.value[0];
+    const firstAvailableDay = cacNgayTrongTuan.value.find(coCaChuaKhoaTrongNgay) || cacNgayTrongTuan.value[0];
+    const caMacDinh = caDauTienCoTheThem(firstAvailableDay);
     chonNgayVal.value = formatISODate(firstAvailableDay);
-    chonCaVal.value = defaultCaId;
+    chonCaVal.value = caMacDinh?.id || DS_CA.value[0]?.id || "";
   }
   showModalChiTietCa.value = false;
   showModalThemCa.value = true;
@@ -675,6 +732,11 @@ async function luuCa() {
   } else {
     ngayStr = chonNgayVal.value;
     caId = chonCaVal.value;
+  }
+
+  if (laCaDaKhoa(ngayStr, caId)) {
+    showError("Ca làm việc đã kết thúc nên không thể thêm nhân viên.");
+    return;
   }
 
   dangTai.value = true;
@@ -1200,7 +1262,7 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                       </div>
                       <!-- Nút + -->
                       <div class="w-7 h-7 rounded-full flex items-center justify-center shadow-md transition hover:scale-110"
-                           :class="laCaDaKhoa(ngay, DS_CA[0]?.id) ? 'bg-slate-400' : 'bg-rose-500 hover:bg-rose-600'">
+                           :class="coCaChuaKhoaTrongNgay(ngay) ? 'bg-rose-500 hover:bg-rose-600' : 'bg-slate-400'">
                         <Plus class="w-4 h-4 text-white" />
                       </div>
                     </div>
@@ -1368,8 +1430,8 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                 v-model="chonCaVal" 
                 class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-slate-400 transition"
               >
-                <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id">
-                  {{ ca.nhan }} ({{ ca.gio }})
+                <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id" :disabled="laCaDaKhoa(chonNgayVal, ca.id)">
+                  {{ ca.nhan }} ({{ ca.gio }}){{ laCaDaKhoa(chonNgayVal, ca.id) ? ' - Đã khóa' : '' }}
                 </option>
               </select>
             </div>
@@ -1394,8 +1456,8 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
             </button>
             <button 
               @click="luuCa" 
-              :disabled="danhSachChonNhanVienIds.length === 0 || dangTai" 
-              class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              :disabled="danhSachChonNhanVienIds.length === 0 || dangTai || caDangChonBiKhoa"
+              class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {{ dangTai ? 'Đang lưu...' : 'Thêm mới' }}
             </button>
