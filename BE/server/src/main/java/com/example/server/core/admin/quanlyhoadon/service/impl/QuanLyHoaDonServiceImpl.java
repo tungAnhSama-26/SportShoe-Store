@@ -1455,7 +1455,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             return coGiaoHang;
         }
         if (normalized.equals("cửa hàng") || normalized.equals("tại quầy") || normalized.equals("offline") || normalized.equals("tại cửa hàng")) {
-            return taiQuay;
+            return taiQuay && !coGiaoHang;
         }
         if (normalized.equals("trực tuyến") || normalized.equals("online")) {
             return !taiQuay;
