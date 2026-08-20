@@ -254,7 +254,7 @@ public class ClientSanPhamController {
         if (!ids.isEmpty()) {
             for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(ids)) {
                 if (row != null && row.length >= 2 && row[0] instanceof Number n && row[1] instanceof String url) {
-                    anhBienTheMap.put(n.intValue(), url);
+                    anhBienTheMap.putIfAbsent(n.intValue(), url);
                 }
             }
         }
