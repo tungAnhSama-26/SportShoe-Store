@@ -9,11 +9,7 @@ import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
-<<<<<<< Updated upstream
-import { traCuuDonHangTheoMa } from '../services/don-hang';
 import { resolveHinhAnh } from '../utils/resolve-image';
-=======
->>>>>>> Stashed changes
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
 import logoVietQr from '../assets/logo/6793a971ea52dda5c8bfec82_vietqr.webp';
@@ -474,16 +470,12 @@ function batDauPoll() {
         dungPoll();
         const ma = tt.maHoaDon;
         qrVnPay.value = null;
-<<<<<<< Updated upstream
-        await hoanTatDatHang(ma, null, khachHangIdPhienThanhToan.value);
+        await hoanTatDatHang(ma);
       } else if (tt.trangThai === 'THAT_BAI') {
         dungPoll();
         qrVnPay.value = null;
         showError(tt.message || 'Số lượng sản phẩm không đủ.');
         await reSyncGio();
-=======
-        await hoanTatDatHang(ma);
->>>>>>> Stashed changes
       } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
         await ngatHetHan();
       }
