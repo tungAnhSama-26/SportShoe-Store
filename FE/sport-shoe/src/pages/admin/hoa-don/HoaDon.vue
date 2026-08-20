@@ -147,7 +147,10 @@ const thongKeTrangThai = computed(() => {
 
 const tongTheoTrangThai = computed(() => {
   const filteredDs = dsTrangThai.filter((trangThai) => {
-    if (boLoc.value.loaiDon === "Trực tuyến") {
+    if (boLoc.value.loaiDon === "Cửa hàng") {
+      return ["Hóa đơn chờ", "Hoàn thành", "Hủy", "Cần hoàn tiền"].includes(trangThai);
+    }
+    if (boLoc.value.loaiDon === "Trực tuyến" || boLoc.value.loaiDon === "Giao hàng") {
       return trangThai !== "Hóa đơn chờ";
     }
     return true;
@@ -189,9 +192,14 @@ watch(soPhanTuMotTrang, () => {
 watch(
   () => boLoc.value.loaiDon,
   (newLoaiDon) => {
-    if (newLoaiDon === "Trực tuyến") {
+    if (newLoaiDon === "Cửa hàng") {
+      const validStatuses = ["Hóa đơn chờ", "Hoàn thành", "Hủy", "Cần hoàn tiền"];
+      if (!validStatuses.includes(trangThaiDangChon.value)) {
+        trangThaiDangChon.value = "Hoàn thành";
+      }
+    } else if (newLoaiDon === "Trực tuyến" || newLoaiDon === "Giao hàng") {
       if (trangThaiDangChon.value === "Hóa đơn chờ") {
-        trangThaiDangChon.value = "Chờ xác nhận";
+        trangThaiDangChon.value = "Đã xác nhận";
       }
     }
   },
