@@ -38,3 +38,12 @@ BE/server/data/chatbot-keys.json
 BE/server/data/ghn-fee-cache.json
 BE/server/data/ghn-fee-cache.json.tmp
 implementation_plan.md
+
+### Local Docker Config ###
+BE/server/.dockerignore
+FE/sport-shoe/.dockerignore
+database/init-db.sh
+start_docker.sh
+docker-compose.yml
+BE/server/Dockerfile
+FE/sport-shoe/Dockerfile
