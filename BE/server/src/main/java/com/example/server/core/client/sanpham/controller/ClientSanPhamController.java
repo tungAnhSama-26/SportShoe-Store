@@ -250,6 +250,14 @@ public class ClientSanPhamController {
         }
         List<GiayChiTiet> bienThes = giayChiTietRepository.findAllById(ids);
         Map<Integer, BigDecimal> giaSauGiamMap = service.layGiaSauGiam(bienThes);
+        Map<Integer, String> anhBienTheMap = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(ids)) {
+                if (row != null && row.length >= 2 && row[0] instanceof Number n && row[1] instanceof String url) {
+                    anhBienTheMap.put(n.intValue(), url);
+                }
+            }
+        }
         List<GiaBienTheGioResponse> data = bienThes.stream()
                 .map(gct -> new GiaBienTheGioResponse(
                         gct.getId(),
@@ -258,7 +266,8 @@ public class ClientSanPhamController {
                         gct.getSoLuong() == null ? 0 : gct.getSoLuong(),
                         coTheBan(gct),
                         layCanNangSanPham(gct),
-                        gct.getGiay().getMa()))
+                        gct.getGiay() != null ? gct.getGiay().getMa() : null,
+                        anhBienTheMap.getOrDefault(gct.getId(), gct.getGiay() != null ? gct.getGiay().getHinhAnh() : null)))
                 .toList();
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ giá thành công", data));
     }

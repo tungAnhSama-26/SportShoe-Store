@@ -7,6 +7,7 @@ import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showError, showWarning, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
+import { resolveHinhAnh } from '../utils/resolve-image';
 import anhMacDinh from '../assets/login-shoe.png';
 
 const router = useRouter();
@@ -138,7 +139,7 @@ function thanhTien(item) {
             :class="{ 'opacity-60': khongConBan(item) }"
           >
             <router-link :to="`/khachhang/san-pham/${item.giayId}`" class="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-50">
-              <img :src="item.hinhAnh || anhMacDinh" :alt="item.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
+              <img :src="resolveHinhAnh(item.hinhAnh) || anhMacDinh" :alt="item.tenSanPham" class="h-full w-full object-cover" @error="xuLyAnhLoi" />
             </router-link>
 
             <div class="flex flex-1 flex-col">

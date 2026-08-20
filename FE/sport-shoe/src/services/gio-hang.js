@@ -125,6 +125,7 @@ export async function dongBoGiaGio() {
     item.conBan = true;
     if (moi.canNang != null) item.canNang = Number(moi.canNang); // cân nặng 1 SP (gram)
     if (moi.ma) item.ma = moi.ma; // mã sản phẩm để hiển thị ở giỏ
+    if (moi.hinhAnh) item.hinhAnh = moi.hinhAnh; // cập nhật ảnh mới nhất của sản phẩm/biến thể
     validItems.push(item);
   }
   luuGioHangLocal(validItems);
