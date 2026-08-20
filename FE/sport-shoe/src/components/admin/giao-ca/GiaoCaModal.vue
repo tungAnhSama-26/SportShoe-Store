@@ -39,7 +39,7 @@ const moCaGhiChu = ref("");
 const lyDoMoCaMuon = ref("");
 const danhSachCaMo = ref([]);
 const caLamMoId = ref("");
-const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const isAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 const isMyShift = computed(() =>
   Boolean(activeShift.value)
   && String(activeShift.value.nhanVienTrongCaId) === String(adminSession.value.id)

@@ -495,6 +495,11 @@ function batDauPoll() {
         const ma = tt.maHoaDon;
         qrVnPay.value = null;
         await hoanTatDatHang(ma, null, khachHangIdPhienThanhToan.value);
+      } else if (tt.trangThai === 'THAT_BAI') {
+        dungPoll();
+        qrVnPay.value = null;
+        showError(tt.message || 'Số lượng sản phẩm không đủ.');
+        await reSyncGio();
       } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
         await ngatHetHan();
       }

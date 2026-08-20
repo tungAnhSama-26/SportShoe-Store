@@ -267,6 +267,12 @@ public class ClientVnPayService {
         if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == 1) {
             result.put("trangThai", TRANG_THAI_DA_THANH_TOAN);
             result.put("maHoaDon", hoaDon.getMa());
+        } else if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == 2) {
+            result.put("trangThai", "THAT_BAI");
+            result.put("message", thanhToan.getGhiChu() != null ? thanhToan.getGhiChu() : "Số lượng sản phẩm không đủ.");
+        } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == 6) {
+            result.put("trangThai", "THAT_BAI");
+            result.put("message", thanhToan.getGhiChu() != null ? thanhToan.getGhiChu() : "Số lượng sản phẩm không đủ.");
         } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == 11
                 && !hetHanLuc.isBefore(Instant.now())) {
             result.put("trangThai", TRANG_THAI_CHO);

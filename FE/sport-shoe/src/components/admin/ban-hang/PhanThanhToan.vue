@@ -241,7 +241,8 @@ const sepayQrUrl = computed(() => {
     const raw = String(props.tienChuyenKhoanKetHop || 0).replace(/\D/g, '');
     amount = raw !== '' ? (Number(raw) || 0) : 0;
   }
-  const description = encodeURIComponent(`${prefix}${props.activePendingInvoice.maHoaDon}`);
+  const maHd = props.activePendingInvoice.ma || props.activePendingInvoice.maHoaDon || '';
+  const description = encodeURIComponent(`${prefix}${maHd}`);
   const accountName = encodeURIComponent('TRAN VU TUNG ANH');
   return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${accountName}`;
 });

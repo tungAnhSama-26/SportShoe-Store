@@ -204,15 +204,14 @@ export function LogicPhieuGiamGia({
     return null;
   }
 
-  async function xuLyApDungPhieu(isAutoRefetch = false) {
-    if (!coTheApDungPhieu.value) {
-      if (maPhieuGiamGia.value.trim() && cartItems.value.length === 0) {
+  async function xuLyApDungPhieu(isAutoRefetch = false, manualCouponCode = null) {
+    const maPhieuDeApDung = (manualCouponCode || maPhieuGiamGia.value).trim();
+    if (!maPhieuDeApDung || cartItems.value.length === 0 || dangApDungPhieu.value) {
+      if (maPhieuDeApDung && cartItems.value.length === 0 && !isAutoRefetch) {
         showError("Vui lòng thêm sản phẩm vào hóa đơn trước khi áp dụng mã");
       }
       return;
     }
-
-    const maPhieuDeApDung = maPhieuGiamGia.value.trim();
 
     dangApDungPhieu.value = true;
     try {
@@ -231,7 +230,7 @@ export function LogicPhieuGiamGia({
       hienThiDanhSachPhieu.value = false;
       capNhatTienKhachThanhToan();
     } catch (error) {
-      if (dangApDungPhieu.value) { // only show error if initiated manually
+      if (!isAutoRefetch) {
         phieuGiamGiaDaApDung.value = null;
         showError(error instanceof Error ? error.message : "Không thể áp dụng phiếu giảm giá");
       }
@@ -310,10 +309,7 @@ export function LogicPhieuGiamGia({
     return null;
   }
 
-  function tuDongApDungVaDeXuatHangMucTiepTheo() {
-      console.log("=== autoApplyAndSuggestNextTier CALLED ===");
-      console.log("tongTien:", tongTien.value);
-
+  async function tuDongApDungVaDeXuatHangMucTiepTheo() {
       if (!tatCaPhieuKhaDung.value.length || !tongTien.value) {
           phieuGiamGiaHangMucTiepTheo.value = null;
           soTienThieuDeDatHangMuc.value = 0;
@@ -366,14 +362,16 @@ export function LogicPhieuGiamGia({
       if (currentBest) {
           if (!phieuGiamGiaDaApDung.value) {
               if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
-                  phieuTotHonDeXuat.value = currentBest;
+                  maPhieuGiamGia.value = currentBest.ma;
+                  await xuLyApDungPhieu(true, currentBest.ma);
               }
           } else if (phieuGiamGiaDaApDung.value.ma !== currentBest.ma) {
               const currentDiscount = tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
               const newDiscount = tinhToanGiamGia(currentBest, tongTien.value);
               
               if (newDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
-                  phieuTotHonDeXuat.value = currentBest;
+                  maPhieuGiamGia.value = currentBest.ma;
+                  await xuLyApDungPhieu(true, currentBest.ma);
               }
           }
       } else {
@@ -385,6 +383,9 @@ export function LogicPhieuGiamGia({
   }
 
   function xuLyGoPhieu() {
+    if (phieuGiamGiaDaApDung.value?.ma) {
+      danhSachPhieuTotHonDaTuChoi.value.add(phieuGiamGiaDaApDung.value.ma);
+    }
     maPhieuGiamGia.value = "";
     phieuGiamGiaDaApDung.value = null;
     ketQuaTimKiemPhieu.value = [];
@@ -423,7 +424,13 @@ export function LogicPhieuGiamGia({
     }, 250);
   });
 
-  watch([coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon, phieuGiamGiaDaApDung], async ([coTheTim]) => {
+  watch(hoaDonChoDaChon, (newInv, oldInv) => {
+    if (newInv?.id !== oldInv?.id) {
+      danhSachPhieuTotHonDaTuChoi.value.clear();
+    }
+  });
+
+  watch([coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon], async ([coTheTim]) => {
     if (!coTheTim) {
       ketQuaTimKiemPhieu.value = [];
       hienThiDanhSachPhieu.value = false;
@@ -436,13 +443,13 @@ export function LogicPhieuGiamGia({
       }
       
       await taiTatCaPhieuKhaDung();
-      tuDongApDungVaDeXuatHangMucTiepTheo();
+      await tuDongApDungVaDeXuatHangMucTiepTheo();
       return;
     }
     
     // Auto re-eval coupons when cart total changes
     await taiTatCaPhieuKhaDung();
-    tuDongApDungVaDeXuatHangMucTiepTheo();
+    await tuDongApDungVaDeXuatHangMucTiepTheo();
     
     // Validate if the currently applied coupon is still valid
     if (phieuGiamGiaDaApDung.value) {

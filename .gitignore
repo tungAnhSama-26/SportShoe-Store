@@ -1,23 +1,39 @@
-### Skills ###
+### Uploads & Static Assets ###
+uploads/
+/uploads/
+BE/server/uploads/
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif
+!database/sample_images/*
+
+### Environment & Secrets ###
+.env
+.env.local
+*.local.conf
+
+### Build & Dependencies ###
+FE/sport-shoe/build/
+FE/sport-shoe/dist/
+BE/server/target/
+node_modules/
+/fe_mobile
+
+### Skills & Debug ###
 skills/
 skill/
 .codex-chrome-debug/
 docs/
 .codex-chrome-test/
-FE/sport-shoe/build/
-FE/sport-shoe/build/index.html
-### Node ###
-node_modules/
-/fe_mobile
-BE/server/uploads
 AGENTS.md
 
-
-### Claude Code (ca nhan - khong commit)
+### Claude Code & Local ###
 .claude/
 CLAUDE.md
 
-### Chatbot Keys (chua API key ca nhan - khong commit)
+### Chatbot Keys & Temporary Cache ###
 BE/server/data/chatbot-keys.json
 BE/server/data/ghn-fee-cache.json
 BE/server/data/ghn-fee-cache.json.tmp

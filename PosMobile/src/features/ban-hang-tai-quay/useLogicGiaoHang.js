@@ -209,7 +209,7 @@ export function useLogicGiaoHang({
       setPhiVanChuyen(phiMoi);
       setDaTinhPhiVanChuyen(true);
       setNguonTinhPhi("MANUAL");
-      setMoTaPhi("Phí giao hàng được nhập thủ công");
+      setMoTaPhi("");
       onPhiVanChuyenDaTinh?.(phiMoi);
     }
 

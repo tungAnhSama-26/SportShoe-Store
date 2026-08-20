@@ -66,7 +66,7 @@ function handleInput(field, value) {
                 :class="field.type === 'color' ? 'md:col-span-2' : ''"
               >
                 <label class="mb-1 block text-[13px] font-semibold text-slate-500">
-                  {{ field.label }}
+                  {{ field.label.replace(/\s*\*/g, '') }} <span v-if="field.required || field.label.includes('*')" class="text-rose-500">*</span>
                 </label>
 
                 <div v-if="field.type === 'color'" class="flex flex-col gap-3">

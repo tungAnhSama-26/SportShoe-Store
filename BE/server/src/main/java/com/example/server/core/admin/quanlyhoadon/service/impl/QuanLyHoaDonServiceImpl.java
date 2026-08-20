@@ -74,6 +74,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     private static final ZoneId MUI_GIO_HOA_DON = ZoneId.of("Asia/Bangkok");
 
     private static final int KENH_BAN_TAI_QUAY = 1;
+    private static final int KENH_BAN_ONLINE = 2;
     private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
     private static final int TRANG_THAI_DA_XAC_NHAN = 9;
     private static final int TRANG_THAI_CHO_GIAO_HANG = 2;
@@ -224,7 +225,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         return hoaDons.stream()
                 .filter(hoaDon -> giaoCaId == null || (hoaDon.getGiaoCa() != null && hoaDon.getGiaoCa().getId().equals(giaoCaId)))
                 .filter(hoaDon -> matchKeyword(searchKeyword, hoaDon, latestThanhToanMap.get(hoaDon.getId()), latestLichSuNhanVienMap.get(hoaDon.getId())))
-                .filter(hoaDon -> matchLoaiDon(loaiDon, hoaDon))
+                .filter(hoaDon -> matchLoaiDon(loaiDon, hoaDon, vanChuyenMap.get(hoaDon.getId())))
                 .filter(hoaDon -> matchDerivedStatus(trangThai, hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())))
                 .map(hoaDon -> new HoaDonSummaryResponse(
                         hoaDon.getId(),
@@ -238,7 +239,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
-                        latestThanhToanMap.containsKey(hoaDon.getId()) ? mapPhuongThucThanhToan(latestThanhToanMap.get(hoaDon.getId()).getHinhThuc()) : "Chưa thanh toán"
+                        latestThanhToanMap.containsKey(hoaDon.getId()) ? mapPhuongThucThanhToan(latestThanhToanMap.get(hoaDon.getId()).getHinhThuc()) : "Chưa thanh toán",
+                        vanChuyenMap.containsKey(hoaDon.getId())
                 ))
                 .toList();
     }
@@ -268,7 +270,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
-                        "N/A" // phuongThucThanhToan is not easily available here without an extra query, and this method is for customer, so we can just return N/A or fetch it.
+                        "N/A", // phuongThucThanhToan is not easily available here without an extra query, and this method is for customer, so we can just return N/A or fetch it.
+                        vanChuyenMap.containsKey(hoaDon.getId())
                 ))
                 .toList();
     }
@@ -1426,23 +1429,38 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         if (loaiDon == null || loaiDon.isBlank()) {
             return null;
         }
-        String normalized = loaiDon.trim();
-        return "Cửa hàng".equalsIgnoreCase(normalized)
-                || "Offline".equalsIgnoreCase(normalized)
-                || "Tại cửa hàng".equalsIgnoreCase(normalized)
-                ? KENH_BAN_TAI_QUAY
-                : null;
+        String normalized = loaiDon.trim().toLowerCase();
+        if (normalized.equals("cửa hàng")
+                || normalized.equals("offline")
+                || normalized.equals("tại cửa hàng")
+                || normalized.equals("tại quầy")) {
+            return KENH_BAN_TAI_QUAY;
+        }
+        if (normalized.equals("trực tuyến")
+                || normalized.equals("online")) {
+            return KENH_BAN_ONLINE;
+        }
+        return null;
     }
 
-    private boolean matchLoaiDon(String loaiDon, HoaDon hoaDon) {
+    private boolean matchLoaiDon(String loaiDon, HoaDon hoaDon, VanChuyen vanChuyen) {
         if (loaiDon == null || loaiDon.isBlank()) {
             return true;
         }
-        String normalized = loaiDon.trim();
-        return mapLoaiDon(hoaDon).equalsIgnoreCase(normalized)
-                || (("Offline".equalsIgnoreCase(normalized) || "Tại cửa hàng".equalsIgnoreCase(normalized))
-                && isTaiQuay(hoaDon))
-                || ("Online".equalsIgnoreCase(normalized) && !isTaiQuay(hoaDon));
+        String normalized = loaiDon.trim().toLowerCase();
+        boolean taiQuay = isTaiQuay(hoaDon);
+        boolean coGiaoHang = vanChuyen != null;
+
+        if (normalized.contains("giao")) {
+            return coGiaoHang;
+        }
+        if (normalized.equals("cửa hàng") || normalized.equals("tại quầy") || normalized.equals("offline") || normalized.equals("tại cửa hàng")) {
+            return taiQuay;
+        }
+        if (normalized.equals("trực tuyến") || normalized.equals("online")) {
+            return !taiQuay;
+        }
+        return true;
     }
 
     private Integer mapTrangThaiFilterToDb(String trangThai) {

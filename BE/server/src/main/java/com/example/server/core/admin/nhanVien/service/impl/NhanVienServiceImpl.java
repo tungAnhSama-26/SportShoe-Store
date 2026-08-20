@@ -280,7 +280,7 @@ public class NhanVienServiceImpl implements NhanVienService {
             return "Nhân viên";
         }
         return switch (vaiTro) {
-            case 1 -> "Admin";
+            case 1 -> "Quản lý";
             case 2 -> "Nhân viên";
             default -> "Không xác định";
         };

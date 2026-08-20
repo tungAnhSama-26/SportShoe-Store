@@ -41,7 +41,7 @@ function firstNonEmpty(...values) {
 
 function normalizeRole(rawRole) {
   if (typeof rawRole === "number") {
-    return rawRole === 1 ? "Quản trị viên" : "Nhân viên";
+    return rawRole === 1 ? "Quản lý" : "Nhân viên";
   }
 
   const role = String(rawRole ?? "").trim();
@@ -50,8 +50,8 @@ function normalizeRole(rawRole) {
   }
 
   const normalized = role.toUpperCase();
-  if (normalized === "1" || normalized === "ADMIN" || normalized === "ROLE_ADMIN") {
-    return "Quản trị viên";
+  if (normalized === "1" || normalized === "ADMIN" || normalized === "ROLE_ADMIN" || normalized === "QUẢN TRỊ VIÊN" || normalized === "QUAN TRI VIEN" || normalized === "QUẢN LÝ" || normalized === "QUAN LY") {
+    return "Quản lý";
   }
   if (normalized === "2" || normalized === "STAFF" || normalized === "EMPLOYEE" || normalized === "ROLE_STAFF") {
     return "Nhân viên";

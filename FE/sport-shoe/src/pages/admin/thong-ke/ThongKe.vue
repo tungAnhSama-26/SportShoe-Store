@@ -582,7 +582,7 @@ const formatLastUpdated = computed(() => {
                       {{ employee.tenNhanVien }}
                     </div>
                     <div class="text-xs text-slate-500">
-                      {{ employee.nhanVienId ? "Nhân viên bán hàng" : "Đơn chưa gán nhân viên" }}
+                      {{ employee.vaiTro || (employee.nhanVienId ? "Nhân viên" : "Đơn chưa gán nhân viên") }}
                     </div>
                   </div>
                 </div>

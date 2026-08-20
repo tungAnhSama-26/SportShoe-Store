@@ -137,7 +137,7 @@ function updateProductField(field, value, numeric = false) {
           </label>
 
           <label class="block">
-            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Sản phẩm <span class="text-rose-500">*</span></span>
+            <span class="mb-1 block text-[13px] font-semibold text-slate-500">Tên sản phẩm <span class="text-rose-500">*</span></span>
             <input
               :value="productForm.ten"
               type="text"
