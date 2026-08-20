@@ -1,5 +1,6 @@
 import logoGhn from "../constants/logoGhn";
 import logoSportShoe from "../assets/logo/logoPhu.png";
+import { dinhDangDiaChi } from "./dia-chi";
 
 const SHOP_ADDRESS = "Chung cư Sông Hồng, ngõ 163 Thái Hà, phường Láng Hạ, quận Đống Đa, thành phố Hà Nội";
 
@@ -18,9 +19,20 @@ function isMeaningfulText(value) {
   return Boolean(text)
     && text !== "-"
     && text !== "—"
+    && normalized !== "[object object]"
     && normalized !== "không áp dụng"
     && normalized !== "không có"
     && normalized !== "chưa cập nhật";
+}
+
+function getInvoiceAddress(invoice) {
+  const raw = invoice?.diaChi ?? invoice?.diaChiGiaoHang;
+  if (!raw) return "";
+  if (typeof raw === "object") {
+    return dinhDangDiaChi(raw);
+  }
+  const str = String(raw).trim();
+  return str.toLowerCase() === "[object object]" ? "" : str;
 }
 
 function buildAddressLine(label, value, options = {}) {
@@ -109,9 +121,17 @@ function normalizePlainText(value) {
 }
 
 function isStoreInvoice(invoice) {
+  const address = normalizePlainText(getInvoiceAddress(invoice));
+  const hasShippingFee = Number(invoice?.phiVanChuyen || 0) > 0;
+  const hasDeliveryAddress = isMeaningfulText(address) && address !== "mua tai quay";
+  const isDeliveryOrder = Boolean(invoice?.giaoHang) || hasShippingFee || hasDeliveryAddress;
+
+  if (isDeliveryOrder) {
+    return false;
+  }
+
   const orderType = normalizePlainText(invoice?.loaiDon);
-  const address = normalizePlainText(invoice?.diaChi);
-  return ["cua hang", "offline", "tai cua hang"].includes(orderType)
+  return ["cua hang", "offline", "tai cua hang", "tai quay"].includes(orderType)
     || address === "mua tai quay";
 }
 
@@ -142,6 +162,7 @@ export function printInvoiceToPdf({
   const status = invoice.trangThai || "Chưa cập nhật";
   const invoiceQrUrl = buildInvoiceQrUrl(invoiceCode);
   const isStoreOrder = isStoreInvoice(invoice);
+  const customerAddress = getInvoiceAddress(invoice);
 
   popup.document.open();
   popup.document.write(`
@@ -597,7 +618,7 @@ export function printInvoiceToPdf({
                   ${buildAddressLine("Email", invoice.email, { hideIfEmpty: true })}
                   <div class="address-line address-line-wide">
                     <span>Địa chỉ</span>
-                    <strong>${escapeHtml(isMeaningfulText(invoice.diaChi) ? invoice.diaChi : "Mua tại quầy")}</strong>
+                    <strong>${escapeHtml(isMeaningfulText(customerAddress) ? customerAddress : "Mua tại quầy")}</strong>
                   </div>
                   ${buildAddressLine("Ghi chú", invoice.ghiChu, { hideIfEmpty: true })}
                 </div>
@@ -612,7 +633,7 @@ export function printInvoiceToPdf({
                 <div class="route-panel">
                   <h2 class="route-title">Đến: ${escapeHtml(getCustomerName(invoice))}</h2>
                   ${buildAddressLine("SĐT", getCustomerPhone(invoice), { hideIfEmpty: true })}
-                  ${buildAddressLine("Địa chỉ", invoice.diaChi, { fallback: "Mua tại quầy" })}
+                  ${buildAddressLine("Địa chỉ", customerAddress, { fallback: "Mua tại quầy" })}
                 </div>
               </section>
 

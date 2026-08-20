@@ -32,9 +32,14 @@ AGENTS.md
 ### Claude Code & Local ###
 .claude/
 CLAUDE.md
-
-### Chatbot Keys & Temporary Cache ###
 BE/server/data/chatbot-keys.json
 BE/server/data/ghn-fee-cache.json
 BE/server/data/ghn-fee-cache.json.tmp
 implementation_plan.md
+
+### Docker Local Overrides (khong commit len AWS)
+docker-compose.override.yml
+*.local.conf
+Dockerfile.local
+update-all.bat
+BE/server/.env
