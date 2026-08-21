@@ -1,22 +1,18 @@
+version: '3.8'
+
 services:
-  # 1. Database MSSQL Server 2022
+  # 1. Container Microsoft SQL Server
   database:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/azure-sql-edge:latest
     container_name: sportshoe-db
     ports:
-      - "${DB_PORT:-1433}:1433"
+      - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${DB_PASSWORD:-Yoasobi123.}
-      - MSSQL_PID=Developer
+      - MSSQL_SA_PASSWORD=MatKhauDatabaseCuaBan123!
+      - MSSQL_MEMORY_LIMIT_MB=450
     volumes:
       - mssql_data:/var/opt/mssql
-    healthcheck:
-      test: ["CMD-SHELL", "(/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' 2>/dev/null || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q 'SELECT 1' 2>/dev/null) || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 25
-      start_period: 10s
     restart: unless-stopped
 
   # 2. Database Auto-Init (Tự động tạo database 'giay' & nạp schema + dữ liệu lần đầu)
@@ -61,15 +57,15 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # 4. Spring Boot Backend
+  # 2. Container Spring Boot Backend
   backend:
+    image: ${DOCKER_USERNAME:-tunganhsama}/sportshoe-backend:latest
     build:
       context: ./BE/server
       dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-sportshoe}/backend:latest
     container_name: sportshoe-backend
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "8080:8080"
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
       - DB_URL=jdbc:sqlserver://database:1433;databaseName=giay;encrypt=true;trustServerCertificate=true
@@ -115,14 +111,27 @@ services:
     restart: unless-stopped
 
   # 5. Vue.js Frontend (Served by Nginx)
+      - JAVA_OPTS=-Xmx256m -Xms128m
+    env_file:
+      - ./BE/server/.env
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - database
+    restart: unless-stopped
+
+  # 3. Container Vue.js Frontend
   frontend:
+    image: ${DOCKER_USERNAME:-tunganhsama}/sportshoe-frontend:latest
     build:
       context: ./FE/sport-shoe
       dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME:-sportshoe}/frontend:latest
     container_name: sportshoe-frontend
     ports:
-      - "${FRONTEND_PORT:-80}:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
     restart: unless-stopped

@@ -17,6 +17,7 @@ function ManHinhBanHangContent() {
     dangTaiHoaDonCho,
     chonHoaDonCho,
     xuLyTaoHoaDonCho,
+    xuLyHuyHoaDonCho,
   } = suDungBanHang();
 
   return (
@@ -51,6 +52,7 @@ function ManHinhBanHangContent() {
                 hoaDonChoDaChon={hoaDonChoDaChon}
                 chonHoaDonCho={chonHoaDonCho}
                 xuLyTaoHoaDonChoMoi={xuLyTaoHoaDonCho}
+                xuLyHuyHoaDonCho={xuLyHuyHoaDonCho}
                 dangTaiHoaDonCho={dangTaiHoaDonCho}
                 maxPendingInvoices={5}
               />
@@ -247,11 +249,13 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   leftColumn: {
-    flex: 2,
+    flex: 1.4,
+    minWidth: 0,
     display: 'flex',
   },
   rightColumn: {
     flex: 1,
+    minWidth: 320,
     display: 'flex',
   }
 });

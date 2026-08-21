@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { suDungBanHang } from '../ngu-canh/NguCanhBanHang';
 
@@ -12,7 +12,11 @@ export default function BangGioHang() {
       <View style={styles.cartList}>
         {sanPhamTrongGio.length === 0 ? (
           <View style={styles.emptyCart}>
-            <Text style={styles.emptyText}>Chưa có sản phẩm nào trong giỏ</Text>
+            <View style={styles.emptyIconWrapper}>
+              <Ionicons name="cart-outline" size={36} color="#94a3b8" />
+            </View>
+            <Text style={styles.emptyText}>Giỏ hàng đang trống</Text>
+            <Text style={styles.emptySubText}>Vui lòng chọn hoặc quét mã sản phẩm</Text>
           </View>
         ) : (
           sanPhamTrongGio.map(item => {
@@ -26,42 +30,57 @@ export default function BangGioHang() {
             }
 
             return (
-              <View key={item.chiTietId} style={styles.cartCard}>
+              <View key={item.chiTietId || item.cartItemId} style={styles.cartCard}>
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName} numberOfLines={2}>{item.tenSanPham}</Text>
-                  <TouchableOpacity style={styles.removeBtn} onPress={() => xoaKhoiGio(item.chiTietId)}>
-                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  <TouchableOpacity 
+                    style={styles.removeBtn} 
+                    onPress={() => xoaKhoiGio(item.chiTietId)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
                 
-                <Text style={styles.itemVariant}>{item.mauSac} - {item.kichCo}</Text>
+                <View style={styles.variantRow}>
+                  <View style={styles.variantTag}>
+                    <Text style={styles.variantTagText}>{item.mauSac || "Màu chuẩn"}</Text>
+                  </View>
+                  <View style={styles.variantTag}>
+                    <Text style={styles.variantTagText}>Size {item.kichCo || "-"}</Text>
+                  </View>
+                </View>
                 
                 <View style={styles.itemFooter}>
-                  <View>
+                  <View style={styles.priceContainer}>
                     <Text style={styles.itemPrice}>
                       {giaBan.toLocaleString('vi-VN')} đ
                     </Text>
                     {isDiscounted && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 4 }}>
-                        <Text style={{ fontSize: 11, color: '#94a3b8', textDecorationLine: 'line-through' }}>
+                      <View style={styles.discountRow}>
+                        <Text style={styles.originPrice}>
                           {giaGoc.toLocaleString('vi-VN')} đ
                         </Text>
-                        <View style={{ backgroundColor: '#ffe4e6', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 }}>
-                          <Text style={{ fontSize: 10, color: '#e11d48', fontWeight: 'bold' }}>
-                            {discountText}
-                          </Text>
+                        <View style={styles.discountBadge}>
+                          <Text style={styles.discountBadgeText}>{discountText}</Text>
                         </View>
                       </View>
                     )}
                   </View>
                   
                   <View style={styles.quantityControl}>
-                    <TouchableOpacity style={styles.qtyBtn} onPress={() => capNhatSoLuong(item.chiTietId, item.soLuong - 1)}>
-                      <Ionicons name="remove" size={16} color="#333" />
+                    <TouchableOpacity 
+                      style={styles.qtyBtn} 
+                      onPress={() => capNhatSoLuong(item.chiTietId, item.soLuong - 1)}
+                    >
+                      <Ionicons name="remove" size={14} color="#334155" />
                     </TouchableOpacity>
                     <Text style={styles.qtyText}>{item.soLuong}</Text>
-                    <TouchableOpacity style={styles.qtyBtn} onPress={() => capNhatSoLuong(item.chiTietId, item.soLuong + 1)}>
-                      <Ionicons name="add" size={16} color="#333" />
+                    <TouchableOpacity 
+                      style={styles.qtyBtn} 
+                      onPress={() => capNhatSoLuong(item.chiTietId, item.soLuong + 1)}
+                    >
+                      <Ionicons name="add" size={14} color="#334155" />
                     </TouchableOpacity>
                   </View>
 
@@ -83,8 +102,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cartList: {
-    padding: 10,
-    gap: 12,
+    padding: 12,
+    gap: 10,
   },
   cartCard: {
     backgroundColor: '#ffffff',
@@ -92,11 +111,11 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -105,57 +124,116 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   itemName: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1e293b',
-    fontSize: 15,
+    fontSize: 14,
     flex: 1,
     paddingRight: 8,
   },
   removeBtn: {
-    padding: 4,
+    padding: 2,
   },
-  itemVariant: {
-    color: '#64748b',
-    fontSize: 13,
-    marginBottom: 12,
+  variantRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  variantTag: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  variantTagText: {
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '600',
   },
   itemFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  priceContainer: {
+    justifyContent: 'center',
+  },
   itemPrice: {
-    color: '#64748b',
+    color: '#334155',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  discountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 4,
+  },
+  originPrice: {
+    fontSize: 11,
+    color: '#94a3b8',
+    textDecorationLine: 'line-through',
+  },
+  discountBadge: {
+    backgroundColor: '#ffe4e6',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  discountBadgeText: {
+    fontSize: 10,
+    color: '#e11d48',
+    fontWeight: '700',
   },
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#f8fafc',
     borderRadius: 8,
-    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 2,
     paddingVertical: 2,
   },
   qtyBtn: {
     padding: 6,
+    borderRadius: 4,
   },
   qtyText: {
-    marginHorizontal: 12,
-    fontWeight: 'bold',
-    fontSize: 15,
+    marginHorizontal: 8,
+    fontWeight: '700',
+    fontSize: 14,
     color: '#1e293b',
+    minWidth: 20,
+    textAlign: 'center',
   },
   itemTotal: {
     color: '#ef4444',
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontSize: 15,
   },
   emptyCart: {
-    padding: 40,
+    paddingVertical: 32,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   emptyText: {
+    color: '#475569',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  emptySubText: {
     color: '#94a3b8',
-    fontSize: 16,
-  }
+    fontSize: 12,
+    marginTop: 4,
+  },
 });

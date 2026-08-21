@@ -206,20 +206,28 @@ export function useLogicBanHangTaiQuay() {
     phiVanChuyenChoLuuRef.current = null;
     khachHangLogic.setKhachHangDuocChon(null);
     khachHangLogic.setTuKhoaKhachHang("");
-    sanPhamLogic.setTuKhoaSanPham("");
-    phieuGiamGiaLogic.setMaPhieuGiamGia("");
     khachHangLogic.setKetQuaTimKiemKhachHang([]);
-    // sanPhamLogic.setKetQuaBienTheSanPham([]); // not strictly needed
+    khachHangLogic.setHienThiDanhSachKhachHang(false);
+    
+    sanPhamLogic.setTuKhoaSanPham("");
     sanPhamLogic.setChiTietSanPhamDaChon(null);
     sanPhamLogic.setMauSacDaChon("");
     sanPhamLogic.setKichCoDaChon("");
     sanPhamLogic.setSoLuongDaChon(1);
+    sanPhamLogic.setHienThiDanhSachSanPham(false);
+    
     gioHangLogic.setCartItems([]);
     setHoaDonChoDaChon(null);
+    
+    phieuGiamGiaLogic.setMaPhieuGiamGia("");
     phieuGiamGiaLogic.setPhieuGiamGiaDaApDung(null);
-    thanhToanLogic.setPhuongThucThanhToan(1);
-    thanhToanLogic.setTienKhachDua("");
-    thanhToanLogic.setGhiChuThanhToan("");
+    phieuGiamGiaLogic.setKetQuaTimKiemPhieu?.([]);
+    phieuGiamGiaLogic.setHienThiDanhSachPhieu(false);
+    phieuGiamGiaLogic.setPhieuTotHonDeXuat?.(null);
+    phieuGiamGiaLogic.setPhieuGiamGiaHangMucTiepTheo?.(null);
+    
+    thanhToanLogic.resetThanhToan();
+    
     setChoPhepGiaoHang(false);
     setTenNguoiNhanGiaoHang("");
     setSdtNguoiNhanGiaoHang("");
@@ -228,6 +236,7 @@ export function useLogicBanHangTaiQuay() {
     setPhiVanChuyen(0);
     setDaTinhPhiVanChuyen(false);
     setDangTinhPhiVanChuyen(false);
+    setDiaChiDaXacNhan("");
 
     if (!isSyncingUIRef.current) {
       publishMessage('/topic/admin/pos-sync', {
@@ -244,12 +253,9 @@ export function useLogicBanHangTaiQuay() {
       height: 12,
       weight: 500
     });
-    khachHangLogic.setHienThiDanhSachKhachHang(false);
-    sanPhamLogic.setHienThiDanhSachSanPham(false);
-    phieuGiamGiaLogic.setHienThiDanhSachPhieu(false);
     xoaPhanHoi();
     sanPhamLogic.taiSanPham("");
-  }, [khachHangLogic, sanPhamLogic, phieuGiamGiaLogic, gioHangLogic, thanhToanLogic, xoaPhanHoi]);
+  }, [khachHangLogic, sanPhamLogic, phieuGiamGiaLogic, gioHangLogic, thanhToanLogic, xoaPhanHoi, publishMessage]);
 
   const taiDanhSachHoaDonCho = useCallback(async () => {
     setDangTaiHoaDonCho(true);
@@ -686,11 +692,19 @@ export function useLogicBanHangTaiQuay() {
         await luuHoaDonHienTai(true);
       }
 
+      const currentCartItems = [...gioHangLogic.cartItems];
+      const currentTienGiam = phieuGiamGiaLogic.phieuGiamGiaDaApDung ? phieuGiamGiaLogic.phieuGiamGiaDaApDung.soTienGiam : 0;
+      const currentPhiVanChuyen = choPhepGiaoHang ? phiVanChuyen : 0;
+      const currentTongTienHang = gioHangLogic.tongTien;
+      const currentKhachCanTra = khachCanTra;
+      const currentTenKhach = khachHangLogic.khachHangDuocChon?.hoTen || (khachHangLogic.laKhachVangLai ? KHACH_VANG_LAI : "");
+      const currentSdt = khachHangLogic.khachHangDuocChon?.sdt || "";
+
       const payload = {
         hoaDonId: hoaDonChoDaChon?.id ?? null,
         khachHangId: layIdKhachHangHienTai(),
-        tenKhachHang: khachHangLogic.khachHangDuocChon?.hoTen || (khachHangLogic.laKhachVangLai ? KHACH_VANG_LAI : ""),
-        soDienThoai: khachHangLogic.khachHangDuocChon?.sdt || "",
+        tenKhachHang: currentTenKhach,
+        soDienThoai: currentSdt,
         maPhieuGiamGia: phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma ?? null,
         hinhThucThanhToan: thanhToanLogic.phuongThucThanhToan,
         tienKhachDua: thanhToanLogic.phuongThucThanhToan === 1 ? thanhToanLogic.tienKhachThanhToan : khachCanTra,
@@ -703,7 +717,7 @@ export function useLogicBanHangTaiQuay() {
 
       const response = await thanhToanTaiQuay(payload);
       const data = response?.data || response;
-      const orderCode = data.ma || (hoaDonChoDaChon?.ma ?? "Đơn hàng mới");
+      const orderCode = data?.maHoaDon || data?.ma || (hoaDonChoDaChon?.ma ?? "Đơn hàng mới");
 
       showToastSuccess(`Thanh toán thành công ${orderCode}`);
       xoaBanNhap();
@@ -711,14 +725,14 @@ export function useLogicBanHangTaiQuay() {
 
       if (data) {
         xuLyInHoaDonTaiQuay({
-          hoaDonChoDaChon: data,
-          cartItems: data.items || [],
-          phiVanChuyen: data.phiVanChuyen || 0,
-          tienGiam: data.tienGiam || 0,
-          tongTien: data.tongTienHang || 0,
-          khachCanTra: data.tongTien || 0,
-          tenKhachHangHienThi: data.tenKhachHang || "",
-          soDienThoaiKhachHangHienThi: data.soDienThoai || ""
+          hoaDonChoDaChon: { ...data, ma: orderCode },
+          cartItems: currentCartItems,
+          phiVanChuyen: Number(data.thongTinGiaoHang?.phiVanChuyen ?? currentPhiVanChuyen),
+          tienGiam: Number(data.tienGiam ?? currentTienGiam),
+          tongTien: Number(data.tongTienHang ?? currentTongTienHang),
+          khachCanTra: Number(data.tongTien ?? currentKhachCanTra),
+          tenKhachHangHienThi: data.tenKhachHang || currentTenKhach,
+          soDienThoaiKhachHangHienThi: data.soDienThoai || currentSdt
         });
       }
     } catch (error) {
