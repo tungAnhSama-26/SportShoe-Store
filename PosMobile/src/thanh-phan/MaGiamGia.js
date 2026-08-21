@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MaGiamGia({ phieuGiamGiaLogic }) {
   const { 
@@ -17,28 +18,42 @@ export default function MaGiamGia({ phieuGiamGiaLogic }) {
       <View style={styles.searchRow}>
         <TextInput
           style={styles.input}
-          placeholder="Nhập mã giảm giá..."
+          placeholder="Nhập mã..."
+          placeholderTextColor="#94a3b8"
           value={maPhieuGiamGia}
           onChangeText={setMaPhieuGiamGia}
           autoCapitalize="characters"
           onSubmitEditing={() => xuLyApDungPhieu(true)}
         />
-        <TouchableOpacity style={styles.applyBtn} onPress={() => xuLyApDungPhieu(true)}>
+        <TouchableOpacity 
+          style={[styles.applyBtn, (!maPhieuGiamGia.trim() || dangApDungPhieu) && styles.applyBtnDisabled]} 
+          onPress={() => xuLyApDungPhieu(true)}
+          disabled={!maPhieuGiamGia.trim() || dangApDungPhieu}
+        >
           {dangApDungPhieu ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Áp dụng</Text>
+            <Text style={styles.applyBtnText}>Áp dụng</Text>
           )}
         </TouchableOpacity>
       </View>
       {phieuGiamGiaDaApDung && (
-        <View style={styles.infoRow}>
-          <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Mã: {phieuGiamGiaDaApDung.ma}</Text>
-          <TouchableOpacity onPress={() => {
-            setPhieuGiamGiaDaApDung(null);
-            setMaPhieuGiamGia("");
-          }}>
-            <Text style={styles.clearText}>Hủy</Text>
+        <View style={styles.appliedCard}>
+          <View style={styles.appliedLeft}>
+            <Ionicons name="pricetag" size={16} color="#16a34a" />
+            <Text style={styles.appliedCode}>
+              {phieuGiamGiaDaApDung.ma}
+              {phieuGiamGiaDaApDung.soTienGiam > 0 ? ` (-${phieuGiamGiaDaApDung.soTienGiam.toLocaleString('vi-VN')} đ)` : ''}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.removeBtn}
+            onPress={() => {
+              setPhieuGiamGiaDaApDung(null);
+              setMaPhieuGiamGia("");
+            }}
+          >
+            <Ionicons name="close-circle" size={18} color="#ef4444" />
           </TouchableOpacity>
         </View>
       )}
@@ -48,46 +63,72 @@ export default function MaGiamGia({ phieuGiamGiaLogic }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#1e293b',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#334155',
   },
   searchRow: {
     flexDirection: 'row',
-    marginBottom: 10,
+    alignItems: 'center',
+    gap: 8,
   },
   input: {
     flex: 1,
+    minWidth: 0,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#f8fafc',
-    borderRadius: 6,
-    paddingHorizontal: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
     height: 40,
-    marginRight: 8,
+    fontSize: 14,
+    color: '#0f172a',
   },
   applyBtn: {
     backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    borderRadius: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
     height: 40,
     flexShrink: 0,
   },
-  infoRow: {
+  applyBtnDisabled: {
+    backgroundColor: '#fca5a5',
+  },
+  applyBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  appliedCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 5,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
   },
-  clearText: {
-    color: '#ef4444',
-    textDecorationLine: 'underline',
+  appliedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  appliedCode: {
+    color: '#15803d',
+    fontWeight: '700',
     fontSize: 13,
+  },
+  removeBtn: {
+    padding: 2,
   },
 });

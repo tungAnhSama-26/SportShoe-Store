@@ -366,12 +366,15 @@ export function useLogicPhieuGiamGia({
       if (!coTheTimPhieu) {
         setKetQuaTimKiemPhieu([]);
         setHienThiDanhSachPhieu(false);
-        if (phieuGiamGiaDaApDung) {
+        if (phieuGiamGiaDaApDung && cartItems.length > 0) {
           const ma = phieuGiamGiaDaApDung.ma;
           setPhieuGiamGiaDaApDung(null);
           setMaPhieuGiamGia("");
           showWarning(`Đơn hàng không đủ điều kiện áp dụng phiếu giảm giá ${ma} nữa.`);
           if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
+        } else if (phieuGiamGiaDaApDung && cartItems.length === 0) {
+          setPhieuGiamGiaDaApDung(null);
+          setMaPhieuGiamGia("");
         }
         await taiTatCaPhieuKhaDung();
         if (isMounted) tuDongApDungVaDeXuatHangMucTiepTheo();
@@ -413,13 +416,14 @@ export function useLogicPhieuGiamGia({
     checkAndReload();
 
     return () => { isMounted = false; };
-  }, [coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon, phieuGiamGiaDaApDung]); // Removed `maPhieuGiamGia` to prevent infinite loop
+  }, [coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon, phieuGiamGiaDaApDung]);
 
   return {
     maPhieuGiamGia, setMaPhieuGiamGia,
     phieuGiamGiaDaApDung, setPhieuGiamGiaDaApDung,
     dangApDungPhieu,
     ketQuaTimKiemPhieu: ketQuaTimKiemPhieuDaSapXep,
+    setKetQuaTimKiemPhieu,
     dangTaiPhieu,
     hienThiDanhSachPhieu, setHienThiDanhSachPhieu,
     tienGiam,
@@ -436,10 +440,12 @@ export function useLogicPhieuGiamGia({
     xuLyGoPhieu,
     xoaCacBoDemThoiGianPhieu,
     phieuGiamGiaHangMucTiepTheo,
+    setPhieuGiamGiaHangMucTiepTheo,
     soTienThieuDeDatHangMuc,
     soSanPhamThieuDeDatHangMuc,
     soTienGiamCuaHangMucTiepTheo,
     phieuTotHonDeXuat,
+    setPhieuTotHonDeXuat,
     tuChoiPhieuTotHon,
     chapNhanPhieuTotHon,
     kiemTraPhieuTotHonTruocThanhToan

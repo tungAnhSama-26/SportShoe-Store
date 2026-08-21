@@ -37,6 +37,8 @@ CLAUDE.md
 BE/server/data/chatbot-keys.json
 BE/server/data/ghn-fee-cache.json
 BE/server/data/ghn-fee-cache.json.tmp
+data/
+/data/
 implementation_plan.md
 
 ### Local Docker Config ###

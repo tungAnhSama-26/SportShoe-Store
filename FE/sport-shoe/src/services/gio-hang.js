@@ -91,7 +91,9 @@ export async function layGioHang() {
 export async function dongBoGiaGio() {
   const gio = docGioHangLocal();
   if (!gio.items.length) return { ...gio, removedNames: [] };
-  const ids = gio.items.map((it) => Number(it.giayChiTietId)).filter(Boolean);
+  const ids = gio.items
+    .map((it) => Number(it.giayChiTietId))
+    .filter((id) => !Number.isNaN(id) && id !== null && id !== undefined);
   let ds = [];
   try {
     ds = await apiRequest(`/client/san-pham/dong-bo-gia`, {
