@@ -1680,7 +1680,7 @@ function cuongCheKetThucCa() {
                 <td class="px-3 py-3 font-semibold text-emerald-600">+{{ formatVND(tx.tongTien) }}</td>
                 <td class="px-3 py-3">
                   <span class="px-2 py-0.5 text-[10px] font-medium rounded-full"
-                        :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-slate-100 dark:bg-slate-700'">
+                        :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : (tx.phuongThucThanhToan === 'Kết hợp' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-semibold' : 'bg-slate-100 dark:bg-slate-700')">
                     {{ tx.phuongThucThanhToan || 'N/A' }}
                   </span>
                 </td>
@@ -1729,7 +1729,8 @@ function cuongCheKetThucCa() {
                   <td class="px-3 py-3">Bán hàng tại quầy</td>
                   <td class="px-3 py-3 font-semibold text-emerald-600">+{{ formatVND(tx.tongTien) }}</td>
                   <td class="px-3 py-3">
-                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 dark:bg-slate-700">
+                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full"
+                          :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : (tx.phuongThucThanhToan === 'Kết hợp' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-semibold' : 'bg-slate-100 dark:bg-slate-700')">
                       {{ tx.phuongThucThanhToan || 'N/A' }}
                     </span>
                   </td>
