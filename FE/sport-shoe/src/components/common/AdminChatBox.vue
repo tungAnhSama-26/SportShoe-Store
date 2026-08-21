@@ -40,6 +40,7 @@ import {
 } from "lucide-vue-next";
 
 import { resolveHinhAnh } from "../../utils/resolve-image";
+import anhSanPhamDuPhong from "../../assets/login-shoe.png";
 
 const router = useRouter();
 const isOpen = ref(false);
@@ -52,6 +53,13 @@ const showHistoryModal = ref(false);
 const sessionList = ref([]);
 const loadingSessions = ref(false);
 const activeSessionId = ref(null);
+
+function xuLyLoiAnhSanPham(event) {
+  const image = event?.target;
+  if (!image || image.dataset.fallbackApplied === "true") return;
+  image.dataset.fallbackApplied = "true";
+  image.src = anhSanPhamDuPhong;
+}
 
 function formatDateTime(isoStr) {
   if (!isoStr) return "";
@@ -703,7 +711,7 @@ function toggleChat() {
         class="flex-1 overflow-y-auto bg-slate-50/50 p-4 space-y-4 dark:bg-slate-900/50 scrollbar-thin"
       >
         <div
-          v-for="msg in messages"
+          v-for="(msg, msgIndex) in messages"
           :key="msg.id"
           class="flex"
           :class="msg.sender === 'USER' ? 'justify-end' : 'justify-start'"
@@ -734,6 +742,7 @@ function toggleChat() {
                   <img
                     :src="resolveHinhAnh(seg.url)"
                     :alt="seg.alt || 'Sản phẩm'"
+                    @error="xuLyLoiAnhSanPham"
                     class="h-36 w-36 object-cover group-hover:scale-105 transition duration-300"
                   />
                   <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/25 transition flex items-center justify-center">
@@ -744,22 +753,20 @@ function toggleChat() {
                 </div>
                 <div
                   v-else-if="seg.type === 'product'"
-                  class="my-2.5 flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-2xl hover:border-rose-400 hover:shadow-md transition cursor-pointer group"
+                  class="my-2.5 flex gap-3 p-2.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl hover:border-rose-300 hover:shadow-md transition-all cursor-pointer group w-full relative overflow-hidden"
                   @click="handleNavigate(seg.productData.url || '/admin/san-pham')"
                 >
-                  <div class="relative w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200/60 dark:border-slate-600">
+                  <div class="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
                     <img
-                      v-if="seg.productData.image"
-                      :src="resolveHinhAnh(seg.productData.image)"
+                      :src="seg.productData.image ? resolveHinhAnh(seg.productData.image) : anhSanPhamDuPhong"
+                      :alt="seg.productData.name || 'Sản phẩm'"
+                      @error="xuLyLoiAnhSanPham"
                       class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
-                    <div v-else class="w-full h-full flex items-center justify-center text-base">
-                      👟
-                    </div>
                   </div>
 
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate group-hover:text-rose-600 transition">
+                  <div class="flex-1 min-w-0 flex flex-col justify-center">
+                    <p class="font-bold text-[11px] text-slate-800 dark:text-slate-100 line-clamp-2 group-hover:text-rose-600 transition">
                       {{ seg.productData.name }}
                     </p>
 
@@ -775,7 +782,7 @@ function toggleChat() {
                       </span>
                     </div>
 
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
                       <span v-if="seg.productData.color" class="inline-flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                         {{ seg.productData.color }}
@@ -784,11 +791,15 @@ function toggleChat() {
                         • {{ seg.productData.size.toLowerCase().includes("size") ? seg.productData.size : "Size " + seg.productData.size }}
                       </span>
                       <span v-if="seg.productData.stock !== undefined" class="font-bold text-amber-600 dark:text-amber-400">
-                        • Số lượng: {{ seg.productData.stock }}
+                        • {{ Number(seg.productData.stock) === 0
+                          ? "Đã hết hàng"
+                          : `${seg.productData.stockLabel || "Còn lại"}: ${seg.productData.stock} đôi` }}
                       </span>
                     </div>
                   </div>
-
+                  <span class="absolute right-2 bottom-1.5 text-[9px] font-semibold text-rose-500 opacity-0 group-hover:opacity-100 transition">
+                    Xem chi tiết →
+                  </span>
                 </div>
                 <div v-else-if="seg.type === 'chart'" class="my-3 p-3 bg-slate-50 border border-slate-100 rounded-xl dark:bg-slate-900/80 dark:border-slate-800">
                   <div class="text-xs font-bold text-slate-700 mb-2 dark:text-slate-200">
@@ -817,7 +828,7 @@ function toggleChat() {
 
             <!-- Gợi ý nhanh đính kèm trực tiếp dưới câu trả lời của AI -->
             <div
-              v-if="msg.sender === 'AI'"
+              v-if="msg.sender === 'AI' && msgIndex === messages.length - 1"
               class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1.5"
             >
               <button
