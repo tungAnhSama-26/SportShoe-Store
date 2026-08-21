@@ -27,8 +27,6 @@ const {
   tongTrangSanPham,
   hienPhanTrangSanPham,
   vietHoaChuCaiDau,
-  dinhDangGio,
-  dinhDangNgay,
   dinhDangTien,
 } = useInvoiceDetailContext();
 
@@ -156,14 +154,13 @@ function nhanGiamGia(item) {
               <th class="px-5 py-3.5">Màu Sắc</th>
               <th class="px-5 py-3.5">Size</th>
               <th class="px-5 py-3.5">Số Lượng</th>
-              <th class="px-5 py-3.5">Thời Gian</th>
               <th class="px-5 py-3.5">Giảm Giá</th>
               <th class="rounded-r-2xl px-5 py-3.5">Đơn Giá</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!danhSachSanPhamPhanTrang.length">
-              <td colspan="10" class="px-5 py-10 text-center text-sm text-slate-400">
+              <td colspan="9" class="px-5 py-10 text-center text-sm text-slate-400">
                 Không có sản phẩm phù hợp với bộ lọc.
               </td>
             </tr>
@@ -199,14 +196,6 @@ function nhanGiamGia(item) {
               </td>
               <td class="px-5 py-6 font-semibold text-slate-700">
                 {{ item.soLuong }}
-              </td>
-              <td class="px-5 py-6">
-                <p class="text-sm font-semibold text-slate-700">
-                  {{ dinhDangGio(hoaDon.ngayTao) }}
-                </p>
-                <p class="text-sm text-slate-400">
-                  {{ dinhDangNgay(hoaDon.ngayTao) }}
-                </p>
               </td>
               <td class="px-5 py-6">
                 <span
