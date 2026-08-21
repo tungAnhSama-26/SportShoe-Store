@@ -68,6 +68,9 @@ public class ChatbotService {
             - Hotline hỗ trợ: **0965852782**
 
             # NGUYÊN TẮC
+            - Khi khách tìm hoặc mua sản phẩm, BẮT BUỘC dùng dữ liệu từ `search_products_tool`.
+            - Nếu tool trả danh sách rỗng, phải nói cửa hàng chưa có sản phẩm phù hợp. TUYỆT ĐỐI KHÔNG tự tạo ID, tên sản phẩm, giá, giảm giá, tồn kho, link hoặc khối `product`.
+            - Chỉ được nêu thông tin sản phẩm xuất hiện nguyên vẹn trong kết quả tool/database.
             - Trả lời bằng Tiếng Việt thân thiện, tự nhiên, ngắn gọn (Tối đa 120 từ).
             """;
 
@@ -101,6 +104,8 @@ public class ChatbotService {
     private final ThongBaoService thongBaoService;
     private final FaqRuleEngine faqRuleEngine;
     private final ChatbotIntentRouter intentRouter;
+    private final ClientProductQueryGuard productQueryGuard;
+    private final ClientProductResponseSanitizer productResponseSanitizer;
 
     @Value("${app.debug-errors:false}")
     private boolean debugErrors;
@@ -113,7 +118,9 @@ public class ChatbotService {
             WebSocketNotificationService webSocketNotificationService,
             ThongBaoService thongBaoService,
             FaqRuleEngine faqRuleEngine,
-            ChatbotIntentRouter intentRouter) {
+            ChatbotIntentRouter intentRouter,
+            ClientProductQueryGuard productQueryGuard,
+            ClientProductResponseSanitizer productResponseSanitizer) {
         this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_SYSTEM_PROMPT).build();
         this.adminChatClient = ChatClient.builder(chatModel).defaultSystem(ADMIN_SYSTEM_PROMPT).build();
 
@@ -124,6 +131,8 @@ public class ChatbotService {
         this.thongBaoService = thongBaoService;
         this.faqRuleEngine = faqRuleEngine;
         this.intentRouter = intentRouter;
+        this.productQueryGuard = productQueryGuard;
+        this.productResponseSanitizer = productResponseSanitizer;
     }
 
     // --- BƯỚC 1: LƯU TIN NHẮN KHÁCH VÀO DB (TRANSACTION NGẮN) ---
@@ -243,6 +252,16 @@ public class ChatbotService {
             String faqAnswer = faqRuleEngine.matchFaq(request.message());
             if (faqAnswer != null) {
                 botReply = faqAnswer;
+                saveAiMessage(session.getId(), botReply);
+                return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
+            }
+
+            // Yêu cầu tìm mua có màu/size rõ ràng được trả lời trực tiếp từ database.
+            // Không giao trường hợp "không có sản phẩm" cho LLM để tránh bịa dữ liệu.
+            java.util.Optional<String> verifiedProductAnswer =
+                    productQueryGuard.answerFromDatabase(request.message());
+            if (verifiedProductAnswer.isPresent()) {
+                botReply = verifiedProductAnswer.get();
                 saveAiMessage(session.getId(), botReply);
                 return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
             }
@@ -464,12 +483,13 @@ public class ChatbotService {
             // Intent Router: Chọn đúng Tool cần thiết
             String[] activeTools = intentRouter.resolveClientTools(userMessage);
 
-            return clientChatClient.prompt()
+            String response = clientChatClient.prompt()
                     .system(CLIENT_SYSTEM_PROMPT)
                     .user(userMessage)
                     .functions(activeTools)
                     .call()
                     .content();
+            return productResponseSanitizer.sanitize(response);
         } catch (Exception e) {
             System.err.println("[AI CHATBOT ERROR] Lỗi khi gọi AI Chatbot:");
             e.printStackTrace();
@@ -574,7 +594,7 @@ public class ChatbotService {
         } catch (Exception e) {
             System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI: " + e.getMessage());
             e.printStackTrace();
-            String errReply = "Không thể gọi AI do API Key hiện tại bị hết dung lượng (Quota Exceeded). Vui lòng đổi sang API Key khác hoặc nạp thêm hạn ngạch để tiếp tục sử dụng.";
+            String errReply = "Hiện không thể kết nối cả AI cloud lẫn AI local. Vui lòng kiểm tra API key, trạng thái Ollama hoặc thử lại sau.";
             saveAdminAiReply(session.getId(), errReply);
             return errReply;
         }

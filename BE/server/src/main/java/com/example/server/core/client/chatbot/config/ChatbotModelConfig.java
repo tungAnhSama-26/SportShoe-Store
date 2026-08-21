@@ -23,6 +23,12 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class ChatbotModelConfig {
@@ -39,6 +45,24 @@ public class ChatbotModelConfig {
     @Value("${GROQ_API_KEY:}")
     private String groqKey;
 
+    @Value("${OLLAMA_BASE_URL:http://ollama:11434}")
+    private String ollamaBaseUrl;
+
+    @Value("${OLLAMA_TEXT_MODEL:qwen3:4b-instruct-2507-q4_K_M}")
+    private String ollamaTextModel;
+
+    @Value("${AI_LOCAL_FALLBACK_ENABLED:true}")
+    private boolean localFallbackEnabled;
+
+    @Value("${AI_REQUEST_TIMEOUT_SECONDS:180}")
+    private int requestTimeoutSeconds;
+
+    @Value("${AI_LOCAL_MAX_CONCURRENT:1}")
+    private int localMaxConcurrent;
+
+    @Value("${AI_LOCAL_QUEUE_WAIT_SECONDS:5}")
+    private int localQueueWaitSeconds;
+
     private final java.util.Map<String, String> thoughtSignatures = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Bean
@@ -53,15 +77,23 @@ public class ChatbotModelConfig {
     }
 
     private ChatModel createModel(String apiKey, String baseUrl, String modelName, String providerName,
+                                   boolean localModel,
                                    org.springframework.ai.model.function.FunctionCallbackContext functionCallbackContext) {
         System.out.println("[AI CHATBOT] Khởi tạo AI provider: " + providerName + " (" + modelName + ")");
         
+        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(Math.min(requestTimeoutSeconds, 10)));
+        requestFactory.setReadTimeout(Duration.ofSeconds(requestTimeoutSeconds));
+
         RestClient.Builder restClientBuilder = RestClient.builder()
+                .requestFactory(requestFactory)
                 .requestInterceptor((HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
                     String requestBody = new String(body, StandardCharsets.UTF_8);
                     
-                    // Inject thought_signature if present in thoughtSignatures map
-                    try {
+                    // Inject thought_signature only for Gemini requests.
+                    if (providerName.startsWith("Gemini")) {
+                        try {
                         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                         com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(requestBody);
                         boolean requestModified = false;
@@ -93,23 +125,24 @@ public class ChatbotModelConfig {
                             requestBody = mapper.writeValueAsString(root);
                             body = requestBody.getBytes(StandardCharsets.UTF_8);
                         }
-                    } catch (Exception e) {
-                        System.err.println("[AI CHATBOT WARNING] Failed to parse/modify request body for thought_signature: " + e.getMessage());
+                        } catch (Exception e) {
+                            System.err.println("[AI CHATBOT WARNING] Failed to parse/modify request body for thought_signature: " + e.getMessage());
+                        }
                     }
 
-                    System.out.println("[AI CHATBOT REQUEST] URL: " + request.getURI() + " | Body: " + requestBody);
+                    System.out.println("[AI CHATBOT REQUEST] Provider: " + providerName + " | URL: " + request.getURI());
                     ClientHttpResponse response = execution.execute(request, body);
                     byte[] responseBodyBytes = response.getBody().readAllBytes();
                     String responseBody = new String(responseBodyBytes, StandardCharsets.UTF_8);
-                    System.out.println("[AI CHATBOT RESPONSE] Status: " + response.getStatusCode() + " | Body: " + responseBody);
+                    System.out.println("[AI CHATBOT RESPONSE] Provider: " + providerName + " | Status: " + response.getStatusCode());
                     
                     if (response.getStatusCode().isError()) {
-                        throw new IOException("AI API Error (HTTP " + response.getStatusCode() + "): " + responseBody);
+                        throw new IOException("AI API Error (HTTP " + response.getStatusCode() + ")");
                     }
                     
                     String trimmed = responseBody.trim();
                     if (trimmed.startsWith("[")) {
-                        throw new IOException("AI API returned JSON Array instead of Object: " + responseBody);
+                        throw new IOException("AI API returned JSON Array instead of Object");
                     }
 
                     // Extract and save thought_signature if present in response
@@ -158,7 +191,8 @@ public class ChatbotModelConfig {
                         String value = matcher.group(1);
                         if (!value.equals("stop") && !value.equals("function_call") && !value.equals("length") 
                                 && !value.equals("content_filter") && !value.equals("tool_call") && !value.equals("tool_calls")) {
-                            System.out.println("[AI CHATBOT WARNING] Sửa finish_reason không hợp lệ: " + value + " -> stop");
+                            System.out.println("[AI CHATBOT WARNING] Provider " + providerName
+                                    + " trả finish_reason không hợp lệ: " + value + " -> stop");
                             matcher.appendReplacement(sb, "\"finish_reason\":\"stop\"");
                             modified = true;
                         } else {
@@ -185,11 +219,12 @@ public class ChatbotModelConfig {
                 .withModel(modelName)
                 .withTemperature(0.7f)
                 .build();
-        return new CompatibleOpenAiChatModel(openAiApi, options, functionCallbackContext, new org.springframework.retry.support.RetryTemplate());
+        ChatModel delegate = new CompatibleOpenAiChatModel(
+                openAiApi, options, functionCallbackContext, singleAttemptRetryTemplate());
+        return new ProviderChatModel(providerName, delegate,
+                localModel ? new Semaphore(Math.max(1, localMaxConcurrent), true) : null,
+                localQueueWaitSeconds);
     }
-
-    @org.springframework.beans.factory.annotation.Autowired
-    private org.springframework.context.ApplicationContext applicationContext;
 
     private FallbackChatModel activeFallbackModel;
     private org.springframework.ai.model.function.FunctionCallbackContext context;
@@ -242,24 +277,174 @@ public class ChatbotModelConfig {
 
         List<ChatModel> models = new ArrayList<>();
         if (isValidKey(activeGroqKey)) {
-            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", context));
+            models.add(createModel(activeGroqKey, "https://api.groq.com/openai", "llama-3.3-70b-versatile", "Groq", false, context));
         }
         if (isValidKey(activeGeminiKey)) {
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash", "Gemini", context));
-            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash-lite", "Gemini-Lite-DuPhong", context));
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash", "Gemini", false, context));
+            models.add(createModel(activeGeminiKey, "https://generativelanguage.googleapis.com/v1beta/openai/", "gemini-2.0-flash-lite", "Gemini-Lite-DuPhong", false, context));
         }
         if (isValidKey(activeOpenAiKey)) {
-            models.add(createModel(activeOpenAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", context));
+            models.add(createModel(activeOpenAiKey, "https://api.openai.com", "gpt-4o-mini", "OpenAI", false, context));
         }
         if (isValidKey(activeDeepseekKey)) {
-            models.add(createModel(activeDeepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", context));
+            models.add(createModel(activeDeepseekKey, "https://api.deepseek.com", "deepseek-chat", "DeepSeek", false, context));
+        }
+
+        if (localFallbackEnabled) {
+            models.add(createModel("ollama", normalizeBaseUrl(ollamaBaseUrl), ollamaTextModel,
+                    "Ollama-Local", true, context));
         }
 
         if (models.isEmpty()) {
-            System.out.println("[AI CHATBOT] CẢNH BÁO: Chưa cấu hình bất kỳ API Key hợp lệ nào. Sẽ dùng key giả lập.");
-            models.add(createModel("dummy-key", "https://api.openai.com", "gpt-4o-mini", "Dummy-OpenAI", context));
+            System.out.println("[AI CHATBOT] CẢNH BÁO: Không có API key hợp lệ và Ollama fallback đang tắt.");
         }
         return models;
+    }
+
+    private String normalizeBaseUrl(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return "http://ollama:11434";
+        }
+        String normalized = baseUrl.trim();
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if (normalized.endsWith("/v1")) {
+            normalized = normalized.substring(0, normalized.length() - 3);
+        }
+        return normalized;
+    }
+
+    static org.springframework.retry.support.RetryTemplate singleAttemptRetryTemplate() {
+        org.springframework.retry.support.RetryTemplate retryTemplate =
+                new org.springframework.retry.support.RetryTemplate();
+        retryTemplate.setRetryPolicy(new org.springframework.retry.policy.SimpleRetryPolicy(1));
+        return retryTemplate;
+    }
+
+    public LocalAiStatus getLocalAiStatus() {
+        List<String> providers = activeFallbackModel == null
+                ? List.of()
+                : activeFallbackModel.getProviderNames();
+        if (!localFallbackEnabled) {
+            return new LocalAiStatus(false, false, false, ollamaTextModel,
+                    "Ollama fallback đang tắt", providers);
+        }
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(2))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(URI.create(normalizeBaseUrl(ollamaBaseUrl) + "/api/tags"))
+                    .timeout(Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return new LocalAiStatus(true, false, false, ollamaTextModel,
+                        "Ollama trả HTTP " + response.statusCode(), providers);
+            }
+            com.fasterxml.jackson.databind.JsonNode root =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(response.body());
+            boolean modelAvailable = false;
+            com.fasterxml.jackson.databind.JsonNode models = root.path("models");
+            if (models.isArray()) {
+                for (com.fasterxml.jackson.databind.JsonNode model : models) {
+                    String name = model.path("name").asText("");
+                    String modelName = model.path("model").asText("");
+                    if (ollamaTextModel.equals(name) || ollamaTextModel.equals(modelName)
+                            || name.startsWith(ollamaTextModel + ":")) {
+                        modelAvailable = true;
+                        break;
+                    }
+                }
+            }
+            return new LocalAiStatus(true, true, modelAvailable, ollamaTextModel,
+                    modelAvailable ? "Ollama local sẵn sàng" : "Ollama đang chạy nhưng thiếu model", providers);
+        } catch (Exception e) {
+            return new LocalAiStatus(true, false, false, ollamaTextModel,
+                    "Không kết nối được Ollama: " + e.getClass().getSimpleName(), providers);
+        }
+    }
+
+    public record LocalAiStatus(
+            boolean enabled,
+            boolean reachable,
+            boolean modelAvailable,
+            String model,
+            String message,
+            List<String> providers
+    ) {}
+
+    public static class ProviderChatModel implements ChatModel {
+        private final String providerName;
+        private final ChatModel delegate;
+        private final Semaphore semaphore;
+        private final int queueWaitSeconds;
+
+        public ProviderChatModel(String providerName, ChatModel delegate,
+                                 Semaphore semaphore, int queueWaitSeconds) {
+            this.providerName = providerName;
+            this.delegate = delegate;
+            this.semaphore = semaphore;
+            this.queueWaitSeconds = Math.max(0, queueWaitSeconds);
+        }
+
+        public String getProviderName() {
+            return providerName;
+        }
+
+        @Override
+        public ChatResponse call(Prompt prompt) {
+            if (semaphore == null) {
+                return delegate.call(prompt);
+            }
+            boolean acquired = false;
+            try {
+                acquired = semaphore.tryAcquire(queueWaitSeconds, TimeUnit.SECONDS);
+                if (!acquired) {
+                    throw new IllegalStateException("AI local đang bận, vui lòng thử lại sau");
+                }
+                return delegate.call(prompt);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Đã hủy khi chờ AI local", e);
+            } finally {
+                if (acquired) {
+                    semaphore.release();
+                }
+            }
+        }
+
+        @Override
+        public Flux<ChatResponse> stream(Prompt prompt) {
+            if (semaphore == null) {
+                return delegate.stream(prompt);
+            }
+            return Flux.defer(() -> {
+                boolean acquired;
+                try {
+                    acquired = semaphore.tryAcquire(queueWaitSeconds, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return Flux.error(new IllegalStateException("Đã hủy khi chờ AI local", e));
+                }
+                if (!acquired) {
+                    return Flux.error(new IllegalStateException("AI local đang bận, vui lòng thử lại sau"));
+                }
+                return delegate.stream(prompt).doFinally(signal -> semaphore.release());
+            });
+        }
+
+        @Override
+        public ChatOptions getDefaultOptions() {
+            return (ChatOptions) delegate.getDefaultOptions();
+        }
+
+        @Override
+        public String toString() {
+            return providerName;
+        }
     }
 
     public static class FallbackChatModel implements ChatModel {
@@ -273,9 +458,16 @@ public class ChatbotModelConfig {
             this.models = new java.util.concurrent.CopyOnWriteArrayList<>(newModels);
         }
 
+        public List<String> getProviderNames() {
+            return models.stream()
+                    .map(model -> model instanceof ProviderChatModel provider
+                            ? provider.getProviderName()
+                            : model.getClass().getSimpleName())
+                    .toList();
+        }
+
         @Override
         public ChatResponse call(Prompt prompt) {
-            System.out.println("[AI CHATBOT PROMPT DEBUG] Prompt options: " + prompt.getOptions());
             if (models.isEmpty()) {
                 throw new IllegalStateException("Không có AI model nào được cấu hình.");
             }
@@ -317,8 +509,12 @@ public class ChatbotModelConfig {
                     if (t.getCause() != null) {
                         errMsg += " (Cause: " + t.getCause().getMessage() + ")";
                     }
-                    errors.add("Model " + model.getClass().getSimpleName() + " failed: " + errMsg);
-                    System.err.println("[AI FALLBACK] Lỗi khi gọi model: " + errMsg);
+                    String providerName = model instanceof ProviderChatModel provider
+                            ? provider.getProviderName()
+                            : model.getClass().getSimpleName();
+                    errors.add("Provider " + providerName + " failed: " + errMsg);
+                    System.err.println("[AI FALLBACK] " + providerName
+                            + " thất bại, chuyển sang provider tiếp theo: " + errMsg);
                 }
             }
             throw new RuntimeException("Tất cả các AI model đều thất bại: " + String.join(" | ", errors), lastError);
