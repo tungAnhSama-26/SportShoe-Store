@@ -86,6 +86,12 @@ export function LogicGioHang({
       if (anyExistingItem) {
         resultStatus = "price_updated";
         oldPrice = anyExistingItem.giaBan;
+        // Đánh dấu các dòng sản phẩm mang mức giá cũ trước đó
+        cartItems.value = cartItems.value.map(it =>
+          Number(it.chiTietId) === Number(product.chiTietId) && Number(it.giaBan) !== Number(product.giaBan)
+            ? { ...it, isOutdatedPrice: true }
+            : it
+        );
       }
       
       cartItems.value = [
@@ -104,6 +110,7 @@ export function LogicGioHang({
           giaBan: product.giaBan,
           giaGoc: product.giaGoc,
           oldPrice: oldPrice,
+          isOutdatedPrice: false,
           soLuongTon: product.soLuongTon
         }
       ];
@@ -123,10 +130,34 @@ export function LogicGioHang({
     };
   }
 
+  function isOutdatedPrice(item) {
+    if (!item) return false;
+    if (item.isOutdatedPrice) return true;
+    const sameVariantItems = cartItems.value.filter(
+      (it) => Number(it.chiTietId) === Number(item.chiTietId)
+    );
+    if (sameVariantItems.length > 1) {
+      const latestItem = sameVariantItems[sameVariantItems.length - 1];
+      if (latestItem && Number(latestItem.giaBan) !== Number(item.giaBan)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function tangSoLuong(cartItemId) {
+    const targetItem = cartItems.value.find((item) => item.cartItemId === cartItemId || item.chiTietId === cartItemId);
+    if (targetItem && isOutdatedPrice(targetItem)) {
+      showWarning(
+        `Sản phẩm "${targetItem.tenSanPham}" đã thay đổi giá trong hệ thống. Không thể tăng số lượng ở mức giá cũ. Vui lòng thêm sản phẩm với giá mới.`,
+        "Không thể tăng số lượng"
+      );
+      return;
+    }
+
     let reachedLimit = "";
     cartItems.value = cartItems.value.map((item) => {
-      if (item.cartItemId !== cartItemId) {
+      if (item.cartItemId !== cartItemId && item.chiTietId !== cartItemId) {
         return item;
       }
       const conLai = soLuongConLai(item.chiTietId, item.soLuongTon);
@@ -167,9 +198,23 @@ export function LogicGioHang({
       newQuantityNum = 1;
     }
 
+    const targetItem = cartItems.value.find((item) => item.cartItemId === cartItemId || item.chiTietId === cartItemId);
+    if (targetItem && isOutdatedPrice(targetItem)) {
+      if (newQuantityNum > targetItem.soLuong) {
+        showWarning(
+          `Sản phẩm "${targetItem.tenSanPham}" đã thay đổi giá trong hệ thống. Không thể tăng số lượng ở mức giá cũ.`,
+          "Không thể tăng số lượng"
+        );
+        cartItems.value = cartItems.value.map((item) => 
+          (item.cartItemId === cartItemId || item.chiTietId === cartItemId) ? { ...item, soLuong: item.soLuong } : item
+        );
+        return;
+      }
+    }
+
     let reachedLimit = "";
     cartItems.value = cartItems.value.map((item) => {
-      if (item.cartItemId !== cartItemId) {
+      if (item.cartItemId !== cartItemId && item.chiTietId !== cartItemId) {
         return item;
       }
       const conLaiThem = soLuongConLai(item.chiTietId, item.soLuongTon);
@@ -200,6 +245,7 @@ export function LogicGioHang({
     validateGioHang,
     taoDanhSachSanPhamThanhToan,
     soLuongConLai,
+    isOutdatedPrice,
     themSanPham,
     tangSoLuong,
     giamSoLuong,
