@@ -1452,7 +1452,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         }
         String normalized = loaiDon.trim().toLowerCase();
         boolean taiQuay = isTaiQuay(hoaDon);
-        boolean coGiaoHang = vanChuyen != null || (hoaDon != null && hoaDon.getDiaChiGiaoHang() != null && !hoaDon.getDiaChiGiaoHang().isBlank());
+        boolean coGiaoHang = vanChuyen != null || hasDeliveryAddress(hoaDon);
 
         if (normalized.contains("giao")) {
             return taiQuay && coGiaoHang;
@@ -1487,7 +1487,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (vanChuyen != null || (hoaDon != null && hoaDon.getDiaChiGiaoHang() != null && !hoaDon.getDiaChiGiaoHang().isBlank())) {
+        if (vanChuyen != null || hasDeliveryAddress(hoaDon)) {
             return "Giao hàng";
         }
         if (isTaiQuay(hoaDon)) {
@@ -1568,9 +1568,13 @@ private boolean isTaiQuay(Integer kenhBan) {
         giayIds.forEach(quanLySanPhamService::dongBoTrangThaiTheoTonKho);
     }
 
-private boolean isDonGiaoHang(HoaDon hoaDon) {
-    return hoaDon.getDiaChiGiaoHang() != null;
-}
+    private boolean isDonGiaoHang(HoaDon hoaDon) {
+        return hasDeliveryAddress(hoaDon);
+    }
+
+    private boolean hasDeliveryAddress(HoaDon hoaDon) {
+        return hoaDon != null && !DiaChiHaiCapMapper.format(hoaDon.getDiaChiGiaoHang()).isBlank();
+    }
 
     private String resolveTenKhachHang(HoaDon hoaDon) {
         if (hoaDon.getTenNguoiNhan() != null && !hoaDon.getTenNguoiNhan().isBlank()) {

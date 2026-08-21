@@ -31,7 +31,7 @@ class ChatbotIntentRouterTest {
     void bestSellerPromptStillReceivesProductTools() {
         var tools = Arrays.asList(router.resolveAdminTools("Sản phẩm bán chạy nhất"));
         assertTrue(tools.contains("search_products_tool"));
-        assertTrue(tools.contains("get_best_selling_shoes_tool"));
+        assertTrue(tools.contains("get_admin_best_selling_shoes_tool"));
     }
 
     @Test

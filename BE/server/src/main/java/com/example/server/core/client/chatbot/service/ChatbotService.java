@@ -91,6 +91,9 @@ public class ChatbotService {
             - Link hóa đơn: [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
 
             # NGUYÊN TẮC
+            - Mọi số liệu doanh thu, hóa đơn, sản phẩm, số lượng và đánh giá phải lấy từ tool/database.
+            - Nếu tool không có dữ liệu, phải trả đúng thông báo không có dữ liệu. Tuyệt đối không tự tạo tên sản phẩm, số liệu, nhận xét, link hoặc khối `product`.
+            - Không diễn giải lại hoặc thay đổi nội dung bên trong khối ```product ... ``` do tool trả về.
             - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
             """;
 
@@ -106,6 +109,7 @@ public class ChatbotService {
     private final ChatbotIntentRouter intentRouter;
     private final ClientProductQueryGuard productQueryGuard;
     private final ClientProductResponseSanitizer productResponseSanitizer;
+    private final AdminQuickQueryService adminQuickQueryService;
 
     @Value("${app.debug-errors:false}")
     private boolean debugErrors;
@@ -120,7 +124,8 @@ public class ChatbotService {
             FaqRuleEngine faqRuleEngine,
             ChatbotIntentRouter intentRouter,
             ClientProductQueryGuard productQueryGuard,
-            ClientProductResponseSanitizer productResponseSanitizer) {
+            ClientProductResponseSanitizer productResponseSanitizer,
+            AdminQuickQueryService adminQuickQueryService) {
         this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_SYSTEM_PROMPT).build();
         this.adminChatClient = ChatClient.builder(chatModel).defaultSystem(ADMIN_SYSTEM_PROMPT).build();
 
@@ -133,6 +138,7 @@ public class ChatbotService {
         this.intentRouter = intentRouter;
         this.productQueryGuard = productQueryGuard;
         this.productResponseSanitizer = productResponseSanitizer;
+        this.adminQuickQueryService = adminQuickQueryService;
     }
 
     // --- BƯỚC 1: LƯU TIN NHẮN KHÁCH VÀO DB (TRANSACTION NGẮN) ---
@@ -572,6 +578,13 @@ public class ChatbotService {
 
         // 2. Lưu tin nhắn Admin (Tx ngắn)
         CuocHoiThoai session = prepareAdminSessionAndSaveMsg(nhanVienId, userMessage);
+
+        // Các thống kê nhanh chỉ-đọc phải trả nguyên dữ liệu từ DB, không để LLM diễn giải hoặc bịa thêm.
+        java.util.Optional<String> quickReply = adminQuickQueryService.answer(userMessage);
+        if (quickReply.isPresent()) {
+            saveAdminAiReply(session.getId(), quickReply.get());
+            return quickReply.get();
+        }
 
         // 3. Load 6 tin nhắn gần nhất để tiết kiệm token (Tx read-only ngắn)
         List<org.springframework.ai.chat.messages.Message> historyMsgs = getRecentAdminChatHistory(session.getId(), 6);
