@@ -81,12 +81,6 @@ function formatDiscountPercent(item) {
               </div>
               <div>
                 <p class="font-medium text-slate-900 dark:text-slate-100 line-clamp-2">{{ item.tenSanPham }}</p>
-                <p v-if="checkOutdated(item)" class="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded inline-block">
-                  Giá cũ (Không thể tăng số lượng)
-                </p>
-                <p v-else-if="item.oldPrice && item.oldPrice !== item.giaBan" class="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded inline-block">
-                  Giá đổi từ {{ dinhDangTien(item.oldPrice) }} thành {{ dinhDangTien(item.giaBan) }}
-                </p>
               </div>
             </div>
           </td>

@@ -55,18 +55,14 @@ export default function BangGioHang() {
                 <View style={styles.itemFooter}>
                   <View style={styles.priceContainer}>
                     <Text style={styles.itemPrice}>{giaBan.toLocaleString('vi-VN')} đ</Text>
-                    {isOutdated ? (
-                      <View style={styles.outdatedBadge}>
-                        <Text style={styles.outdatedBadgeText}>Giá cũ (không thể +SL)</Text>
-                      </View>
-                    ) : isDiscounted ? (
+                    {isDiscounted && (
                       <View style={styles.discountRow}>
                         <Text style={styles.itemOriginalPrice}>{giaGoc.toLocaleString('vi-VN')} đ</Text>
                         <View style={styles.discountBadge}>
                           <Text style={styles.discountBadgeText}>{discountText}</Text>
                         </View>
                       </View>
-                    ) : null}
+                    )}
                   </View>
                   
                   <View style={styles.quantityControl}>
