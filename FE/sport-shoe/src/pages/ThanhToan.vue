@@ -9,7 +9,6 @@ import { gioHangStore } from '../stores/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showWarning, showSuccess, showError, showConfirm, showBigSuccess } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
-import { traCuuDonHangTheoMa } from '../services/don-hang';
 import { resolveHinhAnh } from '../utils/resolve-image';
 import anhMacDinh from '../assets/login-shoe.png';
 import logoGhn from '../assets/logo/Logo-GHN-Blue-Orange.webp';
@@ -180,10 +179,26 @@ async function capNhatPhiShip() {
   dangTinhPhi.value = true;
   loiPhiShip.value = '';
   try {
-    phiShip.value = await tinhPhiVanChuyen(taoPayloadDiaChi(f));
+    const res = await tinhPhiVanChuyen(taoPayloadDiaChi(f));
+    if (res && res.phiVanChuyen != null) {
+      phiShip.value = res;
+    } else {
+      phiShip.value = {
+        phiVanChuyen: 35000,
+        uocTinh: false,
+        moTa: '',
+        nguonTinhPhi: 'DEFAULT_FALLBACK',
+      };
+    }
   } catch (error) {
-    phiShip.value = null;
-    loiPhiShip.value = getDisplayErrorMessage(error, 'GHN chưa hỗ trợ tuyến giao hàng này.');
+    // Khi API GHN bị lỗi hoặc tắt mạng trên máy local -> đặt phí mặc định 35k và ẩn logo GHN
+    phiShip.value = {
+      phiVanChuyen: 35000,
+      uocTinh: false,
+      moTa: '',
+      nguonTinhPhi: 'DEFAULT_FALLBACK',
+    };
+    loiPhiShip.value = '';
   } finally {
     dangTinhPhi.value = false;
   }
@@ -376,36 +391,15 @@ function hopLeThongTin() {
   return true;
 }
 
-async function hoanTatDatHang(maHoaDon, hoaDonId = null, khachHangIdKhiDat = null) {
+async function hoanTatDatHang(maHoaDon) {
   daDatHang.value = true;
   xoaGioHang();
   gioHangStore.datSoLuong(0);
   // Popup to giữa màn báo đặt hàng thành công (giống các màn khác), popup sống qua điều hướng.
   showBigSuccess(`Mã đơn hàng của bạn: <b>${maHoaDon}</b>`, 'Đặt hàng thành công!');
 
-  // Khách có tài khoản xem đơn trong "Đơn hàng của tôi"; khách vãng lai dùng màn tra cứu công khai.
-  if (khachHangIdKhiDat) {
-    let idDonHang = Number(hoaDonId);
-
-    // COD trả sẵn ID. VietQR hiện chỉ trả mã hóa đơn khi polling nên tra lại để lấy ID.
-    if (!Number.isInteger(idDonHang) || idDonHang <= 0) {
-      try {
-        const donVuaTao = await traCuuDonHangTheoMa(maHoaDon);
-        idDonHang = Number(donVuaTao?.id);
-      } catch {
-        idDonHang = 0;
-      }
-    }
-
-    if (Number.isInteger(idDonHang) && idDonHang > 0) {
-      await router.push({ name: 'don-hang-chi-tiet', params: { id: idDonHang } });
-    } else {
-      // Lỗi mạng tạm thời vẫn giữ khách trong khu vực đơn hàng của tài khoản.
-      await router.push({ name: 'don-hang' });
-    }
-    return;
-  }
-
+  // Mọi khách (đăng nhập hay vãng lai, COD hay VietQR) đều vào màn cảm ơn kèm mã đơn.
+  // Màn này có sẵn thanh tiến trình trạng thái nên khách theo dõi được đơn ngay tại đây.
   await router.push({ name: 'tra-cuu-don', query: { ma: maHoaDon, moi: '1' } });
 }
 
@@ -443,12 +437,12 @@ async function datHangMoi() {
   const khachHangIdKhiDat = coPhienKhachHang() ? layKhachId() : null;
   khachHangIdPhien.value = khachHangIdKhiDat;
   if (hinhThucThanhToan.value === 'VNPAY' || hinhThucThanhToan.value === 'VIETQR') {
-    return moThanhToanVnPay(khachHangIdKhiDat);
+    return moThanhToanVnPay();
   }
   dangDat.value = true;
   try {
     const kq = await datHang(taoPayload());
-    await hoanTatDatHang(kq.maHoaDon, kq.hoaDonId, khachHangIdKhiDat);
+    await hoanTatDatHang(kq.maHoaDon);
   } catch (e) {
     showError(getDisplayErrorMessage(e, 'Không thể đặt hàng. Vui lòng thử lại.'));
   } finally {
@@ -457,12 +451,9 @@ async function datHangMoi() {
 }
 
 // --- VNPay: hiện QR hoặc link redirect ---
-const khachHangIdPhienThanhToan = ref(null);
-
-async function moThanhToanVnPay(khachHangIdKhiDat = null) {
+async function moThanhToanVnPay() {
   dangDat.value = true;
   try {
-    khachHangIdPhienThanhToan.value = khachHangIdKhiDat;
     qrVnPay.value = await taoMaVnPay(taoPayload());
     if (qrVnPay.value && qrVnPay.value.qrData && qrVnPay.value.qrData.startsWith('http') && !qrVnPay.value.qrData.includes('qr.sepay.vn')) {
       window.open(qrVnPay.value.qrData, '_blank');
@@ -495,7 +486,7 @@ function batDauPoll() {
         dungPoll();
         const ma = tt.maHoaDon;
         qrVnPay.value = null;
-        await hoanTatDatHang(ma, null, khachHangIdPhienThanhToan.value);
+        await hoanTatDatHang(ma);
       } else if (tt.trangThai === 'THAT_BAI') {
         dungPoll();
         qrVnPay.value = null;
@@ -739,8 +730,7 @@ function xuLyAnhLoi(event) {
             <div class="flex items-center justify-between text-sm text-slate-500">
               <span class="flex items-center gap-1.5">
                 Phí vận chuyển
-                <img :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
-                <span v-if="phiShip?.uocTinh" class="text-xs text-slate-400">(ước tính)</span>
+                <img v-if="phiShip && phiShip.nguonTinhPhi === 'GHN_LIVE'" :src="logoGhn" alt="GHN" class="h-4 w-auto object-contain" />
               </span>
               <span v-if="dangTinhPhi" class="text-slate-400">Đang tính...</span>
               <span v-else-if="phiShip" class="font-semibold text-slate-700">{{ dinhDangTienViet(phiShipSo) }}</span>
@@ -748,9 +738,6 @@ function xuLyAnhLoi(event) {
                 {{ loiPhiShip || 'Nhập địa chỉ để tính' }}
               </span>
             </div>
-            <p v-if="phiShip?.moTa" class="text-right text-[11px]" :class="phiShip.nguonTinhPhi === 'GHN_LIVE' ? 'text-slate-400' : 'text-amber-600'">
-              {{ phiShip.moTa }}
-            </p>
             <div class="flex items-center justify-between pt-1">
               <span class="text-sm font-semibold text-slate-700">Tổng cộng</span>
               <span class="text-xl font-bold text-primary">{{ dinhDangTienViet(tongThanhToan) }}</span>

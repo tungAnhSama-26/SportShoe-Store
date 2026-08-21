@@ -15,7 +15,6 @@ const route = useRoute();
 const router = useRouter();
 const { isDark, toggleDark } = useDarkMode();
 const { adminSession, avatarUrl } = useAdminSession();
-const FALLBACK_ADMIN_NAME = "Trần Vũ Tùng Anh";
 const hienMenuTaiKhoan = ref(false);
 
 const { activeShift, loadActiveShift } = useGiaoCa();
@@ -436,14 +435,10 @@ const currentSubRoute = computed(() => {
 });
 
 const profileName = computed(() => {
-  const username = adminSession.value.tenTaiKhoan?.trim();
   const fullName = adminSession.value.hoTen?.trim();
+  const username = adminSession.value.tenTaiKhoan?.trim();
 
-  if (username && username !== "admin") {
-    return fullName || username;
-  }
-
-  return FALLBACK_ADMIN_NAME;
+  return fullName || username || "Quản trị viên";
 });
 
 const hasAvatar = computed(() => Boolean(adminSession.value.hinhAnh?.trim()));

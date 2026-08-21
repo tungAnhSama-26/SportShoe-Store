@@ -51,8 +51,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import static org.springframework.util.StringUtils.hasText;
 
 @Service
 public class QuanLySanPhamService {
@@ -86,6 +88,7 @@ public class QuanLySanPhamService {
             Long tongSoLuong,
             boolean coGiamGia
     ) {}
+
 
     private final GiayRepository giayRepository;
     private final GiayChiTietRepository giayChiTietRepository;
@@ -208,10 +211,7 @@ public class QuanLySanPhamService {
 
     @Transactional(readOnly = true)
     public DanhMucSanPhamResponse layDanhMuc() {
-        var sort = org.springframework.data.domain.Sort.by(
-                org.springframework.data.domain.Sort.Direction.DESC, "ngayTao")
-                .and(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"));
-
+        var sort = Sort.by(Sort.Direction.DESC, "ngayTao").and(Sort.by(Sort.Direction.DESC, "id"));
         var loaiGiay = loaiGiayRepository.findAll(sort).stream()
                 .filter(l -> l.getTrangThai() != null && l.getTrangThai() == 1)
                 .map(l -> new LoaiGiayOption(l.getId(), l.getTen())).toList();

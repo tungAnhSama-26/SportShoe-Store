@@ -148,7 +148,7 @@ function shouldShowRoleNotice() {
 }
 
 const accountDisplayName = computed(
-  () => adminSessionState.value.tenTaiKhoan || adminSessionState.value.hoTen || DEFAULT_SESSION.tenTaiKhoan,
+  () => adminSessionState.value.hoTen || adminSessionState.value.tenTaiKhoan || DEFAULT_SESSION.tenTaiKhoan,
 );
 
 const avatarUrl = computed(() => {

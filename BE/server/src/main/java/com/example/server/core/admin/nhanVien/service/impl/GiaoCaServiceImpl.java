@@ -92,8 +92,12 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Override
     @Transactional
     public GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request) {
-        kiemTraKhongCoCaChuaKetThuc();
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
+        if (laAdmin(nhanVien)) {
+            kiemTraNhanVienKhongCoCaChuaKetThuc(nhanVienId);
+        } else {
+            kiemTraKhongCoCaChuaKetThuc();
+        }
         LocalTime hienTai = LocalTime.now(MUI_GIO);
         CaLam caLam = xacDinhCaDuocMo(
                 nhanVien,
@@ -512,6 +516,12 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         }
     }
 
+    private void kiemTraNhanVienKhongCoCaChuaKetThuc(UUID nhanVienId) {
+        if (giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(nhanVienId, TRANG_THAI_CHUA_KET_THUC)) {
+            throw new BusinessException("Bạn đang có ca làm việc chưa kết thúc.");
+        }
+    }
+
     private GiaoCa layCaDangMoCuaNhanVien(UUID nhanVienId) {
         return giaoCaRepository
                 .findByNhanVienTrongCaIdAndTrangThai(nhanVienId, TrangThaiGiaoCa.MO_CA.ma())
@@ -521,6 +531,11 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     private GiaoCa layCaDangMoCoQuyenTruyCap(UUID nhanVienId) {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
         if (laAdmin(nhanVien)) {
+            Optional<GiaoCa> caCuaAdmin = giaoCaRepository
+                    .findByNhanVienTrongCaIdAndTrangThai(nhanVienId, TrangThaiGiaoCa.MO_CA.ma());
+            if (caCuaAdmin.isPresent()) {
+                return caCuaAdmin.get();
+            }
             return giaoCaRepository
                     .findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of(TrangThaiGiaoCa.MO_CA.ma()))
                     .orElseThrow(() -> new BusinessException(

@@ -224,6 +224,7 @@ export function useChiTietHoaDon() {
       return false;
     }
     return (
+      hoaDon.value?.loaiDon === "Tại quầy" ||
       hoaDon.value?.loaiDon === "Cửa hàng" ||
       hoaDon.value?.loaiDon === "Offline" ||
       hoaDon.value?.loaiDon === "Tại cửa hàng" ||
@@ -1478,7 +1479,16 @@ export function useChiTietHoaDon() {
     });
   });
 
-  const laHoanThanh = computed(() => hoaDon.value?.trangThai === 5);
+  const laHoanThanh = computed(() => {
+    const stt = String(hoaDon.value?.trangThai || "").toLowerCase().trim();
+    return (
+      stt === "hoàn thành" ||
+      stt === "đã hoàn thành" ||
+      stt === "hoan_thanh" ||
+      hoaDon.value?.trangThai === 5 ||
+      hoaDon.value?.trangThai === "5"
+    );
+  });
 
   async function xuLyMuaLai() {
     if (!hoaDon.value) return;

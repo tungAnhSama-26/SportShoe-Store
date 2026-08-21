@@ -68,13 +68,24 @@ function dinhDangTien(value) {
 }
 
 function dinhDangNgay(ngay) {
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(ngay));
+  if (!ngay) return "—";
+  try {
+    const d = new Date(ngay);
+    if (isNaN(d.getTime())) return String(ngay);
+    const date = new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(d);
+    const time = new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d);
+    return `${time} ${date}`;
+  } catch {
+    return String(ngay);
+  }
 }
 
 function layNgayHienTaiInput() {
@@ -147,7 +158,7 @@ const thongKeTrangThai = computed(() => {
 
 const tongTheoTrangThai = computed(() => {
   const filteredDs = dsTrangThai.filter((trangThai) => {
-    if (boLoc.value.loaiDon === "Cửa hàng") {
+    if (boLoc.value.loaiDon === "Tại quầy" || boLoc.value.loaiDon === "Cửa hàng") {
       return ["Hóa đơn chờ", "Hoàn thành", "Hủy", "Cần hoàn tiền"].includes(trangThai);
     }
     if (boLoc.value.loaiDon === "Trực tuyến" || boLoc.value.loaiDon === "Giao hàng") {
@@ -163,9 +174,9 @@ const tongTheoTrangThai = computed(() => {
 });
 
 const danhSachHienThi = computed(() => {
-  return danhSach.value.filter(
-    (hoaDon) => hoaDon.trangThai === trangThaiDangChon.value,
-  );
+  return danhSach.value
+    .filter((hoaDon) => hoaDon.trangThai === trangThaiDangChon.value)
+    .sort((a, b) => new Date(b.ngayTao || 0) - new Date(a.ngayTao || 0) || (b.id || 0) - (a.id || 0));
 });
 
 const soPhanTuMotTrang = ref(5);
@@ -192,7 +203,7 @@ watch(soPhanTuMotTrang, () => {
 watch(
   () => boLoc.value.loaiDon,
   (newLoaiDon) => {
-    if (newLoaiDon === "Cửa hàng") {
+    if (newLoaiDon === "Tại quầy" || newLoaiDon === "Cửa hàng") {
       const validStatuses = ["Hóa đơn chờ", "Hoàn thành", "Hủy", "Cần hoàn tiền"];
       if (!validStatuses.includes(trangThaiDangChon.value)) {
         trangThaiDangChon.value = "Hoàn thành";
@@ -430,7 +441,7 @@ onBeforeUnmount(() => {
             class="h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white"
           >
             <option value="">Tất cả loại đơn</option>
-            <option value="Cửa hàng">Cửa hàng</option>
+            <option value="Tại quầy">Tại quầy</option>
             <option value="Giao hàng">Giao hàng</option>
             <option value="Trực tuyến">Trực tuyến</option>
           </select>
@@ -555,13 +566,13 @@ onBeforeUnmount(() => {
                 <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
                 <td class="px-3 py-3.5">
                   <span
-                    v-if="hoaDon.coGiaoHang && (hoaDon.loaiDon === 'Cửa hàng' || hoaDon.loaiDon === 'Tại quầy')"
+                    v-if="hoaDon.loaiDon === 'Giao hàng' || (hoaDon.coGiaoHang && (hoaDon.loaiDon === 'Cửa hàng' || hoaDon.loaiDon === 'Tại quầy'))"
                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80"
                   >
                     Giao hàng
                   </span>
                   <span
-                    v-else-if="hoaDon.loaiDon === 'Cửa hàng' || hoaDon.loaiDon === 'Tại quầy'"
+                    v-else-if="hoaDon.loaiDon === 'Tại quầy' || hoaDon.loaiDon === 'Cửa hàng'"
                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80"
                   >
                     Tại quầy
@@ -570,7 +581,7 @@ onBeforeUnmount(() => {
                     v-else
                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200/80"
                   >
-                    {{ hoaDon.loaiDon || 'Trực tuyến' }}
+                    Trực tuyến
                   </span>
                 </td>
                 <td class="px-3 py-3.5 text-center">
