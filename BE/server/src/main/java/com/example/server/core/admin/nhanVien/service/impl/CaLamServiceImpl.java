@@ -141,8 +141,8 @@ public class CaLamServiceImpl implements CaLamService {
         try {
             String s = gioBatDau.trim();
             String e = gioKetThuc.trim();
-            java.time.LocalTime startMoi = java.time.LocalTime.parse(s.length() == 5 ? s + ":00" : s);
-            java.time.LocalTime endMoi = java.time.LocalTime.parse(e.length() == 5 ? e + ":00" : e);
+            LocalTime startMoi = parseGio(s);
+            LocalTime endMoi = parseGio(e);
 
             List<CaLam> cacCaHoatDong = caLamRepository.findAll().stream()
                     .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
@@ -153,19 +153,45 @@ public class CaLamServiceImpl implements CaLamService {
                 if (ca.getGioBatDau() == null || ca.getGioKetThuc() == null) continue;
                 String cs = ca.getGioBatDau().trim();
                 String ce = ca.getGioKetThuc().trim();
-                java.time.LocalTime startCu = java.time.LocalTime.parse(cs.length() == 5 ? cs + ":00" : cs);
-                java.time.LocalTime endCu = java.time.LocalTime.parse(ce.length() == 5 ? ce + ":00" : ce);
+                LocalTime startCu = parseGio(cs);
+                LocalTime endCu = parseGio(ce);
 
-                // Hai khoảng thời gian giao nhau: startMoi < endCu && startCu < endMoi
-                if (startMoi.isBefore(endCu) && startCu.isBefore(endMoi)) {
+                if (khoangGioGiaoNhau(startMoi, endMoi, startCu, endCu)) {
                     throw new BusinessException(
                             "Khoảng thời gian (" + s + " - " + e + ") bị trùng với ca đang hoạt động: "
                                     + ca.getTen() + " (" + cs + " - " + ce + "). "
                                     + "Vui lòng tắt ca bị trùng hoặc chỉnh sửa lại thời gian của ca.");
                 }
             }
-        } catch (java.time.format.DateTimeParseException ignored) {
+        } catch (DateTimeParseException ignored) {
         }
+    }
+
+    private LocalTime parseGio(String gio) {
+        String value = gio.trim();
+        return LocalTime.parse(value.length() == 5 ? value + ":00" : value);
+    }
+
+    private boolean khoangGioGiaoNhau(LocalTime startA, LocalTime endA, LocalTime startB, LocalTime endB) {
+        return tachKhoangGio(startA, endA).stream()
+                .anyMatch(khoangA -> tachKhoangGio(startB, endB).stream()
+                        .anyMatch(khoangB -> khoangA.batDau() < khoangB.ketThuc()
+                                && khoangB.batDau() < khoangA.ketThuc()));
+    }
+
+    private List<KhoangPhut> tachKhoangGio(LocalTime start, LocalTime end) {
+        int startMinutes = start.getHour() * 60 + start.getMinute();
+        int endMinutes = end.getHour() * 60 + end.getMinute();
+        if (startMinutes == endMinutes) {
+            return List.of();
+        }
+        if (startMinutes < endMinutes) {
+            return List.of(new KhoangPhut(startMinutes, endMinutes));
+        }
+        return List.of(new KhoangPhut(startMinutes, 24 * 60), new KhoangPhut(0, endMinutes));
+    }
+
+    private record KhoangPhut(int batDau, int ketThuc) {
     }
 
     @Override

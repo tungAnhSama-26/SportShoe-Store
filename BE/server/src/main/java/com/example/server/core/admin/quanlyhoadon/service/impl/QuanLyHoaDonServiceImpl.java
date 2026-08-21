@@ -197,17 +197,19 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 hoaDonIds
         ).stream().collect(Collectors.toMap(vanChuyen -> vanChuyen.getHoaDon().getId(), Function.identity()));
 
-        Map<Integer, ThanhToan> latestThanhToanMap = thanhToanRepository
+        List<ThanhToan> thanhToans = thanhToanRepository
                 .findByHoaDonIdInOrderByNgayTaoDesc(hoaDonIds)
                 .stream()
+                .toList();
+        Map<Integer, List<ThanhToan>> thanhToanTheoHoaDonMap = thanhToans.stream()
+                .collect(Collectors.groupingBy(thanhToan -> thanhToan.getHoaDon().getId()));
+        Map<Integer, ThanhToan> latestThanhToanMap = thanhToans.stream()
                 .collect(Collectors.toMap(
                         thanhToan -> thanhToan.getHoaDon().getId(),
                         Function.identity(),
                         (latest, ignored) -> latest
                 ));
-        java.util.Set<Integer> invoicesNeedingRefund = thanhToanRepository
-                .findByHoaDonIdInOrderByNgayTaoDesc(hoaDonIds)
-                .stream()
+        java.util.Set<Integer> invoicesNeedingRefund = thanhToans.stream()
                 .filter(tt -> Objects.equals(tt.getTrangThai(), TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN))
                 .map(tt -> tt.getHoaDon().getId())
                 .collect(Collectors.toSet());
@@ -235,11 +237,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveMaNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId()), latestLichSuNhanVienMap.get(hoaDon.getId())),
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                        mapLoaiDon(hoaDon),
+                        mapLoaiDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
-                        latestThanhToanMap.containsKey(hoaDon.getId()) ? mapPhuongThucThanhToan(latestThanhToanMap.get(hoaDon.getId()).getHinhThuc()) : "Chưa thanh toán",
+                        resolvePhuongThucThanhToanSummary(thanhToanTheoHoaDonMap.get(hoaDon.getId()), latestThanhToanMap.get(hoaDon.getId())),
                         vanChuyenMap.containsKey(hoaDon.getId())
                 ))
                 .toList();
@@ -266,7 +268,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         null,
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                        mapLoaiDon(hoaDon),
+                        mapLoaiDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
@@ -954,8 +956,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 resolveNguoiTaoHoaDon(hoaDon, maNhanVien),
                 hoaDon.getTongTienThanhToan(),
                 hoaDon.getNgayTao(),
-            mapLoaiDon(hoaDon),
-            resolveTrangThaiHoaDon(hoaDon, vanChuyen),
+                mapLoaiDon(hoaDon, vanChuyen),
+                resolveTrangThaiHoaDon(hoaDon, vanChuyen),
                 safeValue(hoaDon.getSdtNguoiNhan()),
                 resolveEmail(hoaDon),
             DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()),
@@ -1433,7 +1435,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         if (normalized.equals("cửa hàng")
                 || normalized.equals("offline")
                 || normalized.equals("tại cửa hàng")
-                || normalized.equals("tại quầy")) {
+                || normalized.equals("tại quầy")
+                || normalized.contains("giao")) {
             return KENH_BAN_TAI_QUAY;
         }
         if (normalized.equals("trực tuyến")
@@ -1444,7 +1447,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private boolean matchLoaiDon(String loaiDon, HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (loaiDon == null || loaiDon.isBlank()) {
+        if (loaiDon == null || loaiDon.isBlank() || "Tất cả".equalsIgnoreCase(loaiDon.trim()) || "Tất cả loại đơn".equalsIgnoreCase(loaiDon.trim())) {
             return true;
         }
         String normalized = loaiDon.trim().toLowerCase();
@@ -1452,7 +1455,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         boolean coGiaoHang = vanChuyen != null;
 
         if (normalized.contains("giao")) {
-            return coGiaoHang;
+            return taiQuay && coGiaoHang;
         }
         if (normalized.equals("cửa hàng") || normalized.equals("tại quầy") || normalized.equals("offline") || normalized.equals("tại cửa hàng")) {
             return taiQuay && !coGiaoHang;
@@ -1483,9 +1486,16 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         };
     }
 
-private String mapLoaiDon(HoaDon hoaDon) {
-    return isTaiQuay(hoaDon) ? "Cửa hàng" : "Trực tuyến";
-}
+    private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
+        if (isTaiQuay(hoaDon)) {
+            return vanChuyen != null ? "Giao hàng" : "Tại quầy";
+        }
+        return "Trực tuyến";
+    }
+
+    private String mapLoaiDon(HoaDon hoaDon) {
+        return mapLoaiDon(hoaDon, null);
+    }
 
 private boolean isTaiQuay(HoaDon hoaDon) {
     return isTaiQuay(hoaDon.getKenhBan());
@@ -1699,6 +1709,34 @@ private boolean isDonGiaoHang(HoaDon hoaDon) {
         return thanhToan.getTienThoiLai() != null && thanhToan.getTienThoiLai().compareTo(BigDecimal.ZERO) > 0
                 ? "Thanh toán toàn phần"
                 : "Thanh toán";
+    }
+
+    private String resolvePhuongThucThanhToanSummary(List<ThanhToan> thanhToans, ThanhToan latestThanhToan) {
+        if (thanhToans == null || thanhToans.isEmpty()) {
+            return "Chưa thanh toán";
+        }
+        boolean coTienMat = thanhToans.stream().anyMatch(this::laThanhToanTienMatThanhCong);
+        boolean coChuyenKhoan = thanhToans.stream().anyMatch(this::laThanhToanChuyenKhoanThanhCong);
+        if (coTienMat && coChuyenKhoan) {
+            return "Kết hợp";
+        }
+        return latestThanhToan != null ? mapPhuongThucThanhToan(latestThanhToan.getHinhThuc()) : "Chưa thanh toán";
+    }
+
+    private boolean laThanhToanTienMatThanhCong(ThanhToan thanhToan) {
+        return laThanhToanThanhCong(thanhToan)
+                && Objects.equals(thanhToan.getHinhThuc(), HINH_THUC_THANH_TOAN_TIEN_MAT);
+    }
+
+    private boolean laThanhToanChuyenKhoanThanhCong(ThanhToan thanhToan) {
+        return laThanhToanThanhCong(thanhToan)
+                && Objects.equals(thanhToan.getHinhThuc(), HINH_THUC_THANH_TOAN_CHUYEN_KHOAN);
+    }
+
+    private boolean laThanhToanThanhCong(ThanhToan thanhToan) {
+        return thanhToan != null
+                && Objects.equals(thanhToan.getLoaiGiaoDich(), LOAI_GIAO_DICH_THANH_TOAN)
+                && Objects.equals(thanhToan.getTrangThai(), TRANG_THAI_THANH_TOAN_THANH_CONG);
     }
 
     private String mapPhuongThucThanhToan(Integer hinhThuc) {

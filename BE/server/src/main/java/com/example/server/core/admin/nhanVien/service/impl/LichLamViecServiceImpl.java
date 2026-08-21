@@ -13,9 +13,11 @@ import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.repository.CaLamRepository;
 import com.example.server.repository.LichLamViecRepository;
 import com.example.server.repository.NhanVienRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -29,17 +31,36 @@ public class LichLamViecServiceImpl implements LichLamViecService {
 
     private static final ZoneId MUI_GIO = ZoneId.of("Asia/Bangkok");
 
+    private final Clock clock;
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanVienRepository nhanVienRepository;
     private final CaLamRepository caLamRepository;
     private final LichLamViecRealtimePublisher realtimePublisher;
 
+    @Autowired
     public LichLamViecServiceImpl(
             LichLamViecRepository lichLamViecRepository,
             NhanVienRepository nhanVienRepository,
             CaLamRepository caLamRepository,
             LichLamViecRealtimePublisher realtimePublisher
     ) {
+        this(
+                Clock.system(MUI_GIO),
+                lichLamViecRepository,
+                nhanVienRepository,
+                caLamRepository,
+                realtimePublisher
+        );
+    }
+
+    LichLamViecServiceImpl(
+            Clock clock,
+            LichLamViecRepository lichLamViecRepository,
+            NhanVienRepository nhanVienRepository,
+            CaLamRepository caLamRepository,
+            LichLamViecRealtimePublisher realtimePublisher
+    ) {
+        this.clock = clock;
         this.lichLamViecRepository = lichLamViecRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.caLamRepository = caLamRepository;
@@ -187,7 +208,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     }
 
     private LocalDate ngayMaiHoacSau(LocalDate tuNgay, LocalDate denNgay) {
-        LocalDate ngayMai = LocalDate.now(MUI_GIO).plusDays(1);
+        LocalDate ngayMai = LocalDate.now(clock).plusDays(1);
         LocalDate tuNgayThucTe = tuNgay.isBefore(ngayMai) ? ngayMai : tuNgay;
         if (tuNgayThucTe.isAfter(denNgay)) {
             throw new BusinessException("Khoảng đã chọn không còn ngày tương lai để thực hiện");
@@ -196,16 +217,21 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     }
 
     private void kiemTraCoTheChinhSua(LocalDate ngay, CaLam caLam) {
-        ZonedDateTime hienTai = ZonedDateTime.now(MUI_GIO);
-        if (ngay.isBefore(hienTai.toLocalDate())) {
-            throw new BusinessException("Không thể thay đổi lịch làm việc trong quá khứ");
+        ZonedDateTime hienTai = ZonedDateTime.now(clock);
+        ZonedDateTime thoiDiemKetThuc = thoiDiemKetThucCa(ngay, caLam);
+        if (!hienTai.isBefore(thoiDiemKetThuc)) {
+            throw new BusinessException("Ca làm việc đã kết thúc nên chỉ được xem lịch sử");
         }
-        if (ngay.equals(hienTai.toLocalDate())) {
-            LocalTime gioBatDau = LocalTime.parse(caLam.getGioBatDau());
-            if (!hienTai.toLocalTime().isBefore(gioBatDau)) {
-                throw new BusinessException("Ca làm việc đã bắt đầu nên chỉ được xem lịch sử");
-            }
+    }
+
+    private ZonedDateTime thoiDiemKetThucCa(LocalDate ngay, CaLam caLam) {
+        LocalTime gioBatDau = LocalTime.parse(caLam.getGioBatDau());
+        LocalTime gioKetThuc = LocalTime.parse(caLam.getGioKetThuc());
+        LocalDate ngayKetThuc = ngay;
+        if (!gioKetThuc.isAfter(gioBatDau)) {
+            ngayKetThuc = ngayKetThuc.plusDays(1);
         }
+        return ZonedDateTime.of(ngayKetThuc, gioKetThuc, MUI_GIO);
     }
 
     private LichLamViecResponse toResponse(LichLamViec lich) {
