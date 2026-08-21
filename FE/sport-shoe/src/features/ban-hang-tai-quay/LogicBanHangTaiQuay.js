@@ -1438,6 +1438,7 @@ function LogicBanHangTaiQuay() {
     dangHuyHoaDonCho,
     dinhDangTien,
     soLuongConLai,
+    isOutdatedPrice,
     xoaBanNhap,
     chonHoaDonCho,
     moDanhSachKhachHang,

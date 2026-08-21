@@ -1,7 +1,7 @@
 <script setup>
 import { Trash2, Pencil } from "lucide-vue-next";
 import { resolveHinhAnh } from "../../../utils/resolve-image";
-defineProps({
+const props = defineProps({
   cartItems: {
     type: Array,
     default: () => []
@@ -13,10 +13,29 @@ defineProps({
   soLuongConLai: {
     type: Function,
     required: true
+  },
+  isOutdatedPrice: {
+    type: Function,
+    default: null
   }
 });
 
-const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remove-item"]);
+const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remove-item", "edit-item"]);
+
+function checkOutdated(item) {
+  if (props.isOutdatedPrice) return props.isOutdatedPrice(item);
+  if (item?.isOutdatedPrice) return true;
+  const sameVariantItems = props.cartItems.filter(
+    (it) => Number(it.chiTietId) === Number(item?.chiTietId)
+  );
+  if (sameVariantItems.length > 1) {
+    const latestItem = sameVariantItems[sameVariantItems.length - 1];
+    if (latestItem && Number(latestItem.giaBan) !== Number(item?.giaBan)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function isDiscounted(item) {
   return Number(item?.giaBan || 0) < Number(item?.giaGoc || 0);
@@ -62,7 +81,10 @@ function formatDiscountPercent(item) {
               </div>
               <div>
                 <p class="font-medium text-slate-900 dark:text-slate-100 line-clamp-2">{{ item.tenSanPham }}</p>
-                <p v-if="item.oldPrice && item.oldPrice !== item.giaBan" class="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded inline-block">
+                <p v-if="checkOutdated(item)" class="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded inline-block">
+                  Giá cũ (Không thể tăng số lượng)
+                </p>
+                <p v-else-if="item.oldPrice && item.oldPrice !== item.giaBan" class="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded inline-block">
                   Giá đổi từ {{ dinhDangTien(item.oldPrice) }} thành {{ dinhDangTien(item.giaBan) }}
                 </p>
               </div>
@@ -83,14 +105,18 @@ function formatDiscountPercent(item) {
               <input
                 type="number"
                 :value="item.soLuong"
+                :readonly="checkOutdated(item)"
+                :title="checkOutdated(item) ? 'Sản phẩm đã đổi giá, không thể sửa tăng số lượng ở giá cũ' : ''"
                 @change="emit('update-item', item.cartItemId || item.chiTietId, $event.target.value)"
                 min="1"
+                :max="checkOutdated(item) ? item.soLuong : undefined"
                 class="w-12 h-6 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-center text-xs font-semibold focus:border-rose-300 dark:focus:border-rose-500 focus:outline-none hide-spin-button"
               />
               <button
                 type="button"
-                class="w-6 h-6 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 disabled:opacity-50 text-xs font-bold select-none"
-                :disabled="soLuongConLai(item.chiTietId, item.soLuongTon) <= 0"
+                class="w-6 h-6 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold select-none"
+                :disabled="checkOutdated(item) || soLuongConLai(item.chiTietId, item.soLuongTon) <= 0"
+                :title="checkOutdated(item) ? 'Sản phẩm đã đổi giá, không thể tăng thêm số lượng ở giá cũ' : ''"
                 @click="emit('increase-item', item.cartItemId || item.chiTietId)"
               >
                 +

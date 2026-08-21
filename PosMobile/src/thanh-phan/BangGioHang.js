@@ -5,7 +5,7 @@ import { suDungBanHang } from '../ngu-canh/NguCanhBanHang';
 
 export default function BangGioHang() {
   const { gioHangLogic } = suDungBanHang();
-  const { cartItems: sanPhamTrongGio, capNhatSoLuong, xoaSanPham: xoaKhoiGio } = gioHangLogic;
+  const { cartItems: sanPhamTrongGio, capNhatSoLuong, xoaSanPham: xoaKhoiGio, isOutdatedPrice } = gioHangLogic;
 
   return (
     <View style={styles.container}>
@@ -23,6 +23,7 @@ export default function BangGioHang() {
             const giaGoc = Number(item?.giaGoc || 0);
             const giaBan = Number(item?.giaBan || 0);
             const isDiscounted = giaBan < giaGoc;
+            const isOutdated = isOutdatedPrice ? isOutdatedPrice(item) : (item?.isOutdatedPrice || false);
             let discountText = "";
             if (isDiscounted && giaGoc > 0) {
               const pct = ((giaGoc - giaBan) / giaGoc) * 100;
@@ -38,34 +39,34 @@ export default function BangGioHang() {
                     onPress={() => xoaKhoiGio(item.chiTietId)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
                 
                 <View style={styles.variantRow}>
                   <View style={styles.variantTag}>
-                    <Text style={styles.variantTagText}>{item.mauSac || "Màu chuẩn"}</Text>
+                    <Text style={styles.variantTagText}>Màu: {item.mauSac || 'Tiêu chuẩn'}</Text>
                   </View>
                   <View style={styles.variantTag}>
-                    <Text style={styles.variantTagText}>Size {item.kichCo || "-"}</Text>
+                    <Text style={styles.variantTagText}>Size: {item.kichCo || 'N/A'}</Text>
                   </View>
                 </View>
                 
                 <View style={styles.itemFooter}>
                   <View style={styles.priceContainer}>
-                    <Text style={styles.itemPrice}>
-                      {giaBan.toLocaleString('vi-VN')} đ
-                    </Text>
-                    {isDiscounted && (
+                    <Text style={styles.itemPrice}>{giaBan.toLocaleString('vi-VN')} đ</Text>
+                    {isOutdated ? (
+                      <View style={styles.outdatedBadge}>
+                        <Text style={styles.outdatedBadgeText}>Giá cũ (không thể +SL)</Text>
+                      </View>
+                    ) : isDiscounted ? (
                       <View style={styles.discountRow}>
-                        <Text style={styles.originPrice}>
-                          {giaGoc.toLocaleString('vi-VN')} đ
-                        </Text>
+                        <Text style={styles.itemOriginalPrice}>{giaGoc.toLocaleString('vi-VN')} đ</Text>
                         <View style={styles.discountBadge}>
                           <Text style={styles.discountBadgeText}>{discountText}</Text>
                         </View>
                       </View>
-                    )}
+                    ) : null}
                   </View>
                   
                   <View style={styles.quantityControl}>
@@ -77,10 +78,11 @@ export default function BangGioHang() {
                     </TouchableOpacity>
                     <Text style={styles.qtyText}>{item.soLuong}</Text>
                     <TouchableOpacity 
-                      style={styles.qtyBtn} 
-                      onPress={() => capNhatSoLuong(item.chiTietId, item.soLuong + 1)}
+                      style={[styles.qtyBtn, isOutdated && styles.qtyBtnDisabled]} 
+                      onPress={() => !isOutdated && capNhatSoLuong(item.chiTietId, item.soLuong + 1)}
+                      disabled={isOutdated}
                     >
-                      <Ionicons name="add" size={14} color="#334155" />
+                      <Ionicons name="add" size={14} color={isOutdated ? "#94a3b8" : "#334155"} />
                     </TouchableOpacity>
                   </View>
 
@@ -235,5 +237,25 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 12,
     marginTop: 4,
+  },
+  outdatedBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  outdatedBadgeText: {
+    color: '#b45309',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  qtyBtnDisabled: {
+    backgroundColor: '#f1f5f9',
+    borderColor: '#e2e8f0',
+    opacity: 0.5,
   },
 });

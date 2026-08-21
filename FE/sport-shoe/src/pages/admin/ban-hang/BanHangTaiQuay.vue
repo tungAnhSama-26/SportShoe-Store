@@ -95,6 +95,7 @@ const {
   dangHuyHoaDonCho,
   dinhDangTien,
   soLuongConLai,
+  isOutdatedPrice,
   taiSanPham,
   xoaBanNhap,
   chonHoaDonCho,
@@ -285,6 +286,7 @@ function xuLyThemKhachHang(khachHangMoi) {
               :cart-items="cartItems"
               :dinh-dang-tien="dinhDangTien"
               :so-luong-con-lai="soLuongConLai"
+              :is-outdated-price="isOutdatedPrice"
               @increase-item="tangSoLuong"
               @decrease-item="giamSoLuong"
               @remove-item="xoaSanPham"
