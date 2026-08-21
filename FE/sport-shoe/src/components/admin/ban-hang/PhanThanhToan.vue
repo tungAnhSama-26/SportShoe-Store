@@ -198,7 +198,16 @@ watch(() => props.paymentMethod, (newVal) => {
   if (newVal === 2) {
     timeLeft.value = 300;
     startTimer();
-  } else {
+  } else if (!showLargeQr.value) {
+    stopTimer();
+  }
+});
+
+watch(showLargeQr, (isOpen) => {
+  if (isOpen) {
+    timeLeft.value = 300;
+    startTimer();
+  } else if (props.paymentMethod !== 2) {
     stopTimer();
   }
 });
@@ -595,19 +604,28 @@ function handlePayNowFromQr() {
             <X class="h-6 w-6" />
           </button>
           <h3 class="mb-6 text-center text-xl font-bold text-slate-800">Quét mã QR để thanh toán</h3>
-          <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-md border-2 border-slate-100 object-contain shadow-sm" />
-          <p class="mt-6 text-center text-base font-medium text-slate-600">
-            QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
-          </p>
-          <div class="mt-6 flex justify-center w-full">
-            <button
-              type="button"
-              class="w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none disabled:text-slate-400"
-              :disabled="!canPay || payingInvoice"
-              @click="handlePayNowFromQr"
-            >
-              {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
-            </button>
+          <div v-if="timeLeft > 0" class="flex flex-col items-center">
+            <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-md border-2 border-slate-100 object-contain shadow-sm" />
+            <p class="mt-6 text-center text-base font-medium text-slate-600">
+              QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
+            </p>
+            <div class="mt-6 flex justify-center w-full">
+              <button
+                type="button"
+                class="w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none disabled:text-slate-400"
+                :disabled="!canPay || payingInvoice"
+                @click="handlePayNowFromQr"
+              >
+                {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
+              </button>
+            </div>
+          </div>
+          <div v-else class="flex h-96 w-96 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-base font-bold">Mã QR đã hết hạn</span>
+            <button type="button" @click="timeLeft = 300; startTimer()" class="mt-3 rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-200">Tạo lại QR</button>
           </div>
         </div>
       </div>
