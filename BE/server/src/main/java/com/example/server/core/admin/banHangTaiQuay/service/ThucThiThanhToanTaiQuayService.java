@@ -87,7 +87,8 @@ public class ThucThiThanhToanTaiQuayService {
             throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
         }
         GiaoCa activeShift = currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1
-                ? giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA"))
+                ? giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
+                    .or(() -> giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
                     .orElseThrow(() -> new BusinessException(
                             "Cửa hàng không có ca làm việc đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."))
                 : giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
