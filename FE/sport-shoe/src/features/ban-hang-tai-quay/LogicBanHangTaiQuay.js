@@ -58,22 +58,6 @@ function LogicBanHangTaiQuay() {
   const daDatGioiHanHoaDonCho = computed(
     () => danhSachHoaDonCho.value.length >= TOI_DA_HOA_DON_CHO
   );
-  const coTheTaoHoaDonCho = computed(
-    () => !dangLuuHoaDonCho.value &&
-      !maPhieuChuaApDung.value &&
-      !daDatGioiHanHoaDonCho.value &&
-      coThongTinGiaoHangHopLe.value &&
-      !sanPhamValidationMessage.value
-  );
-  const coTheThanhToan = computed(() => {
-    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || dangThanhToan?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value) {
-      return false;
-    }
-    if (phuongThucThanhToan?.value === 1) {
-      return !thongBaoLoiThanhToan?.value;
-    }
-    return true;
-  });
   const {
     tuKhoaKhachHang,
     ketQuaTimKiemKhachHang,
@@ -120,6 +104,7 @@ function LogicBanHangTaiQuay() {
     validateGioHang,
     taoDanhSachSanPhamThanhToan,
     soLuongConLai,
+    isOutdatedPrice,
     themSanPham,
     tangSoLuong,
     giamSoLuong,
@@ -225,6 +210,24 @@ function LogicBanHangTaiQuay() {
     khachCanTra,
     thongBaoLoi,
     hoaDonChoDaChon
+  });
+
+  const coTheTaoHoaDonCho = computed(
+    () => !dangLuuHoaDonCho.value &&
+      !maPhieuChuaApDung.value &&
+      !daDatGioiHanHoaDonCho.value &&
+      coThongTinGiaoHangHopLe.value &&
+      !sanPhamValidationMessage.value
+  );
+
+  const coTheThanhToan = computed(() => {
+    if (!cartItems.value || cartItems.value.length === 0) return false;
+    if (sanPhamValidationMessage.value) return false;
+    if (dangThanhToan.value) return false;
+    if (choPhepGiaoHang.value && !coThongTinGiaoHangHopLe.value) return false;
+    if (phuongThucThanhToan.value === 1 && thongBaoLoiThanhToan.value) return false;
+    if (phuongThucThanhToan.value === 5 && thongBaoLoiThanhToan.value) return false;
+    return true;
   });
 
   const {
