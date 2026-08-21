@@ -255,7 +255,12 @@ export function LogicInHoaDon() {
         <section class="pos-title-box">
           <h1>HOÁ ĐƠN THANH TOÁN</h1>
           <p class="pos-code">Số: ${hoaDonChoDaChon.ma}</p>
-          <p class="pos-date">Ngày: ${new Date().toLocaleString("vi-VN")}</p>
+          <p class="pos-date">In lúc: ${(() => {
+            const d = new Date();
+            const datePart = new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+            const timePart = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(d);
+            return `${timePart} Ngày ${datePart}`;
+          })()}</p>
         </section>
 
         <section class="pos-meta">

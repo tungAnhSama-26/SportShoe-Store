@@ -224,6 +224,7 @@ export function useChiTietHoaDon() {
       return false;
     }
     return (
+      hoaDon.value?.loaiDon === "Tại quầy" ||
       hoaDon.value?.loaiDon === "Cửa hàng" ||
       hoaDon.value?.loaiDon === "Offline" ||
       hoaDon.value?.loaiDon === "Tại cửa hàng" ||

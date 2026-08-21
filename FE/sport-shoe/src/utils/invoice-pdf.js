@@ -135,6 +135,28 @@ function isStoreInvoice(invoice) {
     || address === "mua tai quay";
 }
 
+function formatDateTimeFull(value) {
+  if (!value) return "Không có";
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    const datePart = new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(d);
+    const timePart = new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(d);
+    return `${timePart} Ngày ${datePart}`;
+  } catch {
+    return String(value);
+  }
+}
+
 export function printInvoiceToPdf({
   invoice,
   formatCurrency,
@@ -156,8 +178,8 @@ export function printInvoiceToPdf({
   const tongCanTra = tongTienHang + phiVanChuyen - giamGia;
   const hasVoucher = isMeaningfulText(invoice.voucher) && giamGia > 0;
   const voucherDiscountText = hasVoucher ? getVoucherDiscountText(invoice, giamGia, formatCurrency) : "";
-  const createdAt = invoice.ngayTao ? formatDate(invoice.ngayTao) : "Không có";
-  const printedAt = formatDate(new Date().toISOString());
+  const createdAt = invoice.ngayTao ? formatDateTimeFull(invoice.ngayTao) : "Không có";
+  const printedAt = formatDateTimeFull(new Date());
   const invoiceCode = invoice.maHoaDon || filename || "SPORTSHOE";
   const status = invoice.trangThai || "Chưa cập nhật";
   const invoiceQrUrl = buildInvoiceQrUrl(invoiceCode);
@@ -432,7 +454,7 @@ export function printInvoiceToPdf({
             <section class="receipt-title-box">
               <h2 class="receipt-title">HOÁ ĐƠN THANH TOÁN</h2>
               <p class="receipt-code">Số: ${escapeHtml(invoiceCode)}</p>
-              <p class="receipt-date">Ngày: ${escapeHtml(createdAt)}</p>
+              <p class="receipt-date">In lúc: ${escapeHtml(createdAt)}</p>
             </section>
 
             <section class="receipt-meta">
