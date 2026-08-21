@@ -235,7 +235,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         resolveMaNhanVien(hoaDon, latestThanhToanMap.get(hoaDon.getId()), latestLichSuNhanVienMap.get(hoaDon.getId())),
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                        mapLoaiDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
+                        mapLoaiDon(hoaDon),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId()), invoicesNeedingRefund.contains(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
@@ -266,7 +266,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                         null,
                         hoaDon.getTongTienThanhToan(),
                         hoaDon.getNgayTao(),
-                        mapLoaiDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
+                        mapLoaiDon(hoaDon),
                         resolveTrangThaiHoaDon(hoaDon, vanChuyenMap.get(hoaDon.getId())),
                         hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMa() : null,
                         resolveEmail(hoaDon),
@@ -954,8 +954,8 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 resolveNguoiTaoHoaDon(hoaDon, maNhanVien),
                 hoaDon.getTongTienThanhToan(),
                 hoaDon.getNgayTao(),
-                mapLoaiDon(hoaDon, vanChuyen),
-                resolveTrangThaiHoaDon(hoaDon, vanChuyen),
+            mapLoaiDon(hoaDon),
+            resolveTrangThaiHoaDon(hoaDon, vanChuyen),
                 safeValue(hoaDon.getSdtNguoiNhan()),
                 resolveEmail(hoaDon),
             DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()),
@@ -1433,8 +1433,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         if (normalized.equals("cửa hàng")
                 || normalized.equals("offline")
                 || normalized.equals("tại cửa hàng")
-                || normalized.equals("tại quầy")
-                || normalized.contains("giao")) {
+                || normalized.equals("tại quầy")) {
             return KENH_BAN_TAI_QUAY;
         }
         if (normalized.equals("trực tuyến")
@@ -1445,7 +1444,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private boolean matchLoaiDon(String loaiDon, HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (loaiDon == null || loaiDon.isBlank() || "Tất cả".equalsIgnoreCase(loaiDon.trim()) || "Tất cả loại đơn".equalsIgnoreCase(loaiDon.trim())) {
+        if (loaiDon == null || loaiDon.isBlank()) {
             return true;
         }
         String normalized = loaiDon.trim().toLowerCase();
@@ -1453,7 +1452,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         boolean coGiaoHang = vanChuyen != null;
 
         if (normalized.contains("giao")) {
-            return taiQuay && coGiaoHang;
+            return coGiaoHang;
         }
         if (normalized.equals("cửa hàng") || normalized.equals("tại quầy") || normalized.equals("offline") || normalized.equals("tại cửa hàng")) {
             return taiQuay && !coGiaoHang;
@@ -1484,16 +1483,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         };
     }
 
-    private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (isTaiQuay(hoaDon)) {
-            return vanChuyen != null ? "Giao hàng" : "Tại quầy";
-        }
-        return "Trực tuyến";
-    }
-
-    private String mapLoaiDon(HoaDon hoaDon) {
-        return mapLoaiDon(hoaDon, null);
-    }
+private String mapLoaiDon(HoaDon hoaDon) {
+    return isTaiQuay(hoaDon) ? "Cửa hàng" : "Trực tuyến";
+}
 
 private boolean isTaiQuay(HoaDon hoaDon) {
     return isTaiQuay(hoaDon.getKenhBan());
