@@ -1,8 +1,0 @@
-target/*
-!target/*.jar
-*compile*.log
-.idea
-.vscode
-.git
-.gitignore
-uploads/

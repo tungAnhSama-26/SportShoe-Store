@@ -7,6 +7,7 @@ export default function PhanHoaDonCho({
   hoaDonChoDaChon = null, 
   chonHoaDonCho,
   xuLyTaoHoaDonChoMoi,
+  xuLyHuyHoaDonCho,
   dangTaiHoaDonCho = false,
   maxPendingInvoices = 5
 }) {
@@ -20,7 +21,7 @@ export default function PhanHoaDonCho({
           onPress={xuLyTaoHoaDonChoMoi}
           disabled={pendingInvoiceLimitReached}
         >
-          <Ionicons name="add" size={20} color={pendingInvoiceLimitReached ? "#94a3b8" : "#334155"} />
+          <Ionicons name="add" size={18} color={pendingInvoiceLimitReached ? "#94a3b8" : "#ef4444"} />
           <Text style={[styles.txtBtnAdd, pendingInvoiceLimitReached && styles.txtBtnAddDisabled]}>
             Thêm hóa đơn chờ
           </Text>
@@ -39,7 +40,7 @@ export default function PhanHoaDonCho({
         </Text>
       )}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.list}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.list} contentContainerStyle={{ gap: 8 }}>
         {danhSachHoaDonCho.length > 0 ? danhSachHoaDonCho.map((invoice) => {
           const isActive = hoaDonChoDaChon?.id === invoice.id;
           return (
@@ -48,7 +49,22 @@ export default function PhanHoaDonCho({
               style={[styles.invoiceItem, isActive ? styles.invoiceItemActive : styles.invoiceItemInactive]}
               onPress={() => chonHoaDonCho(invoice)}
             >
-              <Text style={styles.invoiceText}>{invoice.ma}</Text>
+              <Ionicons name="receipt-outline" size={16} color={isActive ? "#ef4444" : "#64748b"} />
+              <Text style={[styles.invoiceText, isActive && styles.invoiceTextActive]}>
+                {invoice.ma || `Hóa đơn ${invoice.id}`}
+              </Text>
+              {xuLyHuyHoaDonCho && (
+                <TouchableOpacity 
+                  style={styles.closeTabBtn} 
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    xuLyHuyHoaDonCho(invoice.id);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={14} color={isActive ? "#ef4444" : "#94a3b8"} />
+                </TouchableOpacity>
+              )}
             </TouchableOpacity>
           );
         }) : (
@@ -125,30 +141,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   invoiceItem: {
-    minWidth: 150,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    marginRight: 12,
+    gap: 8,
   },
   invoiceItemActive: {
     borderColor: '#ef4444',
     backgroundColor: '#fef2f2',
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    elevation: 3,
   },
   invoiceItemInactive: {
     borderColor: '#e2e8f0',
     backgroundColor: '#f8fafc',
   },
   invoiceText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  invoiceTextActive: {
+    color: '#ef4444',
+    fontWeight: '700',
+  },
+  closeTabBtn: {
+    padding: 2,
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,

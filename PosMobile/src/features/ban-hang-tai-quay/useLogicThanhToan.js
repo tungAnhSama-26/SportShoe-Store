@@ -85,15 +85,19 @@ export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     capNhatTienKhachThanhToan(false, false);
   }, [khachCanTra, capNhatTienKhachThanhToan]);
 
-  useEffect(() => {
-    capNhatTienKhachThanhToan(true, false);
-  }, [phuongThucThanhToan, capNhatTienKhachThanhToan]);
+  const resetThanhToan = useCallback(() => {
+    setPhuongThucThanhToan(PHUONG_THUC_THANH_TOAN.TIEN_MAT);
+    setTienKhachDua("");
+    setDaSuaTienKhachDua(false);
+    setGhiChuThanhToan("");
+  }, []);
 
   return {
     phuongThucThanhToan,
     setPhuongThucThanhToan,
     tienKhachDua,
     setTienKhachDua,
+    setDaSuaTienKhachDua,
     ghiChuThanhToan,
     setGhiChuThanhToan,
     tienKhachThanhToan,
@@ -101,6 +105,7 @@ export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     thongBaoLoiThanhToan,
     capNhatTienKhachThanhToan: (force = false) => capNhatTienKhachThanhToan(false, force),
     kiemTraLoiThanhToan,
-    xuLyTienKhachDuaInput
+    xuLyTienKhachDuaInput,
+    resetThanhToan
   };
 }

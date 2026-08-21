@@ -35,11 +35,21 @@ CLAUDE.md
 BE/server/data/chatbot-keys.json
 BE/server/data/ghn-fee-cache.json
 BE/server/data/ghn-fee-cache.json.tmp
+data/
+/data/
 implementation_plan.md
 
-### Docker Local Overrides (khong commit len AWS)
+### Local Docker Config & Overrides ###
 docker-compose.override.yml
 *.local.conf
 Dockerfile.local
 update-all.bat
 BE/server/.env
+BE/server/.dockerignore
+FE/sport-shoe/.dockerignore
+database/init-db.sh
+start_docker.sh
+docker-compose.yml
+BE/server/Dockerfile
+FE/sport-shoe/Dockerfile
+
