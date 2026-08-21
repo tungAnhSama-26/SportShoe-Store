@@ -1,6 +1,8 @@
 <script setup>
 import { Trash2, Pencil } from "lucide-vue-next";
 import { resolveHinhAnh } from "../../../utils/resolve-image";
+import { dinhDangTien as formatTienTe } from "../../../features/ban-hang-tai-quay/TienTe";
+
 const props = defineProps({
   cartItems: {
     type: Array,
@@ -8,7 +10,7 @@ const props = defineProps({
   },
   dinhDangTien: {
     type: Function,
-    required: true
+    default: null
   },
   soLuongConLai: {
     type: Function,
@@ -21,6 +23,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remove-item", "edit-item"]);
+
+const formatTien = (val) => (typeof props.dinhDangTien === "function" ? props.dinhDangTien(val) : formatTienTe(val));
 
 function checkOutdated(item) {
   if (props.isOutdatedPrice) return props.isOutdatedPrice(item);
@@ -45,8 +49,28 @@ function formatDiscountPercent(item) {
   const giaGoc = Number(item?.giaGoc || 0);
   const giaBan = Number(item?.giaBan || 0);
   if (giaGoc <= 0 || giaBan >= giaGoc) return "";
-  const pct = ((giaGoc - giaBan) / giaGoc) * 100;
-  return pct % 1 === 0 ? `-${pct.toFixed(0)}%` : `-${pct.toFixed(1)}%`;
+  const pct = Math.round(((giaGoc - giaBan) / giaGoc) * 100);
+  return `-${pct}%`;
+}
+
+function getPriceChangeText(item) {
+  if (item?.oldPrice && Number(item.oldPrice) !== Number(item.giaBan)) {
+    const direction = Number(item.oldPrice) < Number(item.giaBan) ? 'lên' : 'xuống';
+    return `Giá sản phẩm đã được cập nhật từ ${formatTien(item.oldPrice)} ${direction} ${formatTien(item.giaBan)}.`;
+  }
+  const sameVariantItems = props.cartItems.filter(
+    (it) => Number(it.chiTietId) === Number(item?.chiTietId)
+  );
+  if (sameVariantItems.length > 1) {
+    const olderItem = sameVariantItems.find(
+      it => Number(it.giaBan) !== Number(item?.giaBan) && (it.isOutdatedPrice || sameVariantItems.indexOf(it) < sameVariantItems.indexOf(item))
+    );
+    if (olderItem && Number(olderItem.giaBan) !== Number(item?.giaBan) && !item?.isOutdatedPrice) {
+      const direction = Number(olderItem.giaBan) < Number(item.giaBan) ? 'lên' : 'xuống';
+      return `Giá sản phẩm đã được cập nhật từ ${formatTien(olderItem.giaBan)} ${direction} ${formatTien(item.giaBan)}.`;
+    }
+  }
+  return null;
 }
 
 </script>
@@ -81,6 +105,9 @@ function formatDiscountPercent(item) {
               </div>
               <div>
                 <p class="font-medium text-slate-900 dark:text-slate-100 line-clamp-2">{{ item.tenSanPham }}</p>
+                <p v-if="getPriceChangeText(item)" class="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded inline-block">
+                  {{ getPriceChangeText(item) }}
+                </p>
               </div>
             </div>
           </td>

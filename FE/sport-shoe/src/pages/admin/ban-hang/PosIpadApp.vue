@@ -1,5 +1,5 @@
 <script setup>
-import { useRouter } from "vue-router";
+import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { ChevronLeft } from "lucide-vue-next";
 import { ref, onMounted, onUnmounted } from "vue";
 import PhanHoaDonCho from "../../../components/admin/ban-hang/PhanHoaDonCho.vue";
@@ -131,14 +131,12 @@ const {
   xuLyTaoHoaDonCho,
   xuLyTaoHoaDonChoMoi,
   xuLyThanhToanNgay,
-  xuLyThanhToanSau,
   xuLyHuyHoaDonCho,
-  xuLyInHoaDon,
-  daInHoaDon,
-  bienTheLienQuan
+  xuLyInHoaDon
 } = LogicBanHangTaiQuay();
 
-import { onBeforeRouteLeave } from "vue-router";
+const daInHoaDon = ref(false);
+const xuLyThanhToanSau = () => {};
 
 const router = useRouter();
 const currentTime = ref("");

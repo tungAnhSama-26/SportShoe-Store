@@ -10,6 +10,7 @@ import ModalQuetQR from "../../../components/admin/ban-hang/ModalQuetQR.vue";
 import ModalThemNhanhKhachHang from "../../../components/admin/ban-hang/ModalThemNhanhKhachHang.vue";
 import { LogicBanHangTaiQuay } from "../../../composable/LogicBanHangTaiQuay";
 import { ref } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 
 const {
   TOI_DA_HOA_DON_CHO,
@@ -136,14 +137,12 @@ const {
   xuLyTaoHoaDonCho,
   xuLyTaoHoaDonChoMoi,
   xuLyThanhToanNgay,
-  xuLyThanhToanSau,
   xuLyHuyHoaDonCho,
-  xuLyInHoaDon,
-  daInHoaDon,
-  bienTheLienQuan
+  xuLyInHoaDon
 } = LogicBanHangTaiQuay();
 
-import { onBeforeRouteLeave } from "vue-router";
+const daInHoaDon = ref(false);
+const xuLyThanhToanSau = () => {};
 
 onBeforeRouteLeave(async (to, from, next) => {
   if (cartItems.value && cartItems.value.length > 0 && !hoaDonChoDaChon.value) {
