@@ -1452,7 +1452,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         }
         String normalized = loaiDon.trim().toLowerCase();
         boolean taiQuay = isTaiQuay(hoaDon);
-        boolean coGiaoHang = vanChuyen != null;
+        boolean coGiaoHang = vanChuyen != null || (hoaDon != null && hoaDon.getDiaChiGiaoHang() != null && !hoaDon.getDiaChiGiaoHang().isBlank());
 
         if (normalized.contains("giao")) {
             return taiQuay && coGiaoHang;
@@ -1487,8 +1487,11 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
+        if (vanChuyen != null || (hoaDon != null && hoaDon.getDiaChiGiaoHang() != null && !hoaDon.getDiaChiGiaoHang().isBlank())) {
+            return "Giao hàng";
+        }
         if (isTaiQuay(hoaDon)) {
-            return vanChuyen != null ? "Giao hàng" : "Tại quầy";
+            return "Tại quầy";
         }
         return "Trực tuyến";
     }

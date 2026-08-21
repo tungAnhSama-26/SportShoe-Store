@@ -26,8 +26,8 @@ export default function BangGioHang() {
             const isOutdated = isOutdatedPrice ? isOutdatedPrice(item) : (item?.isOutdatedPrice || false);
             let discountText = "";
             if (isDiscounted && giaGoc > 0) {
-              const pct = ((giaGoc - giaBan) / giaGoc) * 100;
-              discountText = pct % 1 === 0 ? `-${pct.toFixed(0)}%` : `-${pct.toFixed(1)}%`;
+              const pct = Math.round(((giaGoc - giaBan) / giaGoc) * 100);
+              discountText = `-${pct}%`;
             }
 
             return (
