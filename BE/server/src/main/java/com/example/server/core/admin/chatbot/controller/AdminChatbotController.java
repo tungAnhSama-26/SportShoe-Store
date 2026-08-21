@@ -113,7 +113,12 @@ public class AdminChatbotController {
     @GetMapping("/config")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<com.example.server.core.admin.chatbot.dto.ChatbotConfigDto>> getConfig() {
-        com.example.server.core.admin.chatbot.dto.ChatbotConfigDto dto = new com.example.server.core.admin.chatbot.dto.ChatbotConfigDto("", "", "", "");
+        com.example.server.core.admin.chatbot.dto.ChatbotConfigDto dto =
+                new com.example.server.core.admin.chatbot.dto.ChatbotConfigDto();
+        dto.setOpenaiApiKey("");
+        dto.setGeminiApiKey("");
+        dto.setDeepseekApiKey("");
+        dto.setGroqApiKey("");
         try {
             java.io.File file = resolveConfigFile();
             if (file.exists()) {
@@ -127,6 +132,14 @@ public class AdminChatbotController {
         } catch (Exception e) {
             System.err.println("[ADMIN CHATBOT CONFIG] Failed to read chatbot config: " + e.getMessage());
         }
+        com.example.server.core.client.chatbot.config.ChatbotModelConfig.LocalAiStatus localStatus =
+                chatbotModelConfig.getLocalAiStatus();
+        dto.setLocalFallbackEnabled(localStatus.enabled());
+        dto.setOllamaReachable(localStatus.reachable());
+        dto.setOllamaModelAvailable(localStatus.modelAvailable());
+        dto.setOllamaModel(localStatus.model());
+        dto.setOllamaMessage(localStatus.message());
+        dto.setProviderOrder(localStatus.providers());
         return ResponseEntity.ok(ApiResponse.success("Thành công", dto));
     }
 

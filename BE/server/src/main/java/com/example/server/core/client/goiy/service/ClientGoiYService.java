@@ -13,7 +13,6 @@ import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,18 +27,14 @@ import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.MimeType;
-import org.springframework.util.MimeTypeUtils;
 
 /**
  * Gợi ý giày (HYBRID, KẾT QUẢ ỔN ĐỊNH): CODE chấm điểm các tiêu chí khách quan (mục đích,
  * phong cách, màu, ưu tiên êm/nhẹ/bền, ngân sách) dựa trên thuộc tính thật, rồi CODE tự lấy
  * top sản phẩm theo điểm -> cùng câu trả lời luôn cho ra CÙNG sản phẩm, cùng thứ tự (không
  * để AI chọn nên không bị ngẫu nhiên). Loại giày được AI phân loại 1 lần rồi cache ở DB.
- * AI chỉ còn dùng cho phần NHẬN XÉT ảnh form chân (temperature=0), không ảnh hưởng sản phẩm.
  */
 @Service
 public class ClientGoiYService {
@@ -123,28 +118,7 @@ public class ClientGoiYService {
 
     @Transactional(readOnly = true)
     public List<CauHoiResponse> layCauHoi() {
-        // Không còn câu hỏi chọn size: size được AI ước lượng từ ảnh bàn chân ở bước gửi ảnh.
         return CAC_CAU_HOI;
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<String> laySizeConHang() {
-        List<String> sizes = entityManager.createQuery("""
-                select distinct kc.giaTri
-                from GiayChiTiet gct
-                  join gct.kichCo kc
-                  join gct.giay g
-                where g.trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0
-                """).getResultList();
-        List<String> kq = new ArrayList<>(sizes);
-        kq.sort((a, b) -> {
-            try {
-                return Double.compare(Double.parseDouble(a.trim()), Double.parseDouble(b.trim()));
-            } catch (NumberFormatException e) {
-                return a.compareToIgnoreCase(b);
-            }
-        });
-        return kq;
     }
 
     // ─── Ứng viên + thuộc tính ───────────────────────────────────────────────
@@ -163,16 +137,7 @@ public class ClientGoiYService {
 
         Map<String, Set<String>> traLoiTheoCau = gomTraLoi(request.traLoi());
 
-        // Ảnh bàn chân -> AI ước lượng size (chọn trong các size cửa hàng có) + nhận xét form chân.
-        KetQuaAnh anhKq = danhGiaAnh(request.anhChan(), laySizeConHang());
-        String sizeGoiY = anhKq.size();
-
-        // Lọc theo size gợi ý; nếu size đó hết hàng thì bỏ lọc, gợi ý mọi size.
-        List<String> locSize = sizeGoiY != null ? List.of(sizeGoiY) : List.of();
-        List<UngVien> ungVien = layUngVien(locSize);
-        if (ungVien.isEmpty() && !locSize.isEmpty()) {
-            ungVien = layUngVien(List.of());
-        }
+        List<UngVien> ungVien = layUngVien(List.of());
         if (ungVien.isEmpty()) {
             throw new BusinessException("Cửa hàng chưa có sản phẩm nào đang bán để gợi ý");
         }
@@ -204,11 +169,8 @@ public class ClientGoiYService {
         }
 
         return new GoiYResponse(
-                sizeGoiY != null
-                        ? "Từ ảnh bàn chân, size gợi ý là " + sizeGoiY
-                            + ". Dưới đây là những đôi khớp bạn nhất, xếp từ phù hợp nhất."
-                        : "Đây là những đôi khớp nhiều tiêu chí bạn chọn nhất, xếp từ phù hợp nhất xuống.",
-                sizeGoiY, anhKq.danhGia(), sanPhams);
+                "Đây là những đôi khớp nhiều tiêu chí bạn chọn nhất, xếp từ phù hợp nhất xuống.",
+                sanPhams);
     }
 
     private Map<String, Set<String>> gomTraLoi(List<TraLoiRequest> traLoi) {
@@ -450,78 +412,4 @@ public class ClientGoiYService {
         return "Phù hợp vì: " + String.join(", ", kq.tieuChiKhop()) + ".";
     }
 
-    // ─── AI đọc ảnh bàn chân: ước lượng size + nhận xét form (temperature=0) ─
-
-    /** Kết quả AI đọc ảnh: size ước lượng (đã khớp size cửa hàng có) + nhận xét form chân. */
-    private record KetQuaAnh(String size, String danhGia) {}
-
-    private KetQuaAnh danhGiaAnh(String anhChan, List<String> sizesCoSan) {
-        byte[] anh = giaiMaAnh(anhChan);
-        if (anh == null) {
-            return new KetQuaAnh(null, null);
-        }
-        ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
-        if (builder == null) {
-            return new KetQuaAnh(null, null);
-        }
-        String dsSize = sizesCoSan.isEmpty() ? "(cửa hàng chưa có size)" : String.join(", ", sizesCoSan);
-        try {
-            MimeType kieu = doanKieuAnh(anhChan);
-            String kq = builder.build().prompt()
-                    .options(OpenAiChatOptions.builder().withMaxTokens(GIOI_HAN_TOKEN).withTemperature(0.0f).build())
-                    .user(u -> u.text(("""
-                            Đây là ảnh bàn chân của khách. Làm 2 việc, trả về ĐÚNG 2 dòng, không thêm gì:
-                            1) Ước lượng size giày phù hợp, CHỌN 1 size gần nhất trong các size cửa hàng có: %s.
-                               Nếu ảnh không phải bàn chân hoặc không đoán được, ghi: khong
-                            2) Đánh giá FORM CHÂN (bề ngang bè/thon, vòm cao/thấp/bẹt, mu bàn chân, gót) trong
-                               2-3 câu và gợi ý kiểu giày nên đi. Nếu ảnh không rõ, ghi: khong
-                            SIZE: <size hoặc khong>
-                            DANH_GIA: <nhận xét hoặc khong>
-                            """).formatted(dsSize))
-                            .media(kieu, new ByteArrayResource(anh)))
-                    .call().content();
-            String size = null;
-            String danhGia = null;
-            for (String dong : (kq == null ? "" : kq).split("\\r?\\n")) {
-                String d = dong.trim();
-                if (d.regionMatches(true, 0, "SIZE:", 0, 5)) {
-                    String v = d.substring(5).trim();
-                    // Chỉ nhận nếu đúng là size cửa hàng đang có (chặn AI bịa size không tồn tại).
-                    size = sizesCoSan.stream().filter(v::contains).findFirst().orElse(null);
-                } else if (d.regionMatches(true, 0, "DANH_GIA:", 0, 9)) {
-                    String v = d.substring(9).trim();
-                    danhGia = v.equalsIgnoreCase("khong") || v.isBlank() ? null : v;
-                }
-            }
-            return new KetQuaAnh(size, danhGia);
-        } catch (Exception e) {
-            System.err.println("[AI GOI Y] Lỗi đọc ảnh chân: " + e.getMessage());
-            return new KetQuaAnh(null, null);
-        }
-    }
-
-    private byte[] giaiMaAnh(String anhChan) {
-        if (anhChan == null || anhChan.isBlank()) {
-            return null;
-        }
-        try {
-            String base64 = anhChan.contains(",") ? anhChan.substring(anhChan.indexOf(',') + 1) : anhChan;
-            byte[] du = Base64.getDecoder().decode(base64.trim());
-            return du.length == 0 ? null : du;
-        } catch (Exception e) {
-            System.err.println("[AI GOI Y] Ảnh chân không hợp lệ, bỏ qua: " + e.getMessage());
-            return null;
-        }
-    }
-
-    private MimeType doanKieuAnh(String dataUri) {
-        String d = dataUri == null ? "" : dataUri.toLowerCase(Locale.ROOT);
-        if (d.startsWith("data:image/png")) {
-            return MimeTypeUtils.IMAGE_PNG;
-        }
-        if (d.startsWith("data:image/webp")) {
-            return MimeType.valueOf("image/webp");
-        }
-        return MimeTypeUtils.IMAGE_JPEG;
-    }
 }

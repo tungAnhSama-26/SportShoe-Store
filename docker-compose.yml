@@ -34,7 +34,34 @@ services:
         condition: service_healthy
     restart: "no"
 
-  # 3. Spring Boot Backend
+  # 3. Ollama Local AI (fallback khi tất cả AI cloud thất bại)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sportshoe-ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_MODEL=${OLLAMA_TEXT_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-10m}
+      - OLLAMA_NO_CLOUD=true
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-ollama_models}:/root/.ollama/models
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve &
+        pid=$$!
+        until ollama list >/dev/null 2>&1; do sleep 1; done
+        ollama pull "$${OLLAMA_MODEL}"
+        wait "$$pid"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama show \"$${OLLAMA_MODEL}\" >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  # 4. Spring Boot Backend
   backend:
     build:
       context: ./BE/server
@@ -70,6 +97,12 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - AI_LOCAL_FALLBACK_ENABLED=${AI_LOCAL_FALLBACK_ENABLED:-true}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_TEXT_MODEL=${OLLAMA_TEXT_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
+      - AI_REQUEST_TIMEOUT_SECONDS=${AI_REQUEST_TIMEOUT_SECONDS:-180}
+      - AI_LOCAL_MAX_CONCURRENT=${AI_LOCAL_MAX_CONCURRENT:-1}
+      - AI_LOCAL_QUEUE_WAIT_SECONDS=${AI_LOCAL_QUEUE_WAIT_SECONDS:-5}
     volumes:
       - ./uploads:/app/uploads
     depends_on:
@@ -77,9 +110,11 @@ services:
         condition: service_healthy
       init-db:
         condition: service_completed_successfully
+      ollama:
+        condition: service_started
     restart: unless-stopped
 
-  # 4. Vue.js Frontend (Served by Nginx)
+  # 5. Vue.js Frontend (Served by Nginx)
   frontend:
     build:
       context: ./FE/sport-shoe
@@ -94,3 +129,4 @@ services:
 
 volumes:
   mssql_data:
+  ollama_models:

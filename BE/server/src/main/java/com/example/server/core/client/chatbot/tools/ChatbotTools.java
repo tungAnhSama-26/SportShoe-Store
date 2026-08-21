@@ -204,6 +204,26 @@ public class ChatbotTools {
                         jpql.append("AND EXISTS (SELECT dgt.id FROM DotGiamGiaSanPham dgt JOIN dgt.giayChiTiet gct JOIN dgt.dotGiamGia dg WHERE gct.giay.id = g.id AND dg.kichHoat = 1 AND dgt.trangThai = 1) ");
                     }
 
+                    boolean filterColor = request.color() != null && !request.color().isBlank();
+                    String searchSize = request.size() == null
+                            ? ""
+                            : request.size().replaceAll("[^0-9]", "").trim();
+                    boolean filterSize = !searchSize.isEmpty();
+                    if (filterColor || filterSize) {
+                        jpql.append("AND EXISTS (SELECT filterGct.id FROM GiayChiTiet filterGct ");
+                        jpql.append("JOIN filterGct.mauSac filterMs JOIN filterGct.kichCo filterKc ");
+                        jpql.append("WHERE filterGct.giay.id = g.id AND filterGct.kichHoat = 1 AND filterGct.soLuong > 0 ");
+                        if (filterColor) {
+                            jpql.append("AND LOWER(filterMs.ten) LIKE :filterColor ");
+                            params.put("filterColor", "%" + request.color().toLowerCase().trim() + "%");
+                        }
+                        if (filterSize) {
+                            jpql.append("AND filterKc.giaTri = :filterSize ");
+                            params.put("filterSize", searchSize);
+                        }
+                        jpql.append(") ");
+                    }
+
                     var query = entityManager.createQuery(jpql.toString(), com.example.server.entity.Giay.class);
                     params.forEach(query::setParameter);
                     query.setMaxResults(10);
@@ -244,7 +264,6 @@ public class ChatbotTools {
                         }
 
                         if (request.size() != null && !request.size().isBlank()) {
-                            String searchSize = request.size().replaceAll("[^0-9]", "").trim();
                             if (!searchSize.isEmpty()) {
                                 boolean matchSize = kichCos.stream().anyMatch(kc -> kc.trim().equals(searchSize) || kc.trim().contains(searchSize));
                                 if (!matchSize) {
