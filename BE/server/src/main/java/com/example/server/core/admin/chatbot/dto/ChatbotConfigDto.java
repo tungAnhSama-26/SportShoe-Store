@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,4 +15,10 @@ public class ChatbotConfigDto {
     private String geminiApiKey;
     private String deepseekApiKey;
     private String groqApiKey;
+    private Boolean localFallbackEnabled;
+    private Boolean ollamaReachable;
+    private Boolean ollamaModelAvailable;
+    private String ollamaModel;
+    private String ollamaMessage;
+    private List<String> providerOrder;
 }
