@@ -110,15 +110,6 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  # 5. Vue.js Frontend (Served by Nginx)
-      - JAVA_OPTS=-Xmx256m -Xms128m
-    env_file:
-      - ./BE/server/.env
-    volumes:
-      - ./uploads:/app/uploads
-    depends_on:
-      - database
-    restart: unless-stopped
 
   # 3. Container Vue.js Frontend
   frontend:
