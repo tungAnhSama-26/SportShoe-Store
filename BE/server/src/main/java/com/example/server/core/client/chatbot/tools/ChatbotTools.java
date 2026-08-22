@@ -168,8 +168,19 @@ public class ChatbotTools {
         if (giaBan != null && actualPrice.compareTo(giaBan) < 0) {
             suffix = " [ĐANG GIẢM GIÁ - Giá gốc: " + giaBan.setScale(0) + "đ, giá sau giảm: " + actualPrice.setScale(0) + "đ]";
         }
+        String hinhAnh = g.getHinhAnh();
+        if (hinhAnh == null || hinhAnh.isBlank()) {
+            List<com.example.server.entity.HinhAnhGiay> images = entityManager.createQuery(
+                    "SELECT h FROM HinhAnhGiay h WHERE h.giayChiTiet.giay.id = :giayId AND h.trangThai = 1 ORDER BY h.laHinhChinh DESC", com.example.server.entity.HinhAnhGiay.class)
+                    .setParameter("giayId", g.getId())
+                    .setMaxResults(1)
+                    .getResultList();
+            if (!images.isEmpty() && images.get(0).getUrl() != null) {
+                hinhAnh = images.get(0).getUrl();
+            }
+        }
         return new ProductDto(
-                 g.getId(), g.getMa(), g.getTen(), moTa + suffix, g.getHinhAnh(),
+                 g.getId(), g.getMa(), g.getTen(), moTa + suffix, hinhAnh,
                  actualPrice,
                  mauSacs, kichCos, soLuongTon, daBan
         );

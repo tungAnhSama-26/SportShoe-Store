@@ -430,6 +430,50 @@ export function LogicPhieuGiamGia({
     }
   });
 
+  async function kiemTraLaiPhieuDangApDung(thongBaoKhiDoi = true) {
+    await taiTatCaPhieuKhaDung();
+    await tuDongApDungVaDeXuatHangMucTiepTheo();
+
+    if (!phieuGiamGiaDaApDung.value) return;
+
+    try {
+      const ma = phieuGiamGiaDaApDung.value.ma;
+      const cu = { ...phieuGiamGiaDaApDung.value };
+      const ketQua = await timPhieuGiamGiaTaiQuay({
+        keyword: ma,
+        hoaDonId: hoaDonChoDaChon.value?.id ?? null,
+        khachHangId: layIdKhachHangHienTai(),
+        tongTienHang: tongTien.value
+      });
+      const moi = (ketQua || []).find(c => String(c.ma).toUpperCase() === String(ma).toUpperCase());
+      
+      if (!moi) {
+        phieuGiamGiaDaApDung.value = null;
+        maPhieuGiamGia.value = "";
+        capNhatTienKhachThanhToan();
+        showWarning(`Phiếu giảm giá "${ma}" đã bị ngừng hoạt động hoặc thay đổi điều kiện, hệ thống đã tự động gỡ bỏ.`);
+        return;
+      }
+
+      // Kiểm tra xem phiếu có bị đổi các thông số giảm giá, mức tối thiểu, tối đa... không
+      const giaTriDoi = Number(moi.giaTri) !== Number(cu.giaTri) ||
+                        Number(moi.loai) !== Number(cu.loai) ||
+                        Number(moi.giamToiDa) !== Number(cu.giamToiDa) ||
+                        Number(moi.giaTriToiThieu) !== Number(cu.giaTriToiThieu) ||
+                        moi.ten !== cu.ten;
+
+      if (giaTriDoi) {
+        phieuGiamGiaDaApDung.value = moi;
+        capNhatTienKhachThanhToan();
+        if (thongBaoKhiDoi) {
+          showWarning(`Thông tin phiếu giảm giá "${ma}" vừa được cập nhật, hệ thống đã tính lại số tiền giảm.`);
+        }
+      }
+    } catch (e) {
+      console.error("Lỗi kiểm tra lại phiếu giảm giá realtime:", e);
+    }
+  }
+
   watch([coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon], async ([coTheTim]) => {
     if (!coTheTim) {
       ketQuaTimKiemPhieu.value = [];
@@ -438,7 +482,9 @@ export function LogicPhieuGiamGia({
         const ma = phieuGiamGiaDaApDung.value.ma;
         phieuGiamGiaDaApDung.value = null;
         maPhieuGiamGia.value = "";
-        showWarning(`Đơn hàng không đủ điều kiện áp dụng phiếu giảm giá ${ma} nữa.`);
+        if (cartItems.value.length > 0) {
+          showWarning(`Đơn hàng không đủ điều kiện áp dụng phiếu giảm giá ${ma} nữa.`);
+        }
         capNhatTienKhachThanhToan();
       }
       
@@ -448,30 +494,7 @@ export function LogicPhieuGiamGia({
     }
     
     // Auto re-eval coupons when cart total changes
-    await taiTatCaPhieuKhaDung();
-    await tuDongApDungVaDeXuatHangMucTiepTheo();
-    
-    // Validate if the currently applied coupon is still valid
-    if (phieuGiamGiaDaApDung.value) {
-      try {
-        const ketQua = await timPhieuGiamGiaTaiQuay({
-          keyword: phieuGiamGiaDaApDung.value.ma,
-          hoaDonId: hoaDonChoDaChon.value?.id ?? null,
-          khachHangId: layIdKhachHangHienTai(),
-          tongTienHang: tongTien.value
-        });
-        const isValid = ketQua.some(c => c.ma === phieuGiamGiaDaApDung.value.ma);
-        if (!isValid) {
-           const ma = phieuGiamGiaDaApDung.value.ma;
-           phieuGiamGiaDaApDung.value = null;
-           maPhieuGiamGia.value = "";
-           showWarning(`Phiếu giảm giá ${ma} không còn hợp lệ. Hệ thống đã tự động gỡ bỏ phiếu.`);
-           capNhatTienKhachThanhToan();
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
+    await kiemTraLaiPhieuDangApDung(false);
     
     if (!maPhieuGiamGia.value.trim() && !hienThiDanhSachPhieu.value) {
       return;
@@ -506,6 +529,7 @@ export function LogicPhieuGiamGia({
       phieuTotHonDeXuat,
       tuChoiPhieuTotHon,
       chapNhanPhieuTotHon,
-      kiemTraPhieuTotHonTruocThanhToan
+      kiemTraPhieuTotHonTruocThanhToan,
+      kiemTraLaiPhieuDangApDung
     };
 }

@@ -50,7 +50,8 @@ public class ClientDanhGiaService {
         List<DanhGiaResponse> danhSach = ds.stream()
                 .map(dg -> new DanhGiaResponse(
                         dg.getId(),
-                        dg.getKhachHang().getHoTen(),
+                        dg.getKhachHang() != null ? dg.getKhachHang().getHoTen() : null,
+                        dg.getKhachHang() != null ? dg.getKhachHang().getHinhAnh() : null,
                         dg.getSoSao(),
                         dg.getNoiDung(),
                         dg.getMedia(),
@@ -140,7 +141,14 @@ public class ClientDanhGiaService {
         // AI kiểm duyệt chạy nền sau commit: đánh giá độc hại/spam/không liên quan sẽ tự bị ẩn.
         danhGiaAiService.kiemDuyetSauCommit(saved.getId(), saved.getSoSao(), saved.getNoiDung());
         return new DanhGiaResponse(
-                saved.getId(), khachHang.getHoTen(), saved.getSoSao(), saved.getNoiDung(), saved.getMedia(),
-                saved.getPhanHoi(), saved.getNgayPhanHoi(), saved.getNgayTao());
+                saved.getId(),
+                khachHang != null ? khachHang.getHoTen() : null,
+                khachHang != null ? khachHang.getHinhAnh() : null,
+                saved.getSoSao(),
+                saved.getNoiDung(),
+                saved.getMedia(),
+                saved.getPhanHoi(),
+                saved.getNgayPhanHoi(),
+                saved.getNgayTao());
     }
 }

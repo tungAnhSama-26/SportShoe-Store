@@ -174,7 +174,8 @@ function LogicBanHangTaiQuay() {
     phieuTotHonDeXuat: loiNhomPhieuGiamGiaTotHon,
     tuChoiPhieuTotHon: tuChoiPhieuGiamGiaTotHon,
     chapNhanPhieuTotHon: chapNhanPhieuGiamGiaTotHon,
-    kiemTraPhieuTotHonTruocThanhToan
+    kiemTraPhieuTotHonTruocThanhToan,
+    kiemTraLaiPhieuDangApDung
   } = LogicPhieuGiamGia({
     cartItems,
     tongTien,
@@ -434,27 +435,6 @@ function LogicBanHangTaiQuay() {
     // Luôn tải toàn bộ biến thể để đối chiếu được cả sản phẩm không nằm trong từ khóa tìm kiếm hiện tại.
     await taiSanPham("", true);
 
-    if (hoaDonChoDaChon.value) {
-      const selectedInvoiceId = hoaDonChoDaChon.value.id;
-      await taiDanhSachHoaDonCho();
-      const stillExists = danhSachHoaDonCho.value.find((invoice) => invoice.id === selectedInvoiceId);
-      if (!stillExists) {
-        hoaDonChoDaChon.value = danhSachHoaDonCho.value[0] ?? null;
-        if (!hoaDonChoDaChon.value) {
-          cartItems.value = [];
-          khachHangDuocChon.value = null;
-          tuKhoaKhachHang.value = "";
-          choPhepGiaoHang.value = false;
-          phieuGiamGiaDaApDung.value = null;
-          return;
-        }
-      }
-
-      const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-      chuyenHoaDonThanhBanNhap(detail);
-      return;
-    }
-
     if (cartItems.value.length === 0) return;
 
     const sanPhamTheoChiTietId = new Map(
@@ -462,10 +442,13 @@ function LogicBanHangTaiQuay() {
     );
     const removedItems = [];
     const remainingItems = [];
-    let giaDaThayDoi = false;
     for (const item of cartItems.value) {
       const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
-      if (!sanPhamMoi) {
+      const isInactive = !sanPhamMoi
+        || sanPhamMoi.kichHoat === 0
+        || sanPhamMoi.trangThai === 0
+        || sanPhamMoi.trangThaiSanPham === 0;
+      if (isInactive) {
         removedItems.push(item);
         continue;
       }
@@ -478,8 +461,13 @@ function LogicBanHangTaiQuay() {
     if (removedItems.length === 0) return;
 
     cartItems.value = remainingItems;
-    for (const item of removedItems) {
-      showWarning(`Sản phẩm "${item.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+    const names = [...new Set(removedItems.map(it => `"${it.tenSanPham}"`))].join(', ');
+    showWarning(`Sản phẩm ${names} đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+    
+    if (hoaDonChoDaChon.value) {
+      setTimeout(() => {
+        void luuHoaDonHienTai(true);
+      }, 50);
     }
   }
 
@@ -503,20 +491,20 @@ function LogicBanHangTaiQuay() {
     }
   }
 
-  subscribeTopic('/topic/admin/san-pham', (message) => {
-    const msgType = message?.type || message?.payload?.loaiSuKien || message?.payload?.type;
-    if (!msgType || CAC_SU_KIEN_CAN_DONG_BO_GIA.has(msgType)) {
-      lenLichDongBoGiaRealtime();
-    }
+  subscribeTopic('/topic/admin/san-pham', () => {
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
   });
 
   subscribeTopic('/topic/admin/thuoc-tinh', () => {
-    lenLichDongBoGiaRealtime();
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
   });
 
   function dongBoGiaKhiQuayLaiTab() {
     if (document.visibilityState === 'visible') {
       lenLichDongBoGiaRealtime(0);
+      void kiemTraLaiPhieuDangApDung(true);
     }
   }
 

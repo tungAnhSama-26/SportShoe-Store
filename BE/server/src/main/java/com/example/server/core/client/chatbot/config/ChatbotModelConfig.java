@@ -48,7 +48,7 @@ public class ChatbotModelConfig {
     @Value("${OLLAMA_BASE_URL:http://ollama:11434}")
     private String ollamaBaseUrl;
 
-    @Value("${OLLAMA_TEXT_MODEL:qwen3:4b-instruct-2507-q4_K_M}")
+    @Value("${OLLAMA_TEXT_MODEL:qwen2.5:3b}")
     private String ollamaTextModel;
 
     @Value("${AI_LOCAL_FALLBACK_ENABLED:true}")
