@@ -501,14 +501,14 @@ public class GhnShippingService {
     }
 
     private void validateToken() {
-        if (token == null || token.isBlank()) throw new BusinessException("Chưa cấu hình ghn.token");
+        if (token == null || token.isBlank()) throw new GhnUnavailableException(new IllegalStateException("Chưa cấu hình ghn.token"));
     }
 
     private void validateConfig() {
         validateToken();
-        if (shopId == null || shopId <= 0) throw new BusinessException("Chưa cấu hình ghn.shop-id");
-        if (fromDistrictId == null || fromDistrictId <= 0) throw new BusinessException("Chưa cấu hình ghn.from-district-id");
-        if (fromWardCode == null || fromWardCode.isBlank()) throw new BusinessException("Chưa cấu hình ghn.from-ward-code");
+        if (shopId == null || shopId <= 0) throw new GhnUnavailableException(new IllegalStateException("Chưa cấu hình ghn.shop-id"));
+        if (fromDistrictId == null || fromDistrictId <= 0) throw new GhnUnavailableException(new IllegalStateException("Chưa cấu hình ghn.from-district-id"));
+        if (fromWardCode == null || fromWardCode.isBlank()) throw new GhnUnavailableException(new IllegalStateException("Chưa cấu hình ghn.from-ward-code"));
     }
 
     private String trimTrailingSlash(String value) {
