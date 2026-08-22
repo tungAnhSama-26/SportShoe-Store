@@ -449,12 +449,12 @@ public class HoaDonTaiQuayService {
 
 
     private ThongTinGiaoHangTaiQuayResponse mapThongTinGiaoHangHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null;
+        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null || vanChuyen != null;
         return new ThongTinGiaoHangTaiQuayResponse(
                 giaoHang,
                 normalizeLegacyDisplayValue(hoaDon.getTenNguoiNhan()),
                 normalizeLegacyDisplayValue(hoaDon.getSdtNguoiNhan()),
-                giaoHang ? DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()) : null,
+                hoaDon.getDiaChiGiaoHang() != null ? DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()) : null,
                 vanChuyen != null ? pricingUseCase.defaultMoney(vanChuyen.getPhiVanChuyen()) : BigDecimal.ZERO,
                 vanChuyen != null ? vanChuyen.getDonViVanChuyen() : null
         );
