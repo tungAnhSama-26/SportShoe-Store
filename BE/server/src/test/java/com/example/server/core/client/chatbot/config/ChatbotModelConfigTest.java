@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -74,5 +75,53 @@ class ChatbotModelConfigTest {
                 }));
 
         assertEquals(1, attempts.get());
+    }
+
+    @Test
+    void skipsCloudProviderDuringCooldownAfterFailure() {
+        ChatModel cloud = mock(ChatModel.class);
+        ChatModel ollama = mock(ChatModel.class);
+        Prompt prompt = mock(Prompt.class);
+        ChatResponse localResponse = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+
+        when(cloud.call(prompt)).thenThrow(new RuntimeException("cloud unavailable"));
+        when(ollama.call(prompt)).thenReturn(localResponse);
+        when(localResponse.getResult()).thenReturn(generation);
+
+        var cloudProvider = new ChatbotModelConfig.ProviderChatModel("Cloud", cloud, null, 0, 60_000L);
+        var localProvider = new ChatbotModelConfig.ProviderChatModel("Ollama-Local", ollama, null, 0, 0L);
+        var fallback = new ChatbotModelConfig.FallbackChatModel(List.of(cloudProvider, localProvider));
+
+        assertSame(localResponse, fallback.call(prompt));
+        assertSame(localResponse, fallback.call(prompt));
+
+        verify(cloud, times(1)).call(prompt);
+        verify(ollama, times(2)).call(prompt);
+    }
+
+    @Test
+    void fallsStraightToOllamaAfterFirstCloudFailure() {
+        ChatModel firstCloud = mock(ChatModel.class);
+        ChatModel secondCloud = mock(ChatModel.class);
+        ChatModel ollama = mock(ChatModel.class);
+        Prompt prompt = mock(Prompt.class);
+        ChatResponse localResponse = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+
+        when(firstCloud.call(prompt)).thenThrow(new RuntimeException("first key failed"));
+        when(ollama.call(prompt)).thenReturn(localResponse);
+        when(localResponse.getResult()).thenReturn(generation);
+
+        var fallback = new ChatbotModelConfig.FallbackChatModel(List.of(
+                new ChatbotModelConfig.ProviderChatModel("Groq", firstCloud, null, 0),
+                new ChatbotModelConfig.ProviderChatModel("Gemini", secondCloud, null, 0),
+                new ChatbotModelConfig.ProviderChatModel("Ollama-Local", ollama, null, 0)));
+
+        assertSame(localResponse, fallback.call(prompt));
+
+        verify(firstCloud, times(1)).call(prompt);
+        verify(secondCloud, times(0)).call(prompt);
+        verify(ollama, times(1)).call(prompt);
     }
 }

@@ -318,6 +318,9 @@ public class ChatbotTools {
             int cardCount = 0;
             for (Object[] sale : sales) {
                 Integer giayId = (Integer) sale[0];
+                if (giayId == null || giayId <= 0) {
+                    continue;
+                }
                 String ten = sale[1] != null ? (String) sale[1] : "Giày";
                 String hinhAnh = sale[2] != null ? (String) sale[2] : "";
                 Long daBan = sale[3] != null ? ((Number) sale[3]).longValue() : 0L;

@@ -54,8 +54,11 @@ public class ChatbotModelConfig {
     @Value("${AI_LOCAL_FALLBACK_ENABLED:true}")
     private boolean localFallbackEnabled;
 
-    @Value("${AI_REQUEST_TIMEOUT_SECONDS:180}")
+    @Value("${AI_REQUEST_TIMEOUT_SECONDS:18000}")
     private int requestTimeoutSeconds;
+
+    @Value("${AI_CLOUD_REQUEST_TIMEOUT_SECONDS:5}")
+    private int cloudRequestTimeoutSeconds;
 
     @Value("${AI_LOCAL_MAX_CONCURRENT:1}")
     private int localMaxConcurrent;
@@ -83,8 +86,11 @@ public class ChatbotModelConfig {
         
         org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory =
                 new org.springframework.http.client.SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(Math.min(requestTimeoutSeconds, 10)));
-        requestFactory.setReadTimeout(Duration.ofSeconds(requestTimeoutSeconds));
+        int providerTimeoutSeconds = localModel
+                ? Math.max(1, requestTimeoutSeconds)
+                : Math.max(1, Math.min(requestTimeoutSeconds, cloudRequestTimeoutSeconds));
+        requestFactory.setConnectTimeout(Duration.ofSeconds(Math.min(providerTimeoutSeconds, 5)));
+        requestFactory.setReadTimeout(Duration.ofSeconds(providerTimeoutSeconds));
 
         RestClient.Builder restClientBuilder = RestClient.builder()
                 .requestFactory(requestFactory)
@@ -377,21 +383,52 @@ public class ChatbotModelConfig {
     ) {}
 
     public static class ProviderChatModel implements ChatModel {
+        private static final long DEFAULT_CLOUD_COOLDOWN_MILLIS = 60_000L;
+
         private final String providerName;
         private final ChatModel delegate;
         private final Semaphore semaphore;
         private final int queueWaitSeconds;
+        private final long failureCooldownMillis;
+        private final java.util.concurrent.atomic.AtomicLong unavailableUntil =
+                new java.util.concurrent.atomic.AtomicLong(0L);
 
         public ProviderChatModel(String providerName, ChatModel delegate,
                                  Semaphore semaphore, int queueWaitSeconds) {
+            this(providerName, delegate, semaphore, queueWaitSeconds,
+                    providerName != null && providerName.toLowerCase(java.util.Locale.ROOT).contains("ollama")
+                            ? 0L : DEFAULT_CLOUD_COOLDOWN_MILLIS);
+        }
+
+        ProviderChatModel(String providerName, ChatModel delegate,
+                          Semaphore semaphore, int queueWaitSeconds, long failureCooldownMillis) {
             this.providerName = providerName;
             this.delegate = delegate;
             this.semaphore = semaphore;
             this.queueWaitSeconds = Math.max(0, queueWaitSeconds);
+            this.failureCooldownMillis = Math.max(0L, failureCooldownMillis);
         }
 
         public String getProviderName() {
             return providerName;
+        }
+
+        boolean isCoolingDown() {
+            return unavailableUntil.get() > System.currentTimeMillis();
+        }
+
+        long coolingDownForMillis() {
+            return Math.max(0L, unavailableUntil.get() - System.currentTimeMillis());
+        }
+
+        void recordFailure() {
+            if (failureCooldownMillis > 0L) {
+                unavailableUntil.set(System.currentTimeMillis() + failureCooldownMillis);
+            }
+        }
+
+        void recordSuccess() {
+            unavailableUntil.set(0L);
         }
 
         @Override
@@ -473,7 +510,15 @@ public class ChatbotModelConfig {
             }
             List<String> errors = new ArrayList<>();
             Throwable lastError = null;
-            for (ChatModel model : models) {
+            for (ChatModel model : selectModelsForSingleCloudAttempt()) {
+                ProviderChatModel provider = model instanceof ProviderChatModel value ? value : null;
+                if (provider != null && provider.isCoolingDown()) {
+                    errors.add("Provider " + provider.getProviderName() + " is cooling down");
+                    System.err.println("[AI FALLBACK] " + provider.getProviderName()
+                            + " đang tạm nghỉ sau lỗi trước, bỏ qua trong "
+                            + provider.coolingDownForMillis() + "ms");
+                    continue;
+                }
                 try {
                     Prompt promptToUse = prompt;
                     ChatOptions promptOptions = (ChatOptions) prompt.getOptions();
@@ -500,17 +545,20 @@ public class ChatbotModelConfig {
                     }
                     ChatResponse response = model.call(promptToUse);
                     if (response != null && response.getResult() != null) {
+                        if (provider != null) provider.recordSuccess();
                         return response;
                     }
+                    if (provider != null) provider.recordFailure();
                     errors.add("Model returned empty response/choices");
                 } catch (Throwable t) {
+                    if (provider != null) provider.recordFailure();
                     lastError = t;
                     String errMsg = t.getMessage();
                     if (t.getCause() != null) {
                         errMsg += " (Cause: " + t.getCause().getMessage() + ")";
                     }
-                    String providerName = model instanceof ProviderChatModel provider
-                            ? provider.getProviderName()
+                    String providerName = model instanceof ProviderChatModel failedProvider
+                            ? failedProvider.getProviderName()
                             : model.getClass().getSimpleName();
                     errors.add("Provider " + providerName + " failed: " + errMsg);
                     System.err.println("[AI FALLBACK] " + providerName
@@ -518,6 +566,31 @@ public class ChatbotModelConfig {
                 }
             }
             throw new RuntimeException("Tất cả các AI model đều thất bại: " + String.join(" | ", errors), lastError);
+        }
+
+        private List<ChatModel> selectModelsForSingleCloudAttempt() {
+            ChatModel localModel = models.stream()
+                    .filter(this::isLocalModel)
+                    .findFirst()
+                    .orElse(null);
+            if (localModel == null) {
+                return models;
+            }
+
+            ChatModel primaryCloud = models.stream()
+                    .filter(model -> !isLocalModel(model))
+                    .findFirst()
+                    .orElse(null);
+            if (primaryCloud == null) {
+                return List.of(localModel);
+            }
+            return List.of(primaryCloud, localModel);
+        }
+
+        private boolean isLocalModel(ChatModel model) {
+            return model instanceof ProviderChatModel provider
+                    && provider.getProviderName() != null
+                    && provider.getProviderName().toLowerCase(java.util.Locale.ROOT).contains("ollama");
         }
 
         @Override
