@@ -456,7 +456,7 @@ export function LogicSanPham({
     // Không đóng hienThiDanhSachSanPham.value = false;
     // Không làm mới bộ lọc: lamMoiBoLoc();
     if (!result) {
-      showError(`Không thể thêm sản phẩm vào giỏ hàng.`);
+      // themSanPham đã tự hiển thị thông báo lỗi chi tiết (ngừng hoạt động / vượt tồn kho)
       return;
     }
     if (result.status === "added") {

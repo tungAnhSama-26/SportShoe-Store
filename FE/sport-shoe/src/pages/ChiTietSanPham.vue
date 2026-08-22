@@ -10,6 +10,7 @@ import { getDisplayErrorMessage } from '../utils/error-message';
 import DanhGiaMedia from '../components/DanhGiaMedia.vue';
 import anhMacDinh from '../assets/login-shoe.png';
 import { resolveHinhAnh } from '../utils/resolve-image';
+import { resolveMediaUrl } from '../utils/media';
 import { ketNoiSanPhamRealtime } from '../services/san-pham-realtime';
 
 const route = useRoute();
@@ -21,6 +22,12 @@ const loi = ref('');
 
 // Sản phẩm chỉ có "đang bán" (1) hoặc "ngừng bán" (khác 1).
 const daNgungBan = computed(() => !!sanPham.value && sanPham.value.trangThai !== 1);
+
+watch(daNgungBan, (ngungBan, cu) => {
+  if (ngungBan && cu === false) {
+    showWarning(`Sản phẩm "${sanPham.value?.ten || 'này'}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+  }
+});
 
 const mauChon = ref('');
 const sizeChon = ref('');
@@ -225,6 +232,10 @@ function chuanHoaSoLuong() {
 }
 
 function kiemTraChon() {
+  if (daNgungBan.value) {
+    showWarning(`Sản phẩm "${sanPham.value?.ten || 'này'}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+    return false;
+  }
   if (!mauChon.value || !sizeChon.value) {
     showWarning('Bạn chưa chọn thông tin sản phẩm (màu sắc, kích cỡ).');
     return false;
@@ -412,8 +423,22 @@ function xuLyAnhLoi(event) {
               <span v-if="bienTheChon" class="text-xs text-slate-400">Còn {{ tonKho }} sản phẩm</span>
             </div>
 
+            <!-- Thông báo ngừng bán -->
+            <div v-if="daNgungBan" class="mt-6 flex items-center gap-3 rounded-2xl bg-rose-50 border border-rose-200/80 p-4 text-rose-800">
+              <span class="text-xl">⚠️</span>
+              <div>
+                <p class="font-bold text-sm text-rose-900">Sản phẩm đã ngừng hoạt động</p>
+                <p class="text-xs text-rose-700 mt-0.5">Sản phẩm này hiện tại đã ngừng kinh doanh, vui lòng chọn sản phẩm khác.</p>
+              </div>
+            </div>
+
             <!-- Nút hành động -->
-            <div class="mt-8 flex flex-col sm:flex-row gap-3">
+            <div v-if="daNgungBan" class="mt-8">
+              <button disabled class="w-full rounded-2xl bg-slate-200 py-3.5 text-sm font-bold text-slate-500 cursor-not-allowed">
+                Sản phẩm đã ngừng hoạt động
+              </button>
+            </div>
+            <div v-else class="mt-8 flex flex-col sm:flex-row gap-3">
               <button @click="themVaoGio" class="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-primary bg-white px-6 py-3.5 text-sm font-bold text-primary transition hover:bg-primary/5">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1" /><circle cx="18" cy="20" r="1" /><path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H7" /></svg>
                 Thêm vào giỏ
@@ -464,7 +489,17 @@ function xuLyAnhLoi(event) {
           <!-- Danh sách đánh giá (chỉ khách đã mua và nhận hàng mới đánh giá được, từ trang đơn hàng) -->
           <div v-if="danhGia.danhSach.length" class="space-y-5">
             <div v-for="dg in danhGia.danhSach" :key="dg.id" class="flex gap-4">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              <img
+                v-if="dg.hinhAnhKhach"
+                :src="resolveMediaUrl(dg.hinhAnhKhach)"
+                :alt="dg.hoTenKhach"
+                class="h-10 w-10 shrink-0 rounded-full object-cover"
+                @error="dg.hinhAnhKhach = null"
+              />
+              <div
+                v-else
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary"
+              >
                 {{ chuCaiDau(dg.hoTenKhach) }}
               </div>
               <div class="flex-1">

@@ -524,7 +524,17 @@ function xuLyAnhLoi(e) {
           </div>
 
           <div class="flex gap-4">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            <img
+              v-if="dg.hinhAnhKhach"
+              :src="resolveMediaUrl(dg.hinhAnhKhach)"
+              :alt="dg.hoTenKhach"
+              class="h-10 w-10 shrink-0 rounded-full object-cover"
+              @error="dg.hinhAnhKhach = null"
+            />
+            <div
+              v-else
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary"
+            >
               {{ chuCaiDau(dg.hoTenKhach) }}
             </div>
             <div class="flex-1">

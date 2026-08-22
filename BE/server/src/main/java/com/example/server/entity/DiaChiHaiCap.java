@@ -26,4 +26,10 @@ public class DiaChiHaiCap {
     @Nationalized
     @Column(name = "dia_chi_cu_the", length = 300)
     private String diaChiCuThe;
+
+    public boolean isBlank() {
+        return (tinhThanh == null || tinhThanh.isBlank())
+                && (phuongXa == null || phuongXa.isBlank())
+                && (diaChiCuThe == null || diaChiCuThe.isBlank());
+    }
 }

@@ -283,7 +283,8 @@ public class AdminDanhGiaService {
     private AdminDanhGiaResponse toResponse(DanhGia dg, String hinhAnhSanPham) {
         return new AdminDanhGiaResponse(
                 dg.getId(),
-                dg.getKhachHang().getHoTen(),
+                dg.getKhachHang() != null ? dg.getKhachHang().getHoTen() : null,
+                dg.getKhachHang() != null ? dg.getKhachHang().getHinhAnh() : null,
                 dg.getSoSao(),
                 dg.getNoiDung(),
                 dg.getMedia(),
@@ -292,8 +293,8 @@ public class AdminDanhGiaService {
                 dg.getNgayPhanHoi(),
                 dg.getTrangThai(),
                 dg.getLyDoAn(),
-                dg.getGiay().getId(),
-                dg.getGiay().getTen(),
+                dg.getGiay() != null ? dg.getGiay().getId() : null,
+                dg.getGiay() != null ? dg.getGiay().getTen() : null,
                 hinhAnhSanPham);
     }
 }
