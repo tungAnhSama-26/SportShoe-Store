@@ -19,7 +19,10 @@ import {
   Headphones, 
   Minus, 
   User, 
-  AlertCircle 
+  AlertCircle,
+  Ticket,
+  BadgePercent,
+  CalendarDays
 } from "lucide-vue-next";
 
 const { subscribeTopic, unsubscribeTopic } = useRealtime();
@@ -31,7 +34,7 @@ const sessionId = ref(null);
 function parseMessage(text) {
   if (!text) return [];
   const segments = [];
-  const blockRegex = /```(product)([\s\S]*?)```/g;
+  const blockRegex = /```(product|offer)([\s\S]*?)```/g;
   let lastIndex = 0;
   let match;
 
@@ -65,6 +68,16 @@ function parseMessage(text) {
         }
       } catch (e) {
         console.error("Lỗi parse product JSON:", e);
+      }
+    } else if (blockType === "offer") {
+      try {
+        const offerJson = JSON.parse(content);
+        const validType = offerJson.type === "promotion" || offerJson.type === "coupon";
+        if (validType && offerJson.name && offerJson.code && offerJson.discount) {
+          segments.push({ type: "offer", offerData: offerJson });
+        }
+      } catch (e) {
+        console.error("Lỗi parse offer JSON:", e);
       }
     }
     lastIndex = blockRegex.lastIndex;
@@ -148,6 +161,10 @@ function isProductUrl(url) {
 function messageHasProductCard(text) {
   return /\[[^\]]+]\((?:https?:\/\/[^)]+)?\/(?:khachhang\/)?(?:san-pham|product)\/\d+\)/i.test(text || "")
     || (text || "").includes("```product");
+}
+
+function messageHasOfferCard(text) {
+  return (text || "").includes("```offer");
 }
 
 function formatOptions(values, visibleLimit) {
@@ -861,7 +878,7 @@ function toggleChatWithDragCheck() {
             <div 
               class="rounded-2xl px-3.5 py-2 text-xs shadow-sm leading-relaxed"
               :class="[
-                msg.nguoiGui !== 'CUSTOMER' && messageHasProductCard(msg.noiDung)
+                msg.nguoiGui !== 'CUSTOMER' && (messageHasProductCard(msg.noiDung) || messageHasOfferCard(msg.noiDung))
                   ? 'w-[94%] max-w-[94%]'
                   : 'max-w-[80%]',
                 msg.nguoiGui === 'CUSTOMER'
@@ -874,6 +891,69 @@ function toggleChatWithDragCheck() {
               <div class="space-y-2 whitespace-pre-wrap">
                 <template v-for="(seg, idx) in parseMessage(msg.noiDung)" :key="idx">
                   <div v-if="seg.type === 'text'" v-html="renderText(seg.content)"></div>
+
+                  <!-- Promotion / voucher card -->
+                  <div
+                    v-else-if="seg.type === 'offer'"
+                    class="overflow-hidden rounded-2xl border border-rose-100 bg-gradient-to-br from-white via-white to-rose-50/70 shadow-sm dark:border-rose-900/40 dark:from-slate-800 dark:via-slate-800 dark:to-rose-950/20"
+                  >
+                    <div class="flex items-start gap-3 p-3">
+                      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-primary dark:bg-rose-950/50 dark:text-rose-300">
+                        <Ticket v-if="seg.offerData.type === 'coupon'" class="h-5 w-5" />
+                        <BadgePercent v-else class="h-5 w-5" />
+                      </div>
+
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                          <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary dark:bg-rose-950/50 dark:text-rose-300">
+                            {{ seg.offerData.label }}
+                          </span>
+                          <span class="rounded-md border border-dashed border-rose-200 bg-white/80 px-1.5 py-0.5 font-mono text-[9px] font-bold text-slate-600 dark:border-rose-900/60 dark:bg-slate-900/40 dark:text-slate-300">
+                            {{ seg.offerData.code }}
+                          </span>
+                        </div>
+
+                        <h6 class="mt-1.5 text-[12px] font-extrabold leading-4 text-slate-900 dark:text-white">
+                          {{ seg.offerData.name }}
+                        </h6>
+                        <p class="mt-1 text-sm font-black text-primary dark:text-rose-300">
+                          {{ seg.offerData.discount }}
+                        </p>
+
+                        <div
+                          v-if="seg.offerData.minimumOrder || seg.offerData.maximumDiscount"
+                          class="mt-2 grid grid-cols-1 gap-1 rounded-xl bg-slate-50/90 p-2 text-[9px] leading-3.5 text-slate-500 dark:bg-slate-900/40 dark:text-slate-400"
+                        >
+                          <div v-if="seg.offerData.minimumOrder" class="flex justify-between gap-2">
+                            <span>Đơn tối thiểu</span>
+                            <span class="text-right font-bold text-slate-700 dark:text-slate-200">{{ seg.offerData.minimumOrder }}</span>
+                          </div>
+                          <div v-if="seg.offerData.maximumDiscount" class="flex justify-between gap-2">
+                            <span>Giảm tối đa</span>
+                            <span class="text-right font-bold text-slate-700 dark:text-slate-200">{{ seg.offerData.maximumDiscount }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 border-t border-rose-100/80 bg-white/60 px-3 py-2 dark:border-rose-900/30 dark:bg-slate-900/20">
+                      <div class="flex min-w-0 items-center gap-1.5 text-[9px] text-slate-500 dark:text-slate-400">
+                        <CalendarDays class="h-3.5 w-3.5 shrink-0 text-primary dark:text-rose-300" />
+                        <span class="leading-3.5">
+                          {{ seg.offerData.startDate || 'Không giới hạn' }}
+                          <template v-if="seg.offerData.endDate"> – {{ seg.offerData.endDate }}</template>
+                        </span>
+                      </div>
+                      <span
+                        class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold"
+                        :class="seg.offerData.status === 'Hoạt động'
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'"
+                      >
+                        {{ seg.offerData.status }}
+                      </span>
+                    </div>
+                  </div>
                   
                   <!-- Markdown Image -->
                   <div

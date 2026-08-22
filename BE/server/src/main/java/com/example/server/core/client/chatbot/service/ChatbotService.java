@@ -32,6 +32,11 @@ public class ChatbotService {
     private static final String CLIENT_SYSTEM_PROMPT = """
             Bạn là trợ lý ảo hỗ trợ mua sắm tại cửa hàng SportShoe.
 
+            # CHẾ ĐỘ CHAT TỰ DO (ƯU TIÊN CAO NHẤT)
+            - Các câu hỏi cần dữ liệu sản phẩm, bán chạy, khuyến mãi và đơn hàng đã được hệ thống truy vấn database trước khi tới đây.
+            - Ở nhánh này bạn không có tool và chỉ được trả lời một lần. Chỉ tư vấn kiến thức chung về chọn giày, cách đo chân, bảo quản và mua sắm.
+            - Không tự tạo tên sản phẩm, ID, link, hình ảnh, giá, tồn kho, khuyến mãi hoặc trạng thái đơn hàng của cửa hàng.
+
             # PHẠM VI HỖ TRỢ
             - Tư vấn chọn mẫu giày thể thao, gợi ý size giày, xem các đợt giảm giá, khuyến mãi, mã voucher và tra cứu đơn hàng của khách.
 
@@ -55,7 +60,7 @@ public class ChatbotService {
             QUY TẮC TƯ VẤN SIZE:
             1. Chân bè/mập: Khuyên nhích lên thêm 0.5 đến 1 Size.
             2. Nếu khách hỏi tư vấn size chung chung (chưa có chiều dài cm): Hướng dẫn cách đo chân, gửi bảng size và hỏi số đo cm. KHÔNG tự ý gọi `search_products_tool` liệt kê sản phẩm ngẫu nhiên.
-            3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38/40) và mới gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
+            3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra size theo bảng và hỏi khách có muốn tìm sản phẩm theo size đó không.
 
             # HƯỚNG DẪN TƯ VẤN KHUYẾN MÃI VÀ VOUCHER (QUAN TRỌNG)
             - Khi khách hàng hỏi về đợt giảm giá, chương trình khuyến mãi, sale, ưu đãi, voucher hay mã giảm giá:
@@ -97,6 +102,18 @@ public class ChatbotService {
             - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
             """;
 
+    private static final String CLIENT_FREE_CHAT_PROMPT = """
+            Bạn là trợ lý mua sắm của SportShoe. Trả lời bằng tiếng Việt thân thiện, rõ ràng, tối đa 70 từ.
+
+            Chỉ tư vấn kiến thức chung về chọn loại giày, đo chân, chọn size, sử dụng và bảo quản giày.
+            Các câu hỏi về sản phẩm đang bán, giá, màu, size còn hàng, bán chạy, khuyến mãi và đơn hàng
+            đã được hệ thống truy vấn database trước khi tới nhánh này.
+
+            Không tự tạo tên sản phẩm, ID, link, ảnh, giá, số lượng, khuyến mãi hoặc trạng thái đơn hàng.
+            Nếu thiếu số đo để chọn size, hướng dẫn khách đo chiều dài bàn chân và hỏi lại số cm.
+            Nếu câu hỏi ngoài phạm vi mua sắm, từ chối ngắn gọn và hướng khách quay lại nội dung về giày.
+            """;
+
     private final ChatClient clientChatClient;
     private final ChatClient adminChatClient;
 
@@ -109,6 +126,7 @@ public class ChatbotService {
     private final ChatbotIntentRouter intentRouter;
     private final ClientProductQueryGuard productQueryGuard;
     private final ClientProductResponseSanitizer productResponseSanitizer;
+    private final ClientQuickQueryService clientQuickQueryService;
     private final AdminQuickQueryService adminQuickQueryService;
 
     @Value("${app.debug-errors:false}")
@@ -125,8 +143,9 @@ public class ChatbotService {
             ChatbotIntentRouter intentRouter,
             ClientProductQueryGuard productQueryGuard,
             ClientProductResponseSanitizer productResponseSanitizer,
+            ClientQuickQueryService clientQuickQueryService,
             AdminQuickQueryService adminQuickQueryService) {
-        this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_SYSTEM_PROMPT).build();
+        this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_FREE_CHAT_PROMPT).build();
         this.adminChatClient = ChatClient.builder(chatModel).defaultSystem(ADMIN_SYSTEM_PROMPT).build();
 
         this.cuocHoiThoaiRepository = cuocHoiThoaiRepository;
@@ -138,6 +157,7 @@ public class ChatbotService {
         this.intentRouter = intentRouter;
         this.productQueryGuard = productQueryGuard;
         this.productResponseSanitizer = productResponseSanitizer;
+        this.clientQuickQueryService = clientQuickQueryService;
         this.adminQuickQueryService = adminQuickQueryService;
     }
 
@@ -258,6 +278,16 @@ public class ChatbotService {
             String faqAnswer = faqRuleEngine.matchFaq(request.message());
             if (faqAnswer != null) {
                 botReply = faqAnswer;
+                saveAiMessage(session.getId(), botReply);
+                return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
+            }
+
+            // Các truy vấn nghiệp vụ phổ biến lấy dữ liệu trực tiếp từ database.
+            // Không đưa qua LLM để tránh tool-call hai lượt và dữ liệu tự suy diễn.
+            java.util.Optional<String> quickAnswer =
+                    clientQuickQueryService.answerFromDatabase(request.message());
+            if (quickAnswer.isPresent()) {
+                botReply = quickAnswer.get();
                 saveAiMessage(session.getId(), botReply);
                 return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
             }
@@ -483,16 +513,16 @@ public class ChatbotService {
         );
     }
 
-    // --- GOI CLIENT LLM (HTTP CALL - DÙNG CHATCLIENT DUY NHẤT & INTENT ROUTER TỐI ƯU TOKEN) ---
+    // --- GỌI CLIENT LLM CHO HỘI THOẠI TỰ DO, KHÔNG ĐĂNG KÝ TOOL ---
     private String generateAiResponse(String userMessage) {
         try {
-            // Intent Router: Chọn đúng Tool cần thiết
-            String[] activeTools = intentRouter.resolveClientTools(userMessage);
-
             String response = clientChatClient.prompt()
-                    .system(CLIENT_SYSTEM_PROMPT)
+                    .system(CLIENT_FREE_CHAT_PROMPT)
                     .user(userMessage)
-                    .functions(activeTools)
+                    .options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+                            .withTemperature(0.3f)
+                            .withMaxTokens(100)
+                            .build())
                     .call()
                     .content();
             return productResponseSanitizer.sanitize(response);
