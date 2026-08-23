@@ -3,16 +3,21 @@ version: '3.8'
 services:
   # 1. Container Microsoft SQL Server
   database:
-    image: mcr.microsoft.com/azure-sql-edge:latest
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sportshoe-db
     ports:
       - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=MatKhauDatabaseCuaBan123!
-      - MSSQL_MEMORY_LIMIT_MB=450
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD:-MatKhauDatabaseCuaBan123!}
     volumes:
       - mssql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"Yoasobi123.\" -C -Q \"SELECT 1\" || /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"Yoasobi123.\" -Q \"SELECT 1\" || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q \"SELECT 1\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     restart: unless-stopped
 
   # 2. Database Auto-Init (Tự động tạo database 'giay' & nạp schema + dữ liệu lần đầu)
@@ -36,8 +41,8 @@ services:
     container_name: sportshoe-ollama
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
-      - OLLAMA_MODEL=${OLLAMA_TEXT_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
-      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-10m}
+      - OLLAMA_MODEL=qwen2.5:3b
+      - OLLAMA_KEEP_ALIVE=0
       - OLLAMA_NO_CLOUD=true
     volumes:
       - ${OLLAMA_MODELS_PATH:-ollama_models}:/root/.ollama/models
@@ -70,7 +75,7 @@ services:
       - JAVA_OPTS=-Xmx512m -Xms256m
       - DB_URL=jdbc:sqlserver://database:1433;databaseName=giay;encrypt=true;trustServerCertificate=true
       - DB_USERNAME=sa
-      - DB_PASSWORD=${DB_PASSWORD:-Yoasobi123.}
+      - DB_PASSWORD=Yoasobi123.
       - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME:-}
@@ -95,8 +100,8 @@ services:
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - AI_LOCAL_FALLBACK_ENABLED=${AI_LOCAL_FALLBACK_ENABLED:-true}
       - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_TEXT_MODEL=${OLLAMA_TEXT_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
-      - AI_REQUEST_TIMEOUT_SECONDS=${AI_REQUEST_TIMEOUT_SECONDS:-18000}
+      - OLLAMA_TEXT_MODEL=${OLLAMA_TEXT_MODEL:-qwen2.5:3b}
+      - AI_REQUEST_TIMEOUT_SECONDS=${AI_REQUEST_TIMEOUT_SECONDS:-180}
       - AI_CLOUD_REQUEST_TIMEOUT_SECONDS=${AI_CLOUD_REQUEST_TIMEOUT_SECONDS:-5}
       - AI_LOCAL_MAX_CONCURRENT=${AI_LOCAL_MAX_CONCURRENT:-1}
       - AI_LOCAL_QUEUE_WAIT_SECONDS=${AI_LOCAL_QUEUE_WAIT_SECONDS:-5}
