@@ -1,20 +1,6 @@
 package com.example.server.core.client.chatbot.service;
 
-import com.example.server.core.client.chatbot.dto.ProductDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminChartDataRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminCsvExportRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminInvoiceCountRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminInvoiceSearchRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminLowStockRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminOrderUpdateRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminProductReviewRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminProductStockUpdateRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminRevenueRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminTopReviewsRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminVoucherCreateRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.BestSellerRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.InvoiceDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.SearchRequest;
+import com.example.server.core.client.chatbot.dto.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;

@@ -12,6 +12,7 @@ import {
 } from "lucide-vue-next";
 import { useGiaoCa } from "../../../composable/useGiaoCa";
 import { useAdminSession } from "../../../composable/useAdminSession";
+import { isAdminRole } from "../../../services/auth";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien";
 import { layThongTinGiaoCaCurrent } from "../../../services/giao-ca";
 import { layDanhSachCaLam } from "../../../services/ca-lam";
@@ -39,7 +40,12 @@ const moCaGhiChu = ref("");
 const lyDoMoCaMuon = ref("");
 const danhSachCaMo = ref([]);
 const caLamMoId = ref("");
-const isAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
+const isAdmin = computed(() => {
+  const vaiTro = adminSession.value?.vaiTro;
+  return isAdminRole()
+    || Number(vaiTro) === 1
+    || ["Quản lý", "Quản trị viên", "Admin"].includes(String(vaiTro));
+});
 const isMyShift = computed(() =>
   Boolean(activeShift.value)
   && String(activeShift.value.nhanVienTrongCaId) === String(adminSession.value.id)
@@ -49,7 +55,7 @@ const caLamDuocChon = computed(() =>
   danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
 );
 const adminCanLyDoMoCa = computed(() => {
-  if (!isAdmin.value || !caLamDuocChon.value) return false;
+  if (isAdmin.value || !caLamDuocChon.value) return false;
   const now = new Date();
   const [hour, minute] = String(caLamDuocChon.value.gioBatDau).split(":").map(Number);
   const start = new Date(now);
@@ -257,14 +263,6 @@ async function submitNhanBanGiao(id) {
 
   if (confirmTienKiemDem.value === null || confirmTienKiemDem.value === "" || Number(confirmTienKiemDem.value) < 0) {
     messageError.value = "Vui lòng kiểm đếm và nhập số tiền thực nhận trước khi nhận ca.";
-    return;
-  }
-  if (isAdmin.value && !caLamMoId.value) {
-    messageError.value = "Vui lòng chọn ca làm việc cần mở.";
-    return;
-  }
-  if (adminCanLyDoMoCa.value && !lyDoMoCaMuon.value.trim()) {
-    messageError.value = "Vui lòng nhập lý do mở ca muộn hoặc ngoài khung giờ.";
     return;
   }
 
@@ -605,7 +603,7 @@ async function submitNhanBanGiao(id) {
             </div>
 
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-              Được mở sớm tối đa 30 phút. Mở sau giờ bắt đầu phải nhập lý do.
+              {{ isAdmin ? 'Admin được mở ca bất kỳ lúc nào, kể cả khi đang có nhân viên trong ca.' : 'Được mở sớm tối đa 30 phút. Mở sau giờ bắt đầu phải nhập lý do.' }}
             </div>
 
             <div>
@@ -617,7 +615,7 @@ async function submitNhanBanGiao(id) {
                 v-model="lyDoMoCaMuon"
                 rows="2"
                 maxlength="300"
-                placeholder="Bắt buộc khi mở sau giờ bắt đầu hoặc admin mở ngoài khung giờ..."
+                :placeholder="isAdmin ? 'Không bắt buộc với admin...' : 'Bắt buộc khi mở sau giờ bắt đầu...'"
                 class="w-full rounded-2xl border border-slate-200 bg-transparent p-3 text-sm outline-none focus:border-amber-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               ></textarea>
             </div>

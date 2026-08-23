@@ -1343,7 +1343,24 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         return discountedPrice.max(BigDecimal.ZERO);
     }
 
-    record ProductDiscountDisplay(DotGiamGia discount, BigDecimal discountedPrice) {}
+    static class ProductDiscountDisplay {
+        private final DotGiamGia discount;
+        private final BigDecimal discountedPrice;
+
+        public ProductDiscountDisplay(DotGiamGia discount, BigDecimal discountedPrice) {
+            this.discount = discount;
+            this.discountedPrice = discountedPrice;
+        }
+
+        public DotGiamGia discount() {
+            return discount;
+        }
+
+        public BigDecimal discountedPrice() {
+            return discountedPrice;
+        }
+    }
+
 
     private VanChuyen upsertVanChuyen(
             HoaDon hoaDon,
@@ -1490,26 +1507,36 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             return null;
         }
         String normalized = normalizeLabel(trangThai);
-        return switch (normalized) {
-            case "Chờ xác nhận" -> TRANG_THAI_CHO_XAC_NHAN;
-            case "Đã xác nhận" -> TRANG_THAI_DA_XAC_NHAN;
-            case "Chờ lấy hàng" -> TRANG_THAI_CHO_GIAO_HANG;
-            case "Chờ giao hàng", "Đang giao hàng" -> TRANG_THAI_DANG_VAN_CHUYEN;
-            case "Đã giao hàng" -> TRANG_THAI_DA_GIAO_HANG;
-            case "Giao hàng thất bại" -> TRANG_THAI_GIAO_HANG_THAT_BAI;
-            case "Hoàn thành" -> TRANG_THAI_HOAN_THANH;
-            case "Hủy", "Cần hoàn tiền" -> TRANG_THAI_HUY;
-            case "Yêu cầu hủy" -> TRANG_THAI_YEU_CAU_HUY;
-            case "Hóa đơn chờ" -> TRANG_THAI_HOA_DON_CHO;
-            default -> null;
-        };
+        switch (normalized) {
+            case "Chờ xác nhận":
+                return TRANG_THAI_CHO_XAC_NHAN;
+            case "Đã xác nhận":
+                return TRANG_THAI_DA_XAC_NHAN;
+            case "Chờ lấy hàng":
+                return TRANG_THAI_CHO_GIAO_HANG;
+            case "Chờ giao hàng":
+            case "Đang giao hàng":
+                return TRANG_THAI_DANG_VAN_CHUYEN;
+            case "Đã giao hàng":
+                return TRANG_THAI_DA_GIAO_HANG;
+            case "Giao hàng thất bại":
+                return TRANG_THAI_GIAO_HANG_THAT_BAI;
+            case "Hoàn thành":
+                return TRANG_THAI_HOAN_THANH;
+            case "Hủy":
+            case "Cần hoàn tiền":
+                return TRANG_THAI_HUY;
+            case "Yêu cầu hủy":
+                return TRANG_THAI_YEU_CAU_HUY;
+            case "Hóa đơn chờ":
+                return TRANG_THAI_HOA_DON_CHO;
+            default:
+                return null;
+        }
     }
 
     private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (!isTaiQuay(hoaDon)) {
-            return "Trực tuyến";
-        }
-        if (vanChuyen != null || hasDeliveryAddress(hoaDon)) {
+        if (vanChuyen != null || (hoaDon != null && hoaDon.getDiaChiGiaoHang() != null && !hoaDon.getDiaChiGiaoHang().isBlank())) {
             return "Giao hàng";
         }
         return "Tại quầy";
@@ -1769,27 +1796,38 @@ private boolean isTaiQuay(Integer kenhBan) {
         if (hinhThuc == null) {
             return "Chưa cập nhật";
         }
-        return switch (hinhThuc) {
-            case HINH_THUC_THANH_TOAN_TIEN_MAT -> "Tiền mặt";
-            case HINH_THUC_THANH_TOAN_CHUYEN_KHOAN -> "Chuyển khoản";
-            case HINH_THUC_THANH_TOAN_VI -> "Ví điện tử";
-            case HINH_THUC_THANH_TOAN_COD -> "COD";
-            default -> "Khác";
-        };
+        switch (hinhThuc) {
+            case HINH_THUC_THANH_TOAN_TIEN_MAT:
+                return "Tiền mặt";
+            case HINH_THUC_THANH_TOAN_CHUYEN_KHOAN:
+                return "Chuyển khoản";
+            case HINH_THUC_THANH_TOAN_VI:
+                return "Ví điện tử";
+            case HINH_THUC_THANH_TOAN_COD:
+                return "COD";
+            default:
+                return "Khác";
+        }
     }
 
     private String mapTrangThaiThanhToan(Integer trangThai) {
         if (trangThai == null) {
             return "Chờ thanh toán";
         }
-        return switch (trangThai) {
-            case TRANG_THAI_THANH_TOAN_THANH_CONG -> "Đã thanh toán";
-            case TRANG_THAI_THANH_TOAN_THAT_BAI -> "Thanh toán thất bại";
-            case TRANG_THAI_THANH_TOAN_DA_HUY -> "Đã hủy";
-            case TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN -> "Cần hoàn tiền";
-            case TRANG_THAI_THANH_TOAN_DA_HOAN_TIEN -> "Đã hoàn tiền";
-            default -> "Chờ thanh toán";
-        };
+        switch (trangThai) {
+            case TRANG_THAI_THANH_TOAN_THANH_CONG:
+                return "Đã thanh toán";
+            case TRANG_THAI_THANH_TOAN_THAT_BAI:
+                return "Thanh toán thất bại";
+            case TRANG_THAI_THANH_TOAN_DA_HUY:
+                return "Đã hủy";
+            case TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN:
+                return "Cần hoàn tiền";
+            case TRANG_THAI_THANH_TOAN_DA_HOAN_TIEN:
+                return "Đã hoàn tiền";
+            default:
+                return "Chờ thanh toán";
+        }
     }
 
     private String normalize(String value) {
@@ -1826,23 +1864,26 @@ private boolean isTaiQuay(Integer kenhBan) {
             return null;
         }
 
-        return switch (normalizeTextKey(value)) {
-            case "1" -> "Chờ xác nhận";
-            case "2" -> "Chờ lấy hàng";
-            case "3" -> "Đang giao hàng";
-            case "4" -> "Đã giao hàng";
-            case "5" -> "Hoàn thành";
-            case "6" -> "Hủy";
-            case "7" -> "Yêu cầu hủy";
-            case "8" -> "Cần hoàn tiền";
-            case "9" -> "Đã xác nhận";
-            case "10" -> "Giao hàng thất bại";
-            case "mua tai quay" -> DIA_CHI_TAI_QUAY;
-            case "không có" -> KHONG_CO;
-            case "khach le", "khach vang lai" -> KHACH_VANG_LAI;
-            case "hoa don cho tao tu man hinh ban hang tai quay" -> GHI_CHU_TAO_HOA_DON_TAI_QUAY;
-            default -> value;
-        };
+        switch (normalizeTextKey(value)) {
+            case "1": return "Chờ xác nhận";
+            case "2": return "Chờ lấy hàng";
+            case "3": return "Đang giao hàng";
+            case "4": return "Đã giao hàng";
+            case "5": return "Hoàn thành";
+            case "6": return "Hủy";
+            case "7": return "Yêu cầu hủy";
+            case "8": return "Cần hoàn tiền";
+            case "9": return "Đã xác nhận";
+            case "10": return "Giao hàng thất bại";
+            case "mua tai quay": return DIA_CHI_TAI_QUAY;
+            case "không có": return KHONG_CO;
+            case "khach le":
+            case "khach vang lai":
+                return KHACH_VANG_LAI;
+            case "hoa don cho tao tu man hinh ban hang tai quay":
+                return GHI_CHU_TAO_HOA_DON_TAI_QUAY;
+            default: return value;
+        }
     }
 
     private String normalizeTextKey(String value) {

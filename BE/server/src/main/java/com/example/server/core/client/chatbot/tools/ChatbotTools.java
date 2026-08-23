@@ -1,6 +1,6 @@
 package com.example.server.core.client.chatbot.tools;
 
-import com.example.server.core.client.chatbot.dto.ProductDto;
+import com.example.server.core.client.chatbot.dto.*;
 import com.example.server.core.admin.quanlyhoadon.domain.TrangThaiHoaDon;
 import com.example.server.core.admin.quanlydanhgia.dto.XepHangDanhGiaResponse;
 import com.example.server.core.admin.quanlydanhgia.service.DanhGiaXepHangService;
@@ -40,66 +40,6 @@ public class ChatbotTools {
         this.phieuGiamGiaService = phieuGiamGiaService;
         this.danhGiaXepHangService = danhGiaXepHangService;
     }
-
-    public record SearchRequest(
-            String keyword,
-            String color,
-            String category,
-            String brand,
-            String size,
-            Boolean onSale
-    ) {}
-
-    public record BestSellerRequest() {}
-
-    public record InvoiceSearchRequest(
-            String code
-    ) {}
-
-    public record InvoiceDto(
-            Integer id,
-            String ma,
-            String tenNguoiNhan,
-            String sdtNguoiNhan,
-            BigDecimal tongTienThanhToan,
-            String trangThaiText,
-            String ngayLap
-    ) {}
-
-    public record AdminRevenueRequest(String period) {}
-    public record AdminLowStockRequest(Integer threshold) {}
-    public record AdminInvoiceSearchRequest(String query, String status) {}
-    public record AdminInvoiceCountRequest(String status) {}
-
-    public record AdminProductReviewRequest(Integer productId, String productName) {}
-    public record AdminTopReviewsRequest() {}
-    public record AdminOrderUpdateRequest(String invoiceCode, String action) {}
-
-    public record AdminProductStockUpdateRequest(
-            String productName,
-            Integer sizeValue,
-            String colorName,
-            Integer newStock
-    ) {}
-
-    public record AdminVoucherCreateRequest(
-            String code,
-            String name,
-            Integer type,
-            BigDecimal value,
-            BigDecimal minOrder,
-            BigDecimal maxDiscount,
-            Integer quantity,
-            Integer durationDays
-    ) {}
-
-    public record AdminChartDataRequest(
-            String chartType
-    ) {}
-
-    public record AdminCsvExportRequest(
-            String dataType
-    ) {}
 
     private BigDecimal calculateActualPrice(Integer giayId, BigDecimal defaultGiaBan) {
         try {
@@ -409,42 +349,6 @@ public class ChatbotTools {
             return "";
         }
     }
-
-    public record CouponSearchRequest(
-            String keyword
-    ) {}
-
-    public record CouponDto(
-            Integer id,
-            String ma,
-            String ten,
-            String loaiText,
-            String loaiPhieuText,
-            BigDecimal giaTri,
-            BigDecimal giaTriToiThieu,
-            BigDecimal giamToiDa,
-            String ngayBatDau,
-            String ngayKetThuc,
-            Integer soLuong,
-            Integer soLuongDaDung,
-            String trangThaiText
-    ) {}
-
-    public record PromotionSearchRequest(
-            String keyword
-    ) {}
-
-    public record PromotionDto(
-            Integer id,
-            String ma,
-            String ten,
-            String moTa,
-            String loaiGiamText,
-            BigDecimal giaTriGiam,
-            String ngayBatDau,
-            String ngayKetThuc,
-            String trangThaiText
-    ) {}
 
     private boolean isGenericPromotionKeyword(String kw) {
         if (kw == null) return true;

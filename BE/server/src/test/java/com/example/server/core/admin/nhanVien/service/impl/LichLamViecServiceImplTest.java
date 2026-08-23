@@ -150,6 +150,8 @@ class LichLamViecServiceImplTest {
 
     @Test
     void phanThuCongKhongConGioiHanBaNguoiMoiCa() {
+        ZonedDateTime now = ZonedDateTime.of(2026, 8, 20, 10, 0, 0, 0, MUI_GIO);
+        service = serviceVoiDongHo(now.toInstant());
         CaLam shift = ca("sang", "08:00", "12:00");
         when(caLamRepository.findByIdForUpdate("sang")).thenReturn(Optional.of(shift));
         when(nhanVienRepository.findById(any(UUID.class)))
@@ -160,7 +162,7 @@ class LichLamViecServiceImplTest {
         for (int index = 0; index < 4; index++) {
             service.phanCa(new PhanCaRequest(
                     UUID.randomUUID(),
-                    LocalDate.now(MUI_GIO).plusDays(1),
+                    now.toLocalDate(),
                     "sang"
             ));
         }
