@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, nextTick, watch, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { marked } from "marked";
 import { 
   layDanhSachPhienAdmin, 
@@ -9,6 +10,8 @@ import {
   layLichSuPhienAdmin
 } from "../../../services/chatbot";
 import { useRealtime } from "../../../composables/useRealtime";
+import { resolveHinhAnh } from "../../../utils/resolve-image";
+import anhSanPhamDuPhong from "../../../assets/login-shoe.png";
 import { 
   Search, 
   MessageSquare, 
@@ -19,10 +22,13 @@ import {
   XCircle, 
   CheckCircle,
   HelpCircle,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  Tag
 } from "lucide-vue-next";
 import Swal from "sweetalert2";
 
+const router = useRouter();
 const { subscribeTopic, unsubscribeTopic } = useRealtime();
 
 const sessions = ref([]);
@@ -201,6 +207,29 @@ function FormatThoiGian(instantString) {
   return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) + " - " + date.toLocaleDateString("vi-VN");
 }
 
+function dinhDangTien(val) {
+  if (val === null || val === undefined) return "0 đ";
+  const num = Number(val);
+  if (isNaN(num)) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(num);
+}
+
+function xuLyLoiAnhSanPham(event) {
+  const image = event?.target;
+  if (!image || image.dataset.fallbackApplied === "true") return;
+  image.dataset.fallbackApplied = "true";
+  image.src = anhSanPhamDuPhong;
+}
+
+function moChiTietSanPham(url) {
+  if (!url) return;
+  if (url.startsWith("http")) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+}
+
 // Render markdown thành HTML (dùng cho tin nhắn AI/Chatbot)
 marked.setOptions({
   breaks: true,
@@ -214,6 +243,75 @@ function renderMarkdown(text) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
   return marked.parse(escaped);
+}
+
+function parseTextAndRawJson(rawText, segments) {
+  if (!rawText) return;
+  // Match single or multiple line JSON objects representing products
+  const jsonRegex = /\{"name"\s*:\s*"[^"]+".*?"price"\s*:\s*\d+.*?\}/g;
+  let lastIdx = 0;
+  let m;
+  while ((m = jsonRegex.exec(rawText)) !== null) {
+    if (m.index > lastIdx) {
+      const t = rawText.substring(lastIdx, m.index).trim();
+      if (t) segments.push({ type: "text", content: t });
+    }
+    try {
+      const parsed = JSON.parse(m[0]);
+      segments.push({ type: "product", productData: parsed });
+    } catch {
+      segments.push({ type: "text", content: m[0] });
+    }
+    lastIdx = jsonRegex.lastIndex;
+  }
+  if (lastIdx < rawText.length) {
+    const t = rawText.substring(lastIdx).trim();
+    if (t) segments.push({ type: "text", content: t });
+  }
+}
+
+function parseMessage(text) {
+  if (!text) return [];
+  const segments = [];
+  const blockRegex = /```(product|offer|chart)([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = blockRegex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    if (matchIndex > lastIndex) {
+      const rawText = text.substring(lastIndex, matchIndex);
+      parseTextAndRawJson(rawText, segments);
+    }
+    const blockType = match[1].trim();
+    const content = match[2].trim();
+    if (blockType === "product") {
+      try {
+        const productJson = JSON.parse(content);
+        segments.push({ type: "product", productData: productJson });
+      } catch (e) {
+        console.error("Lỗi parse product JSON:", e);
+        segments.push({ type: "text", content: match[0] });
+      }
+    } else if (blockType === "offer") {
+      try {
+        const offerJson = JSON.parse(content);
+        segments.push({ type: "offer", offerData: offerJson });
+      } catch (e) {
+        segments.push({ type: "text", content: match[0] });
+      }
+    } else {
+      segments.push({ type: "text", content: match[0] });
+    }
+    lastIndex = blockRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    const rawText = text.substring(lastIndex);
+    parseTextAndRawJson(rawText, segments);
+  }
+
+  return segments;
 }
 
 // Theo dõi thay đổi từ khóa để lọc danh sách
@@ -483,11 +581,81 @@ onUnmounted(() => {
                         : 'bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700/50 rounded-tl-none'
                   ]"
                 >
-                  <div 
-                    v-if="msg.nguoiGui === 'AI'"
-                    class="leading-relaxed prose prose-sm max-w-none prose-a:text-blue-600 prose-a:underline"
-                    v-html="renderMarkdown(msg.noiDung)"
-                  ></div>
+                  <template v-if="msg.nguoiGui === 'AI'">
+                    <div class="space-y-2">
+                      <div v-for="(seg, idx) in parseMessage(msg.noiDung)" :key="idx">
+                        <div 
+                          v-if="seg.type === 'text'"
+                          class="leading-relaxed prose prose-sm max-w-none prose-a:text-blue-600 prose-a:underline dark:prose-invert"
+                          v-html="renderMarkdown(seg.content)"
+                        ></div>
+
+                        <!-- Product Card -->
+                        <div
+                          v-else-if="seg.type === 'product'"
+                          class="my-2 flex gap-3 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group w-full relative overflow-hidden text-left"
+                          @click="moChiTietSanPham(seg.productData.url || '/admin/san-pham')"
+                        >
+                          <div class="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
+                            <img
+                              :src="seg.productData.image ? resolveHinhAnh(seg.productData.image) : anhSanPhamDuPhong"
+                              :alt="seg.productData.name || 'Sản phẩm'"
+                              @error="xuLyLoiAnhSanPham"
+                              class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            />
+                          </div>
+
+                          <div class="flex-1 min-w-0 flex flex-col justify-center">
+                            <p class="font-bold text-xs text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-purple-700 transition">
+                              {{ seg.productData.name }}
+                            </p>
+
+                            <div class="flex items-center gap-2 mt-0.5">
+                              <span class="text-xs font-extrabold text-rose-600 dark:text-rose-400">
+                                {{ seg.productData.price ? dinhDangTien(seg.productData.price) : '' }}
+                              </span>
+                              <span
+                                v-if="seg.productData.originalPrice && Number(seg.productData.originalPrice) > Number(seg.productData.price)"
+                                class="text-[10px] text-slate-400 line-through"
+                              >
+                                {{ dinhDangTien(seg.productData.originalPrice) }}
+                              </span>
+                            </div>
+
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                              <span v-if="seg.productData.color" class="inline-flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                                {{ seg.productData.color }}
+                              </span>
+                              <span v-if="seg.productData.size" class="inline-flex items-center gap-1">
+                                • {{ seg.productData.size.toLowerCase().includes("size") ? seg.productData.size : "Size " + seg.productData.size }}
+                              </span>
+                              <span v-if="seg.productData.stock !== undefined" class="font-bold text-amber-600 dark:text-amber-400">
+                                • {{ Number(seg.productData.stock) === 0
+                                  ? "Đã hết hàng"
+                                  : `${seg.productData.stockLabel || "Còn lại"}: ${seg.productData.stock} đôi` }}
+                              </span>
+                            </div>
+                          </div>
+                          <span class="absolute right-2 bottom-1 text-[10px] font-semibold text-purple-600 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+                            Chi tiết <ExternalLink class="w-3 h-3" />
+                          </span>
+                        </div>
+
+                        <!-- Offer Card -->
+                        <div
+                          v-else-if="seg.type === 'offer'"
+                          class="my-2 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-left"
+                        >
+                          <div class="flex items-center gap-2 font-bold text-amber-800 text-xs">
+                            <Tag class="w-3.5 h-3.5" />
+                            {{ seg.offerData.name }}
+                          </div>
+                          <p class="text-xs text-slate-600 mt-1">Mã: <span class="font-mono font-bold text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-200">{{ seg.offerData.code }}</span> - Giảm {{ seg.offerData.discount }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
                   <p v-else class="whitespace-pre-wrap leading-relaxed">{{ msg.noiDung }}</p>
                 </div>
               </div>

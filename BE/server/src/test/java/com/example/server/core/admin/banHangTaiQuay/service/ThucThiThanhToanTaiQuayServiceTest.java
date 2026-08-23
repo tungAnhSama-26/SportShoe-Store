@@ -49,6 +49,7 @@ class ThucThiThanhToanTaiQuayServiceTest {
     @Mock private TonKhoTaiQuayService inventoryUseCase;
     @Mock private GiayChiTietRepository giayChiTietRepository;
     @Mock private SanPhamTaiQuayService productUseCase;
+    @Mock private com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
 
     private ThucThiThanhToanTaiQuayService service;
 
@@ -67,7 +68,8 @@ class ThucThiThanhToanTaiQuayServiceTest {
                 giaoCaRepository,
                 inventoryUseCase,
                 giayChiTietRepository,
-                productUseCase
+                productUseCase,
+                hinhAnhGiayRepository
         );
     }
 

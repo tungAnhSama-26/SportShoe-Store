@@ -41,6 +41,7 @@ function LogicBanHangTaiQuay() {
   const choPhepGiaoHang = ref(false);
   const tenNguoiNhanGiaoHang = ref("");
   const sdtNguoiNhanGiaoHang = ref("");
+  const emailNguoiNhanGiaoHang = ref("");
   const diaChiGiaoHang = ref({ ...DIA_CHI_RONG });
   const donViVanChuyen = ref("GHN");
   const phiVanChuyen = ref(0);
@@ -133,6 +134,7 @@ function LogicBanHangTaiQuay() {
     choPhepGiaoHang,
     tenNguoiNhanGiaoHang,
     sdtNguoiNhanGiaoHang,
+    emailNguoiNhanGiaoHang,
     diaChiGiaoHang,
     donViVanChuyen,
     phiVanChuyen,
@@ -799,6 +801,7 @@ function LogicBanHangTaiQuay() {
     choPhepGiaoHang.value = Boolean(thongTinGiaoHang?.giaoHang);
     tenNguoiNhanGiaoHang.value = thongTinGiaoHang?.tenNguoiNhan || "";
     sdtNguoiNhanGiaoHang.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
+    emailNguoiNhanGiaoHang.value = thongTinGiaoHang?.email || khachHangDuocChon.value?.email || "";
     if (thongTinGiaoHang?.giaoHang) {
       diaChiGiaoHang.value = chuanHoaDiaChi(thongTinGiaoHang.diaChiGiaoHang);
     } else if (!diaChiGiaoHang.value && khachHangDuocChon.value?.diaChiMacDinh) {

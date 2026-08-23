@@ -21,11 +21,11 @@ function xuLyAnhLoi(event) {
   <section id="bo-suu-tap" class="bg-transparent px-6 py-14 lg:px-10 lg:py-16">
     <div class="mx-auto max-w-7xl">
       <div class="text-center">
-        <h2 class="text-2xl font-semibold text-black">Mua sắm theo hãng</h2>
+        <h2 class="text-2xl font-semibold text-black">Mua sắm theo thương hiệu</h2>
       </div>
 
       <p v-if="!danhMuc.length" class="mt-10 rounded-2xl border border-dashed border-primary/20 bg-white/60 py-12 text-center text-sm text-slate-400">
-        Chưa có hãng nào để hiển thị.
+        Chưa có thương hiệu nào để hiển thị.
       </p>
 
       <div v-else class="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">

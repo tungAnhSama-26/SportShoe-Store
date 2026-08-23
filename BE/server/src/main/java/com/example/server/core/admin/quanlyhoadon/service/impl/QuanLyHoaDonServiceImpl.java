@@ -434,10 +434,20 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 .map(ct -> {
                     GiayChiTiet gct = ct.getGiayChiTiet();
                     String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+                    String hinhAnh = null;
+                    if (hinhAnhGiayRepository != null) {
+                        List<com.example.server.entity.HinhAnhGiay> listAnh = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(gct.getId(), 1);
+                        if (listAnh != null && !listAnh.isEmpty()) {
+                            hinhAnh = listAnh.get(0).getUrl();
+                        }
+                    }
+                    if (hinhAnh == null || hinhAnh.isBlank()) {
+                        hinhAnh = gct.getGiay().getHinhAnh();
+                    }
                     return new EmailService.DongDonHangEmail(
                             gct.getGiay().getTen(),
                             bienThe,
-                            gct.getGiay().getHinhAnh(),
+                            hinhAnh,
                             ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
                             ct.getGiaDonVi(),
                             ct.getThanhTien()

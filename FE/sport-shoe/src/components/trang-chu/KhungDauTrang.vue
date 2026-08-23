@@ -35,11 +35,8 @@ function avatarTuTen(ten) {
 // URL avatar của khách đang đăng nhập: ưu tiên ảnh đã tải lên, fallback avatar chữ cái.
 const avatarUrl = computed(() => {
   if (!daDangNhap.value) return null;
-  const anh = (thongTinKhach.value?.hinhAnh || "").trim();
-  if (anh) {
-    if (/^(https?:|data:|blob:)/i.test(anh)) return anh;
-    return anh.startsWith("/") ? apiOrigin + anh : apiOrigin + "/" + anh;
-  }
+  const anh = resolveHinhAnh(thongTinKhach.value?.hinhAnh);
+  if (anh) return anh;
   return avatarTuTen(thongTinKhach.value?.hoTen);
 });
 
@@ -205,9 +202,15 @@ function toggleMenu() {
   }
 }
 
-onMounted(() => {
+function dongBoKhachHang(e) {
   daDangNhap.value = Boolean(layKhachId());
-  thongTinKhach.value = layThongTinKhach();
+  thongTinKhach.value = (e && e.detail) ? e.detail : layThongTinKhach();
+}
+
+onMounted(() => {
+  dongBoKhachHang();
+  window.addEventListener("storage", dongBoKhachHang);
+  window.addEventListener("khach-hang-thay-doi", dongBoKhachHang);
   capNhatTrangThaiCuon();
   window.addEventListener("scroll", capNhatTrangThaiCuon, { passive: true });
   gioHangStore.lamMoi();
@@ -220,6 +223,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener("scroll", capNhatTrangThaiCuon);
+  window.removeEventListener("storage", dongBoKhachHang);
+  window.removeEventListener("khach-hang-thay-doi", dongBoKhachHang);
   document.body.style.overflow = "";
   if (chuongTimer) clearInterval(chuongTimer);
 });

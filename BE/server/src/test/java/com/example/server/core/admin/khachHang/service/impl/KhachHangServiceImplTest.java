@@ -211,7 +211,7 @@ class KhachHangServiceImplTest {
     }
 
     @Test
-    @DisplayName("taoKhachHang - happy path: tạo thành công, hash mật khẩu, không gửi email chào mừng")
+    @DisplayName("taoKhachHang - happy path: tạo thành công, hash mật khẩu, gửi email tài khoản cho khách")
     void taoKhachHang_hapPath_thiTaoThanhCongVaHashMatKhau() {
         when(passwordService.hash("matkhau123")).thenReturn("HASHED_PW");
         ArgumentCaptor<KhachHang> captor = ArgumentCaptor.forClass(KhachHang.class);
@@ -236,7 +236,12 @@ class KhachHangServiceImplTest {
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getNgayTao()).isNotNull();
 
-        verifyNoInteractions(emailService);
+        verify(emailService).sendCustomerRegistrationEmailAsync(
+                "test@example.com",
+                "Nguyễn Văn A",
+                "nguyenvana",
+                "matkhau123"
+        );
     }
 
     @Test

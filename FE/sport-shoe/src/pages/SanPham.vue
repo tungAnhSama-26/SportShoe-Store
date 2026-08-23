@@ -52,11 +52,11 @@ const cauHinhTrang = computed(() =>
 );
 
 const NHOM_LOC = [
-  { khoa: "thuongHieu", nhan: "Hãng" },
+  { khoa: "thuongHieu", nhan: "Thương hiệu" },
+  { khoa: "gioiTinhNhan", nhan: "Giới tính", tuyChonCoDinh: ["Nam", "Nữ", "Unisex"] },
   { khoa: "mauSac", nhan: "Màu sắc", nhieu: true },
   { khoa: "kichCo", nhan: "Kích cỡ", nhieu: true },
   { khoa: "loaiGiay", nhan: "Loại giày" },
-  { khoa: "gioiTinhNhan", nhan: "Giới tính" },
   { khoa: "chatLieu", nhan: "Chất liệu" },
   { khoa: "deGiay", nhan: "Đế giày" },
   { khoa: "coGiay", nhan: "Cổ giày" },
@@ -102,8 +102,16 @@ onMounted(async () => {
 
 const danhSachTheoTrang = computed(() => {
   const cheDo = cauHinhTrang.value.cheDo;
-  if (cheDo === "nam") return tatCaSanPham.value.filter((sp) => boDau(sp.gioiTinhNhan) === "nam");
-  if (cheDo === "nu") return tatCaSanPham.value.filter((sp) => boDau(sp.gioiTinhNhan) === "nu");
+  if (cheDo === "nam") {
+    return tatCaSanPham.value.filter((sp) =>
+      ["nam", "unisex"].includes(boDau(sp.gioiTinhNhan))
+    );
+  }
+  if (cheDo === "nu") {
+    return tatCaSanPham.value.filter((sp) =>
+      ["nu", "unisex"].includes(boDau(sp.gioiTinhNhan))
+    );
+  }
   if (cheDo === "tre-em") {
     return tatCaSanPham.value.filter((sp) =>
       boDau(`${sp.ten} ${sp.loaiGiay}`).includes("tre em")
@@ -114,6 +122,9 @@ const danhSachTheoTrang = computed(() => {
 });
 
 function giaTriDuyNhat(nhom) {
+  if (nhom.tuyChonCoDinh) {
+    return nhom.tuyChonCoDinh;
+  }
   const tapGiaTri = new Set();
   danhSachTheoTrang.value.forEach((sanPham) => {
     if (nhom.nhieu) {
@@ -147,11 +158,15 @@ const danhSachLoc = computed(() => {
   for (const nhom of NHOM_LOC) {
     const daChon = boLoc.value[nhom.khoa];
     if (daChon.length) {
-      danhSach = nhom.nhieu
-        ? danhSach.filter((sanPham) =>
-            daChon.some((giaTri) => (sanPham[nhom.khoa] || []).includes(giaTri))
-          )
-        : danhSach.filter((sanPham) => daChon.includes(sanPham[nhom.khoa]));
+      if (nhom.khoa === "gioiTinhNhan") {
+        danhSach = danhSach.filter((sanPham) => daChon.includes(sanPham.gioiTinhNhan));
+      } else if (nhom.nhieu) {
+        danhSach = danhSach.filter((sanPham) =>
+          daChon.some((giaTri) => (sanPham[nhom.khoa] || []).includes(giaTri))
+        );
+      } else {
+        danhSach = danhSach.filter((sanPham) => daChon.includes(sanPham[nhom.khoa]));
+      }
     }
   }
 

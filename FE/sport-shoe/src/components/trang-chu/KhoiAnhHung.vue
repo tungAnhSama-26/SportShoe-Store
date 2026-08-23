@@ -111,7 +111,7 @@ onUnmounted(() => {
                 href="#bo-suu-tap"
                 class="inline-flex items-center rounded-xl border border-white/40 bg-white/5 px-5 py-2.5 text-[13px] font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:border-white/60"
               >
-                Khám phá theo hãng
+                Khám phá theo thương hiệu
               </a>
             </div>
 

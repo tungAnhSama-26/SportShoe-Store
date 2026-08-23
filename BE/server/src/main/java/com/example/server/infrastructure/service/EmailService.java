@@ -14,13 +14,16 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.core.io.FileSystemResource;
 
 @Service
 public class EmailService {
@@ -312,6 +315,37 @@ public class EmailService {
             List<DongDonHangEmail> items
     ) {}
 
+    private record InlineProductImage(String cid, File file, String contentType) {}
+
+    private File resolveLocalImageFile(String path) {
+        if (path == null || path.isBlank() || path.matches("(?i)^(https?:|data:).*")) {
+            return null;
+        }
+        String cleanPath = path.trim();
+        if (cleanPath.startsWith("/")) {
+            cleanPath = cleanPath.substring(1);
+        }
+        File f1 = new File(cleanPath);
+        if (f1.exists() && f1.isFile()) {
+            return f1;
+        }
+        if (!cleanPath.startsWith("uploads/")) {
+            File f2 = new File("uploads/" + cleanPath);
+            if (f2.exists() && f2.isFile()) {
+                return f2;
+            }
+        }
+        return null;
+    }
+
+    private String getImageContentType(File file) {
+        String name = file.getName().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".png")) return "image/png";
+        if (name.endsWith(".webp")) return "image/webp";
+        if (name.endsWith(".gif")) return "image/gif";
+        return "image/jpeg";
+    }
+
     /** Gửi email xác nhận đơn hàng ở luồng nền; lỗi chỉ ghi log, không chặn việc đặt hàng. */
     @Async
     public void sendOrderStatusUpdatedEmailAsync(DonHangEmail data, String tenTrangThaiMoi) {
@@ -319,23 +353,29 @@ public class EmailService {
             return;
         }
         try {
+            log.info("Bắt đầu gửi email cập nhật trạng thái đơn #{} tới {}", data.maHoaDon(), data.to());
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             applyFrom(helper);
             helper.setTo(data.to());
             helper.setSubject("SportShoe Store - Cập nhật trạng thái đơn hàng #" + safeText(data.maHoaDon()));
-            helper.setText(buildOrderStatusUpdatedEmailHtml(data, tenTrangThaiMoi), true);
+            List<InlineProductImage> inlineImages = new ArrayList<>();
+            helper.setText(buildOrderStatusUpdatedEmailHtml(data, tenTrangThaiMoi, inlineImages), true);
             ClassPathResource logo = new ClassPathResource(LOGO_RESOURCE);
             if (logo.exists()) {
                 helper.addInline(LOGO_CID, logo);
             }
+            for (InlineProductImage img : inlineImages) {
+                helper.addInline(img.cid(), new FileSystemResource(img.file()), img.contentType());
+            }
             mailSender.send(message);
+            log.info("Đã gửi thành công email cập nhật trạng thái đơn #{} tới {}", data.maHoaDon(), data.to());
         } catch (MessagingException | MailException exception) {
             log.error("Không thể gửi email cập nhật trạng thái đơn hàng tới {}", data.to(), exception);
         }
     }
 
-    private String buildOrderStatusUpdatedEmailHtml(DonHangEmail d, String tenTrangThaiMoi) {
+    private String buildOrderStatusUpdatedEmailHtml(DonHangEmail d, String tenTrangThaiMoi, List<InlineProductImage> inlineImages) {
         boolean chuyenKhoan = "VNPAY".equalsIgnoreCase(d.hinhThucThanhToan())
                 || "CHUYEN_KHOAN".equalsIgnoreCase(d.hinhThucThanhToan());
         String thanhToanText = chuyenKhoan
@@ -349,12 +389,26 @@ public class EmailService {
 
         StringBuilder itemsHtml = new StringBuilder();
         if (d.items() != null) {
+            int itemIdx = 0;
             for (DongDonHangEmail it : d.items()) {
-                String anhUrl = resolveAnhSanPham(it.hinhAnh());
-                String anhCell = anhUrl.isBlank()
-                        ? "<div style=\"width:56px;height:56px;border-radius:8px;background:#f3f4f6;\"></div>"
-                        : ("<img src=\"" + escapeHtml(anhUrl)
-                                + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />");
+                String anhCell = "<div style=\"width:56px;height:56px;border-radius:8px;background:#f3f4f6;\"></div>";
+                String rawAnh = it.hinhAnh();
+                if (rawAnh != null && !rawAnh.isBlank()) {
+                    String trimmed = rawAnh.trim();
+                    File localFile = resolveLocalImageFile(trimmed);
+                    if (localFile != null && localFile.exists() && localFile.isFile()) {
+                        String cid = "itemImgStatus_" + (itemIdx++);
+                        inlineImages.add(new InlineProductImage(cid, localFile, getImageContentType(localFile)));
+                        anhCell = "<img src=\"cid:" + cid + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />";
+                    } else if (trimmed.matches("(?i)^(https?:|data:).*")) {
+                        anhCell = "<img src=\"" + escapeHtml(trimmed) + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />";
+                    } else {
+                        String resolvedUrl = resolveAnhSanPham(trimmed);
+                        if (!resolvedUrl.isBlank()) {
+                            anhCell = "<img src=\"" + escapeHtml(resolvedUrl) + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />";
+                        }
+                    }
+                }
                 itemsHtml.append("""
                         <tr>
                           <td style="width:64px;padding:14px 12px 14px 0;border-bottom:1px solid #eee;vertical-align:top;">__ANH__</td>
@@ -491,23 +545,29 @@ public class EmailService {
             return;
         }
         try {
+            log.info("Bắt đầu gửi email xác nhận đơn hàng #{} tới {}", data.maHoaDon(), data.to());
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             applyFrom(helper);
             helper.setTo(data.to());
             helper.setSubject("SportShoe Store - Xác nhận đơn hàng #" + safeText(data.maHoaDon()));
-            helper.setText(buildOrderConfirmationEmailHtml(data), true);
+            List<InlineProductImage> inlineImages = new ArrayList<>();
+            helper.setText(buildOrderConfirmationEmailHtml(data, inlineImages), true);
             ClassPathResource logo = new ClassPathResource(LOGO_RESOURCE);
             if (logo.exists()) {
                 helper.addInline(LOGO_CID, logo);
             }
+            for (InlineProductImage img : inlineImages) {
+                helper.addInline(img.cid(), new FileSystemResource(img.file()), img.contentType());
+            }
             mailSender.send(message);
+            log.info("Đã gửi thành công email xác nhận đơn hàng #{} tới {}", data.maHoaDon(), data.to());
         } catch (MessagingException | MailException exception) {
             log.error("Không thể gửi email xác nhận đơn hàng tới {}", data.to(), exception);
         }
     }
 
-    private String buildOrderConfirmationEmailHtml(DonHangEmail d) {
+    private String buildOrderConfirmationEmailHtml(DonHangEmail d, List<InlineProductImage> inlineImages) {
         boolean chuyenKhoan = "VNPAY".equalsIgnoreCase(d.hinhThucThanhToan())
                 || "CHUYEN_KHOAN".equalsIgnoreCase(d.hinhThucThanhToan());
         String thanhToanText = chuyenKhoan
@@ -524,12 +584,26 @@ public class EmailService {
 
         StringBuilder itemsHtml = new StringBuilder();
         if (d.items() != null) {
+            int itemIdx = 0;
             for (DongDonHangEmail it : d.items()) {
-                String anhUrl = resolveAnhSanPham(it.hinhAnh());
-                String anhCell = anhUrl.isBlank()
-                        ? "<div style=\"width:56px;height:56px;border-radius:8px;background:#f3f4f6;\"></div>"
-                        : ("<img src=\"" + escapeHtml(anhUrl)
-                                + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />");
+                String anhCell = "<div style=\"width:56px;height:56px;border-radius:8px;background:#f3f4f6;\"></div>";
+                String rawAnh = it.hinhAnh();
+                if (rawAnh != null && !rawAnh.isBlank()) {
+                    String trimmed = rawAnh.trim();
+                    File localFile = resolveLocalImageFile(trimmed);
+                    if (localFile != null && localFile.exists() && localFile.isFile()) {
+                        String cid = "itemImgConfirm_" + (itemIdx++);
+                        inlineImages.add(new InlineProductImage(cid, localFile, getImageContentType(localFile)));
+                        anhCell = "<img src=\"cid:" + cid + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />";
+                    } else if (trimmed.matches("(?i)^(https?:|data:).*")) {
+                        anhCell = "<img src=\"" + escapeHtml(trimmed) + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />";
+                    } else {
+                        String resolvedUrl = resolveAnhSanPham(trimmed);
+                        if (!resolvedUrl.isBlank()) {
+                            anhCell = "<img src=\"" + escapeHtml(resolvedUrl) + "\" alt=\"\" width=\"56\" style=\"width:56px;height:56px;object-fit:cover;border-radius:8px;background:#f3f4f6;\" />";
+                        }
+                    }
+                }
                 itemsHtml.append("""
                         <tr>
                           <td style="width:64px;padding:14px 12px 14px 0;border-bottom:1px solid #eee;vertical-align:top;">__ANH__</td>

@@ -183,7 +183,7 @@ const thongSo = computed(() => {
   const sp = sanPham.value;
   if (!sp) return [];
   return [
-    { nhan: 'Hãng', giaTri: sp.thuongHieu },
+    { nhan: 'Thương hiệu', giaTri: sp.thuongHieu },
     { nhan: 'Loại giày', giaTri: sp.loaiGiay },
     { nhan: 'Giới tính', giaTri: gioiTinhNhan.value },
     { nhan: 'Chất liệu', giaTri: sp.chatLieu },
