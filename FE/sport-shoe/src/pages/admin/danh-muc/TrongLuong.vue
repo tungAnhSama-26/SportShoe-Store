@@ -136,7 +136,7 @@ function validate() {
   if (!Number.isInteger(giaTri) || giaTri < 100) {
     errors.giaTri = 'Trọng lượng phải là số nguyên từ 100 gram trở lên'
   } else if (giaTri > 2500) {
-    errors.giaTri = 'Trọng lượng tối đa không vượt quá 2,500 gram (2.5kg)'
+    errors.giaTri = 'Trọng lượng tối đa không vượt quá 2,500 gram'
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {
