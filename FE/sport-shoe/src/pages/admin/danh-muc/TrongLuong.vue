@@ -133,10 +133,10 @@ function validate() {
   const moTa = normalizeOptionalText(form.moTa)
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã trọng lượng'
-  if (!Number.isInteger(giaTri) || giaTri < 1) {
-    errors.giaTri = 'Trọng lượng phải là số nguyên từ 1 gram trở lên'
-  } else if (giaTri > 10000) {
-    errors.giaTri = 'Trọng lượng tối đa không vượt quá 10,000 gram'
+  if (!Number.isInteger(giaTri) || giaTri < 100) {
+    errors.giaTri = 'Trọng lượng phải là số nguyên từ 100 gram trở lên'
+  } else if (giaTri > 2500) {
+    errors.giaTri = 'Trọng lượng tối đa không vượt quá 2,500 gram (2.5kg)'
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {
