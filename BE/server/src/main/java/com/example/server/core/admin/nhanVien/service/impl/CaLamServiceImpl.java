@@ -70,7 +70,7 @@ public class CaLamServiceImpl implements CaLamService {
         try {
             caLamRepository.save(caLam);
         } catch (Exception e) {
-            throw new BusinessException("Không thể lưu ca làm việc. Giờ kết thúc phải lớn hơn giờ bắt đầu!");
+            throw new BusinessException("Không thể lưu ca làm việc. Vui lòng kiểm tra lại giờ bắt đầu và giờ kết thúc!");
         }
         realtimePublisher.phatSauCommit("TAO_CA_LAM");
         return toResponse(caLam);
@@ -101,7 +101,7 @@ public class CaLamServiceImpl implements CaLamService {
         try {
             caLamRepository.save(caLam);
         } catch (Exception e) {
-            throw new BusinessException("Không thể lưu ca làm việc. Giờ kết thúc phải lớn hơn giờ bắt đầu!");
+            throw new BusinessException("Không thể lưu ca làm việc. Vui lòng kiểm tra lại giờ bắt đầu và giờ kết thúc!");
         }
         realtimePublisher.phatSauCommit("CAP_NHAT_CA_LAM");
         return toResponse(caLam);
@@ -123,9 +123,6 @@ public class CaLamServiceImpl implements CaLamService {
 
             if (start.equals(end)) {
                 throw new BusinessException("Giờ kết thúc không được trùng với giờ bắt đầu!");
-            }
-            if (!start.isBefore(end)) {
-                throw new BusinessException("Giờ kết thúc (" + e + ") phải lớn hơn giờ bắt đầu (" + s + "). Ví dụ: 08:00 - 12:00!");
             }
         } catch (java.time.format.DateTimeParseException ex) {
             throw new BusinessException("Định dạng giờ không hợp lệ!");

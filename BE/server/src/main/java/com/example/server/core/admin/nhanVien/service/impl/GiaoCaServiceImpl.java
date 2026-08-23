@@ -71,14 +71,9 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     public GiaoCaResponse layCaHoatDong(UUID nhanVienId) {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
         if (laAdmin(nhanVien)) {
-            Optional<GiaoCa> caCuaAdmin = giaoCaRepository
-                    .findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(
-                            nhanVienId, TRANG_THAI_CHUA_KET_THUC);
-            if (caCuaAdmin.isPresent()) {
-                return mapToResponse(caCuaAdmin.get());
-            }
             return giaoCaRepository
-                    .findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of(TrangThaiGiaoCa.MO_CA.ma()))
+                    .findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(
+                            nhanVienId, TRANG_THAI_CHUA_KET_THUC)
                     .map(this::mapToResponse)
                     .orElse(null);
         }
@@ -115,9 +110,13 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Transactional(readOnly = true)
     public GiaoCaStatsResponse layThongTinGiaoCaCurrent(UUID nhanVienId) {
         GiaoCa giaoCa = layCaDangMoCoQuyenTruyCap(nhanVienId);
+        if (giaoCa == null) {
+            return new GiaoCaStatsResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        }
         BigDecimal tienMat = tinhTienMat(giaoCa.getId());
         BigDecimal tienChuyenKhoan = tinhTienChuyenKhoan(giaoCa.getId());
-        return new GiaoCaStatsResponse(tienMat, tienChuyenKhoan, giaoCa.getTienDauCa().add(tienMat));
+        BigDecimal tienDauCa = giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO;
+        return new GiaoCaStatsResponse(tienMat, tienChuyenKhoan, tienDauCa.add(tienMat));
     }
 
     @Override
@@ -176,11 +175,12 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Transactional
     public GiaoCaResponse ketCa(UUID nhanVienId, KetCaRequest request) {
         GiaoCa giaoCa = layCaDangMoCuaNhanVien(nhanVienId);
+        NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
         if (timCaKeTiep(giaoCa.getCaLam()).isPresent()) {
             throw new BusinessException("Vẫn còn ca làm việc tiếp theo. Vui lòng bàn giao cho nhân viên ca tiếp theo.");
         }
 
-        chotSoLieuCa(giaoCa, request.tienCuoiCaThucTe(), request.lyDoChenhLech(), request.ghiChu());
+        chotSoLieuCa(giaoCa, request.tienCuoiCaThucTe(), request.lyDoChenhLech(), request.ghiChu(), !laAdmin(nhanVien));
         giaoCa.setTrangThai(TrangThaiGiaoCa.DA_KET_THUC.ma());
         giaoCa.setCaChuaKetThuc(null);
         return mapToResponse(giaoCaRepository.save(giaoCa));
@@ -271,6 +271,10 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Override
     @Transactional(readOnly = true)
     public void checkActiveShiftOrThrow(UUID nhanVienId) {
+        NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
+        if (laAdmin(nhanVien)) {
+            return;
+        }
         layCaDangMoCoQuyenTruyCap(nhanVienId);
     }
 
@@ -392,9 +396,6 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         CaLam ca = caLamRepository.findById(caLamId.trim())
                 .filter(item -> Boolean.TRUE.equals(item.getTrangThai()))
                 .orElseThrow(() -> new BusinessException("Ca làm việc quản trị viên chọn không tồn tại hoặc đã ngừng hoạt động."));
-        if (canLyDoMoMuonHoacNgoaiLe(ca, hienTai) && (lyDoMoMuon == null || lyDoMoMuon.isBlank())) {
-            throw new BusinessException("Vui lòng nhập lý do mở ca muộn hoặc mở ca ngoài khung giờ.");
-        }
         return ca;
     }
 
@@ -422,11 +423,10 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     private String taoGhiChuMoCa(NhanVien nhanVien, CaLam caLam, LocalTime hienTai, MoCaRequest request) {
-        boolean canLyDo = !laAdmin(nhanVien)
-                ? hienTai.isAfter(LocalTime.parse(caLam.getGioBatDau()))
-                : canLyDoMoMuonHoacNgoaiLe(caLam, hienTai);
+        boolean canLyDo = !laAdmin(nhanVien) && hienTai.isAfter(LocalTime.parse(caLam.getGioBatDau()));
+        String lyDoMoMuon = request.lyDoMoMuon();
         String ghiChuLyDo = canLyDo
-                ? "Lý do mở ca muộn/ngoại lệ: " + request.lyDoMoMuon().trim()
+                ? "Lý do mở ca muộn/ngoại lệ: " + lyDoMoMuon.trim()
                 : null;
         return ghepGhiChu(request.ghiChu(), ghiChuLyDo);
     }
@@ -489,9 +489,15 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     private void chotSoLieuCa(GiaoCa giaoCa, BigDecimal tienThucTe, String lyDo, String ghiChu) {
+        chotSoLieuCa(giaoCa, tienThucTe, lyDo, ghiChu, true);
+    }
+
+    private void chotSoLieuCa(GiaoCa giaoCa, BigDecimal tienThucTe, String lyDo, String ghiChu, boolean batBuocLyDo) {
         BigDecimal tienHeThong = giaoCa.getTienDauCa().add(tinhTienMat(giaoCa.getId()));
         BigDecimal chenhLech = tienThucTe.subtract(tienHeThong);
-        kiemTraLyDoChenhLech(chenhLech, lyDo);
+        if (batBuocLyDo) {
+            kiemTraLyDoChenhLech(chenhLech, lyDo);
+        }
         giaoCa.setThoiGianRa(Instant.now());
         giaoCa.setTienCuoiCaThucTe(tienThucTe);
         giaoCa.setLyDoChenhLech(lyDo);
@@ -531,15 +537,9 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     private GiaoCa layCaDangMoCoQuyenTruyCap(UUID nhanVienId) {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
         if (laAdmin(nhanVien)) {
-            Optional<GiaoCa> caCuaAdmin = giaoCaRepository
-                    .findByNhanVienTrongCaIdAndTrangThai(nhanVienId, TrangThaiGiaoCa.MO_CA.ma());
-            if (caCuaAdmin.isPresent()) {
-                return caCuaAdmin.get();
-            }
             return giaoCaRepository
-                    .findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of(TrangThaiGiaoCa.MO_CA.ma()))
-                    .orElseThrow(() -> new BusinessException(
-                            "Cửa hàng chưa có ca làm việc đang hoạt động. Vui lòng mở ca trước khi thực hiện giao dịch."));
+                    .findByNhanVienTrongCaIdAndTrangThai(nhanVienId, TrangThaiGiaoCa.MO_CA.ma())
+                    .orElse(null);
         }
         return layCaDangMoCuaNhanVien(nhanVienId);
     }

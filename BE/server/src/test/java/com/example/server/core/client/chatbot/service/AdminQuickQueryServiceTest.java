@@ -1,11 +1,6 @@
 package com.example.server.core.client.chatbot.service;
 
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminLowStockRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminRevenueRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.AdminTopReviewsRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.BestSellerRequest;
-import com.example.server.core.client.chatbot.dto.ProductDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.*;
+import com.example.server.core.client.chatbot.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

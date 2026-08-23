@@ -4,6 +4,8 @@ import com.example.server.core.admin.quanLySanPham.service.QuanLySanPhamService;
 import com.example.server.core.admin.quanlydanhgia.service.DanhGiaXepHangService;
 import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import com.example.server.core.admin.quanlykhuyenmai.service.PhieuGiamGiaService;
+import com.example.server.core.client.chatbot.dto.AdminLowStockRequest;
+import com.example.server.core.client.chatbot.dto.BestSellerRequest;
 import com.example.server.entity.GiayChiTiet;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -49,8 +51,8 @@ class ChatbotToolsAdminTest {
         when(priceQuery.setParameter("giayId", 15)).thenReturn(priceQuery);
         when(priceQuery.getResultList()).thenReturn(List.of());
 
-        Function<ChatbotTools.AdminLowStockRequest, String> tool = tools(entityManager).getAdminLowStockTool();
-        String result = tool.apply(new ChatbotTools.AdminLowStockRequest(5));
+        Function<AdminLowStockRequest, String> tool = tools(entityManager).getAdminLowStockTool();
+        String result = tool.apply(new AdminLowStockRequest(5));
 
         assertTrue(result.contains("Dior B22 Sneaker"));
         assertTrue(result.contains("\"color\":\"Đen\""));
@@ -70,7 +72,7 @@ class ChatbotToolsAdminTest {
 
         String result = tools(entityManager)
                 .getAdminLowStockTool()
-                .apply(new ChatbotTools.AdminLowStockRequest(8));
+                .apply(new AdminLowStockRequest(8));
 
         assertTrue(result.contains("không có sản phẩm nào"));
         assertTrue(result.contains("dưới 8"));
@@ -103,7 +105,7 @@ class ChatbotToolsAdminTest {
 
         String result = tools(entityManager)
                 .getAdminBestSellingShoesTool()
-                .apply(new ChatbotTools.BestSellerRequest());
+                .apply(new BestSellerRequest());
 
         assertTrue(result.contains("```product"));
         assertTrue(result.contains("Dior B22 Sneaker (Đã bán: 7)"));
@@ -122,7 +124,7 @@ class ChatbotToolsAdminTest {
 
         String result = tools(entityManager)
                 .getAdminBestSellingShoesTool()
-                .apply(new ChatbotTools.BestSellerRequest());
+                .apply(new BestSellerRequest());
 
         assertTrue(result.contains("chưa có dữ liệu bán hàng hoàn thành"));
         assertFalse(result.contains("Danh sách sản phẩm bán chạy nhất"));

@@ -146,4 +146,76 @@ class ThucThiThanhToanTaiQuayServiceTest {
 
         verify(invoiceUseCase).luuLichSuHoaDon(hoaDon, 3, "Admin bán hàng tại quầy");
     }
+
+    @Test
+    void adminThanhToanTaiQuayKhongCanMoCaNeuCuaHangChuaCoCaDangMo() {
+        NhanVien admin = new NhanVien();
+        admin.setId(UUID.randomUUID());
+        admin.setMa("AD001");
+        admin.setHoTen("Admin bán hàng");
+        admin.setVaiTro(1);
+
+        HoaDon hoaDon = new HoaDon();
+        hoaDon.setId(102);
+        hoaDon.setMa("HD102");
+        hoaDon.setNhanVien(admin);
+        hoaDon.setTongTienHang(BigDecimal.valueOf(180000));
+        hoaDon.setTienGiam(BigDecimal.ZERO);
+        hoaDon.setTongTienThanhToan(BigDecimal.valueOf(180000));
+
+        ThanhToanTaiQuayRequest request = new ThanhToanTaiQuayRequest(
+                null,
+                null,
+                "Khách vãng lai",
+                "",
+                null,
+                null,
+                1,
+                BigDecimal.valueOf(180000),
+                null,
+                null,
+                "Admin bán không cần mở ca",
+                List.of(new TaoHoaDonChoItemRequest(2, 1, BigDecimal.valueOf(180000)))
+        );
+
+        when(invoiceUseCase.resolveNhanVienDangDangNhap()).thenReturn(admin);
+        when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(admin.getId(), "MO_CA"))
+                .thenReturn(Optional.empty());
+        when(giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
+                .thenReturn(Optional.empty());
+        when(invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(null)).thenReturn(3);
+        when(invoiceUseCase.taoHoaDon(
+                eq(null),
+                eq("Khách vãng lai"),
+                eq(""),
+                eq(null),
+                eq(null),
+                anyList(),
+                eq(3),
+                eq("Admin bán không cần mở ca")
+        )).thenReturn(hoaDon);
+        when(paymentUseCase.xacDinhTienKhachDua(eq(1), any(), eq(BigDecimal.valueOf(180000)), eq(null), eq(null)))
+                .thenReturn(BigDecimal.valueOf(180000));
+        when(paymentUseCase.tinhTienThua(eq(1), eq(BigDecimal.valueOf(180000)), eq(BigDecimal.valueOf(180000)), eq(null), eq(null)))
+                .thenReturn(BigDecimal.ZERO);
+        when(paymentUseCase.mapHinhThucThanhToan(1)).thenReturn(1);
+        when(vanChuyenRepository.findByHoaDonId(102)).thenReturn(Optional.empty());
+        when(invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon)).thenReturn("Khách vãng lai");
+        when(invoiceUseCase.resolveSoDienThoaiKhachHangHoaDon(hoaDon)).thenReturn("");
+        when(invoiceUseCase.mapHoaDonChiTiet(eq(hoaDon), anyList(), any()))
+                .thenReturn(new HoaDonChoChiTietResponse(
+                        102, "HD102", null, "Khách vãng lai", "", null,
+                        BigDecimal.valueOf(180000), BigDecimal.ZERO, BigDecimal.valueOf(180000),
+                        null, null, List.of()
+                ));
+
+        service.thanhToanTaiQuay(request);
+
+        ArgumentCaptor<HoaDon> hoaDonCaptor = ArgumentCaptor.forClass(HoaDon.class);
+        verify(hoaDonRepository).save(hoaDonCaptor.capture());
+        assertThat(hoaDonCaptor.getValue().getGiaoCa()).isNull();
+        assertThat(hoaDonCaptor.getValue().getNhanVien()).isSameAs(admin);
+
+        verify(invoiceUseCase).luuLichSuHoaDon(hoaDon, 3, "Admin bán không cần mở ca");
+    }
 }

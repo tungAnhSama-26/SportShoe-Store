@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ThucThiThanhToanTaiQuayService {
@@ -89,14 +90,7 @@ public class ThucThiThanhToanTaiQuayService {
         if (currentEmp == null) {
             throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
         }
-        GiaoCa activeShift = currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1
-                ? giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
-                    .or(() -> giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
-                    .orElseThrow(() -> new BusinessException(
-                            "Cửa hàng không có ca làm việc đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."))
-                : giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
-                    .orElseThrow(() -> new BusinessException(
-                            "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
+        GiaoCa activeShift = resolveCaThanhToan(currentEmp);
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -212,6 +206,17 @@ public class ThucThiThanhToanTaiQuayService {
                 invoiceUseCase.mapHoaDonChiTiet(hoaDon, new ArrayList<>(), null).phieuGiamGia(), // cheat
                 hoaDon.getNgayThanhToan()
         );
+    }
+
+    private GiaoCa resolveCaThanhToan(NhanVien currentEmp) {
+        Optional<GiaoCa> caCuaNhanVien = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA");
+        if (currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1) {
+            return caCuaNhanVien
+                    .or(() -> giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
+                    .orElse(null);
+        }
+        return caCuaNhanVien.orElseThrow(() -> new BusinessException(
+                "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
     }
 
     private HoaDon thanhToanHoaDonCho(ThanhToanTaiQuayRequest request) {
