@@ -52,10 +52,16 @@ function hienThiLyDo(maLyDo) {
 function resolveHinhAnh(url) {
   const value = String(url || "").trim();
   if (!value) return "";
-  if (/^(https?:|data:|blob:)/i.test(value)) return value;
-  if (value.startsWith("/uploads/")) return `${apiOrigin}${value}`;
-  if (value.startsWith("uploads/")) return `${apiOrigin}/${value}`;
-  return value.startsWith("/") ? `${apiOrigin}${value}` : `${apiOrigin}/${value}`;
+  if (/^(data:|blob:)/i.test(value)) return value;
+  const idx = value.indexOf("/uploads/");
+  if (idx >= 0) return value.slice(idx);
+  if (value.startsWith("uploads/")) return `/${value}`;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(value)) {
+    return value.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "");
+  }
+  if (/^https?:/i.test(value)) return value;
+  if (value.startsWith("/")) return value;
+  return `/${value}`;
 }
 
 const route = useRoute();
