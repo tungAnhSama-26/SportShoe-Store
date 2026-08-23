@@ -3,7 +3,7 @@ import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 
 const backendTarget =
-  process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8080";
+  process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8081";
 
 const createBackendProxy = ({ websocket = false } = {}) => ({
   target: backendTarget,
@@ -40,7 +40,7 @@ var stdin_default = defineConfig({
     open: false,
     allowedHosts: [".trycloudflare.com"],
     headers: {
-      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http://localhost:8080 http://127.0.0.1:8080 https://res.cloudinary.com https://firebasestorage.googleapis.com https://ui-avatars.com; media-src 'self' data: blob: http://localhost:8080 http://127.0.0.1:8080; connect-src 'self' ws: wss: https: http://localhost:8080 http://127.0.0.1:8080 https://provinces.open-api.vn https://api.vietqr.io;",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http://localhost:8081 http://127.0.0.1:8081 https://res.cloudinary.com https://firebasestorage.googleapis.com https://ui-avatars.com; media-src 'self' data: blob: http://localhost:8081 http://127.0.0.1:8081; connect-src 'self' ws: wss: https: http://localhost:8081 http://127.0.0.1:8081 https://provinces.open-api.vn https://api.vietqr.io;",
       "X-Frame-Options": "SAMEORIGIN",
       "X-Content-Type-Options": "nosniff",
       "X-XSS-Protection": "1; mode=block",

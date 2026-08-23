@@ -74,9 +74,14 @@ public class ChatbotModelConfig {
     }
 
     private boolean isValidKey(String key) {
-        return key != null && !key.isBlank() && 
-               !key.equalsIgnoreCase("your-api-key-here") && 
-               !key.equalsIgnoreCase("your_api_key_here");
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+        String normalized = key.trim();
+        return !normalized.equalsIgnoreCase("your-api-key-here")
+                && !normalized.equalsIgnoreCase("your_api_key_here")
+                && !normalized.equalsIgnoreCase("dummy-key")
+                && !normalized.contains("...");
     }
 
     private ChatModel createModel(String apiKey, String baseUrl, String modelName, String providerName,

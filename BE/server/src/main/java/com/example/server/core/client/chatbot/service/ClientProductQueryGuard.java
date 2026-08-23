@@ -1,7 +1,7 @@
 package com.example.server.core.client.chatbot.service;
 
 import com.example.server.core.client.chatbot.dto.ProductDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.SearchRequest;
+import com.example.server.core.client.chatbot.dto.SearchRequest;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
