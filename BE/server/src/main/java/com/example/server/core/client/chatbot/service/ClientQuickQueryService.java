@@ -1,14 +1,6 @@
 package com.example.server.core.client.chatbot.service;
 
-import com.example.server.core.client.chatbot.tools.ChatbotTools.BestSellerRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.CouponDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.CouponSearchRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.InvoiceDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.InvoiceSearchRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.PromotionDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.PromotionSearchRequest;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.SearchRequest;
-import com.example.server.core.client.chatbot.dto.ProductDto;
+import com.example.server.core.client.chatbot.dto.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

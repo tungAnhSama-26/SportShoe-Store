@@ -90,7 +90,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
                 .orElseThrow(() -> new BusinessException("Ca làm việc không tồn tại hoặc đã ngừng hoạt động"));
 
-        kiemTraCoTheChinhSua(request.ngay(), caLam);
+        kiemTraCaDangDienRa(request.ngay(), caLam);
 
         if (lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
                 request.nhanVienId(), request.ngay(), caLam.getId())) {
@@ -193,10 +193,32 @@ public class LichLamViecServiceImpl implements LichLamViecService {
             CaLam caCu = lich.getCaLam();
             LocalTime batDauCu = LocalTime.parse(caCu.getGioBatDau());
             LocalTime ketThucCu = LocalTime.parse(caCu.getGioKetThuc());
-            if (batDauMoi.isBefore(ketThucCu) && batDauCu.isBefore(ketThucMoi)) {
+            if (khoangGioGiaoNhau(batDauMoi, ketThucMoi, batDauCu, ketThucCu)) {
                 throw new BusinessException("Ca " + caMoi.getTen() + " bị chồng giờ với " + caCu.getTen());
             }
         }
+    }
+
+    private boolean khoangGioGiaoNhau(LocalTime batDauA, LocalTime ketThucA, LocalTime batDauB, LocalTime ketThucB) {
+        return tachKhoangGio(batDauA, ketThucA).stream()
+                .anyMatch(khoangA -> tachKhoangGio(batDauB, ketThucB).stream()
+                        .anyMatch(khoangB -> khoangA.batDau() < khoangB.ketThuc()
+                                && khoangB.batDau() < khoangA.ketThuc()));
+    }
+
+    private List<KhoangPhut> tachKhoangGio(LocalTime batDau, LocalTime ketThuc) {
+        int batDauPhut = batDau.getHour() * 60 + batDau.getMinute();
+        int ketThucPhut = ketThuc.getHour() * 60 + ketThuc.getMinute();
+        if (batDauPhut == ketThucPhut) {
+            return List.of();
+        }
+        if (batDauPhut < ketThucPhut) {
+            return List.of(new KhoangPhut(batDauPhut, ketThucPhut));
+        }
+        return List.of(new KhoangPhut(batDauPhut, 24 * 60), new KhoangPhut(0, ketThucPhut));
+    }
+
+    private record KhoangPhut(int batDau, int ketThuc) {
     }
 
     private void saveLich(NhanVien nhanVien, LocalDate ngay, CaLam caLam) {
@@ -222,6 +244,22 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         if (!hienTai.isBefore(thoiDiemKetThuc)) {
             throw new BusinessException("Ca làm việc đã kết thúc nên chỉ được xem lịch sử");
         }
+    }
+
+    private void kiemTraCaDangDienRa(LocalDate ngay, CaLam caLam) {
+        ZonedDateTime hienTai = ZonedDateTime.now(clock);
+        ZonedDateTime thoiDiemBatDau = thoiDiemBatDauCa(ngay, caLam);
+        ZonedDateTime thoiDiemKetThuc = thoiDiemKetThucCa(ngay, caLam);
+        if (hienTai.isBefore(thoiDiemBatDau)) {
+            throw new BusinessException("Chỉ có thể thêm nhân viên vào ca đang diễn ra");
+        }
+        if (!hienTai.isBefore(thoiDiemKetThuc)) {
+            throw new BusinessException("Ca làm việc đã kết thúc nên không thể thêm nhân viên");
+        }
+    }
+
+    private ZonedDateTime thoiDiemBatDauCa(LocalDate ngay, CaLam caLam) {
+        return ZonedDateTime.of(ngay, LocalTime.parse(caLam.getGioBatDau()), MUI_GIO);
     }
 
     private ZonedDateTime thoiDiemKetThucCa(LocalDate ngay, CaLam caLam) {

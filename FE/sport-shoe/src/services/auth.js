@@ -115,7 +115,19 @@ export function isAdminAuthenticated() {
 }
 
 export function isAdminRole() {
-  return Number(getCurrentAdminUser()?.vaiTro) === 1;
+  const role = getCurrentAdminUser()?.vaiTro;
+  if (Number(role) === 1) {
+    return true;
+  }
+  const normalizedRole = String(role ?? "").trim().toUpperCase();
+  return [
+    "ADMIN",
+    "ROLE_ADMIN",
+    "QUẢN LÝ",
+    "QUAN LY",
+    "QUẢN TRỊ VIÊN",
+    "QUAN TRI VIEN"
+  ].includes(normalizedRole);
 }
 
 export function hasRequiredAdminCccd() {

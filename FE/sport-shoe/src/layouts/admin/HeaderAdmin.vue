@@ -505,13 +505,14 @@ function dangXuat() {
         <button
           type="button"
           @click="chuyenDenCaLamViec"
+          :title="activeShift ? 'Có ca làm việc đang hoạt động' : (isAdminRole() ? 'Admin không bắt buộc mở ca để bán hàng' : 'Chưa mở ca làm việc')"
           class="inline-flex h-11 px-4 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-semibold text-sm shadow-sm"
         >
           <ArrowRightLeft class="h-4 w-4 text-[#B82220] dark:text-rose-400" />
           <span>Ca làm việc</span>
           <span
             class="h-2 w-2 rounded-full"
-            :class="activeShift ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'"
+            :class="activeShift ? 'bg-emerald-500 animate-pulse' : (isAdminRole() ? 'bg-slate-400' : 'bg-rose-500')"
           ></span>
         </button>
 

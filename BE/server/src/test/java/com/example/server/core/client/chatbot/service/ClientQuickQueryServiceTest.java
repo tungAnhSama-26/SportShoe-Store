@@ -1,10 +1,6 @@
 package com.example.server.core.client.chatbot.service;
 
-import com.example.server.core.client.chatbot.dto.ProductDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.CouponDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.InvoiceDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.PromotionDto;
-import com.example.server.core.client.chatbot.tools.ChatbotTools.SearchRequest;
+import com.example.server.core.client.chatbot.dto.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -120,7 +116,7 @@ class ClientQuickQueryServiceTest {
     }
 
     private ClientQuickQueryService service(
-            java.util.function.Function<com.example.server.core.client.chatbot.tools.ChatbotTools.BestSellerRequest, String> bestSeller) {
+            java.util.function.Function<BestSellerRequest, String> bestSeller) {
         return new ClientQuickQueryService(
                 bestSeller, request -> List.of(), request -> List.of(), request -> null, request -> List.of());
     }
