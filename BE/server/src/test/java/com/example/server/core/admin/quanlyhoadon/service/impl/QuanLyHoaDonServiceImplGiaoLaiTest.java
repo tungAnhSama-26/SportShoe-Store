@@ -198,9 +198,6 @@ class QuanLyHoaDonServiceImplGiaoLaiTest {
         when(vanChuyenRepository.findByHoaDonId(hoaDon.getId())).thenReturn(Optional.of(vanChuyen));
         when(lichSuHoaDonRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId()))
                 .thenReturn(List.of());
-        when(hinhAnhGiayRepository.findByGiayChiTietIdInAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(
-                anyList(), anyInt()
-        )).thenReturn(List.of());
     }
 
     private HoaDon taoHoaDonGiaoThatBai() {
