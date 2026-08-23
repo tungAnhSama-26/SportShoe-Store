@@ -1536,7 +1536,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        if (vanChuyen != null || (hoaDon != null && hoaDon.getDiaChiGiaoHang() != null && !hoaDon.getDiaChiGiaoHang().isBlank())) {
+        if (vanChuyen != null || hasDeliveryAddress(hoaDon)) {
             return "Giao hàng";
         }
         return "Tại quầy";
