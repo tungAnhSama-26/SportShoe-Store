@@ -276,7 +276,7 @@ export function useChiTietSanPhamFormPage() {
       return null
     }
     const parsed = Number(matched[1])
-    return Number.isInteger(parsed) && parsed > 0 && parsed <= 10000 ? parsed : null
+    return Number.isInteger(parsed) && parsed >= 100 && parsed <= 2500 ? parsed : null
   }
   function clearQuickCreateErrors() {
     Object.keys(quickCreateErrors).forEach((key) => delete quickCreateErrors[key])
