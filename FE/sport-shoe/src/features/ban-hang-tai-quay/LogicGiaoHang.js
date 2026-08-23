@@ -16,6 +16,7 @@ export function LogicGiaoHang({
   choPhepGiaoHang,
   tenNguoiNhanGiaoHang,
   sdtNguoiNhanGiaoHang,
+  emailNguoiNhanGiaoHang = ref(""),
   diaChiGiaoHang,
   donViVanChuyen,
   phiVanChuyen,
@@ -32,6 +33,7 @@ export function LogicGiaoHang({
   const moTaPhi = ref("");
   const tenNguoiNhanGiaoHangHienThi = computed(() => tenNguoiNhanGiaoHang.value ?? "");
   const soDienThoaiNguoiNhanGiaoHangHienThi = computed(() => sdtNguoiNhanGiaoHang.value ?? "");
+  const emailNguoiNhanGiaoHangHienThi = computed(() => emailNguoiNhanGiaoHang.value || khachHangDuocChon.value?.email || "");
   const phiVanChuyenHienThi = computed(() => choPhepGiaoHang.value ? phiVanChuyen.value : 0);
   const diaChiGiaoHangHienThi = computed(() => {
     if (diaChiHopLe(diaChiGiaoHang.value)) {
@@ -61,6 +63,7 @@ export function LogicGiaoHang({
     giaoHang: choPhepGiaoHang.value,
     tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
     soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
+    email: emailNguoiNhanGiaoHangHienThi.value,
     diaChiGiaoHang: diaChiGiaoHangHienThi.value,
     donViVanChuyen: donViVanChuyen.value,
     phiVanChuyen: phiVanChuyen.value,
@@ -94,6 +97,7 @@ export function LogicGiaoHang({
         giaoHang: false,
         tenNguoiNhan: null,
         soDienThoaiNguoiNhan: null,
+        email: null,
         diaChiGiaoHang: null,
         phiVanChuyen: 0,
         donViVanChuyen: null
@@ -104,6 +108,7 @@ export function LogicGiaoHang({
       giaoHang: true,
       tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value || null,
       soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value || null,
+      email: emailNguoiNhanGiaoHangHienThi.value || null,
       diaChiGiaoHang: diaChiHopLe(diaChiGiaoHangHienThi.value) ? chuanHoaDiaChi(diaChiGiaoHangHienThi.value) : null,
       phiVanChuyen: phiVanChuyen.value,
       donViVanChuyen: donViVanChuyen.value || "GHN"
@@ -140,6 +145,9 @@ export function LogicGiaoHang({
             }
           }
         }
+        if (!emailNguoiNhanGiaoHang.value?.trim() && khachHangDuocChon.value?.email) {
+          emailNguoiNhanGiaoHang.value = khachHangDuocChon.value.email;
+        }
       }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "tenNguoiNhan")) {
@@ -147,6 +155,9 @@ export function LogicGiaoHang({
     }
     if (Object.prototype.hasOwnProperty.call(patch, "soDienThoaiNguoiNhan")) {
       sdtNguoiNhanGiaoHang.value = patch.soDienThoaiNguoiNhan ?? "";
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "email")) {
+      emailNguoiNhanGiaoHang.value = patch.email ?? "";
     }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
       const newDiaChi = chuanHoaDiaChi(patch.diaChiGiaoHang);

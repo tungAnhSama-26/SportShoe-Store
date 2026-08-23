@@ -460,12 +460,34 @@ async function dongPhienTroChuyen() {
   cuonXuongCuoi();
 }
 
+const inputRef = ref(null);
+
+function autoGrowInput() {
+  const el = inputRef.value;
+  if (!el) return;
+  el.style.height = "auto";
+  const newHeight = Math.min(el.scrollHeight, 120);
+  el.style.height = `${newHeight}px`;
+}
+
+function handleEnterKey(event) {
+  if (event.shiftKey) {
+    return;
+  }
+  if (inputText.value.trim() && !isSending.value) {
+    guiTinNhan();
+  }
+}
+
 async function guiTinNhan(contentStr) {
   const msgText = contentStr || inputText.value.trim();
   if (!msgText || isSending.value) return;
 
   if (!contentStr) {
     inputText.value = "";
+    if (inputRef.value) {
+      inputRef.value.style.height = "auto";
+    }
   }
 
   // Push user message
@@ -717,13 +739,13 @@ function toggleChat() {
           :class="msg.sender === 'USER' ? 'justify-end' : 'justify-start'"
         >
           <div
-            class="max-w-[85%] rounded-[18px] px-4 py-2.5 text-sm shadow-sm"
+            class="max-w-[85%] rounded-[18px] px-4 py-2.5 text-sm shadow-sm break-words [overflow-wrap:anywhere] [word-break:break-word]"
             :class="msg.sender === 'USER' 
               ? 'bg-[#B82220] text-white rounded-br-none' 
               : 'bg-white text-slate-800 rounded-bl-none border border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700'"
           >
             <!-- Content -->
-            <div class="leading-relaxed">
+            <div class="leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
               <span v-for="(seg, idx) in parseMessage(msg.content)" :key="idx">
                 <span v-if="seg.type === 'text'" v-html="renderText(seg.content)"></span>
                 <button
@@ -856,21 +878,24 @@ function toggleChat() {
       </div>
 
       <!-- Input area -->
-      <div class="border-t border-slate-100 p-4 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <form @submit.prevent="guiTinNhan()" class="flex items-center gap-2">
-          <input
+      <div class="border-t border-slate-100 p-3 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <form @submit.prevent="guiTinNhan()" class="flex items-end gap-2 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 focus-within:border-rose-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition">
+          <textarea
+            ref="inputRef"
             v-model="inputText"
-            type="text"
-            placeholder="Nhập câu hỏi hỗ trợ quản trị..."
+            rows="1"
+            placeholder="Nhập câu hỏi hỗ trợ quản trị... (Enter để gửi, Shift+Enter xuống dòng)"
             :disabled="isSending"
-            class="flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-rose-500 focus:bg-white focus:outline-none disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          />
+            @input="autoGrowInput"
+            @keydown.enter.exact.prevent="handleEnterKey"
+            class="flex-1 max-h-28 min-h-[38px] resize-none bg-transparent px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none disabled:opacity-50 dark:text-slate-100 scrollbar-thin leading-relaxed break-words [overflow-wrap:anywhere]"
+          ></textarea>
           <button
             type="submit"
             :disabled="!inputText.trim() || isSending"
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B82220] text-white shadow transition hover:bg-[#B82220]/95 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#B82220] text-white shadow transition hover:bg-[#B82220]/95 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
           >
-            <Send class="h-4.5 w-4.5" />
+            <Send class="h-4 w-4" />
           </button>
         </form>
       </div>

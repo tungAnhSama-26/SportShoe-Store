@@ -383,6 +383,16 @@ async function luu() {
   const ngaySinh = normalizeText(form.value.ngaySinh);
   const hinhAnh = normalizeText(form.value.hinhAnh);
 
+  const confirmed = await showConfirm(
+    laMoi
+      ? "Bạn có chắc chắn muốn thêm khách hàng mới này không? Hệ thống sẽ gửi thông tin tài khoản đến email của khách hàng."
+      : "Bạn có chắc chắn muốn lưu các thay đổi cho khách hàng này không?",
+    laMoi ? "Xác nhận thêm khách hàng" : "Xác nhận lưu thay đổi",
+    laMoi ? "Thêm mới" : "Lưu thay đổi",
+    "Hủy",
+  );
+  if (!confirmed) return;
+
   dangLuu.value = true;
   loiTrang.value = "";
 
@@ -406,8 +416,8 @@ async function luu() {
           JSON.stringify({
             loai: "success",
             tieuDe: "Đã tạo khách hàng mới",
-            noiDung: "",
-            iconColor: "#ef4444",
+            noiDung: "Thông tin tài khoản đã được gửi đến email của khách hàng.",
+            iconColor: "#10b981",
           }),
         );
       }

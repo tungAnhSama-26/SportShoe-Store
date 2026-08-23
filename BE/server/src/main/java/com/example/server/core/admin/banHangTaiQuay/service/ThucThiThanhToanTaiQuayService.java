@@ -45,6 +45,7 @@ public class ThucThiThanhToanTaiQuayService {
     private final TonKhoTaiQuayService inventoryUseCase;
     private final GiayChiTietRepository giayChiTietRepository;
     private final SanPhamTaiQuayService productUseCase;
+    private final com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
 
     public ThucThiThanhToanTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -59,7 +60,8 @@ public class ThucThiThanhToanTaiQuayService {
             GiaoCaRepository giaoCaRepository,
             TonKhoTaiQuayService inventoryUseCase,
             GiayChiTietRepository giayChiTietRepository,
-            SanPhamTaiQuayService productUseCase
+            SanPhamTaiQuayService productUseCase,
+            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -74,6 +76,7 @@ public class ThucThiThanhToanTaiQuayService {
         this.inventoryUseCase = inventoryUseCase;
         this.giayChiTietRepository = giayChiTietRepository;
         this.productUseCase = productUseCase;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
     }
 
     @Transactional
@@ -173,15 +176,24 @@ public class ThucThiThanhToanTaiQuayService {
         hoaDonRepository.save(hoaDon);
         invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, request.ghiChu());
 
-        if (request.thongTinGiaoHang() != null && Boolean.TRUE.equals(request.thongTinGiaoHang().giaoHang())) {
-            String emailNhan = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getEmail() : null;
-            if (emailNhan != null && !emailNhan.isBlank()) {
-                String hinhThucEmail = paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan());
-                BigDecimal phiShipEmail = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
-                        .map(c -> c.getPhiVanChuyen()).orElse(BigDecimal.ZERO);
-                guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
-                        hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId()), hinhThucEmail, phiShipEmail);
+        String emailNhan = null;
+        if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getEmail() != null && !hoaDon.getKhachHang().getEmail().isBlank()) {
+            emailNhan = hoaDon.getKhachHang().getEmail().trim();
+        } else if (request.thongTinGiaoHang() != null && request.thongTinGiaoHang().email() != null && !request.thongTinGiaoHang().email().isBlank()) {
+            emailNhan = request.thongTinGiaoHang().email().trim();
+        } else if (request.khachHangId() != null) {
+            KhachHang kh = invoiceUseCase.timKhachHang(request.khachHangId());
+            if (kh != null && kh.getEmail() != null && !kh.getEmail().isBlank()) {
+                emailNhan = kh.getEmail().trim();
             }
+        }
+
+        if (emailNhan != null && !emailNhan.isBlank()) {
+            String hinhThucEmail = paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan());
+            BigDecimal phiShipEmail = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                    .map(com.example.server.entity.VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
+            guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
+                    hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId()), hinhThucEmail, phiShipEmail);
         }
 
         return new ThanhToanTaiQuayResponse(
@@ -241,6 +253,7 @@ public class ThucThiThanhToanTaiQuayService {
         hoaDon.setTongTienThanhToan(tongTienHang);
 
         KhachHang khachHang = invoiceUseCase.timKhachHang(request.khachHangId());
+        hoaDon.setKhachHang(khachHang);
         String tenKhachHang = invoiceUseCase.layTenKhachHang(khachHang, request.tenKhachHang());
         String soDienThoai = invoiceUseCase.laySoDienThoai(khachHang, request.soDienThoai());
 
@@ -273,10 +286,20 @@ public class ThucThiThanhToanTaiQuayService {
         for (HoaDonChiTiet ct : dong) {
             GiayChiTiet gct = ct.getGiayChiTiet();
             String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+            String hinhAnh = null;
+            if (hinhAnhGiayRepository != null) {
+                List<com.example.server.entity.HinhAnhGiay> listAnh = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(gct.getId(), 1);
+                if (listAnh != null && !listAnh.isEmpty()) {
+                    hinhAnh = listAnh.get(0).getUrl();
+                }
+            }
+            if (hinhAnh == null || hinhAnh.isBlank()) {
+                hinhAnh = gct.getGiay().getHinhAnh();
+            }
             items.add(new EmailService.DongDonHangEmail(
                     gct.getGiay().getTen(),
                     bienThe,
-                    gct.getGiay().getHinhAnh(),
+                    hinhAnh,
                     ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
                     ct.getGiaDonVi(),
                     ct.getThanhTien()

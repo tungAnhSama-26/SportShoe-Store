@@ -71,6 +71,7 @@ public class ClientDatHangService {
     private final ThongBaoService thongBaoService;
     private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
     private final com.example.server.repository.GiayChiTietRepository giayChiTietRepository;
+    private final com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
 
     public ClientDatHangService(
             ClientCheckoutItemService checkoutItemService,
@@ -85,7 +86,8 @@ public class ClientDatHangService {
             EmailService emailService,
             ThongBaoService thongBaoService,
             SanPhamRealtimePublisher sanPhamRealtimePublisher,
-            com.example.server.repository.GiayChiTietRepository giayChiTietRepository
+            com.example.server.repository.GiayChiTietRepository giayChiTietRepository,
+            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository
     ) {
         this.emailService = emailService;
         this.checkoutItemService = checkoutItemService;
@@ -100,6 +102,7 @@ public class ClientDatHangService {
         this.thongBaoService = thongBaoService;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
         this.giayChiTietRepository = giayChiTietRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
     }
 
     @Transactional
@@ -350,11 +353,12 @@ public class ClientDatHangService {
     }
 
     private String layGuestEmail(String ghiChu) {
-        if (ghiChu == null || !ghiChu.startsWith("[GuestEmail:")) {
+        if (ghiChu == null || !ghiChu.contains("[GuestEmail:")) {
             return null;
         }
-        int ketThuc = ghiChu.indexOf(']');
-        return ketThuc > 12 ? ghiChu.substring(12, ketThuc).trim() : null;
+        int start = ghiChu.indexOf("[GuestEmail:") + 12;
+        int ketThuc = ghiChu.indexOf(']', start);
+        return ketThuc > start ? ghiChu.substring(start, ketThuc).trim() : null;
     }
 
     /** Gửi email xác nhận đơn hàng cho khách (chạy ở luồng nền, lỗi không chặn đặt hàng). */
@@ -373,10 +377,20 @@ public class ClientDatHangService {
         for (HoaDonChiTiet ct : dong) {
             GiayChiTiet gct = ct.getGiayChiTiet();
             String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+            String hinhAnh = null;
+            if (hinhAnhGiayRepository != null) {
+                List<com.example.server.entity.HinhAnhGiay> listAnh = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(gct.getId(), 1);
+                if (listAnh != null && !listAnh.isEmpty()) {
+                    hinhAnh = listAnh.get(0).getUrl();
+                }
+            }
+            if (hinhAnh == null || hinhAnh.isBlank()) {
+                hinhAnh = gct.getGiay().getHinhAnh();
+            }
             items.add(new EmailService.DongDonHangEmail(
                     gct.getGiay().getTen(),
                     bienThe,
-                    gct.getGiay().getHinhAnh(),
+                    hinhAnh,
                     ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
                     ct.getGiaDonVi(),
                     ct.getThanhTien()
