@@ -931,18 +931,19 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         List<HoaDonChiTiet> hoaDonChiTiets = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
         List<ThanhToan> thanhToans = thanhToanRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
         VanChuyen vanChuyen = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).orElse(null);
-        Map<Integer, String> hinhAnhMap = hinhAnhGiayRepository
-                .findByGiayChiTietIdInAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(
-                        hoaDonChiTiets.stream().map(item -> item.getGiayChiTiet().getId()).toList(),
-                        TRANG_THAI_HINH_ANH_HOAT_DONG
-                )
-                .stream()
-                .filter(hinh -> hinh.getGiayChiTiet() != null && hinh.getGiayChiTiet().getId() != null)
-                .collect(Collectors.toMap(
-                        hinh -> hinh.getGiayChiTiet().getId(),
-                        HinhAnhGiay::getUrl,
-                        (oldValue, newValue) -> oldValue
-                ));
+        Map<Integer, String> hinhAnhMap = new HashMap<>();
+        List<Integer> gctIds = hoaDonChiTiets.stream()
+                .filter(item -> item.getGiayChiTiet() != null && item.getGiayChiTiet().getId() != null)
+                .map(item -> item.getGiayChiTiet().getId())
+                .distinct()
+                .toList();
+        if (!gctIds.isEmpty()) {
+            for (Object[] row : hinhAnhGiayRepository.findMainImageUrlsByGiayChiTietIds(gctIds)) {
+                Integer gctId = (Integer) row[0];
+                String url = (String) row[1];
+                hinhAnhMap.putIfAbsent(gctId, url);
+            }
+        }
 
         List<LichSuHoaDon> lichSuHoaDons = lichSuHoaDonRepository.findByHoaDonIdOrderByNgayTaoDesc(hoaDon.getId());
         ThanhToan thanhToanCoNhanVien = thanhToans.stream()
@@ -1263,6 +1264,14 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             }
         }
 
+        String hinhAnh = null;
+        if (giayChiTietId != null) {
+            hinhAnh = hinhAnhMap.get(giayChiTietId);
+        }
+        if ((hinhAnh == null || hinhAnh.isBlank()) && item.getGiayChiTiet() != null && item.getGiayChiTiet().getGiay() != null) {
+            hinhAnh = item.getGiayChiTiet().getGiay().getHinhAnh();
+        }
+
         return new HoaDonProductResponse(
                 item.getId(),
                 giayChiTietId,
@@ -1275,7 +1284,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
                 defaultMoney(item.getGiaDonVi()),
                 giaBanChiTiet,
                 defaultMoney(item.getThanhTien()),
-                giayChiTietId != null ? hinhAnhMap.getOrDefault(giayChiTietId, "") : "",
+                hinhAnh != null ? hinhAnh : "",
                 tenDotGiamGia,
                 giaTriGiamDotGiamGia,
                 loaiGiamDotGiamGia
