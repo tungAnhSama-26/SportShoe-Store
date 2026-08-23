@@ -35,6 +35,7 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { useAdminSession } from "../../../composable/useAdminSession.js";
 import LichLamViecNhanVien from "./LichLamViecNhanVien.vue";
 import { useRealtime } from "../../../composables/useRealtime.js";
+import { khoangGioGiaoNhau, tinhThoiLuongCa } from "../../../utils/ca-lam.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -582,30 +583,55 @@ function laCaDaKhoa(ngay, caId) {
   if (!ngay) return false;
   const date = taoNgayLocal(ngay);
   const now = new Date();
-  const today = new Date(now);
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Ngày quá khứ → khóa
   if (date < today) return true;
+  if (date.getTime() !== today.getTime() || !caId) return false;
 
-  // Ngày hôm nay → khóa khi ca đã kết thúc, ca đang diễn ra vẫn được chỉnh
-  if (date.getTime() === today.getTime() && caId) {
-    const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
-    if (!thoiGian) return false;
-    const thoiDiemKetThuc = new Date(date);
-    thoiDiemKetThuc.setHours(
-      Math.floor(thoiGian.ketThuc / 60),
-      thoiGian.ketThuc % 60,
-      0,
-      0,
-    );
-    if (thoiGian.ketThuc <= thoiGian.batDau) {
-      thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
-    }
-    return now >= thoiDiemKetThuc;
+  const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+  if (!thoiGian) return false;
+
+  const thoiDiemKetThuc = new Date(date);
+  thoiDiemKetThuc.setHours(
+    Math.floor(thoiGian.ketThuc / 60),
+    thoiGian.ketThuc % 60,
+    0,
+    0,
+  );
+  if (thoiGian.ketThuc <= thoiGian.batDau) {
+    thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
+  }
+  return now >= thoiDiemKetThuc;
+}
+
+function coTheThemNhanVienVaoCa(ngay, caId) {
+  if (!ngay || !caId) return false;
+  const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+  if (!thoiGian) return false;
+
+  const date = taoNgayLocal(ngay);
+  const thoiDiemBatDau = new Date(date);
+  thoiDiemBatDau.setHours(
+    Math.floor(thoiGian.batDau / 60),
+    thoiGian.batDau % 60,
+    0,
+    0,
+  );
+
+  const thoiDiemKetThuc = new Date(date);
+  thoiDiemKetThuc.setHours(
+    Math.floor(thoiGian.ketThuc / 60),
+    thoiGian.ketThuc % 60,
+    0,
+    0,
+  );
+  if (thoiGian.ketThuc <= thoiGian.batDau) {
+    thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
   }
 
-  return false;
+  const now = new Date();
+  return now >= thoiDiemBatDau && now < thoiDiemKetThuc;
 }
 
 function laNgayQuaKhu(ngay) {
@@ -624,8 +650,14 @@ const caHienTaiBiKhoa = computed(() => {
   return laCaDaKhoa(day.ngay, ca.id);
 });
 
+const caHienTaiCoTheThemNhanVien = computed(() => {
+  if (!currentChiTietCa.value) return false;
+  const { day, ca } = currentChiTietCa.value;
+  return coTheThemNhanVienVaoCa(day.ngay, ca.id);
+});
+
 function caDauTienCoTheThem(ngay) {
-  return DS_CA.value.find((ca) => !laCaDaKhoa(ngay, ca.id));
+  return DS_CA.value.find((ca) => coTheThemNhanVienVaoCa(ngay, ca.id));
 }
 
 function coCaChuaKhoaTrongNgay(ngay) {
@@ -638,12 +670,12 @@ const isThemCaThang = ref(false);
 const caDangChonBiKhoa = computed(() => {
   const ngay = currentChiTietCa.value?.day?.ngayStr || chonNgayVal.value;
   const caId = currentChiTietCa.value?.ca?.id || chonCaVal.value;
-  return Boolean(ngay && caId && laCaDaKhoa(ngay, caId));
+  return Boolean(ngay && caId && !coTheThemNhanVienVaoCa(ngay, caId));
 });
 
 watch([chonNgayVal, DS_CA], () => {
   if (!chonNgayVal.value || !DS_CA.value.length) return;
-  if (!chonCaVal.value || laCaDaKhoa(chonNgayVal.value, chonCaVal.value)) {
+  if (!chonCaVal.value || !coTheThemNhanVienVaoCa(chonNgayVal.value, chonCaVal.value)) {
     const caKhaDung = caDauTienCoTheThem(chonNgayVal.value);
     if (caKhaDung) {
       chonCaVal.value = caKhaDung.id;
@@ -734,8 +766,8 @@ async function luuCa() {
     caId = chonCaVal.value;
   }
 
-  if (laCaDaKhoa(ngayStr, caId)) {
-    showError("Ca làm việc đã kết thúc nên không thể thêm nhân viên.");
+  if (!coTheThemNhanVienVaoCa(ngayStr, caId)) {
+    showError("Chỉ có thể thêm nhân viên vào ca đang diễn ra.");
     return;
   }
 
@@ -979,9 +1011,7 @@ function soGioCa(id) {
   const ca = layThongTinCa(id);
   if (!ca?.gio || !ca.gio.includes("-")) return 0;
   const [batDau, ketThuc] = ca.gio.split("-").map((value) => value.trim());
-  const [gioDau, phutDau] = batDau.split(":").map(Number);
-  const [gioCuoi, phutCuoi] = ketThuc.split(":").map(Number);
-  return Math.max(0, gioCuoi + phutCuoi / 60 - gioDau - phutDau / 60);
+  return (tinhThoiLuongCa(batDau, ketThuc) ?? 0) / 60;
 }
 
 function caChongGio(caThuNhatId, caThuHaiId) {
@@ -989,13 +1019,9 @@ function caChongGio(caThuNhatId, caThuHaiId) {
   const caThuHai = layThongTinCa(caThuHaiId);
   if (!caThuNhat?.gio?.includes("-") || !caThuHai?.gio?.includes("-")) return false;
 
-  const doiSangPhut = (giaTri) => {
-    const [gio, phut] = giaTri.trim().split(":").map(Number);
-    return gio * 60 + phut;
-  };
-  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map(doiSangPhut);
-  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map(doiSangPhut);
-  return batDauMot < ketThucHai && batDauHai < ketThucMot;
+  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map((value) => value.trim());
+  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map((value) => value.trim());
+  return khoangGioGiaoNhau(batDauMot, ketThucMot, batDauHai, ketThucHai);
 }
 
 function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
@@ -1367,8 +1393,8 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
             </div>
           </div>
 
-          <!-- Footer: Nút Thêm (ẩn khi ca đã khóa) -->
-          <div v-if="!caHienTaiBiKhoa" class="border-t border-slate-100 p-5 bg-slate-50">
+          <!-- Footer: Nút Thêm (chỉ hiện khi ca đang diễn ra) -->
+          <div v-if="caHienTaiCoTheThemNhanVien" class="border-t border-slate-100 p-5 bg-slate-50">
             <button 
               @click="moModalThemCa" 
               class="w-full flex justify-center items-center gap-2 py-2.5 bg-white border border-slate-200 shadow-sm text-sm font-bold text-slate-700 rounded-xl hover:bg-slate-50 transition"
@@ -1430,8 +1456,13 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                 v-model="chonCaVal" 
                 class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-slate-400 transition"
               >
-                <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id" :disabled="laCaDaKhoa(chonNgayVal, ca.id)">
-                  {{ ca.nhan }} ({{ ca.gio }}){{ laCaDaKhoa(chonNgayVal, ca.id) ? ' - Đã khóa' : '' }}
+                <option
+                  v-for="ca in DS_CA"
+                  :key="ca.id"
+                  :value="ca.id"
+                  :disabled="!coTheThemNhanVienVaoCa(chonNgayVal, ca.id)"
+                >
+                  {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Không phải ca hiện tại' : '' }}
                 </option>
               </select>
             </div>
@@ -1442,7 +1473,6 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
               <input 
                 type="date" 
                 v-model="chonNgayVal" 
-                :min="formatISODate(new Date())"
                 class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-slate-400 transition"
               />
             </div>
