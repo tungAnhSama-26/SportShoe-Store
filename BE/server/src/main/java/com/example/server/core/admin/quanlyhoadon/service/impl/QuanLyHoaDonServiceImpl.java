@@ -1506,13 +1506,13 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
     }
 
     private String mapLoaiDon(HoaDon hoaDon, VanChuyen vanChuyen) {
+        if (!isTaiQuay(hoaDon)) {
+            return "Trực tuyến";
+        }
         if (vanChuyen != null || hasDeliveryAddress(hoaDon)) {
             return "Giao hàng";
         }
-        if (isTaiQuay(hoaDon)) {
-            return "Tại quầy";
-        }
-        return "Trực tuyến";
+        return "Tại quầy";
     }
 
     private String mapLoaiDon(HoaDon hoaDon) {

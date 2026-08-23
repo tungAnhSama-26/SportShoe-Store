@@ -22,14 +22,10 @@ const thongTinShipper = computed(() => {
 });
 
 const loaiDonHienThi = computed(() => {
-  if (
-    hoaDon.value?.loaiDon === "Giao hàng" ||
-    hoaDon.value?.coGiaoHang ||
-    diaChiHopLe(hoaDon.value?.diaChi) ||
-    Number(hoaDon.value?.phiVanChuyen || 0) > 0 ||
-    hoaDon.value?.donViVanChuyen ||
-    hoaDon.value?.maVanDon
-  ) {
+  if (hoaDon.value?.loaiDon === "Trực tuyến" || hoaDon.value?.loaiDon === "Online") {
+    return "Trực tuyến";
+  }
+  if (hoaDon.value?.loaiDon === "Giao hàng") {
     return "Giao hàng";
   }
   if (hoaDon.value?.loaiDon === "Cửa hàng" || hoaDon.value?.loaiDon === "Tại quầy") {

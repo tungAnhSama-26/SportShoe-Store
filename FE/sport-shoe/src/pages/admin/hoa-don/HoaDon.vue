@@ -280,7 +280,7 @@ function xuatExcel() {
       { label: "Số điện thoại", value: (row) => row.soDienThoai || "—" },
       { label: "Tổng tiền", value: (row) => dinhDangTien(row.tongTien) },
       { label: "Ngày tạo", value: (row) => dinhDangNgay(row.ngayTao) },
-      { label: "Loại đơn", value: (row) => row.coGiaoHang && (row.loaiDon === 'Cửa hàng' || row.loaiDon === 'Tại quầy') ? 'Giao hàng' : (row.loaiDon === 'Cửa hàng' ? 'Tại quầy' : (row.loaiDon || '—')) },
+      { label: "Loại đơn", value: (row) => row.loaiDon || "—" },
       { label: "Trạng thái", value: (row) => row.trangThai || "—" },
     ],
     rows: danhSachHienThi.value,
@@ -574,7 +574,7 @@ onBeforeUnmount(() => {
                 <td class="px-3 py-3.5">{{ dinhDangNgay(hoaDon.ngayTao) }}</td>
                 <td class="px-3 py-3.5">
                   <span
-                    v-if="hoaDon.loaiDon === 'Giao hàng' || (hoaDon.coGiaoHang && (hoaDon.loaiDon === 'Cửa hàng' || hoaDon.loaiDon === 'Tại quầy'))"
+                    v-if="hoaDon.loaiDon === 'Giao hàng'"
                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80"
                   >
                     Giao hàng
