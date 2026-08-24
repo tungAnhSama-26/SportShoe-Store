@@ -24,9 +24,6 @@ public class RealtimeUpdateInterceptor implements HandlerInterceptor {
                 String uri = request.getRequestURI();
                 if (uri.startsWith("/api/v1/admin/san-pham") || uri.startsWith("/api/v1/admin/san-pham-chi-tiet") || uri.startsWith("/api/v1/admin/dot-giam-gia")) {
                     webSocketNotificationService.sendToTopic("/topic/admin/san-pham", "PRODUCT_CHANGED", "Product Update");
-                } else if (uri.startsWith("/api/v1/admin/phieu-giam-gia") || uri.startsWith("/api/v1/admin/phieu-giam-gia-khach-hang")) {
-                    webSocketNotificationService.sendToTopic("/topic/admin/phieu-giam-gia", "VOUCHER_CHANGED", "Voucher Update");
-                    webSocketNotificationService.sendToTopic("/topic/admin/san-pham", "PHIEU_GIAM_GIA", "Voucher Update");
                 } else if (uri.startsWith("/api/v1/admin/danh-muc")) {
                     webSocketNotificationService.sendToTopic("/topic/admin/thuoc-tinh", "ATTRIBUTE_CHANGED", "Attribute Update");
                 }
