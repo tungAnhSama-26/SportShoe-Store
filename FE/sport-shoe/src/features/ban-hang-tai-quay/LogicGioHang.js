@@ -133,6 +133,7 @@ export function LogicGioHang({
   function isOutdatedPrice(item) {
     if (!item) return false;
     if (item.isOutdatedPrice) return true;
+    if (item.currentCatalogPrice && Number(item.currentCatalogPrice) !== Number(item.giaBan)) return true;
     const sameVariantItems = cartItems.value.filter(
       (it) => Number(it.chiTietId) === Number(item.chiTietId)
     );

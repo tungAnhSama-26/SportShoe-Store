@@ -457,22 +457,31 @@ function LogicBanHangTaiQuay() {
         removedItems.push(item);
         continue;
       }
+      // Kiểm tra giá sản phẩm mới trong catalog so với giá hiện tại trong giỏ hàng
+      const newPriceNum = Number(sanPhamMoi.giaBan);
+      const currentPriceNum = Number(item.giaBan);
+      const isPriceChanged = newPriceNum !== currentPriceNum;
+
       remainingItems.push({
         ...item,
-        soLuongTon: sanPhamMoi.soLuongTon
+        soLuongTon: sanPhamMoi.soLuongTon,
+        isOutdatedPrice: isPriceChanged ? true : (item.isOutdatedPrice || false),
+        currentCatalogPrice: newPriceNum,
+        oldPrice: isPriceChanged ? (item.oldPrice || item.giaBan) : item.oldPrice
       });
     }
 
-    if (removedItems.length === 0) return;
-
     cartItems.value = remainingItems;
-    const names = [...new Set(removedItems.map(it => `"${it.tenSanPham}"`))].join(', ');
-    showWarning(`Sản phẩm ${names} đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
-    
-    if (hoaDonChoDaChon.value) {
-      setTimeout(() => {
-        void luuHoaDonHienTai(true);
-      }, 50);
+
+    if (removedItems.length > 0) {
+      const names = [...new Set(removedItems.map(it => `"${it.tenSanPham}"`))].join(', ');
+      showWarning(`Sản phẩm ${names} đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+      
+      if (hoaDonChoDaChon.value) {
+        setTimeout(() => {
+          void luuHoaDonHienTai(true);
+        }, 50);
+      }
     }
   }
 
@@ -502,6 +511,11 @@ function LogicBanHangTaiQuay() {
   });
 
   subscribeTopic('/topic/admin/thuoc-tinh', () => {
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
+  });
+
+  subscribeTopic('/topic/admin/dot-giam-gia', () => {
     lenLichDongBoGiaRealtime(50);
     void kiemTraLaiPhieuDangApDung(true);
   });
