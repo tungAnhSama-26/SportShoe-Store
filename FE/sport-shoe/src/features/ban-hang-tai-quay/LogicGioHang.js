@@ -222,8 +222,7 @@ export function LogicGioHang({
 
       if (newQuantityNum > maxAllowed) {
         reachedLimit = item.tenSanPham;
-        // The user specifically requested to return to 1 if quantity exceeds stock
-        return { ...item, soLuong: 1 };
+        return { ...item, soLuong: maxAllowed > 0 ? maxAllowed : 1 };
       }
       return { ...item, soLuong: newQuantityNum };
     });
