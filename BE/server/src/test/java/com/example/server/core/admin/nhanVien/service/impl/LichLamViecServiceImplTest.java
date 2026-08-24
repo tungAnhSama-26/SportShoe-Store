@@ -206,6 +206,24 @@ class LichLamViecServiceImplTest {
     }
 
     @Test
+    void phanCaChoCaTuongLai() {
+        ZonedDateTime now = ZonedDateTime.of(2026, 8, 20, 10, 0, 0, 0, MUI_GIO);
+        service = serviceVoiDongHo(now.toInstant());
+        UUID employeeId = UUID.randomUUID();
+        NhanVien employee = nhanVien(employeeId);
+        CaLam shift = ca("sang", "08:00", "12:00");
+        when(nhanVienRepository.findById(employeeId)).thenReturn(Optional.of(employee));
+        when(caLamRepository.findByIdForUpdate("sang")).thenReturn(Optional.of(shift));
+        when(lichLamViecRepository.save(any(LichLamViec.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.phanCa(new PhanCaRequest(employeeId, now.toLocalDate().plusDays(1), "sang"));
+
+        verify(lichLamViecRepository).save(any(LichLamViec.class));
+        verify(realtimePublisher).phatSauCommit("PHAN_CA");
+    }
+
+    @Test
     void phanCaChoCaHomNayDaKetThucBiTuChoi() {
         ZonedDateTime now = ZonedDateTime.of(2026, 8, 20, 13, 0, 0, 0, MUI_GIO);
         service = serviceVoiDongHo(now.toInstant());

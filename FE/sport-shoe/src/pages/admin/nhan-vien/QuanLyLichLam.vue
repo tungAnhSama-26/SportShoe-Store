@@ -611,14 +611,6 @@ function coTheThemNhanVienVaoCa(ngay, caId) {
   if (!thoiGian) return false;
 
   const date = taoNgayLocal(ngay);
-  const thoiDiemBatDau = new Date(date);
-  thoiDiemBatDau.setHours(
-    Math.floor(thoiGian.batDau / 60),
-    thoiGian.batDau % 60,
-    0,
-    0,
-  );
-
   const thoiDiemKetThuc = new Date(date);
   thoiDiemKetThuc.setHours(
     Math.floor(thoiGian.ketThuc / 60),
@@ -631,7 +623,7 @@ function coTheThemNhanVienVaoCa(ngay, caId) {
   }
 
   const now = new Date();
-  return now >= thoiDiemBatDau && now < thoiDiemKetThuc;
+  return now < thoiDiemKetThuc;
 }
 
 function laNgayQuaKhu(ngay) {
@@ -767,7 +759,7 @@ async function luuCa() {
   }
 
   if (!coTheThemNhanVienVaoCa(ngayStr, caId)) {
-    showError("Chỉ có thể thêm nhân viên vào ca đang diễn ra.");
+    showError("Chỉ có thể thêm nhân viên vào ca hiện tại hoặc ca tương lai.");
     return;
   }
 
@@ -1393,7 +1385,7 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
             </div>
           </div>
 
-          <!-- Footer: Nút Thêm (chỉ hiện khi ca đang diễn ra) -->
+          <!-- Footer: Nút Thêm (chỉ hiện khi ca chưa kết thúc) -->
           <div v-if="caHienTaiCoTheThemNhanVien" class="border-t border-slate-100 p-5 bg-slate-50">
             <button 
               @click="moModalThemCa" 
@@ -1462,7 +1454,7 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                   :value="ca.id"
                   :disabled="!coTheThemNhanVienVaoCa(chonNgayVal, ca.id)"
                 >
-                  {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Không phải ca hiện tại' : '' }}
+                  {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Ca đã kết thúc' : '' }}
                 </option>
               </select>
             </div>

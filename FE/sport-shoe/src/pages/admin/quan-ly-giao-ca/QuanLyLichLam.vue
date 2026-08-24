@@ -432,14 +432,6 @@ function coTheThemNhanVienVaoCa(ngay, caId) {
   if (!thoiGian) return false;
 
   const date = taoNgayLocal(ngay);
-  const thoiDiemBatDau = new Date(date);
-  thoiDiemBatDau.setHours(
-    Math.floor(thoiGian.batDau / 60),
-    thoiGian.batDau % 60,
-    0,
-    0,
-  );
-
   const thoiDiemKetThuc = new Date(date);
   thoiDiemKetThuc.setHours(
     Math.floor(thoiGian.ketThuc / 60),
@@ -452,7 +444,7 @@ function coTheThemNhanVienVaoCa(ngay, caId) {
   }
 
   const now = new Date();
-  return now >= thoiDiemBatDau && now < thoiDiemKetThuc;
+  return now < thoiDiemKetThuc;
 }
 
 // Computed: ca hiện tại trong modal có bị khóa không
@@ -539,7 +531,7 @@ async function luuCa() {
   }
 
   if (!coTheThemNhanVienVaoCa(ngayStr, caId)) {
-    showError("Chỉ có thể thêm nhân viên vào ca đang diễn ra.");
+    showError("Chỉ có thể thêm nhân viên vào ca hiện tại hoặc ca tương lai.");
     return;
   }
 
@@ -1107,7 +1099,7 @@ const caUnassigned = computed(
                     :value="formatISODate(ngay)"
                     :disabled="!coTheThemNhanVienVaoCa(ngay, chonCaVal)"
                   >
-                    {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }}){{ !coTheThemNhanVienVaoCa(ngay, chonCaVal) ? ' - Không phải ca hiện tại' : '' }}
+                    {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }}){{ !coTheThemNhanVienVaoCa(ngay, chonCaVal) ? ' - Ca đã kết thúc' : '' }}
                   </option>
                 </select>
               </div>
@@ -1125,7 +1117,7 @@ const caUnassigned = computed(
                     :value="ca.id"
                     :disabled="!coTheThemNhanVienVaoCa(chonNgayVal, ca.id)"
                   >
-                    {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Không phải ca hiện tại' : '' }}
+                    {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Ca đã kết thúc' : '' }}
                   </option>
                 </select>
               </div>
