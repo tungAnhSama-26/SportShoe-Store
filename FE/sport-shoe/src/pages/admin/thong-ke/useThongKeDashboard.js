@@ -55,7 +55,7 @@ export function useThongKeDashboard() {
   ];
 
   const PRODUCT_STOCK_OPTIONS = [
-    { value: "ALL", label: "Tất cả tồn kho" },
+    { value: "ALL", label: "Tất cả sản phẩm" },
     { value: "IN_STOCK", label: "Còn hàng" },
     { value: "LOW_STOCK", label: "Sắp hết" },
     { value: "OUT_OF_STOCK", label: "Hết hàng" }
@@ -64,7 +64,7 @@ export function useThongKeDashboard() {
   const PRODUCT_SORT_OPTIONS = [
     { value: "BEST_SELLER", label: "Bán chạy nhất" },
     { value: "REVENUE_DESC", label: "Doanh thu cao nhất" },
-    { value: "STOCK_ASC", label: "Tồn kho thấp nhất" },
+    { value: "STOCK_ASC", label: "Số lượng ít nhất" },
     { value: "NAME_ASC", label: "Tên A - Z" }
   ];
 
@@ -563,7 +563,7 @@ export function useThongKeDashboard() {
     labels: partitionedBrandData.value.map((item) => item.label),
     datasets: [
       {
-        label: brandChartType.value === "REVENUE" ? "Doanh thu" : brandChartType.value === "VOLUME" ? "Số lượng bán" : "Tồn kho",
+        label: brandChartType.value === "REVENUE" ? "Doanh thu" : brandChartType.value === "VOLUME" ? "Số lượng bán" : "Số lượng còn",
         data: partitionedBrandData.value.map((item) => item.value),
         borderColor: "#f43f5e",
         backgroundColor: "rgba(244, 63, 94, 0.05)",
@@ -1173,7 +1173,7 @@ export function useThongKeDashboard() {
         { label: "Thương hiệu", value: (row) => row.thuongHieu || "Chưa cập nhật" },
         { label: "Đã bán", value: (row) => formatNumber(row.daBan) },
         { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) },
-        { label: "Tồn kho", value: (row) => formatNumber(row.tonKho) }
+        { label: "Số lượng còn", value: (row) => formatNumber(row.tonKho) }
       ],
       rows
     });

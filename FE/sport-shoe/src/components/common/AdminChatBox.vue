@@ -225,8 +225,8 @@ async function handleChatbotAction(url) {
       const color = decodeURIComponent(parts[2]);
       const qty = parts[3];
       const confirmed = await showConfirm(
-        `Bạn có chắc chắn muốn cập nhật tồn kho sản phẩm **${productName}** (Size **${size}**, Màu **${color}**) thành **${qty}** không?`, 
-        'Cập nhật tồn kho', 
+        `Bạn có chắc chắn muốn cập nhật số lượng sản phẩm **${productName}** (Size **${size}**, Màu **${color}**) thành **${qty}** không?`, 
+        'Cập nhật số lượng', 
         'Đồng ý', 
         'Hủy'
       );

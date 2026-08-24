@@ -26,7 +26,7 @@ public class TonKhoTaiQuayService {
 
         int tonThucTe = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
         if (tonThucTe < soLuong) {
-            throw new BusinessException("Số lượng tồn kho không đủ cho sản phẩm "
+            throw new BusinessException("Số lượng không đủ cho sản phẩm "
                     + giayChiTiet.getGiay().getTen() + " (còn " + tonThucTe + ")");
         }
     }

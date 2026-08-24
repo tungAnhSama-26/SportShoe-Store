@@ -656,7 +656,7 @@ const formatLastUpdated = computed(() => {
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Tồn kho</label>
+          <label class="text-xs font-medium text-slate-500">Số lượng</label>
           <select
             v-model="productFilters.stockStatus"
             class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
@@ -709,7 +709,7 @@ const formatLastUpdated = computed(() => {
               <th class="px-4 py-2">Thương hiệu</th>
               <th class="px-4 py-2 text-right">Đã bán</th>
               <th class="px-4 py-2 text-right">Doanh thu</th>
-              <th class="px-4 py-2 text-right">Tồn kho</th>
+              <th class="px-4 py-2 text-right">Số lượng còn</th>
             </tr>
           </thead>
           <tbody>

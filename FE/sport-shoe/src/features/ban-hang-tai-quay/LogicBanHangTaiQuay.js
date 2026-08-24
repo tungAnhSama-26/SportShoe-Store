@@ -929,7 +929,7 @@ function LogicBanHangTaiQuay() {
         try {
           const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
           
-          if (msg.includes("Số lượng tồn kho không đủ")) {
+          if (msg.includes("Số lượng không đủ") || msg.includes("Số lượng tồn kho không đủ")) {
             let hasAdjusted = false;
             const currentCartItems = [...cartItems.value];
             
@@ -948,7 +948,7 @@ function LogicBanHangTaiQuay() {
             chuyenHoaDonThanhBanNhap(detail);
             
             if (hasAdjusted) {
-              thongBaoLoi.value = "Kho không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về mức tối đa tồn kho.";
+              thongBaoLoi.value = "Số lượng không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về mức tối đa khả dụng.";
               setTimeout(() => {
                 luuHoaDonHienTai(true).catch(() => {});
               }, 500);
