@@ -1,6 +1,7 @@
 package com.example.server.core.admin.nhanVien.service.impl;
 
 import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
+import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.GiaoCaResponse;
 import com.example.server.core.admin.nhanVien.service.TrangThaiGiaoCa;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
@@ -94,6 +95,35 @@ class GiaoCaServiceImplTest {
 
         assertThat(response).isNull();
         verify(giaoCaRepository, never()).findFirstByTrangThaiInOrderByThoiGianVaoDesc(anyList());
+    }
+
+    @Test
+    void adminKetCaTrucTiepKhongCanBanGiaoChoCaTiepTheo() {
+        NhanVien admin = nhanVien(UUID.randomUUID(), "AD001", "Admin", 1);
+        CaLam caSang = caLam("sang", "Ca sáng", "08:00", "12:00");
+        GiaoCa giaoCa = new GiaoCa();
+        giaoCa.setMa("GC001");
+        giaoCa.setNhanVienTrongCa(admin);
+        giaoCa.setCaLam(caSang);
+        giaoCa.setTienDauCa(BigDecimal.valueOf(500000));
+        giaoCa.setTrangThai(TrangThaiGiaoCa.MO_CA.ma());
+        giaoCa.setCaChuaKetThuc(1);
+
+        when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(admin.getId(), TrangThaiGiaoCa.MO_CA.ma()))
+                .thenReturn(Optional.of(giaoCa));
+        when(nhanVienRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
+        when(giaoCaRepository.save(any(GiaoCa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        GiaoCaResponse response = service.ketCa(admin.getId(), new KetCaRequest(
+                BigDecimal.valueOf(500000),
+                "",
+                "Admin kết ca trực tiếp"
+        ));
+
+        assertThat(response.trangThai()).isEqualTo(TrangThaiGiaoCa.DA_KET_THUC.ma());
+        assertThat(giaoCa.getCaChuaKetThuc()).isNull();
+        assertThat(giaoCa.getThoiGianRa()).isNotNull();
+        verify(caLamRepository, never()).findAll();
     }
 
     private List<String> trangThaiChuaKetThuc() {

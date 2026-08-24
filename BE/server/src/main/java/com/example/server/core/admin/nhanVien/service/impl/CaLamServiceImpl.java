@@ -1,35 +1,32 @@
 package com.example.server.core.admin.nhanVien.service.impl;
 
 import com.example.server.core.admin.nhanVien.dto.request.CaLamRequest;
+import com.example.server.core.admin.nhanVien.dto.request.DoiTrangThaiCaLamRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.CaLamResponse;
 import com.example.server.core.admin.nhanVien.service.CaLamService;
 import com.example.server.core.realtime.lichlamviec.LichLamViecRealtimePublisher;
 import com.example.server.entity.CaLam;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.CaLamRepository;
-import com.example.server.repository.LichLamViecRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
 public class CaLamServiceImpl implements CaLamService {
 
     private final CaLamRepository caLamRepository;
-    private final LichLamViecRepository lichLamViecRepository;
     private final LichLamViecRealtimePublisher realtimePublisher;
 
     public CaLamServiceImpl(
             CaLamRepository caLamRepository,
-            LichLamViecRepository lichLamViecRepository,
             LichLamViecRealtimePublisher realtimePublisher
     ) {
         this.caLamRepository = caLamRepository;
-        this.lichLamViecRepository = lichLamViecRepository;
         this.realtimePublisher = realtimePublisher;
     }
 
@@ -37,6 +34,7 @@ public class CaLamServiceImpl implements CaLamService {
     @Transactional(readOnly = true)
     public List<CaLamResponse> layDanhSachCaLam() {
         return caLamRepository.findAll().stream()
+                .sorted(Comparator.comparing(CaLam::getId, String.CASE_INSENSITIVE_ORDER))
                 .map(this::toResponse)
                 .toList();
     }
@@ -82,14 +80,6 @@ public class CaLamServiceImpl implements CaLamService {
         CaLam caLam = caLamRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc"));
 
-        // Khi ngừng hoạt động ca: kiểm tra nếu đang có lịch làm việc từ hôm nay trở đi thì chặn
-        if (Boolean.TRUE.equals(caLam.getTrangThai()) && Boolean.FALSE.equals(request.trangThai())) {
-            LocalDate homNay = LocalDate.now();
-            if (lichLamViecRepository.existsByCaLamIdAndNgayGreaterThanEqual(id, homNay)) {
-                throw new BusinessException("Không thể ngừng hoạt động ca \"" + caLam.getTen() + "\" vì đang có lịch làm việc của nhân viên trong ca từ hôm nay trở đi. Vui lòng xóa lịch làm việc của nhân viên trong ca trước khi ngừng hoạt động!");
-            }
-        }
-
         validateGioCa(request.gioBatDau(), request.gioKetThuc());
         validateTrungKhoangGio(id, request.gioBatDau(), request.gioKetThuc(), request.trangThai());
 
@@ -105,6 +95,22 @@ public class CaLamServiceImpl implements CaLamService {
         }
         realtimePublisher.phatSauCommit("CAP_NHAT_CA_LAM");
         return toResponse(caLam);
+    }
+
+    @Override
+    @Transactional
+    public CaLamResponse doiTrangThaiCaLam(String id, DoiTrangThaiCaLamRequest request) {
+        CaLam caLam = caLamRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc"));
+
+        if (Boolean.TRUE.equals(request.trangThai())) {
+            validateTrungKhoangGio(id, caLam.getGioBatDau(), caLam.getGioKetThuc(), true);
+        }
+
+        caLam.setTrangThai(request.trangThai());
+        CaLam saved = caLamRepository.save(caLam);
+        realtimePublisher.phatSauCommit("DOI_TRANG_THAI_CA_LAM");
+        return toResponse(saved);
     }
 
     private void validateGioCa(String gioBatDau, String gioKetThuc) {
