@@ -40,7 +40,7 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
             left join fetch gtt.congNgheDem cnd
             left join fetch gtt.trongLuong tl
             where gct.kichHoat = 1
-              and gct.soLuong > 0
+              and gct.soLuong >= 0
               and g.trangThai = 1
               and th.trangThai = 1
               and lg.trangThai = 1

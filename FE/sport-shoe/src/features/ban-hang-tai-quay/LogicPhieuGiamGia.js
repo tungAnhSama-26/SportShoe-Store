@@ -109,11 +109,11 @@ export function LogicPhieuGiamGia({
   );
 
   function danhDauCanApDungLaiPhieu() {
-    if (!maPhieuGiamGia.value.trim()) {
+    if (!maPhieuGiamGia.value.trim() && !phieuGiamGiaDaApDung.value) {
       phieuGiamGiaDaApDung.value = null;
       return;
     }
-    phieuGiamGiaDaApDung.value = null;
+    void kiemTraLaiPhieuDangApDung(false);
   }
 
   async function timKiemPhieu(keyword) {
@@ -295,7 +295,8 @@ export function LogicPhieuGiamGia({
       const currentBestDiscount = tinhToanGiamGia(currentBest, tongTien.value);
       const currentDiscount = phieuGiamGiaDaApDung.value ? (Number(tienGiam.value) || 0) : 0;
       
-      if (currentBestDiscount > currentDiscount && (!phieuGiamGiaDaApDung.value || phieuGiamGiaDaApDung.value.ma !== currentBest.ma)) {
+      // CHỈ hiển thị popup đổi voucher khi đã có voucher áp dụng trước đó và có voucher khác giảm nhiều hơn
+      if (phieuGiamGiaDaApDung.value && phieuGiamGiaDaApDung.value.ma !== currentBest.ma && currentBestDiscount > currentDiscount) {
         if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
           return {
             coupon: currentBest,
@@ -303,6 +304,10 @@ export function LogicPhieuGiamGia({
             oldDiscount: currentDiscount
           };
         }
+      } else if (!phieuGiamGiaDaApDung.value && currentBestDiscount > 0 && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
+        // Nếu chưa có voucher nào nhưng có voucher hợp lệ, tự động áp dụng luôn vào đơn hàng
+        maPhieuGiamGia.value = currentBest.ma;
+        await xuLyApDungPhieu(true, currentBest.ma);
       }
     }
     
@@ -365,11 +370,17 @@ export function LogicPhieuGiamGia({
                   maPhieuGiamGia.value = currentBest.ma;
                   await xuLyApDungPhieu(true, currentBest.ma);
               }
-          } else if (phieuGiamGiaDaApDung.value.ma !== currentBest.ma) {
+          } else {
               const currentDiscount = tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
               const newDiscount = tinhToanGiamGia(currentBest, tongTien.value);
               
-              if (newDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
+              if (phieuGiamGiaDaApDung.value.ma === currentBest.ma) {
+                  phieuGiamGiaDaApDung.value = {
+                      ...phieuGiamGiaDaApDung.value,
+                      soTienGiam: currentDiscount
+                  };
+                  capNhatTienKhachThanhToan();
+              } else if (newDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
                   maPhieuGiamGia.value = currentBest.ma;
                   await xuLyApDungPhieu(true, currentBest.ma);
               }
@@ -434,11 +445,11 @@ export function LogicPhieuGiamGia({
     await taiTatCaPhieuKhaDung();
     await tuDongApDungVaDeXuatHangMucTiepTheo();
 
-    if (!phieuGiamGiaDaApDung.value) return;
+    const ma = phieuGiamGiaDaApDung.value?.ma || maPhieuGiamGia.value?.trim();
+    if (!ma) return;
 
     try {
-      const ma = phieuGiamGiaDaApDung.value.ma;
-      const cu = { ...phieuGiamGiaDaApDung.value };
+      const cu = phieuGiamGiaDaApDung.value ? { ...phieuGiamGiaDaApDung.value } : null;
       const ketQua = await timPhieuGiamGiaTaiQuay({
         keyword: ma,
         hoaDonId: hoaDonChoDaChon.value?.id ?? null,
@@ -451,24 +462,15 @@ export function LogicPhieuGiamGia({
         phieuGiamGiaDaApDung.value = null;
         maPhieuGiamGia.value = "";
         capNhatTienKhachThanhToan();
-        showWarning(`Phiếu giảm giá "${ma}" đã bị ngừng hoạt động hoặc thay đổi điều kiện, hệ thống đã tự động gỡ bỏ.`);
+        if (cu && thongBaoKhiDoi) {
+          showWarning(`Phiếu giảm giá "${ma}" không còn đủ điều kiện áp dụng, hệ thống đã tự động gỡ bỏ.`);
+        }
         return;
       }
 
-      // Kiểm tra xem phiếu có bị đổi các thông số giảm giá, mức tối thiểu, tối đa... không
-      const giaTriDoi = Number(moi.giaTri) !== Number(cu.giaTri) ||
-                        Number(moi.loai) !== Number(cu.loai) ||
-                        Number(moi.giamToiDa) !== Number(cu.giamToiDa) ||
-                        Number(moi.giaTriToiThieu) !== Number(cu.giaTriToiThieu) ||
-                        moi.ten !== cu.ten;
-
-      if (giaTriDoi) {
-        phieuGiamGiaDaApDung.value = moi;
-        capNhatTienKhachThanhToan();
-        if (thongBaoKhiDoi) {
-          showWarning(`Thông tin phiếu giảm giá "${ma}" vừa được cập nhật, hệ thống đã tính lại số tiền giảm.`);
-        }
-      }
+      phieuGiamGiaDaApDung.value = moi;
+      maPhieuGiamGia.value = moi.ma;
+      capNhatTienKhachThanhToan();
     } catch (e) {
       console.error("Lỗi kiểm tra lại phiếu giảm giá realtime:", e);
     }
