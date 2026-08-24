@@ -295,7 +295,8 @@ export function LogicPhieuGiamGia({
       const currentBestDiscount = tinhToanGiamGia(currentBest, tongTien.value);
       const currentDiscount = phieuGiamGiaDaApDung.value ? (Number(tienGiam.value) || 0) : 0;
       
-      if (currentBestDiscount > currentDiscount && (!phieuGiamGiaDaApDung.value || phieuGiamGiaDaApDung.value.ma !== currentBest.ma)) {
+      // CHỈ hiển thị popup đổi voucher khi đã có voucher áp dụng trước đó và có voucher khác giảm nhiều hơn
+      if (phieuGiamGiaDaApDung.value && phieuGiamGiaDaApDung.value.ma !== currentBest.ma && currentBestDiscount > currentDiscount) {
         if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
           return {
             coupon: currentBest,
@@ -303,6 +304,10 @@ export function LogicPhieuGiamGia({
             oldDiscount: currentDiscount
           };
         }
+      } else if (!phieuGiamGiaDaApDung.value && currentBestDiscount > 0 && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
+        // Nếu chưa có voucher nào nhưng có voucher hợp lệ, tự động áp dụng luôn vào đơn hàng
+        maPhieuGiamGia.value = currentBest.ma;
+        await xuLyApDungPhieu(true, currentBest.ma);
       }
     }
     

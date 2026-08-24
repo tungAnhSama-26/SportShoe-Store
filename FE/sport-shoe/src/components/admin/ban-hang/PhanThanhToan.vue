@@ -297,7 +297,7 @@ function handlePayNowFromQr() {
 
         <!-- Voucher khả dụng (Applied Coupon) -->
         <div v-if="appliedCoupon && appliedCoupon.ma" class="bg-[#F2F9F4] dark:bg-emerald-900/20 rounded-md p-3.5 flex flex-col relative border border-[#E3F2E8] dark:border-emerald-800/30">
-           <button @click="emit('remove-coupon')" class="absolute top-2.5 right-2.5 p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-full transition-colors">
+           <button @click="emit('remove-coupon')" class="absolute top-2.5 right-2.5 p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-full transition-colors" title="Bỏ voucher">
              <X class="w-4 h-4" />
            </button>
            <div class="flex items-center gap-2 mb-3">
@@ -314,6 +314,60 @@ function handlePayNowFromQr() {
                  <span class="font-bold text-emerald-600 dark:text-emerald-400">-{{ dinhDangTien(appliedCoupon.soTienGiam) }}</span>
               </div>
            </div>
+        </div>
+
+        <!-- Voucher Input / Selector khi chưa áp dụng -->
+        <div v-else class="relative">
+          <div class="flex items-center gap-2">
+            <input
+              :value="couponCode"
+              type="text"
+              placeholder="Nhập hoặc chọn mã giảm giá..."
+              class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold uppercase text-slate-800 dark:text-slate-200 outline-none transition focus:border-red-400 placeholder:normal-case placeholder:font-normal"
+              @input="emit('update:couponCode', $event.target.value)"
+              @focus="emit('focus-coupon')"
+              @blur="emit('blur-coupon')"
+            />
+            <button
+              type="button"
+              class="rounded-xl bg-red-500 hover:bg-red-600 px-3 py-2 text-xs font-bold text-white transition disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400"
+              :disabled="!coTheApDungPhieu || applyingCoupon"
+              @click="emit('apply-coupon')"
+            >
+              {{ applyingCoupon ? "..." : "Áp dụng" }}
+            </button>
+          </div>
+
+          <!-- Danh sách gợi ý / tìm kiếm voucher -->
+          <div
+            v-if="showCouponDropdown && (couponResults.length > 0 || loadingCoupons)"
+            class="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-xl"
+          >
+            <div v-if="loadingCoupons" class="p-3 text-center text-xs text-slate-400">
+              Đang tải danh sách phiếu...
+            </div>
+            <div v-else class="space-y-1">
+              <div
+                v-for="coupon in couponResults"
+                :key="coupon.id"
+                class="cursor-pointer rounded-lg p-2 transition hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between"
+                @mousedown.prevent="emit('select-coupon', coupon)"
+              >
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-xs text-red-600 dark:text-red-400">{{ coupon.ma }}</span>
+                    <span class="rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400">
+                      {{ coupon.loai === 1 ? `${coupon.giaTri}%` : dinhDangTien(coupon.giaTri) }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Đơn tối thiểu {{ dinhDangTien(coupon.giaTriToiThieu || 0) }}
+                  </p>
+                </div>
+                <span class="text-xs font-semibold text-red-500 dark:text-red-400">Chọn</span>
+              </div>
+            </div>
+          </div>
         </div>
 
 
