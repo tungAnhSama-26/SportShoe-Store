@@ -88,11 +88,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Transactional
     public GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request) {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
-        if (laAdmin(nhanVien)) {
-            kiemTraNhanVienKhongCoCaChuaKetThuc(nhanVienId);
-        } else {
-            kiemTraKhongCoCaChuaKetThuc();
-        }
+        kiemTraNhanVienKhongCoCaChuaKetThuc(nhanVienId);
         LocalTime hienTai = LocalTime.now(MUI_GIO);
         CaLam caLam = xacDinhCaDuocMo(
                 nhanVien,
@@ -176,7 +172,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     public GiaoCaResponse ketCa(UUID nhanVienId, KetCaRequest request) {
         GiaoCa giaoCa = layCaDangMoCuaNhanVien(nhanVienId);
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
-        if (!laAdmin(nhanVien) && timCaKeTiep(giaoCa.getCaLam()).isPresent()) {
+        if (!laAdmin(nhanVien) && timCaKeTiep(giaoCa).isPresent()) {
             throw new BusinessException("Vẫn còn ca làm việc tiếp theo. Vui lòng bàn giao cho nhân viên ca tiếp theo.");
         }
 
@@ -210,9 +206,9 @@ public class GiaoCaServiceImpl implements GiaoCaService {
             throw new BusinessException("Bạn đang có ca làm việc khác chưa kết thúc.");
         }
 
-        CaLam caKeTiep = timCaKeTiep(giaoCa.getCaLam())
+        CaTiepTheo caKeTiep = timCaKeTiep(giaoCa)
                 .orElseThrow(() -> new BusinessException("Không còn ca tiếp theo để nhận bàn giao."));
-        kiemTraNguoiNhanThuocCa(nguoiNhan, caKeTiep, LocalDate.now(MUI_GIO));
+        kiemTraNguoiNhanThuocCa(nguoiNhan, caKeTiep.caLam(), caKeTiep.ngay());
 
         if (giaoCa.getTienCuoiCaThucTe() == null
                 || request.tienNhanKiemDem().compareTo(giaoCa.getTienCuoiCaThucTe()) != 0) {
@@ -228,7 +224,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
         GiaoCa caMoi = taoCaMoi(
                 nguoiNhan,
-                caKeTiep,
+                caKeTiep.caLam(),
                 request.tienNhanKiemDem(),
                 "Mở ca tự động từ ca bàn giao " + giaoCa.getMa());
         giaoCaRepository.save(caMoi);
@@ -325,21 +321,38 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     private GiaoCaOptionsResponse taoTuyChonBanGiao(GiaoCa giaoCa) {
-        Optional<CaLam> caKeTiepOptional = timCaKeTiep(giaoCa.getCaLam());
+        if (laAdmin(giaoCa.getNhanVienTrongCa())) {
+            return new GiaoCaOptionsResponse(true, null, null, List.of());
+        }
+
+        Optional<CaTiepTheo> caKeTiepOptional = timCaKeTiep(giaoCa);
         if (caKeTiepOptional.isEmpty()) {
             return new GiaoCaOptionsResponse(true, null, null, List.of());
         }
 
-        CaLam caKeTiep = caKeTiepOptional.get();
-        LocalDate ngay = LocalDate.now(MUI_GIO);
-        List<GiaoCaOptionsResponse.NhanVienNhanCaResponse> ungVien = nhanVienRepository.findAll().stream()
+        CaTiepTheo caKeTiep = caKeTiepOptional.get();
+        List<NhanVien> nhanVienCaKeTiep = lichLamViecRepository
+                .findByNgayAndCaLamId(caKeTiep.ngay(), caKeTiep.caLam().getId())
+                .stream()
+                .map(LichLamViec::getNhanVien)
                 .filter(this::dangHoatDong)
                 .filter(nhanVien -> !nhanVien.getId().equals(giaoCa.getNhanVienTrongCa().getId()))
-                .filter(nhanVien -> laAdmin(nhanVien)
-                        || lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
-                                nhanVien.getId(), ngay, caKeTiep.getId()))
+                .filter(nhanVien -> !laAdmin(nhanVien))
                 .filter(nhanVien -> !giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(
                         nhanVien.getId(), TRANG_THAI_CHUA_KET_THUC))
+                .toList();
+
+        if (nhanVienCaKeTiep.isEmpty()) {
+            nhanVienCaKeTiep = nhanVienRepository.findAll().stream()
+                    .filter(this::dangHoatDong)
+                    .filter(this::laAdmin)
+                    .filter(nhanVien -> !nhanVien.getId().equals(giaoCa.getNhanVienTrongCa().getId()))
+                    .filter(nhanVien -> !giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(
+                            nhanVien.getId(), TRANG_THAI_CHUA_KET_THUC))
+                    .toList();
+        }
+
+        List<GiaoCaOptionsResponse.NhanVienNhanCaResponse> ungVien = nhanVienCaKeTiep.stream()
                 .map(nhanVien -> new GiaoCaOptionsResponse.NhanVienNhanCaResponse(
                         nhanVien.getId(), nhanVien.getMa(), nhanVien.getHoTen(), nhanVien.getVaiTro()))
                 .toList();
@@ -347,7 +360,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         String lyDo = ungVien.isEmpty()
                 ? "Ca tiếp theo chưa có nhân viên đủ điều kiện nhận. Vui lòng liên hệ quản trị viên để bổ sung lịch hoặc nhận ca."
                 : null;
-        return new GiaoCaOptionsResponse(false, caKeTiep.getId(), lyDo, ungVien);
+        return new GiaoCaOptionsResponse(false, caKeTiep.caLam().getId(), lyDo, ungVien);
     }
 
     private CaLam xacDinhCaDuocMo(
@@ -431,34 +444,35 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         return ghepGhiChu(request.ghiChu(), ghiChuLyDo);
     }
 
-    private Optional<CaLam> timCaKeTiep(CaLam caHienTai) {
+    private Optional<CaTiepTheo> timCaKeTiep(GiaoCa giaoCa) {
         List<CaLam> cacCa = cacCaHoatDong();
         if (cacCa.isEmpty()) {
             return Optional.empty();
         }
 
-        LocalTime hienTai = LocalTime.now(MUI_GIO);
+        LocalDate ngayCaHienTai = giaoCa.getThoiGianVao() == null
+                ? LocalDate.now(MUI_GIO)
+                : giaoCa.getThoiGianVao().atZone(MUI_GIO).toLocalDate();
+        CaLam caHienTai = giaoCa.getCaLam();
 
-        // 1. Dựa theo thời gian thực tế: Tìm ca có giờ kết thúc sau thời điểm hiện tại và khác ca hiện tại
-        Optional<CaLam> caTheoThoiGian = cacCa.stream()
-                .filter(ca -> !ca.getId().equals(caHienTai.getId()))
-                .filter(ca -> {
-                    LocalTime gioKetThuc = LocalTime.parse(ca.getGioKetThuc());
-                    return gioKetThuc.isAfter(hienTai);
-                })
-                .min(Comparator.comparing(ca -> LocalTime.parse(ca.getGioBatDau())));
-
-        if (caTheoThoiGian.isPresent()) {
-            return caTheoThoiGian;
-        }
-
-        // 2. Fallback: Nếu không tìm thấy theo giờ thực tế, lấy theo thứ tự ca liền kề
-        for (int i = 0; i < cacCa.size() - 1; i++) {
+        for (int i = 0; i < cacCa.size(); i++) {
             if (cacCa.get(i).getId().equals(caHienTai.getId())) {
-                return Optional.of(cacCa.get(i + 1));
+                boolean laCaCuoiNgay = i == cacCa.size() - 1;
+                CaLam caKeTiep = laCaCuoiNgay ? cacCa.get(0) : cacCa.get(i + 1);
+                LocalDate ngayCaKeTiep = laCaCuoiNgay ? ngayCaHienTai.plusDays(1) : ngayCaHienTai;
+                return Optional.of(new CaTiepTheo(caKeTiep, ngayCaKeTiep));
             }
         }
-        return Optional.empty();
+
+        LocalTime gioBatDauCaHienTai = LocalTime.parse(caHienTai.getGioBatDau());
+        return cacCa.stream()
+                .filter(ca -> LocalTime.parse(ca.getGioBatDau()).isAfter(gioBatDauCaHienTai))
+                .findFirst()
+                .map(ca -> new CaTiepTheo(ca, ngayCaHienTai))
+                .or(() -> Optional.of(new CaTiepTheo(cacCa.get(0), ngayCaHienTai.plusDays(1))));
+    }
+
+    private record CaTiepTheo(CaLam caLam, LocalDate ngay) {
     }
 
     private List<CaLam> cacCaHoatDong() {
@@ -514,12 +528,6 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         giaoCa.setTienNhanKiemDem(null);
         giaoCa.setLyDoChenhLech(null);
         giaoCa.setGhiChu(ghepGhiChu(giaoCa.getGhiChu(), ghiChuMoi));
-    }
-
-    private void kiemTraKhongCoCaChuaKetThuc() {
-        if (giaoCaRepository.existsByCaChuaKetThuc(1)) {
-            throw new BusinessException("Cửa hàng đang có ca làm việc chưa kết thúc. Vui lòng hoàn tất ca hiện tại trước.");
-        }
     }
 
     private void kiemTraNhanVienKhongCoCaChuaKetThuc(UUID nhanVienId) {

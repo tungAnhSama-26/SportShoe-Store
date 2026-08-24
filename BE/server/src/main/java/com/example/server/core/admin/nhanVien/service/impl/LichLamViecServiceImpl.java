@@ -90,7 +90,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
                 .orElseThrow(() -> new BusinessException("Ca làm việc không tồn tại hoặc đã ngừng hoạt động"));
 
-        kiemTraCaDangDienRa(request.ngay(), caLam);
+        kiemTraCaChuaKetThuc(request.ngay(), caLam);
 
         if (lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
                 request.nhanVienId(), request.ngay(), caLam.getId())) {
@@ -246,20 +246,12 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         }
     }
 
-    private void kiemTraCaDangDienRa(LocalDate ngay, CaLam caLam) {
+    private void kiemTraCaChuaKetThuc(LocalDate ngay, CaLam caLam) {
         ZonedDateTime hienTai = ZonedDateTime.now(clock);
-        ZonedDateTime thoiDiemBatDau = thoiDiemBatDauCa(ngay, caLam);
         ZonedDateTime thoiDiemKetThuc = thoiDiemKetThucCa(ngay, caLam);
-        if (hienTai.isBefore(thoiDiemBatDau)) {
-            throw new BusinessException("Chỉ có thể thêm nhân viên vào ca đang diễn ra");
-        }
         if (!hienTai.isBefore(thoiDiemKetThuc)) {
             throw new BusinessException("Ca làm việc đã kết thúc nên không thể thêm nhân viên");
         }
-    }
-
-    private ZonedDateTime thoiDiemBatDauCa(LocalDate ngay, CaLam caLam) {
-        return ZonedDateTime.of(ngay, LocalTime.parse(caLam.getGioBatDau()), MUI_GIO);
     }
 
     private ZonedDateTime thoiDiemKetThucCa(LocalDate ngay, CaLam caLam) {

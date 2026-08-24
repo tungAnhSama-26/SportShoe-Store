@@ -673,7 +673,7 @@ GO
 -- ============================================================
 CREATE INDEX ix_giao_ca_nv_trong_ca ON giao_ca(nhan_vien_trong_ca_id, trang_thai);
 CREATE INDEX ix_giao_ca_nv_nhan ON giao_ca(nhan_vien_nhan_id, trang_thai);
-CREATE UNIQUE INDEX ux_giao_ca_mot_ca_chua_ket_thuc ON giao_ca(ca_chua_ket_thuc) WHERE ca_chua_ket_thuc = 1;
+CREATE UNIQUE INDEX ux_giao_ca_mot_ca_chua_ket_thuc_theo_nv ON giao_ca(nhan_vien_trong_ca_id) WHERE ca_chua_ket_thuc = 1;
 CREATE INDEX ix_giao_ca_ca_lam ON giao_ca(ca_lam_id, thoi_gian_vao);
 CREATE INDEX ix_giao_ca_trang_thai_thoi_gian ON giao_ca(trang_thai, thoi_gian_vao DESC);
 CREATE INDEX ix_thong_bao_khach_hang ON thong_bao_khach_hang(khach_hang_id, da_xem, ngay_tao DESC);
