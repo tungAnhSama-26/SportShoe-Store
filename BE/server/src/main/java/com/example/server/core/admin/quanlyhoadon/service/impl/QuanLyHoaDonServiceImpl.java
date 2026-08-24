@@ -810,7 +810,7 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
             if (tonKho < entry.getValue()) {
                 String tenSanPham = bienThe.getGiay() != null ? bienThe.getGiay().getTen() : "Sản phẩm";
                 throw new BusinessException(
-                        "Không đủ tồn kho để giao lại '" + tenSanPham + "' (còn " + tonKho
+                        "Không đủ số lượng để giao lại '" + tenSanPham + "' (còn " + tonKho
                                 + ", cần " + entry.getValue() + ")"
                 );
             }
@@ -1941,7 +1941,7 @@ private boolean isTaiQuay(Integer kenhBan) {
                     throw new BusinessException("Số lượng sản phẩm '" + giayChiTiet.getGiay().getTen() + "' trong hóa đơn không hợp lệ.");
                 }
                 if (ton < soLuongYeuCau) {
-                    throw new BusinessException("Số lượng tồn kho không đủ cho sản phẩm '" + giayChiTiet.getGiay().getTen() + "' (Còn lại: " + ton + ", yêu cầu: " + soLuongYeuCau + ")");
+                    throw new BusinessException("Số lượng không đủ cho sản phẩm '" + giayChiTiet.getGiay().getTen() + "' (Còn lại: " + ton + ", yêu cầu: " + soLuongYeuCau + ")");
                 }
             }
         }
@@ -1981,7 +1981,7 @@ private boolean isTaiQuay(Integer kenhBan) {
                 int ton = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
                 int soLuongYeuCau = item.getSoLuong() == null ? 0 : item.getSoLuong();
                 if (ton < soLuongYeuCau) {
-                    warnings.add("Sản phẩm '" + name + "' không đủ số lượng tồn kho (Tồn: " + ton + ", Cần: " + soLuongYeuCau + ").");
+                    warnings.add("Sản phẩm '" + name + "' không đủ số lượng khả dụng (Còn: " + ton + ", Cần: " + soLuongYeuCau + ").");
                 }
                 
                 String variantImage = hinhAnhGiayRepository.findByGiayChiTietIdInAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(

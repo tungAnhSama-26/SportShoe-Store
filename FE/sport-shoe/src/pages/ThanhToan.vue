@@ -787,7 +787,7 @@ function xuLyAnhLoi(event) {
             Đang chờ thanh toán...
             <span v-if="soGiayQrConLai > 0" class="font-mono font-bold text-rose-500">({{ thoiGianQrConLai }})</span>
           </div>
-          <p class="mt-2 text-center text-[11px] text-slate-400">Mã QR giữ tồn kho trong 5 phút. Vui lòng thanh toán trước khi hết hạn.</p>
+          <p class="mt-2 text-center text-[11px] text-slate-400">Mã QR có hiệu lực trong 5 phút. Vui lòng thanh toán trước khi hết hạn.</p>
           <button @click="dongVnPay" class="mt-5 w-full rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             Hủy
           </button>

@@ -102,6 +102,6 @@ public class ClientPhiVanChuyenService {
         if (GhnOfflineFeeService.SOURCE_PUBLIC_TARIFF.equals(response.nguonTinhPhi())) {
             return "Phí offline ước tính theo bảng giá công khai GHN";
         }
-        return response.uocTinh() ? "Phí GHN ước tính theo các tuyến cũ" : "Phí GHN";
+        return "Phí GHN";
     }
 }

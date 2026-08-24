@@ -446,8 +446,11 @@ function LogicBanHangTaiQuay() {
     const remainingItems = [];
     for (const item of cartItems.value) {
       const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
-      const isInactive = !sanPhamMoi
-        || sanPhamMoi.kichHoat === 0
+      if (!sanPhamMoi) {
+        remainingItems.push(item);
+        continue;
+      }
+      const isInactive = sanPhamMoi.kichHoat === 0
         || sanPhamMoi.trangThai === 0
         || sanPhamMoi.trangThaiSanPham === 0;
       if (isInactive) {
@@ -759,7 +762,6 @@ function LogicBanHangTaiQuay() {
         const isInactive = item.trangThaiSanPham === 0
           || item.trangThai === 0
           || item.kichHoat === 0
-          || (ketQuaBienTheSanPham.value.length > 0 && !thongTin)
           || (thongTin && (thongTin.kichHoat === 0 || thongTin.trangThai === 0));
 
         if (isInactive) {
@@ -875,10 +877,22 @@ function LogicBanHangTaiQuay() {
         const response = await capNhatHoaDonCho(currentInvoiceId, payload);
         
         dangLuuNoiBo = true;
-        cartItems.value = cartItems.value.map(item => ({
-          ...item,
-          soLuongBanDau: item.soLuong
-        }));
+        if (response && Array.isArray(response.items)) {
+          const respMap = new Map(response.items.map(i => [Number(i.chiTietId), i]));
+          cartItems.value = cartItems.value.map(item => {
+            const serverItem = respMap.get(Number(item.chiTietId));
+            return {
+              ...item,
+              soLuongBanDau: serverItem ? serverItem.soLuong : item.soLuong,
+              soLuongTon: serverItem && typeof serverItem.soLuongTon !== 'undefined' ? serverItem.soLuongTon : item.soLuongTon
+            };
+          });
+        } else {
+          cartItems.value = cartItems.value.map(item => ({
+            ...item,
+            soLuongBanDau: item.soLuong
+          }));
+        }
         setTimeout(() => { dangLuuNoiBo = false; }, 50);
 
         if (pendingSave) {
@@ -915,16 +929,17 @@ function LogicBanHangTaiQuay() {
         try {
           const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
           
-          if (msg.includes("Số lượng tồn kho không đủ")) {
+          if (msg.includes("Số lượng không đủ") || msg.includes("Số lượng tồn kho không đủ")) {
             let hasAdjusted = false;
             const currentCartItems = [...cartItems.value];
             
             detail.items = detail.items.map(dbItem => {
-              const matchedCartItem = currentCartItems.find(c => c.chiTietId === dbItem.chiTietId);
+              const matchedCartItem = currentCartItems.find(c => Number(c.chiTietId) === Number(dbItem.chiTietId));
               let desiredQty = matchedCartItem ? matchedCartItem.soLuong : dbItem.soLuong;
+              const totalStockAllowed = (Number(dbItem.soLuongTon) || 0) + (Number(dbItem.soLuong) || 0);
               
-              if (desiredQty > dbItem.soLuongTon) {
-                 desiredQty = dbItem.soLuongTon > 0 ? 1 : 0;
+              if (desiredQty > totalStockAllowed) {
+                 desiredQty = totalStockAllowed > 0 ? totalStockAllowed : 1;
                  hasAdjusted = true;
               }
               return { ...dbItem, soLuong: desiredQty };
@@ -933,7 +948,7 @@ function LogicBanHangTaiQuay() {
             chuyenHoaDonThanhBanNhap(detail);
             
             if (hasAdjusted) {
-              thongBaoLoi.value = "Kho không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về 1.";
+              thongBaoLoi.value = "Số lượng không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về mức tối đa khả dụng.";
               setTimeout(() => {
                 luuHoaDonHienTai(true).catch(() => {});
               }, 500);

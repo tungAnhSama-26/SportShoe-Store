@@ -636,7 +636,7 @@ public class ChatbotTools {
                             .getResultList();
 
                     if (lowStockList.isEmpty()) {
-                        return "Hiện tại không có sản phẩm nào có số lượng tồn kho dưới " + limit + " chiếc.";
+                        return "Hiện tại không có sản phẩm nào có số lượng dưới " + limit + " chiếc.";
                     }
 
                     StringBuilder sb = new StringBuilder("Danh sách sản phẩm sắp hết hàng (Số lượng < " + limit + "):\n");
@@ -987,11 +987,11 @@ public class ChatbotTools {
                     );
 
                     quanLySanPhamService.capNhatBienThe(variantId, updateRequest);
-                    return String.format("Đã cập nhật số lượng tồn kho của biến thể **%s (Màu %s, Size %s)** thành **%d** thành công.",
+                    return String.format("Đã cập nhật số lượng của biến thể **%s (Màu %s, Size %s)** thành **%d** thành công.",
                             tenSanPham, tenMau, kichCo, request.newStock());
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return "Lỗi khi cập nhật số lượng tồn kho: " + e.getMessage();
+                    return "Lỗi khi cập nhật số lượng: " + e.getMessage();
                 }
             }
         };
