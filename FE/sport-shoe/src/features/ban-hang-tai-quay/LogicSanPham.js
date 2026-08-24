@@ -416,7 +416,7 @@ export function LogicSanPham({
     const soLuongToiDa = soLuongConLai(bienTheDaChon.value.chiTietId, bienTheDaChon.value.soLuongTon);
     if (newQuantityNum > soLuongToiDa) {
       soLuongDaChon.value = Math.max(soLuongToiDa, 1);
-      showWarning(`Sản phẩm đã đạt giới hạn tồn kho (tối đa ${soLuongToiDa})`);
+      showWarning(`Sản phẩm đã đạt giới hạn số lượng có thể chọn (tối đa ${soLuongToiDa})`);
     } else {
       soLuongDaChon.value = newQuantityNum;
     }

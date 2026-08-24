@@ -61,7 +61,7 @@ export function LogicGioHang({
 
     const soLuongCoTheThem = soLuongConLai(product.chiTietId, product.soLuongTon);
     if (quantity > soLuongCoTheThem) {
-      showWarning(`Sản phẩm ${product.tenSanPham} đã vượt giới hạn tồn kho`);
+      showWarning(`Sản phẩm ${product.tenSanPham} đã đạt giới hạn số lượng có thể mua`);
       return false;
     }
 
@@ -168,7 +168,7 @@ export function LogicGioHang({
       return { ...item, soLuong: item.soLuong + 1 };
     });
     if (reachedLimit) {
-      showWarning(`Sản phẩm ${reachedLimit} đã vượt giới hạn tồn kho`);
+      showWarning(`Sản phẩm ${reachedLimit} đã đạt giới hạn số lượng có thể mua`);
       return;
     }
     danhDauCanApDungLaiPhieu();
@@ -228,7 +228,7 @@ export function LogicGioHang({
     });
 
     if (reachedLimit) {
-      showWarning(`Sản phẩm ${reachedLimit} đã vượt giới hạn tồn kho`);
+      showWarning(`Sản phẩm ${reachedLimit} đã đạt giới hạn số lượng có thể mua`);
     }
 
     danhDauCanApDungLaiPhieu();

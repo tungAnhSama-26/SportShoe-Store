@@ -1498,13 +1498,10 @@ export function useChiTietHoaDon() {
       if (res.warnings && res.warnings.length > 0) {
         const listHtml = res.warnings.map(w => `<li style="text-align: left; margin-bottom: 5px;">⚠️ ${w}</li>`).join("");
         const checkResult = await showConfirm(
-          "Cảnh báo sản phẩm",
           `<div style="font-size: 14.5px; line-height: 1.5;">Một số sản phẩm không khả dụng:<br/><ul style="margin-top: 10px; max-height: 200px; overflow-y: auto; padding-left: 15px;">${listHtml}</ul><br/>Bạn có muốn tiếp tục mua lại các sản phẩm khả dụng còn lại không?</div>`,
-          {
-            confirmButtonText: "Tiếp tục",
-            cancelButtonText: "Hủy bỏ",
-            icon: "warning"
-          }
+          "Cảnh báo sản phẩm",
+          "Tiếp tục",
+          "Hủy bỏ"
         );
         if (!checkResult) {
           dangCapNhat.value = false;
