@@ -247,11 +247,14 @@ export function LogicPhieuGiamGia({
             khachHangId: layIdKhachHangHienTai(),
             tongTienHang: 999999999 // Get all
          });
-         console.log("taiTatCaPhieuKhaDung result:", ketQua);
-         tatCaPhieuKhaDung.value = ketQua;
+         const currentList = tatCaPhieuKhaDung.value || [];
+         const isSame = currentList.length === (ketQua || []).length &&
+           currentList.every((item, idx) => item.id === ketQua[idx].id && item.ma === ketQua[idx].ma && item.giaTri === ketQua[idx].giaTri);
+         if (!isSame) {
+           tatCaPhieuKhaDung.value = ketQua || [];
+         }
      } catch (e) {
          console.error("taiTatCaPhieuKhaDung error:", e);
-         tatCaPhieuKhaDung.value = [];
      }
   }
 
@@ -316,8 +319,12 @@ export function LogicPhieuGiamGia({
 
   async function tuDongApDungVaDeXuatHangMucTiepTheo() {
       if (!tatCaPhieuKhaDung.value.length || !tongTien.value) {
-          phieuGiamGiaHangMucTiepTheo.value = null;
-          soTienThieuDeDatHangMuc.value = 0;
+          if (phieuGiamGiaHangMucTiepTheo.value !== null) {
+              phieuGiamGiaHangMucTiepTheo.value = null;
+          }
+          if (soTienThieuDeDatHangMuc.value !== 0) {
+              soTienThieuDeDatHangMuc.value = 0;
+          }
           return;
       }
       
@@ -351,17 +358,27 @@ export function LogicPhieuGiamGia({
           foundNextDiscount = tinhToanGiamGia(foundNext, Number(foundNext.giaTriToiThieu) || 0);
       }
       
-      phieuGiamGiaHangMucTiepTheo.value = foundNext;
-      soTienGiamCuaHangMucTiepTheo.value = foundNextDiscount;
-      soTienThieuDeDatHangMuc.value = foundNext ? Math.max(0, (Number(foundNext.giaTriToiThieu) || 0) - Number(tongTien.value)) : 0;
+      if (phieuGiamGiaHangMucTiepTheo.value?.ma !== foundNext?.ma) {
+          phieuGiamGiaHangMucTiepTheo.value = foundNext;
+      }
+      if (soTienGiamCuaHangMucTiepTheo.value !== foundNextDiscount) {
+          soTienGiamCuaHangMucTiepTheo.value = foundNextDiscount;
+      }
+      const missing = foundNext ? Math.max(0, (Number(foundNext.giaTriToiThieu) || 0) - Number(tongTien.value)) : 0;
+      if (soTienThieuDeDatHangMuc.value !== missing) {
+          soTienThieuDeDatHangMuc.value = missing;
+      }
       
-      if (soTienThieuDeDatHangMuc.value > 0 && cartItems.value && cartItems.value.length > 0) {
-          const cheapestItemPrice = Math.min(...cartItems.value.map(i => i.giaDonVi || 0));
-          soSanPhamThieuDeDatHangMuc.value = cheapestItemPrice > 0 
-              ? Math.ceil(soTienThieuDeDatHangMuc.value / cheapestItemPrice) 
-              : 1;
+      if (missing > 0 && cartItems.value && cartItems.value.length > 0) {
+          const cheapestItemPrice = Math.min(...cartItems.value.map(i => i.giaDonVi || i.giaBan || 0));
+          const neededCount = cheapestItemPrice > 0 ? Math.ceil(missing / cheapestItemPrice) : 1;
+          if (soSanPhamThieuDeDatHangMuc.value !== neededCount) {
+              soSanPhamThieuDeDatHangMuc.value = neededCount;
+          }
       } else {
-          soSanPhamThieuDeDatHangMuc.value = 0;
+          if (soSanPhamThieuDeDatHangMuc.value !== 0) {
+              soSanPhamThieuDeDatHangMuc.value = 0;
+          }
       }
       
       if (currentBest) {
@@ -375,11 +392,13 @@ export function LogicPhieuGiamGia({
               const newDiscount = tinhToanGiamGia(currentBest, tongTien.value);
               
               if (phieuGiamGiaDaApDung.value.ma === currentBest.ma) {
-                  phieuGiamGiaDaApDung.value = {
-                      ...phieuGiamGiaDaApDung.value,
-                      soTienGiam: currentDiscount
-                  };
-                  capNhatTienKhachThanhToan();
+                  if (Number(phieuGiamGiaDaApDung.value.soTienGiam) !== Number(currentDiscount)) {
+                      phieuGiamGiaDaApDung.value = {
+                          ...phieuGiamGiaDaApDung.value,
+                          soTienGiam: currentDiscount
+                      };
+                      capNhatTienKhachThanhToan();
+                  }
               } else if (newDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
                   maPhieuGiamGia.value = currentBest.ma;
                   await xuLyApDungPhieu(true, currentBest.ma);
@@ -441,14 +460,17 @@ export function LogicPhieuGiamGia({
     }
   });
 
+  let dangKiemTraPhieu = false;
   async function kiemTraLaiPhieuDangApDung(thongBaoKhiDoi = true) {
-    await taiTatCaPhieuKhaDung();
-    await tuDongApDungVaDeXuatHangMucTiepTheo();
-
-    const ma = phieuGiamGiaDaApDung.value?.ma || maPhieuGiamGia.value?.trim();
-    if (!ma) return;
-
+    if (dangKiemTraPhieu) return;
+    dangKiemTraPhieu = true;
     try {
+      await taiTatCaPhieuKhaDung();
+      await tuDongApDungVaDeXuatHangMucTiepTheo();
+
+      const ma = phieuGiamGiaDaApDung.value?.ma || maPhieuGiamGia.value?.trim();
+      if (!ma) return;
+
       const cu = phieuGiamGiaDaApDung.value ? { ...phieuGiamGiaDaApDung.value } : null;
       const ketQua = await timPhieuGiamGiaTaiQuay({
         keyword: ma,
@@ -468,11 +490,19 @@ export function LogicPhieuGiamGia({
         return;
       }
 
-      phieuGiamGiaDaApDung.value = moi;
-      maPhieuGiamGia.value = moi.ma;
-      capNhatTienKhachThanhToan();
+      if (
+        phieuGiamGiaDaApDung.value?.id !== moi.id ||
+        phieuGiamGiaDaApDung.value?.ma !== moi.ma ||
+        Number(phieuGiamGiaDaApDung.value?.soTienGiam) !== Number(moi.soTienGiam)
+      ) {
+        phieuGiamGiaDaApDung.value = moi;
+        maPhieuGiamGia.value = moi.ma;
+        capNhatTienKhachThanhToan();
+      }
     } catch (e) {
       console.error("Lỗi kiểm tra lại phiếu giảm giá realtime:", e);
+    } finally {
+      dangKiemTraPhieu = false;
     }
   }
 
