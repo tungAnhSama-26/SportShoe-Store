@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { 
-  Filter, Plus, RotateCcw, Clock, Eye, X, Search
+  Filter, Plus, RotateCcw, Clock, Eye, X, Search, Power
 } from 'lucide-vue-next';
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { getDisplayErrorMessage } from '../../../utils/error-message.js';
 import TimePicker24h from "../../../components/common/TimePicker24h.vue";
-import { layDanhSachCaLam, taoCaLam, capNhatCaLam } from '../../../services/ca-lam.js';
+import { layDanhSachCaLam, taoCaLam, capNhatCaLam, doiTrangThaiCaLam } from '../../../services/ca-lam.js';
 import { khoangGioGiaoNhau, taoGoiYCaTiepTheo } from '../../../utils/ca-lam.js';
 
 // --- Dữ liệu Ca làm việc ---
@@ -55,6 +55,10 @@ const dsHienThi = computed(() => {
   });
 });
 
+const coCaDangHoatDong = computed(() =>
+  danhSachCaLam.value.some((ca) => ca.trangThai)
+);
+
 function lamMoi() {
   filters.value = { timKiem: '', gioBatDau: '', gioKetThuc: '', trangThai: 'all' };
 }
@@ -93,16 +97,36 @@ async function toggleTrangThai(ca) {
   if (!confirmed) return;
 
   try {
-    await capNhatCaLam(ca.id, {
-      ten: ca.ten,
-      gioBatDau: ca.gioBatDau,
-      gioKetThuc: ca.gioKetThuc,
-      trangThai: seBat
-    });
+    await doiTrangThaiCaLam(ca.id, seBat);
     showSuccess(`Đã thay đổi trạng thái ca ${ca.ten}`);
     await taiDanhSach();
   } catch (e) {
     showError(getDisplayErrorMessage(e, "Không thể thay đổi trạng thái ca làm việc"));
+  }
+}
+
+async function tatTatCaCaLam() {
+  const danhSachDangBat = danhSachCaLam.value.filter((ca) => ca.trangThai);
+  if (danhSachDangBat.length === 0) {
+    showError("Hiện không có ca làm việc nào đang hoạt động.");
+    return;
+  }
+
+  const confirmed = await showConfirm(
+    `Bạn có chắc chắn muốn tắt tất cả ${danhSachDangBat.length} ca làm việc đang hoạt động?`,
+    "Xác nhận"
+  );
+  if (!confirmed) return;
+
+  dangTai.value = true;
+  try {
+    await Promise.all(danhSachDangBat.map((ca) => doiTrangThaiCaLam(ca.id, false)));
+    showSuccess("Đã tắt tất cả ca làm việc đang hoạt động.");
+    await taiDanhSach();
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, "Không thể tắt tất cả ca làm việc"));
+  } finally {
+    dangTai.value = false;
   }
 }
 
@@ -301,6 +325,14 @@ async function luuTaoCa() {
           <button @click="lamMoi" class="h-9 px-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-500 text-[14px] font-medium transition shadow-sm">
             <RotateCcw class="w-4 h-4" />
             <span>Đặt lại bộ lọc</span>
+          </button>
+          <button
+            @click="tatTatCaCaLam"
+            :disabled="!coCaDangHoatDong || dangTai"
+            class="h-9 px-4 flex items-center gap-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[14px] font-medium transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Power class="w-4 h-4" />
+            <span>Tắt tất cả</span>
           </button>
           <button @click="moModalTaoCa" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[14px] font-medium transition shadow-sm">
             <Plus class="w-4 h-4" />

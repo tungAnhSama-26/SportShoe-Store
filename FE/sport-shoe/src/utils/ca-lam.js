@@ -40,14 +40,18 @@ export function khoangGioGiaoNhau(gioBatDauA, gioKetThucA, gioBatDauB, gioKetThu
   return khoangA.some(a => khoangB.some(b => a.batDau < b.ketThuc && b.batDau < a.ketThuc));
 }
 
-const GIO_BAT_DAU_MAC_DINH = '08:00';
 const THOI_LUONG_MAC_DINH_PHUT = 4 * 60;
 
+function layGioHienTai() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
 function taoGoiYMacDinh() {
-  const batDauMacDinh = chuyenGioThanhPhut(GIO_BAT_DAU_MAC_DINH);
+  const batDauMacDinh = layGioHienTai();
   return {
     tuCa: null,
-    gioBatDau: GIO_BAT_DAU_MAC_DINH,
+    gioBatDau: chuyenPhutThanhGio(batDauMacDinh),
     gioKetThuc: chuyenPhutThanhGio(batDauMacDinh + THOI_LUONG_MAC_DINH_PHUT)
   };
 }
@@ -60,17 +64,15 @@ export function taoGoiYCaTiepTheo(danhSachCaLam) {
       const ketThuc = chuyenGioThanhPhut(ca.gioKetThuc);
       const thoiLuong = tinhThoiLuongCa(ca.gioBatDau, ca.gioKetThuc);
       if (batDau === null || ketThuc === null || thoiLuong === null) return null;
-      const ketThucTuyenTinh = ketThuc > batDau ? ketThuc : ketThuc + 1440;
-      return { ...ca, batDau, ketThuc, ketThucTuyenTinh, thoiLuong };
+      return { ...ca, batDau, ketThuc, thoiLuong };
     })
-    .filter(Boolean)
-    .sort((a, b) => b.ketThucTuyenTinh - a.ketThucTuyenTinh || b.batDau - a.batDau);
+    .filter(Boolean);
 
-  const caTruocDo = cacCaHopLe[0];
+  const caTruocDo = cacCaHopLe.at(-1);
   if (!caTruocDo) return taoGoiYMacDinh();
 
-  const batDauGoiY = caTruocDo.ketThucTuyenTinh;
-  const ketThucGoiY = batDauGoiY + caTruocDo.thoiLuong;
+  const batDauGoiY = caTruocDo.ketThuc;
+  const ketThucGoiY = batDauGoiY + THOI_LUONG_MAC_DINH_PHUT;
   if (ketThucGoiY <= batDauGoiY) return taoGoiYMacDinh();
 
   return {

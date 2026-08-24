@@ -53,6 +53,13 @@ export function capNhatCaLam(id, payload) {
   });
 }
 
+export function doiTrangThaiCaLam(id, trangThai) {
+  return request(`/admin/ca-lam/${id}/trang-thai`, {
+    method: "PATCH",
+    body: JSON.stringify({ trangThai }),
+  });
+}
+
 export function xoaCaLam(id) {
   return request(`/admin/ca-lam/${id}`, {
     method: "DELETE",
