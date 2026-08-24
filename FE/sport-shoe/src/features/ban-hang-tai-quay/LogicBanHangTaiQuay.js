@@ -443,7 +443,9 @@ function LogicBanHangTaiQuay() {
       (ketQuaBienTheSanPham.value || []).map((product) => [Number(product.chiTietId), product])
     );
     const removedItems = [];
+    let hasChanges = false;
     const remainingItems = [];
+
     for (const item of cartItems.value) {
       const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
       if (!sanPhamMoi) {
@@ -455,23 +457,36 @@ function LogicBanHangTaiQuay() {
         || sanPhamMoi.trangThaiSanPham === 0;
       if (isInactive) {
         removedItems.push(item);
+        hasChanges = true;
         continue;
       }
       // Kiểm tra giá sản phẩm mới trong catalog so với giá hiện tại trong giỏ hàng
+      const newStock = sanPhamMoi.soLuongTon;
       const newPriceNum = Number(sanPhamMoi.giaBan);
       const currentPriceNum = Number(item.giaBan);
       const isPriceChanged = newPriceNum !== currentPriceNum;
+      const isOutdated = isPriceChanged ? true : Boolean(item.isOutdatedPrice);
+
+      if (
+        item.soLuongTon !== newStock ||
+        Boolean(item.isOutdatedPrice) !== isOutdated ||
+        item.currentCatalogPrice !== newPriceNum
+      ) {
+        hasChanges = true;
+      }
 
       remainingItems.push({
         ...item,
-        soLuongTon: sanPhamMoi.soLuongTon,
-        isOutdatedPrice: isPriceChanged ? true : (item.isOutdatedPrice || false),
+        soLuongTon: newStock,
+        isOutdatedPrice: isOutdated,
         currentCatalogPrice: newPriceNum,
         oldPrice: isPriceChanged ? (item.oldPrice || item.giaBan) : item.oldPrice
       });
     }
 
-    cartItems.value = remainingItems;
+    if (hasChanges) {
+      cartItems.value = remainingItems;
+    }
 
     if (removedItems.length > 0) {
       const names = [...new Set(removedItems.map(it => `"${it.tenSanPham}"`))].join(', ');

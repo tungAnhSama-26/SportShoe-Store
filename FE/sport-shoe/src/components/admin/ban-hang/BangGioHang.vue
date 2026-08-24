@@ -56,20 +56,17 @@ function formatDiscountPercent(item) {
 }
 
 function getPriceChangeText(item) {
-  if (!item) return null;
-  // 1. Khi giá catalog thay đổi so với giá trong giỏ hàng
-  if (item.currentCatalogPrice && Number(item.currentCatalogPrice) !== Number(item.giaBan)) {
-    const oldP = Number(item.giaBan);
-    const newP = Number(item.currentCatalogPrice);
+  if (!item || item.isOutdatedPrice) return null;
+
+  // 1. Dòng sản phẩm mới có oldPrice khác với giaBan hiện tại
+  if (item.oldPrice && Number(item.oldPrice) !== Number(item.giaBan)) {
+    const oldP = Number(item.oldPrice);
+    const newP = Number(item.giaBan);
     const direction = oldP < newP ? 'lên' : 'xuống';
     return `Giá sản phẩm đã được cập nhật từ ${formatTien(oldP)} ${direction} ${formatTien(newP)}.`;
   }
-  // 2. Khi item có oldPrice (đã ghi nhận đổi giá khi thêm sản phẩm)
-  if (item?.oldPrice && Number(item.oldPrice) !== Number(item.giaBan)) {
-    const direction = Number(item.oldPrice) < Number(item.giaBan) ? 'lên' : 'xuống';
-    return `Giá sản phẩm đã được cập nhật từ ${formatTien(item.oldPrice)} ${direction} ${formatTien(item.giaBan)}.`;
-  }
-  // 3. Khi cùng biến thể có nhiều dòng khác giá trong giỏ
+
+  // 2. Khi cùng biến thể có dòng cũ trong giỏ, dòng mới này sẽ hiển thị thông báo
   const sameVariantItems = props.cartItems.filter(
     (it) => Number(it.chiTietId) === Number(item?.chiTietId)
   );
@@ -77,18 +74,14 @@ function getPriceChangeText(item) {
     const olderItem = sameVariantItems.find(
       it => Number(it.giaBan) !== Number(item?.giaBan) && (it.isOutdatedPrice || sameVariantItems.indexOf(it) < sameVariantItems.indexOf(item))
     );
-    if (olderItem && Number(olderItem.giaBan) !== Number(item?.giaBan) && !item?.isOutdatedPrice) {
-      const direction = Number(olderItem.giaBan) < Number(item.giaBan) ? 'lên' : 'xuống';
-      return `Giá sản phẩm đã được cập nhật từ ${formatTien(olderItem.giaBan)} ${direction} ${formatTien(item.giaBan)}.`;
-    }
-    const newerItem = sameVariantItems.find(
-      it => Number(it.giaBan) !== Number(item?.giaBan) && sameVariantItems.indexOf(it) > sameVariantItems.indexOf(item)
-    );
-    if (newerItem && Number(newerItem.giaBan) !== Number(item?.giaBan)) {
-      const direction = Number(item.giaBan) < Number(newerItem.giaBan) ? 'lên' : 'xuống';
-      return `Giá sản phẩm đã được cập nhật từ ${formatTien(item.giaBan)} ${direction} ${formatTien(newerItem.giaBan)}.`;
+    if (olderItem) {
+      const oldP = Number(olderItem.giaBan);
+      const newP = Number(item.giaBan);
+      const direction = oldP < newP ? 'lên' : 'xuống';
+      return `Giá sản phẩm đã được cập nhật từ ${formatTien(oldP)} ${direction} ${formatTien(newP)}.`;
     }
   }
+
   return null;
 }
 
