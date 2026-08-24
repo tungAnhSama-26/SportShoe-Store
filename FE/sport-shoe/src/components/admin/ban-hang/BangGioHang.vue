@@ -27,8 +27,10 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
 const formatTien = (val) => (typeof props.dinhDangTien === "function" ? props.dinhDangTien(val) : formatTienTe(val));
 
 function checkOutdated(item) {
-  if (props.isOutdatedPrice) return props.isOutdatedPrice(item);
-  if (item?.isOutdatedPrice) return true;
+  if (!item) return false;
+  if (item.isOutdatedPrice) return true;
+  if (item.currentCatalogPrice && Number(item.currentCatalogPrice) !== Number(item.giaBan)) return true;
+  if (props.isOutdatedPrice && props.isOutdatedPrice(item)) return true;
   const sameVariantItems = props.cartItems.filter(
     (it) => Number(it.chiTietId) === Number(item?.chiTietId)
   );
@@ -54,10 +56,20 @@ function formatDiscountPercent(item) {
 }
 
 function getPriceChangeText(item) {
+  if (!item) return null;
+  // 1. Khi giá catalog thay đổi so với giá trong giỏ hàng
+  if (item.currentCatalogPrice && Number(item.currentCatalogPrice) !== Number(item.giaBan)) {
+    const oldP = Number(item.giaBan);
+    const newP = Number(item.currentCatalogPrice);
+    const direction = oldP < newP ? 'lên' : 'xuống';
+    return `Giá sản phẩm đã được cập nhật từ ${formatTien(oldP)} ${direction} ${formatTien(newP)}.`;
+  }
+  // 2. Khi item có oldPrice (đã ghi nhận đổi giá khi thêm sản phẩm)
   if (item?.oldPrice && Number(item.oldPrice) !== Number(item.giaBan)) {
     const direction = Number(item.oldPrice) < Number(item.giaBan) ? 'lên' : 'xuống';
     return `Giá sản phẩm đã được cập nhật từ ${formatTien(item.oldPrice)} ${direction} ${formatTien(item.giaBan)}.`;
   }
+  // 3. Khi cùng biến thể có nhiều dòng khác giá trong giỏ
   const sameVariantItems = props.cartItems.filter(
     (it) => Number(it.chiTietId) === Number(item?.chiTietId)
   );
@@ -68,6 +80,13 @@ function getPriceChangeText(item) {
     if (olderItem && Number(olderItem.giaBan) !== Number(item?.giaBan) && !item?.isOutdatedPrice) {
       const direction = Number(olderItem.giaBan) < Number(item.giaBan) ? 'lên' : 'xuống';
       return `Giá sản phẩm đã được cập nhật từ ${formatTien(olderItem.giaBan)} ${direction} ${formatTien(item.giaBan)}.`;
+    }
+    const newerItem = sameVariantItems.find(
+      it => Number(it.giaBan) !== Number(item?.giaBan) && sameVariantItems.indexOf(it) > sameVariantItems.indexOf(item)
+    );
+    if (newerItem && Number(newerItem.giaBan) !== Number(item?.giaBan)) {
+      const direction = Number(item.giaBan) < Number(newerItem.giaBan) ? 'lên' : 'xuống';
+      return `Giá sản phẩm đã được cập nhật từ ${formatTien(item.giaBan)} ${direction} ${formatTien(newerItem.giaBan)}.`;
     }
   }
   return null;
