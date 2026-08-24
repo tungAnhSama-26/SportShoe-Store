@@ -459,7 +459,10 @@ function chuyenDenTrangChu() {
 }
 
 function chuyenDenCaLamViec() {
-  router.push("/admin/ban-giao-ca");
+  router.push({
+    path: "/admin/ban-giao-ca",
+    query: { vaoCa: String(Date.now()) },
+  });
 }
 
 function dangXuat() {
