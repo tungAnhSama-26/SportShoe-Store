@@ -29,6 +29,17 @@ BEGIN
         ON dbo.giao_ca;
     END;
 
+    IF EXISTS (
+        SELECT 1
+        FROM sys.indexes
+        WHERE object_id = OBJECT_ID(N'dbo.giao_ca')
+          AND name = N'ux_giao_ca_mot_ca_chua_ket_thuc_theo_nv'
+    )
+    BEGIN
+        DROP INDEX ux_giao_ca_mot_ca_chua_ket_thuc_theo_nv
+        ON dbo.giao_ca;
+    END;
+
     IF OBJECT_ID(N'dbo.ck_giao_ca_chua_ket_thuc', N'C') IS NOT NULL
     BEGIN
         ALTER TABLE dbo.giao_ca
@@ -127,6 +138,17 @@ BEGIN TRY
         ON dbo.giao_ca;
     END;
 
+    IF EXISTS (
+        SELECT 1
+        FROM sys.indexes
+        WHERE object_id = OBJECT_ID(N'dbo.giao_ca')
+          AND name = N'ux_giao_ca_mot_ca_chua_ket_thuc_theo_nv'
+    )
+    BEGIN
+        DROP INDEX ux_giao_ca_mot_ca_chua_ket_thuc_theo_nv
+        ON dbo.giao_ca;
+    END;
+
 
     /* --------------------------------------------------------
        3. Xóa constraint cũ và constraint từ lần chạy trước
@@ -167,14 +189,15 @@ BEGIN TRY
 
 
     /* --------------------------------------------------------
-       5. Chỉ giữ một ca mới nhất chưa kết thúc
-       Những ca mở cũ hơn được chuyển sang DA_KET_THUC
+       5. Mỗi nhân viên chỉ giữ một ca mới nhất chưa kết thúc
+       Những ca mở cũ hơn của cùng nhân viên được chuyển sang DA_KET_THUC
        -------------------------------------------------------- */
 
     ;WITH danh_sach_ca AS (
         SELECT
             id,
             ROW_NUMBER() OVER (
+                PARTITION BY nhan_vien_trong_ca_id
                 ORDER BY thoi_gian_vao DESC, id DESC
             ) AS thu_tu
         FROM dbo.giao_ca
@@ -359,8 +382,8 @@ BEGIN TRY
        15. Unique filtered index
        -------------------------------------------------------- */
 
-    CREATE UNIQUE INDEX ux_giao_ca_mot_ca_chua_ket_thuc
-    ON dbo.giao_ca(ca_chua_ket_thuc)
+    CREATE UNIQUE INDEX ux_giao_ca_mot_ca_chua_ket_thuc_theo_nv
+    ON dbo.giao_ca(nhan_vien_trong_ca_id)
     WHERE ca_chua_ket_thuc = 1;
 
 
