@@ -86,6 +86,7 @@ const {
   tienKhachDua,
   tienMatKetHop,
   tienChuyenKhoanKetHop,
+  hienThiMaQrLon,
   thongBaoLoiThanhToan,
   tienThua,
   ghiChuThanhToan,
@@ -363,6 +364,7 @@ function xuLyThemKhachHang(khachHangMoi) {
             :ten-khach-hang-hien-thi="tenKhachHangHienThi"
             :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
             :payment-method="phuongThucThanhToan"
+            :show-large-qr="hienThiMaQrLon"
             :amount-paid="tienKhachDua"
             :tien-mat-ket-hop="tienMatKetHop"
             :tien-chuyen-khoan-ket-hop="tienChuyenKhoanKetHop"
@@ -388,6 +390,7 @@ function xuLyThemKhachHang(khachHangMoi) {
             @update-shipping="capNhatThongTinGiaoHang"
             @calculate-shipping="xuLyTinhPhiVanChuyen"
             @update:payment-method="datPhuongThucThanhToan"
+            @update:show-large-qr="val => hienThiMaQrLon = val"
             @amount-input="xuLyTienKhachDuaInput"
             @cash-split-input="xuLyTienMatKetHopInput"
             @transfer-split-input="xuLyTienChuyenKhoanKetHopInput"

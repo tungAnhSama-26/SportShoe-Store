@@ -6,6 +6,7 @@ export function useLogicPhieuGiamGia({
   cartItems,
   tongTien,
   hoaDonChoDaChon,
+  dangTaiChiTietHoaDon,
   khachHangDuocChon,
   layIdKhachHangHienTai,
   taoDanhSachSanPhamThanhToan,
@@ -360,6 +361,7 @@ export function useLogicPhieuGiamGia({
 
   // Effect to handle changes in context (tongTien, cartItems, etc)
   useEffect(() => {
+    if (dangTaiChiTietHoaDon) return;
     let isMounted = true;
 
     const checkAndReload = async () => {
@@ -416,7 +418,7 @@ export function useLogicPhieuGiamGia({
     checkAndReload();
 
     return () => { isMounted = false; };
-  }, [coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon, phieuGiamGiaDaApDung]);
+  }, [coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon, dangTaiChiTietHoaDon]);
 
   return {
     maPhieuGiamGia, setMaPhieuGiamGia,
