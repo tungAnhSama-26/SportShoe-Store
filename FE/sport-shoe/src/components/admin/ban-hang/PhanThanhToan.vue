@@ -161,6 +161,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  showLargeQr: {
+    type: Boolean,
+    default: false
+  },
   dinhDangTien: {
     type: Function,
     required: true
@@ -177,6 +181,7 @@ const emit = defineEmits([
   "update-shipping",
   "calculate-shipping",
   "update:paymentMethod",
+  "update:showLargeQr",
   "amount-input",
   "cash-split-input",
   "transfer-split-input",
@@ -189,7 +194,6 @@ const emit = defineEmits([
 ]);
 
 const timeLeft = ref(300);
-const showLargeQr = ref(false);
 const isAmountTouched = ref(false);
 let timer = null;
 
@@ -198,12 +202,12 @@ watch(() => props.paymentMethod, (newVal) => {
   if (newVal === 2) {
     timeLeft.value = 300;
     startTimer();
-  } else if (!showLargeQr.value) {
+  } else if (!props.showLargeQr) {
     stopTimer();
   }
 });
 
-watch(showLargeQr, (isOpen) => {
+watch(() => props.showLargeQr, (isOpen) => {
   if (isOpen) {
     timeLeft.value = 300;
     startTimer();
@@ -271,7 +275,7 @@ function handleQrClick() {
       return;
     }
   }
-  showLargeQr.value = true;
+  emit('update:showLargeQr', true);
 }
 
 watch(() => props.tienMatKetHop, (val) => {
@@ -285,7 +289,7 @@ watch(() => props.tienMatKetHop, (val) => {
 });
 function handlePayNowFromQr() {
   emit('pay-now');
-  showLargeQr.value = false;
+  emit('update:showLargeQr', false);
 }
 </script>
 
@@ -501,7 +505,7 @@ function handlePayNowFromQr() {
                 :checked="paymentMethod === 2"
                 type="radio"
                 class="h-4 w-4 accent-red-500"
-                @click="emit('update:paymentMethod', 2); showLargeQr = true"
+                @click="emit('update:paymentMethod', 2); emit('update:showLargeQr', true)"
               />
               <span>Chuyển khoản</span>
             </label>
@@ -649,11 +653,11 @@ function handlePayNowFromQr() {
     </div>
 
     <Teleport to="body">
-      <div v-if="showLargeQr" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" @click="showLargeQr = false">
+      <div v-if="showLargeQr" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" @click="emit('update:showLargeQr', false)">
         <div class="relative rounded-[32px] bg-white p-8 shadow-2xl" @click.stop>
           <button
             class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
-            @click="showLargeQr = false"
+            @click="emit('update:showLargeQr', false)"
           >
             <X class="h-6 w-6" />
           </button>

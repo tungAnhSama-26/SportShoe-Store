@@ -379,7 +379,7 @@ watch(() => props.showProductDropdown, (newVal) => {
                 <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="text-left text-base font-bold text-slate-950 dark:text-slate-200">
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center w-12">STT</th>
-                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Mã Sản Phẩm</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Mã biến thể</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Tên Sản Phẩm</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Màu sắc</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center">Size</th>

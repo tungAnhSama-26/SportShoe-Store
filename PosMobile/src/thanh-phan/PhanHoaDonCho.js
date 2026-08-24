@@ -51,7 +51,7 @@ export default function PhanHoaDonCho({
             >
               <Ionicons name="receipt-outline" size={16} color={isActive ? "#ef4444" : "#64748b"} />
               <Text style={[styles.invoiceText, isActive && styles.invoiceTextActive]}>
-                {invoice.ma || `Hóa đơn ${invoice.id}`}
+                {invoice.ma || `Hóa đơn ${invoice.id}`} <Text style={{ fontSize: 12, opacity: 0.85 }}>({invoice.tongSanPham || 0}SP)</Text>
               </Text>
               {xuLyHuyHoaDonCho && (
                 <TouchableOpacity 

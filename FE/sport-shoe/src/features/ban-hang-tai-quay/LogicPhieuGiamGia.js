@@ -9,6 +9,7 @@ export function LogicPhieuGiamGia({
   cartItems,
   tongTien,
   hoaDonChoDaChon,
+  dangTaiChiTietHoaDon,
   khachHangDuocChon,
   layIdKhachHangHienTai,
   taoDanhSachSanPhamThanhToan,
@@ -507,6 +508,8 @@ export function LogicPhieuGiamGia({
   }
 
   watch([coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon], async ([coTheTim]) => {
+    if (dangTaiChiTietHoaDon?.value) return;
+
     if (!coTheTim) {
       ketQuaTimKiemPhieu.value = [];
       hienThiDanhSachPhieu.value = false;

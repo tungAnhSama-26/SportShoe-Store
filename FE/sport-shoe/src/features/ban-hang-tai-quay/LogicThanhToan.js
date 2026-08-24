@@ -11,6 +11,7 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
   const tienMatKetHop = ref("");
   const tienChuyenKhoanKetHop = ref("");
   const ghiChuThanhToan = ref("");
+  const hienThiMaQrLon = ref(false);
 
   watch(() => hoaDonChoDaChon.value?.id, (newId, oldId) => {
     if (newId !== oldId) {
@@ -20,6 +21,7 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
       tienMatKetHop.value = "";
       tienChuyenKhoanKetHop.value = "";
       ghiChuThanhToan.value = "";
+      hienThiMaQrLon.value = false;
     }
   });
 
@@ -139,6 +141,7 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     tienKhachThanhToan,
     tienThua,
     thongBaoLoiThanhToan,
+    hienThiMaQrLon,
     capNhatTienKhachThanhToan: (force = false) => capNhatTienKhachThanhToan(false, force),
     kiemTraLoiThanhToan,
     xuLyTienKhachDuaInput,

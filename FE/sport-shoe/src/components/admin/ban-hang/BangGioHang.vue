@@ -93,7 +93,7 @@ function getPriceChangeText(item) {
       <thead class="bg-slate-100 dark:bg-slate-800/80 text-left text-sm text-slate-950 dark:text-slate-200 font-bold">
         <tr>
           <th class="px-3 py-2 whitespace-nowrap w-[5%]">STT</th>
-          <th class="px-3 py-2 whitespace-nowrap w-[15%]">Mã sản phẩm</th>
+          <th class="px-3 py-2 whitespace-nowrap w-[15%]">Mã biến thể</th>
           <th class="px-3 py-2 whitespace-nowrap w-[30%]">Tên sản phẩm</th>
           <th class="px-3 py-2 whitespace-nowrap w-[10%]">Màu sắc</th>
           <th class="px-3 py-2 whitespace-nowrap w-[10%]">Kích cỡ</th>
