@@ -130,7 +130,6 @@ const tienNhanKiemDem = ref(null);
 const lyDoTuChoi = ref("");
 
 const processing = ref(false);
-const hienFormMoCaAdmin = ref(false);
 
 const getLastWordOfName = computed(() => {
   const parts = (adminSession.value.hoTen || "Nhân viên").trim().split(/\s+/);
@@ -145,6 +144,7 @@ const isAdmin = computed(() => {
     || Number(vaiTro) === 1
     || ["Quản lý", "Quản trị viên", "Admin"].includes(String(vaiTro));
 });
+const shouldRedirectAdminToHandover = computed(() => isAdmin.value && isMoCaSángSớmMode.value);
 const caLamDuocChon = computed(() =>
   danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
 );
@@ -270,6 +270,11 @@ async function taiNhanVienGiaoCa() {
 
 // State Machine Sync based on BE states
 async function syncState() {
+  if (shouldRedirectAdminToHandover.value) {
+    router.replace("/admin/ban-giao-ca");
+    return;
+  }
+
   if (activeShift.value) {
     if (activeShift.value.trangThai === "MO_CA") {
       buocHienTai.value = 1;
@@ -413,7 +418,7 @@ async function xacNhanMoCaSángSớmBtn() {
       processing.value = false;
       if (res.success) {
         showSuccess(res.message);
-        router.push("/admin/ban-hang");
+        router.push("/admin/ban-giao-ca");
       } else {
         showError(res.message);
       }
@@ -636,7 +641,7 @@ function cuongCheKetThucCa() {
 <template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- SCREEN B: MỞ CA SÁNG SỚM -->
-    <div v-if="isMoCaSángSớmMode" class="flex items-center justify-center min-h-[70vh]">
+    <div v-if="isMoCaSángSớmMode && !isAdmin" class="flex items-center justify-center min-h-[70vh]">
       <!-- Case 1: Active shift already exists -->
       <div v-if="activeShift && (!isAdmin || isMyShift)" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 text-center space-y-5">
         <div class="mx-auto h-16 w-16 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-500 rounded-full flex items-center justify-center text-amber-500 shadow-md">
@@ -753,108 +758,7 @@ function cuongCheKetThucCa() {
         </div>
       </div>
 
-      <!-- Case 3: Admin can sell immediately without opening a shift -->
-      <div v-else-if="isAdmin" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-5">
-        <div class="mx-auto h-16 w-16 bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-500 rounded-full flex items-center justify-center text-emerald-500 shadow-md">
-          <CheckCircle2 class="h-8 w-8" />
-        </div>
-        <div class="text-center">
-          <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">Admin không cần mở ca</h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-            Bạn có thể vào màn bán hàng và thanh toán ngay. Nếu cửa hàng đang có ca nhân viên, admin vẫn được bán hàng trong ca đó.
-          </p>
-        </div>
-        <div class="grid gap-3">
-          <button
-            type="button"
-            @click="router.push('/admin/ban-hang')"
-            class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition"
-          >
-            Vào bán hàng ngay
-          </button>
-          <button
-            type="button"
-            @click="hienFormMoCaAdmin = !hienFormMoCaAdmin"
-            class="w-full py-3.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/40 font-bold rounded-2xl transition"
-          >
-            {{ hienFormMoCaAdmin ? 'Ẩn mở ca quản lý' : 'Mở ca quản lý riêng' }}
-          </button>
-        </div>
-
-        <div v-if="hienFormMoCaAdmin" class="space-y-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left dark:border-slate-700 dark:bg-slate-900/30">
-          <div v-if="activeShift && !isMyShift" class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs font-semibold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
-            Đang có ca của {{ activeShift.nhanVienTrongCaTen }}. Admin vẫn có thể mở ca riêng bất kỳ lúc nào.
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Ca làm việc cần mở <span class="text-rose-500">*</span>
-            </label>
-            <select
-              v-model="caLamMoId"
-              class="w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400"
-            >
-              <option value="">Chọn ca làm việc</option>
-              <option v-for="ca in danhSachCaMo" :key="ca.id" :value="String(ca.id)">
-                {{ ca.ten }} ({{ ca.gioBatDau }} - {{ ca.gioKetThuc }})
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Nhập số tiền mặt có trong két <span class="text-rose-500">*</span>
-            </label>
-            <div class="flex items-center gap-3">
-              <div class="relative flex-1">
-                <input
-                  type="text"
-                  v-model="tienMoCaSángSớmFormatted"
-                  min="0"
-                  placeholder="Nhập số tiền mặt có trong két..."
-                  class="w-full h-12 pl-4 pr-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-lg font-bold text-slate-800 dark:text-white focus:outline-none focus:border-rose-400 transition"
-                />
-                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">đ</span>
-              </div>
-              <button
-                type="button"
-                @click="showsCalculator = true"
-                title="Mở bảng tính đếm tiền"
-                class="h-12 w-12 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition shadow-sm"
-              >
-                <Calculator class="h-6 w-6" />
-              </button>
-            </div>
-            <p class="mt-2 text-xs italic text-slate-500 dark:text-slate-400 leading-normal">
-              {{ docTienBangChu(tienMoCaSángSớm) }}
-            </p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Ghi chú mở ca
-            </label>
-            <textarea
-              v-model="ghiChuMoCaSángSớm"
-              rows="3"
-              maxlength="200"
-              class="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-rose-400 transition"
-              placeholder="Nhập ghi chú mở ca..."
-            ></textarea>
-          </div>
-
-          <button
-            type="button"
-            @click="xacNhanMoCaSángSớmBtn"
-            :disabled="processing"
-            class="w-full py-4 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl shadow-lg transition text-sm uppercase tracking-wider disabled:opacity-50"
-          >
-            {{ processing ? 'ĐANG MỞ CA...' : 'MỞ CA QUẢN LÝ' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Case 4: Staff has no active ca, no pending handover - show normal starting cash declaration -->
+      <!-- Case 3: Staff has no active ca, no pending handover - show normal starting cash declaration -->
       <div v-else class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
         <!-- Header -->
         <div class="text-center space-y-2">
@@ -1352,21 +1256,22 @@ function cuongCheKetThucCa() {
         </div>
         <div>
           <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">
-            {{ isAdmin ? 'Admin có thể bán ngay' : 'Không có ca hoạt động' }}
+            Không có ca hoạt động
           </h2>
           <p v-if="isAdmin" class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-            Bạn không cần mở ca để bán hàng. Hãy vào màn bán hàng tại quầy và thực hiện thanh toán như bình thường.
+            Hiện chưa có ca làm việc hoặc yêu cầu bàn giao nào cần xử lý.
           </p>
           <p v-else class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             Bạn hiện không có ca làm việc nào đang hoạt động và không có ca bàn giao nào cần xác nhận.
             Vui lòng mở ca làm việc để bắt đầu thực hiện bán hàng và quản lý ca.
           </p>
         </div>
-        <button 
-          @click="router.push(isAdmin ? '/admin/ban-hang' : '/admin/mo-ca')" 
+        <button
+          v-if="!isAdmin"
+          @click="router.push('/admin/mo-ca')"
           class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition"
         >
-          {{ isAdmin ? 'Vào bán hàng ngay' : 'Đi đến Mở ca làm việc' }}
+          Đi đến Mở ca làm việc
         </button>
       </div>
 

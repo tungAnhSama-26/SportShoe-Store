@@ -176,7 +176,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     public GiaoCaResponse ketCa(UUID nhanVienId, KetCaRequest request) {
         GiaoCa giaoCa = layCaDangMoCuaNhanVien(nhanVienId);
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
-        if (timCaKeTiep(giaoCa.getCaLam()).isPresent()) {
+        if (!laAdmin(nhanVien) && timCaKeTiep(giaoCa.getCaLam()).isPresent()) {
             throw new BusinessException("Vẫn còn ca làm việc tiếp theo. Vui lòng bàn giao cho nhân viên ca tiếp theo.");
         }
 
