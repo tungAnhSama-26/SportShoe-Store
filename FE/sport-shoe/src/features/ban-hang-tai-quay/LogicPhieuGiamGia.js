@@ -383,6 +383,9 @@ export function LogicPhieuGiamGia({
       }
       
       if (currentBest) {
+          const currentDiscount = phieuGiamGiaDaApDung.value ? tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value) : 0;
+          const bestDiscount = tinhToanGiamGia(currentBest, tongTien.value);
+
           if (!phieuGiamGiaDaApDung.value) {
               if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
                   maPhieuGiamGia.value = currentBest.ma;
@@ -390,14 +393,19 @@ export function LogicPhieuGiamGia({
                   capNhatTienKhachThanhToan();
               }
           } else if (phieuGiamGiaDaApDung.value?.ma === currentBest?.ma) {
-              const currentDiscount = tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
-              if (Number(phieuGiamGiaDaApDung.value.soTienGiam) !== Number(currentDiscount)) {
+              if (Number(phieuGiamGiaDaApDung.value.soTienGiam) !== Number(bestDiscount)) {
                   phieuGiamGiaDaApDung.value = {
                       ...phieuGiamGiaDaApDung.value,
-                      soTienGiam: currentDiscount
+                      soTienGiam: bestDiscount
                   };
                   capNhatTienKhachThanhToan();
               }
+          } else if (bestDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
+              // Khi giỏ hàng tăng số lượng/đạt hạn mức cao hơn và mở khóa voucher tốt hơn:
+              // Tự động nâng cấp lên voucher tốt nhất cho giỏ hàng
+              maPhieuGiamGia.value = currentBest.ma;
+              phieuGiamGiaDaApDung.value = currentBest;
+              capNhatTienKhachThanhToan();
           }
       } else {
          if (phieuGiamGiaDaApDung.value && !dangApDungPhieu.value) {
@@ -442,7 +450,6 @@ export function LogicPhieuGiamGia({
     }
     const trimmed = value.trim();
     if (!trimmed) {
-      phieuGiamGiaDaApDung.value = null;
       if (hienThiDanhSachPhieu.value) {
         boDemThoiGianPhieu = window.setTimeout(() => {
           void timKiemPhieu("");
