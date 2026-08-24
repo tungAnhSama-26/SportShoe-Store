@@ -280,13 +280,13 @@ export async function showPaymentConfirmWithCoupon({
     <div class="text-left font-sans text-slate-800">
       <div class="bg-red-50 border border-red-100 rounded-lg p-3 mb-5 flex items-center gap-2">
         <svg class="w-5 h-5 text-[#cf1018] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-        <span class="text-[#a90d14] font-medium text-[15px]">Có voucher tốt hơn cho đơn hàng của bạn!</span>
+        <span class="text-[#a90d14] font-medium text-[15px]">${oldCouponCode ? 'Có voucher tốt hơn cho đơn hàng của bạn!' : 'Có voucher giảm giá cho đơn hàng của bạn!'}</span>
       </div>
 
       <div class="grid grid-cols-2 gap-4 mb-5">
         <div>
           <div class="text-sm text-slate-500 mb-1.5 font-medium">Voucher hiện tại</div>
-          ${oldCouponCode ? `<div class="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-md text-sm font-semibold mb-2">${oldCouponCode}</div>` : `<div class="text-sm text-slate-400 mb-2 italic">Không có</div>`}
+          ${oldCouponCode ? `<div class="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-md text-sm font-semibold mb-2">${oldCouponCode}</div>` : `<div class="text-sm text-slate-400 mb-2 italic">Chưa áp dụng</div>`}
           <div class="text-sm text-slate-600 flex items-center gap-1">Giảm: <span class="${oldDiscount > 0 ? 'line-through text-slate-400' : ''}">${dinhDangTienViet(oldDiscount)}</span></div>
         </div>
         <div>

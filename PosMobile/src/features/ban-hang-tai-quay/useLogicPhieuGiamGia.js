@@ -311,9 +311,8 @@ export function useLogicPhieuGiamGia({
       if (!phieuGiamGiaDaApDung) {
         if (!danhSachPhieuTotHonDaTuChoi.has(currentBest.ma)) {
           setMaPhieuGiamGia(currentBest.ma);
-          if (!dangApDungPhieu) {
-            xuLyApDungPhieu(false, currentBest.ma);
-          }
+          setPhieuGiamGiaDaApDung(currentBest);
+          if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
         }
       } else if (phieuGiamGiaDaApDung.ma !== currentBest.ma) {
         const currentDiscount = tinhToanGiamGia(phieuGiamGiaDaApDung, tongTien);
@@ -396,13 +395,24 @@ export function useLogicPhieuGiamGia({
             tongTienHang: tongTien
           });
           const ketQua = response?.data || response;
-          const isValid = Array.isArray(ketQua) && ketQua.some(c => c.ma === phieuGiamGiaDaApDung.ma);
-          if (!isValid && isMounted) {
+          const moi = Array.isArray(ketQua) ? ketQua.find(c => String(c.ma).toUpperCase() === String(phieuGiamGiaDaApDung.ma).toUpperCase()) : null;
+          if (!moi && isMounted) {
              const ma = phieuGiamGiaDaApDung.ma;
              setPhieuGiamGiaDaApDung(null);
              setMaPhieuGiamGia("");
-             showWarning(`Phiếu giảm giá ${ma} không còn hợp lệ. Hệ thống đã tự động gỡ bỏ phiếu.`);
+             showWarning(`Phiếu giảm giá "${ma}" đã ngừng hoạt động hoặc không còn đủ điều kiện áp dụng, hệ thống đã tự động gỡ bỏ.`);
              if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
+          } else if (moi && isMounted) {
+             const cuGiam = Number(phieuGiamGiaDaApDung.soTienGiam || 0);
+             const moiGiam = Number(moi.soTienGiam || 0);
+             if (cuGiam !== moiGiam || phieuGiamGiaDaApDung.giaTri !== moi.giaTri) {
+                setPhieuGiamGiaDaApDung(moi);
+                setMaPhieuGiamGia(moi.ma);
+                if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
+                if (cuGiam !== moiGiam) {
+                   showWarning(`Thông tin phiếu giảm giá "${moi.ma}" đã thay đổi. Số tiền giảm đã được cập nhật từ ${dinhDangTien(cuGiam)} thành ${dinhDangTien(moiGiam)}.`);
+                }
+             }
           }
         } catch (e) {
           // ignore
@@ -418,7 +428,7 @@ export function useLogicPhieuGiamGia({
     checkAndReload();
 
     return () => { isMounted = false; };
-  }, [coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon, dangTaiChiTietHoaDon]);
+  }, [coTheTimPhieu, tongTien, khachHangDuocChon, hoaDonChoDaChon?.id, dangTaiChiTietHoaDon]);
 
   return {
     maPhieuGiamGia, setMaPhieuGiamGia,

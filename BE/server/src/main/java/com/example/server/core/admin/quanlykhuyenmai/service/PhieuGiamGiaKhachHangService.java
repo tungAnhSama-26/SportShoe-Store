@@ -33,6 +33,7 @@ public class PhieuGiamGiaKhachHangService {
     private final KhachHangRepository khachHangRepository;
     private final EmailService emailService;
     private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public List<QuanLyPhieuGiamGiaKhachHangResponse> getAll() {
         return phieuGiamGiaKhachHangRepository.hienThiPhieuGiamGiaKhachHang();
@@ -49,6 +50,7 @@ public class PhieuGiamGiaKhachHangService {
 
     public void remove(Integer id) {
         phieuGiamGiaKhachHangRepository.deleteById(id);
+        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
     }
 
     public PhieuGiamGiaKhachHang add(PhieuGiamGiaKhachHangRequest request) {
@@ -64,6 +66,7 @@ public class PhieuGiamGiaKhachHangService {
         phieuGiamGiaKhachHang.setNgayTao(Instant.now());
 
         PhieuGiamGiaKhachHang saved = phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
 
         // Báo vào chuông thông báo của khách được tặng.
         clientThongBaoService.guiChoKhach(
@@ -112,7 +115,9 @@ public class PhieuGiamGiaKhachHangService {
             phieuGiamGiaKhachHang.setNgayTao(Instant.now());
         }
 
-        return phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+        PhieuGiamGiaKhachHang updated = phieuGiamGiaKhachHangRepository.save(phieuGiamGiaKhachHang);
+        sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
+        return updated;
     }
 
     private Instant toInstant(LocalDate value) {

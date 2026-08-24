@@ -524,18 +524,18 @@ export function useLogicBanHangTaiQuay() {
     if (isSyncingUIRef.current || dangTaiChiTietHoaDon) return;
     if (hoaDonChoDaChon) {
       const payloadState = {
-        choPhepGiaoHang,
-        tenNguoiNhanGiaoHang,
-        sdtNguoiNhanGiaoHang,
-        diaChiGiaoHang,
-        tienKhachDua: thanhToanLogic.tienKhachDua,
-        tienMatKetHop: thanhToanLogic.tienMatKetHop,
-        tienChuyenKhoanKetHop: thanhToanLogic.tienChuyenKhoanKetHop,
-        phuongThucThanhToan: thanhToanLogic.phuongThucThanhToan,
-        hienThiMaQrLon: thanhToanLogic.hienThiMaQrLon,
-        ghiChuThanhToan: thanhToanLogic.ghiChuThanhToan,
-        tuKhoaKhachHang: khachHangLogic.tuKhoaKhachHang,
-        khachHangDuocChon: khachHangLogic.khachHangDuocChon
+        choPhepGiaoHang: Boolean(choPhepGiaoHang),
+        tenNguoiNhanGiaoHang: String(tenNguoiNhanGiaoHang || "").trim(),
+        sdtNguoiNhanGiaoHang: String(sdtNguoiNhanGiaoHang || "").trim(),
+        diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHang),
+        tienKhachDua: String(thanhToanLogic.tienKhachDua || "").trim(),
+        tienMatKetHop: String(thanhToanLogic.tienMatKetHop || "").trim(),
+        tienChuyenKhoanKetHop: String(thanhToanLogic.tienChuyenKhoanKetHop || "").trim(),
+        phuongThucThanhToan: Number(thanhToanLogic.phuongThucThanhToan) || 1,
+        hienThiMaQrLon: Boolean(thanhToanLogic.hienThiMaQrLon),
+        ghiChuThanhToan: String(thanhToanLogic.ghiChuThanhToan || "").trim(),
+        tuKhoaKhachHang: String(khachHangLogic.tuKhoaKhachHang || "").trim(),
+        khachHangId: khachHangLogic.khachHangDuocChon?.id || null
       };
 
       // Prevent echoing back the exact same state we just received
@@ -547,7 +547,20 @@ export function useLogicBanHangTaiQuay() {
         sender: sessionIdRef.current,
         action: 'SYNC_STATE',
         invoiceId: hoaDonChoDaChon.id,
-        state: payloadState
+        state: {
+          choPhepGiaoHang,
+          tenNguoiNhanGiaoHang,
+          sdtNguoiNhanGiaoHang,
+          diaChiGiaoHang,
+          tienKhachDua: thanhToanLogic.tienKhachDua,
+          tienMatKetHop: thanhToanLogic.tienMatKetHop,
+          tienChuyenKhoanKetHop: thanhToanLogic.tienChuyenKhoanKetHop,
+          phuongThucThanhToan: thanhToanLogic.phuongThucThanhToan,
+          hienThiMaQrLon: thanhToanLogic.hienThiMaQrLon,
+          ghiChuThanhToan: thanhToanLogic.ghiChuThanhToan,
+          tuKhoaKhachHang: khachHangLogic.tuKhoaKhachHang,
+          khachHangDuocChon: khachHangLogic.khachHangDuocChon
+        }
       });
     }
   }, [
@@ -895,6 +908,30 @@ export function useLogicBanHangTaiQuay() {
             return;
           }
 
+          // Nếu hóa đơn đang mở vừa được cập nhật từ thiết bị khác -> tải lại chi tiết để không bị đè/mất giỏ hàng
+          if (latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId && msg.action === 'UPDATED') {
+            if (boDemTuDongLuu.current) {
+              clearTimeout(boDemTuDongLuu.current);
+              boDemTuDongLuu.current = null;
+            }
+            isSyncingUIRef.current = true;
+            dangLuuNoiBoRef.current = true;
+            skipNextAutosave.current = true;
+            try {
+              const detail = await layChiTietHoaDonCho(msg.invoiceId);
+              if (detail && latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId) {
+                latestRef.current.chuyenHoaDonThanhBanNhap(detail);
+              }
+            } catch (e) {
+              console.error("Lỗi cập nhật chi tiết hóa đơn realtime trên App:", e);
+            } finally {
+              setTimeout(() => {
+                isSyncingUIRef.current = false;
+                dangLuuNoiBoRef.current = false;
+              }, 300);
+            }
+          }
+
           // Chỉ tự động chọn hóa đơn nếu hiện tại CHƯA chọn hóa đơn nào và có hóa đơn mới được tạo
           if (!latestRef.current.hoaDonChoDaChon && msg.action === 'CREATED') {
             const invoice = (invoices || []).find((hd) => hd.id === msg.invoiceId);
@@ -931,18 +968,28 @@ export function useLogicBanHangTaiQuay() {
           skipNextAutosave.current = true;
           
           lastReceivedSyncState.current = {
-            ...msg.state,
-            diaChiGiaoHang: chuanHoaDiaChi(msg.state.diaChiGiaoHang)
+            choPhepGiaoHang: Boolean(msg.state.choPhepGiaoHang),
+            tenNguoiNhanGiaoHang: String(msg.state.tenNguoiNhanGiaoHang || "").trim(),
+            sdtNguoiNhanGiaoHang: String(msg.state.sdtNguoiNhanGiaoHang || "").trim(),
+            diaChiGiaoHang: chuanHoaDiaChi(msg.state.diaChiGiaoHang),
+            tienKhachDua: String(msg.state.tienKhachDua || "").trim(),
+            tienMatKetHop: String(msg.state.tienMatKetHop || "").trim(),
+            tienChuyenKhoanKetHop: String(msg.state.tienChuyenKhoanKetHop || "").trim(),
+            phuongThucThanhToan: Number(msg.state.phuongThucThanhToan) || 1,
+            hienThiMaQrLon: Boolean(msg.state.hienThiMaQrLon),
+            ghiChuThanhToan: String(msg.state.ghiChuThanhToan || "").trim(),
+            tuKhoaKhachHang: String(msg.state.tuKhoaKhachHang || "").trim(),
+            khachHangId: msg.state.khachHangDuocChon?.id || null
           };
 
-          latestRef.current.setChoPhepGiaoHang(msg.state.choPhepGiaoHang);
-          latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);
-          latestRef.current.setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang);
+          latestRef.current.setChoPhepGiaoHang(Boolean(msg.state.choPhepGiaoHang));
+          latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang || "");
+          latestRef.current.setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang || "");
           latestRef.current.setDiaChiGiaoHang(chuanHoaDiaChi(msg.state.diaChiGiaoHang));
           latestRef.current.thanhToanLogic.setTienKhachDua(msg.state.tienKhachDua || "");
           latestRef.current.thanhToanLogic.setTienMatKetHop(msg.state.tienMatKetHop || "");
           latestRef.current.thanhToanLogic.setTienChuyenKhoanKetHop(msg.state.tienChuyenKhoanKetHop || "");
-          latestRef.current.thanhToanLogic.setPhuongThucThanhToan(msg.state.phuongThucThanhToan);
+          latestRef.current.thanhToanLogic.setPhuongThucThanhToan(msg.state.phuongThucThanhToan || 1);
           latestRef.current.thanhToanLogic.setHienThiMaQrLon(!!msg.state.hienThiMaQrLon);
           latestRef.current.thanhToanLogic.setGhiChuThanhToan(msg.state.ghiChuThanhToan || "");
           latestRef.current.khachHangLogic.setTuKhoaKhachHang(msg.state.tuKhoaKhachHang || "");
@@ -951,7 +998,7 @@ export function useLogicBanHangTaiQuay() {
           setTimeout(() => { 
             isSyncingUIRef.current = false; 
             dangLuuNoiBoRef.current = false; 
-          }, 50);
+          }, 150);
         }
       }
     });
