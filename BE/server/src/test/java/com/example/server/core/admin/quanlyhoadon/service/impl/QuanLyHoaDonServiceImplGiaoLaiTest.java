@@ -158,7 +158,7 @@ class QuanLyHoaDonServiceImplGiaoLaiTest {
 
         assertThatThrownBy(() -> service.giaoLaiDonHang(hoaDon.getId()))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Không đủ tồn kho");
+                .hasMessageContaining("Không đủ số lượng");
 
         assertThat(thanhToan.getTrangThai()).isEqualTo(4);
         assertThat(bienThe.getSoLuong()).isEqualTo(1);
