@@ -107,6 +107,8 @@ public class QuanLySanPhamService {
     private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final HoaDonRepository hoaDonRepository;
+    private final com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService;
+    private final com.example.server.core.admin.thongbao.service.ThongBaoService thongBaoService;
 
     public QuanLySanPhamService(
             GiayRepository giayRepository,
@@ -125,7 +127,9 @@ public class QuanLySanPhamService {
             CongNgheDemRepository congNgheDemRepository,
             com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher,
             HoaDonChiTietRepository hoaDonChiTietRepository,
-            HoaDonRepository hoaDonRepository
+            HoaDonRepository hoaDonRepository,
+            com.example.server.core.client.thongbao.service.ClientThongBaoService clientThongBaoService,
+            com.example.server.core.admin.thongbao.service.ThongBaoService thongBaoService
     ) {
         this.giayRepository = giayRepository;
         this.giayChiTietRepository = giayChiTietRepository;
@@ -144,6 +148,8 @@ public class QuanLySanPhamService {
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.hoaDonRepository = hoaDonRepository;
+        this.clientThongBaoService = clientThongBaoService;
+        this.thongBaoService = thongBaoService;
     }
 
     // ─── Danh mục ────────────────────────────────────────────────────────────
@@ -782,6 +788,18 @@ public class QuanLySanPhamService {
                 giayChiTietRepository.save(ct);
                 xoaKhoiGioHangCuaKhachHang(ct.getId());
             }
+            clientThongBaoService.guiChoTatCaKhach(
+                    "SAN_PHAM",
+                    "Sản phẩm đã ngừng bán",
+                    "Sản phẩm \"" + giay.getTen() + "\" đã ngừng bán.",
+                    "/khachhang/san-pham"
+            );
+            thongBaoService.taoThongBao(
+                    "Sản phẩm đã ngừng bán",
+                    "Sản phẩm \"" + giay.getTen() + "\" đã ngừng bán.",
+                    "STOCK",
+                    "/admin/san-pham"
+            );
             sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
             return;
         }
@@ -795,6 +813,18 @@ public class QuanLySanPhamService {
         giay.setNgayCapNhat(Instant.now());
         // Tự đặt Kinh doanh / Hết hàng theo tồn của các biến thể đang bán.
         updateTrangThaiTuSoLuong(giay);
+        clientThongBaoService.guiChoTatCaKhach(
+                "SAN_PHAM",
+                "Sản phẩm mở bán trở lại",
+                "Sản phẩm \"" + giay.getTen() + "\" đã mở bán trở lại. Xem ngay!",
+                "/khachhang/san-pham/" + id
+        );
+        thongBaoService.taoThongBao(
+                "Sản phẩm mở bán trở lại",
+                "Sản phẩm \"" + giay.getTen() + "\" đã mở bán trở lại.",
+                "STOCK",
+                "/admin/san-pham"
+        );
         sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_GIAY");
     }
 
@@ -926,6 +956,48 @@ public class QuanLySanPhamService {
         var saved = giayChiTietRepository.save(gct);
         updateTrangThaiTuSoLuong(saved.getGiay().getId());
         sanPhamRealtimePublisher.phatSauCommit("DOI_TRANG_THAI_BIEN_THE");
+
+        String tenSp = saved.getGiay() != null ? saved.getGiay().getTen() : "Sản phẩm";
+        String mauSac = saved.getMauSac() != null ? saved.getMauSac().getTen() : "";
+        String kichCo = saved.getKichCo() != null ? saved.getKichCo().getGiaTri() : "";
+        StringBuilder moTaSb = new StringBuilder(tenSp);
+        if (!mauSac.isBlank()) moTaSb.append(" (").append(mauSac);
+        if (!kichCo.isBlank()) {
+            if (!mauSac.isBlank()) moTaSb.append(", ");
+            else moTaSb.append(" (");
+            moTaSb.append("Size ").append(kichCo);
+        }
+        if (!mauSac.isBlank() || !kichCo.isBlank()) moTaSb.append(")");
+        String chiTietMoTa = moTaSb.toString();
+
+        if (req.kichHoat() != null && req.kichHoat() == 0) {
+            clientThongBaoService.guiChoTatCaKhach(
+                    "SAN_PHAM",
+                    "Sản phẩm đã ngừng bán",
+                    "Sản phẩm \"" + chiTietMoTa + "\" đã ngừng bán.",
+                    "/khachhang/san-pham"
+            );
+            thongBaoService.taoThongBao(
+                    "Sản phẩm đã ngừng bán",
+                    "Sản phẩm \"" + chiTietMoTa + "\" đã ngừng bán.",
+                    "STOCK",
+                    "/admin/bien-the-san-pham?giayId=" + (saved.getGiay() != null ? saved.getGiay().getId() : 0) + "&variantId=" + saved.getId() + "&status=0"
+            );
+        } else if (req.kichHoat() != null && req.kichHoat() == 1) {
+            clientThongBaoService.guiChoTatCaKhach(
+                    "SAN_PHAM",
+                    "Sản phẩm mở bán trở lại",
+                    "Sản phẩm \"" + chiTietMoTa + "\" đã mở bán trở lại. Xem ngay!",
+                    "/khachhang/san-pham/" + (saved.getGiay() != null ? saved.getGiay().getId() : "")
+            );
+            thongBaoService.taoThongBao(
+                    "Sản phẩm mở bán trở lại",
+                    "Sản phẩm \"" + chiTietMoTa + "\" đã mở bán trở lại.",
+                    "STOCK",
+                    "/admin/bien-the-san-pham?giayId=" + (saved.getGiay() != null ? saved.getGiay().getId() : 0) + "&variantId=" + saved.getId() + "&status=1"
+            );
+        }
+
         var activeDiscount = buildActiveDiscountInfoMap(List.of(saved)).get(saved.getId());
         return toBienThe(saved, activeDiscount);
     }
@@ -944,6 +1016,20 @@ public class QuanLySanPhamService {
     private void xoaKhoiGioHangCuaKhachHang(Integer giayChiTietId) {
         // CHỈ gỡ khỏi giỏ hàng (hóa đơn trạng thái 0). KHÔNG đụng đơn thật (chờ xác nhận = 1...)
         // Không xóa vật lý dòng đơn vì sẽ làm sai lịch sử nghiệp vụ và vi phạm khóa ngoại.
+        GiayChiTiet gct = giayChiTietRepository.findById(giayChiTietId).orElse(null);
+        String tenSp = gct != null && gct.getGiay() != null ? gct.getGiay().getTen() : "Sản phẩm";
+        String mauSac = gct != null && gct.getMauSac() != null ? gct.getMauSac().getTen() : "";
+        String kichCo = gct != null && gct.getKichCo() != null ? gct.getKichCo().getGiaTri() : "";
+        StringBuilder moTaSb = new StringBuilder(tenSp);
+        if (!mauSac.isBlank()) moTaSb.append(" (").append(mauSac);
+        if (!kichCo.isBlank()) {
+            if (!mauSac.isBlank()) moTaSb.append(", ");
+            else moTaSb.append(" (");
+            moTaSb.append("Size ").append(kichCo);
+        }
+        if (!mauSac.isBlank() || !kichCo.isBlank()) moTaSb.append(")");
+        String chiTietMoTa = moTaSb.toString();
+
         List<HoaDonChiTiet> toDelete = hoaDonChiTietRepository.findByGiayChiTietIdAndTrangThaiHoaDon(giayChiTietId, List.of(0));
         for (HoaDonChiTiet hdct : toDelete) {
             HoaDon hd = hdct.getHoaDon();
@@ -972,6 +1058,16 @@ public class QuanLySanPhamService {
             
             hoaDonChiTietRepository.delete(hdct);
             hoaDonRepository.save(hd);
+
+            if (hd.getKhachHang() != null && hd.getKhachHang().getId() != null) {
+                clientThongBaoService.guiChoKhach(
+                        hd.getKhachHang().getId(),
+                        "SAN_PHAM",
+                        "Sản phẩm đã ngừng bán",
+                        "Sản phẩm \"" + chiTietMoTa + "\" đã ngừng bán và đã được tự động gỡ khỏi giỏ hàng của bạn.",
+                        "/khachhang/gio-hang"
+                );
+            }
         }
     }
 

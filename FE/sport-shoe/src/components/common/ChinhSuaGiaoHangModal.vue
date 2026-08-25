@@ -102,6 +102,7 @@ function luu() {
   emit("save", {
     tenNguoiNhan: form.value.tenNguoiNhan.trim(),
     sdtNguoiNhan: form.value.sdtNguoiNhan.trim(),
+    soDienThoaiNguoiNhan: form.value.sdtNguoiNhan.trim(),
     email: form.value.email.trim(),
     diaChiGiaoHang: taoPayloadDiaChi(diaChiHienTai.value),
     ghiChu: form.value.ghiChu.trim(),

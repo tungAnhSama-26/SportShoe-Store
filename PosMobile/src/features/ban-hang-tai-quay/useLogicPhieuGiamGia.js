@@ -205,10 +205,11 @@ export function useLogicPhieuGiamGia({
     }
   }, [hoaDonChoDaChon, layIdKhachHangHienTai]);
 
-  const tuChoiPhieuTotHon = useCallback(() => {
-    if (phieuTotHonDeXuat) {
+  const tuChoiPhieuTotHon = useCallback((code) => {
+    const ma = code || phieuTotHonDeXuat?.ma;
+    if (ma) {
       const newSet = new Set(danhSachPhieuTotHonDaTuChoi);
-      newSet.add(phieuTotHonDeXuat.ma);
+      newSet.add(ma);
       setDanhSachPhieuTotHonDaTuChoi(newSet);
       setPhieuTotHonDeXuat(null);
     }
@@ -314,12 +315,14 @@ export function useLogicPhieuGiamGia({
           setPhieuGiamGiaDaApDung(currentBest);
           if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
         }
-      } else if (phieuGiamGiaDaApDung.ma !== currentBest.ma) {
+      } else {
         const currentDiscount = tinhToanGiamGia(phieuGiamGiaDaApDung, tongTien);
-        const newDiscount = tinhToanGiamGia(currentBest, tongTien);
-        
-        if (newDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.has(currentBest.ma)) {
-          setPhieuTotHonDeXuat(currentBest);
+        if (Number(phieuGiamGiaDaApDung.soTienGiam) !== Number(currentDiscount)) {
+          setPhieuGiamGiaDaApDung({
+            ...phieuGiamGiaDaApDung,
+            soTienGiam: currentDiscount
+          });
+          if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
         }
       }
     } else {

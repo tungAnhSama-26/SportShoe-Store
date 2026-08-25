@@ -392,20 +392,15 @@ export function LogicPhieuGiamGia({
                   phieuGiamGiaDaApDung.value = currentBest;
                   capNhatTienKhachThanhToan();
               }
-          } else if (phieuGiamGiaDaApDung.value?.ma === currentBest?.ma) {
-              if (Number(phieuGiamGiaDaApDung.value.soTienGiam) !== Number(bestDiscount)) {
+          } else {
+              // Giữ nguyên voucher đã áp dụng, chỉ cập nhật lại số tiền giảm theo giá trị đơn hàng hiện tại
+              if (Number(phieuGiamGiaDaApDung.value.soTienGiam) !== Number(currentDiscount)) {
                   phieuGiamGiaDaApDung.value = {
                       ...phieuGiamGiaDaApDung.value,
-                      soTienGiam: bestDiscount
+                      soTienGiam: currentDiscount
                   };
                   capNhatTienKhachThanhToan();
               }
-          } else if (bestDiscount > currentDiscount && !danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
-              // Khi giỏ hàng tăng số lượng/đạt hạn mức cao hơn và mở khóa voucher tốt hơn:
-              // Tự động nâng cấp lên voucher tốt nhất cho giỏ hàng
-              maPhieuGiamGia.value = currentBest.ma;
-              phieuGiamGiaDaApDung.value = currentBest;
-              capNhatTienKhachThanhToan();
           }
       } else {
          if (phieuGiamGiaDaApDung.value && !dangApDungPhieu.value) {
