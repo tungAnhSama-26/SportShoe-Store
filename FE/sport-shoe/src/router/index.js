@@ -29,7 +29,6 @@ const AdminLayout = () => import("../layouts/admin/AdminLayout.vue");
 const ThongKe = () => import("../pages/admin/thong-ke/ThongKe.vue");
 const PhieuGiamGia = () => import("../pages/admin/khuyen-mai/PhieuGiamGia.vue");
 const ChiTietPhieuGiamGia = () => import("../pages/admin/khuyen-mai/ChiTietPhieuGiamGia.vue");
-const ChiTietPhieuGiamGiaKhachHang = () => import("../pages/admin/khuyen-mai/ChiTietPhieuGiamGiaKhachHang.vue");
 const DotGiamGia = () => import("../pages/admin/khuyen-mai/DotGiamGia.vue");
 const ChiTietDotGiamGia = () => import("../pages/admin/khuyen-mai/ChiTietDotGiamGia.vue");
 const HoaDon = () => import("../pages/admin/hoa-don/HoaDon.vue");
@@ -314,7 +313,7 @@ const router = createRouter({
         {
           path: "phieu-giam-gia-khach-hang",
           name: "admin-phieu-giam-gia-khach-hang",
-          component: PhieuGiamGia
+          redirect: "/admin/phieu-giam-gia"
         },
         {
           path: "phieu-giam-gia/them",
@@ -329,12 +328,12 @@ const router = createRouter({
         {
           path: "phieu-giam-gia-khach-hang/them",
           name: "admin-phieu-giam-gia-khach-hang-them",
-          component: ChiTietPhieuGiamGiaKhachHang
+          redirect: "/admin/phieu-giam-gia/them"
         },
         {
           path: "phieu-giam-gia-khach-hang/:id",
           name: "admin-phieu-giam-gia-khach-hang-chi-tiet",
-          component: ChiTietPhieuGiamGiaKhachHang
+          redirect: "/admin/phieu-giam-gia"
         },
         {
           path: "hoa-don",

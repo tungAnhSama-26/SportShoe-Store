@@ -199,11 +199,8 @@ const pageTitle = computed(() => {
   const titles = {
     'admin-thong-ke': 'Thống kê',
     'admin-phieu-giam-gia': 'Phiếu giảm giá',
-    'admin-phieu-giam-gia-khach-hang': 'Phiếu giảm giá khách hàng',
     'admin-phieu-giam-gia-them': 'Thêm phiếu giảm giá',
     'admin-phieu-giam-gia-chi-tiet': 'Chi tiết phiếu giảm giá',
-    'admin-phieu-giam-gia-khach-hang-them': 'Thêm phiếu giảm giá khách hàng',
-    'admin-phieu-giam-gia-khach-hang-chi-tiet': 'Chi tiết phiếu giảm giá khách hàng',
     'admin-dot-giam-gia': 'Đợt giảm giá',
     'admin-dot-giam-gia-them': 'Thêm đợt giảm giá',
     'admin-dot-giam-gia-chi-tiet': 'Chi tiết đợt giảm giá',
@@ -257,16 +254,6 @@ const subRouteBreadcrumbs = {
   'admin-phieu-giam-gia-chi-tiet': {
     parentPath: '/admin/phieu-giam-gia',
     parentTitle: 'Phiếu giảm giá',
-    childTitle: 'Chi tiết phiếu giảm giá'
-  },
-  'admin-phieu-giam-gia-khach-hang-them': {
-    parentPath: '/admin/phieu-giam-gia-khach-hang',
-    parentTitle: 'Phiếu giảm giá khách hàng',
-    childTitle: 'Thêm phiếu giảm giá'
-  },
-  'admin-phieu-giam-gia-khach-hang-chi-tiet': {
-    parentPath: '/admin/phieu-giam-gia-khach-hang',
-    parentTitle: 'Phiếu giảm giá khách hàng',
     childTitle: 'Chi tiết phiếu giảm giá'
   },
   'admin-hoa-don-chi-tiet': {
@@ -367,16 +354,6 @@ const subRouteBreadcrumbs = {
   'admin-dot-giam-gia-chi-tiet': {
     parentPath: '/admin/dot-giam-gia',
     parentTitle: 'Đợt giảm giá',
-    childTitle: 'Chi tiết đợt giảm giá'
-  },
-  'admin-dot-giam-gia-san-pham-them': {
-    parentPath: '/admin/dot-giam-gia-san-pham',
-    parentTitle: 'Đợt giảm giá sản phẩm',
-    childTitle: 'Thêm đợt giảm giá'
-  },
-  'admin-dot-giam-gia-san-pham-chi-tiet': {
-    parentPath: '/admin/dot-giam-gia-san-pham',
-    parentTitle: 'Đợt giảm giá sản phẩm',
     childTitle: 'Chi tiết đợt giảm giá'
   },
   'admin-nhan-vien-them': {
