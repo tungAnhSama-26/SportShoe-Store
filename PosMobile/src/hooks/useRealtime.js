@@ -2,9 +2,18 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import { Platform } from 'react-native';
 
-// Giao thức ws:// cho WebSocket thuần thay vì http:// của SockJS
-// Lưu ý: Nếu chạy trên thiết bị thật, hãy thay '10.0.2.2' hoặc 'localhost' thành IP mạng LAN của máy tính chạy backend (ví dụ: '192.168.1.5:8080')
-const WS_BROKER_URL = Platform.OS === 'android' ? 'ws://10.0.2.2:8080/ws' : 'ws://localhost:8080/ws';
+const getWsUrl = () => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/ws`;
+    }
+    return 'ws://localhost:8080/ws';
+  }
+  return Platform.OS === 'android' ? 'ws://10.0.2.2:8080/ws' : 'ws://localhost:8080/ws';
+};
+
+const WS_BROKER_URL = getWsUrl();
 
 // Global variables for singleton client
 let stompClient = null;
