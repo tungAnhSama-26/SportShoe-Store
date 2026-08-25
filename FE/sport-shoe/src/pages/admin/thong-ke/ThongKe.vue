@@ -582,7 +582,7 @@ const formatLastUpdated = computed(() => {
                       {{ employee.tenNhanVien }}
                     </div>
                     <div class="text-xs text-slate-500">
-                      {{ employee.nhanVienId ? "Nhân viên bán hàng" : "Đơn chưa gán nhân viên" }}
+                      {{ employee.vaiTro || (employee.nhanVienId ? "Nhân viên" : "Đơn chưa gán nhân viên") }}
                     </div>
                   </div>
                 </div>
@@ -656,7 +656,7 @@ const formatLastUpdated = computed(() => {
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Tồn kho</label>
+          <label class="text-xs font-medium text-slate-500">Số lượng</label>
           <select
             v-model="productFilters.stockStatus"
             class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
@@ -708,8 +708,8 @@ const formatLastUpdated = computed(() => {
               <th class="px-4 py-2">Tên sản phẩm</th>
               <th class="px-4 py-2">Thương hiệu</th>
               <th class="px-4 py-2 text-right">Đã bán</th>
-              <th class="px-4 py-2 text-right">Số lượng trả</th>
               <th class="px-4 py-2 text-right">Doanh thu</th>
+              <th class="px-4 py-2 text-right">Số lượng còn</th>
             </tr>
           </thead>
           <tbody>
@@ -748,10 +748,7 @@ const formatLastUpdated = computed(() => {
               <td class="px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatNumber(product.daBan) }}
               </td>
-              <td class="px-4 py-4 text-right font-semibold text-rose-600">
-                {{ formatNumber(product.soLuongTra) }}
-              </td>
-              <td class="rounded-r-[20px] px-4 py-4 text-right font-semibold text-slate-800">
+              <td class="px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatCurrency(product.doanhThu) }}
               </td>
             </tr>

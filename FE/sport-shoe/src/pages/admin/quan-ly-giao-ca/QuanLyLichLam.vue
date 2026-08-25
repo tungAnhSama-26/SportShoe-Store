@@ -11,6 +11,8 @@ import {
   Plus,
   Shuffle,
   Users,
+  Clock,
+  X,
 } from "lucide-vue-next";
 import { layDanhSachNhanVien } from "../../../services/nhan-vien.js";
 import {
@@ -22,7 +24,9 @@ import {
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { getDisplayErrorMessage } from "../../../utils/error-message.js";
 import { exportRowsToExcel } from "../../../utils/export-excel.js";
+import { khoangGioGiaoNhau, taoGoiYCaTiepTheo, tinhThoiLuongCa } from "../../../utils/ca-lam.js";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
+import TimePicker24h from "../../../components/common/TimePicker24h.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -296,6 +300,7 @@ const chonCaVal = ref("sang");
 
 // ───────── Hiển thị modal Thêm ca làm mới (Modal 3) ─────────
 const showModalTaoCa = ref(false);
+const goiYCaTiepTheo = ref(null);
 const formTaoCa = ref({
   tenCa: "",
   gioBatDau: "",
@@ -303,11 +308,25 @@ const formTaoCa = ref({
   moTa: ""
 });
 
+function tachGioCa(ca) {
+  const [gioBatDau = "", gioKetThuc = ""] = String(ca.gio || "")
+    .split("-")
+    .map((item) => item.trim());
+  return {
+    id: ca.id,
+    ten: ca.nhan,
+    gioBatDau,
+    gioKetThuc,
+    trangThai: true,
+  };
+}
+
 function moModalTaoCa() {
+  goiYCaTiepTheo.value = taoGoiYCaTiepTheo(DS_CA.value.map(tachGioCa));
   formTaoCa.value = {
     tenCa: "",
-    gioBatDau: "",
-    gioKetThuc: "",
+    gioBatDau: goiYCaTiepTheo.value?.gioBatDau ?? "",
+    gioKetThuc: goiYCaTiepTheo.value?.gioKetThuc ?? "",
     moTa: ""
   };
   showModalTaoCa.value = true;
@@ -315,6 +334,7 @@ function moModalTaoCa() {
 
 function huyTaoCa() {
   showModalTaoCa.value = false;
+  goiYCaTiepTheo.value = null;
 }
 
 function luuTaoCa() {
@@ -326,8 +346,8 @@ function luuTaoCa() {
     showError("Vui lòng chọn thời gian bắt đầu và kết thúc.");
     return;
   }
-  if (formTaoCa.value.gioBatDau >= formTaoCa.value.gioKetThuc) {
-    showError("Giờ kết thúc phải lớn hơn giờ bắt đầu (Ví dụ: 08:00 - 12:00).");
+  if (formTaoCa.value.gioBatDau === formTaoCa.value.gioKetThuc) {
+    showError("Giờ kết thúc không được trùng với giờ bắt đầu.");
     return;
   }
 
@@ -341,36 +361,90 @@ function luuTaoCa() {
 
   showSuccess("Thêm ca làm mới thành công!");
   showModalTaoCa.value = false;
+  goiYCaTiepTheo.value = null;
 }
 
-// Giờ bắt đầu của mỗi ca
-const GIO_BAT_DAU_CA = computed(() => {
+function taoNgayLocal(value) {
+  if (value instanceof Date) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+  }
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function doiGioSangPhut(value) {
+  if (!value || typeof value !== "string") return null;
+  const [gio, phut] = value.trim().split(":").map(Number);
+  if (!Number.isFinite(gio) || !Number.isFinite(phut)) return null;
+  return gio * 60 + phut;
+}
+
+const THOI_GIAN_CA = computed(() => {
   const map = {};
-  DS_CA.value.forEach(c => {
-    const startHourStr = c.gio.split("-")[0].trim().split(":")[0];
-    map[c.id] = parseInt(startHourStr, 10) || 8;
+  DS_CA.value.forEach((ca) => {
+    const [batDauText = "", ketThucText = ""] = String(ca.gio || "")
+      .split("-")
+      .map((value) => value.trim());
+    const batDau = doiGioSangPhut(batDauText);
+    const ketThuc = doiGioSangPhut(ketThucText);
+    if (batDau !== null && ketThuc !== null) {
+      map[String(ca.id).toLowerCase()] = { batDau, ketThuc };
+    }
   });
   return map;
 });
 
 function laCaDaKhoa(ngay, caId) {
   if (!ngay) return false;
-  const date = new Date(ngay);
-  date.setHours(0, 0, 0, 0);
+  const date = taoNgayLocal(ngay);
   const now = new Date();
-  const today = new Date(now);
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Ngày quá khứ → khóa
   if (date < today) return true;
+  if (date.getTime() !== today.getTime() || !caId) return false;
 
-  // Ngày hôm nay → kiểm tra ca đã bắt đầu chưa
-  if (date.getTime() === today.getTime() && caId) {
-    const gioBatDau = GIO_BAT_DAU_CA.value[caId];
-    if (gioBatDau !== undefined && now.getHours() >= gioBatDau) return true;
+  const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+  if (!thoiGian) return false;
+
+  const thoiDiemKetThuc = new Date(date);
+  thoiDiemKetThuc.setHours(
+    Math.floor(thoiGian.ketThuc / 60),
+    thoiGian.ketThuc % 60,
+    0,
+    0,
+  );
+  if (thoiGian.ketThuc <= thoiGian.batDau) {
+    thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
+  }
+  return now >= thoiDiemKetThuc;
+}
+
+function coTheThemNhanVienVaoCa(ngay, caId) {
+  if (!ngay || !caId) return false;
+  const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+  if (!thoiGian) return false;
+
+  const date = taoNgayLocal(ngay);
+  const thoiDiemKetThuc = new Date(date);
+  thoiDiemKetThuc.setHours(
+    Math.floor(thoiGian.ketThuc / 60),
+    thoiGian.ketThuc % 60,
+    0,
+    0,
+  );
+  if (thoiGian.ketThuc <= thoiGian.batDau) {
+    thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
   }
 
-  return false;
+  const now = new Date();
+  return now < thoiDiemKetThuc;
 }
 
 // Computed: ca hiện tại trong modal có bị khóa không
@@ -380,15 +454,23 @@ const caHienTaiBiKhoa = computed(() => {
   return laCaDaKhoa(day.ngay, ca.id);
 });
 
+const caHienTaiCoTheThemNhanVien = computed(() => {
+  if (!currentChiTietCa.value) return false;
+  const { day, ca } = currentChiTietCa.value;
+  return coTheThemNhanVienVaoCa(day.ngay, ca.id);
+});
+
 function moModalThemCa() {
   chonNhanVienId.value = "";
   if (currentChiTietCa.value) {
     // Từ modal chi tiết ca — không cần check vì nút đã ẩn khi ca bị khóa
   } else {
-    const defaultCaId = DS_CA.value[0]?.id || 'sang';
-    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, defaultCaId)) || cacNgayTrongTuan.value[0];
+    const firstAvailableDay = cacNgayTrongTuan.value.find(d =>
+      DS_CA.value.some(ca => coTheThemNhanVienVaoCa(d, ca.id))
+    ) || cacNgayTrongTuan.value[0];
+    const caDangDienRa = DS_CA.value.find(ca => coTheThemNhanVienVaoCa(firstAvailableDay, ca.id));
     chonNgayVal.value = formatISODate(firstAvailableDay);
-    chonCaVal.value = defaultCaId;
+    chonCaVal.value = caDangDienRa?.id || DS_CA.value[0]?.id || 'sang';
   }
   showModalChiTietCa.value = false;
   showModalThemCa.value = true;
@@ -448,7 +530,10 @@ async function luuCa() {
     }
   }
 
-
+  if (!coTheThemNhanVienVaoCa(ngayStr, caId)) {
+    showError("Chỉ có thể thêm nhân viên vào ca hiện tại hoặc ca tương lai.");
+    return;
+  }
 
   dangTai.value = true;
   try {
@@ -612,9 +697,7 @@ function soGioCa(id) {
   const ca = layThongTinCa(id);
   if (!ca?.gio || !ca.gio.includes("-")) return 0;
   const [batDau, ketThuc] = ca.gio.split("-").map((value) => value.trim());
-  const [gioDau, phutDau] = batDau.split(":").map(Number);
-  const [gioCuoi, phutCuoi] = ketThuc.split(":").map(Number);
-  return Math.max(0, gioCuoi + phutCuoi / 60 - gioDau - phutDau / 60);
+  return (tinhThoiLuongCa(batDau, ketThuc) ?? 0) / 60;
 }
 
 function caChongGio(caThuNhatId, caThuHaiId) {
@@ -622,13 +705,9 @@ function caChongGio(caThuNhatId, caThuHaiId) {
   const caThuHai = layThongTinCa(caThuHaiId);
   if (!caThuNhat?.gio?.includes("-") || !caThuHai?.gio?.includes("-")) return false;
 
-  const doiSangPhut = (giaTri) => {
-    const [gio, phut] = giaTri.trim().split(":").map(Number);
-    return gio * 60 + phut;
-  };
-  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map(doiSangPhut);
-  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map(doiSangPhut);
-  return batDauMot < ketThucHai && batDauHai < ketThucMot;
+  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map((value) => value.trim());
+  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map((value) => value.trim());
+  return khoangGioGiaoNhau(batDauMot, ketThucMot, batDauHai, ketThucHai);
 }
 
 function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
@@ -963,8 +1042,8 @@ const caUnassigned = computed(
             </div>
           </div>
 
-          <!-- Footer: Nút Thêm (ẩn khi ca đã khóa) -->
-          <div v-if="!caHienTaiBiKhoa" class="border-t border-slate-100 p-5 bg-slate-50">
+          <!-- Footer: Nút Thêm (chỉ hiện khi ca đang diễn ra) -->
+          <div v-if="caHienTaiCoTheThemNhanVien" class="border-t border-slate-100 p-5 bg-slate-50">
             <button 
               @click="moModalThemCa" 
               class="w-full flex justify-center items-center gap-2 py-2.5 bg-white border border-slate-200 shadow-sm text-sm font-bold text-slate-700 rounded-xl hover:bg-slate-50 transition"
@@ -1018,9 +1097,9 @@ const caUnassigned = computed(
                     v-for="(ngay, idx) in cacNgayTrongTuan" 
                     :key="idx" 
                     :value="formatISODate(ngay)"
-                    :disabled="laCaDaKhoa(ngay, chonCaVal)"
+                    :disabled="!coTheThemNhanVienVaoCa(ngay, chonCaVal)"
                   >
-                    {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }}){{ laCaDaKhoa(ngay, chonCaVal) ? ' - Đã khóa' : '' }}
+                    {{ NHAN_TUAN[idx] }} ({{ formatNgay(ngay) }}){{ !coTheThemNhanVienVaoCa(ngay, chonCaVal) ? ' - Ca đã kết thúc' : '' }}
                   </option>
                 </select>
               </div>
@@ -1032,8 +1111,13 @@ const caUnassigned = computed(
                   v-model="chonCaVal" 
                   class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-slate-50/50 text-slate-700 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition"
                 >
-                  <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id">
-                    {{ ca.nhan }} ({{ ca.gio }})
+                  <option
+                    v-for="ca in DS_CA"
+                    :key="ca.id"
+                    :value="ca.id"
+                    :disabled="!coTheThemNhanVienVaoCa(chonNgayVal, ca.id)"
+                  >
+                    {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Ca đã kết thúc' : '' }}
                   </option>
                 </select>
               </div>
@@ -1071,7 +1155,7 @@ const caUnassigned = computed(
             </button>
             <button 
               @click="luuCa" 
-              :disabled="!chonNhanVienId || dangTai" 
+              :disabled="!chonNhanVienId || dangTai || !coTheThemNhanVienVaoCa(currentChiTietCa?.day?.ngayStr || chonNgayVal, currentChiTietCa?.ca?.id || chonCaVal)" 
               class="flex-1 py-2.5 rounded-xl bg-rose-400 hover:bg-rose-500 text-white text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ dangTai ? 'Đang lưu...' : 'Thêm vào ca' }}
@@ -1110,23 +1194,31 @@ const caUnassigned = computed(
               />
             </div>
 
+            <div v-if="goiYCaTiepTheo" class="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2.5">
+              <Clock class="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+              <p class="text-[13px] text-blue-700 leading-snug">
+                <template v-if="goiYCaTiepTheo.tuCa">
+                  Gợi ý ca tiếp theo sau "{{ goiYCaTiepTheo.tuCa.ten }}": {{ goiYCaTiepTheo.gioBatDau }} - {{ goiYCaTiepTheo.gioKetThuc }}.
+                </template>
+                <template v-else>
+                  Gợi ý ca đầu tiên: {{ goiYCaTiepTheo.gioBatDau }} - {{ goiYCaTiepTheo.gioKetThuc }}.
+                </template>
+              </p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-1.5">
                 <label class="text-[14px] font-medium text-slate-700">Giờ bắt đầu</label>
-                <input 
-                  v-model="formTaoCa.gioBatDau" 
-                  type="time" 
-                  class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white"
-                />
+                <div class="w-full h-11 border border-slate-200 rounded-xl focus-within:border-slate-400 transition bg-white overflow-hidden">
+                  <TimePicker24h v-model="formTaoCa.gioBatDau" />
+                </div>
               </div>
               
               <div class="space-y-1.5">
                 <label class="text-[14px] font-medium text-slate-700">Giờ kết thúc</label>
-                <input 
-                  v-model="formTaoCa.gioKetThuc" 
-                  type="time" 
-                  class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white"
-                />
+                <div class="w-full h-11 border border-slate-200 rounded-xl focus-within:border-slate-400 transition bg-white overflow-hidden">
+                  <TimePicker24h v-model="formTaoCa.gioKetThuc" />
+                </div>
               </div>
             </div>
 

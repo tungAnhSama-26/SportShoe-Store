@@ -133,10 +133,10 @@ function validate() {
   const moTa = normalizeOptionalText(form.moTa)
 
   if (!form.ma.trim()) errors.ma = 'Không thể tự tạo mã trọng lượng'
-  if (!Number.isInteger(giaTri) || giaTri < 1) {
-    errors.giaTri = 'Trọng lượng phải là số nguyên từ 1 gram trở lên'
-  } else if (giaTri > 10000) {
-    errors.giaTri = 'Trọng lượng tối đa không vượt quá 10,000 gram'
+  if (!Number.isInteger(giaTri) || giaTri < 100) {
+    errors.giaTri = 'Trọng lượng phải là số nguyên từ 100 gram trở lên'
+  } else if (giaTri > 2500) {
+    errors.giaTri = 'Trọng lượng tối đa không vượt quá 2,500 gram'
   }
 
   if (moTa && hasSpecialCharacters(moTa)) {
@@ -168,12 +168,18 @@ async function handleSave() {
       moTa: normalizeOptionalText(form.moTa)
     }
 
-    if (modalMode.value === 'add') await trongLuongApi.create(body)
-    else await trongLuongApi.update(selectedItem.value.id, body)
-
-    showSuccess(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
-    showModal.value = false
-    loadData(currentPage.value)
+    if (modalMode.value === 'add') {
+      await trongLuongApi.create(body)
+      showSuccess('Tạo thành công')
+      showModal.value = false
+      keyword.value = ''
+      loadData(0)
+    } else {
+      await trongLuongApi.update(selectedItem.value.id, body)
+      showSuccess('Cập nhật thành công')
+      showModal.value = false
+      loadData(currentPage.value)
+    }
   } catch (e) {
     Object.assign(errors, getFieldErrors(e))
     showError(getDisplayErrorMessage(e, 'Không thể lưu trọng lượng'))
@@ -330,7 +336,7 @@ async function xuatExcel() {
             <div class="p-6 space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Mã *</label>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Mã <span class="text-rose-500">*</span></label>
                   <input
                     v-model="form.ma"
                     readonly
@@ -341,7 +347,7 @@ async function xuatExcel() {
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Trọng lượng *</label>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Trọng lượng (gram) <span class="text-rose-500">*</span></label>
                   <input
                     v-model.number="form.giaTri"
                     type="number"

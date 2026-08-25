@@ -308,7 +308,7 @@ public class HoaDonChoTaiQuayService {
 
         hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HUY);
         hoaDon.setNgayCapNhat(Instant.now());
-        hoaDon.setGhiChu("Hoa don cho da bi huy");
+        hoaDon.setGhiChu("Hóa đơn chờ đã bị hủy");
         hoaDon.setNhanVien(invoiceUseCase.resolveNhanVienDangDangNhap());
         hoaDonRepository.save(hoaDon);
         invoiceUseCase.luuLichSuHoaDon(hoaDon, TRANG_THAI_HOA_DON_HUY, hoaDon.getGhiChu());
@@ -317,7 +317,7 @@ public class HoaDonChoTaiQuayService {
     @Scheduled(cron = "0 0 * * * *") // Chạy mỗi giờ 1 lần để dọn dẹp
     @Transactional
     public void cleanupExpiredPendingInvoices() {
-        Instant moc = Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS);
+        Instant moc = Instant.now().minus(12, java.time.temporal.ChronoUnit.HOURS);
         List<HoaDon> expiredInvoices = hoaDonRepository.findExpiredPendingInvoices(KENH_BAN_TAI_QUAY, TRANG_THAI_HOA_DON_CHO_TAI_QUAY, moc);
         for (HoaDon hd : expiredInvoices) {
             huyHoaDonCho(hd.getId());

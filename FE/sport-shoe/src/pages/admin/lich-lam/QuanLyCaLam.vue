@@ -1,12 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { 
-  Filter, Plus, RotateCcw, Clock, Eye, X, Search
+  Filter, Plus, RotateCcw, Clock, Eye, X, Search, Power
 } from 'lucide-vue-next';
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { getDisplayErrorMessage } from '../../../utils/error-message.js';
 import TimePicker24h from "../../../components/common/TimePicker24h.vue";
-import { layDanhSachCaLam, taoCaLam, capNhatCaLam } from '../../../services/ca-lam.js';
+import { layDanhSachCaLam, taoCaLam, capNhatCaLam, doiTrangThaiCaLam } from '../../../services/ca-lam.js';
+import { khoangGioGiaoNhau, taoGoiYCaTiepTheo } from '../../../utils/ca-lam.js';
 
 // --- Dữ liệu Ca làm việc ---
 const danhSachCaLam = ref([]);
@@ -54,6 +55,10 @@ const dsHienThi = computed(() => {
   });
 });
 
+const coCaDangHoatDong = computed(() =>
+  danhSachCaLam.value.some((ca) => ca.trangThai)
+);
+
 function lamMoi() {
   filters.value = { timKiem: '', gioBatDau: '', gioKetThuc: '', trangThai: 'all' };
 }
@@ -71,8 +76,7 @@ function timCaTrungGio(gioBatDau, gioKetThuc, excludeId = null) {
     const startCu = ca.gioBatDau.trim();
     const endCu = ca.gioKetThuc.trim();
 
-    // 2 khoảng thời gian giao nhau: startMoi < endCu && startCu < endMoi
-    if (startMoi < endCu && startCu < endMoi) {
+    if (khoangGioGiaoNhau(startMoi, endMoi, startCu, endCu)) {
       return ca;
     }
   }
@@ -93,16 +97,36 @@ async function toggleTrangThai(ca) {
   if (!confirmed) return;
 
   try {
-    await capNhatCaLam(ca.id, {
-      ten: ca.ten,
-      gioBatDau: ca.gioBatDau,
-      gioKetThuc: ca.gioKetThuc,
-      trangThai: seBat
-    });
+    await doiTrangThaiCaLam(ca.id, seBat);
     showSuccess(`Đã thay đổi trạng thái ca ${ca.ten}`);
     await taiDanhSach();
   } catch (e) {
     showError(getDisplayErrorMessage(e, "Không thể thay đổi trạng thái ca làm việc"));
+  }
+}
+
+async function tatTatCaCaLam() {
+  const danhSachDangBat = danhSachCaLam.value.filter((ca) => ca.trangThai);
+  if (danhSachDangBat.length === 0) {
+    showError("Hiện không có ca làm việc nào đang hoạt động.");
+    return;
+  }
+
+  const confirmed = await showConfirm(
+    `Bạn có chắc chắn muốn tắt tất cả ${danhSachDangBat.length} ca làm việc đang hoạt động?`,
+    "Xác nhận"
+  );
+  if (!confirmed) return;
+
+  dangTai.value = true;
+  try {
+    await Promise.all(danhSachDangBat.map((ca) => doiTrangThaiCaLam(ca.id, false)));
+    showSuccess("Đã tắt tất cả ca làm việc đang hoạt động.");
+    await taiDanhSach();
+  } catch (e) {
+    showError(getDisplayErrorMessage(e, "Không thể tắt tất cả ca làm việc"));
+  } finally {
+    dangTai.value = false;
   }
 }
 
@@ -115,6 +139,7 @@ const formTaoCa = ref({
   gioKetThuc: "",
   moTa: ""
 });
+const goiYCaTiepTheo = ref(null);
 const formErrors = ref({
   tenCa: "",
   gioBatDau: "",
@@ -124,10 +149,11 @@ const formErrors = ref({
 
 function moModalTaoCa() {
   isEdit.value = false;
+  goiYCaTiepTheo.value = taoGoiYCaTiepTheo(danhSachCaLam.value);
   formTaoCa.value = {
     tenCa: "",
-    gioBatDau: "",
-    gioKetThuc: "",
+    gioBatDau: goiYCaTiepTheo.value?.gioBatDau ?? "",
+    gioKetThuc: goiYCaTiepTheo.value?.gioKetThuc ?? "",
     moTa: ""
   };
   formErrors.value = { tenCa: "", gioBatDau: "", gioKetThuc: "", trungCa: "" };
@@ -136,6 +162,7 @@ function moModalTaoCa() {
 
 function moModalSuaCa(ca) {
   isEdit.value = true;
+  goiYCaTiepTheo.value = null;
   formTaoCa.value = {
     id: ca.id,
     tenCa: ca.ten,
@@ -149,6 +176,7 @@ function moModalSuaCa(ca) {
 
 function huyTaoCa() {
   showModalTaoCa.value = false;
+  goiYCaTiepTheo.value = null;
 }
 
 async function luuTaoCa() {
@@ -187,9 +215,6 @@ async function luuTaoCa() {
     const end = formTaoCa.value.gioKetThuc;
     if (start === end) {
       formErrors.value.gioKetThuc = "Giờ kết thúc không được trùng với giờ bắt đầu.";
-      isValid = false;
-    } else if (start > end) {
-      formErrors.value.gioKetThuc = "Giờ kết thúc phải lớn hơn giờ bắt đầu (Ví dụ: 08:00 - 12:00).";
       isValid = false;
     } else {
       // Kiểm tra trùng khoảng thời gian với các ca đang hoạt động
@@ -300,6 +325,14 @@ async function luuTaoCa() {
           <button @click="lamMoi" class="h-9 px-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-500 text-[14px] font-medium transition shadow-sm">
             <RotateCcw class="w-4 h-4" />
             <span>Đặt lại bộ lọc</span>
+          </button>
+          <button
+            @click="tatTatCaCaLam"
+            :disabled="!coCaDangHoatDong || dangTai"
+            class="h-9 px-4 flex items-center gap-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[14px] font-medium transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Power class="w-4 h-4" />
+            <span>Tắt tất cả</span>
           </button>
           <button @click="moModalTaoCa" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[14px] font-medium transition shadow-sm">
             <Plus class="w-4 h-4" />
@@ -413,28 +446,44 @@ async function luuTaoCa() {
               <p v-if="formErrors.tenCa" class="text-[12px] text-rose-500 mt-1">{{ formErrors.tenCa }}</p>
             </div>
 
+            <div v-if="!isEdit && goiYCaTiepTheo" class="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2.5">
+              <Clock class="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+              <p class="text-[13px] text-blue-700 leading-snug">
+                <template v-if="goiYCaTiepTheo.tuCa">
+                  Gợi ý ca tiếp theo sau "{{ goiYCaTiepTheo.tuCa.ten }}": {{ goiYCaTiepTheo.gioBatDau }} - {{ goiYCaTiepTheo.gioKetThuc }}.
+                </template>
+                <template v-else>
+                  Gợi ý ca đầu tiên: {{ goiYCaTiepTheo.gioBatDau }} - {{ goiYCaTiepTheo.gioKetThuc }}.
+                </template>
+              </p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-1.5">
                 <label class="text-[14px] font-medium text-slate-700">Giờ bắt đầu <span class="text-rose-500">*</span></label>
-                <input 
-                  type="time" 
-                  v-model="formTaoCa.gioBatDau" 
-                  class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white" 
+                <div
+                  class="w-full h-11 border border-slate-200 rounded-xl focus-within:border-slate-400 transition bg-white overflow-hidden"
                   :class="{'border-rose-500 focus:border-rose-500': formErrors.gioBatDau}"
-                  @input="formErrors.gioBatDau = ''"
-                />
+                >
+                  <TimePicker24h
+                    v-model="formTaoCa.gioBatDau"
+                    @update:modelValue="formErrors.gioBatDau = ''"
+                  />
+                </div>
                 <p v-if="formErrors.gioBatDau" class="text-[12px] text-rose-500 mt-1">{{ formErrors.gioBatDau }}</p>
               </div>
               
               <div class="space-y-1.5">
                 <label class="text-[14px] font-medium text-slate-700">Giờ kết thúc <span class="text-rose-500">*</span></label>
-                <input 
-                  type="time" 
-                  v-model="formTaoCa.gioKetThuc" 
-                  class="w-full h-11 px-3 text-[14px] border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition bg-white" 
+                <div
+                  class="w-full h-11 border border-slate-200 rounded-xl focus-within:border-slate-400 transition bg-white overflow-hidden"
                   :class="{'border-rose-500 focus:border-rose-500': formErrors.gioKetThuc || formErrors.trungCa}"
-                  @input="formErrors.gioKetThuc = ''; formErrors.trungCa = ''"
-                />
+                >
+                  <TimePicker24h
+                    v-model="formTaoCa.gioKetThuc"
+                    @update:modelValue="formErrors.gioKetThuc = ''; formErrors.trungCa = ''"
+                  />
+                </div>
                 <p v-if="formErrors.gioKetThuc" class="text-[12px] text-rose-500 mt-1">{{ formErrors.gioKetThuc }}</p>
               </div>
             </div>

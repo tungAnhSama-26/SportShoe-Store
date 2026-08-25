@@ -51,12 +51,40 @@ public class ClientPhiVanChuyenService {
                 request.diaChiGiaoHang(),
                 null, null, null, null, null, null, null, null
         );
-        TinhPhiVanChuyenGhnResponse ghn = ghnShippingService.tinhPhi(hoaDonTam, items, ghnRequest);
-        BigDecimal phi = ghn.phiVanChuyen() != null ? ghn.phiVanChuyen() : BigDecimal.ZERO;
+        TinhPhiVanChuyenGhnResponse ghn;
+        try {
+            ghn = ghnShippingService.tinhPhi(hoaDonTam, items, ghnRequest);
+        } catch (Exception ex) {
+            // Khi API GHN lỗi hoặc tắt mạng trên máy local -> tự động để phí mặc định là 35.000đ
+            return new PhiVanChuyenResponse(
+                    BigDecimal.valueOf(35000),
+                    false,
+                    null,
+                    "DEFAULT_FALLBACK",
+                    false,
+                    null,
+                    null
+            );
+        }
+
+        // Nếu không có kết nối GHN trực tiếp (đang dùng cache/bảng giá offline) -> ép về phí mặc định 35.000đ
+        if (ghn == null || !GhnOfflineFeeService.SOURCE_LIVE.equals(ghn.nguonTinhPhi())) {
+            return new PhiVanChuyenResponse(
+                    BigDecimal.valueOf(35000),
+                    false,
+                    null,
+                    "DEFAULT_FALLBACK",
+                    false,
+                    null,
+                    null
+            );
+        }
+
+        BigDecimal phi = ghn.phiVanChuyen() != null ? ghn.phiVanChuyen() : BigDecimal.valueOf(35000);
         return new PhiVanChuyenResponse(
                 phi,
-                ghn.uocTinh(),
-                moTaNguonPhi(ghn),
+                false,
+                null,
                 ghn.nguonTinhPhi(),
                 ghn.giaCu(),
                 ghn.thoiDiemBaoGia(),
@@ -65,12 +93,15 @@ public class ClientPhiVanChuyenService {
     }
 
     private String moTaNguonPhi(TinhPhiVanChuyenGhnResponse response) {
+        if ("DEFAULT_FALLBACK".equals(response.nguonTinhPhi())) {
+            return null;
+        }
         if (GhnOfflineFeeService.SOURCE_CACHE.equals(response.nguonTinhPhi())) {
             return response.giaCu() ? "Phí GHN từ cache cũ (ước tính)" : "Phí GHN đã lưu gần nhất (ước tính)";
         }
         if (GhnOfflineFeeService.SOURCE_PUBLIC_TARIFF.equals(response.nguonTinhPhi())) {
             return "Phí offline ước tính theo bảng giá công khai GHN";
         }
-        return response.uocTinh() ? "Phí GHN ước tính theo các tuyến cũ" : "Phí GHN";
+        return "Phí GHN";
     }
 }

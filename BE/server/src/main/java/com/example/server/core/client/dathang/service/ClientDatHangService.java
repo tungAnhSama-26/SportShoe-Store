@@ -7,7 +7,7 @@ import com.example.server.core.client.vanchuyen.service.ClientPhiVanChuyenServic
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.hoadon.HoaDonRealtimePublisher;
 import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
-import com.example.server.core.inventory.TonKhoKhaDungService;
+
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
@@ -22,6 +22,13 @@ import com.example.server.repository.ThanhToanRepository;
 import com.example.server.repository.VanChuyenRepository;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.infrastructure.address.DiaChiHaiCapMapper;
+import com.example.server.infrastructure.exception.ResourceNotFoundException;
+import com.example.server.infrastructure.service.EmailService;
+import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import com.example.server.infrastructure.exception.ResourceNotFoundException;
 import com.example.server.infrastructure.service.EmailService;
 import java.math.BigDecimal;
@@ -62,8 +69,9 @@ public class ClientDatHangService {
     private final HoaDonRealtimePublisher hoaDonRealtimePublisher;
     private final EmailService emailService;
     private final ThongBaoService thongBaoService;
-    private final TonKhoKhaDungService tonKhoKhaDungService;
     private final SanPhamRealtimePublisher sanPhamRealtimePublisher;
+    private final com.example.server.repository.GiayChiTietRepository giayChiTietRepository;
+    private final com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
 
     public ClientDatHangService(
             ClientCheckoutItemService checkoutItemService,
@@ -77,8 +85,9 @@ public class ClientDatHangService {
             HoaDonRealtimePublisher hoaDonRealtimePublisher,
             EmailService emailService,
             ThongBaoService thongBaoService,
-            TonKhoKhaDungService tonKhoKhaDungService,
-            SanPhamRealtimePublisher sanPhamRealtimePublisher
+            SanPhamRealtimePublisher sanPhamRealtimePublisher,
+            com.example.server.repository.GiayChiTietRepository giayChiTietRepository,
+            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository
     ) {
         this.emailService = emailService;
         this.checkoutItemService = checkoutItemService;
@@ -91,8 +100,9 @@ public class ClientDatHangService {
         this.vanChuyenRepository = vanChuyenRepository;
         this.hoaDonRealtimePublisher = hoaDonRealtimePublisher;
         this.thongBaoService = thongBaoService;
-        this.tonKhoKhaDungService = tonKhoKhaDungService;
         this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
+        this.giayChiTietRepository = giayChiTietRepository;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
     }
 
     @Transactional
@@ -105,10 +115,6 @@ public class ClientDatHangService {
         return datHang(request, maGiaoDich, null);
     }
 
-    /**
-     * Snapshot KHÓA lúc tạo mã QR (VNPAY/VietQR): giá sản phẩm theo biến thể + tiền giảm voucher
-     * đã chốt. Khi tạo đơn dùng đúng snapshot này, không tính lại theo trạng thái hiện tại.
-     */
     public record KhoaThanhToan(Map<Integer, BigDecimal> giaSanPham, BigDecimal tienGiamVoucher) {}
 
     @Transactional
@@ -147,9 +153,6 @@ public class ClientDatHangService {
             int trangThaiHoaDon,
             boolean kichHoatDon
     ) {
-        if (!daGiuCho) {
-            tonKhoKhaDungService.khoaVaKiemTra(request.sanPhams(), null);
-        }
         Map<Integer, BigDecimal> giaKhoa = khoa == null ? null : khoa.giaSanPham();
         ClientCheckoutItemService.KetQua checkout =
                 checkoutItemService.chuanBi(request.sanPhams(), giaKhoa, daGiuCho);
@@ -283,8 +286,40 @@ public class ClientDatHangService {
             throw new BusinessException("Phiên thanh toán không còn hiệu lực");
         }
         Instant now = Instant.now();
-        if (hoaDon.getNgayTao().plus(TonKhoKhaDungService.THOI_GIAN_GIU_QR).isBefore(now)) {
-            throw new BusinessException("Phiên thanh toán đã hết hạn giữ hàng");
+        if (hoaDon.getNgayTao().plus(java.time.Duration.ofMinutes(15)).isBefore(now)) {
+            throw new BusinessException("Phiên thanh toán đã hết hạn");
+        }
+
+        // KIỂM TRA TỒN KHO VÀ TRẠNG THÁI SẢN PHẨM TẠI THỜI ĐIỂM XÁC NHẬN THANH TOÁN
+        List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        for (HoaDonChiTiet ct : dong) {
+            com.example.server.entity.GiayChiTiet gct = giayChiTietRepository.findByIdForUpdate(ct.getGiayChiTiet().getId())
+                    .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại trong hệ thống"));
+
+            if (gct.getKichHoat() == null || gct.getKichHoat() != 1
+                    || gct.getGiay() == null || gct.getGiay().getTrangThai() == null || gct.getGiay().getTrangThai() != 1) {
+                hoaDon.setTrangThai(6); // Hủy đơn
+                thanhToan.setTrangThai(2); // Thất bại
+                String msg = "Sản phẩm \"" + (gct.getGiay() != null ? gct.getGiay().getTen() : "") + "\" đã ngừng kinh doanh. Đơn hàng đã bị hủy.";
+                thanhToan.setGhiChu(msg);
+                thanhToanRepository.save(thanhToan);
+                hoaDonRepository.save(hoaDon);
+                sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
+                throw new BusinessException(msg);
+            }
+
+            int tonThucTe = gct.getSoLuong() == null ? 0 : gct.getSoLuong();
+            int soLuongMua = ct.getSoLuong() == null ? 0 : ct.getSoLuong();
+            if (tonThucTe < soLuongMua) {
+                hoaDon.setTrangThai(6); // Hủy đơn
+                thanhToan.setTrangThai(2); // Thất bại
+                String msg = "Số lượng sản phẩm không đủ.";
+                thanhToan.setGhiChu(msg);
+                thanhToanRepository.save(thanhToan);
+                hoaDonRepository.save(hoaDon);
+                sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
+                throw new BusinessException(msg);
+            }
         }
 
         hoaDon.setTrangThai(TRANG_THAI_CHO_XAC_NHAN);
@@ -307,7 +342,6 @@ public class ClientDatHangService {
                 "/admin/hoa-don/" + hoaDon.getId()
         );
 
-        List<HoaDonChiTiet> dong = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
         String emailNhan = hoaDon.getKhachHang() != null
                 ? hoaDon.getKhachHang().getEmail() : layGuestEmail(hoaDon.getGhiChu());
         String tenNhan = hoaDon.getKhachHang() != null
@@ -319,11 +353,12 @@ public class ClientDatHangService {
     }
 
     private String layGuestEmail(String ghiChu) {
-        if (ghiChu == null || !ghiChu.startsWith("[GuestEmail:")) {
+        if (ghiChu == null || !ghiChu.contains("[GuestEmail:")) {
             return null;
         }
-        int ketThuc = ghiChu.indexOf(']');
-        return ketThuc > 12 ? ghiChu.substring(12, ketThuc).trim() : null;
+        int start = ghiChu.indexOf("[GuestEmail:") + 12;
+        int ketThuc = ghiChu.indexOf(']', start);
+        return ketThuc > start ? ghiChu.substring(start, ketThuc).trim() : null;
     }
 
     /** Gửi email xác nhận đơn hàng cho khách (chạy ở luồng nền, lỗi không chặn đặt hàng). */
@@ -342,10 +377,20 @@ public class ClientDatHangService {
         for (HoaDonChiTiet ct : dong) {
             GiayChiTiet gct = ct.getGiayChiTiet();
             String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+            String hinhAnh = null;
+            if (hinhAnhGiayRepository != null) {
+                List<com.example.server.entity.HinhAnhGiay> listAnh = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(gct.getId(), 1);
+                if (listAnh != null && !listAnh.isEmpty()) {
+                    hinhAnh = listAnh.get(0).getUrl();
+                }
+            }
+            if (hinhAnh == null || hinhAnh.isBlank()) {
+                hinhAnh = gct.getGiay().getHinhAnh();
+            }
             items.add(new EmailService.DongDonHangEmail(
                     gct.getGiay().getTen(),
                     bienThe,
-                    gct.getGiay().getHinhAnh(),
+                    hinhAnh,
                     ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
                     ct.getGiaDonVi(),
                     ct.getThanhTien()

@@ -52,10 +52,16 @@ function hienThiLyDo(maLyDo) {
 function resolveHinhAnh(url) {
   const value = String(url || "").trim();
   if (!value) return "";
-  if (/^(https?:|data:|blob:)/i.test(value)) return value;
-  if (value.startsWith("/uploads/")) return `${apiOrigin}${value}`;
-  if (value.startsWith("uploads/")) return `${apiOrigin}/${value}`;
-  return value.startsWith("/") ? `${apiOrigin}${value}` : `${apiOrigin}/${value}`;
+  if (/^(data:|blob:)/i.test(value)) return value;
+  const idx = value.indexOf("/uploads/");
+  if (idx >= 0) return value.slice(idx);
+  if (value.startsWith("uploads/")) return `/${value}`;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(value)) {
+    return value.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "");
+  }
+  if (/^https?:/i.test(value)) return value;
+  if (value.startsWith("/")) return value;
+  return `/${value}`;
 }
 
 const route = useRoute();
@@ -314,6 +320,14 @@ const daHoanThanh = computed(() => don.value?.trangThai === 5);
 // Quyền hủy/sửa do backend quyết định theo hình thức thanh toán + trạng thái.
 const coTheYeuCauHuy = computed(() => don.value?.coTheHuy === true);
 const coTheSuaThongTinGiaoHang = computed(() => don.value?.coTheCapNhatGiaoHang === true);
+const coTheNhanHang = computed(() => {
+  if (!don.value) return false;
+  if (typeof don.value.coTheNhanHang === 'boolean') {
+    return don.value.coTheNhanHang;
+  }
+  const daThanhToan = don.value.hinhThucThanhToan === 'CHUYEN_KHOAN' || don.value.daThanhToan === true;
+  return don.value.trangThai === 4 && daThanhToan;
+});
 const emailKhachHang = ref('');
 
 const lichSuGiaoHang = computed(() => {
@@ -510,18 +524,16 @@ function xuLyAnhLoi(event) {
           </button>
         </section>
 
-        <!-- Hành động khi đơn hoàn thành hoặc đã giao hàng -->
-        <section v-if="don && [4, 5].includes(don.trangThai)" class="mt-6 flex flex-wrap gap-3 items-center">
-          <button v-if="don.trangThai === 4" @click="xacNhanNhan" :disabled="dangXuLy" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60">
+        <!-- Hành động khi đơn hoàn thành hoặc đã giao hàng và thanh toán -->
+        <section v-if="don && (coTheNhanHang || don.trangThai === 5)" class="mt-6 flex flex-wrap gap-3 items-center">
+          <button v-if="coTheNhanHang" @click="xacNhanNhan" :disabled="dangXuLy" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 disabled:opacity-60">
             {{ dangXuLy ? 'Đang xử lý...' : 'Đã nhận hàng' }}
           </button>
           <button v-if="don.trangThai === 5" @click="diDanhGia" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.3 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
             Đánh giá sản phẩm
           </button>
-
         </section>
-
         <!-- Thông tin nhận hàng -->
         <section class="mt-6 rounded-3xl bg-white border border-slate-100 p-6 lg:p-7 shadow-sm">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">

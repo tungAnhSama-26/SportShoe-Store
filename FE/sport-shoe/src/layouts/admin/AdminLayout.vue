@@ -8,7 +8,7 @@ import { isDesktopSidebar, isSidebarOpen, syncSidebarWithViewport } from "../../
 import { useAdminSession } from "../../composable/useAdminSession";
 
 const { adminSession, refreshAdminSession, shouldShowRoleNotice } = useAdminSession();
-const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 const hienThongBaoDangNhap = ref(false);
 let thongBaoTimeout;
 

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { suDungBanHang } from '../ngu-canh/NguCanhBanHang';
 import { chuanHoaDiaChi, dinhDangDiaChi, layMaDonViDiaChi, timDonViDiaChi } from '../utils/diaChi';
 import { layPhuongXaHaiCap, layTinhThanhHaiCap } from '../api/diaChi';
+import { dinhDangSo, dinhDangTienNhap, layChuSoTien } from '../features/ban-hang-tai-quay/TienTe';
 
 export default function PhanGiaoHang() {
   const logic = suDungBanHang();
@@ -36,6 +37,24 @@ export default function PhanGiaoHang() {
   const [dsTinh, setDsTinh] = useState([]);
   const [dsPhuongXa, setDsPhuongXa] = useState([]);
   const [loaiDanhSach, setLoaiDanhSach] = useState(null);
+  const [phiNhapTay, setPhiNhapTay] = useState(dinhDangSo(phiGiaoHang));
+  const [dangSuaPhi, setDangSuaPhi] = useState(false);
+
+  useEffect(() => {
+    if (!dangSuaPhi) {
+      setPhiNhapTay(dinhDangSo(phiGiaoHang));
+    }
+  }, [phiGiaoHang, dangSuaPhi]);
+
+  const luuPhiNhapTay = () => {
+    const numeric = parseInt(layChuSoTien(phiNhapTay), 10);
+    const phiMoi = Number.isNaN(numeric) ? 0 : numeric;
+    setDangSuaPhi(false);
+    setPhiNhapTay(dinhDangSo(phiMoi));
+    if (phiMoi !== phiGiaoHang) {
+      setPhiGiaoHang(phiMoi);
+    }
+  };
 
   useEffect(() => {
     layTinhThanhHaiCap()
@@ -175,16 +194,19 @@ export default function PhanGiaoHang() {
 
           <View style={styles.feeBox}>
             <Text style={styles.feeTitle}>Phí giao hàng</Text>
-            <TextInput
-              style={styles.feeInput}
-              keyboardType="numeric"
-              placeholder="Nhập phí..."
-              value={phiGiaoHang ? phiGiaoHang.toString() : ""}
-              onChangeText={(text) => {
-                const numeric = parseInt(text.replace(/[^0-9]/g, ''), 10);
-                setPhiGiaoHang(isNaN(numeric) ? 0 : numeric);
-              }}
-            />
+            <View style={styles.feeInputWrapper}>
+              <TextInput
+                style={styles.feeInput}
+                keyboardType="numeric"
+                placeholder="0"
+                value={phiNhapTay}
+                onFocus={() => setDangSuaPhi(true)}
+                onChangeText={(text) => setPhiNhapTay(dinhDangTienNhap(text))}
+                onBlur={luuPhiNhapTay}
+                onSubmitEditing={luuPhiNhapTay}
+              />
+              <Text style={styles.feeCurrency}>đ</Text>
+            </View>
             {thongTinGiaoHang.moTaPhi ? (
               <Text style={thongTinGiaoHang.nguonTinhPhi === 'GHN_LIVE' ? styles.liveFeeNote : styles.offlineFeeNote}>
                 {thongTinGiaoHang.moTaPhi}
@@ -364,14 +386,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
   },
-  feeInput: {
+  feeInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 6,
-    paddingHorizontal: 12,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 8,
+  },
+  feeInput: {
+    minWidth: 0,
+    width: 100,
     paddingVertical: 6,
-    width: 120,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0f172a',
     textAlign: 'right',
+  },
+  feeCurrency: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+    marginLeft: 4,
   },
   liveFeeNote: {
     width: '100%',

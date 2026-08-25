@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ThucThiThanhToanTaiQuayService {
@@ -45,6 +46,7 @@ public class ThucThiThanhToanTaiQuayService {
     private final TonKhoTaiQuayService inventoryUseCase;
     private final GiayChiTietRepository giayChiTietRepository;
     private final SanPhamTaiQuayService productUseCase;
+    private final com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
 
     public ThucThiThanhToanTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -59,7 +61,8 @@ public class ThucThiThanhToanTaiQuayService {
             GiaoCaRepository giaoCaRepository,
             TonKhoTaiQuayService inventoryUseCase,
             GiayChiTietRepository giayChiTietRepository,
-            SanPhamTaiQuayService productUseCase
+            SanPhamTaiQuayService productUseCase,
+            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -74,6 +77,7 @@ public class ThucThiThanhToanTaiQuayService {
         this.inventoryUseCase = inventoryUseCase;
         this.giayChiTietRepository = giayChiTietRepository;
         this.productUseCase = productUseCase;
+        this.hinhAnhGiayRepository = hinhAnhGiayRepository;
     }
 
     @Transactional
@@ -86,13 +90,7 @@ public class ThucThiThanhToanTaiQuayService {
         if (currentEmp == null) {
             throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
         }
-        GiaoCa activeShift = currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1
-                ? giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA"))
-                    .orElseThrow(() -> new BusinessException(
-                            "Cửa hàng không có ca làm việc đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."))
-                : giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA")
-                    .orElseThrow(() -> new BusinessException(
-                            "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
+        GiaoCa activeShift = resolveCaThanhToan(currentEmp);
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -172,15 +170,24 @@ public class ThucThiThanhToanTaiQuayService {
         hoaDonRepository.save(hoaDon);
         invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, request.ghiChu());
 
-        if (request.thongTinGiaoHang() != null && Boolean.TRUE.equals(request.thongTinGiaoHang().giaoHang())) {
-            String emailNhan = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getEmail() : null;
-            if (emailNhan != null && !emailNhan.isBlank()) {
-                String hinhThucEmail = paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan());
-                BigDecimal phiShipEmail = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
-                        .map(c -> c.getPhiVanChuyen()).orElse(BigDecimal.ZERO);
-                guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
-                        hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId()), hinhThucEmail, phiShipEmail);
+        String emailNhan = null;
+        if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getEmail() != null && !hoaDon.getKhachHang().getEmail().isBlank()) {
+            emailNhan = hoaDon.getKhachHang().getEmail().trim();
+        } else if (request.thongTinGiaoHang() != null && request.thongTinGiaoHang().email() != null && !request.thongTinGiaoHang().email().isBlank()) {
+            emailNhan = request.thongTinGiaoHang().email().trim();
+        } else if (request.khachHangId() != null) {
+            KhachHang kh = invoiceUseCase.timKhachHang(request.khachHangId());
+            if (kh != null && kh.getEmail() != null && !kh.getEmail().isBlank()) {
+                emailNhan = kh.getEmail().trim();
             }
+        }
+
+        if (emailNhan != null && !emailNhan.isBlank()) {
+            String hinhThucEmail = paymentUseCase.resolveCongThanhToan(request.hinhThucThanhToan());
+            BigDecimal phiShipEmail = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                    .map(com.example.server.entity.VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
+            guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
+                    hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId()), hinhThucEmail, phiShipEmail);
         }
 
         return new ThanhToanTaiQuayResponse(
@@ -199,6 +206,17 @@ public class ThucThiThanhToanTaiQuayService {
                 invoiceUseCase.mapHoaDonChiTiet(hoaDon, new ArrayList<>(), null).phieuGiamGia(), // cheat
                 hoaDon.getNgayThanhToan()
         );
+    }
+
+    private GiaoCa resolveCaThanhToan(NhanVien currentEmp) {
+        Optional<GiaoCa> caCuaNhanVien = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA");
+        if (currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1) {
+            return caCuaNhanVien
+                    .or(() -> giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
+                    .orElse(null);
+        }
+        return caCuaNhanVien.orElseThrow(() -> new BusinessException(
+                "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
     }
 
     private HoaDon thanhToanHoaDonCho(ThanhToanTaiQuayRequest request) {
@@ -240,6 +258,7 @@ public class ThucThiThanhToanTaiQuayService {
         hoaDon.setTongTienThanhToan(tongTienHang);
 
         KhachHang khachHang = invoiceUseCase.timKhachHang(request.khachHangId());
+        hoaDon.setKhachHang(khachHang);
         String tenKhachHang = invoiceUseCase.layTenKhachHang(khachHang, request.tenKhachHang());
         String soDienThoai = invoiceUseCase.laySoDienThoai(khachHang, request.soDienThoai());
 
@@ -247,8 +266,7 @@ public class ThucThiThanhToanTaiQuayService {
             voucherUseCase.giaiPhongPhieuGiamGia(hoaDon.getPhieuGiamGia(), hoaDon.getKhachHang());
         }
         voucherUseCase.ganPhieuGiamGiaChoHoaDon(hoaDon, request.maPhieuGiamGia(), khachHang, tongTienHang);
-        hoaDon.setKhachHang(khachHang);
-        invoiceUseCase.apDungThongTinGiaoHangChoHoaDon(hoaDon, request.thongTinGiaoHang(), tenKhachHang, soDienThoai);
+        invoiceUseCase.apDungThongTinGiaoHangChoHoaDon(hoaDon, request.thongTinGiaoHang(), tenKhachHang, soDienThoai, true);
         hoaDon.setGhiChu(request.ghiChu());
         hoaDon.setNhanVien(invoiceUseCase.resolveNhanVienDangDangNhap());
 
@@ -273,10 +291,20 @@ public class ThucThiThanhToanTaiQuayService {
         for (HoaDonChiTiet ct : dong) {
             GiayChiTiet gct = ct.getGiayChiTiet();
             String bienThe = gct.getMauSac().getTen() + " / Size " + gct.getKichCo().getGiaTri();
+            String hinhAnh = null;
+            if (hinhAnhGiayRepository != null) {
+                List<com.example.server.entity.HinhAnhGiay> listAnh = hinhAnhGiayRepository.findByGiayChiTietIdAndTrangThaiOrderByLaHinhChinhDescNgayTaoAsc(gct.getId(), 1);
+                if (listAnh != null && !listAnh.isEmpty()) {
+                    hinhAnh = listAnh.get(0).getUrl();
+                }
+            }
+            if (hinhAnh == null || hinhAnh.isBlank()) {
+                hinhAnh = gct.getGiay().getHinhAnh();
+            }
             items.add(new EmailService.DongDonHangEmail(
                     gct.getGiay().getTen(),
                     bienThe,
-                    gct.getGiay().getHinhAnh(),
+                    hinhAnh,
                     ct.getSoLuong() == null ? 0 : ct.getSoLuong(),
                     ct.getGiaDonVi(),
                     ct.getThanhTien()
@@ -298,5 +326,86 @@ public class ThucThiThanhToanTaiQuayService {
                 hoaDon.getTongTienThanhToan(),
                 items
         ));
+    }
+
+    @Transactional
+    public HoaDon xacNhanThanhToanSePay(String noiDung, long soTien) {
+        if (noiDung == null || noiDung.isBlank()) {
+            return null;
+        }
+
+        String rawContent = noiDung.replaceAll("[^a-zA-Z0-9]", "").toUpperCase(java.util.Locale.ROOT);
+        List<HoaDon> hoaDonChos = hoaDonRepository.findByKenhBanAndTrangThai(1, com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_CHO_TAI_QUAY);
+
+        for (HoaDon hoaDon : hoaDonChos) {
+            String maHd = hoaDon.getMa() != null ? hoaDon.getMa().replaceAll("[^a-zA-Z0-9]", "").toUpperCase(java.util.Locale.ROOT) : "";
+            if (maHd.isEmpty()) {
+                continue;
+            }
+
+            if (rawContent.contains(maHd)) {
+                BigDecimal tongCanThanhToan = hoaDon.getTongTienThanhToan();
+                long soTienKyVong = tongCanThanhToan == null ? 0L : tongCanThanhToan.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+                if (soTienKyVong > 0 && soTien < soTienKyVong) {
+                    return null;
+                }
+
+                List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+                if (items == null || items.isEmpty()) {
+                    return null;
+                }
+
+                GiaoCa activeShift = null;
+                if (hoaDon.getNhanVien() != null) {
+                    activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(hoaDon.getNhanVien().getId(), "MO_CA").orElse(null);
+                }
+                if (activeShift == null) {
+                    activeShift = giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")).orElse(null);
+                }
+
+                boolean coGiaoHang = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).isPresent();
+                int trangThaiSauThanhToan = coGiaoHang
+                        ? com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_DA_XAC_NHAN
+                        : com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_HOAN_THANH;
+
+                ThanhToan thanhToan = new ThanhToan();
+                thanhToan.setHoaDon(hoaDon);
+                thanhToan.setNhanVien(hoaDon.getNhanVien());
+                thanhToan.setHinhThuc(2); // 2: Chuyen khoan
+                thanhToan.setSoTien(tongCanThanhToan);
+                thanhToan.setTienThoiLai(BigDecimal.ZERO);
+                thanhToan.setCongThanhToan("Chuyen khoan (SePay Webhook)");
+                thanhToan.setNgayThanhToan(Instant.now());
+                thanhToan.setTrangThai(1);
+                thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
+                thanhToan.setMaGiaoDich(noiDung);
+                thanhToan.setGhiChu("Thanh toan tu dong qua SePay Webhook (" + noiDung + ")");
+                thanhToan.setNgayTao(Instant.now());
+                thanhToanRepository.save(thanhToan);
+
+                hoaDon.setTrangThai(trangThaiSauThanhToan);
+                hoaDon.setNgayThanhToan(Instant.now());
+                hoaDon.setNgayCapNhat(Instant.now());
+                if (activeShift != null) {
+                    hoaDon.setGiaoCa(activeShift);
+                }
+                hoaDonRepository.save(hoaDon);
+
+                invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, "Thanh toan thanh cong qua chuyen khoan SePay Webhook (" + noiDung + ")");
+
+                if (coGiaoHang) {
+                    String emailNhan = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getEmail() : null;
+                    if (emailNhan != null && !emailNhan.isBlank()) {
+                        BigDecimal phiShip = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                                .map(com.example.server.entity.VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
+                        guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
+                                items, "Chuyen khoan (SePay)", phiShip);
+                    }
+                }
+
+                return hoaDon;
+            }
+        }
+        return null;
     }
 }

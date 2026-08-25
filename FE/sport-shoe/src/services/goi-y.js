@@ -1,6 +1,6 @@
 import { apiRequest } from "./api-client";
 
-// Gợi ý giày bằng AI: khách trả lời trắc nghiệm (chọn nhiều đáp án) + quét form chân không bắt buộc.
+// Gợi ý giày bằng AI: khách trả lời bộ câu hỏi trắc nghiệm (chọn nhiều đáp án).
 
 // Lấy bộ câu hỏi để hiển thị.
 export async function layCauHoiGoiY() {
@@ -9,11 +9,11 @@ export async function layCauHoiGoiY() {
   });
 }
 
-// Gửi đáp án + ảnh bàn chân (data URI base64, có thể bỏ trống) -> nhận gợi ý.
-export async function layGoiYGiay({ traLoi, anhChan } = {}) {
+// Gửi đáp án -> nhận gợi ý.
+export async function layGoiYGiay({ traLoi } = {}) {
   return apiRequest("/client/goi-y", {
     method: "POST",
-    body: JSON.stringify({ traLoi, anhChan: anhChan || null }),
+    body: JSON.stringify({ traLoi }),
     fallbackMessage: "AI chưa gợi ý được, vui lòng thử lại",
   });
 }

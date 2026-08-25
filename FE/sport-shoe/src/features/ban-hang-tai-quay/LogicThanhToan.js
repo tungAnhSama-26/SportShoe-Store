@@ -7,17 +7,21 @@ import { PHUONG_THUC_THANH_TOAN } from "./Enum";
 export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
   const phuongThucThanhToan = ref(PHUONG_THUC_THANH_TOAN.TIEN_MAT);
   const tienKhachDua = ref("");
+  const daSuaTienKhachDua = ref(false);
   const tienMatKetHop = ref("");
   const tienChuyenKhoanKetHop = ref("");
   const ghiChuThanhToan = ref("");
+  const hienThiMaQrLon = ref(false);
 
   watch(() => hoaDonChoDaChon.value?.id, (newId, oldId) => {
     if (newId !== oldId) {
       phuongThucThanhToan.value = PHUONG_THUC_THANH_TOAN.TIEN_MAT;
       tienKhachDua.value = "";
+      daSuaTienKhachDua.value = false;
       tienMatKetHop.value = "";
       tienChuyenKhoanKetHop.value = "";
       ghiChuThanhToan.value = "";
+      hienThiMaQrLon.value = false;
     }
   });
 
@@ -84,7 +88,10 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
       return;
     }
     if (force || isPaymentMethodChange) {
-      tienKhachDua.value = "";
+      daSuaTienKhachDua.value = false;
+    }
+    if (!daSuaTienKhachDua.value) {
+      tienKhachDua.value = dinhDangSo(khachCanTra.value);
     }
   }
 
@@ -101,6 +108,7 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
   }
 
   function xuLyTienKhachDuaInput(value) {
+    daSuaTienKhachDua.value = true;
     tienKhachDua.value = value;
     dinhDangTienKhachDua();
   }
@@ -133,6 +141,7 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     tienKhachThanhToan,
     tienThua,
     thongBaoLoiThanhToan,
+    hienThiMaQrLon,
     capNhatTienKhachThanhToan: (force = false) => capNhatTienKhachThanhToan(false, force),
     kiemTraLoiThanhToan,
     xuLyTienKhachDuaInput,

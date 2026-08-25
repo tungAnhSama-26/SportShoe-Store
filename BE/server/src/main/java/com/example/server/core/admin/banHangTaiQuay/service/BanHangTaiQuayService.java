@@ -19,6 +19,8 @@ import com.example.server.entity.KhachHang;
 import com.example.server.infrastructure.websocket.WebSocketNotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -159,15 +161,54 @@ public class BanHangTaiQuayService {
         return response;
     }
 
+    @Transactional
+    public String xacNhanThanhToanSePay(String noiDung, long soTien) {
+        HoaDon hoaDon = paymentExecutionUseCase.xacNhanThanhToanSePay(noiDung, soTien);
+        if (hoaDon != null) {
+            phatRealtimeHoaDonCho("PAID", hoaDon.getId(), hoaDon.getMa());
+            return hoaDon.getMa();
+        }
+        return null;
+    }
+
     private void phatRealtimeHoaDonCho(String action, Integer hoaDonId) {
-        webSocketNotificationService.sendToTopic(
-                POS_SYNC_TOPIC,
-                "POS_INVOICE_CHANGED",
-                Map.of(
-                        "action", action,
-                        "invoiceId", hoaDonId
-                )
-        );
+        phatRealtimeHoaDonCho(action, hoaDonId, null);
+    }
+
+    private void phatRealtimeHoaDonCho(String action, Integer hoaDonId, String maHoaDon) {
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("action", action);
+        payload.put("invoiceId", hoaDonId);
+        if (maHoaDon != null) {
+            payload.put("maHoaDon", maHoaDon);
+            payload.put("message", "Hóa đơn " + maHoaDon + " đã được thanh toán thành công qua chuyển khoản SePay!");
+        }
+
+        Runnable publish = () -> {
+            webSocketNotificationService.sendToTopic(
+                    POS_SYNC_TOPIC,
+                    "POS_INVOICE_CHANGED",
+                    payload
+            );
+            webSocketNotificationService.sendToTopic(
+                    "/topic/admin/orders",
+                    "ORDER_UPDATED",
+                    payload
+            );
+        };
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()
+                && TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish.run();
+                }
+            });
+            return;
+        }
+
+        publish.run();
     }
 
     @Transactional(readOnly = true)

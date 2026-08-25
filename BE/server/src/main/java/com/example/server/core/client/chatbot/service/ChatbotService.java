@@ -32,6 +32,11 @@ public class ChatbotService {
     private static final String CLIENT_SYSTEM_PROMPT = """
             Bạn là trợ lý ảo hỗ trợ mua sắm tại cửa hàng SportShoe.
 
+            # CHẾ ĐỘ CHAT TỰ DO (ƯU TIÊN CAO NHẤT)
+            - Các câu hỏi cần dữ liệu sản phẩm, bán chạy, khuyến mãi và đơn hàng đã được hệ thống truy vấn database trước khi tới đây.
+            - Ở nhánh này bạn không có tool và chỉ được trả lời một lần. Chỉ tư vấn kiến thức chung về chọn giày, cách đo chân, bảo quản và mua sắm.
+            - Không tự tạo tên sản phẩm, ID, link, hình ảnh, giá, tồn kho, khuyến mãi hoặc trạng thái đơn hàng của cửa hàng.
+
             # PHẠM VI HỖ TRỢ
             - Tư vấn chọn mẫu giày thể thao, gợi ý size giày, xem các đợt giảm giá, khuyến mãi, mã voucher và tra cứu đơn hàng của khách.
 
@@ -41,10 +46,11 @@ public class ChatbotService {
               "Dạ, mình là trợ lý ảo hỗ trợ mua sắm tại SportShoe nên chỉ có thể giúp bạn tư vấn chọn mẫu giày, tìm kiếm size số, xem các đợt giảm giá khuyến mãi hoặc kiểm tra đơn hàng của bạn thôi ạ. Bạn có muốn mình gợi ý mẫu giày thể thao nào đang hot không?"
 
             # HƯỚNG DẪN HIỂN THỊ SẢN PHẨM VÀ HÌNH ẢNH (BẮT BUỘC)
-            - Mỗi khi nhắc tới, giới thiệu hoặc tìm kiếm BẤT KỲ sản phẩm nào trong cửa hàng, BẮT BUỘC phải đính kèm link chi tiết dạng:
+            - Mỗi khi nhắc tới, giới thiệu hoặc liệt kê BẤT KỲ sản phẩm nào trong cửa hàng, BẮT BUỘC phải viết tên sản phẩm dưới dạng link chi tiết:
               [Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)
-              Giao diện sẽ tự động chuyển link này thành THẺ SẢN PHẨM TRỰC QUAN hiển thị đầy đủ HÌNH ẢNH, GIÁ BÁN, GIẢM GIÁ và THÔNG SỐ.
-            - Hoặc bạn có thể đính kèm ảnh dạng Markdown: ![Tên sản phẩm](URL_HINH_ANH)
+              Ví dụ: `1. [Nike Air Force 1 07](/khachhang/san-pham/0)`
+              Giao diện trang web sẽ tự động chuyển link này thành THẺ SẢN PHẨM TRỰC QUAN hiển thị đầy đủ HÌNH ẢNH, GIÁ BÁN, GIẢM GIÁ và THÔNG SỐ.
+            - TUYỆT ĐỐI KHÔNG viết tên giày dạng văn bản trơn không có link (ví dụ viết "1. Nike Air Force 1 07") vì giao diện sẽ không lấy được ảnh.
             - Khi khách hàng hỏi hoặc yêu cầu "gửi hình ảnh sản phẩm": TUYỆT ĐỐI KHÔNG trả lời "tôi không thể gửi hình ảnh". Hãy dùng URL hình ảnh (hinhAnh) và ID sản phẩm từ kết quả gọi tool để gửi link `[Tên sản phẩm](/khachhang/san-pham/ID_SAN_PHAM)` hoặc ảnh Markdown `![Tên sản phẩm](URL_HINH_ANH)`.
 
             # HƯỚNG DẪN TƯ VẤN KÍCH CỠ GIÀY (SIZE GUIDE CHUẨN VIỆT NAM)
@@ -55,7 +61,7 @@ public class ChatbotService {
             QUY TẮC TƯ VẤN SIZE:
             1. Chân bè/mập: Khuyên nhích lên thêm 0.5 đến 1 Size.
             2. Nếu khách hỏi tư vấn size chung chung (chưa có chiều dài cm): Hướng dẫn cách đo chân, gửi bảng size và hỏi số đo cm. KHÔNG tự ý gọi `search_products_tool` liệt kê sản phẩm ngẫu nhiên.
-            3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra số Size chuẩn (ví dụ 24cm -> Size 38/40) và mới gọi `search_products_tool(size="38")`. KHÔNG truyền "24cm" vào `keyword`.
+            3. Nếu khách đã cung cấp chiều dài cm (ví dụ 24cm): Tự động chuyển đổi chiều dài cm ra size theo bảng và hỏi khách có muốn tìm sản phẩm theo size đó không.
 
             # HƯỚNG DẪN TƯ VẤN KHUYẾN MÃI VÀ VOUCHER (QUAN TRỌNG)
             - Khi khách hàng hỏi về đợt giảm giá, chương trình khuyến mãi, sale, ưu đãi, voucher hay mã giảm giá:
@@ -68,6 +74,9 @@ public class ChatbotService {
             - Hotline hỗ trợ: **0965852782**
 
             # NGUYÊN TẮC
+            - Khi khách tìm hoặc mua sản phẩm, BẮT BUỘC dùng dữ liệu từ `search_products_tool`.
+            - Nếu tool trả danh sách rỗng, phải nói cửa hàng chưa có sản phẩm phù hợp. TUYỆT ĐỐI KHÔNG tự tạo ID, tên sản phẩm, giá, giảm giá, tồn kho, link hoặc khối `product`.
+            - Chỉ được nêu thông tin sản phẩm xuất hiện nguyên vẹn trong kết quả tool/database.
             - Trả lời bằng Tiếng Việt thân thiện, tự nhiên, ngắn gọn (Tối đa 120 từ).
             """;
 
@@ -88,7 +97,22 @@ public class ChatbotService {
             - Link hóa đơn: [Xem chi tiết hóa đơn](/admin/hoa-don/ID_HOA_DON)
 
             # NGUYÊN TẮC
+            - Mọi số liệu doanh thu, hóa đơn, sản phẩm, số lượng và đánh giá phải lấy từ tool/database.
+            - Nếu tool không có dữ liệu, phải trả đúng thông báo không có dữ liệu. Tuyệt đối không tự tạo tên sản phẩm, số liệu, nhận xét, link hoặc khối `product`.
+            - Không diễn giải lại hoặc thay đổi nội dung bên trong khối ```product ... ``` do tool trả về.
             - Trả lời bằng Tiếng Việt chuyên nghiệp, ngắn gọn, đi thẳng vào vấn đề.
+            """;
+
+    private static final String CLIENT_FREE_CHAT_PROMPT = """
+            Bạn là trợ lý mua sắm của SportShoe. Trả lời bằng tiếng Việt thân thiện, rõ ràng, tối đa 70 từ.
+
+            Chỉ tư vấn kiến thức chung về chọn loại giày, đo chân, chọn size, sử dụng và bảo quản giày.
+            Các câu hỏi về sản phẩm đang bán, giá, màu, size còn hàng, bán chạy, khuyến mãi và đơn hàng
+            đã được hệ thống truy vấn database trước khi tới nhánh này.
+
+            Không tự tạo tên sản phẩm, ID, link, ảnh, giá, số lượng, khuyến mãi hoặc trạng thái đơn hàng.
+            Nếu thiếu số đo để chọn size, hướng dẫn khách đo chiều dài bàn chân và hỏi lại số cm.
+            Nếu câu hỏi ngoài phạm vi mua sắm, từ chối ngắn gọn và hướng khách quay lại nội dung về giày.
             """;
 
     private final ChatClient clientChatClient;
@@ -101,6 +125,10 @@ public class ChatbotService {
     private final ThongBaoService thongBaoService;
     private final FaqRuleEngine faqRuleEngine;
     private final ChatbotIntentRouter intentRouter;
+    private final ClientProductQueryGuard productQueryGuard;
+    private final ClientProductResponseSanitizer productResponseSanitizer;
+    private final ClientQuickQueryService clientQuickQueryService;
+    private final AdminQuickQueryService adminQuickQueryService;
 
     @Value("${app.debug-errors:false}")
     private boolean debugErrors;
@@ -113,8 +141,12 @@ public class ChatbotService {
             WebSocketNotificationService webSocketNotificationService,
             ThongBaoService thongBaoService,
             FaqRuleEngine faqRuleEngine,
-            ChatbotIntentRouter intentRouter) {
-        this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_SYSTEM_PROMPT).build();
+            ChatbotIntentRouter intentRouter,
+            ClientProductQueryGuard productQueryGuard,
+            ClientProductResponseSanitizer productResponseSanitizer,
+            ClientQuickQueryService clientQuickQueryService,
+            AdminQuickQueryService adminQuickQueryService) {
+        this.clientChatClient = ChatClient.builder(chatModel).defaultSystem(CLIENT_FREE_CHAT_PROMPT).build();
         this.adminChatClient = ChatClient.builder(chatModel).defaultSystem(ADMIN_SYSTEM_PROMPT).build();
 
         this.cuocHoiThoaiRepository = cuocHoiThoaiRepository;
@@ -124,6 +156,10 @@ public class ChatbotService {
         this.thongBaoService = thongBaoService;
         this.faqRuleEngine = faqRuleEngine;
         this.intentRouter = intentRouter;
+        this.productQueryGuard = productQueryGuard;
+        this.productResponseSanitizer = productResponseSanitizer;
+        this.clientQuickQueryService = clientQuickQueryService;
+        this.adminQuickQueryService = adminQuickQueryService;
     }
 
     // --- BƯỚC 1: LƯU TIN NHẮN KHÁCH VÀO DB (TRANSACTION NGẮN) ---
@@ -243,6 +279,26 @@ public class ChatbotService {
             String faqAnswer = faqRuleEngine.matchFaq(request.message());
             if (faqAnswer != null) {
                 botReply = faqAnswer;
+                saveAiMessage(session.getId(), botReply);
+                return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
+            }
+
+            // Các truy vấn nghiệp vụ phổ biến lấy dữ liệu trực tiếp từ database.
+            // Không đưa qua LLM để tránh tool-call hai lượt và dữ liệu tự suy diễn.
+            java.util.Optional<String> quickAnswer =
+                    clientQuickQueryService.answerFromDatabase(request.message());
+            if (quickAnswer.isPresent()) {
+                botReply = quickAnswer.get();
+                saveAiMessage(session.getId(), botReply);
+                return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
+            }
+
+            // Yêu cầu tìm mua có màu/size rõ ràng được trả lời trực tiếp từ database.
+            // Không giao trường hợp "không có sản phẩm" cho LLM để tránh bịa dữ liệu.
+            java.util.Optional<String> verifiedProductAnswer =
+                    productQueryGuard.answerFromDatabase(request.message());
+            if (verifiedProductAnswer.isPresent()) {
+                botReply = verifiedProductAnswer.get();
                 saveAiMessage(session.getId(), botReply);
                 return new ClientChatResponse(session.getId(), botReply, session.getTrangThai());
             }
@@ -458,18 +514,19 @@ public class ChatbotService {
         );
     }
 
-    // --- GOI CLIENT LLM (HTTP CALL - DÙNG CHATCLIENT DUY NHẤT & INTENT ROUTER TỐI ƯU TOKEN) ---
+    // --- GỌI CLIENT LLM CHO HỘI THOẠI TỰ DO, KHÔNG ĐĂNG KÝ TOOL ---
     private String generateAiResponse(String userMessage) {
         try {
-            // Intent Router: Chọn đúng Tool cần thiết
-            String[] activeTools = intentRouter.resolveClientTools(userMessage);
-
-            return clientChatClient.prompt()
-                    .system(CLIENT_SYSTEM_PROMPT)
+            String response = clientChatClient.prompt()
+                    .system(CLIENT_FREE_CHAT_PROMPT)
                     .user(userMessage)
-                    .functions(activeTools)
+                    .options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+                            .withTemperature(0.3f)
+                            .withMaxTokens(100)
+                            .build())
                     .call()
                     .content();
+            return productResponseSanitizer.sanitize(response);
         } catch (Exception e) {
             System.err.println("[AI CHATBOT ERROR] Lỗi khi gọi AI Chatbot:");
             e.printStackTrace();
@@ -553,6 +610,13 @@ public class ChatbotService {
         // 2. Lưu tin nhắn Admin (Tx ngắn)
         CuocHoiThoai session = prepareAdminSessionAndSaveMsg(nhanVienId, userMessage);
 
+        // Các thống kê nhanh chỉ-đọc phải trả nguyên dữ liệu từ DB, không để LLM diễn giải hoặc bịa thêm.
+        java.util.Optional<String> quickReply = adminQuickQueryService.answer(userMessage);
+        if (quickReply.isPresent()) {
+            saveAdminAiReply(session.getId(), quickReply.get());
+            return quickReply.get();
+        }
+
         // 3. Load 6 tin nhắn gần nhất để tiết kiệm token (Tx read-only ngắn)
         List<org.springframework.ai.chat.messages.Message> historyMsgs = getRecentAdminChatHistory(session.getId(), 6);
 
@@ -574,7 +638,7 @@ public class ChatbotService {
         } catch (Exception e) {
             System.err.println("[ADMIN CHATBOT ERROR] Lỗi khi gọi Admin AI: " + e.getMessage());
             e.printStackTrace();
-            String errReply = "Không thể gọi AI do API Key hiện tại bị hết dung lượng (Quota Exceeded). Vui lòng đổi sang API Key khác hoặc nạp thêm hạn ngạch để tiếp tục sử dụng.";
+            String errReply = "Hiện không thể kết nối cả AI cloud lẫn AI local. Vui lòng kiểm tra API key, trạng thái Ollama hoặc thử lại sau.";
             saveAdminAiReply(session.getId(), errReply);
             return errReply;
         }

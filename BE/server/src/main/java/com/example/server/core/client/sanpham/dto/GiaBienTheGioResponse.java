@@ -12,6 +12,7 @@ import java.math.BigDecimal;
  * @param conBan        biến thể còn được bán (đang kích hoạt)
  * @param canNang       cân nặng 1 sản phẩm (gram) - lấy từ thuộc tính trọng lượng của giày
  * @param ma            mã sản phẩm (Giay.ma) để hiển thị ở giỏ hàng
+ * @param hinhAnh       hình ảnh biến thể hoặc hình ảnh chính của giày
  */
 public record GiaBienTheGioResponse(
         Integer giayChiTietId,
@@ -20,6 +21,7 @@ public record GiaBienTheGioResponse(
         Integer tonKho,
         boolean conBan,
         Integer canNang,
-        String ma
+        String ma,
+        String hinhAnh
 ) {
 }

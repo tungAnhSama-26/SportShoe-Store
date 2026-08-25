@@ -161,6 +161,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  showLargeQr: {
+    type: Boolean,
+    default: false
+  },
   dinhDangTien: {
     type: Function,
     required: true
@@ -177,6 +181,7 @@ const emit = defineEmits([
   "update-shipping",
   "calculate-shipping",
   "update:paymentMethod",
+  "update:showLargeQr",
   "amount-input",
   "cash-split-input",
   "transfer-split-input",
@@ -189,7 +194,6 @@ const emit = defineEmits([
 ]);
 
 const timeLeft = ref(300);
-const showLargeQr = ref(false);
 const isAmountTouched = ref(false);
 let timer = null;
 
@@ -198,7 +202,16 @@ watch(() => props.paymentMethod, (newVal) => {
   if (newVal === 2) {
     timeLeft.value = 300;
     startTimer();
-  } else {
+  } else if (!props.showLargeQr) {
+    stopTimer();
+  }
+});
+
+watch(() => props.showLargeQr, (isOpen) => {
+  if (isOpen) {
+    timeLeft.value = 300;
+    startTimer();
+  } else if (props.paymentMethod !== 2) {
     stopTimer();
   }
 });
@@ -241,7 +254,8 @@ const sepayQrUrl = computed(() => {
     const raw = String(props.tienChuyenKhoanKetHop || 0).replace(/\D/g, '');
     amount = raw !== '' ? (Number(raw) || 0) : 0;
   }
-  const description = encodeURIComponent(`${prefix}${props.activePendingInvoice.maHoaDon}`);
+  const maHd = props.activePendingInvoice.ma || props.activePendingInvoice.maHoaDon || '';
+  const description = encodeURIComponent(`${prefix}${maHd}`);
   const accountName = encodeURIComponent('TRAN VU TUNG ANH');
   return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${accountName}`;
 });
@@ -261,7 +275,7 @@ function handleQrClick() {
       return;
     }
   }
-  showLargeQr.value = true;
+  emit('update:showLargeQr', true);
 }
 
 watch(() => props.tienMatKetHop, (val) => {
@@ -275,7 +289,7 @@ watch(() => props.tienMatKetHop, (val) => {
 });
 function handlePayNowFromQr() {
   emit('pay-now');
-  showLargeQr.value = false;
+  emit('update:showLargeQr', false);
 }
 </script>
 
@@ -287,7 +301,7 @@ function handlePayNowFromQr() {
 
         <!-- Voucher khả dụng (Applied Coupon) -->
         <div v-if="appliedCoupon && appliedCoupon.ma" class="bg-[#F2F9F4] dark:bg-emerald-900/20 rounded-md p-3.5 flex flex-col relative border border-[#E3F2E8] dark:border-emerald-800/30">
-           <button @click="emit('remove-coupon')" class="absolute top-2.5 right-2.5 p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-full transition-colors">
+           <button @click="emit('remove-coupon')" class="absolute top-2.5 right-2.5 p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-full transition-colors" title="Bỏ voucher">
              <X class="w-4 h-4" />
            </button>
            <div class="flex items-center gap-2 mb-3">
@@ -304,6 +318,60 @@ function handlePayNowFromQr() {
                  <span class="font-bold text-emerald-600 dark:text-emerald-400">-{{ dinhDangTien(appliedCoupon.soTienGiam) }}</span>
               </div>
            </div>
+        </div>
+
+        <!-- Voucher Input / Selector khi chưa áp dụng -->
+        <div v-else class="relative">
+          <div class="flex items-center gap-2">
+            <input
+              :value="couponCode"
+              type="text"
+              placeholder="Nhập hoặc chọn mã giảm giá..."
+              class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold uppercase text-slate-800 dark:text-slate-200 outline-none transition focus:border-red-400 placeholder:normal-case placeholder:font-normal"
+              @input="emit('update:couponCode', $event.target.value)"
+              @focus="emit('focus-coupon')"
+              @blur="emit('blur-coupon')"
+            />
+            <button
+              type="button"
+              class="rounded-xl bg-red-500 hover:bg-red-600 px-3 py-2 text-xs font-bold text-white transition disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400"
+              :disabled="!coTheApDungPhieu || applyingCoupon"
+              @click="emit('apply-coupon')"
+            >
+              {{ applyingCoupon ? "..." : "Áp dụng" }}
+            </button>
+          </div>
+
+          <!-- Danh sách gợi ý / tìm kiếm voucher -->
+          <div
+            v-if="showCouponDropdown && (couponResults.length > 0 || loadingCoupons)"
+            class="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-xl"
+          >
+            <div v-if="loadingCoupons" class="p-3 text-center text-xs text-slate-400">
+              Đang tải danh sách phiếu...
+            </div>
+            <div v-else class="space-y-1">
+              <div
+                v-for="coupon in couponResults"
+                :key="coupon.id"
+                class="cursor-pointer rounded-lg p-2 transition hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between"
+                @mousedown.prevent="emit('select-coupon', coupon)"
+              >
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-xs text-red-600 dark:text-red-400">{{ coupon.ma }}</span>
+                    <span class="rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400">
+                      {{ coupon.loai === 1 ? `${coupon.giaTri}%` : dinhDangTien(coupon.giaTri) }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Đơn tối thiểu {{ dinhDangTien(coupon.giaTriToiThieu || 0) }}
+                  </p>
+                </div>
+                <span class="text-xs font-semibold text-red-500 dark:text-red-400">Chọn</span>
+              </div>
+            </div>
+          </div>
         </div>
 
 
@@ -376,14 +444,19 @@ function handlePayNowFromQr() {
             </svg>
 
             <!-- Fee amount box -->
-            <span
-              class="inline-flex min-w-[72px] items-center justify-end rounded-md border bg-white dark:bg-slate-800 px-2.5 py-1 text-sm font-semibold"
+            <input
+              v-if="!shippingInfo.dangTinhPhi"
+              type="text"
+              inputmode="numeric"
+              title="Phí vận chuyển (có thể chỉnh sửa)"
+              class="inline-flex min-w-[72px] w-[95px] items-center justify-end rounded-md border bg-white dark:bg-slate-800 px-2.5 py-1 text-sm font-semibold text-right outline-none focus:border-red-400"
               :class="shippingInfo.daTinhPhi && shippingInfo.phiVanChuyen > 0
                 ? 'border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400'
                 : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'"
-            >
-              {{ shippingInfo.dangTinhPhi ? '...' : dinhDangTien(shippingInfo.phiVanChuyen || 0) }}
-            </span>
+              :value="shippingInfo.phiVanChuyen ? dinhDangTien(shippingInfo.phiVanChuyen).replace(/ đ/g, '') : ''"
+              @input="emit('update-shipping', { phiVanChuyen: Number($event.target.value.replace(/\D/g, '')) })"
+            />
+            <span v-else class="inline-flex min-w-[72px] items-center justify-end rounded-md border border-slate-200 bg-white px-2.5 py-1 text-sm font-semibold text-slate-400">...</span>
 
             <!-- Calculate icon button -->
             <button
@@ -391,7 +464,7 @@ function handlePayNowFromQr() {
               type="button"
               title="Tính phí vận chuyển"
               class="flex h-7 w-7 items-center justify-center rounded-md border border-orange-200 dark:border-orange-800/50 bg-orange-50 dark:bg-orange-900/20 text-orange-500 dark:text-orange-400 transition hover:bg-orange-100 dark:hover:bg-orange-900/40 active:scale-95"
-              @click="emit('calculate-shipping')"
+              @click="emit('calculate-shipping', { force: true })"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"/>
@@ -432,7 +505,7 @@ function handlePayNowFromQr() {
                 :checked="paymentMethod === 2"
                 type="radio"
                 class="h-4 w-4 accent-red-500"
-                @click="emit('update:paymentMethod', 2); showLargeQr = true"
+                @click="emit('update:paymentMethod', 2); emit('update:showLargeQr', true)"
               />
               <span>Chuyển khoản</span>
             </label>
@@ -580,28 +653,37 @@ function handlePayNowFromQr() {
     </div>
 
     <Teleport to="body">
-      <div v-if="showLargeQr" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" @click="showLargeQr = false">
+      <div v-if="showLargeQr" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" @click="emit('update:showLargeQr', false)">
         <div class="relative rounded-[32px] bg-white p-8 shadow-2xl" @click.stop>
           <button
             class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
-            @click="showLargeQr = false"
+            @click="emit('update:showLargeQr', false)"
           >
             <X class="h-6 w-6" />
           </button>
           <h3 class="mb-6 text-center text-xl font-bold text-slate-800">Quét mã QR để thanh toán</h3>
-          <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-md border-2 border-slate-100 object-contain shadow-sm" />
-          <p class="mt-6 text-center text-base font-medium text-slate-600">
-            QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
-          </p>
-          <div class="mt-6 flex justify-center w-full">
-            <button
-              type="button"
-              class="w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none disabled:text-slate-400"
-              :disabled="!canPay || payingInvoice"
-              @click="handlePayNowFromQr"
-            >
-              {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
-            </button>
+          <div v-if="timeLeft > 0" class="flex flex-col items-center">
+            <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-md border-2 border-slate-100 object-contain shadow-sm" />
+            <p class="mt-6 text-center text-base font-medium text-slate-600">
+              QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
+            </p>
+            <div class="mt-6 flex justify-center w-full">
+              <button
+                type="button"
+                class="w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none disabled:text-slate-400"
+                :disabled="!canPay || payingInvoice"
+                @click="handlePayNowFromQr"
+              >
+                {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
+              </button>
+            </div>
+          </div>
+          <div v-else class="flex h-96 w-96 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-base font-bold">Mã QR đã hết hạn</span>
+            <button type="button" @click="timeLeft = 300; startTimer()" class="mt-3 rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-200">Tạo lại QR</button>
           </div>
         </div>
       </div>

@@ -55,7 +55,7 @@ export function useThongKeDashboard() {
   ];
 
   const PRODUCT_STOCK_OPTIONS = [
-    { value: "ALL", label: "Tất cả tồn kho" },
+    { value: "ALL", label: "Tất cả sản phẩm" },
     { value: "IN_STOCK", label: "Còn hàng" },
     { value: "LOW_STOCK", label: "Sắp hết" },
     { value: "OUT_OF_STOCK", label: "Hết hàng" }
@@ -64,8 +64,7 @@ export function useThongKeDashboard() {
   const PRODUCT_SORT_OPTIONS = [
     { value: "BEST_SELLER", label: "Bán chạy nhất" },
     { value: "REVENUE_DESC", label: "Doanh thu cao nhất" },
-    { value: "STOCK_ASC", label: "Tồn kho thấp nhất" },
-    { value: "RETURNED_DESC", label: "Trả lại nhiều nhất" },
+    { value: "STOCK_ASC", label: "Số lượng ít nhất" },
     { value: "NAME_ASC", label: "Tên A - Z" }
   ];
 
@@ -564,7 +563,7 @@ export function useThongKeDashboard() {
     labels: partitionedBrandData.value.map((item) => item.label),
     datasets: [
       {
-        label: brandChartType.value === "REVENUE" ? "Doanh thu" : brandChartType.value === "VOLUME" ? "Số lượng bán" : "Tồn kho",
+        label: brandChartType.value === "REVENUE" ? "Doanh thu" : brandChartType.value === "VOLUME" ? "Số lượng bán" : "Số lượng còn",
         data: partitionedBrandData.value.map((item) => item.value),
         borderColor: "#f43f5e",
         backgroundColor: "rgba(244, 63, 94, 0.05)",
@@ -993,10 +992,7 @@ export function useThongKeDashboard() {
         return Number(left.tonKho ?? 0) - Number(right.tonKho ?? 0)
           || Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
           || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
-      case "RETURNED_DESC":
-        return Number(right.soLuongTra ?? 0) - Number(left.soLuongTra ?? 0)
-          || Number(right.daBan ?? 0) - Number(left.daBan ?? 0)
-          || String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi");
+
       case "NAME_ASC":
         return String(left.tenSanPham ?? "").localeCompare(String(right.tenSanPham ?? ""), "vi")
           || String(left.maSanPham ?? "").localeCompare(String(right.maSanPham ?? ""), "vi");
@@ -1176,8 +1172,8 @@ export function useThongKeDashboard() {
         { label: "Tên sản phẩm", key: "tenSanPham" },
         { label: "Thương hiệu", value: (row) => row.thuongHieu || "Chưa cập nhật" },
         { label: "Đã bán", value: (row) => formatNumber(row.daBan) },
-        { label: "Số lượng trả", value: (row) => formatNumber(row.soLuongTra) },
-        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) }
+        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) },
+        { label: "Số lượng còn", value: (row) => formatNumber(row.tonKho) }
       ],
       rows
     });

@@ -51,7 +51,7 @@ public class ChatbotIntentRouter {
         if (message == null || message.isBlank()) {
             return new String[]{
                 "get_admin_revenue_stats_tool", "get_admin_low_stock_tool",
-                "search_admin_invoices_tool", "search_products_tool", "get_best_selling_shoes_tool"
+                "search_admin_invoices_tool", "search_products_tool", "get_admin_best_selling_shoes_tool"
             };
         }
 
@@ -86,7 +86,7 @@ public class ChatbotIntentRouter {
         }
         if (isProduct) {
             tools.add("search_products_tool");
-            tools.add("get_best_selling_shoes_tool");
+            tools.add("get_admin_best_selling_shoes_tool");
         }
         if (isReview) {
             tools.add("get_admin_product_reviews_tool");
@@ -104,7 +104,7 @@ public class ChatbotIntentRouter {
             tools.add("get_admin_low_stock_tool");
             tools.add("search_admin_invoices_tool");
             tools.add("search_products_tool");
-            tools.add("get_best_selling_shoes_tool");
+            tools.add("get_admin_best_selling_shoes_tool");
             tools.add("get_admin_chart_data_tool");
         }
 

@@ -91,7 +91,9 @@ export async function layGioHang() {
 export async function dongBoGiaGio() {
   const gio = docGioHangLocal();
   if (!gio.items.length) return { ...gio, removedNames: [] };
-  const ids = gio.items.map((it) => Number(it.giayChiTietId)).filter(Boolean);
+  const ids = gio.items
+    .map((it) => Number(it.giayChiTietId))
+    .filter((id) => !Number.isNaN(id) && id !== null && id !== undefined);
   let ds = [];
   try {
     ds = await apiRequest(`/client/san-pham/dong-bo-gia`, {
@@ -125,6 +127,7 @@ export async function dongBoGiaGio() {
     item.conBan = true;
     if (moi.canNang != null) item.canNang = Number(moi.canNang); // cân nặng 1 SP (gram)
     if (moi.ma) item.ma = moi.ma; // mã sản phẩm để hiển thị ở giỏ
+    if (moi.hinhAnh) item.hinhAnh = moi.hinhAnh; // cập nhật ảnh mới nhất của sản phẩm/biến thể
     validItems.push(item);
   }
   luuGioHangLocal(validItems);

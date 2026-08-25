@@ -1,6 +1,5 @@
 package com.example.server.core.admin.banHangTaiQuay.service;
 
-import com.example.server.core.inventory.TonKhoKhaDungService;
 import com.example.server.entity.GiayChiTiet;
 import com.example.server.infrastructure.exception.BusinessException;
 import java.time.Instant;
@@ -9,10 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TonKhoTaiQuayService {
 
-    private final TonKhoKhaDungService tonKhoKhaDungService;
-
-    public TonKhoTaiQuayService(TonKhoKhaDungService tonKhoKhaDungService) {
-        this.tonKhoKhaDungService = tonKhoKhaDungService;
+    public TonKhoTaiQuayService() {
     }
 
     public void validateAvailable(GiayChiTiet giayChiTiet, Integer soLuong) {
@@ -30,7 +26,7 @@ public class TonKhoTaiQuayService {
 
         int tonThucTe = giayChiTiet.getSoLuong() == null ? 0 : giayChiTiet.getSoLuong();
         if (tonThucTe < soLuong) {
-            throw new BusinessException("Số lượng tồn kho không đủ cho sản phẩm "
+            throw new BusinessException("Số lượng không đủ cho sản phẩm "
                     + giayChiTiet.getGiay().getTen() + " (còn " + tonThucTe + ")");
         }
     }

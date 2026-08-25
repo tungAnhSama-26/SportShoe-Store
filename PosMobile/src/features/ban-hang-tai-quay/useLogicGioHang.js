@@ -82,6 +82,11 @@ export function useLogicGioHang({
       if (anyExistingItem) {
         resultStatus = "price_updated";
         oldPrice = anyExistingItem.giaBan;
+        setCartItems(prev => prev.map(it => 
+          Number(it.chiTietId) === Number(product.chiTietId) && Number(it.giaBan) !== Number(product.giaBan)
+            ? { ...it, isOutdatedPrice: true }
+            : it
+        ));
       }
       
       setCartItems(prev => [
@@ -99,6 +104,7 @@ export function useLogicGioHang({
           soLuongBanDau: 0,
           giaBan: product.giaBan,
           oldPrice: oldPrice,
+          isOutdatedPrice: false,
           soLuongTon: product.soLuongTon
         }
       ]);
@@ -118,12 +124,33 @@ export function useLogicGioHang({
     };
   }, [cartItems, soLuongConLai, dongBoSanPhamSauKhiThemVaoGio, danhDauCanApDungLaiPhieu, danhDauCanTinhLaiPhiVanChuyen, capNhatTienKhachThanhToan, xoaPhanHoi]);
 
+  const isOutdatedPrice = useCallback((item) => {
+    if (!item) return false;
+    if (item.isOutdatedPrice) return true;
+    const sameVariantItems = cartItems.filter(
+      (it) => Number(it.chiTietId) === Number(item.chiTietId)
+    );
+    if (sameVariantItems.length > 1) {
+      const latestItem = sameVariantItems[sameVariantItems.length - 1];
+      if (latestItem && Number(latestItem.giaBan) !== Number(item.giaBan)) {
+        return true;
+      }
+    }
+    return false;
+  }, [cartItems]);
+
   const tangSoLuong = useCallback((cartItemId) => {
+    const targetItem = cartItems.find((item) => item.cartItemId === cartItemId || item.chiTietId === cartItemId);
+    if (targetItem && isOutdatedPrice(targetItem)) {
+      setTimeout(() => showWarning(`Sản phẩm "${targetItem.tenSanPham}" đã thay đổi giá trong hệ thống. Không thể tăng số lượng ở mức giá cũ.`), 0);
+      return;
+    }
+
     let reachedLimit = "";
     setCartItems(prev => {
       let limitHit = "";
       const newItems = prev.map((item) => {
-        if (item.cartItemId !== cartItemId) {
+        if (item.cartItemId !== cartItemId && item.chiTietId !== cartItemId) {
           return item;
         }
         // we use a fresh calculation based on current state inside setState
@@ -147,17 +174,17 @@ export function useLogicGioHang({
     if (danhDauCanApDungLaiPhieu) danhDauCanApDungLaiPhieu();
     if (danhDauCanTinhLaiPhiVanChuyen) danhDauCanTinhLaiPhiVanChuyen();
     if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
-  }, [danhDauCanApDungLaiPhieu, danhDauCanTinhLaiPhiVanChuyen, capNhatTienKhachThanhToan]);
+  }, [cartItems, isOutdatedPrice, danhDauCanApDungLaiPhieu, danhDauCanTinhLaiPhiVanChuyen, capNhatTienKhachThanhToan]);
 
   const giamSoLuong = useCallback((cartItemId) => {
-    setCartItems(prev => prev.map((item) => item.cartItemId === cartItemId ? { ...item, soLuong: item.soLuong - 1 } : item).filter((item) => item.soLuong > 0));
+    setCartItems(prev => prev.map((item) => (item.cartItemId === cartItemId || item.chiTietId === cartItemId) ? { ...item, soLuong: item.soLuong - 1 } : item).filter((item) => item.soLuong > 0));
     if (danhDauCanApDungLaiPhieu) danhDauCanApDungLaiPhieu();
     if (danhDauCanTinhLaiPhiVanChuyen) danhDauCanTinhLaiPhiVanChuyen();
     if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
   }, [danhDauCanApDungLaiPhieu, danhDauCanTinhLaiPhiVanChuyen, capNhatTienKhachThanhToan]);
 
   const xoaSanPham = useCallback((cartItemId) => {
-    setCartItems(prev => prev.filter((item) => item.cartItemId !== cartItemId));
+    setCartItems(prev => prev.filter((item) => item.cartItemId !== cartItemId && item.chiTietId !== cartItemId));
     if (danhDauCanApDungLaiPhieu) danhDauCanApDungLaiPhieu();
     if (danhDauCanTinhLaiPhiVanChuyen) danhDauCanTinhLaiPhiVanChuyen();
     if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
@@ -167,6 +194,14 @@ export function useLogicGioHang({
     let newQuantityNum = parseInt(newQuantity, 10);
     if (isNaN(newQuantityNum) || newQuantityNum <= 0) {
       newQuantityNum = 1;
+    }
+
+    const targetItem = cartItems.find((item) => item.cartItemId === cartItemId || item.chiTietId === cartItemId);
+    if (targetItem && isOutdatedPrice(targetItem)) {
+      if (newQuantityNum > targetItem.soLuong) {
+        setTimeout(() => showWarning(`Sản phẩm "${targetItem.tenSanPham}" đã thay đổi giá trong hệ thống. Không thể tăng số lượng ở mức giá cũ.`), 0);
+        return;
+      }
     }
 
     let reachedLimit = "";
@@ -208,6 +243,7 @@ export function useLogicGioHang({
     validateGioHang,
     taoDanhSachSanPhamThanhToan,
     soLuongConLai,
+    isOutdatedPrice,
     themSanPham,
     tangSoLuong,
     giamSoLuong,

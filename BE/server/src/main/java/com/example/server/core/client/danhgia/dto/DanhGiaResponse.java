@@ -6,6 +6,7 @@ import java.time.Instant;
 public record DanhGiaResponse(
         Integer id,
         String hoTenKhach,
+        String hinhAnhKhach,
         Integer soSao,
         String noiDung,
         String media,
