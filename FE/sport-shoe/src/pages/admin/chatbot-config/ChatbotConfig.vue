@@ -20,6 +20,14 @@ const visibility = ref({
 
 const loading = ref(false);
 const saving = ref(false);
+const localStatus = ref({
+  enabled: true,
+  reachable: false,
+  modelAvailable: false,
+  model: "qwen3:4b-instruct-2507-q4_K_M",
+  message: "Đang kiểm tra Ollama...",
+  providerOrder: []
+});
 
 async function fetchConfig() {
   loading.value = true;
@@ -31,6 +39,14 @@ async function fetchConfig() {
         geminiApiKey: data.geminiApiKey || "",
         deepseekApiKey: data.deepseekApiKey || "",
         groqApiKey: data.groqApiKey || ""
+      };
+      localStatus.value = {
+        enabled: data.localFallbackEnabled !== false,
+        reachable: data.ollamaReachable === true,
+        modelAvailable: data.ollamaModelAvailable === true,
+        model: data.ollamaModel || "qwen3:4b-instruct-2507-q4_K_M",
+        message: data.ollamaMessage || "Chưa có trạng thái Ollama",
+        providerOrder: data.providerOrder || []
       };
     }
   } catch (error) {
@@ -101,6 +117,39 @@ onMounted(() => {
         <Save v-else class="h-4 w-4" />
         Lưu cấu hình
       </button>
+    </div>
+
+    <!-- Ollama fallback status -->
+    <div class="mb-6 rounded-2xl border p-4"
+      :class="localStatus.reachable && localStatus.modelAvailable
+        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20'
+        : 'border-rose-200 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20'">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-3">
+          <Cpu class="mt-0.5 h-5 w-5 shrink-0"
+            :class="localStatus.reachable && localStatus.modelAvailable ? 'text-emerald-600' : 'text-rose-600'" />
+          <div>
+            <p class="font-bold text-slate-800 dark:text-slate-100">Ollama local fallback</p>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ localStatus.message }}</p>
+            <p class="mt-1 text-xs text-slate-500">
+              Model: <code class="rounded bg-white/70 px-1.5 py-0.5 dark:bg-slate-900/50">{{ localStatus.model }}</code>
+            </p>
+          </div>
+        </div>
+        <span class="self-start rounded-full px-3 py-1 text-xs font-bold sm:self-center"
+          :class="localStatus.reachable && localStatus.modelAvailable
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+            : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'">
+          {{ localStatus.reachable && localStatus.modelAvailable ? 'Sẵn sàng' : 'Chưa sẵn sàng' }}
+        </span>
+      </div>
+      <div v-if="localStatus.providerOrder.length" class="mt-3 border-t border-black/5 pt-3 text-xs text-slate-500 dark:border-white/10">
+        Thứ tự hiện tại:
+        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ localStatus.providerOrder.join(' → ') }}</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-500">
+        Cloud được gọi trước. Ollama chỉ xử lý khi các API key không có hoặc tất cả provider cloud đều thất bại.
+      </p>
     </div>
 
     <!-- Alert Box -->

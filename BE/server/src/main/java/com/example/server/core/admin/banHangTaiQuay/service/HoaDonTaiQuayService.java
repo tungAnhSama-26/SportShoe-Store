@@ -186,7 +186,7 @@ public class HoaDonTaiQuayService {
 
         voucherUseCase.ganPhieuGiamGiaChoHoaDon(hoaDon, maPhieuGiamGia, khachHang, tongTienHang);
         hoaDon.setKhachHang(khachHang);
-        apDungThongTinGiaoHangChoHoaDon(hoaDon, thongTinGiaoHang, tenKhachHang, soDienThoai);
+        apDungThongTinGiaoHangChoHoaDon(hoaDon, thongTinGiaoHang, tenKhachHang, soDienThoai, !invoiceStateUseCase.trangThaiHoaDonCho(trangThai));
 
         NhanVien currentEmp = resolveNhanVienDangDangNhap();
         if (currentEmp != null) {
@@ -249,6 +249,16 @@ public class HoaDonTaiQuayService {
             String tenMacDinh,
             String soDienThoaiMacDinh
     ) {
+        apDungThongTinGiaoHangChoHoaDon(hoaDon, thongTinGiaoHang, tenMacDinh, soDienThoaiMacDinh, false);
+    }
+
+    public void apDungThongTinGiaoHangChoHoaDon(
+            HoaDon hoaDon,
+            ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang,
+            String tenMacDinh,
+            String soDienThoaiMacDinh,
+            boolean batBuocHopLe
+    ) {
         boolean giaoHang = shippingUseCase.laDonGiaoHang(thongTinGiaoHang);
         String tenNguoiNhan = shippingUseCase.resolveGiaTriChuoi(
                 giaoHang && thongTinGiaoHang != null ? thongTinGiaoHang.tenNguoiNhan() : null,
@@ -259,11 +269,18 @@ public class HoaDonTaiQuayService {
                 soDienThoaiMacDinh
         );
 
-        if (giaoHang && (soDienThoaiNguoiNhan == null || soDienThoaiNguoiNhan.isBlank() || laGiaTriKhongCo(soDienThoaiNguoiNhan))) {
+        if (batBuocHopLe && giaoHang && (soDienThoaiNguoiNhan == null || soDienThoaiNguoiNhan.isBlank() || laGiaTriKhongCo(soDienThoaiNguoiNhan))) {
             throw new BusinessException("Vui lòng nhập số điện thoại người nhận");
         }
 
-        DiaChiHaiCap diaChiGiaoHang = giaoHang ? shippingUseCase.requireDiaChiGiaoHang(thongTinGiaoHang) : null;
+        DiaChiHaiCap diaChiGiaoHang = null;
+        if (giaoHang) {
+            if (batBuocHopLe) {
+                diaChiGiaoHang = shippingUseCase.requireDiaChiGiaoHang(thongTinGiaoHang);
+            } else {
+                diaChiGiaoHang = shippingUseCase.resolveDiaChiGiaoHangOptional(thongTinGiaoHang);
+            }
+        }
         BigDecimal phiVanChuyen = giaoHang ? shippingUseCase.resolvePhiVanChuyen(thongTinGiaoHang) : BigDecimal.ZERO;
 
         hoaDon.setTenNguoiNhan(tenNguoiNhan);
@@ -432,12 +449,12 @@ public class HoaDonTaiQuayService {
 
 
     private ThongTinGiaoHangTaiQuayResponse mapThongTinGiaoHangHoaDon(HoaDon hoaDon, VanChuyen vanChuyen) {
-        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null;
+        boolean giaoHang = hoaDon.getDiaChiGiaoHang() != null || vanChuyen != null;
         return new ThongTinGiaoHangTaiQuayResponse(
                 giaoHang,
                 normalizeLegacyDisplayValue(hoaDon.getTenNguoiNhan()),
                 normalizeLegacyDisplayValue(hoaDon.getSdtNguoiNhan()),
-                giaoHang ? DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()) : null,
+                hoaDon.getDiaChiGiaoHang() != null ? DiaChiHaiCapMapper.toResponse(hoaDon.getDiaChiGiaoHang()) : null,
                 vanChuyen != null ? pricingUseCase.defaultMoney(vanChuyen.getPhiVanChuyen()) : BigDecimal.ZERO,
                 vanChuyen != null ? vanChuyen.getDonViVanChuyen() : null
         );

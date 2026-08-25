@@ -29,8 +29,6 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     boolean existsByNhanVienTrongCaIdAndTrangThaiIn(UUID nhanVienId, List<String> trangThai);
 
-    boolean existsByCaChuaKetThuc(Integer caChuaKetThuc);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT g FROM GiaoCa g WHERE g.id = :id")
     Optional<GiaoCa> findByIdForUpdate(@Param("id") UUID id);

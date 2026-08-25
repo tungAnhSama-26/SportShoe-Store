@@ -35,12 +35,13 @@ import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import { useAdminSession } from "../../../composable/useAdminSession.js";
 import LichLamViecNhanVien from "./LichLamViecNhanVien.vue";
 import { useRealtime } from "../../../composables/useRealtime.js";
+import { khoangGioGiaoNhau, tinhThoiLuongCa } from "../../../utils/ca-lam.js";
 
 const route = useRoute();
 const router = useRouter();
 
 const { adminSession } = useAdminSession();
-const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 
 import { layDanhSachCaLam, normalizeShiftName } from "../../../services/ca-lam.js";
 
@@ -80,6 +81,7 @@ async function taiDanhSachCa() {
           muaNhat: colorSet.muaNhat,
           nut: colorSet.nut,
           gioBatDau: c.gioBatDau,
+          gioKetThuc: c.gioKetThuc,
           trangThai: Boolean(c.trangThai),
         };
       });
@@ -378,7 +380,7 @@ watch(ngayDauTuan, async () => {
 const boLocVaiTro = ref(0); // 0 = tất cả
 const dsVaiTro = [
   { value: 0, label: "Tất cả" },
-  { value: 1, label: "Quản trị viên" },
+  { value: 1, label: "Quản lý" },
   { value: 2, label: "Nhân viên" },
 ];
 
@@ -543,35 +545,85 @@ const chonNhanVienId = ref("");
 const chonNgayVal = ref("");
 const chonCaVal = ref("");
 
-// Giờ bắt đầu của mỗi ca
-const GIO_BAT_DAU_CA = computed(() => {
+function taoNgayLocal(value) {
+  if (value instanceof Date) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+  }
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function doiGioSangPhut(value) {
+  if (!value || typeof value !== "string") return null;
+  const [gio, phut] = value.trim().split(":").map(Number);
+  if (!Number.isFinite(gio) || !Number.isFinite(phut)) return null;
+  return gio * 60 + phut;
+}
+
+const THOI_GIAN_CA = computed(() => {
   const map = {};
-  DS_CA.value.forEach(c => {
-    const [gio, phut] = c.gio.split("-")[0].trim().split(":").map(Number);
-    map[c.id] = Number.isFinite(gio) && Number.isFinite(phut) ? gio * 60 + phut : 8 * 60;
+  TAT_CA.value.forEach(c => {
+    const [batDauText = "", ketThucText = ""] = (c.gio || "").split("-").map((value) => value.trim());
+    const batDau = doiGioSangPhut(c.gioBatDau || batDauText);
+    const ketThuc = doiGioSangPhut(c.gioKetThuc || ketThucText);
+    if (batDau !== null && ketThuc !== null) {
+      map[String(c.id).toLowerCase()] = { batDau, ketThuc };
+    }
   });
   return map;
 });
 
 function laCaDaKhoa(ngay, caId) {
   if (!ngay) return false;
-  const date = new Date(ngay);
-  date.setHours(0, 0, 0, 0);
+  const date = taoNgayLocal(ngay);
   const now = new Date();
-  const today = new Date(now);
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Ngày quá khứ → khóa
   if (date < today) return true;
+  if (date.getTime() !== today.getTime() || !caId) return false;
 
-  // Ngày hôm nay → kiểm tra ca đã bắt đầu chưa
-  if (date.getTime() === today.getTime() && caId) {
-    const phutBatDau = GIO_BAT_DAU_CA.value[caId];
-    const phutHienTai = now.getHours() * 60 + now.getMinutes();
-    if (phutBatDau !== undefined && phutHienTai >= phutBatDau) return true;
+  const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+  if (!thoiGian) return false;
+
+  const thoiDiemKetThuc = new Date(date);
+  thoiDiemKetThuc.setHours(
+    Math.floor(thoiGian.ketThuc / 60),
+    thoiGian.ketThuc % 60,
+    0,
+    0,
+  );
+  if (thoiGian.ketThuc <= thoiGian.batDau) {
+    thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
+  }
+  return now >= thoiDiemKetThuc;
+}
+
+function coTheThemNhanVienVaoCa(ngay, caId) {
+  if (!ngay || !caId) return false;
+  const thoiGian = THOI_GIAN_CA.value[String(caId).toLowerCase()];
+  if (!thoiGian) return false;
+
+  const date = taoNgayLocal(ngay);
+  const thoiDiemKetThuc = new Date(date);
+  thoiDiemKetThuc.setHours(
+    Math.floor(thoiGian.ketThuc / 60),
+    thoiGian.ketThuc % 60,
+    0,
+    0,
+  );
+  if (thoiGian.ketThuc <= thoiGian.batDau) {
+    thoiDiemKetThuc.setDate(thoiDiemKetThuc.getDate() + 1);
   }
 
-  return false;
+  const now = new Date();
+  return now < thoiDiemKetThuc;
 }
 
 function laNgayQuaKhu(ngay) {
@@ -590,8 +642,38 @@ const caHienTaiBiKhoa = computed(() => {
   return laCaDaKhoa(day.ngay, ca.id);
 });
 
+const caHienTaiCoTheThemNhanVien = computed(() => {
+  if (!currentChiTietCa.value) return false;
+  const { day, ca } = currentChiTietCa.value;
+  return coTheThemNhanVienVaoCa(day.ngay, ca.id);
+});
+
+function caDauTienCoTheThem(ngay) {
+  return DS_CA.value.find((ca) => coTheThemNhanVienVaoCa(ngay, ca.id));
+}
+
+function coCaChuaKhoaTrongNgay(ngay) {
+  return Boolean(caDauTienCoTheThem(ngay));
+}
+
 const danhSachChonNhanVienIds = ref([]);
 const isThemCaThang = ref(false);
+
+const caDangChonBiKhoa = computed(() => {
+  const ngay = currentChiTietCa.value?.day?.ngayStr || chonNgayVal.value;
+  const caId = currentChiTietCa.value?.ca?.id || chonCaVal.value;
+  return Boolean(ngay && caId && !coTheThemNhanVienVaoCa(ngay, caId));
+});
+
+watch([chonNgayVal, DS_CA], () => {
+  if (!chonNgayVal.value || !DS_CA.value.length) return;
+  if (!chonCaVal.value || !coTheThemNhanVienVaoCa(chonNgayVal.value, chonCaVal.value)) {
+    const caKhaDung = caDauTienCoTheThem(chonNgayVal.value);
+    if (caKhaDung) {
+      chonCaVal.value = caKhaDung.id;
+    }
+  }
+});
 
 // Modal xem lịch theo ngày (quá khứ)
 const showModalXemNgay = ref(false);
@@ -599,15 +681,14 @@ const xemNgayData = ref(null);
 
 function moModalThemCaThang(ngay) {
   const ngayStr = formatISODate(ngay);
-  const defaultCaId = DS_CA.value[0]?.id || '';
-  const isPast = laCaDaKhoa(ngay, defaultCaId);
+  const caMacDinh = caDauTienCoTheThem(ngay);
 
-  if (isPast) {
+  if (!caMacDinh) {
     return;
   }
 
   chonNgayVal.value = ngayStr;
-  chonCaVal.value = DS_CA.value[0]?.id || "";
+  chonCaVal.value = caMacDinh.id;
   danhSachChonNhanVienIds.value = [];
   currentChiTietCa.value = null;
   isThemCaThang.value = true;
@@ -622,10 +703,10 @@ function moModalThemCa() {
     chonNgayVal.value = currentChiTietCa.value.day.ngayStr;
     chonCaVal.value = currentChiTietCa.value.ca.id;
   } else {
-    const defaultCaId = DS_CA.value[0]?.id || '';
-    const firstAvailableDay = cacNgayTrongTuan.value.find(d => !laCaDaKhoa(d, defaultCaId)) || cacNgayTrongTuan.value[0];
+    const firstAvailableDay = cacNgayTrongTuan.value.find(coCaChuaKhoaTrongNgay) || cacNgayTrongTuan.value[0];
+    const caMacDinh = caDauTienCoTheThem(firstAvailableDay);
     chonNgayVal.value = formatISODate(firstAvailableDay);
-    chonCaVal.value = defaultCaId;
+    chonCaVal.value = caMacDinh?.id || DS_CA.value[0]?.id || "";
   }
   showModalChiTietCa.value = false;
   showModalThemCa.value = true;
@@ -675,6 +756,11 @@ async function luuCa() {
   } else {
     ngayStr = chonNgayVal.value;
     caId = chonCaVal.value;
+  }
+
+  if (!coTheThemNhanVienVaoCa(ngayStr, caId)) {
+    showError("Chỉ có thể thêm nhân viên vào ca hiện tại hoặc ca tương lai.");
+    return;
   }
 
   dangTai.value = true;
@@ -917,9 +1003,7 @@ function soGioCa(id) {
   const ca = layThongTinCa(id);
   if (!ca?.gio || !ca.gio.includes("-")) return 0;
   const [batDau, ketThuc] = ca.gio.split("-").map((value) => value.trim());
-  const [gioDau, phutDau] = batDau.split(":").map(Number);
-  const [gioCuoi, phutCuoi] = ketThuc.split(":").map(Number);
-  return Math.max(0, gioCuoi + phutCuoi / 60 - gioDau - phutDau / 60);
+  return (tinhThoiLuongCa(batDau, ketThuc) ?? 0) / 60;
 }
 
 function caChongGio(caThuNhatId, caThuHaiId) {
@@ -927,13 +1011,9 @@ function caChongGio(caThuNhatId, caThuHaiId) {
   const caThuHai = layThongTinCa(caThuHaiId);
   if (!caThuNhat?.gio?.includes("-") || !caThuHai?.gio?.includes("-")) return false;
 
-  const doiSangPhut = (giaTri) => {
-    const [gio, phut] = giaTri.trim().split(":").map(Number);
-    return gio * 60 + phut;
-  };
-  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map(doiSangPhut);
-  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map(doiSangPhut);
-  return batDauMot < ketThucHai && batDauHai < ketThucMot;
+  const [batDauMot, ketThucMot] = caThuNhat.gio.split("-").map((value) => value.trim());
+  const [batDauHai, ketThucHai] = caThuHai.gio.split("-").map((value) => value.trim());
+  return khoangGioGiaoNhau(batDauMot, ketThucMot, batDauHai, ketThucHai);
 }
 
 function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
@@ -951,25 +1031,26 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
   <div v-else class="schedule-page space-y-5">
 
     <!-- ───── HEADER TÙY CHỌN ───── -->
-    <div class="bg-white rounded-[16px] border border-slate-200 p-5 shadow-sm">
+    <div class="bg-white rounded-[16px] border border-slate-200 p-5 shadow-sm mb-6">
       <div class="flex items-center gap-3 mb-4">
         <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
           <Filter class="h-5 w-5" />
         </div>
         <h2 class="admin-section-title">Bộ lọc</h2>
       </div>
-      <div class="flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex flex-wrap items-center gap-4">
         <!-- Filters -->
-        <div class="flex items-center gap-4">
+        <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-2">
-            <span class="text-[13px] font-medium text-slate-700">Nhân viên <span class="text-rose-500"></span></span>
-            <div class="relative w-48">
-              <input v-model="timKiemNhanVien" type="text" placeholder="Tìm kiếm nhân viên..." class="w-full h-9 pl-3 pr-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition" />
+            <span class="text-[13px] font-medium text-slate-700">Nhân viên</span>
+            <div class="relative w-40">
+              <input v-model="timKiemNhanVien" type="text" placeholder="Tìm kiếm..." class="w-full h-9 pl-3 pr-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition" />
             </div>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-[13px] font-medium text-slate-700">Ca làm:</span>
-            <div class="relative w-40">
+            <div class="relative w-32">
               <select v-model="boLocCaLam" class="w-full h-9 px-3 text-[13px] border border-slate-200 rounded-lg focus:outline-none focus:border-rose-400 transition bg-white cursor-pointer">
                 <option value="">Tất cả ca</option>
                 <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id">{{ ca.nhan }}</option>
@@ -979,36 +1060,36 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
           <div class="flex items-center gap-2">
             <span class="text-[13px] font-medium text-slate-700">Ngày làm:</span>
             <div class="relative flex items-center h-9 border border-slate-200 rounded-lg bg-white overflow-hidden focus-within:border-rose-400 transition">
-              <input type="date" v-model="ngayLocSelect" class="w-36 h-full px-3 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
+              <input type="date" v-model="ngayLocSelect" class="w-32 h-full px-3 text-[13px] text-slate-700 outline-none bg-transparent cursor-pointer" />
             </div>
           </div>
         </div>
-        
+
         <!-- Actions -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2 ml-auto">
           <!-- Xếp ca tự động (Duy trì chức năng cũ) -->
-          <button @click="xepCaDong" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Tạo một lịch khung cho mỗi ca trong tương lai' : 'Không còn ngày tương lai để xếp ca'" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-medium transition shadow-sm disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-slate-100">
+          <button @click="xepCaDong" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Tạo một lịch khung cho mỗi ca trong tương lai' : 'Không còn ngày tương lai để xếp ca'" class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-medium transition shadow-sm disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-slate-100">
             <Shuffle class="w-4 h-4" />
-            <span>Xếp ca tự động</span>
+            <span>Xếp tự động</span>
           </button>
-          <button @click="datLaiLichTuongLai" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Xóa lịch từ ngày mai đến cuối tuần đang xem' : 'Không còn ngày tương lai để đặt lại'" class="h-9 px-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-[13px] font-medium transition disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-white">
+          <button @click="datLaiLichTuongLai" :disabled="!coNgayTuongLaiTrongTuan" :title="coNgayTuongLaiTrongTuan ? 'Xóa lịch từ ngày mai đến cuối tuần đang xem' : 'Không còn ngày tương lai để đặt lại'" class="h-9 px-3 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-[13px] font-medium transition disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-white">
             <RotateCcw class="w-4 h-4" />
-            <span>Đặt lại lịch</span>
+            <span>Đặt lại</span>
           </button>
           <!-- Tải template button (red) -->
-          <button @click="xuatExcel" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
+          <button @click="xuatExcel" class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
             <Download class="w-4 h-4" />
-            <span>Tải template</span>
+            <span>Tải mẫu</span>
           </button>
           <!-- Import Excel button (dark navy) -->
-          <button class="h-9 px-4 flex items-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-medium transition shadow-sm">
+          <button class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-medium transition shadow-sm">
             <Upload class="w-4 h-4" />
-            <span>Import Excel</span>
+            <span>Import</span>
           </button>
           <!-- Thêm mới lịch làm việc -->
-          <button @click="moModalThemCaTuHeader" class="h-9 px-4 flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
+          <button @click="moModalThemCaTuHeader" class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[13px] font-medium transition shadow-sm">
             <Plus class="w-4 h-4" />
-            <span>Thêm mới lịch làm việc</span>
+            <span>Thêm lịch</span>
           </button>
         </div>
       </div>
@@ -1199,7 +1280,7 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                       </div>
                       <!-- Nút + -->
                       <div class="w-7 h-7 rounded-full flex items-center justify-center shadow-md transition hover:scale-110"
-                           :class="laCaDaKhoa(ngay, DS_CA[0]?.id) ? 'bg-slate-400' : 'bg-rose-500 hover:bg-rose-600'">
+                           :class="coCaChuaKhoaTrongNgay(ngay) ? 'bg-rose-500 hover:bg-rose-600' : 'bg-slate-400'">
                         <Plus class="w-4 h-4 text-white" />
                       </div>
                     </div>
@@ -1304,8 +1385,8 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
             </div>
           </div>
 
-          <!-- Footer: Nút Thêm (ẩn khi ca đã khóa) -->
-          <div v-if="!caHienTaiBiKhoa" class="border-t border-slate-100 p-5 bg-slate-50">
+          <!-- Footer: Nút Thêm (chỉ hiện khi ca chưa kết thúc) -->
+          <div v-if="caHienTaiCoTheThemNhanVien" class="border-t border-slate-100 p-5 bg-slate-50">
             <button 
               @click="moModalThemCa" 
               class="w-full flex justify-center items-center gap-2 py-2.5 bg-white border border-slate-200 shadow-sm text-sm font-bold text-slate-700 rounded-xl hover:bg-slate-50 transition"
@@ -1367,8 +1448,13 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
                 v-model="chonCaVal" 
                 class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-slate-400 transition"
               >
-                <option v-for="ca in DS_CA" :key="ca.id" :value="ca.id">
-                  {{ ca.nhan }} ({{ ca.gio }})
+                <option
+                  v-for="ca in DS_CA"
+                  :key="ca.id"
+                  :value="ca.id"
+                  :disabled="!coTheThemNhanVienVaoCa(chonNgayVal, ca.id)"
+                >
+                  {{ ca.nhan }} ({{ ca.gio }}){{ !coTheThemNhanVienVaoCa(chonNgayVal, ca.id) ? ' - Ca đã kết thúc' : '' }}
                 </option>
               </select>
             </div>
@@ -1379,7 +1465,6 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
               <input 
                 type="date" 
                 v-model="chonNgayVal" 
-                :min="formatISODate(new Date())"
                 class="w-full h-11 px-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:border-slate-400 transition"
               />
             </div>
@@ -1393,8 +1478,8 @@ function nhanVienDaCoHoacChongCa(nhanVien, ngayStr, caLamId) {
             </button>
             <button 
               @click="luuCa" 
-              :disabled="danhSachChonNhanVienIds.length === 0 || dangTai" 
-              class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              :disabled="danhSachChonNhanVienIds.length === 0 || dangTai || caDangChonBiKhoa"
+              class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {{ dangTai ? 'Đang lưu...' : 'Thêm mới' }}
             </button>

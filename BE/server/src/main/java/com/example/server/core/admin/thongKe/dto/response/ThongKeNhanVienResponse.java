@@ -8,6 +8,7 @@ public record ThongKeNhanVienResponse(
         UUID nhanVienId,
         String maNhanVien,
         String tenNhanVien,
+        String vaiTro,
         Long tongDonHang,
         Long sanPhamDaBan,
         BigDecimal doanhThu

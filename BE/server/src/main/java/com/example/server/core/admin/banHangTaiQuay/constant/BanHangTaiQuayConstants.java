@@ -30,7 +30,7 @@ public class BanHangTaiQuayConstants {
     public static final int TRANG_THAI_PHIEU_THEO_KH_CHUA_DUNG = 1;
 
     // Các cấu hình giới hạn
-    public static final int SO_SAN_PHAM_TIM_TOI_DA = 50;
+    public static final int SO_SAN_PHAM_TIM_TOI_DA = 1000;
 
     // Các chuỗi hằng số
     public static final String DIA_CHI_TAI_QUAY = "Mua tại quầy";

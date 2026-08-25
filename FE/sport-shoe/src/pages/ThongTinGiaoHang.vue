@@ -9,7 +9,7 @@
     </section>
     <section class="mx-auto max-w-6xl px-6 py-12">
       <div class="grid gap-6 md:grid-cols-3">
-        <article class="rounded-2xl bg-white p-6 shadow-sm"><span class="text-sm font-bold text-primary">01</span><h2 class="mt-3 text-lg font-bold">Xác nhận đơn</h2><p class="mt-3 text-sm leading-7 text-slate-600">Đơn hàng được kiểm tra thông tin, tồn kho và phương thức thanh toán trước khi đóng gói.</p></article>
+        <article class="rounded-2xl bg-white p-6 shadow-sm"><span class="text-sm font-bold text-primary">01</span><h2 class="mt-3 text-lg font-bold">Xác nhận đơn</h2><p class="mt-3 text-sm leading-7 text-slate-600">Đơn hàng được kiểm tra thông tin, số lượng sản phẩm và phương thức thanh toán trước khi đóng gói.</p></article>
         <article class="rounded-2xl bg-white p-6 shadow-sm"><span class="text-sm font-bold text-primary">02</span><h2 class="mt-3 text-lg font-bold">Bàn giao vận chuyển</h2><p class="mt-3 text-sm leading-7 text-slate-600">Khi đơn được bàn giao, trạng thái và mã vận đơn sẽ được cập nhật để khách hàng theo dõi.</p></article>
         <article class="rounded-2xl bg-white p-6 shadow-sm"><span class="text-sm font-bold text-primary">03</span><h2 class="mt-3 text-lg font-bold">Nhận hàng</h2><p class="mt-3 text-sm leading-7 text-slate-600">Kiểm tra tình trạng kiện hàng và sản phẩm trước khi xác nhận đã nhận.</p></article>
       </div>

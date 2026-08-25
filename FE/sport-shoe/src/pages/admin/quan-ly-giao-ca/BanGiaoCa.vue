@@ -21,6 +21,7 @@ import {
 } from "lucide-vue-next";
 import { showSuccess, showError, showConfirm } from "../../../utils/alert.js";
 import { useAdminSession } from "../../../composable/useAdminSession";
+import { isAdminRole } from "../../../services/auth";
 import { useGiaoCa } from "../../../composable/useGiaoCa";
 import { layThongTinGiaoCaCurrent, layTuyChonBanGiao } from "../../../services/giao-ca";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
@@ -53,6 +54,8 @@ const lyDoKhongTheBanGiao = ref("");
 const currentStats = ref(null);
 const loadingStats = ref(false);
 const isPaidInvoicesCollapsed = ref(true);
+const adminAutoOpeningShift = ref(false);
+const skipAdminAutoOpenUntilNextEntry = ref(false);
 
 const pendingInvoices = computed(() => {
   return shiftTransactions.value.filter(tx => 
@@ -137,7 +140,14 @@ const getLastWordOfName = computed(() => {
 
 const isMoCaSángSớmMode = computed(() => route.path === "/admin/mo-ca");
 
-const isAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const isAdmin = computed(() => {
+  const vaiTro = adminSession.value?.vaiTro;
+  return isAdminRole()
+    || Number(vaiTro) === 1
+    || ["Quản lý", "Quản trị viên", "Admin"].includes(String(vaiTro));
+});
+const ketCaTrucTiep = computed(() => isAdmin.value || coTheKetCa.value);
+const shouldRedirectAdminToHandover = computed(() => isAdmin.value && isMoCaSángSớmMode.value);
 const caLamDuocChon = computed(() =>
   danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
 );
@@ -184,6 +194,9 @@ const isCaDaChot = ref(false);
 const pendingHandover = computed(() => {
   return pendingHandovers.value && pendingHandovers.value.length > 0 ? pendingHandovers.value[0] : null;
 });
+const shouldShowOpenShiftScreen = computed(() =>
+  isMoCaSángSớmMode.value && !isAdmin.value
+);
 
 const displayShift = computed(() => activeShift.value || pendingHandover.value);
 
@@ -261,8 +274,56 @@ async function taiNhanVienGiaoCa() {
   }
 }
 
+async function adminVaoCaTuDong() {
+  if (!isAdmin.value || activeShift.value || pendingHandover.value || adminAutoOpeningShift.value) {
+    return false;
+  }
+  adminAutoOpeningShift.value = true;
+  try {
+    if (!danhSachCaMo.value.length || !caLamMoId.value) {
+      await taiCaLamChoMoCa();
+    }
+    if (!caLamMoId.value) {
+      showError("Chưa có ca làm việc đang hoạt động để admin vào ca.");
+      return false;
+    }
+    const res = await openShift(
+      0,
+      "Admin vào ca tự động",
+      caLamMoId.value,
+      "Admin vào ca không cần bước mở ca",
+    );
+    if (!res.success) {
+      showError(res.message);
+      return false;
+    }
+    showSuccess("Đã ghi nhận admin vào ca làm việc");
+    await loadActiveShift();
+    await loadPendingHandovers();
+    return true;
+  } finally {
+    adminAutoOpeningShift.value = false;
+  }
+}
+
+async function adminVaoCaTiep() {
+  skipAdminAutoOpenUntilNextEntry.value = false;
+  await loadActiveShift();
+  await loadPendingHandovers();
+  await syncState();
+}
+
 // State Machine Sync based on BE states
 async function syncState() {
+  if (shouldRedirectAdminToHandover.value) {
+    router.replace("/admin/ban-giao-ca");
+    return;
+  }
+
+  if (isAdmin.value && !activeShift.value && !pendingHandover.value && !skipAdminAutoOpenUntilNextEntry.value) {
+    await adminVaoCaTuDong();
+  }
+
   if (activeShift.value) {
     if (activeShift.value.trangThai === "MO_CA") {
       buocHienTai.value = 1;
@@ -299,7 +360,10 @@ watch([activeShift, pendingHandovers], () => {
   syncState();
 });
 
-watch(() => route.path, () => {
+watch(() => [route.path, route.query.vaoCa], () => {
+  if (isAdmin.value && route.path === "/admin/ban-giao-ca" && route.query.vaoCa) {
+    skipAdminAutoOpenUntilNextEntry.value = false;
+  }
   syncState();
 });
 
@@ -406,7 +470,7 @@ async function xacNhanMoCaSángSớmBtn() {
       processing.value = false;
       if (res.success) {
         showSuccess(res.message);
-        router.push("/admin/ban-hang");
+        router.push("/admin/ban-giao-ca");
       } else {
         showError(res.message);
       }
@@ -450,24 +514,21 @@ async function xacNhanBanGiaoCaBtn() {
 }
 
 async function ketCaLamViecBtn() {
-  if (chenhLech.value !== 0 && (!lyDoChenhLech.value || !lyDoChenhLech.value.trim())) {
+  if (!isAdmin.value && chenhLech.value !== 0 && (!lyDoChenhLech.value || !lyDoChenhLech.value.trim())) {
     showError("Số tiền chênh lệch khác 0. Vui lòng nhập lý do chênh lệch.");
     return;
   }
-  if (isAdmin.value && !caLamMoId.value) {
-    showError("Vui lòng chọn ca làm việc cần mở");
-    return;
-  }
-  if (adminCanLyDoMoCa.value && !lyDoMoCaMuon.value.trim()) {
-    showError("Vui lòng nhập lý do mở ca muộn hoặc ngoài khung giờ");
-    return;
-  }
   const confirmed = await showConfirm(
-    "Đây là ca cuối trong ngày. Kết ca sẽ không mở ca mới.",
+    isAdmin.value
+      ? "Admin sẽ kết thúc ca hiện tại và không bàn giao cho nhân viên ca sau."
+      : "Đây là ca cuối trong ngày. Kết ca sẽ không mở ca mới.",
     "Xác nhận kết ca làm việc?"
   );
   if (!confirmed) return;
   processing.value = true;
+  if (isAdmin.value) {
+    skipAdminAutoOpenUntilNextEntry.value = true;
+  }
   const res = await endShift({
     tienCuoiCaThucTe: tienThucTe.value,
     lyDoChenhLech: lyDoChenhLech.value,
@@ -478,6 +539,9 @@ async function ketCaLamViecBtn() {
     buocHienTai.value = 4;
     showSuccess(res.message);
   } else {
+    if (isAdmin.value) {
+      skipAdminAutoOpenUntilNextEntry.value = false;
+    }
     showError(res.message);
   }
 }
@@ -637,9 +701,9 @@ function cuongCheKetThucCa() {
 <template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- SCREEN B: MỞ CA SÁNG SỚM -->
-    <div v-if="isMoCaSángSớmMode" class="flex items-center justify-center min-h-[70vh]">
+    <div v-if="shouldShowOpenShiftScreen" class="flex items-center justify-center min-h-[70vh]">
       <!-- Case 1: Active shift already exists -->
-      <div v-if="activeShift" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 text-center space-y-5">
+      <div v-if="activeShift && (!isAdmin || isMyShift)" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 text-center space-y-5">
         <div class="mx-auto h-16 w-16 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-500 rounded-full flex items-center justify-center text-amber-500 shadow-md">
           <AlertTriangle class="h-8 w-8 animate-pulse" />
         </div>
@@ -659,7 +723,7 @@ function cuongCheKetThucCa() {
       </div>
 
       <!-- Case 2: Pending Handover waiting for confirmation -->
-      <div v-else-if="pendingHandover" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
+      <div v-else-if="pendingHandover && !isAdmin" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
         <div class="text-center space-y-2">
           <div class="mx-auto h-14 w-14 bg-blue-50 dark:bg-blue-950/20 border-2 border-primary rounded-full flex items-center justify-center text-primary shadow-sm">
             <FileSpreadsheet class="h-7 w-7" />
@@ -754,7 +818,7 @@ function cuongCheKetThucCa() {
         </div>
       </div>
 
-      <!-- Case 3: No active ca, no pending handover - show normal starting cash declaration -->
+      <!-- Case 3: Staff has no active ca, no pending handover - show normal starting cash declaration -->
       <div v-else class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 space-y-6">
         <!-- Header -->
         <div class="text-center space-y-2">
@@ -860,7 +924,7 @@ function cuongCheKetThucCa() {
           <button 
             type="button"
             @click="xacNhanMoCaSángSớmBtn"
-            :disabled="processing"
+            :disabled="processing || (isAdmin && !caLamMoId)"
             class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition text-sm uppercase tracking-wider disabled:opacity-50"
           >
             {{ processing ? 'ĐANG MỞ CA...' : 'BẮT ĐẦU CA LÀM VIỆC' }}
@@ -1251,14 +1315,33 @@ function cuongCheKetThucCa() {
           <Clock class="h-8 w-8" />
         </div>
         <div>
-          <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">Không có ca hoạt động</h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+          <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-white uppercase">
+            Không có ca hoạt động
+          </h2>
+          <p v-if="isAdmin" class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            Admin có thể vào ca làm việc bất kỳ lúc nào. Hệ thống sẽ tự ghi nhận lịch sử hoạt động.
+          </p>
+          <p v-else class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             Bạn hiện không có ca làm việc nào đang hoạt động và không có ca bàn giao nào cần xác nhận.
             Vui lòng mở ca làm việc để bắt đầu thực hiện bán hàng và quản lý ca.
           </p>
         </div>
-        <button 
-          @click="router.push('/admin/mo-ca')" 
+        <div
+          v-if="adminAutoOpeningShift"
+          class="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary"
+        >
+          Đang ghi nhận admin vào ca làm việc...
+        </div>
+        <button
+          v-if="isAdmin && !adminAutoOpeningShift"
+          @click="adminVaoCaTiep"
+          class="w-full py-3.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg transition"
+        >
+          Vào ca làm việc
+        </button>
+        <button
+          v-if="!isAdmin"
+          @click="router.push('/admin/mo-ca')"
           class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition"
         >
           Đi đến Mở ca làm việc
@@ -1426,7 +1509,7 @@ function cuongCheKetThucCa() {
               </div>
 
               <!-- Receiver dropdown -->
-              <div v-if="!coTheKetCa">
+              <div v-if="!ketCaTrucTiep">
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                   Chọn nhân viên nhận ca <span class="text-rose-500">*</span>
                 </label>
@@ -1437,7 +1520,7 @@ function cuongCheKetThucCa() {
                     :key="nv.id" 
                     :value="nv.id"
                   >
-                    {{ nv.hoTen }} ({{ nv.ma }}){{ nv.vaiTro === 1 ? ' - Quản trị viên' : '' }}
+                    {{ nv.hoTen }} ({{ nv.ma }}){{ nv.vaiTro === 1 ? ' - Quản lý' : '' }}
                   </option>
                 </select>
                 <p v-if="lyDoKhongTheBanGiao" class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold leading-5 text-amber-800">
@@ -1476,7 +1559,7 @@ function cuongCheKetThucCa() {
               </div>
 
               <!-- Button: GỬI YÊU CẦU BÀN GIAO -->
-              <button v-if="!coTheKetCa"
+              <button v-if="!ketCaTrucTiep"
                 type="button"
                 @click="xacNhanBanGiaoCaBtn"
                 :disabled="processing || listNhanVien.length === 0"
@@ -1680,7 +1763,7 @@ function cuongCheKetThucCa() {
                 <td class="px-3 py-3 font-semibold text-emerald-600">+{{ formatVND(tx.tongTien) }}</td>
                 <td class="px-3 py-3">
                   <span class="px-2 py-0.5 text-[10px] font-medium rounded-full"
-                        :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-slate-100 dark:bg-slate-700'">
+                        :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : (tx.phuongThucThanhToan === 'Kết hợp' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-semibold' : 'bg-slate-100 dark:bg-slate-700')">
                     {{ tx.phuongThucThanhToan || 'N/A' }}
                   </span>
                 </td>
@@ -1729,7 +1812,8 @@ function cuongCheKetThucCa() {
                   <td class="px-3 py-3">Bán hàng tại quầy</td>
                   <td class="px-3 py-3 font-semibold text-emerald-600">+{{ formatVND(tx.tongTien) }}</td>
                   <td class="px-3 py-3">
-                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 dark:bg-slate-700">
+                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full"
+                          :class="tx.phuongThucThanhToan === 'Chưa thanh toán' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : (tx.phuongThucThanhToan === 'Kết hợp' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-semibold' : 'bg-slate-100 dark:bg-slate-700')">
                       {{ tx.phuongThucThanhToan || 'N/A' }}
                     </span>
                   </td>

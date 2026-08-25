@@ -41,6 +41,7 @@ function LogicBanHangTaiQuay() {
   const choPhepGiaoHang = ref(false);
   const tenNguoiNhanGiaoHang = ref("");
   const sdtNguoiNhanGiaoHang = ref("");
+  const emailNguoiNhanGiaoHang = ref("");
   const diaChiGiaoHang = ref({ ...DIA_CHI_RONG });
   const donViVanChuyen = ref("GHN");
   const phiVanChuyen = ref(0);
@@ -58,22 +59,6 @@ function LogicBanHangTaiQuay() {
   const daDatGioiHanHoaDonCho = computed(
     () => danhSachHoaDonCho.value.length >= TOI_DA_HOA_DON_CHO
   );
-  const coTheTaoHoaDonCho = computed(
-    () => !dangLuuHoaDonCho.value &&
-      !maPhieuChuaApDung.value &&
-      !daDatGioiHanHoaDonCho.value &&
-      coThongTinGiaoHangHopLe.value &&
-      !sanPhamValidationMessage.value
-  );
-  const coTheThanhToan = computed(() => {
-    if (!cartItems?.value?.length || sanPhamValidationMessage?.value || dangThanhToan?.value || maPhieuChuaApDung?.value || !coThongTinGiaoHangHopLe?.value) {
-      return false;
-    }
-    if (phuongThucThanhToan?.value === 1) {
-      return !thongBaoLoiThanhToan?.value;
-    }
-    return true;
-  });
   const {
     tuKhoaKhachHang,
     ketQuaTimKiemKhachHang,
@@ -120,6 +105,7 @@ function LogicBanHangTaiQuay() {
     validateGioHang,
     taoDanhSachSanPhamThanhToan,
     soLuongConLai,
+    isOutdatedPrice,
     themSanPham,
     tangSoLuong,
     giamSoLuong,
@@ -148,6 +134,7 @@ function LogicBanHangTaiQuay() {
     choPhepGiaoHang,
     tenNguoiNhanGiaoHang,
     sdtNguoiNhanGiaoHang,
+    emailNguoiNhanGiaoHang,
     diaChiGiaoHang,
     donViVanChuyen,
     phiVanChuyen,
@@ -156,6 +143,7 @@ function LogicBanHangTaiQuay() {
     dangTinhPhiVanChuyen,
     cauHinhGiaoHang,
     khachHangDuocChon,
+    tuKhoaKhachHang,
     hoaDonChoDaChon,
     cartItems,
     thongBaoLoi
@@ -188,11 +176,13 @@ function LogicBanHangTaiQuay() {
     phieuTotHonDeXuat: loiNhomPhieuGiamGiaTotHon,
     tuChoiPhieuTotHon: tuChoiPhieuGiamGiaTotHon,
     chapNhanPhieuTotHon: chapNhanPhieuGiamGiaTotHon,
-    kiemTraPhieuTotHonTruocThanhToan
+    kiemTraPhieuTotHonTruocThanhToan,
+    kiemTraLaiPhieuDangApDung
   } = LogicPhieuGiamGia({
     cartItems,
     tongTien,
     hoaDonChoDaChon,
+    dangTaiChiTietHoaDon,
     khachHangDuocChon,
     layIdKhachHangHienTai,
     taoDanhSachSanPhamThanhToan,
@@ -214,6 +204,7 @@ function LogicBanHangTaiQuay() {
     tienKhachThanhToan,
     tienThua,
     thongBaoLoiThanhToan,
+    hienThiMaQrLon,
     capNhatTienKhachThanhToan,
     kiemTraLoiThanhToan,
     xuLyTienKhachDuaInput,
@@ -226,37 +217,59 @@ function LogicBanHangTaiQuay() {
     hoaDonChoDaChon
   });
 
+  const coTheTaoHoaDonCho = computed(
+    () => !dangLuuHoaDonCho.value &&
+      !maPhieuChuaApDung.value &&
+      !daDatGioiHanHoaDonCho.value &&
+      coThongTinGiaoHangHopLe.value &&
+      !sanPhamValidationMessage.value
+  );
+
+  const coTheThanhToan = computed(() => {
+    if (!cartItems.value || cartItems.value.length === 0) return false;
+    if (sanPhamValidationMessage.value) return false;
+    if (dangThanhToan.value) return false;
+    if (choPhepGiaoHang.value && !coThongTinGiaoHangHopLe.value) return false;
+    if (phuongThucThanhToan.value === 1 && thongBaoLoiThanhToan.value) return false;
+    if (phuongThucThanhToan.value === 5 && thongBaoLoiThanhToan.value) return false;
+    return true;
+  });
+
   const {
     xuLyInHoaDonTaiQuay
   } = LogicInHoaDon();
 
-  const { subscribeTopic, publishMessage } = useRealtime();
+  const { isConnected, subscribeTopic, publishMessage } = useRealtime();
 
   const sessionId = Math.random().toString(36).substring(2, 15);
   let isSyncingUI = false;
-  let lastLocalSaveTime = 0;
 
   subscribeTopic('/topic/admin/pos-sync', async (rawMsg) => {
     const msg = rawMsg?.payload ?? rawMsg;
     if (msg.sender === sessionId) return;
 
     if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
-      if (Date.now() - lastLocalSaveTime < 2500 && (msg.action === 'UPDATED' || msg.action === 'CREATED')) {
-        return;
-      }
       try {
-        await taiDanhSachHoaDonCho();
         if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
           if (hoaDonChoDaChon.value?.id === msg.invoiceId) {
+            if (msg.action === 'PAID') {
+              showToastSuccess(msg.message || `Hóa đơn ${msg.maHoaDon || ''} đã thanh toán thành công!`);
+            }
             xoaBanNhap();
+          } else if (msg.action === 'PAID') {
+            showToastSuccess(msg.message || `Hóa đơn ${msg.maHoaDon || ''} đã thanh toán thành công!`);
           }
+          await taiDanhSachHoaDonCho(true);
           return;
         }
-        const invoice = danhSachHoaDonCho.value.find((hd) => hd.id === msg.invoiceId);
-        if (invoice) {
-          if (hoaDonChoDaChon.value?.id === msg.invoiceId) {
-            await chonHoaDonCho(invoice);
-          } else if (!hoaDonChoDaChon.value && msg.action === 'CREATED') {
+
+        // Cập nhật danh sách hóa đơn chờ một cách ngầm (silent) để không chớp nháy thanh tab
+        await taiDanhSachHoaDonCho(true);
+
+        // Chỉ tự động chọn nếu hiện tại chưa chọn hóa đơn nào và có hóa đơn mới được tạo
+        if (!hoaDonChoDaChon.value && msg.action === 'CREATED') {
+          const invoice = danhSachHoaDonCho.value.find((hd) => hd.id === msg.invoiceId);
+          if (invoice) {
             await chonHoaDonCho(invoice);
           }
         }
@@ -269,9 +282,13 @@ function LogicBanHangTaiQuay() {
     if (msg.action === 'CHON_HOA_DON') {
       isSyncingUI = true;
       try {
-        await taiDanhSachHoaDonCho();
+        if (msg.invoiceId == null) {
+          xoaBanNhap();
+          return;
+        }
+        await taiDanhSachHoaDonCho(true);
         const invoice = danhSachHoaDonCho.value.find(hd => hd.id === msg.invoiceId);
-        if (invoice) {
+        if (invoice && hoaDonChoDaChon.value?.id !== msg.invoiceId) {
           await chonHoaDonCho(invoice);
         }
       } catch (e) {
@@ -285,22 +302,48 @@ function LogicBanHangTaiQuay() {
       dangLuuNoiBo = true;
       skipNextAutosave = true;
 
-      lastReceivedSyncState = msg.state;
+      lastReceivedSyncState = {
+        ...msg.state,
+        diaChiGiaoHang: chuanHoaDiaChi(msg.state.diaChiGiaoHang)
+      };
 
       choPhepGiaoHang.value = msg.state.choPhepGiaoHang;
       tenNguoiNhanGiaoHang.value = msg.state.tenNguoiNhanGiaoHang;
       sdtNguoiNhanGiaoHang.value = msg.state.sdtNguoiNhanGiaoHang;
-      diaChiGiaoHang.value = chuanHoaDiaChi(msg.state.diaChiGiaoHang);
-      tienKhachDua.value = msg.state.tienKhachDua;
+      const newDiaChi = chuanHoaDiaChi(msg.state.diaChiGiaoHang);
+      if (JSON.stringify(diaChiGiaoHang.value) !== JSON.stringify(newDiaChi)) {
+        diaChiGiaoHang.value = newDiaChi;
+      }
+      tienKhachDua.value = msg.state.tienKhachDua || "";
+      tienMatKetHop.value = msg.state.tienMatKetHop || "";
+      tienChuyenKhoanKetHop.value = msg.state.tienChuyenKhoanKetHop || "";
       phuongThucThanhToan.value = msg.state.phuongThucThanhToan;
-      ghiChuThanhToan.value = msg.state.ghiChuThanhToan;
-      tuKhoaKhachHang.value = msg.state.tuKhoaKhachHang;
-      khachHangDuocChon.value = msg.state.khachHangDuocChon;
+      hienThiMaQrLon.value = !!msg.state.hienThiMaQrLon;
+      ghiChuThanhToan.value = msg.state.ghiChuThanhToan || "";
+      tuKhoaKhachHang.value = msg.state.tuKhoaKhachHang || "";
+      khachHangDuocChon.value = msg.state.khachHangDuocChon || null;
 
       setTimeout(() => {
         isSyncingUI = false;
         dangLuuNoiBo = false;
       }, 50);
+    }
+  });
+
+  watch(isConnected, async (connected) => {
+    if (!connected) return;
+
+    try {
+      const currentInvoiceId = hoaDonChoDaChon.value?.id;
+      await taiDanhSachHoaDonCho(true);
+      if (!currentInvoiceId) return;
+
+      const currentInvoice = danhSachHoaDonCho.value.find((invoice) => invoice.id === currentInvoiceId);
+      if (!currentInvoice) {
+        xoaBanNhap();
+      }
+    } catch (e) {
+      console.error("Lỗi tải lại POS sau khi kết nối realtime:", e);
     }
   });
 
@@ -394,52 +437,70 @@ function LogicBanHangTaiQuay() {
     // Luôn tải toàn bộ biến thể để đối chiếu được cả sản phẩm không nằm trong từ khóa tìm kiếm hiện tại.
     await taiSanPham("", true);
 
-    if (hoaDonChoDaChon.value) {
-      const selectedInvoiceId = hoaDonChoDaChon.value.id;
-      await taiDanhSachHoaDonCho();
-      const stillExists = danhSachHoaDonCho.value.find((invoice) => invoice.id === selectedInvoiceId);
-      if (!stillExists) {
-        hoaDonChoDaChon.value = danhSachHoaDonCho.value[0] ?? null;
-        if (!hoaDonChoDaChon.value) {
-          cartItems.value = [];
-          khachHangDuocChon.value = null;
-          tuKhoaKhachHang.value = "";
-          choPhepGiaoHang.value = false;
-          phieuGiamGiaDaApDung.value = null;
-          return;
-        }
-      }
-
-      const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
-      chuyenHoaDonThanhBanNhap(detail);
-      return;
-    }
-
     if (cartItems.value.length === 0) return;
 
     const sanPhamTheoChiTietId = new Map(
       (ketQuaBienTheSanPham.value || []).map((product) => [Number(product.chiTietId), product])
     );
     const removedItems = [];
+    let hasChanges = false;
     const remainingItems = [];
-    let giaDaThayDoi = false;
+
     for (const item of cartItems.value) {
       const sanPhamMoi = sanPhamTheoChiTietId.get(Number(item.chiTietId));
       if (!sanPhamMoi) {
-        removedItems.push(item);
+        remainingItems.push(item);
         continue;
       }
+      const isInactive = sanPhamMoi.kichHoat === 0
+        || sanPhamMoi.trangThai === 0
+        || sanPhamMoi.trangThaiSanPham === 0;
+      if (isInactive) {
+        removedItems.push(item);
+        hasChanges = true;
+        continue;
+      }
+      // Kiểm tra giá sản phẩm mới trong catalog so với giá hiện tại trong giỏ hàng
+      const newStock = sanPhamMoi.soLuongTon;
+      const newPriceNum = Number(sanPhamMoi.giaBan);
+      const currentPriceNum = Number(item.giaBan);
+      const isPriceChanged = newPriceNum !== currentPriceNum;
+      const isOutdated = isPriceChanged ? true : Boolean(item.isOutdatedPrice);
+
+      if (
+        item.soLuongTon !== newStock ||
+        Boolean(item.isOutdatedPrice) !== isOutdated ||
+        item.currentCatalogPrice !== newPriceNum
+      ) {
+        hasChanges = true;
+      }
+
       remainingItems.push({
         ...item,
-        soLuongTon: sanPhamMoi.soLuongTon
+        soLuongTon: newStock,
+        isOutdatedPrice: isOutdated,
+        currentCatalogPrice: newPriceNum,
+        oldPrice: isPriceChanged ? (item.oldPrice || item.giaBan) : item.oldPrice
       });
     }
 
-    if (removedItems.length === 0) return;
+    if (hasChanges) {
+      dangLuuNoiBo = true;
+      cartItems.value = remainingItems;
+      setTimeout(() => {
+        dangLuuNoiBo = false;
+      }, 50);
+    }
 
-    cartItems.value = remainingItems;
-    for (const item of removedItems) {
-      showWarning(`Sản phẩm "${item.tenSanPham}" đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+    if (removedItems.length > 0) {
+      const names = [...new Set(removedItems.map(it => `"${it.tenSanPham}"`))].join(', ');
+      showWarning(`Sản phẩm ${names} đã ngừng hoạt động, vui lòng chọn sản phẩm khác.`);
+      
+      if (hoaDonChoDaChon.value) {
+        setTimeout(() => {
+          void luuHoaDonHienTai(true);
+        }, 50);
+      }
     }
   }
 
@@ -463,20 +524,25 @@ function LogicBanHangTaiQuay() {
     }
   }
 
-  subscribeTopic('/topic/admin/san-pham', (message) => {
-    const msgType = message?.type || message?.payload?.loaiSuKien || message?.payload?.type;
-    if (!msgType || CAC_SU_KIEN_CAN_DONG_BO_GIA.has(msgType)) {
-      lenLichDongBoGiaRealtime();
-    }
+  subscribeTopic('/topic/admin/san-pham', () => {
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
   });
 
   subscribeTopic('/topic/admin/thuoc-tinh', () => {
-    lenLichDongBoGiaRealtime();
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
+  });
+
+  subscribeTopic('/topic/admin/dot-giam-gia', () => {
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
   });
 
   function dongBoGiaKhiQuayLaiTab() {
     if (document.visibilityState === 'visible') {
       lenLichDongBoGiaRealtime(0);
+      void kiemTraLaiPhieuDangApDung(true);
     }
   }
 
@@ -560,16 +626,22 @@ function LogicBanHangTaiQuay() {
     void taiSanPham("");
   }
 
-  async function taiDanhSachHoaDonCho() {
-    dangTaiHoaDonCho.value = true;
+  async function taiDanhSachHoaDonCho(silent = false) {
+    if (!silent) {
+      dangTaiHoaDonCho.value = true;
+    }
     try {
       danhSachHoaDonCho.value = await layDanhSachHoaDonCho();
     } catch (error) {
-      thongBaoLoi.value = error instanceof Error
-        ? error.message
-        : "Không thể tải danh sách hóa đơn chờ";
+      if (!silent) {
+        thongBaoLoi.value = error instanceof Error
+          ? error.message
+          : "Không thể tải danh sách hóa đơn chờ";
+      }
     } finally {
-      dangTaiHoaDonCho.value = false;
+      if (!silent) {
+        dangTaiHoaDonCho.value = false;
+      }
     }
   }
 
@@ -669,8 +741,7 @@ function LogicBanHangTaiQuay() {
       
       if (latestVariant) {
         productToAdd = {
-          ...latestVariant,
-          soLuongTon: Math.max((latestVariant.soLuongTon || 0) - (soLuongDaChon.value || 1), 0)
+          ...latestVariant
         };
       }
     } catch (e) {
@@ -699,14 +770,24 @@ function LogicBanHangTaiQuay() {
   }
 
   function chuyenHoaDonThanhBanNhap(invoice) {
+    if (boDemTuDongLuu) {
+      clearTimeout(boDemTuDongLuu);
+      boDemTuDongLuu = null;
+    }
     isSyncingUI = true;
     skipNextAutosave = true;
+    dangLuuNoiBo = true;
+
     const thongTinTheoChiTietId = new Map(
       ketQuaBienTheSanPham.value.map((product) => [Number(product.chiTietId), product])
     );
     const thongTinGiaoHang = invoice.thongTinGiaoHang || null;
 
-    tuKhoaKhachHang.value = invoice.tenKhachHang || invoice.soDienThoai || "";
+    if (hoaDonChoDaChon.value?.id === invoice.id && !invoice.khachHangId && !invoice.tenKhachHang) {
+      // Giữ nguyên tuKhoaKhachHang để không bị mất chữ khi người dùng đang gõ
+    } else {
+      tuKhoaKhachHang.value = invoice.tenKhachHang || invoice.soDienThoai || "";
+    }
     khachHangDuocChon.value = invoice.khachHangId
       ? (khachHangDuocChon.value?.id === invoice.khachHangId
           ? { ...khachHangDuocChon.value, hoTen: invoice.tenKhachHang, sdt: invoice.soDienThoai }
@@ -717,15 +798,14 @@ function LogicBanHangTaiQuay() {
             email: null
           })
       : null;
-    dangLuuNoiBo = true;
+
     let hasRemovedInactive = false;
-    cartItems.value = invoice.items
+    cartItems.value = (invoice.items || [])
       .filter((item) => {
         const thongTin = thongTinTheoChiTietId.get(Number(item.chiTietId));
         const isInactive = item.trangThaiSanPham === 0
           || item.trangThai === 0
           || item.kichHoat === 0
-          || (ketQuaBienTheSanPham.value.length > 0 && !thongTin)
           || (thongTin && (thongTin.kichHoat === 0 || thongTin.trangThai === 0));
 
         if (isInactive) {
@@ -757,16 +837,11 @@ function LogicBanHangTaiQuay() {
           soLuongTon: item.soLuongTon
         };
       });
-    setTimeout(() => { 
-      dangLuuNoiBo = false; 
-      isSyncingUI = false;
-      if (hasRemovedInactive) {
-        luuHoaDonHienTai(true);
-      }
-    }, 50);
+
     choPhepGiaoHang.value = Boolean(thongTinGiaoHang?.giaoHang);
     tenNguoiNhanGiaoHang.value = thongTinGiaoHang?.tenNguoiNhan || "";
     sdtNguoiNhanGiaoHang.value = thongTinGiaoHang?.soDienThoaiNguoiNhan || "";
+    emailNguoiNhanGiaoHang.value = thongTinGiaoHang?.email || khachHangDuocChon.value?.email || "";
     if (thongTinGiaoHang?.giaoHang) {
       diaChiGiaoHang.value = chuanHoaDiaChi(thongTinGiaoHang.diaChiGiaoHang);
     } else if (!diaChiGiaoHang.value && khachHangDuocChon.value?.diaChiMacDinh) {
@@ -803,35 +878,77 @@ function LogicBanHangTaiQuay() {
     ketQuaTimKiemPhieu.value = [];
     hienThiDanhSachPhieu.value = false;
     capNhatTienKhachThanhToan(false);
+
+    setTimeout(() => { 
+      dangLuuNoiBo = false; 
+      isSyncingUI = false;
+      if (hasRemovedInactive) {
+        luuHoaDonHienTai(true);
+      }
+    }, 300);
+
     return false;
   }
+
+  let dangLuuAPI = false;
+  let pendingSave = false;
 
   async function luuHoaDonHienTai(force = false) {
     if (!hoaDonChoDaChon.value) return;
     if (dangThanhToan.value && !force) return;
-    lastLocalSaveTime = Date.now();
+    
+    if (dangLuuAPI) {
+      pendingSave = true;
+      return;
+    }
+    
+    dangLuuAPI = true;
+    pendingSave = false;
+    
     try {
-      const payload = {
-        tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
-        soDienThoai: khachHangDuocChon.value?.sdt || sdtNguoiNhanGiaoHang.value || "",
-        ghiChu: "",
-        khachHangId: khachHangDuocChon.value?.id || null,
-        maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma || null,
-        thongTinGiaoHang: (choPhepGiaoHang.value && coThongTinGiaoHangHopLe.value) ? taoPayloadGiaoHang() : null,
-        items: cartItems.value.map(item => ({
-          chiTietId: item.chiTietId,
-          soLuong: item.soLuong,
-          giaBan: item.giaBan
-        })),
-      };
-      const response = await capNhatHoaDonCho(hoaDonChoDaChon.value.id, payload);
-      // Cập nhật lại soLuongBanDau vì backend đã trừ tồn kho
-      dangLuuNoiBo = true;
-      cartItems.value = cartItems.value.map(item => ({
-        ...item,
-        soLuongBanDau: item.soLuong
-      }));
-      setTimeout(() => { dangLuuNoiBo = false; }, 50);
+      while (true) {
+        const currentInvoiceId = hoaDonChoDaChon.value.id;
+        const payload = {
+          tenKhachHang: khachHangDuocChon.value?.hoTen || tenNguoiNhanGiaoHang.value || (laKhachVangLai.value ? KHACH_VANG_LAI : ""),
+          soDienThoai: khachHangDuocChon.value?.sdt || sdtNguoiNhanGiaoHang.value || "",
+          ghiChu: "",
+          khachHangId: khachHangDuocChon.value?.id || null,
+          maPhieuGiamGia: phieuGiamGiaDaApDung.value?.ma || null,
+          thongTinGiaoHang: choPhepGiaoHang.value ? taoPayloadGiaoHang() : null,
+          items: cartItems.value.map(item => ({
+            chiTietId: item.chiTietId,
+            soLuong: item.soLuong,
+            giaBan: item.giaBan
+          })),
+        };
+        const response = await capNhatHoaDonCho(currentInvoiceId, payload);
+        
+        dangLuuNoiBo = true;
+        if (response && Array.isArray(response.items)) {
+          const respMap = new Map(response.items.map(i => [Number(i.chiTietId), i]));
+          cartItems.value = cartItems.value.map(item => {
+            const serverItem = respMap.get(Number(item.chiTietId));
+            return {
+              ...item,
+              soLuongBanDau: serverItem ? serverItem.soLuong : item.soLuong,
+              soLuongTon: serverItem && typeof serverItem.soLuongTon !== 'undefined' ? serverItem.soLuongTon : item.soLuongTon
+            };
+          });
+        } else {
+          cartItems.value = cartItems.value.map(item => ({
+            ...item,
+            soLuongBanDau: item.soLuong
+          }));
+        }
+        setTimeout(() => { dangLuuNoiBo = false; }, 50);
+
+        if (pendingSave) {
+          pendingSave = false;
+          // loop again to save the latest state
+        } else {
+          break;
+        }
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Cập nhật hóa đơn chờ thất bại";
       if (msg.includes("Chỉ được cập nhật") || msg.includes("trạng thái chờ")) {
@@ -859,16 +976,17 @@ function LogicBanHangTaiQuay() {
         try {
           const detail = await layChiTietHoaDonCho(hoaDonChoDaChon.value.id);
           
-          if (msg.includes("Số lượng tồn kho không đủ")) {
+          if (msg.includes("Số lượng không đủ") || msg.includes("Số lượng tồn kho không đủ")) {
             let hasAdjusted = false;
             const currentCartItems = [...cartItems.value];
             
             detail.items = detail.items.map(dbItem => {
-              const matchedCartItem = currentCartItems.find(c => c.chiTietId === dbItem.chiTietId);
+              const matchedCartItem = currentCartItems.find(c => Number(c.chiTietId) === Number(dbItem.chiTietId));
               let desiredQty = matchedCartItem ? matchedCartItem.soLuong : dbItem.soLuong;
+              const totalStockAllowed = (Number(dbItem.soLuongTon) || 0) + (Number(dbItem.soLuong) || 0);
               
-              if (desiredQty > dbItem.soLuongTon) {
-                 desiredQty = dbItem.soLuongTon > 0 ? 1 : 0;
+              if (desiredQty > totalStockAllowed) {
+                 desiredQty = totalStockAllowed > 0 ? totalStockAllowed : 1;
                  hasAdjusted = true;
               }
               return { ...dbItem, soLuong: desiredQty };
@@ -877,7 +995,7 @@ function LogicBanHangTaiQuay() {
             chuyenHoaDonThanhBanNhap(detail);
             
             if (hasAdjusted) {
-              thongBaoLoi.value = "Kho không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về 1.";
+              thongBaoLoi.value = "Số lượng không đủ! Đã tự động điều chỉnh số lượng trong giỏ hàng về mức tối đa khả dụng.";
               setTimeout(() => {
                 luuHoaDonHienTai(true).catch(() => {});
               }, 500);
@@ -891,6 +1009,8 @@ function LogicBanHangTaiQuay() {
       }
 
       throw error;
+    } finally {
+      dangLuuAPI = false;
     }
   }
   
@@ -923,11 +1043,11 @@ function LogicBanHangTaiQuay() {
       }
     }
 
-    if (dangLuuNoiBo || dangThanhToan.value) return;
+    if (dangLuuNoiBo || isSyncingUI || dangTaiChiTietHoaDon.value || dangThanhToan.value) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
     boDemTuDongLuu = setTimeout(() => {
       luuHoaDonHienTai().catch(() => {});
-    }, 300);
+    }, 500);
   }, { deep: true });
 
   let lastReceivedSyncState = null;
@@ -938,11 +1058,15 @@ function LogicBanHangTaiQuay() {
     sdtNguoiNhanGiaoHang.value,
     diaChiGiaoHang.value,
     tienKhachDua.value,
+    tienMatKetHop.value,
+    tienChuyenKhoanKetHop.value,
     phuongThucThanhToan.value,
+    hienThiMaQrLon.value,
     ghiChuThanhToan.value,
-    tuKhoaKhachHang.value
+    tuKhoaKhachHang.value,
+    khachHangDuocChon.value
   ], () => {
-    if (isSyncingUI || dangTaiChiTietHoaDon.value) return;
+    if (dangLuuNoiBo || isSyncingUI || dangTaiChiTietHoaDon.value) return;
     if (hoaDonChoDaChon.value) {
       const payloadState = {
         choPhepGiaoHang: choPhepGiaoHang.value,
@@ -950,7 +1074,10 @@ function LogicBanHangTaiQuay() {
         sdtNguoiNhanGiaoHang: sdtNguoiNhanGiaoHang.value,
         diaChiGiaoHang: diaChiGiaoHang.value,
         tienKhachDua: tienKhachDua.value,
+        tienMatKetHop: tienMatKetHop.value,
+        tienChuyenKhoanKetHop: tienChuyenKhoanKetHop.value,
         phuongThucThanhToan: phuongThucThanhToan.value,
+        hienThiMaQrLon: hienThiMaQrLon.value,
         ghiChuThanhToan: ghiChuThanhToan.value,
         tuKhoaKhachHang: tuKhoaKhachHang.value,
         khachHangDuocChon: khachHangDuocChon.value
@@ -970,6 +1097,17 @@ function LogicBanHangTaiQuay() {
   }, { deep: true });
 
   async function chonHoaDonCho(invoice) {
+    if (!invoice) return;
+
+    if (hoaDonChoDaChon.value?.id === invoice.id && !dangTaiChiTietHoaDon.value) {
+      return;
+    }
+
+    if (boDemTuDongLuu) {
+      clearTimeout(boDemTuDongLuu);
+      boDemTuDongLuu = null;
+    }
+
     if (!isSyncingUI) {
       publishMessage('/topic/admin/pos-sync', {
         sender: sessionId,
@@ -986,12 +1124,12 @@ function LogicBanHangTaiQuay() {
       }
     }
 
+    hoaDonChoDaChon.value = invoice;
     dangTaiChiTietHoaDon.value = true;
     thongBaoLoi.value = "";
     try {
-      await taiSanPham("");
+      await taiSanPham("", true);
       const detail = await layChiTietHoaDonCho(invoice.id);
-      hoaDonChoDaChon.value = invoice;
       chuyenHoaDonThanhBanNhap(detail);
     } catch (error) {
       thongBaoLoi.value = error instanceof Error ? error.message : "Không thể tải hóa đơn chờ";
@@ -1012,7 +1150,6 @@ function LogicBanHangTaiQuay() {
       return;
     }
     dangLuuHoaDonCho.value = true;
-    lastLocalSaveTime = Date.now();
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
     try {
@@ -1152,7 +1289,11 @@ function LogicBanHangTaiQuay() {
       return;
     }
 
-    const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn hủy hóa đơn ${hoaDonChoDaChon.value.ma} không?`);
+    const currentInvoice = hoaDonChoDaChon.value;
+    const maHoaDon = currentInvoice?.ma || "";
+    const hoaDonId = currentInvoice?.id;
+
+    const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn hủy hóa đơn ${maHoaDon} không?`);
     if (!isConfirmed) {
       return;
     }
@@ -1160,12 +1301,12 @@ function LogicBanHangTaiQuay() {
     dangHuyHoaDonCho.value = true;
     thongBaoLoi.value = "";
     try {
-      await huyHoaDonCho(hoaDonChoDaChon.value.id);
+      await huyHoaDonCho(hoaDonId);
       
       toastSwal.fire({
         icon: 'success',
         title: 'Thành công!',
-        text: `Đã hủy hóa đơn chờ ${hoaDonChoDaChon.value.ma}`,
+        text: `Đã hủy hóa đơn chờ ${maHoaDon}`,
         timer: 3000,
         iconColor: '#cf1018',
         target: document.getElementById('pos-tablet-screen') || 'body'
@@ -1320,9 +1461,9 @@ function LogicBanHangTaiQuay() {
     danhMucCoSan,
     mauSacCoSan,
     kichCoCoSan,
-    giaToiThieuDaChon: giaThapNhatDaChon,
-    giaToiDaDaChon: giaCaoNhatDaChon,
-    giaToiDaCoSan: giaCaoNhatCoSan,
+    giaThapNhatDaChon,
+    giaCaoNhatDaChon,
+    giaCaoNhatCoSan,
     nhanTimKiemSanPham,
     cartItems,
     chiTietSanPhamDaChon,
@@ -1374,6 +1515,7 @@ function LogicBanHangTaiQuay() {
     dangHuyHoaDonCho,
     dinhDangTien,
     soLuongConLai,
+    isOutdatedPrice,
     xoaBanNhap,
     chonHoaDonCho,
     moDanhSachKhachHang,
@@ -1415,6 +1557,7 @@ function LogicBanHangTaiQuay() {
     xuLyTienKhachDuaInput: xuLyTienKhachDuaInput,
     xuLyTienMatKetHopInput,
     xuLyTienChuyenKhoanKetHopInput,
+    hienThiMaQrLon,
     xuLyTaoHoaDonCho,
     xuLyTaoHoaDonChoMoi,
     xuLyThanhToanNgay,

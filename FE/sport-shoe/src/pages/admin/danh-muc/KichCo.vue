@@ -136,12 +136,18 @@ async function handleSave() {
       ghiChu: normalizeOptionalText(form.ghiChu)
     }
 
-    if (modalMode.value === 'add') await kichCoApi.create(body)
-    else await kichCoApi.update(selectedItem.value.id, body)
-
-    showSuccess(modalMode.value === 'add' ? 'Tạo thành công' : 'Cập nhật thành công')
-    showModal.value = false
-    loadData(currentPage.value)
+    if (modalMode.value === 'add') {
+      await kichCoApi.create(body)
+      showSuccess('Tạo thành công')
+      showModal.value = false
+      keyword.value = ''
+      loadData(0)
+    } else {
+      await kichCoApi.update(selectedItem.value.id, body)
+      showSuccess('Cập nhật thành công')
+      showModal.value = false
+      loadData(currentPage.value)
+    }
   } catch (e) {
     Object.assign(errors, getFieldErrors(e))
     showError(getDisplayErrorMessage(e, 'Không thể lưu kích cỡ'))
@@ -297,7 +303,7 @@ async function xuatExcel() {
 
             <div class="p-6 space-y-4">
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Kích cỡ *</label>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Kích cỡ <span class="text-rose-500">*</span></label>
                 <input
                   v-model="form.giaTri"
                   :disabled="modalMode === 'view'"

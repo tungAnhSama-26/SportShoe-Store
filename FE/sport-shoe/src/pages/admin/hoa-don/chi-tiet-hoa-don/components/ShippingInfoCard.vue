@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { useInvoiceDetailContext } from "../composables/useInvoiceDetailContext";
-import { dinhDangDiaChi } from "../../../../../utils/dia-chi";
+import { dinhDangDiaChi, diaChiHopLe } from "../../../../../utils/dia-chi";
 import {
   hoaDonDaCoShipperGhn,
   layShipperGhnTheoHoaDon,
@@ -19,6 +19,19 @@ const thongTinShipper = computed(() => {
   }
 
   return layShipperGhnTheoHoaDon(hoaDon.value);
+});
+
+const loaiDonHienThi = computed(() => {
+  if (hoaDon.value?.loaiDon === "Trực tuyến" || hoaDon.value?.loaiDon === "Online") {
+    return "Trực tuyến";
+  }
+  if (hoaDon.value?.loaiDon === "Giao hàng") {
+    return "Giao hàng";
+  }
+  if (hoaDon.value?.loaiDon === "Cửa hàng" || hoaDon.value?.loaiDon === "Tại quầy") {
+    return "Tại quầy";
+  }
+  return hoaDon.value?.loaiDon || "—";
 });
 </script>
 
@@ -65,7 +78,7 @@ const thongTinShipper = computed(() => {
       </div>
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <span class="text-slate-400">Loại Đơn</span>
-        <span class="font-semibold text-slate-700">{{ hoaDon.loaiDon }}</span>
+        <span class="font-semibold text-slate-700">{{ loaiDonHienThi }}</span>
       </div>
       <div class="flex items-center justify-between">
         <span class="text-slate-400">Ghi Chú</span>

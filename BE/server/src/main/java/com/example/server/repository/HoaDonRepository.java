@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
+    List<HoaDon> findByKenhBanAndTrangThai(Integer kenhBan, Integer trangThai);
+
+    List<HoaDon> findByTrangThai(Integer trangThai);
+
     List<HoaDon> findTop10ByKenhBanAndTrangThaiOrderByNgayTaoDesc(Integer kenhBan, Integer trangThai);
 
     long countByKenhBanAndTrangThai(Integer kenhBan, Integer trangThai);
@@ -107,7 +111,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
               and (:tuNgay is null or hd.ngayTao >= :tuNgay)
               and (:denNgay is null or hd.ngayTao <= :denNgay)
               and not (hd.kenhBan = 2 and hd.trangThai = 11)
-            order by hd.ngayTao asc, hd.id asc
+            order by hd.ngayTao desc, hd.id desc
             """)
     List<HoaDon> searchInvoices(
             @Param("keyword") String keyword,

@@ -8,6 +8,6 @@ import jakarta.validation.constraints.Size;
 
 public record TrongLuongRequest(
         @NotBlank @Size(max = 50) String ma,
-        @NotNull @Min(1) @Max(value = 10000, message = "Trọng lượng tối đa là 10,000 gram") Integer giaTri,
+        @NotNull @Min(value = 100, message = "Trọng lượng tối thiểu từ 100 gram trở lên") @Max(value = 2500, message = "Trọng lượng tối đa không vượt quá 2,500 gram") Integer giaTri,
         @Size(max = 300) String moTa
 ) {}

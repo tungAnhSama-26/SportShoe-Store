@@ -27,6 +27,17 @@ public class GiaoHangTaiQuayService {
         return DiaChiHaiCapMapper.toEntity(thongTinGiaoHang.diaChiGiaoHang());
     }
 
+    public DiaChiHaiCap resolveDiaChiGiaoHangOptional(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
+        if (thongTinGiaoHang == null || thongTinGiaoHang.diaChiGiaoHang() == null) {
+            return null;
+        }
+        try {
+            return DiaChiHaiCapMapper.toEntity(thongTinGiaoHang.diaChiGiaoHang());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public BigDecimal resolvePhiVanChuyen(ThongTinGiaoHangTaiQuayRequest thongTinGiaoHang) {
         BigDecimal phiVanChuyen = pricingUseCase.defaultMoney(thongTinGiaoHang != null ? thongTinGiaoHang.phiVanChuyen() : null);
         if (phiVanChuyen.compareTo(BigDecimal.ZERO) < 0) {

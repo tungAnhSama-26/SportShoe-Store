@@ -10,6 +10,7 @@ import ModalQuetQR from "../../../components/admin/ban-hang/ModalQuetQR.vue";
 import ModalThemNhanhKhachHang from "../../../components/admin/ban-hang/ModalThemNhanhKhachHang.vue";
 import { LogicBanHangTaiQuay } from "../../../composable/LogicBanHangTaiQuay";
 import { ref } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 
 const {
   TOI_DA_HOA_DON_CHO,
@@ -38,9 +39,9 @@ const {
   boLocDanhMucDaChon,
   boLocMauSacDaChon,
   boLocKichCoDaChon,
-  giaToiThieuDaChon,
-  giaToiDaDaChon,
-  giaToiDaCoSan,
+  giaThapNhatDaChon,
+  giaCaoNhatDaChon,
+  giaCaoNhatCoSan,
   thuongHieuCoSan,
   danhMucCoSan,
   mauSacCoSan,
@@ -85,6 +86,7 @@ const {
   tienKhachDua,
   tienMatKetHop,
   tienChuyenKhoanKetHop,
+  hienThiMaQrLon,
   thongBaoLoiThanhToan,
   tienThua,
   ghiChuThanhToan,
@@ -95,6 +97,7 @@ const {
   dangHuyHoaDonCho,
   dinhDangTien,
   soLuongConLai,
+  isOutdatedPrice,
   taiSanPham,
   xoaBanNhap,
   chonHoaDonCho,
@@ -135,14 +138,12 @@ const {
   xuLyTaoHoaDonCho,
   xuLyTaoHoaDonChoMoi,
   xuLyThanhToanNgay,
-  xuLyThanhToanSau,
   xuLyHuyHoaDonCho,
-  xuLyInHoaDon,
-  daInHoaDon,
-  bienTheLienQuan
+  xuLyInHoaDon
 } = LogicBanHangTaiQuay();
 
-import { onBeforeRouteLeave } from "vue-router";
+const daInHoaDon = ref(false);
+const xuLyThanhToanSau = () => {};
 
 onBeforeRouteLeave(async (to, from, next) => {
   if (cartItems.value && cartItems.value.length > 0 && !hoaDonChoDaChon.value) {
@@ -163,8 +164,8 @@ const datBoLocThuongHieu = (val) => { boLocThuongHieuDaChon.value = val; };
 const datBoLocDanhMuc = (val) => { boLocDanhMucDaChon.value = val; };
 const datBoLocMauSac = (val) => { boLocMauSacDaChon.value = val; };
 const datBoLocKichCo = (val) => { boLocKichCoDaChon.value = val; };
-const datGiaToiThieu = (val) => { giaToiThieuDaChon.value = val; };
-const datGiaToiDa = (val) => { giaToiDaDaChon.value = val; };
+const datGiaToiThieu = (val) => { giaThapNhatDaChon.value = val; };
+const datGiaToiDa = (val) => { giaCaoNhatDaChon.value = val; };
 const datMaPhieuGiamGia = (val) => { maPhieuGiamGia.value = val; };
 const datPhuongThucThanhToan = (val) => { phuongThucThanhToan.value = val; };
 const datGhiChuThanhToan = (val) => { ghiChuThanhToan.value = val; };
@@ -250,9 +251,9 @@ function xuLyThemKhachHang(khachHangMoi) {
                 :selected-category-filter="boLocDanhMucDaChon"
                 :selected-color-filter="boLocMauSacDaChon"
                 :selected-size-filter="boLocKichCoDaChon"
-                :selected-min-price="giaToiThieuDaChon"
-                :selected-max-price="giaToiDaDaChon"
-                :max-available-price="giaToiDaCoSan"
+                :selected-min-price="giaThapNhatDaChon"
+                :selected-max-price="giaCaoNhatDaChon"
+                :max-available-price="giaCaoNhatCoSan"
                 :available-brands="thuongHieuCoSan"
                 :available-categories="danhMucCoSan"
                 :available-colors="mauSacCoSan"
@@ -285,6 +286,7 @@ function xuLyThemKhachHang(khachHangMoi) {
               :cart-items="cartItems"
               :dinh-dang-tien="dinhDangTien"
               :so-luong-con-lai="soLuongConLai"
+              :is-outdated-price="isOutdatedPrice"
               @increase-item="tangSoLuong"
               @decrease-item="giamSoLuong"
               @remove-item="xoaSanPham"
@@ -362,6 +364,7 @@ function xuLyThemKhachHang(khachHangMoi) {
             :ten-khach-hang-hien-thi="tenKhachHangHienThi"
             :so-dien-thoai-khach-hang-hien-thi="soDienThoaiKhachHangHienThi"
             :payment-method="phuongThucThanhToan"
+            :show-large-qr="hienThiMaQrLon"
             :amount-paid="tienKhachDua"
             :tien-mat-ket-hop="tienMatKetHop"
             :tien-chuyen-khoan-ket-hop="tienChuyenKhoanKetHop"
@@ -387,6 +390,7 @@ function xuLyThemKhachHang(khachHangMoi) {
             @update-shipping="capNhatThongTinGiaoHang"
             @calculate-shipping="xuLyTinhPhiVanChuyen"
             @update:payment-method="datPhuongThucThanhToan"
+            @update:show-large-qr="val => hienThiMaQrLon = val"
             @amount-input="xuLyTienKhachDuaInput"
             @cash-split-input="xuLyTienMatKetHopInput"
             @transfer-split-input="xuLyTienChuyenKhoanKetHopInput"

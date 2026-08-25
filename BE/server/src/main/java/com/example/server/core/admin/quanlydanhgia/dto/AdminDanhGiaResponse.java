@@ -9,6 +9,7 @@ import java.time.Instant;
 public record AdminDanhGiaResponse(
         Integer id,
         String hoTenKhach,
+        String hinhAnhKhach,
         Integer soSao,
         String noiDung,
         String media,

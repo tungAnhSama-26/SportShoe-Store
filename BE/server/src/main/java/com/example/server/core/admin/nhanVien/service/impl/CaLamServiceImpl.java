@@ -1,33 +1,32 @@
 package com.example.server.core.admin.nhanVien.service.impl;
 
 import com.example.server.core.admin.nhanVien.dto.request.CaLamRequest;
+import com.example.server.core.admin.nhanVien.dto.request.DoiTrangThaiCaLamRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.CaLamResponse;
 import com.example.server.core.admin.nhanVien.service.CaLamService;
 import com.example.server.core.realtime.lichlamviec.LichLamViecRealtimePublisher;
 import com.example.server.entity.CaLam;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.CaLamRepository;
-import com.example.server.repository.LichLamViecRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
 public class CaLamServiceImpl implements CaLamService {
 
     private final CaLamRepository caLamRepository;
-    private final LichLamViecRepository lichLamViecRepository;
     private final LichLamViecRealtimePublisher realtimePublisher;
 
     public CaLamServiceImpl(
             CaLamRepository caLamRepository,
-            LichLamViecRepository lichLamViecRepository,
             LichLamViecRealtimePublisher realtimePublisher
     ) {
         this.caLamRepository = caLamRepository;
-        this.lichLamViecRepository = lichLamViecRepository;
         this.realtimePublisher = realtimePublisher;
     }
 
@@ -35,6 +34,7 @@ public class CaLamServiceImpl implements CaLamService {
     @Transactional(readOnly = true)
     public List<CaLamResponse> layDanhSachCaLam() {
         return caLamRepository.findAll().stream()
+                .sorted(Comparator.comparing(CaLam::getId, String.CASE_INSENSITIVE_ORDER))
                 .map(this::toResponse)
                 .toList();
     }
@@ -68,7 +68,7 @@ public class CaLamServiceImpl implements CaLamService {
         try {
             caLamRepository.save(caLam);
         } catch (Exception e) {
-            throw new BusinessException("Không thể lưu ca làm việc. Giờ kết thúc phải lớn hơn giờ bắt đầu!");
+            throw new BusinessException("Không thể lưu ca làm việc. Vui lòng kiểm tra lại giờ bắt đầu và giờ kết thúc!");
         }
         realtimePublisher.phatSauCommit("TAO_CA_LAM");
         return toResponse(caLam);
@@ -79,14 +79,6 @@ public class CaLamServiceImpl implements CaLamService {
     public CaLamResponse capNhatCaLam(String id, CaLamRequest request) {
         CaLam caLam = caLamRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc"));
-
-        // Khi ngừng hoạt động ca: kiểm tra nếu đang có lịch làm việc từ hôm nay trở đi thì chặn
-        if (Boolean.TRUE.equals(caLam.getTrangThai()) && Boolean.FALSE.equals(request.trangThai())) {
-            LocalDate homNay = LocalDate.now();
-            if (lichLamViecRepository.existsByCaLamIdAndNgayGreaterThanEqual(id, homNay)) {
-                throw new BusinessException("Không thể ngừng hoạt động ca \"" + caLam.getTen() + "\" vì đang có lịch làm việc của nhân viên trong ca từ hôm nay trở đi. Vui lòng xóa lịch làm việc của nhân viên trong ca trước khi ngừng hoạt động!");
-            }
-        }
 
         validateGioCa(request.gioBatDau(), request.gioKetThuc());
         validateTrungKhoangGio(id, request.gioBatDau(), request.gioKetThuc(), request.trangThai());
@@ -99,10 +91,26 @@ public class CaLamServiceImpl implements CaLamService {
         try {
             caLamRepository.save(caLam);
         } catch (Exception e) {
-            throw new BusinessException("Không thể lưu ca làm việc. Giờ kết thúc phải lớn hơn giờ bắt đầu!");
+            throw new BusinessException("Không thể lưu ca làm việc. Vui lòng kiểm tra lại giờ bắt đầu và giờ kết thúc!");
         }
         realtimePublisher.phatSauCommit("CAP_NHAT_CA_LAM");
         return toResponse(caLam);
+    }
+
+    @Override
+    @Transactional
+    public CaLamResponse doiTrangThaiCaLam(String id, DoiTrangThaiCaLamRequest request) {
+        CaLam caLam = caLamRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc"));
+
+        if (Boolean.TRUE.equals(request.trangThai())) {
+            validateTrungKhoangGio(id, caLam.getGioBatDau(), caLam.getGioKetThuc(), true);
+        }
+
+        caLam.setTrangThai(request.trangThai());
+        CaLam saved = caLamRepository.save(caLam);
+        realtimePublisher.phatSauCommit("DOI_TRANG_THAI_CA_LAM");
+        return toResponse(saved);
     }
 
     private void validateGioCa(String gioBatDau, String gioKetThuc) {
@@ -122,9 +130,6 @@ public class CaLamServiceImpl implements CaLamService {
             if (start.equals(end)) {
                 throw new BusinessException("Giờ kết thúc không được trùng với giờ bắt đầu!");
             }
-            if (!start.isBefore(end)) {
-                throw new BusinessException("Giờ kết thúc (" + e + ") phải lớn hơn giờ bắt đầu (" + s + "). Ví dụ: 08:00 - 12:00!");
-            }
         } catch (java.time.format.DateTimeParseException ex) {
             throw new BusinessException("Định dạng giờ không hợp lệ!");
         }
@@ -141,8 +146,8 @@ public class CaLamServiceImpl implements CaLamService {
         try {
             String s = gioBatDau.trim();
             String e = gioKetThuc.trim();
-            java.time.LocalTime startMoi = java.time.LocalTime.parse(s.length() == 5 ? s + ":00" : s);
-            java.time.LocalTime endMoi = java.time.LocalTime.parse(e.length() == 5 ? e + ":00" : e);
+            LocalTime startMoi = parseGio(s);
+            LocalTime endMoi = parseGio(e);
 
             List<CaLam> cacCaHoatDong = caLamRepository.findAll().stream()
                     .filter(ca -> Boolean.TRUE.equals(ca.getTrangThai()))
@@ -153,19 +158,45 @@ public class CaLamServiceImpl implements CaLamService {
                 if (ca.getGioBatDau() == null || ca.getGioKetThuc() == null) continue;
                 String cs = ca.getGioBatDau().trim();
                 String ce = ca.getGioKetThuc().trim();
-                java.time.LocalTime startCu = java.time.LocalTime.parse(cs.length() == 5 ? cs + ":00" : cs);
-                java.time.LocalTime endCu = java.time.LocalTime.parse(ce.length() == 5 ? ce + ":00" : ce);
+                LocalTime startCu = parseGio(cs);
+                LocalTime endCu = parseGio(ce);
 
-                // Hai khoảng thời gian giao nhau: startMoi < endCu && startCu < endMoi
-                if (startMoi.isBefore(endCu) && startCu.isBefore(endMoi)) {
+                if (khoangGioGiaoNhau(startMoi, endMoi, startCu, endCu)) {
                     throw new BusinessException(
                             "Khoảng thời gian (" + s + " - " + e + ") bị trùng với ca đang hoạt động: "
                                     + ca.getTen() + " (" + cs + " - " + ce + "). "
                                     + "Vui lòng tắt ca bị trùng hoặc chỉnh sửa lại thời gian của ca.");
                 }
             }
-        } catch (java.time.format.DateTimeParseException ignored) {
+        } catch (DateTimeParseException ignored) {
         }
+    }
+
+    private LocalTime parseGio(String gio) {
+        String value = gio.trim();
+        return LocalTime.parse(value.length() == 5 ? value + ":00" : value);
+    }
+
+    private boolean khoangGioGiaoNhau(LocalTime startA, LocalTime endA, LocalTime startB, LocalTime endB) {
+        return tachKhoangGio(startA, endA).stream()
+                .anyMatch(khoangA -> tachKhoangGio(startB, endB).stream()
+                        .anyMatch(khoangB -> khoangA.batDau() < khoangB.ketThuc()
+                                && khoangB.batDau() < khoangA.ketThuc()));
+    }
+
+    private List<KhoangPhut> tachKhoangGio(LocalTime start, LocalTime end) {
+        int startMinutes = start.getHour() * 60 + start.getMinute();
+        int endMinutes = end.getHour() * 60 + end.getMinute();
+        if (startMinutes == endMinutes) {
+            return List.of();
+        }
+        if (startMinutes < endMinutes) {
+            return List.of(new KhoangPhut(startMinutes, endMinutes));
+        }
+        return List.of(new KhoangPhut(startMinutes, 24 * 60), new KhoangPhut(0, endMinutes));
+    }
+
+    private record KhoangPhut(int batDau, int ketThuc) {
     }
 
     @Override

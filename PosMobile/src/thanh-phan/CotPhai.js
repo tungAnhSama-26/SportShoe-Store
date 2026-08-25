@@ -42,14 +42,13 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     gap: 16,
-    paddingRight: 4,
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 24,
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.6)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -57,12 +56,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   headerText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1e293b',
-    marginBottom: 12,
+    marginBottom: 8,
   },
 });

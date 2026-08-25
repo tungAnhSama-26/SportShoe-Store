@@ -3,10 +3,20 @@ import { tinhPhiVanChuyenTaiQuay } from "../../services/ban-hang-tai-quay";
 import { showError } from "../../utils/alert";
 import { chuanHoaDiaChi, diaChiHopLe, dinhDangDiaChi } from "../../utils/dia-chi";
 
+function layDiaChiDungDeTinhPhi(value) {
+  const diaChi = chuanHoaDiaChi(value);
+  return {
+    tinhThanh: diaChi.tinhThanh,
+    phuongXa: diaChi.phuongXa,
+    diaChiCuThe: diaChi.diaChiCuThe
+  };
+}
+
 export function LogicGiaoHang({
   choPhepGiaoHang,
   tenNguoiNhanGiaoHang,
   sdtNguoiNhanGiaoHang,
+  emailNguoiNhanGiaoHang = ref(""),
   diaChiGiaoHang,
   donViVanChuyen,
   phiVanChuyen,
@@ -15,6 +25,7 @@ export function LogicGiaoHang({
   dangTinhPhiVanChuyen,
   cauHinhGiaoHang,
   khachHangDuocChon,
+  tuKhoaKhachHang,
   hoaDonChoDaChon,
   cartItems
 }) {
@@ -22,6 +33,7 @@ export function LogicGiaoHang({
   const moTaPhi = ref("");
   const tenNguoiNhanGiaoHangHienThi = computed(() => tenNguoiNhanGiaoHang.value ?? "");
   const soDienThoaiNguoiNhanGiaoHangHienThi = computed(() => sdtNguoiNhanGiaoHang.value ?? "");
+  const emailNguoiNhanGiaoHangHienThi = computed(() => emailNguoiNhanGiaoHang.value || khachHangDuocChon.value?.email || "");
   const phiVanChuyenHienThi = computed(() => choPhepGiaoHang.value ? phiVanChuyen.value : 0);
   const diaChiGiaoHangHienThi = computed(() => {
     if (diaChiHopLe(diaChiGiaoHang.value)) {
@@ -51,6 +63,7 @@ export function LogicGiaoHang({
     giaoHang: choPhepGiaoHang.value,
     tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
     soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
+    email: emailNguoiNhanGiaoHangHienThi.value,
     diaChiGiaoHang: diaChiGiaoHangHienThi.value,
     donViVanChuyen: donViVanChuyen.value,
     phiVanChuyen: phiVanChuyen.value,
@@ -71,9 +84,9 @@ export function LogicGiaoHang({
     if (!choPhepGiaoHang.value) {
       return;
     }
+    daTinhPhiVanChuyen.value = false;
     phiVanChuyen.value = 0;
     diaChiDaXacNhan.value = "";
-    daTinhPhiVanChuyen.value = false;
     nguonTinhPhi.value = "";
     moTaPhi.value = "";
   }
@@ -84,6 +97,7 @@ export function LogicGiaoHang({
         giaoHang: false,
         tenNguoiNhan: null,
         soDienThoaiNguoiNhan: null,
+        email: null,
         diaChiGiaoHang: null,
         phiVanChuyen: 0,
         donViVanChuyen: null
@@ -92,23 +106,17 @@ export function LogicGiaoHang({
 
     return {
       giaoHang: true,
-      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value,
-      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value,
-      diaChiGiaoHang: chuanHoaDiaChi(diaChiGiaoHangHienThi.value),
+      tenNguoiNhan: tenNguoiNhanGiaoHangHienThi.value || null,
+      soDienThoaiNguoiNhan: soDienThoaiNguoiNhanGiaoHangHienThi.value || null,
+      email: emailNguoiNhanGiaoHangHienThi.value || null,
+      diaChiGiaoHang: diaChiHopLe(diaChiGiaoHangHienThi.value) ? chuanHoaDiaChi(diaChiGiaoHangHienThi.value) : null,
       phiVanChuyen: phiVanChuyen.value,
       donViVanChuyen: donViVanChuyen.value || "GHN"
     };
   }
 
   function capNhatThongTinGiaoHang(patch) {
-    const canTinhLai = [
-      "diaChiGiaoHang",
-      "serviceTypeId",
-      "length",
-      "width",
-      "height",
-      "weight"
-    ].some((key) => Object.prototype.hasOwnProperty.call(patch, key));
+    const khoaTinhPhiTruocKhiCapNhat = taoKhoaTinhPhiVanChuyen();
 
     if (Object.prototype.hasOwnProperty.call(patch, "giaoHang")) {
       choPhepGiaoHang.value = Boolean(patch.giaoHang);
@@ -117,11 +125,28 @@ export function LogicGiaoHang({
           diaChiGiaoHang.value = khachHangDuocChon.value.diaChiMacDinh;
         }
         // Tự điền tên và SDT người nhận từ khách hàng đã chọn nếu đang trống
-        if (!tenNguoiNhanGiaoHang.value.trim() && khachHangDuocChon.value?.hoTen) {
-          tenNguoiNhanGiaoHang.value = khachHangDuocChon.value.hoTen;
+        if (!tenNguoiNhanGiaoHang.value?.trim()) {
+          if (khachHangDuocChon.value?.hoTen) {
+            tenNguoiNhanGiaoHang.value = khachHangDuocChon.value.hoTen;
+          } else if (tuKhoaKhachHang?.value?.trim() && tuKhoaKhachHang.value.trim() !== "Khách lẻ" && tuKhoaKhachHang.value.trim() !== "Khách vãng lai") {
+            const raw = tuKhoaKhachHang.value.trim();
+            if (!/^[0-9+ ]{8,15}$/.test(raw)) {
+              tenNguoiNhanGiaoHang.value = raw;
+            }
+          }
         }
-        if (!sdtNguoiNhanGiaoHang.value.trim() && khachHangDuocChon.value?.sdt) {
-          sdtNguoiNhanGiaoHang.value = khachHangDuocChon.value.sdt;
+        if (!sdtNguoiNhanGiaoHang.value?.trim()) {
+          if (khachHangDuocChon.value?.sdt) {
+            sdtNguoiNhanGiaoHang.value = khachHangDuocChon.value.sdt;
+          } else if (tuKhoaKhachHang?.value?.trim()) {
+            const raw = tuKhoaKhachHang.value.trim();
+            if (/^[0-9+ ]{8,15}$/.test(raw)) {
+              sdtNguoiNhanGiaoHang.value = raw;
+            }
+          }
+        }
+        if (!emailNguoiNhanGiaoHang.value?.trim() && khachHangDuocChon.value?.email) {
+          emailNguoiNhanGiaoHang.value = khachHangDuocChon.value.email;
         }
       }
     }
@@ -131,38 +156,50 @@ export function LogicGiaoHang({
     if (Object.prototype.hasOwnProperty.call(patch, "soDienThoaiNguoiNhan")) {
       sdtNguoiNhanGiaoHang.value = patch.soDienThoaiNguoiNhan ?? "";
     }
+    if (Object.prototype.hasOwnProperty.call(patch, "email")) {
+      emailNguoiNhanGiaoHang.value = patch.email ?? "";
+    }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
-      diaChiGiaoHang.value = chuanHoaDiaChi(patch.diaChiGiaoHang);
+      const newDiaChi = chuanHoaDiaChi(patch.diaChiGiaoHang);
+      if (JSON.stringify(diaChiGiaoHang.value) !== JSON.stringify(newDiaChi)) {
+        diaChiGiaoHang.value = newDiaChi;
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "serviceTypeId")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        serviceTypeId: Number(patch.serviceTypeId) || 2
-      };
+      const newVal = Number(patch.serviceTypeId) || 2;
+      if (cauHinhGiaoHang.value.serviceTypeId !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, serviceTypeId: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "length")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        length: Number(patch.length) || 30
-      };
+      const newVal = Number(patch.length) || 30;
+      if (cauHinhGiaoHang.value.length !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, length: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "width")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        width: Number(patch.width) || 20
-      };
+      const newVal = Number(patch.width) || 20;
+      if (cauHinhGiaoHang.value.width !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, width: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "height")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        height: Number(patch.height) || 12
-      };
+      const newVal = Number(patch.height) || 12;
+      if (cauHinhGiaoHang.value.height !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, height: newVal };
+      }
     }
     if (Object.prototype.hasOwnProperty.call(patch, "weight")) {
-      cauHinhGiaoHang.value = {
-        ...cauHinhGiaoHang.value,
-        weight: Number(patch.weight) || 500
-      };
+      const newVal = Number(patch.weight) || 500;
+      if (cauHinhGiaoHang.value.weight !== newVal) {
+        cauHinhGiaoHang.value = { ...cauHinhGiaoHang.value, weight: newVal };
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "phiVanChuyen")) {
+      phiVanChuyen.value = Number(patch.phiVanChuyen) || 0;
+      daTinhPhiVanChuyen.value = true;
+      nguonTinhPhi.value = "MANUAL";
+      moTaPhi.value = "";
     }
 
     if (!choPhepGiaoHang.value) {
@@ -174,12 +211,37 @@ export function LogicGiaoHang({
       return;
     }
 
-    if (canTinhLai) {
+    if (khoaTinhPhiTruocKhiCapNhat !== taoKhoaTinhPhiVanChuyen()) {
       danhDauCanTinhLaiPhiVanChuyen();
     }
   }
 
-  async function xuLyTinhPhiVanChuyen() {
+  let khoaYeuCauPhiDangChay = "";
+  let khoaYeuCauPhiGanNhat = "";
+
+  function taoKhoaTinhPhiVanChuyen() {
+    return JSON.stringify({
+      diaChi: layDiaChiDungDeTinhPhi(diaChiGiaoHangHienThi.value),
+      items: cartItems.value
+        .map(item => ({ id: String(item.chiTietId), sl: Number(item.soLuong) }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
+      giaoHang: Boolean(choPhepGiaoHang.value),
+      cauHinh: {
+        serviceTypeId: Number(cauHinhGiaoHang.value.serviceTypeId),
+        length: Number(cauHinhGiaoHang.value.length),
+        width: Number(cauHinhGiaoHang.value.width),
+        height: Number(cauHinhGiaoHang.value.height),
+        weight: Number(cauHinhGiaoHang.value.weight)
+      }
+    });
+  }
+
+  async function xuLyTinhPhiVanChuyen(options = {}) {
+    const force = Boolean(options?.force);
+    const khoaYeuCau = taoKhoaTinhPhiVanChuyen();
+    if (khoaYeuCauPhiDangChay || (!force && khoaYeuCau === khoaYeuCauPhiGanNhat)) {
+      return;
+    }
     if (!coTheTinhPhiVanChuyen.value) {
       if (!choPhepGiaoHang.value || !diaChiHopLe(diaChiGiaoHangHienThi.value)) {
         phiVanChuyen.value = 0;
@@ -192,6 +254,8 @@ export function LogicGiaoHang({
       }
       return;
     }
+    khoaYeuCauPhiDangChay = khoaYeuCau;
+    khoaYeuCauPhiGanNhat = khoaYeuCau;
     dangTinhPhiVanChuyen.value = true;
     try {
       const items = cartItems.value.map(item => ({
@@ -214,7 +278,7 @@ export function LogicGiaoHang({
         ? (result.giaCu ? "Phí GHN từ cache cũ (ước tính)" : "Phí GHN đã lưu gần nhất (ước tính)")
         : result.nguonTinhPhi === "GHN_PUBLIC_TARIFF"
           ? "Phí offline ước tính theo bảng giá công khai GHN"
-          : (result.uocTinh ? "Phí GHN ước tính theo các tuyến cũ" : "Phí GHN");
+          : "Phí GHN";
       daTinhPhiVanChuyen.value = true;
     } catch (error) {
       phiVanChuyen.value = 0;
@@ -224,25 +288,37 @@ export function LogicGiaoHang({
       moTaPhi.value = "";
       showError(error instanceof Error ? error.message : "Không thể tính phí vận chuyển");
     } finally {
+      khoaYeuCauPhiDangChay = "";
       dangTinhPhiVanChuyen.value = false;
     }
   }
 
+  const dependenciesTinhPhi = computed(taoKhoaTinhPhiVanChuyen);
+
   let phiVanChuyenTimeout = null;
   watch(
-    () => [
-      diaChiGiaoHangHienThi.value,
-      cartItems.value,
-      choPhepGiaoHang.value,
-      cauHinhGiaoHang.value
-    ],
-    () => {
+    dependenciesTinhPhi,
+    (newVal, oldVal) => {
+      if (newVal === oldVal) return;
+      if (!choPhepGiaoHang.value || !cartItems.value.length || !diaChiHopLe(diaChiGiaoHangHienThi.value)) {
+        khoaYeuCauPhiGanNhat = "";
+        if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
+        phiVanChuyenTimeout = null;
+        return;
+      }
+      if (daTinhPhiVanChuyen.value) {
+        if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
+        phiVanChuyenTimeout = null;
+        return;
+      }
+      if (newVal === khoaYeuCauPhiGanNhat || newVal === khoaYeuCauPhiDangChay) return;
       if (phiVanChuyenTimeout) clearTimeout(phiVanChuyenTimeout);
       phiVanChuyenTimeout = setTimeout(() => {
+        phiVanChuyenTimeout = null;
+        if (newVal !== dependenciesTinhPhi.value) return;
         xuLyTinhPhiVanChuyen().catch(() => {});
       }, 800);
-    },
-    { deep: true }
+    }
   );
 
   return {

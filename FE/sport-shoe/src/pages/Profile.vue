@@ -126,7 +126,9 @@ async function chonAnhAvatar(e) {
     const userRaw = localStorage.getItem("user");
     if (userRaw) {
       const user = JSON.parse(userRaw);
-      localStorage.setItem("user", JSON.stringify({ ...user, ...updated }));
+      const updatedUser = { ...user, ...updated, hinhAnh: url };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new CustomEvent("khach-hang-thay-doi", { detail: updatedUser }));
     }
     showSuccess("Cập nhật ảnh đại diện thành công.", "Thành công");
   } catch (error) {
@@ -218,6 +220,7 @@ async function taiProfile() {
       if (userRaw) localHinhAnh = JSON.parse(userRaw).hinhAnh || "";
     } catch (e) {}
 
+    const finalHinhAnh = data.hinhAnh || localHinhAnh;
     form.value = {
       hoTen: data.hoTen ?? "",
       tenDangNhap: data.tenDangNhap ?? "",
@@ -225,8 +228,18 @@ async function taiProfile() {
       sdt: data.sdt ?? "",
       gioiTinh: data.gioiTinh ?? 1,
       ngaySinh: data.ngaySinh ?? "",
-      hinhAnh: data.hinhAnh || localHinhAnh,
+      hinhAnh: finalHinhAnh,
     };
+
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        const updatedUser = { ...u, ...data, hinhAnh: finalHinhAnh };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        window.dispatchEvent(new CustomEvent("khach-hang-thay-doi", { detail: updatedUser }));
+      }
+    } catch (e) {}
   } catch (error) {
     loiTrang.value = getDisplayErrorMessage(
       error,
@@ -499,7 +512,9 @@ async function luuProfile() {
     const userRaw = localStorage.getItem("user");
     if (userRaw) {
       const user = JSON.parse(userRaw);
-      localStorage.setItem("user", JSON.stringify({ ...user, ...updated }));
+      const updatedUser = { ...user, ...updated };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new CustomEvent("khach-hang-thay-doi", { detail: updatedUser }));
     }
 
     showSuccess("Cập nhật thông tin thành công.", "Thành công");

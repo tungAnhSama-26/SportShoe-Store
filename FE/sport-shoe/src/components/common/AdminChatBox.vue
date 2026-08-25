@@ -40,6 +40,7 @@ import {
 } from "lucide-vue-next";
 
 import { resolveHinhAnh } from "../../utils/resolve-image";
+import anhSanPhamDuPhong from "../../assets/login-shoe.png";
 
 const router = useRouter();
 const isOpen = ref(false);
@@ -52,6 +53,13 @@ const showHistoryModal = ref(false);
 const sessionList = ref([]);
 const loadingSessions = ref(false);
 const activeSessionId = ref(null);
+
+function xuLyLoiAnhSanPham(event) {
+  const image = event?.target;
+  if (!image || image.dataset.fallbackApplied === "true") return;
+  image.dataset.fallbackApplied = "true";
+  image.src = anhSanPhamDuPhong;
+}
 
 function formatDateTime(isoStr) {
   if (!isoStr) return "";
@@ -217,8 +225,8 @@ async function handleChatbotAction(url) {
       const color = decodeURIComponent(parts[2]);
       const qty = parts[3];
       const confirmed = await showConfirm(
-        `Bạn có chắc chắn muốn cập nhật tồn kho sản phẩm **${productName}** (Size **${size}**, Màu **${color}**) thành **${qty}** không?`, 
-        'Cập nhật tồn kho', 
+        `Bạn có chắc chắn muốn cập nhật số lượng sản phẩm **${productName}** (Size **${size}**, Màu **${color}**) thành **${qty}** không?`, 
+        'Cập nhật số lượng', 
         'Đồng ý', 
         'Hủy'
       );
@@ -452,12 +460,34 @@ async function dongPhienTroChuyen() {
   cuonXuongCuoi();
 }
 
+const inputRef = ref(null);
+
+function autoGrowInput() {
+  const el = inputRef.value;
+  if (!el) return;
+  el.style.height = "auto";
+  const newHeight = Math.min(el.scrollHeight, 120);
+  el.style.height = `${newHeight}px`;
+}
+
+function handleEnterKey(event) {
+  if (event.shiftKey) {
+    return;
+  }
+  if (inputText.value.trim() && !isSending.value) {
+    guiTinNhan();
+  }
+}
+
 async function guiTinNhan(contentStr) {
   const msgText = contentStr || inputText.value.trim();
   if (!msgText || isSending.value) return;
 
   if (!contentStr) {
     inputText.value = "";
+    if (inputRef.value) {
+      inputRef.value.style.height = "auto";
+    }
   }
 
   // Push user message
@@ -703,19 +733,19 @@ function toggleChat() {
         class="flex-1 overflow-y-auto bg-slate-50/50 p-4 space-y-4 dark:bg-slate-900/50 scrollbar-thin"
       >
         <div
-          v-for="msg in messages"
+          v-for="(msg, msgIndex) in messages"
           :key="msg.id"
           class="flex"
           :class="msg.sender === 'USER' ? 'justify-end' : 'justify-start'"
         >
           <div
-            class="max-w-[85%] rounded-[18px] px-4 py-2.5 text-sm shadow-sm"
+            class="max-w-[85%] rounded-[18px] px-4 py-2.5 text-sm shadow-sm break-words [overflow-wrap:anywhere] [word-break:break-word]"
             :class="msg.sender === 'USER' 
               ? 'bg-[#B82220] text-white rounded-br-none' 
               : 'bg-white text-slate-800 rounded-bl-none border border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700'"
           >
             <!-- Content -->
-            <div class="leading-relaxed">
+            <div class="leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
               <span v-for="(seg, idx) in parseMessage(msg.content)" :key="idx">
                 <span v-if="seg.type === 'text'" v-html="renderText(seg.content)"></span>
                 <button
@@ -734,6 +764,7 @@ function toggleChat() {
                   <img
                     :src="resolveHinhAnh(seg.url)"
                     :alt="seg.alt || 'Sản phẩm'"
+                    @error="xuLyLoiAnhSanPham"
                     class="h-36 w-36 object-cover group-hover:scale-105 transition duration-300"
                   />
                   <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/25 transition flex items-center justify-center">
@@ -744,22 +775,20 @@ function toggleChat() {
                 </div>
                 <div
                   v-else-if="seg.type === 'product'"
-                  class="my-2.5 flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-2xl hover:border-rose-400 hover:shadow-md transition cursor-pointer group"
+                  class="my-2.5 flex gap-3 p-2.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 rounded-2xl hover:border-rose-300 hover:shadow-md transition-all cursor-pointer group w-full relative overflow-hidden"
                   @click="handleNavigate(seg.productData.url || '/admin/san-pham')"
                 >
-                  <div class="relative w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200/60 dark:border-slate-600">
+                  <div class="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
                     <img
-                      v-if="seg.productData.image"
-                      :src="resolveHinhAnh(seg.productData.image)"
+                      :src="seg.productData.image ? resolveHinhAnh(seg.productData.image) : anhSanPhamDuPhong"
+                      :alt="seg.productData.name || 'Sản phẩm'"
+                      @error="xuLyLoiAnhSanPham"
                       class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
-                    <div v-else class="w-full h-full flex items-center justify-center text-base">
-                      👟
-                    </div>
                   </div>
 
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate group-hover:text-rose-600 transition">
+                  <div class="flex-1 min-w-0 flex flex-col justify-center">
+                    <p class="font-bold text-[11px] text-slate-800 dark:text-slate-100 line-clamp-2 group-hover:text-rose-600 transition">
                       {{ seg.productData.name }}
                     </p>
 
@@ -775,7 +804,7 @@ function toggleChat() {
                       </span>
                     </div>
 
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
                       <span v-if="seg.productData.color" class="inline-flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                         {{ seg.productData.color }}
@@ -784,11 +813,15 @@ function toggleChat() {
                         • {{ seg.productData.size.toLowerCase().includes("size") ? seg.productData.size : "Size " + seg.productData.size }}
                       </span>
                       <span v-if="seg.productData.stock !== undefined" class="font-bold text-amber-600 dark:text-amber-400">
-                        • Số lượng: {{ seg.productData.stock }}
+                        • {{ Number(seg.productData.stock) === 0
+                          ? "Đã hết hàng"
+                          : `${seg.productData.stockLabel || "Còn lại"}: ${seg.productData.stock} đôi` }}
                       </span>
                     </div>
                   </div>
-
+                  <span class="absolute right-2 bottom-1.5 text-[9px] font-semibold text-rose-500 opacity-0 group-hover:opacity-100 transition">
+                    Xem chi tiết →
+                  </span>
                 </div>
                 <div v-else-if="seg.type === 'chart'" class="my-3 p-3 bg-slate-50 border border-slate-100 rounded-xl dark:bg-slate-900/80 dark:border-slate-800">
                   <div class="text-xs font-bold text-slate-700 mb-2 dark:text-slate-200">
@@ -817,7 +850,7 @@ function toggleChat() {
 
             <!-- Gợi ý nhanh đính kèm trực tiếp dưới câu trả lời của AI -->
             <div
-              v-if="msg.sender === 'AI'"
+              v-if="msg.sender === 'AI' && msgIndex === messages.length - 1"
               class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1.5"
             >
               <button
@@ -845,21 +878,24 @@ function toggleChat() {
       </div>
 
       <!-- Input area -->
-      <div class="border-t border-slate-100 p-4 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <form @submit.prevent="guiTinNhan()" class="flex items-center gap-2">
-          <input
+      <div class="border-t border-slate-100 p-3 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <form @submit.prevent="guiTinNhan()" class="flex items-end gap-2 bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 focus-within:border-rose-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition">
+          <textarea
+            ref="inputRef"
             v-model="inputText"
-            type="text"
-            placeholder="Nhập câu hỏi hỗ trợ quản trị..."
+            rows="1"
+            placeholder="Nhập câu hỏi hỗ trợ quản trị... (Enter để gửi, Shift+Enter xuống dòng)"
             :disabled="isSending"
-            class="flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-rose-500 focus:bg-white focus:outline-none disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          />
+            @input="autoGrowInput"
+            @keydown.enter.exact.prevent="handleEnterKey"
+            class="flex-1 max-h-28 min-h-[38px] resize-none bg-transparent px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none disabled:opacity-50 dark:text-slate-100 scrollbar-thin leading-relaxed break-words [overflow-wrap:anywhere]"
+          ></textarea>
           <button
             type="submit"
             :disabled="!inputText.trim() || isSending"
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B82220] text-white shadow transition hover:bg-[#B82220]/95 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#B82220] text-white shadow transition hover:bg-[#B82220]/95 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
           >
-            <Send class="h-4.5 w-4.5" />
+            <Send class="h-4 w-4" />
           </button>
         </form>
       </div>

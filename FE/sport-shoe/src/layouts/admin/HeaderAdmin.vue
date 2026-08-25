@@ -15,7 +15,6 @@ const route = useRoute();
 const router = useRouter();
 const { isDark, toggleDark } = useDarkMode();
 const { adminSession, avatarUrl } = useAdminSession();
-const FALLBACK_ADMIN_NAME = "Trần Vũ Tùng Anh";
 const hienMenuTaiKhoan = ref(false);
 
 const { activeShift, loadActiveShift } = useGiaoCa();
@@ -178,7 +177,7 @@ onMounted(() => {
   subscribeTopic("/topic/admin/notifications", (msg) => {
     if (msg.type === "NEW_NOTIFICATION") {
       const tb = msg.payload;
-      const laAdmin = adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin";
+      const laAdmin = adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin";
       if (!laAdmin && tb.loai !== "ORDER" && tb.loai !== "REFUND" && tb.loai !== "CANCEL") {
         return; // Bỏ qua thông báo không phải hóa đơn đối với nhân viên
       }
@@ -413,14 +412,10 @@ const currentSubRoute = computed(() => {
 });
 
 const profileName = computed(() => {
-  const username = adminSession.value.tenTaiKhoan?.trim();
   const fullName = adminSession.value.hoTen?.trim();
+  const username = adminSession.value.tenTaiKhoan?.trim();
 
-  if (username && username !== "admin") {
-    return fullName || username;
-  }
-
-  return FALLBACK_ADMIN_NAME;
+  return fullName || username || "Quản trị viên";
 });
 
 const hasAvatar = computed(() => Boolean(adminSession.value.hinhAnh?.trim()));
@@ -441,7 +436,10 @@ function chuyenDenTrangChu() {
 }
 
 function chuyenDenCaLamViec() {
-  router.push("/admin/ban-giao-ca");
+  router.push({
+    path: "/admin/ban-giao-ca",
+    query: { vaoCa: String(Date.now()) },
+  });
 }
 
 function dangXuat() {
@@ -487,13 +485,14 @@ function dangXuat() {
         <button
           type="button"
           @click="chuyenDenCaLamViec"
+          :title="activeShift ? 'Có ca làm việc đang hoạt động' : (isAdminRole() ? 'Admin không bắt buộc mở ca để bán hàng' : 'Chưa mở ca làm việc')"
           class="inline-flex h-11 px-4 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-semibold text-sm shadow-sm"
         >
           <ArrowRightLeft class="h-4 w-4 text-[#B82220] dark:text-rose-400" />
           <span>Ca làm việc</span>
           <span
             class="h-2 w-2 rounded-full"
-            :class="activeShift ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'"
+            :class="activeShift ? 'bg-emerald-500 animate-pulse' : (isAdminRole() ? 'bg-slate-400' : 'bg-rose-500')"
           ></span>
         </button>
 

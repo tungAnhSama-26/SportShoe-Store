@@ -154,7 +154,9 @@ function handleOpenProduct(product) {
     return;
   }
   emit("open-product", product);
-  // Không đóng modal và không làm mới bộ lọc khi bấm thêm sản phẩm
+  
+  // Đóng modal để người dùng thấy sản phẩm đã được thêm vào giỏ hàng
+  dongModal();
 }
 
 function dongModal() {
@@ -292,8 +294,6 @@ watch(() => props.showProductDropdown, (newVal) => {
                 placeholder="Tìm kiếm mã, tên sản phẩm..."
                 class="h-10 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-10 pr-3 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none transition focus:border-red-300 dark:focus:border-red-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-red-50 dark:focus:ring-red-900/20 shadow-sm"
                 @keyup.enter="handleEnter"
-                @focus="emit('focus-product')"
-                @blur="handleBlur"
               />
               <div
                 v-if="loadingProducts"
@@ -379,7 +379,7 @@ watch(() => props.showProductDropdown, (newVal) => {
                 <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="text-left text-base font-bold text-slate-950 dark:text-slate-200">
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center w-12">STT</th>
-                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Mã Sản Phẩm</th>
+                    <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Mã biến thể</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Tên Sản Phẩm</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4">Màu sắc</th>
                     <th class="whitespace-nowrap bg-slate-100 dark:bg-slate-800/80 px-5 py-4 text-center">Size</th>

@@ -1,6 +1,7 @@
 package com.example.server.core.admin.nhanVien.controller;
 
 import com.example.server.core.admin.nhanVien.dto.request.CaLamRequest;
+import com.example.server.core.admin.nhanVien.dto.request.DoiTrangThaiCaLamRequest;
 import com.example.server.core.admin.nhanVien.dto.responsse.CaLamResponse;
 import com.example.server.core.admin.nhanVien.service.CaLamService;
 import com.example.server.infrastructure.api.ApiResponse;
@@ -52,6 +53,18 @@ public class CaLamController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Cập nhật ca làm việc thành công",
                 caLamService.capNhatCaLam(id, request)
+        ));
+    }
+
+    @PatchMapping("/{id}/trang-thai")
+    public ResponseEntity<ApiResponse<CaLamResponse>> doiTrangThaiCaLam(
+            @PathVariable String id,
+            @Valid @RequestBody DoiTrangThaiCaLamRequest request
+    ) {
+        assertIsAdmin();
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đổi trạng thái ca làm việc thành công",
+                caLamService.doiTrangThaiCaLam(id, request)
         ));
     }
 

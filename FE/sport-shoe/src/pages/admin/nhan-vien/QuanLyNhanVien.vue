@@ -52,7 +52,7 @@ let toastTimer = null;
 
 const dsVaiTro = [
   { label: "Tất cả vai trò", value: "" },
-  { label: "Quản trị viên", value: "1" },
+  { label: "Quản lý", value: "1" },
   { label: "Nhân viên", value: "2" },
 ];
 
@@ -137,8 +137,13 @@ function chuanHoaChuoi(value) {
 
 function hienThiVaiTro(nv) {
   const normalizedRole = chuanHoaChuoi(nv?.tenVaiTro);
-  if (normalizedRole.includes("admin") || normalizedRole.includes("quan tri")) {
-    return "Quản trị viên";
+  if (
+    normalizedRole.includes("admin") ||
+    normalizedRole.includes("quan tri") ||
+    normalizedRole.includes("quan ly") ||
+    Number(nv?.vaiTro) === 1
+  ) {
+    return "Quản lý";
   }
   if (
     normalizedRole.includes("ban hang") ||
@@ -262,8 +267,8 @@ watch(
 const dangDoiTrangThai = ref(null);
 
 async function capNhatTrangThai(nv) {
-  if (adminSession.value.vaiTro !== "Quản trị viên") {
-    showError("Chỉ có Quản trị viên mới có quyền thực hiện hành động này.");
+  if (adminSession.value.vaiTro !== "Quản lý" && adminSession.value.vaiTro !== "Quản trị viên" && adminSession.value.vaiTro !== "Admin") {
+    showError("Chỉ có Quản lý mới có quyền thực hiện hành động này.");
     return;
   }
 
@@ -272,8 +277,8 @@ async function capNhatTrangThai(nv) {
     return;
   }
 
-  if (nv.tenVaiTro === "Admin") {
-    showError("Không thể thay đổi trạng thái của tài khoản Quản trị viên.");
+  if (nv.tenVaiTro === "Admin" || nv.tenVaiTro === "Quản lý" || nv.vaiTro === 1) {
+    showError("Không thể thay đổi trạng thái của tài khoản Quản lý.");
     return;
   }
 
@@ -513,13 +518,13 @@ onUnmounted(() => {
               <td class="rounded-r-2xl px-2 py-2 align-top text-center">
                 <div class="flex items-center justify-center gap-0.5">
                   <AdminQuickStatusAction
-                    v-if="adminSession.vaiTro === 'Quản trị viên'"
+                    v-if="adminSession.vaiTro === 'Quản lý' || adminSession.vaiTro === 'Quản trị viên' || adminSession.vaiTro === 'Admin'"
                     :loading="dangDoiTrangThai === nv.id"
-                    :disabled="nv.tenVaiTro === 'Admin' || nv.id === adminSession.id"
+                    :disabled="nv.tenVaiTro === 'Admin' || nv.tenVaiTro === 'Quản lý' || nv.vaiTro === 1 || nv.id === adminSession.id"
                     :disabled-title="
                       nv.id === adminSession.id
                         ? 'Không thể đổi trạng thái chính mình'
-                        : 'Không thể đổi trạng thái Quản trị viên'
+                        : 'Không thể đổi trạng thái Quản lý'
                     "
                     :action-label="nv.trangThai !== 0 ? 'Cho nghỉ làm' : 'Kích hoạt nhân viên'"
                     :intent="nv.trangThai !== 0 ? 'deactivate' : 'activate'"

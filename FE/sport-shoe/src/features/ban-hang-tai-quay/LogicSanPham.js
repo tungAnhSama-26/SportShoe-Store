@@ -1,5 +1,6 @@
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { timSanPhamTaiQuay } from "../../services/ban-hang-tai-quay";
+import { thuongHieuApi, loaiGiayApi, mauSacApi, kichCoApi } from "../../services/danh-muc-api";
 import { KHACH_VANG_LAI } from "./HangSo";
 import { trichXuatTuKhoaSanPhamTuQr } from "./SanPhamQR";
 import { showError, showSuccess, showWarning } from "../../utils/alert";
@@ -49,40 +50,32 @@ export function LogicSanPham({
     }
   });
 
-  const thuongHieuCoSan = computed(() => {
-    const brands = new Set();
-    ketQuaBienTheSanPham.value.forEach(p => {
-      if (p.thuongHieu) brands.add(p.thuongHieu);
-    });
-    return Array.from(brands).sort();
-  });
-
-  const danhMucCoSan = computed(() => {
-    const categories = new Set();
-    ketQuaBienTheSanPham.value.forEach(p => {
-      if (p.loaiGiay) categories.add(p.loaiGiay);
-    });
-    return Array.from(categories).sort();
-  });
-
+  const thuongHieuCoSan = ref([]);
+  const danhMucCoSan = ref([]);
   const boLocMauSacDaChon = ref("");
   const boLocKichCoDaChon = ref("");
+  const mauSacCoSan = ref([]);
+  const kichCoCoSan = ref([]);
 
-  const mauSacCoSan = computed(() => {
-    const colors = new Set();
-    ketQuaBienTheSanPham.value.forEach(p => {
-      if (p.mauSac) colors.add(p.mauSac);
-      else if (p.maBienThe) colors.add(p.maBienThe);
-    });
-    return Array.from(colors).sort();
-  });
+  async function taiThuocTinhBoLoc() {
+    try {
+      const [thuongHieuRes, loaiGiayRes, mauSacRes, kichCoRes] = await Promise.all([
+        thuongHieuApi.list("", 0, 100),
+        loaiGiayApi.list("", 0, 100),
+        mauSacApi.list("", 0, 100),
+        kichCoApi.list("", 0, 100),
+      ]);
+      thuongHieuCoSan.value = (thuongHieuRes?.items || []).map(x => x.ten).sort();
+      danhMucCoSan.value = (loaiGiayRes?.items || []).map(x => x.ten).sort();
+      mauSacCoSan.value = (mauSacRes?.items || []).map(x => x.ten).sort();
+      kichCoCoSan.value = (kichCoRes?.items || []).map(x => x.giaTri).sort();
+    } catch (error) {
+      console.error("Lỗi khi tải thuộc tính bộ lọc:", error);
+    }
+  }
 
-  const kichCoCoSan = computed(() => {
-    const sizes = new Set();
-    ketQuaBienTheSanPham.value.forEach(p => {
-      if (p.kichCo) sizes.add(p.kichCo);
-    });
-    return Array.from(sizes).sort();
+  onMounted(() => {
+    taiThuocTinhBoLoc();
   });
 
   const ketQuaSanPham = computed(() => {
@@ -423,7 +416,7 @@ export function LogicSanPham({
     const soLuongToiDa = soLuongConLai(bienTheDaChon.value.chiTietId, bienTheDaChon.value.soLuongTon);
     if (newQuantityNum > soLuongToiDa) {
       soLuongDaChon.value = Math.max(soLuongToiDa, 1);
-      showWarning(`Sản phẩm đã đạt giới hạn tồn kho (tối đa ${soLuongToiDa})`);
+      showWarning(`Sản phẩm đã đạt giới hạn số lượng có thể chọn (tối đa ${soLuongToiDa})`);
     } else {
       soLuongDaChon.value = newQuantityNum;
     }
@@ -449,7 +442,6 @@ export function LogicSanPham({
   watch(tuKhoaSanPham, (value) => {
     xoaBoDemThoiGianSanPham();
     trangHienTai.value = 1;
-    hienThiDanhSachSanPham.value = value.trim().length > 0;
     boDemThoiGianSanPham = window.setTimeout(() => {
       void taiSanPham(value);
     }, 250);
@@ -464,7 +456,7 @@ export function LogicSanPham({
     // Không đóng hienThiDanhSachSanPham.value = false;
     // Không làm mới bộ lọc: lamMoiBoLoc();
     if (!result) {
-      showError(`Không thể thêm sản phẩm vào giỏ hàng.`);
+      // themSanPham đã tự hiển thị thông báo lỗi chi tiết (ngừng hoạt động / vượt tồn kho)
       return;
     }
     if (result.status === "added") {

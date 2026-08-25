@@ -26,6 +26,7 @@ export default function PhanSanPham() {
 
   const xuLyThem = (sanPham) => {
     themTrucTiepBienThe(sanPham);
+    dongDanhSachSanPham();
   };
 
   return (

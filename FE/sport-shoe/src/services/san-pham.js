@@ -14,7 +14,11 @@ async function laySanPhamNoiBat(limit = 8) {
   return Array.isArray(data) ? data.map(mapSanPhamDayDu) : [];
 }
 
-const NHAN_GIOI_TINH = { 1: "Nam", 2: "Nữ", 3: "Unisex" };
+function layNhanGioiTinh(val) {
+  if (val === 1 || val === "1" || String(val).toLowerCase() === "nam") return "Nam";
+  if (val === 2 || val === "2" || String(val).toLowerCase() === "nu" || String(val).toLowerCase() === "nữ") return "Nữ";
+  return "Unisex";
+}
 
 // Map đầy đủ thuộc tính cho trang danh sách sản phẩm (để lọc theo nhiều tiêu chí).
 // item = ClientSanPhamResponse { thongTin, hinhAnhSanPham, giaHienThiMin, giaNiemYetHienThi, coGiam, mauSac, kichCo }
@@ -41,7 +45,7 @@ function mapSanPhamDayDu(item) {
     coGiay: g.coGiay || "",
     congNgheDem: g.congNgheDem || "",
     trongLuong: g.trongLuong || "",
-    gioiTinhNhan: NHAN_GIOI_TINH[g.gioiTinh] || "Khác",
+    gioiTinhNhan: layNhanGioiTinh(g.gioiTinh),
     mauSac: Array.isArray(item.mauSac) ? item.mauSac : [],
     kichCo: Array.isArray(item.kichCo) ? item.kichCo : [],
     soSao: Number(item.soSaoTrungBinh || 0),

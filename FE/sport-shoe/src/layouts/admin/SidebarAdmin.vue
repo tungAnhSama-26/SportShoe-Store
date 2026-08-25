@@ -44,7 +44,7 @@ import {
 } from "lucide-vue-next";
 const route = useRoute();
 const { adminSession } = useAdminSession();
-const laAdmin = computed(() => adminSession.value.vaiTro === "Quản trị viên");
+const laAdmin = computed(() => adminSession.value.vaiTro === "Quản lý" || adminSession.value.vaiTro === "Quản trị viên" || adminSession.value.vaiTro === "Admin");
 const isActive = (path) => route.path.startsWith(path);
 
 // Chuông thông báo: số đánh giá chưa xem.
