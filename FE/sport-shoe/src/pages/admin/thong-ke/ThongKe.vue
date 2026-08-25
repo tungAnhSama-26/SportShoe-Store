@@ -710,7 +710,6 @@ const formatLastUpdated = computed(() => {
               <th class="px-4 py-2 text-right">Đã bán</th>
               <th class="px-4 py-2 text-right">Số lượng trả</th>
               <th class="px-4 py-2 text-right">Doanh thu</th>
-              <th class="px-4 py-2 text-right">Tồn kho</th>
             </tr>
           </thead>
           <tbody>
@@ -752,23 +751,13 @@ const formatLastUpdated = computed(() => {
               <td class="px-4 py-4 text-right font-semibold text-rose-600">
                 {{ formatNumber(product.soLuongTra) }}
               </td>
-              <td class="px-4 py-4 text-right font-semibold text-slate-800">
+              <td class="rounded-r-[20px] px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatCurrency(product.doanhThu) }}
-              </td>
-              <td class="rounded-r-[20px] px-4 py-4 text-right">
-                <span
-                  :class="[
-                    'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
-                    rowBadgeClass(product.tonKho)
-                  ]"
-                >
-                  {{ formatNumber(product.tonKho) }}
-                </span>
               </td>
             </tr>
 
             <tr v-if="filteredProducts.length === 0">
-              <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">
+              <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">
                 Không có sản phẩm phù hợp với bộ lọc hiện tại.
               </td>
             </tr>

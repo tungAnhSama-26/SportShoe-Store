@@ -1177,8 +1177,7 @@ export function useThongKeDashboard() {
         { label: "Thương hiệu", value: (row) => row.thuongHieu || "Chưa cập nhật" },
         { label: "Đã bán", value: (row) => formatNumber(row.daBan) },
         { label: "Số lượng trả", value: (row) => formatNumber(row.soLuongTra) },
-        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) },
-        { label: "Tồn kho", value: (row) => formatNumber(row.tonKho) }
+        { label: "Doanh thu", value: (row) => formatCurrency(row.doanhThu) }
       ],
       rows
     });
