@@ -91,6 +91,13 @@ const {
   dangLuuHoaDonCho,
   coTheThanhToan,
   dangThanhToan,
+  qrChuyenKhoan,
+  dangTaoQrChuyenKhoan,
+  soGiayQrConLai,
+  dongQrChuyenKhoan,
+  xuLyMoQrKetHop,
+  xuLyTaoLaiQr,
+  xuLyXacNhanDaChuyenKhoan,
   dangHuyHoaDonCho,
   dinhDangTien,
   soLuongConLai,
@@ -396,6 +403,9 @@ function xuLyMaQuet(keyword) {
             :pending-invoice-limit-reached="daDatGioiHanHoaDonCho"
             :can-pay="coTheThanhToan"
             :paying-invoice="dangThanhToan"
+            :qr-chuyen-khoan="qrChuyenKhoan"
+            :creating-qr="dangTaoQrChuyenKhoan"
+            :so-giay-qr-con-lai="soGiayQrConLai"
             :canceling-pending-invoice="dangHuyHoaDonCho"
             :dinh-dang-tien="dinhDangTien"
             :so-luong-con-lai="soLuongConLai"
@@ -414,6 +424,10 @@ function xuLyMaQuet(keyword) {
             @update:payment-note="datGhiChuThanhToan"
             @print-invoice="xuLyInHoaDon"
             @pay-now="xuLyThanhToanNgay"
+            @request-qr="xuLyMoQrKetHop"
+            @close-qr="dongQrChuyenKhoan"
+            @refresh-qr="xuLyTaoLaiQr"
+            @confirm-paid="xuLyXacNhanDaChuyenKhoan"
             @pay-later="xuLyThanhToanSau"
             @cancel-pending-invoice="xuLyHuyHoaDonCho"
             @create-empty-invoice="xuLyTaoHoaDonChoMoi"

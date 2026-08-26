@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onUnmounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { Printer, X, Sparkles, CheckCircle, QrCode } from "lucide-vue-next";
 import ghnLogo from "../../../assets/logo/Logo-GHN-Blue-Orange.webp";
 import { showWarning } from "../../../utils/alert";
@@ -161,13 +161,21 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  showLargeQr: {
-    type: Boolean,
-    default: false
-  },
   dinhDangTien: {
     type: Function,
     required: true
+  },
+  qrChuyenKhoan: {
+    type: Object,
+    default: null
+  },
+  creatingQr: {
+    type: Boolean,
+    default: false
+  },
+  soGiayQrConLai: {
+    type: Number,
+    default: 0
   }
 });
 
@@ -181,7 +189,6 @@ const emit = defineEmits([
   "update-shipping",
   "calculate-shipping",
   "update:paymentMethod",
-  "update:showLargeQr",
   "amount-input",
   "cash-split-input",
   "transfer-split-input",
@@ -190,76 +197,20 @@ const emit = defineEmits([
   "pay-now",
   "cancel-pending-invoice",
   "create-empty-invoice",
-  "pay-later"
+  "pay-later",
+  "request-qr",
+  "close-qr",
+  "refresh-qr",
+  "confirm-paid"
 ]);
 
-const timeLeft = ref(300);
 const isAmountTouched = ref(false);
-let timer = null;
 
-watch(() => props.paymentMethod, (newVal) => {
+watch(() => props.paymentMethod, () => {
   isAmountTouched.value = false;
-  if (newVal === 2) {
-    timeLeft.value = 300;
-    startTimer();
-  } else if (!props.showLargeQr) {
-    stopTimer();
-  }
 });
 
-watch(() => props.showLargeQr, (isOpen) => {
-  if (isOpen) {
-    timeLeft.value = 300;
-    startTimer();
-  } else if (props.paymentMethod !== 2) {
-    stopTimer();
-  }
-});
-
-function startTimer() {
-  stopTimer();
-  timer = setInterval(() => {
-    if (timeLeft.value > 0) {
-      timeLeft.value--;
-    } else {
-      stopTimer();
-    }
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
-}
-
-onUnmounted(() => {
-  stopTimer();
-});
-
-const formattedTimeLeft = computed(() => {
-  const m = Math.floor(timeLeft.value / 60);
-  const s = timeLeft.value % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-});
-
-const sepayQrUrl = computed(() => {
-  if (!props.activePendingInvoice) return '';
-  const bank = 'MB';
-  const acc = '894932828';
-  const prefix = 'SHOE';
-  let amount = Math.max(Number(props.khachCanTra) || 0, 0);
-  if (props.paymentMethod === 5) {
-    const raw = String(props.tienChuyenKhoanKetHop || 0).replace(/\D/g, '');
-    amount = raw !== '' ? (Number(raw) || 0) : 0;
-  }
-  const maHd = props.activePendingInvoice.ma || props.activePendingInvoice.maHoaDon || '';
-  const description = encodeURIComponent(`${prefix}${maHd}`);
-  const accountName = encodeURIComponent('TRAN VU TUNG ANH');
-  return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amount}&addInfo=${description}&accountName=${accountName}`;
-});
-
+// Mã QR do backend dựng theo tài khoản đã cấu hình cho SePay; ở đây chỉ xin mã.
 function handleQrClick() {
   const cashNum = Number(String(props.tienMatKetHop || 0).replace(/\D/g, ''));
   const transferNum = Number(String(props.tienChuyenKhoanKetHop || 0).replace(/\D/g, ''));
@@ -275,7 +226,7 @@ function handleQrClick() {
       return;
     }
   }
-  emit('update:showLargeQr', true);
+  emit('request-qr', props.paymentMethod === 5 ? transferNum : null);
 }
 
 watch(() => props.tienMatKetHop, (val) => {
@@ -287,10 +238,15 @@ watch(() => props.tienMatKetHop, (val) => {
     }
   }
 });
+
 function handlePayNowFromQr() {
   emit('pay-now');
-  emit('update:showLargeQr', false);
 }
+
+const dongHoQrConLai = computed(() => {
+  const giay = Math.max(0, Number(props.soGiayQrConLai) || 0);
+  return `${Math.floor(giay / 60)}:${String(giay % 60).padStart(2, '0')}`;
+});
 </script>
 
 <template>
@@ -505,7 +461,7 @@ function handlePayNowFromQr() {
                 :checked="paymentMethod === 2"
                 type="radio"
                 class="h-4 w-4 accent-red-500"
-                @click="emit('update:paymentMethod', 2); emit('update:showLargeQr', true)"
+                @change="emit('update:paymentMethod', 2)"
               />
               <span>Chuyển khoản</span>
             </label>
@@ -583,35 +539,12 @@ function handlePayNowFromQr() {
           <span class="max-w-[65%] break-all text-right text-base font-bold text-slate-900 dark:text-slate-100">{{ dinhDangTien(tienThua) }}</span>
         </div>
 
-        <div v-if="paymentMethod === 2" class="flex flex-col items-center justify-center rounded-md border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-3 shadow-sm">
-          <p class="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">Quét mã QR để thanh toán</p>
-          <div v-if="timeLeft > 0" class="flex flex-col items-center">
-            <img
-              :src="sepayQrUrl"
-              alt="VietQR"
-              class="h-40 w-40 cursor-pointer rounded-md border border-slate-100 object-contain transition hover:scale-105"
-              title="Bấm để phóng to"
-              @click="handleQrClick()"
-            />
-            <p class="mt-2 text-center text-xs text-slate-500">
-              QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
-            </p>
-            <button
-              type="button"
-              class="mt-3 w-full rounded-md bg-red-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:text-slate-400"
-              :disabled="!canPay || payingInvoice"
-              @click="emit('pay-now')"
-            >
-              {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
-            </button>
-          </div>
-          <div v-else class="flex h-40 w-40 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="text-sm font-bold">Mã QR đã hết hạn</span>
-            <button type="button" @click="timeLeft = 300; startTimer()" class="mt-2 rounded bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-200">Tạo lại</button>
-          </div>
+        <div v-if="paymentMethod === 2" class="flex items-start gap-2 rounded-md border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-3 text-xs text-slate-500 dark:text-slate-400 shadow-sm">
+          <QrCode class="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+          <span>
+            Bấm <b class="text-slate-700 dark:text-slate-200">Thanh toán</b> để hiện mã QR cho khách quét.
+            Hệ thống tự xác nhận và chuyển trạng thái hóa đơn ngay khi tiền về tài khoản.
+          </span>
         </div>
         <div>
           <label class="mb-1.5 block text-sm text-slate-500 dark:text-slate-400">Ghi chú thanh toán</label>
@@ -639,10 +572,10 @@ function handlePayNowFromQr() {
           <button
             type="button"
             class="rounded-md bg-red-500 px-3 py-3 text-sm font-bold text-white shadow-[0_20px_40px_rgba(239,68,68,0.35)] dark:shadow-[0_20px_40px_rgba(239,68,68,0.15)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none whitespace-nowrap"
-            :disabled="!canPay || payingInvoice"
+            :disabled="!canPay || payingInvoice || creatingQr"
             @click="emit('pay-now')"
           >
-            {{ payingInvoice ? "Đang xử lý..." : "Thanh toán" }}
+            {{ creatingQr ? "Đang tạo mã QR..." : (payingInvoice ? "Đang xử lý..." : "Thanh toán") }}
           </button>
         </div>
       </div>
@@ -653,37 +586,94 @@ function handlePayNowFromQr() {
     </div>
 
     <Teleport to="body">
-      <div v-if="showLargeQr" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" @click="emit('update:showLargeQr', false)">
-        <div class="relative rounded-[32px] bg-white p-8 shadow-2xl" @click.stop>
+      <div v-if="qrChuyenKhoan" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+        <div class="relative w-full max-w-md rounded-[32px] bg-white p-8 shadow-2xl">
           <button
             class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
-            @click="emit('update:showLargeQr', false)"
+            @click="emit('close-qr')"
           >
             <X class="h-6 w-6" />
           </button>
           <h3 class="mb-6 text-center text-xl font-bold text-slate-800">Quét mã QR để thanh toán</h3>
-          <div v-if="timeLeft > 0" class="flex flex-col items-center">
-            <img :src="sepayQrUrl" alt="VietQR Large" class="h-96 w-96 rounded-md border-2 border-slate-100 object-contain shadow-sm" />
-            <p class="mt-6 text-center text-base font-medium text-slate-600">
-              QR sẽ hết hạn sau: <span class="font-bold text-red-500">{{ formattedTimeLeft }}</span>
+          <div v-if="qrChuyenKhoan.hetHan" class="flex flex-col items-center">
+            <div class="flex h-80 w-80 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-base font-bold">Mã QR đã hết hạn</span>
+              <span class="mt-1 text-xs text-rose-400">Mã chỉ có hiệu lực 5 phút</span>
+            </div>
+            <button
+              type="button"
+              class="mt-5 w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-400 disabled:shadow-none"
+              :disabled="creatingQr"
+              @click="emit('refresh-qr')"
+            >
+              {{ creatingQr ? "Đang tạo mã QR..." : "Tạo lại mã QR" }}
+            </button>
+          </div>
+          <div v-else class="flex flex-col items-center">
+            <img
+              :src="qrChuyenKhoan.qrUrl"
+              alt="VietQR"
+              class="h-80 w-80 rounded-md border-2 border-slate-100 object-contain shadow-sm"
+            />
+            <p class="mt-3 text-center text-sm text-slate-600">
+              Mã QR hết hạn sau: <span class="font-bold text-red-500">{{ dongHoQrConLai }}</span>
             </p>
-            <div class="mt-6 flex justify-center w-full">
+            <div class="mt-5 w-full space-y-1.5 rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-slate-500">Hóa đơn</span>
+                <span class="font-bold text-slate-800">{{ qrChuyenKhoan.maHoaDon }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-slate-500">Số tiền</span>
+                <span class="font-bold text-red-500">{{ dinhDangTien(qrChuyenKhoan.soTien) }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <span class="shrink-0 text-slate-500">Nội dung CK</span>
+                <span class="break-all text-right font-bold text-slate-800">{{ qrChuyenKhoan.noiDungCk }}</span>
+              </div>
+            </div>
+            <p class="mt-3 text-center text-xs text-slate-500">
+              Khách cần giữ nguyên nội dung chuyển khoản để hệ thống đối chiếu đúng hóa đơn.
+            </p>
+
+            <template v-if="qrChuyenKhoan.tuDong">
+              <div class="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-emerald-600">
+                <span class="h-2.5 w-2.5 animate-ping rounded-full bg-emerald-500"></span>
+                Đang chờ khách chuyển khoản...
+              </div>
+              <!-- Van an toàn khi SePay lỗi: tiền đã về nhưng webhook không báo -> thu ngân tự xác nhận. -->
               <button
                 type="button"
-                class="w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:shadow-none disabled:text-slate-400"
+                class="mt-5 w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-400 disabled:shadow-none"
+                :disabled="payingInvoice"
+                @click="emit('confirm-paid')"
+              >
+                {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
+              </button>
+              <p class="mt-2 text-center text-xs text-slate-400">
+                Chỉ bấm khi đã kiểm tra tiền về tài khoản mà hệ thống chưa tự xác nhận.
+              </p>
+              <button
+                type="button"
+                class="mt-3 w-full rounded-[16px] bg-slate-200 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-300"
+                @click="emit('close-qr')"
+              >
+                Đóng
+              </button>
+            </template>
+            <template v-else>
+              <button
+                type="button"
+                class="mt-5 w-full rounded-[16px] bg-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600 hover:shadow-red-500/40 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-400 disabled:shadow-none"
                 :disabled="!canPay || payingInvoice"
                 @click="handlePayNowFromQr"
               >
                 {{ payingInvoice ? "Đang xử lý..." : "Đã thanh toán" }}
               </button>
-            </div>
-          </div>
-          <div v-else class="flex h-96 w-96 flex-col items-center justify-center rounded-md border border-dashed border-rose-200 bg-rose-50 text-center text-rose-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="text-base font-bold">Mã QR đã hết hạn</span>
-            <button type="button" @click="timeLeft = 300; startTimer()" class="mt-3 rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-200">Tạo lại QR</button>
+            </template>
           </div>
         </div>
       </div>

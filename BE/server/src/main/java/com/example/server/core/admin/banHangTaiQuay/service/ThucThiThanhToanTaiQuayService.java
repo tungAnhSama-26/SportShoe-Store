@@ -20,6 +20,8 @@ import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.infrastructure.service.EmailService;
 import com.example.server.entity.GiaoCa;
 import com.example.server.entity.NhanVien;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,13 @@ import java.util.Optional;
 
 @Service
 public class ThucThiThanhToanTaiQuayService {
+
+    private static final Logger log = LoggerFactory.getLogger(ThucThiThanhToanTaiQuayService.class);
+
+    /** Giới hạn cột thanh_toan.ma_giao_dich / ghi_chu và lich_su_hoa_don.ghi_chu. */
+    private static final int DAI_TOI_DA_MA_GIAO_DICH = 200;
+    private static final int DAI_TOI_DA_GHI_CHU = 500;
+    private static final int DAI_TOI_DA_GHI_CHU_LICH_SU = 1000;
 
     private final HoaDonRepository hoaDonRepository;
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
@@ -91,6 +100,8 @@ public class ThucThiThanhToanTaiQuayService {
             throw new BusinessException("Nhân viên chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
         }
         GiaoCa activeShift = resolveCaThanhToan(currentEmp);
+        // Khách bị khóa tài khoản thì không bán được, kể cả khi hóa đơn chờ đã gắn khách từ trước.
+        invoiceUseCase.kiemTraKhachHangHoatDong(invoiceUseCase.timKhachHang(request.khachHangId()));
         paymentUseCase.validateTienKhachDua(request.tienKhachDua());
         Integer trangThaiSauThanhToan = invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(request.thongTinGiaoHang());
         HoaDon hoaDon = request.hoaDonId() == null
@@ -231,6 +242,8 @@ public class ThucThiThanhToanTaiQuayService {
             throw new BusinessException("Hóa đơn này không ở trạng thái chờ thanh toán");
         }
 
+        invoiceUseCase.kiemTraKhachHangHoatDong(hoaDon.getKhachHang());
+
         List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
         if (items == null || items.isEmpty()) {
             throw new BusinessException("Hóa đơn phải có ít nhất một sản phẩm để thanh toán");
@@ -328,6 +341,16 @@ public class ThucThiThanhToanTaiQuayService {
         ));
     }
 
+    /**
+     * Webhook SePay báo tiền về: tìm hóa đơn chờ tại quầy có mã nằm trong nội dung chuyển khoản
+     * rồi ghi nhận thanh toán và chuyển trạng thái hóa đơn.
+     *
+     * <p>Nội dung webhook gửi sang là ghép của {@code code + content + description} nên có thể dài
+     * hàng trăm ký tự — phải cắt trước khi lưu, nếu không bản ghi thanh toán vượt độ dài cột và cả
+     * giao dịch bị rollback, hóa đơn nằm mãi ở trạng thái chờ.</p>
+     *
+     * @return hóa đơn vừa được ghi nhận thanh toán; null nếu không hóa đơn chờ nào khớp.
+     */
     @Transactional
     public HoaDon xacNhanThanhToanSePay(String noiDung, long soTien) {
         if (noiDung == null || noiDung.isBlank()) {
@@ -335,77 +358,108 @@ public class ThucThiThanhToanTaiQuayService {
         }
 
         String rawContent = noiDung.replaceAll("[^a-zA-Z0-9]", "").toUpperCase(java.util.Locale.ROOT);
-        List<HoaDon> hoaDonChos = hoaDonRepository.findByKenhBanAndTrangThai(1, com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_CHO_TAI_QUAY);
+        List<HoaDon> hoaDonChos = hoaDonRepository.findByKenhBanAndTrangThai(
+                com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.KENH_BAN_TAI_QUAY,
+                com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_CHO_TAI_QUAY);
+        if (hoaDonChos.isEmpty()) {
+            log.info("SePay POS: khong co hoa don cho tai quay nao de doi chieu (noi dung '{}')", rawContent);
+            return null;
+        }
 
         for (HoaDon hoaDon : hoaDonChos) {
             String maHd = hoaDon.getMa() != null ? hoaDon.getMa().replaceAll("[^a-zA-Z0-9]", "").toUpperCase(java.util.Locale.ROOT) : "";
-            if (maHd.isEmpty()) {
+            if (maHd.isEmpty() || !rawContent.contains(maHd)) {
                 continue;
             }
 
-            if (rawContent.contains(maHd)) {
-                BigDecimal tongCanThanhToan = hoaDon.getTongTienThanhToan();
-                long soTienKyVong = tongCanThanhToan == null ? 0L : tongCanThanhToan.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
-                if (soTienKyVong > 0 && soTien < soTienKyVong) {
-                    return null;
-                }
-
-                List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
-                if (items == null || items.isEmpty()) {
-                    return null;
-                }
-
-                GiaoCa activeShift = null;
-                if (hoaDon.getNhanVien() != null) {
-                    activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(hoaDon.getNhanVien().getId(), "MO_CA").orElse(null);
-                }
-                if (activeShift == null) {
-                    activeShift = giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")).orElse(null);
-                }
-
-                boolean coGiaoHang = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).isPresent();
-                int trangThaiSauThanhToan = coGiaoHang
-                        ? com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_DA_XAC_NHAN
-                        : com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_HOAN_THANH;
-
-                ThanhToan thanhToan = new ThanhToan();
-                thanhToan.setHoaDon(hoaDon);
-                thanhToan.setNhanVien(hoaDon.getNhanVien());
-                thanhToan.setHinhThuc(2); // 2: Chuyen khoan
-                thanhToan.setSoTien(tongCanThanhToan);
-                thanhToan.setTienThoiLai(BigDecimal.ZERO);
-                thanhToan.setCongThanhToan("Chuyen khoan (SePay Webhook)");
-                thanhToan.setNgayThanhToan(Instant.now());
-                thanhToan.setTrangThai(1);
-                thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
-                thanhToan.setMaGiaoDich(noiDung);
-                thanhToan.setGhiChu("Thanh toan tu dong qua SePay Webhook (" + noiDung + ")");
-                thanhToan.setNgayTao(Instant.now());
-                thanhToanRepository.save(thanhToan);
-
-                hoaDon.setTrangThai(trangThaiSauThanhToan);
-                hoaDon.setNgayThanhToan(Instant.now());
-                hoaDon.setNgayCapNhat(Instant.now());
-                if (activeShift != null) {
-                    hoaDon.setGiaoCa(activeShift);
-                }
-                hoaDonRepository.save(hoaDon);
-
-                invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, "Thanh toan thanh cong qua chuyen khoan SePay Webhook (" + noiDung + ")");
-
-                if (coGiaoHang) {
-                    String emailNhan = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getEmail() : null;
-                    if (emailNhan != null && !emailNhan.isBlank()) {
-                        BigDecimal phiShip = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
-                                .map(com.example.server.entity.VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
-                        guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
-                                items, "Chuyen khoan (SePay)", phiShip);
-                    }
-                }
-
-                return hoaDon;
+            BigDecimal tongCanThanhToan = hoaDon.getTongTienThanhToan();
+            long soTienKyVong = tongCanThanhToan == null ? 0L : tongCanThanhToan.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+            // Chuyển thiếu (hoặc chỉ chuyển một phần trong hình thức kết hợp) -> để thu ngân xác nhận tay.
+            if (soTienKyVong > 0 && soTien < soTienKyVong) {
+                log.info("SePay POS: hoa don {} khop noi dung nhung chuyen thieu tien ({} < {})",
+                        hoaDon.getMa(), soTien, soTienKyVong);
+                continue;
             }
+
+            List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
+            if (items == null || items.isEmpty()) {
+                log.warn("SePay POS: hoa don {} khong con dong san pham nao, bo qua", hoaDon.getMa());
+                continue;
+            }
+
+            KhachHang khachHangHoaDon = hoaDon.getKhachHang();
+            if (khachHangHoaDon != null
+                    && (khachHangHoaDon.getTrangThai() == null || khachHangHoaDon.getTrangThai() != 1)) {
+                // khách đã bị khóa -> để nhân viên xử lý tay, không tự hoàn tất
+                log.warn("SePay POS: hoa don {} gan khach da bi khoa, de nhan vien xu ly tay", hoaDon.getMa());
+                continue;
+            }
+
+            GiaoCa activeShift = null;
+            if (hoaDon.getNhanVien() != null) {
+                activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(hoaDon.getNhanVien().getId(), "MO_CA").orElse(null);
+            }
+            if (activeShift == null) {
+                activeShift = giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")).orElse(null);
+            }
+
+            boolean coGiaoHang = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).isPresent();
+            int trangThaiSauThanhToan = coGiaoHang
+                    ? com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_DA_XAC_NHAN
+                    : com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_HOAN_THANH;
+
+            ThanhToan thanhToan = new ThanhToan();
+            thanhToan.setHoaDon(hoaDon);
+            thanhToan.setNhanVien(hoaDon.getNhanVien());
+            thanhToan.setHinhThuc(2); // 2: Chuyen khoan
+            thanhToan.setSoTien(tongCanThanhToan);
+            thanhToan.setTienThoiLai(BigDecimal.ZERO);
+            thanhToan.setCongThanhToan("Chuyen khoan (SePay Webhook)");
+            thanhToan.setNgayThanhToan(Instant.now());
+            thanhToan.setTrangThai(1);
+            thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
+            thanhToan.setMaGiaoDich(catNgan(noiDung, DAI_TOI_DA_MA_GIAO_DICH));
+            thanhToan.setGhiChu(catNgan("Thanh toan tu dong qua SePay Webhook (" + noiDung + ")", DAI_TOI_DA_GHI_CHU));
+            thanhToan.setNgayTao(Instant.now());
+            thanhToanRepository.save(thanhToan);
+
+            hoaDon.setTrangThai(trangThaiSauThanhToan);
+            hoaDon.setNgayThanhToan(Instant.now());
+            hoaDon.setNgayCapNhat(Instant.now());
+            if (activeShift != null) {
+                hoaDon.setGiaoCa(activeShift);
+            }
+            hoaDonRepository.save(hoaDon);
+
+            invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan,
+                    catNgan("Thanh toan thanh cong qua chuyen khoan SePay Webhook (" + noiDung + ")", DAI_TOI_DA_GHI_CHU_LICH_SU));
+
+            if (coGiaoHang) {
+                String emailNhan = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getEmail() : null;
+                if (emailNhan != null && !emailNhan.isBlank()) {
+                    BigDecimal phiShip = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
+                            .map(com.example.server.entity.VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
+                    guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
+                            items, "Chuyen khoan (SePay)", phiShip);
+                }
+            }
+
+            log.info("SePay POS: da ghi nhan thanh toan cho hoa don {} (so tien {}), trang thai moi {}",
+                    hoaDon.getMa(), soTien, trangThaiSauThanhToan);
+            return hoaDon;
         }
+
+        log.info("SePay POS: noi dung '{}' khong khop {} hoa don cho dang co ({})",
+                rawContent, hoaDonChos.size(), hoaDonChos.stream().map(HoaDon::getMa).toList());
         return null;
+    }
+
+    /** Cắt chuỗi cho vừa độ dài cột: nội dung webhook dài không được làm hỏng cả giao dịch. */
+    private String catNgan(String giaTri, int doDaiToiDa) {
+        if (giaTri == null) {
+            return null;
+        }
+        String rutGon = giaTri.trim();
+        return rutGon.length() <= doDaiToiDa ? rutGon : rutGon.substring(0, doDaiToiDa);
     }
 }

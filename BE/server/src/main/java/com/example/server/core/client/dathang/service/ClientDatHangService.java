@@ -56,6 +56,7 @@ public class ClientDatHangService {
     private static final int TRANG_THAI_CHO_THANH_TOAN = 0;
     private static final int TRANG_THAI_DA_THANH_TOAN = 1;
     private static final int LOAI_GIAO_DICH_THANH_TOAN = 1;
+    private static final int TRANG_THAI_KHACH_HANG_HOAT_DONG = 1;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final ClientCheckoutItemService checkoutItemService;
@@ -162,6 +163,13 @@ public class ClientDatHangService {
                 ? null
                 : khachHangRepository.findById(request.khachHangId())
                         .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
+        // Khách bị khóa sau khi đăng nhập vẫn còn token trên máy -> chặn ngay tại bước tạo đơn.
+        if (khachHang != null
+                && (khachHang.getTrangThai() == null
+                    || khachHang.getTrangThai() != TRANG_THAI_KHACH_HANG_HOAT_DONG)) {
+            throw new BusinessException(
+                    "Tài khoản của bạn đã bị khóa nên không thể đặt hàng. Vui lòng liên hệ cửa hàng để được hỗ trợ.");
+        }
         Instant now = Instant.now();
 
         HoaDon hoaDon = new HoaDon();
@@ -286,7 +294,9 @@ public class ClientDatHangService {
             throw new BusinessException("Phiên thanh toán không còn hiệu lực");
         }
         Instant now = Instant.now();
-        if (hoaDon.getNgayTao().plus(java.time.Duration.ofMinutes(15)).isBefore(now)) {
+        if (hoaDon.getNgayTao()
+                .plus(com.example.server.core.client.vnpay.service.ClientVnPayService.THOI_GIAN_HIEU_LUC_QR)
+                .isBefore(now)) {
             throw new BusinessException("Phiên thanh toán đã hết hạn");
         }
 

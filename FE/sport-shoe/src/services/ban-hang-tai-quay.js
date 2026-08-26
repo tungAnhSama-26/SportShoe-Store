@@ -73,6 +73,19 @@ function thanhToanTaiQuay(payload) {
     body: JSON.stringify(payload)
   });
 }
+function taoQrChuyenKhoan(id, soTien) {
+  const params = new URLSearchParams();
+  if (soTien != null) {
+    params.set("soTien", String(soTien));
+  }
+  const query = params.toString();
+  return request(`/admin/ban-hang-tai-quay/hoa-don-cho/${id}/qr-chuyen-khoan${query ? `?${query}` : ""}`, {
+    method: "POST"
+  });
+}
+function layTrangThaiChuyenKhoan(id) {
+  return request(`/admin/ban-hang-tai-quay/hoa-don-cho/${id}/trang-thai-chuyen-khoan`);
+}
 function huyHoaDonCho(id) {
   return request(`/admin/ban-hang-tai-quay/hoa-don-cho/${id}/huy`, {
     method: "PATCH"
@@ -91,6 +104,8 @@ export {
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
+  layTrangThaiChuyenKhoan,
+  taoQrChuyenKhoan,
   tinhPhiVanChuyenTaiQuay,
   taoHoaDonCho,
   capNhatHoaDonCho,

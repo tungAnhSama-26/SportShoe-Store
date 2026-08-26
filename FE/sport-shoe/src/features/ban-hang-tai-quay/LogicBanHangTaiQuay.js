@@ -5,6 +5,8 @@ import {
   huyHoaDonCho,
   layChiTietHoaDonCho,
   layDanhSachHoaDonCho,
+  layTrangThaiChuyenKhoan,
+  taoQrChuyenKhoan,
   thanhToanTaiQuay,
   taoHoaDonCho,
   capNhatHoaDonCho,
@@ -15,6 +17,7 @@ import {
   KHACH_VANG_LAI,
   TOI_DA_HOA_DON_CHO,
 } from "./HangSo";
+import { PHUONG_THUC_THANH_TOAN } from "./Enum";
 import { dinhDangTien } from "./TienTe";
 import { LogicGioHang } from "./LogicGioHang";
 import { LogicPhieuGiamGia } from "./LogicPhieuGiamGia";
@@ -35,6 +38,10 @@ function LogicBanHangTaiQuay() {
   const dangLuuHoaDonCho = ref(false);
   const dangHuyHoaDonCho = ref(false);
   const dangThanhToan = ref(false);
+  // Mã QR chuyển khoản đang hiện cho khách quét (null = không hiện).
+  const qrChuyenKhoan = ref(null);
+  const dangTaoQrChuyenKhoan = ref(false);
+  const soGiayQrConLai = ref(0);
   const dangTaiChiTietHoaDon = ref(false);
   const thongBaoLoi = ref("");
   const thongBaoThanhCong = ref("");
@@ -250,6 +257,11 @@ function LogicBanHangTaiQuay() {
 
     if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
       try {
+        // Đang hiện mã QR cho chính hóa đơn này -> tiền đã về, đóng mã và mở hóa đơn luôn.
+        if (msg.action === 'PAID' && qrChuyenKhoan.value?.hoaDonId === msg.invoiceId) {
+          await hoanTatChuyenKhoan(msg.invoiceId, msg.maHoaDon || qrChuyenKhoan.value?.maHoaDon);
+          return;
+        }
         if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
           if (hoaDonChoDaChon.value?.id === msg.invoiceId) {
             if (msg.action === 'PAID') {
@@ -1017,6 +1029,8 @@ function LogicBanHangTaiQuay() {
   let dangLuuNoiBo = false;
   let skipNextAutosave = false;
   let boDemTuDongLuu = null;
+  let boDemPollChuyenKhoan = null;
+  let boDemDongHoQr = null;
   watch(() => [
     cartItems.value,
     choPhepGiaoHang.value,
@@ -1144,6 +1158,7 @@ function LogicBanHangTaiQuay() {
     }
     if (daDatGioiHanHoaDonCho.value) {
       thongBaoLoi.value = `Chỉ được tạo tối đa ${TOI_DA_HOA_DON_CHO} hóa đơn chờ.`;
+      showError(thongBaoLoi.value);
       return;
     }
     if (!coTheTaoHoaDonCho.value) {
@@ -1178,14 +1193,156 @@ function LogicBanHangTaiQuay() {
       
     } catch (error) {
       thongBaoLoi.value = error instanceof Error ? error.message : "Không thể tạo hóa đơn chờ";
+      showError(thongBaoLoi.value);
     } finally {
       dangLuuHoaDonCho.value = false;
     }
   }
 
+  /** Dừng vòng poll trạng thái chuyển khoản (nếu đang chạy). */
+  function dungPollChuyenKhoan() {
+    if (boDemPollChuyenKhoan) {
+      clearInterval(boDemPollChuyenKhoan);
+      boDemPollChuyenKhoan = null;
+    }
+  }
+
+  function dungDongHoQr() {
+    if (boDemDongHoQr) {
+      clearInterval(boDemDongHoQr);
+      boDemDongHoQr = null;
+    }
+  }
+
+  // Mã QR chỉ sống 5 phút (BE trả hetHanLuc) — hết giờ thì ngừng chờ và mời thu ngân sinh mã mới.
+  function batDauDemNguocQr(hetHanLuc) {
+    dungDongHoQr();
+    const moc = hetHanLuc ? new Date(hetHanLuc).getTime() : 0;
+    const capNhat = () => {
+      soGiayQrConLai.value = moc ? Math.max(0, Math.ceil((moc - Date.now()) / 1000)) : 0;
+      if (moc && soGiayQrConLai.value <= 0) {
+        dungDongHoQr();
+        dungPollChuyenKhoan();
+        if (qrChuyenKhoan.value) {
+          qrChuyenKhoan.value = { ...qrChuyenKhoan.value, hetHan: true };
+        }
+      }
+    };
+    capNhat();
+    boDemDongHoQr = setInterval(capNhat, 1000);
+  }
+
+  /** Đóng mã QR chuyển khoản; hóa đơn vẫn nằm nguyên ở trạng thái chờ. */
+  function dongQrChuyenKhoan() {
+    dungPollChuyenKhoan();
+    dungDongHoQr();
+    soGiayQrConLai.value = 0;
+    qrChuyenKhoan.value = null;
+  }
+
+  // Tiền về -> webhook SePay đã chuyển trạng thái hóa đơn, POS chỉ việc dọn màn và mở hóa đơn.
+  async function hoanTatChuyenKhoan(hoaDonId, maHoaDon) {
+    if (!qrChuyenKhoan.value) {
+      return;
+    }
+    dongQrChuyenKhoan();
+    thongBaoThanhCong.value = `Đã thanh toán ${maHoaDon ?? ""}`.trim();
+    showToastSuccess(`Hóa đơn ${maHoaDon ?? ""} đã thanh toán chuyển khoản thành công!`);
+    await taiDanhSachHoaDonCho();
+    xoaBanNhap();
+    if (hoaDonId && router) {
+      router.push(`/admin/hoa-don/${hoaDonId}`);
+    }
+  }
+
+  // Websocket có thể rớt nên vẫn poll trạng thái hóa đơn trong lúc mã QR đang hiện.
+  function batDauPollChuyenKhoan(hoaDonId) {
+    dungPollChuyenKhoan();
+    boDemPollChuyenKhoan = setInterval(async () => {
+      if (!qrChuyenKhoan.value) {
+        dungPollChuyenKhoan();
+        return;
+      }
+      try {
+        const trangThai = await layTrangThaiChuyenKhoan(hoaDonId);
+        if (trangThai?.daThanhToan) {
+          await hoanTatChuyenKhoan(hoaDonId, trangThai.maHoaDon);
+        } else if (trangThai?.trangThai === 6) {
+          dongQrChuyenKhoan();
+          showError("Hóa đơn đã bị hủy nên không thể thanh toán chuyển khoản.");
+        }
+      } catch (error) {
+        // Lỗi mạng tạm thời -> để lần poll sau thử lại.
+      }
+    }, 2500);
+  }
+
+  // Webhook SePay đối chiếu theo mã hóa đơn nên phải có hóa đơn chờ trước khi hiện mã QR.
+  async function chuanBiHoaDonChoTruocKhiQuet() {
+    if (hoaDonChoDaChon.value) {
+      await luuHoaDonHienTai(true);
+      return hoaDonChoDaChon.value?.id ?? null;
+    }
+    await xuLyTaoHoaDonCho();
+    return hoaDonChoDaChon.value?.id ?? null;
+  }
+
+  /**
+   * Hiện mã QR chuyển khoản cho khách quét.
+   * @param tuDong true (chuyển khoản toàn phần): chờ webhook SePay tự chuyển trạng thái hóa đơn.
+   *               false (kết hợp tiền mặt): khách chỉ chuyển một phần nên thu ngân vẫn xác nhận tay.
+   */
+  async function moQrChuyenKhoan({ tuDong = true, soTien = null } = {}) {
+    if (dangTaoQrChuyenKhoan.value) {
+      return;
+    }
+    dangTaoQrChuyenKhoan.value = true;
+    xoaPhanHoi();
+    try {
+      // Tạo hóa đơn chờ mới sẽ kéo hình thức thanh toán về tiền mặt -> giữ lại lựa chọn của thu ngân.
+      const phuongThucDangChon = phuongThucThanhToan.value;
+      const hoaDonId = await chuanBiHoaDonChoTruocKhiQuet();
+      phuongThucThanhToan.value = phuongThucDangChon;
+      if (!hoaDonId) {
+        if (!thongBaoLoi.value) {
+          thongBaoLoi.value = "Chưa tạo được hóa đơn chờ để hiện mã QR chuyển khoản.";
+        }
+        showError(thongBaoLoi.value);
+        return;
+      }
+      const qr = await taoQrChuyenKhoan(hoaDonId, soTien);
+      qrChuyenKhoan.value = { ...qr, tuDong, soTienYeuCau: soTien, hetHan: false };
+      batDauDemNguocQr(qr?.hetHanLuc);
+      if (tuDong) {
+        batDauPollChuyenKhoan(hoaDonId);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Không thể tạo mã QR chuyển khoản";
+      thongBaoLoi.value = msg;
+      showError(msg);
+    } finally {
+      dangTaoQrChuyenKhoan.value = false;
+    }
+  }
+
+  // Hình thức kết hợp: thu ngân bấm nút QR cạnh ô "Chuyển khoản" để khách quét phần còn thiếu.
+  async function xuLyMoQrKetHop(soTien) {
+    await moQrChuyenKhoan({ tuDong: false, soTien: soTien ?? null });
+  }
+
+  /** Mã hết hạn -> sinh mã mới cho đúng hóa đơn và đúng số tiền đang chờ. */
+  async function xuLyTaoLaiQr() {
+    const qr = qrChuyenKhoan.value;
+    if (!qr) {
+      return;
+    }
+    await moQrChuyenKhoan({ tuDong: qr.tuDong, soTien: qr.soTienYeuCau ?? null });
+  }
+
   async function xuLyThanhToanNgay() {
     if (!daChonKhach.value) {
       thongBaoLoi.value = "Vui lòng chọn khách hàng hoặc Khách vãng lai trước khi thanh toán.";
+      showError(thongBaoLoi.value);
       return;
     }
     if (!validateGioHang(true) || !kiemTraLoiThanhToan()) {
@@ -1220,6 +1377,21 @@ function LogicBanHangTaiQuay() {
       }
     }
 
+    // Chuyển khoản toàn phần: hiện mã QR cho khách quét, webhook SePay sẽ tự hoàn tất hóa đơn.
+    if (phuongThucThanhToan.value === PHUONG_THUC_THANH_TOAN.CHUYEN_KHOAN) {
+      await moQrChuyenKhoan({ tuDong: true });
+      return;
+    }
+
+    dongQrChuyenKhoan();
+    await thucThiThanhToan();
+  }
+
+  /**
+   * Gọi API thanh toán cho hóa đơn đang dựng (đã qua bước xác nhận/validate).
+   * @returns true nếu hóa đơn đã thanh toán xong.
+   */
+  async function thucThiThanhToan() {
     dangThanhToan.value = true;
     thongBaoLoi.value = "";
     thongBaoThanhCong.value = "";
@@ -1253,6 +1425,7 @@ function LogicBanHangTaiQuay() {
       if (paidInvoiceId && router) {
         router.push(`/admin/hoa-don/${paidInvoiceId}`);
       }
+      return true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Không thể thanh toán trực tiếp";
       thongBaoLoi.value = msg;
@@ -1269,8 +1442,58 @@ function LogicBanHangTaiQuay() {
           }
         }
       }
+      // thongBaoLoi không hiển thị trên màn nên phải báo thẳng cho thu ngân biết vì sao không thanh toán được.
+      showError(thongBaoLoi.value);
+      return false;
     } finally {
       dangThanhToan.value = false;
+    }
+  }
+
+  /**
+   * Nút "Đã thanh toán" ngay trên mã QR: dùng khi tiền đã về tài khoản nhưng webhook SePay
+   * không báo về (SePay lỗi, mạng rớt) nên hóa đơn còn nằm ở trạng thái chờ.
+   */
+  async function xuLyXacNhanDaChuyenKhoan() {
+    const qr = qrChuyenKhoan.value;
+    if (!qr || dangThanhToan.value) {
+      return;
+    }
+    const hoaDonId = qr.hoaDonId;
+
+    // Webhook vừa kịp chạy -> hóa đơn đã rời trạng thái chờ, chỉ cần dọn màn, không ghi nhận lần hai.
+    try {
+      const trangThai = await layTrangThaiChuyenKhoan(hoaDonId);
+      if (trangThai?.daThanhToan) {
+        await hoanTatChuyenKhoan(hoaDonId, trangThai.maHoaDon);
+        return;
+      }
+    } catch (error) {
+      // Không hỏi được trạng thái thì vẫn để thu ngân xác nhận tay.
+    }
+
+    // Realtime có thể đổi hóa đơn đang chọn -> không thanh toán nhầm hóa đơn khác.
+    if (hoaDonChoDaChon.value?.id !== hoaDonId) {
+      showError("Hóa đơn của mã QR này không còn được chọn trên màn. Vui lòng đóng mã và thao tác lại.");
+      return;
+    }
+
+    const isConfirmed = await showConfirm(
+      `Xác nhận đã nhận ${dinhDangTien(qr.soTien)} chuyển khoản cho hóa đơn ${qr.maHoaDon}?`
+    );
+    if (!isConfirmed) {
+      return;
+    }
+
+    dungPollChuyenKhoan();
+    dungDongHoQr();
+    const daXong = await thucThiThanhToan();
+    if (daXong) {
+      qrChuyenKhoan.value = null;
+      soGiayQrConLai.value = 0;
+    } else if (qrChuyenKhoan.value?.tuDong) {
+      // Thanh toán tay hỏng -> mở lại vòng chờ để webhook vẫn còn cơ hội tự hoàn tất.
+      batDauPollChuyenKhoan(hoaDonId);
     }
   }
 
@@ -1318,6 +1541,7 @@ function LogicBanHangTaiQuay() {
       xoaBanNhap();
     } catch (error) {
       thongBaoLoi.value = error instanceof Error ? error.message : "Không thể hủy hóa đơn chờ";
+      showError(thongBaoLoi.value);
     } finally {
       dangHuyHoaDonCho.value = false;
     }
@@ -1360,6 +1584,8 @@ function LogicBanHangTaiQuay() {
   }
 
   function xoaCacBoDem() {
+    dungPollChuyenKhoan();
+    dungDongHoQr();
     xoaBoDemThoiGianKhachHang();
     xoaBoDemThoiGianSanPham();
     xoaCacBoDemThoiGianPhieu();
@@ -1514,6 +1740,13 @@ function LogicBanHangTaiQuay() {
     dangLuuHoaDonCho,
     coTheThanhToan,
     dangThanhToan,
+    qrChuyenKhoan,
+    dangTaoQrChuyenKhoan,
+    soGiayQrConLai,
+    dongQrChuyenKhoan,
+    xuLyMoQrKetHop,
+    xuLyTaoLaiQr,
+    xuLyXacNhanDaChuyenKhoan,
     dangHuyHoaDonCho,
     dinhDangTien,
     soLuongConLai,
