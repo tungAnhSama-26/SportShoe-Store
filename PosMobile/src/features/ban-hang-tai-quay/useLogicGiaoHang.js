@@ -168,6 +168,9 @@ export function useLogicGiaoHang({
     if (Object.prototype.hasOwnProperty.call(patch, "soDienThoaiNguoiNhan")) {
       setSdtNguoiNhanGiaoHang(patch.soDienThoaiNguoiNhan ?? "");
     }
+    if (Object.prototype.hasOwnProperty.call(patch, "sdtNguoiNhan")) {
+      setSdtNguoiNhanGiaoHang(patch.sdtNguoiNhan ?? "");
+    }
     if (Object.prototype.hasOwnProperty.call(patch, "diaChiGiaoHang")) {
       const newDiaChi = chuanHoaDiaChi(patch.diaChiGiaoHang);
       const diaChiHienTai = chuanHoaDiaChi(diaChiGiaoHang);

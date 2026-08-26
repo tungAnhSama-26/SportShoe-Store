@@ -73,9 +73,9 @@ services:
       - "8080:8080"
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
-      - DB_URL=${DB_URL:-jdbc:sqlserver://database:1433;databaseName=sportshoe;encrypt=true;trustServerCertificate=true}
+      - DB_URL=${DB_URL:-jdbc:sqlserver://database:1433;databaseName=giay;encrypt=true;trustServerCertificate=true}
       - DB_USERNAME=sa
-      - DB_PASSWORD=${DB_PASSWORD:-MatKhauDatabaseCuaBan123!}
+      - DB_PASSWORD=${DB_PASSWORD:-Yoasobi123.}
       - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME:-}

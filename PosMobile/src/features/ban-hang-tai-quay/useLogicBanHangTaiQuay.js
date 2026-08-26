@@ -685,12 +685,12 @@ export function useLogicBanHangTaiQuay() {
 
     const betterCouponInfo = await phieuGiamGiaLogic.kiemTraPhieuTotHonTruocThanhToan();
     if (betterCouponInfo) {
-      // Because we are porting Vue's SweetAlert which awaits, we would need to mock or handle showPaymentConfirmWithCoupon
-      // I'll skip the SweetAlert logic for now, or just show standard confirm
       const choice = await showConfirm(`Phiếu giảm giá ${betterCouponInfo.coupon.ma} tiết kiệm hơn. Bạn có muốn sử dụng không?`);
       if (choice) {
         phieuGiamGiaLogic.setMaPhieuGiamGia(betterCouponInfo.coupon.ma);
         await phieuGiamGiaLogic.xuLyApDungPhieu(true, betterCouponInfo.coupon.ma);
+      } else {
+        phieuGiamGiaLogic.tuChoiPhieuTotHon(betterCouponInfo.coupon.ma);
       }
     } else {
       // In React Native, window.confirm can be replaced by Alert.alert or alert util

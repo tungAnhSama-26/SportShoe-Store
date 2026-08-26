@@ -1207,7 +1207,9 @@ function LogicBanHangTaiQuay() {
 
       if (choice === 'use_new') {
         maPhieuGiamGia.value = betterCouponInfo.coupon.ma;
-        await xuLyApDungPhieu(true);
+        await xuLyApDungPhieu(true, betterCouponInfo.coupon.ma);
+      } else if (choice === 'use_old') {
+        tuChoiPhieuGiamGiaTotHon(betterCouponInfo.coupon.ma);
       } else if (choice === 'cancel') {
         return;
       }

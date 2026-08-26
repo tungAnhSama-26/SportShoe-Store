@@ -657,7 +657,9 @@ async function toggleBienTheStatus(item) {
 
     await api.doiTrangThaiBienThe(item.id, newTrangThai)
     item.kichHoat = newTrangThai
-    showSuccess('Cập nhật trạng thái thành công')
+    const trangThaiMoi = newTrangThai === 1 ? 'Đang bán' : 'Ngừng bán'
+    const tenBienThe = item.maChiTietSanPham || item.tenSanPham || 'biến thể'
+    showSuccess(`Đã chuyển biến thể "${tenBienThe}" sang "${trangThaiMoi}"`)
   } catch (error) {
     showError(getDisplayErrorMessage(error, 'Cập nhật trạng thái thất bại'))
   } finally {

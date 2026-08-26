@@ -46,7 +46,10 @@ watch(hienModalGiaoHang, async (newVal) => {
 });
 
 function handleSaveModal(data) {
-  emit("update-shipping", data);
+  emit("update-shipping", {
+    ...data,
+    soDienThoaiNguoiNhan: data.soDienThoaiNguoiNhan || data.sdtNguoiNhan || ""
+  });
   hienModalGiaoHang.value = false;
 }
 

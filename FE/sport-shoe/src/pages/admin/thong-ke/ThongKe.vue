@@ -751,16 +751,6 @@ const formatLastUpdated = computed(() => {
               <td class="px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatCurrency(product.doanhThu) }}
               </td>
-              <td class="rounded-r-[20px] px-4 py-4 text-right">
-                <span
-                  :class="[
-                    'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
-                    rowBadgeClass(product.tonKho)
-                  ]"
-                >
-                  {{ formatNumber(product.tonKho) }}
-                </span>
-              </td>
             </tr>
 
             <tr v-if="filteredProducts.length === 0">

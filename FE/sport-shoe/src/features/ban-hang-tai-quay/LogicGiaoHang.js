@@ -156,6 +156,9 @@ export function LogicGiaoHang({
     if (Object.prototype.hasOwnProperty.call(patch, "soDienThoaiNguoiNhan")) {
       sdtNguoiNhanGiaoHang.value = patch.soDienThoaiNguoiNhan ?? "";
     }
+    if (Object.prototype.hasOwnProperty.call(patch, "sdtNguoiNhan")) {
+      sdtNguoiNhanGiaoHang.value = patch.sdtNguoiNhan ?? "";
+    }
     if (Object.prototype.hasOwnProperty.call(patch, "email")) {
       emailNguoiNhanGiaoHang.value = patch.email ?? "";
     }
