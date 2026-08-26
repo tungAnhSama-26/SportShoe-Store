@@ -12,7 +12,7 @@
 
 *Dự án tốt nghiệp / Hệ thống thương mại điện tử chuyên biệt cho giày thể thao, tích hợp toàn diện giữa cửa hàng trực tuyến (E-Commerce Web), hệ thống quản trị chuyên sâu (Admin Dashboard), hệ thống Bán hàng tại quầy đa năng (Web POS) và ứng dụng di động/máy tính bảng (PosMobile) đồng bộ thời gian thực.*
 
-[🌐 Trải nghiệm Trực tiếp (Demo Online)](https://sportshoestore.duckdns.org) • [📱 Màn hình POS Mobile](https://sportshoestore.duckdns.org/pos-mobile) • [💻 Màn hình POS Tablet](https://sportshoestore.duckdns.org/pos) • [📖 Báo cáo Lỗi & Đóng góp](https://github.com/tungAnhSama-26/SportShoe-Store/issues)
+[🌐 Trải nghiệm Trực tiếp (Demo Online)](https://sportshoestore.duckdns.org) • [📱 Màn hình POS Mobile](https://sportshoestore.duckdns.org/pos-mobile) • [📖 Báo cáo Lỗi & Đóng góp](https://github.com/tungAnhSama-26/SportShoe-Store/issues)
 
 </div>
 
