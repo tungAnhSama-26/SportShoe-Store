@@ -456,10 +456,7 @@ export function usePhieuGiamGiaList() {
 
   function openCreateModal() {
     router.push({
-      name:
-        activeTab.value === "khach-hang"
-          ? "admin-phieu-giam-gia-khach-hang-them"
-          : "admin-phieu-giam-gia-them",
+      name: "admin-phieu-giam-gia-them",
     });
   }
 
@@ -470,10 +467,7 @@ export function usePhieuGiamGiaList() {
     }
 
     router.push({
-      name:
-        target === "khach-hang"
-          ? "admin-phieu-giam-gia-khach-hang-chi-tiet"
-          : "admin-phieu-giam-gia-chi-tiet",
+      name: "admin-phieu-giam-gia-chi-tiet",
       params: { id: item.id },
     });
   }
