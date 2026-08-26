@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 👟 SPORTSHOE STORE - HỆ THỐNG QUẢN LÝ BÁN GIÀY THỂ THAO & BÁN HÀNG TẠI QUẦY (POS)
 
@@ -26,16 +26,14 @@
   - [3.2. Phân hệ Khách hàng (E-Commerce Storefront)](#32-phân-hệ-khách-hàng-e-commerce-storefront)
   - [3.3. Phân hệ Quản trị (Admin Management)](#33-phân-hệ-quản-trị-admin-management)
   - [3.4. Trợ lý ảo AI & Tích hợp bên thứ ba](#34-trợ-lý-ảo-ai--tích-hợp-bên-thứ-ba)
-- [4. Cấu trúc thư mục dự án](#-4-cấu-trúc-thư-mục-dự-án)
-- [5. Hướng dẫn cài đặt & Chạy cục bộ (Local Development)](#-5-hướng-dẫn-cài-đặt--chạy-cục-bộ-local-development)
-  - [5.1. Yêu cầu môi trường](#51-yêu-cầu-môi-trường)
-  - [5.2. Khởi tạo Cơ sở dữ liệu](#52-khởi-tạo-cơ-sở-dữ-liệu)
-  - [5.3. Chạy Backend (Spring Boot)](#53-chạy-backend-spring-boot)
-  - [5.4. Chạy Frontend Web (Vue 3)](#54-chạy-frontend-web-vue-3)
-  - [5.5. Chạy PosMobile (Expo / React Native)](#55-chạy-posmobile-expo--react-native)
-- [6. Triển khai bằng Docker (Docker Deployment)](#-6-triển-khai-bằng-docker-docker-deployment)
-- [7. Tài khoản dùng thử (Demo Accounts)](#-7-tài-khoản-dùng-thử-demo-accounts)
-- [8. Thành viên đóng góp (Contributors)](#-8-thành-viên-đóng-góp-contributors)
+- [4. Hướng dẫn cài đặt & Chạy cục bộ (Local Development)](#-4-hướng-dẫn-cài-đặt--chạy-cục-bộ-local-development)
+  - [4.1. Yêu cầu môi trường](#41-yêu-cầu-môi-trường)
+  - [4.2. Khởi tạo Cơ sở dữ liệu](#42-khởi-tạo-cơ-sở-dữ-liệu)
+  - [4.3. Chạy Backend (Spring Boot)](#43-chạy-backend-spring-boot)
+  - [4.4. Chạy Frontend Web (Vue 3)](#44-chạy-frontend-web-vue-3)
+  - [4.5. Chạy PosMobile (Expo / React Native)](#45-chạy-posmobile-expo--react-native)
+- [5. Triển khai bằng Docker (Docker Deployment)](#-5-triển-khai-bằng-docker-docker-deployment)
+- [6. Tài khoản dùng thử (Demo Accounts)](#-6-tài-khoản-dùng-thử-demo-accounts)
 
 ---
 
@@ -53,11 +51,11 @@
 ### ⚙️ Backend Layer
 * **Ngôn ngữ & Framework:** Java 17, Spring Boot 3.2.5 (RESTful API, Spring Security, Spring Data JPA, WebSocket STOMP, Spring Validation).
 * **Database & Caching:** Microsoft SQL Server 2022 / Azure SQL Edge, HikariCP.
-* **Xác thực & Phân quyền:** JWT (JSON Web Tokens) với RBAC (ROLE_ADMIN, ROLE_STAFF, ROLE_CUSTOMER).
+* **Xác thực & Phân quyền:** JWT (JSON Web Tokens) với RBAC (`ROLE_ADMIN`, `ROLE_STAFF`, `ROLE_CUSTOMER`).
 * **Thư viện tích hợp:** Lombok, Hibernate ORM, Apache POI (Xuất Excel), iText/HTML2PDF (In hóa đơn).
 
 ### 🖥️ Frontend Web Layer
-* **Framework:** Vue 3 (Composition API & <script setup>), Vite, Vue Router 4.
+* **Framework:** Vue 3 (Composition API & `<script setup>`), Vite, Vue Router 4.
 * **Styling & UI:** Tailwind CSS v4, Lucide Icons, SweetAlert2.
 * **Biểu đồ & Tiện ích:** Chart.js, Vue-Chartjs, ZXing (Quét mã vạch/QR qua Camera), Axios, StompJS.
 
@@ -109,53 +107,9 @@
 
 ---
 
-## 📁 4. Cấu trúc thư mục dự án
+## 🚀 4. Hướng dẫn cài đặt & Chạy cục bộ (Local Development)
 
-`	ext
-SportShoe-Store/
-├── BE/                           # Backend Spring Boot
-│   └── server/
-│       ├── src/main/java/com/example/server/
-│       │   ├── core/             # Nghiệp vụ Admin & Client theo Module
-│       │   ├── entity/           # JPA Entities (Giay, HoaDon, ThanhToan,...)
-│       │   ├── repository/       # Spring Data Repositories
-│       │   └── infrastructure/   # Bảo mật, Cấu hình, WebSocket, Scheduler
-│       ├── src/main/resources/   # Application properties, file cấu hình
-│       └── pom.xml
-├── FE/                           # Frontend Vue 3 Web
-│   └── sport-shoe/
-│       ├── src/
-│       │   ├── components/       # Các component dùng chung & chuyên biệt
-│       │   ├── features/         # Logic bán hàng tại quầy, giỏ hàng, thanh toán
-│       │   ├── layouts/          # AdminLayout, PosLayout, TrangMacDinh
-│       │   ├── pages/            # Các trang giao diện (Client & Admin)
-│       │   ├── router/           # Cấu hình định tuyến Vue Router
-│       │   └── services/         # API Service Calls & WebSocket Client
-│       ├── nginx.conf            # Cấu hình Nginx Web Server + Reverse Proxy
-│       ├── Dockerfile
-│       └── package.json
-├── PosMobile/                    # Ứng dụng POS React Native / Expo
-│   ├── src/
-│   │   ├── api/                  # API Client kết nối Backend
-│   │   ├── features/             # Logic nghiệp vụ POS Mobile
-│   │   ├── hooks/                # Custom hooks (useRealtime WebSocket)
-│   │   └── thanh-phan/           # UI Components (CotTrai, CotPhai,...)
-│   ├── App.js
-│   ├── Dockerfile
-│   └── package.json
-├── database/                     # SQL Scripts (Schema, Data, Migrations)
-│   ├── 01_schema.sql             # Cấu trúc bảng và ràng buộc CSDL
-│   ├── 02_data.sql               # Dữ liệu mẫu (Sample data)
-│   └── 07_fix_thanh_toan_constraints.sql
-├── docker-compose.yml            # Điều phối toàn bộ Container
-└── README.md
-`
-
----
-
-## 🚀 5. Hướng dẫn cài đặt & Chạy cục bộ (Local Development)
-
-### 5.1. Yêu cầu môi trường
+### 4.1. Yêu cầu môi trường
 * **Java Development Kit (JDK):** Phiên bản 17 trở lên.
 * **Node.js:** Phiên bản 18.x hoặc 20.x (kèm npm).
 * **Database:** Microsoft SQL Server 2019/2022 hoặc Docker Azure SQL Edge.
@@ -163,117 +117,96 @@ SportShoe-Store/
 
 ---
 
-### 5.2. Khởi tạo Cơ sở dữ liệu
+### 4.2. Khởi tạo Cơ sở dữ liệu
 1. Mở **SQL Server Management Studio (SSMS)** hoặc **Azure Data Studio**.
 2. Tạo cơ sở dữ liệu mới:
-   `sql
-   CREATE DATABASE giay;
-   GO
-   `
-3. Chạy lần lượt các script trong thư mục database/:
-   - [01_schema.sql](file:///database/01_schema.sql)
-   - [02_data.sql](file:///database/02_data.sql)
+```sql
+CREATE DATABASE giay;
+GO
+```
+3. Chạy lần lượt các script trong thư mục `database/`:
+   - `01_schema.sql`
+   - `02_data.sql`
 
 ---
 
-### 5.3. Chạy Backend (Spring Boot)
+### 4.3. Chạy Backend (Spring Boot)
 1. Di chuyển vào thư mục backend:
-   `ash
-   cd BE/server
-   `
-2. Cấu hình thông tin kết nối CSDL trong file src/main/resources/application.properties (hoặc tạo file pplication-local.properties):
-   `properties
-   spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=giay;encrypt=true;trustServerCertificate=true
-   spring.datasource.username=sa
-   spring.datasource.password=YourPassword123!
-   `
+```bash
+cd BE/server
+```
+2. Cấu hình thông tin kết nối CSDL trong file `src/main/resources/application.properties` (hoặc tạo file `application-local.properties`):
+```properties
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=giay;encrypt=true;trustServerCertificate=true
+spring.datasource.username=sa
+spring.datasource.password=YourPassword123!
+```
 3. Biên dịch và khởi chạy server:
-   `ash
-   mvn clean spring-boot:run
-   `
-   *Backend sẽ khởi chạy tại:* http://localhost:8080
+```bash
+mvn clean spring-boot:run
+```
+*Backend sẽ khởi chạy tại:* `http://localhost:8080`
 
 ---
 
-### 5.4. Chạy Frontend Web (Vue 3)
+### 4.4. Chạy Frontend Web (Vue 3)
 1. Di chuyển vào thư mục frontend:
-   `ash
-   cd FE/sport-shoe
-   `
+```bash
+cd FE/sport-shoe
+```
 2. Cài đặt các gói phụ thuộc:
-   `ash
-   npm install
-   `
+```bash
+npm install
+```
 3. Khởi chạy môi trường phát triển (Dev Server):
-   `ash
-   npm run dev
-   `
-   *Giao diện Web sẽ khởi chạy tại:* http://localhost:5173
+```bash
+npm run dev
+```
+*Giao diện Web sẽ khởi chạy tại:* `http://localhost:5173`
 
 ---
 
-### 5.5. Chạy PosMobile (Expo / React Native)
+### 4.5. Chạy PosMobile (Expo / React Native)
 1. Di chuyển vào thư mục PosMobile:
-   `ash
-   cd PosMobile
-   `
+```bash
+cd PosMobile
+```
 2. Cài đặt thư viện:
-   `ash
-   npm install
-   `
+```bash
+npm install
+```
 3. Chạy trên nền tảng Web hoặc thiết bị di động:
-   - **Chạy bản Web:** 
-pm run web (Mở tại http://localhost:8081)
-   - **Chạy trên điện thoại (Expo Go):** 
-pm start rồi quét mã QR bằng ứng dụng Expo Go trên Android/iOS.
+   - **Chạy bản Web:** `npm run web` (Mở tại `http://localhost:8081`)
+   - **Chạy trên điện thoại (Expo Go):** `npm start` rồi quét mã QR bằng ứng dụng Expo Go trên Android/iOS.
 
 ---
 
-## 🐳 6. Triển khai bằng Docker (Docker Deployment)
+## 🐳 5. Triển khai bằng Docker (Docker Deployment)
 
 Hệ thống đã được đóng gói hoàn chỉnh bằng **Docker Compose** sẵn sàng triển khai trên VPS / Cloud Server (AWS, DigitalOcean, Azure):
 
-1. Tạo file cấu hình môi trường .env từ .env.example:
-   `ash
-   cp .env.example .env
-   `
+1. Tạo file cấu hình môi trường `.env` từ `.env.example`:
+```bash
+cp .env.example .env
+```
 2. Khởi chạy toàn bộ hệ thống (Database, Ollama AI, Backend, Frontend) chỉ với 1 câu lệnh:
-   `ash
-   docker compose up -d --build
-   `
+```bash
+docker compose up -d --build
+```
 3. Kiểm tra trạng thái các container:
-   `ash
-   docker compose ps
-   `
+```bash
+docker compose ps
+```
 
 ---
 
-## 🔑 7. Tài khoản dùng thử (Demo Accounts)
+## 🔑 6. Tài khoản dùng thử (Demo Accounts)
 
 | Phân quyền | Tên đăng nhập / Email | Mật khẩu mặc định | Ghi chú |
 | :--- | :--- | :--- | :--- |
-| **Quản trị viên (Admin)** | dmin@sportshoe.com / dmin | Admin@123 | Toàn quyền quản trị hệ thống |
-| **Nhân viên thu ngân (Staff)** | staff@sportshoe.com / 
-hanvien | Staff@123 | Bán hàng tại quầy, giao ca, hóa đơn |
-| **Khách hàng (Customer)** | customer@gmail.com / khachhang | Customer@123 | Mua sắm, tra cứu đơn hàng |
-
----
-
-## 👥 8. Thành viên đóng góp (Contributors)
-
-Dự án được xây dựng và hoàn thiện bởi nhóm phát triển:
-
-<div align="center">
-
-| Avatar | Thành viên | Vai trò chính |
-| :---: | :---: | :---: |
-| <img src="https://github.com/Huynguyen6686.png" width="60" style="border-radius:50%"> | **Huy Nguyễn** | Fullstack Developer, POS Architecture, DevOps |
-| <img src="https://github.com/tungAnhSama-26.png" width="60" style="border-radius:50%"> | **Tùng Anh** | Frontend Developer, UI/UX Design, E-Commerce |
-| <img src="https://github.com/Nghiem-huy.png" width="60" style="border-radius:50%"> | **Nghiêm Huy** | Backend Developer, Database Design, API Integration |
-| <img src="https://github.com/bui-hiep.png" width="60" style="border-radius:50%"> | **Bùi Hiệp** | Fullstack Developer, Quản lý ca làm & chấm công |
-| <img src="https://github.com/thu-thuy.png" width="60" style="border-radius:50%"> | **Thu Thủy** | Quality Assurance, Testing, Quản lý Khuyến mãi |
-
-</div>
+| **Quản trị viên (Admin)** | `admin@sportshoe.com` / `admin` | `Admin@123` | Toàn quyền quản trị hệ thống |
+| **Nhân viên thu ngân (Staff)** | `staff@sportshoe.com` / `nhanvien` | `Staff@123` | Bán hàng tại quầy, giao ca, hóa đơn |
+| **Khách hàng (Customer)** | `customer@gmail.com` / `khachhang` | `Customer@123` | Mua sắm, tra cứu đơn hàng |
 
 ---
 
