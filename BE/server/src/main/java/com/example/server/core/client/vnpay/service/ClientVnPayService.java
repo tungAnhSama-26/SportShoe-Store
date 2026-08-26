@@ -48,7 +48,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ClientVnPayService {
 
-    public static final java.time.Duration THOI_GIAN_HIEU_LUC_QR = java.time.Duration.ofMinutes(15);
+    /** Mã QR chuyển khoản (online lẫn tại quầy) chỉ sống 5 phút kể từ lúc sinh mã. */
+    public static final java.time.Duration THOI_GIAN_HIEU_LUC_QR = java.time.Duration.ofMinutes(5);
 
     public static final String TRANG_THAI_CHO = "CHO";
     public static final String TRANG_THAI_DA_THANH_TOAN = "DA_THANH_TOAN";

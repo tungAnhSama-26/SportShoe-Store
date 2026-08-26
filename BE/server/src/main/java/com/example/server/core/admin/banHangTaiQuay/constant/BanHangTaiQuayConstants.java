@@ -12,6 +12,9 @@ public class BanHangTaiQuayConstants {
     // Trạng thái vận chuyển
     public static final int TRANG_THAI_VAN_CHUYEN_CHO_XU_LY = 1;
 
+    // Trạng thái khách hàng
+    public static final int TRANG_THAI_KHACH_HANG_HOAT_DONG = 1;
+
     // Kênh bán
     public static final int KENH_BAN_TAI_QUAY = 1;
 

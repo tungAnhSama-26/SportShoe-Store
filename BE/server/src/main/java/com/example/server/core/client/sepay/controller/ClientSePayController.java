@@ -78,15 +78,27 @@ public class ClientSePayController {
 
         log.info("SePay webhook nhan thong tin chuyen khoan: noiDung='{}', soTien={}", noiDung, soTien);
 
-        // 4.1. Khớp đơn Online (Web Khách hàng)
-        String onlineMa = clientVnPayService.xacNhanTheoChuyenKhoan(noiDung, soTien);
+        // 4.1. Khớp đơn Online (Web Khách hàng).
+        // Lỗi ở nhánh này không được chặn nhánh POS: tiền đã về, phải thử khớp nốt hóa đơn tại quầy.
+        String onlineMa = null;
+        try {
+            onlineMa = clientVnPayService.xacNhanTheoChuyenKhoan(noiDung, soTien);
+        } catch (RuntimeException e) {
+            log.error("SePay webhook loi khi doi chieu don Online (noiDung='{}')", noiDung, e);
+        }
         if (onlineMa != null) {
             log.info("SePay webhook xac nhan thanh toan don hang Online thanh cong: {}", onlineMa);
             return ResponseEntity.ok(Map.of("success", true, "orderCode", onlineMa, "type", "ONLINE"));
         }
 
         // 4.2. Khớp đơn Bán hàng tại quầy (POS)
-        String posMa = banHangTaiQuayService.xacNhanThanhToanSePay(noiDung, soTien);
+        String posMa = null;
+        try {
+            posMa = banHangTaiQuayService.xacNhanThanhToanSePay(noiDung, soTien);
+        } catch (RuntimeException e) {
+            // Không ném ra ngoài để SePay khỏi gửi lại liên tục; thu ngân vẫn còn nút "Đã thanh toán".
+            log.error("SePay webhook loi khi doi chieu don Tai Quay (noiDung='{}')", noiDung, e);
+        }
         if (posMa != null) {
             log.info("SePay webhook xac nhan thanh toan don hang Tai Quay (POS) thanh cong: {}", posMa);
             return ResponseEntity.ok(Map.of("success", true, "orderCode", posMa, "type", "POS"));

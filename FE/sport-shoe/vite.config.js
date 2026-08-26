@@ -3,7 +3,7 @@ import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 
 const backendTarget =
-  process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8081";
+  process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8080";
 
 const createBackendProxy = ({ websocket = false } = {}) => ({
   target: backendTarget,

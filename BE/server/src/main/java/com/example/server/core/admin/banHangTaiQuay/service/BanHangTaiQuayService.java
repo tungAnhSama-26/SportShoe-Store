@@ -8,6 +8,7 @@ import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTie
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoTomTatResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.KhachHangTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.PhieuGiamGiaTaiQuayResponse;
+import com.example.server.core.admin.banHangTaiQuay.dto.response.QrChuyenKhoanResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.SanPhamTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.ThanhToanTaiQuayResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.request.TinhPhiVanChuyenGhnRequest;
@@ -39,6 +40,7 @@ public class BanHangTaiQuayService {
     private final HoaDonTaiQuayService invoiceUseCase;
     private final HoaDonChoTaiQuayService pendingInvoiceUseCase;
     private final ThucThiThanhToanTaiQuayService paymentExecutionUseCase;
+    private final QrChuyenKhoanTaiQuayService qrChuyenKhoanUseCase;
     private final GhnShippingService ghnShippingService;
     private final WebSocketNotificationService webSocketNotificationService;
 
@@ -50,7 +52,8 @@ public class BanHangTaiQuayService {
             GhnShippingService ghnShippingService,
             WebSocketNotificationService webSocketNotificationService,
             HoaDonChoTaiQuayService pendingInvoiceUseCase,
-            ThucThiThanhToanTaiQuayService paymentExecutionUseCase
+            ThucThiThanhToanTaiQuayService paymentExecutionUseCase,
+            QrChuyenKhoanTaiQuayService qrChuyenKhoanUseCase
     ) {
         this.customerUseCase = customerUseCase;
         this.productUseCase = productUseCase;
@@ -58,6 +61,7 @@ public class BanHangTaiQuayService {
         this.invoiceUseCase = invoiceUseCase;
         this.pendingInvoiceUseCase = pendingInvoiceUseCase;
         this.paymentExecutionUseCase = paymentExecutionUseCase;
+        this.qrChuyenKhoanUseCase = qrChuyenKhoanUseCase;
         this.ghnShippingService = ghnShippingService;
         this.webSocketNotificationService = webSocketNotificationService;
     }
@@ -169,6 +173,18 @@ public class BanHangTaiQuayService {
             return hoaDon.getMa();
         }
         return null;
+    }
+
+    /** Dựng mã QR chuyển khoản cho hóa đơn chờ để khách quét tại quầy. */
+    @Transactional(readOnly = true)
+    public QrChuyenKhoanResponse taoQrChuyenKhoan(Integer hoaDonId, BigDecimal soTien) {
+        return qrChuyenKhoanUseCase.taoQr(hoaDonId, soTien);
+    }
+
+    /** Màn POS poll trong lúc hiện mã QR: webhook SePay đã ghi nhận tiền về chưa. */
+    @Transactional(readOnly = true)
+    public QrChuyenKhoanResponse trangThaiChuyenKhoan(Integer hoaDonId) {
+        return qrChuyenKhoanUseCase.trangThai(hoaDonId);
     }
 
     private void phatRealtimeHoaDonCho(String action, Integer hoaDonId) {

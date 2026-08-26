@@ -9,6 +9,7 @@ import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTie
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoTomTatResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.KhachHangTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.PhieuGiamGiaTaiQuayResponse;
+import com.example.server.core.admin.banHangTaiQuay.dto.response.QrChuyenKhoanResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.SanPhamTaiQuayResponse;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.ThanhToanTaiQuayResponse;
 import com.example.server.core.admin.quanlyhoadon.dto.responsse.TinhPhiVanChuyenGhnResponse;
@@ -139,6 +140,29 @@ public class BanHangTaiQuayController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Thanh toán tại quầy thành công",
                 banHangTaiQuayService.thanhToanTaiQuay(request)
+        ));
+    }
+
+    /** Tạo mã QR chuyển khoản cho hóa đơn chờ (số tiền bỏ trống = tổng tiền phải trả). */
+    @PostMapping("/hoa-don-cho/{hoaDonId}/qr-chuyen-khoan")
+    public ResponseEntity<ApiResponse<QrChuyenKhoanResponse>> taoQrChuyenKhoan(
+            @PathVariable Integer hoaDonId,
+            @RequestParam(name = "soTien", required = false) BigDecimal soTien
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Tạo mã QR chuyển khoản thành công",
+                banHangTaiQuayService.taoQrChuyenKhoan(hoaDonId, soTien)
+        ));
+    }
+
+    /** POS poll trong lúc hiện mã QR: hóa đơn đã được webhook SePay ghi nhận thanh toán chưa. */
+    @GetMapping("/hoa-don-cho/{hoaDonId}/trang-thai-chuyen-khoan")
+    public ResponseEntity<ApiResponse<QrChuyenKhoanResponse>> trangThaiChuyenKhoan(
+            @PathVariable Integer hoaDonId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy trạng thái chuyển khoản thành công",
+                banHangTaiQuayService.trangThaiChuyenKhoan(hoaDonId)
         ));
     }
 

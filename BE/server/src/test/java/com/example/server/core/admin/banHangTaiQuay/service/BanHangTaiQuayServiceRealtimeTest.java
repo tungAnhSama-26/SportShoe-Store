@@ -29,6 +29,7 @@ class BanHangTaiQuayServiceRealtimeTest {
     @Mock private HoaDonTaiQuayService invoiceUseCase;
     @Mock private HoaDonChoTaiQuayService pendingInvoiceUseCase;
     @Mock private ThucThiThanhToanTaiQuayService paymentExecutionUseCase;
+    @Mock private QrChuyenKhoanTaiQuayService qrChuyenKhoanUseCase;
     @Mock private GhnShippingService ghnShippingService;
     @Mock private WebSocketNotificationService webSocketNotificationService;
 
@@ -44,7 +45,8 @@ class BanHangTaiQuayServiceRealtimeTest {
                 ghnShippingService,
                 webSocketNotificationService,
                 pendingInvoiceUseCase,
-                paymentExecutionUseCase
+                paymentExecutionUseCase,
+                qrChuyenKhoanUseCase
         );
     }
 

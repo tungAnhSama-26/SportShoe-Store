@@ -392,6 +392,23 @@ public class HoaDonTaiQuayService {
                 .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
     }
 
+    /**
+     * Chặn bán cho khách đã bị khóa tài khoản. Khách bị khóa không hiện trong ô tìm kiếm,
+     * nhưng hóa đơn chờ tạo trước đó vẫn giữ khách cũ nên phải chặn lại lúc thanh toán.
+     */
+    public void kiemTraKhachHangHoatDong(KhachHang khachHang) {
+        if (khachHang == null) {
+            return;
+        }
+        if (khachHang.getTrangThai() == null || khachHang.getTrangThai() != TRANG_THAI_KHACH_HANG_HOAT_DONG) {
+            String ten = khachHang.getHoTen() != null && !khachHang.getHoTen().isBlank()
+                    ? khachHang.getHoTen()
+                    : "này";
+            throw new BusinessException("Khách hàng " + ten
+                    + " đã bị khóa tài khoản, không thể thanh toán. Vui lòng chọn khách hàng khác hoặc bán cho khách lẻ.");
+        }
+    }
+
     public String layTenKhachHang(KhachHang khachHang, String tenKhachHang) {
         if (khachHang != null && khachHang.getHoTen() != null && !khachHang.getHoTen().isBlank()) {
             return khachHang.getHoTen();
