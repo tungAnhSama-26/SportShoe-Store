@@ -23,6 +23,7 @@ public class DiscountScheduler {
     private final DotGiamGiaRepository dotGiamGiaRepository;
     private final GiayChiTietRepository giayChiTietRepository;
     private final ThongBaoService thongBaoService;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     /**
      * Tác vụ quét và cập nhật lại giá bán trong DB và trạng thái phiếu giảm giá.
@@ -51,6 +52,7 @@ public class DiscountScheduler {
             // 3. Kiểm tra và tạo cảnh báo voucher sắp hết hạn hoặc hết số lượng
             thongBaoService.checkVoucherCanhBao();
             
+            sanPhamRealtimePublisher.phatSauCommit("PHIEU_GIAM_GIA");
             log.info("Đồng bộ hoàn tất.");
         } catch (Exception e) {
             log.error("Lỗi trong quá trình đồng bộ: {}", e.getMessage(), e);

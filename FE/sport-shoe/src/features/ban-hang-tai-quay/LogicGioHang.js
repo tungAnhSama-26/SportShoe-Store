@@ -61,7 +61,7 @@ export function LogicGioHang({
 
     const soLuongCoTheThem = soLuongConLai(product.chiTietId, product.soLuongTon);
     if (quantity > soLuongCoTheThem) {
-      showWarning(`Sản phẩm ${product.tenSanPham} đã vượt giới hạn tồn kho`);
+      showWarning(`Sản phẩm ${product.tenSanPham} đã đạt giới hạn số lượng có thể mua`);
       return false;
     }
 
@@ -133,6 +133,7 @@ export function LogicGioHang({
   function isOutdatedPrice(item) {
     if (!item) return false;
     if (item.isOutdatedPrice) return true;
+    if (item.currentCatalogPrice && Number(item.currentCatalogPrice) !== Number(item.giaBan)) return true;
     const sameVariantItems = cartItems.value.filter(
       (it) => Number(it.chiTietId) === Number(item.chiTietId)
     );
@@ -168,7 +169,7 @@ export function LogicGioHang({
       return { ...item, soLuong: item.soLuong + 1 };
     });
     if (reachedLimit) {
-      showWarning(`Sản phẩm ${reachedLimit} đã vượt giới hạn tồn kho`);
+      showWarning(`Sản phẩm ${reachedLimit} đã đạt giới hạn số lượng có thể mua`);
       return;
     }
     danhDauCanApDungLaiPhieu();
@@ -222,14 +223,13 @@ export function LogicGioHang({
 
       if (newQuantityNum > maxAllowed) {
         reachedLimit = item.tenSanPham;
-        // The user specifically requested to return to 1 if quantity exceeds stock
-        return { ...item, soLuong: 1 };
+        return { ...item, soLuong: maxAllowed > 0 ? maxAllowed : 1 };
       }
       return { ...item, soLuong: newQuantityNum };
     });
 
     if (reachedLimit) {
-      showWarning(`Sản phẩm ${reachedLimit} đã vượt giới hạn tồn kho`);
+      showWarning(`Sản phẩm ${reachedLimit} đã đạt giới hạn số lượng có thể mua`);
     }
 
     danhDauCanApDungLaiPhieu();

@@ -144,7 +144,7 @@ function productQuickToggleIntent(item) {
 
 function productQuickToggleDisabledTitle(item) {
   if (Number(item.trangThai) === 2) {
-    return 'Sản phẩm đang hết hàng — trạng thái tự theo tồn kho, không thể đổi thủ công'
+    return 'Sản phẩm đang hết hàng, không thể đổi thủ công'
   }
   return canQuickToggleProduct(item)
     ? productQuickToggleLabel(item)

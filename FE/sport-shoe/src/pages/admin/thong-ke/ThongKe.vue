@@ -656,7 +656,7 @@ const formatLastUpdated = computed(() => {
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-slate-500">Tồn kho</label>
+          <label class="text-xs font-medium text-slate-500">Số lượng</label>
           <select
             v-model="productFilters.stockStatus"
             class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white"
@@ -709,7 +709,7 @@ const formatLastUpdated = computed(() => {
               <th class="px-4 py-2">Thương hiệu</th>
               <th class="px-4 py-2 text-right">Đã bán</th>
               <th class="px-4 py-2 text-right">Doanh thu</th>
-              <th class="px-4 py-2 text-right">Tồn kho</th>
+              <th class="px-4 py-2 text-right">Số lượng còn</th>
             </tr>
           </thead>
           <tbody>
@@ -750,16 +750,6 @@ const formatLastUpdated = computed(() => {
               </td>
               <td class="px-4 py-4 text-right font-semibold text-slate-800">
                 {{ formatCurrency(product.doanhThu) }}
-              </td>
-              <td class="rounded-r-[20px] px-4 py-4 text-right">
-                <span
-                  :class="[
-                    'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
-                    rowBadgeClass(product.tonKho)
-                  ]"
-                >
-                  {{ formatNumber(product.tonKho) }}
-                </span>
               </td>
             </tr>
 

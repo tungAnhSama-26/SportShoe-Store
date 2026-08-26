@@ -156,6 +156,9 @@ export function LogicGiaoHang({
     if (Object.prototype.hasOwnProperty.call(patch, "soDienThoaiNguoiNhan")) {
       sdtNguoiNhanGiaoHang.value = patch.soDienThoaiNguoiNhan ?? "";
     }
+    if (Object.prototype.hasOwnProperty.call(patch, "sdtNguoiNhan")) {
+      sdtNguoiNhanGiaoHang.value = patch.sdtNguoiNhan ?? "";
+    }
     if (Object.prototype.hasOwnProperty.call(patch, "email")) {
       emailNguoiNhanGiaoHang.value = patch.email ?? "";
     }
@@ -278,7 +281,7 @@ export function LogicGiaoHang({
         ? (result.giaCu ? "Phí GHN từ cache cũ (ước tính)" : "Phí GHN đã lưu gần nhất (ước tính)")
         : result.nguonTinhPhi === "GHN_PUBLIC_TARIFF"
           ? "Phí offline ước tính theo bảng giá công khai GHN"
-          : (result.uocTinh ? "Phí GHN ước tính theo các tuyến cũ" : "Phí GHN");
+          : "Phí GHN";
       daTinhPhiVanChuyen.value = true;
     } catch (error) {
       phiVanChuyen.value = 0;

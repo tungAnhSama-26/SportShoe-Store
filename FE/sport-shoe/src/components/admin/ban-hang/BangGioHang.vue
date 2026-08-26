@@ -27,8 +27,10 @@ const emit = defineEmits(["increase-item", "decrease-item", "update-item", "remo
 const formatTien = (val) => (typeof props.dinhDangTien === "function" ? props.dinhDangTien(val) : formatTienTe(val));
 
 function checkOutdated(item) {
-  if (props.isOutdatedPrice) return props.isOutdatedPrice(item);
-  if (item?.isOutdatedPrice) return true;
+  if (!item) return false;
+  if (item.isOutdatedPrice) return true;
+  if (item.currentCatalogPrice && Number(item.currentCatalogPrice) !== Number(item.giaBan)) return true;
+  if (props.isOutdatedPrice && props.isOutdatedPrice(item)) return true;
   const sameVariantItems = props.cartItems.filter(
     (it) => Number(it.chiTietId) === Number(item?.chiTietId)
   );
@@ -54,10 +56,17 @@ function formatDiscountPercent(item) {
 }
 
 function getPriceChangeText(item) {
-  if (item?.oldPrice && Number(item.oldPrice) !== Number(item.giaBan)) {
-    const direction = Number(item.oldPrice) < Number(item.giaBan) ? 'lên' : 'xuống';
-    return `Giá sản phẩm đã được cập nhật từ ${formatTien(item.oldPrice)} ${direction} ${formatTien(item.giaBan)}.`;
+  if (!item || item.isOutdatedPrice) return null;
+
+  // 1. Dòng sản phẩm mới có oldPrice khác với giaBan hiện tại
+  if (item.oldPrice && Number(item.oldPrice) !== Number(item.giaBan)) {
+    const oldP = Number(item.oldPrice);
+    const newP = Number(item.giaBan);
+    const direction = oldP < newP ? 'lên' : 'xuống';
+    return `Giá sản phẩm đã được cập nhật từ ${formatTien(oldP)} ${direction} ${formatTien(newP)}.`;
   }
+
+  // 2. Khi cùng biến thể có dòng cũ trong giỏ, dòng mới này sẽ hiển thị thông báo
   const sameVariantItems = props.cartItems.filter(
     (it) => Number(it.chiTietId) === Number(item?.chiTietId)
   );
@@ -65,11 +74,14 @@ function getPriceChangeText(item) {
     const olderItem = sameVariantItems.find(
       it => Number(it.giaBan) !== Number(item?.giaBan) && (it.isOutdatedPrice || sameVariantItems.indexOf(it) < sameVariantItems.indexOf(item))
     );
-    if (olderItem && Number(olderItem.giaBan) !== Number(item?.giaBan) && !item?.isOutdatedPrice) {
-      const direction = Number(olderItem.giaBan) < Number(item.giaBan) ? 'lên' : 'xuống';
-      return `Giá sản phẩm đã được cập nhật từ ${formatTien(olderItem.giaBan)} ${direction} ${formatTien(item.giaBan)}.`;
+    if (olderItem) {
+      const oldP = Number(olderItem.giaBan);
+      const newP = Number(item.giaBan);
+      const direction = oldP < newP ? 'lên' : 'xuống';
+      return `Giá sản phẩm đã được cập nhật từ ${formatTien(oldP)} ${direction} ${formatTien(newP)}.`;
     }
   }
+
   return null;
 }
 
@@ -81,7 +93,7 @@ function getPriceChangeText(item) {
       <thead class="bg-slate-100 dark:bg-slate-800/80 text-left text-sm text-slate-950 dark:text-slate-200 font-bold">
         <tr>
           <th class="px-3 py-2 whitespace-nowrap w-[5%]">STT</th>
-          <th class="px-3 py-2 whitespace-nowrap w-[15%]">Mã sản phẩm</th>
+          <th class="px-3 py-2 whitespace-nowrap w-[15%]">Mã biến thể</th>
           <th class="px-3 py-2 whitespace-nowrap w-[30%]">Tên sản phẩm</th>
           <th class="px-3 py-2 whitespace-nowrap w-[10%]">Màu sắc</th>
           <th class="px-3 py-2 whitespace-nowrap w-[10%]">Kích cỡ</th>

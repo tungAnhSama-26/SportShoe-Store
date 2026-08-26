@@ -271,8 +271,10 @@ async function xuLyDoiTrangThai(item) {
   }
   updatingStatusIds.add(item.id);
   try {
-    await api.doiTrangThai(item.id, trangThaiKeTiep(item));
-    showSuccess("Cập nhật trạng thái sản phẩm thành công");
+    const nextStatus = trangThaiKeTiep(item);
+    await api.doiTrangThai(item.id, nextStatus);
+    const statusText = nextStatus === 1 ? 'Đang kinh doanh' : (nextStatus === 0 ? 'Hết hàng' : 'Ngừng kinh doanh');
+    showSuccess(`Đã chuyển sản phẩm "${item.ten}" sang "${statusText}"`);
     await loadData(currentPage.value);
   } catch (error) {
     showToast(

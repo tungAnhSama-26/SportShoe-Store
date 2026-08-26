@@ -166,7 +166,7 @@ function diToiLienKet() {
 }
 
 function bieuTuongLoai(loai) {
-  return { DON_HANG: "📦", VOUCHER: "🎟️", GIAM_GIA: "🔥", DANH_GIA: "⭐" }[loai] || "🔔";
+  return { DON_HANG: "📦", VOUCHER: "🎟️", GIAM_GIA: "🔥", DANH_GIA: "⭐", SAN_PHAM: "👟" }[loai] || "🔔";
 }
 
 // "5 phút trước" / "2 giờ trước" / "1 ngày trước" (thông báo tối đa 3 ngày).

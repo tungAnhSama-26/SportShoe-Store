@@ -148,6 +148,7 @@ export function useLogicBanHangTaiQuay() {
     cartItems: gioHangLogic.cartItems,
     tongTien: gioHangLogic.tongTien,
     hoaDonChoDaChon,
+    dangTaiChiTietHoaDon,
     khachHangDuocChon: khachHangLogic.khachHangDuocChon,
     layIdKhachHangHienTai,
     taoDanhSachSanPhamThanhToan: gioHangLogic.taoDanhSachSanPhamThanhToan,
@@ -257,8 +258,10 @@ export function useLogicBanHangTaiQuay() {
     sanPhamLogic.taiSanPham("");
   }, [khachHangLogic, sanPhamLogic, phieuGiamGiaLogic, gioHangLogic, thanhToanLogic, xoaPhanHoi, publishMessage]);
 
-  const taiDanhSachHoaDonCho = useCallback(async () => {
-    setDangTaiHoaDonCho(true);
+  const taiDanhSachHoaDonCho = useCallback(async (silent = false) => {
+    if (!silent) {
+      setDangTaiHoaDonCho(true);
+    }
     try {
       const response = await layDanhSachHoaDonCho();
       const data = response?.data || response;
@@ -266,10 +269,14 @@ export function useLogicBanHangTaiQuay() {
       setDanhSachHoaDonCho(invoices);
       return invoices;
     } catch (error) {
-      setThongBaoLoi(error instanceof Error ? error.message : "Không thể tải danh sách hóa đơn chờ");
+      if (!silent) {
+        setThongBaoLoi(error instanceof Error ? error.message : "Không thể tải danh sách hóa đơn chờ");
+      }
       return [];
     } finally {
-      setDangTaiHoaDonCho(false);
+      if (!silent) {
+        setDangTaiHoaDonCho(false);
+      }
     }
   }, []);
 
@@ -317,12 +324,6 @@ export function useLogicBanHangTaiQuay() {
         soLuongTon: sanPhamLogic.laySoLuongTonHienTai(item.chiTietId, item.soLuong)
       };
     }));
-    setTimeout(() => {
-      dangLuuNoiBoRef.current = false;
-      if (canLuuPhiSauDongBo) {
-        luuHoaDonHienTaiRef.current?.().catch(() => {});
-      }
-    }, 50);
 
     setChoPhepGiaoHang(Boolean(thongTinGiaoHang?.giaoHang));
     setTenNguoiNhanGiaoHang(thongTinGiaoHang?.tenNguoiNhan || "");
@@ -375,9 +376,15 @@ export function useLogicBanHangTaiQuay() {
         tongTienSauGiam: Math.max((invoice.tongTienHang || 0) - (invoice.tienGiam || 0), 0)
       }
       : null);
-    // phieuGiamGiaLogic.setKetQuaTimKiemPhieu([]); // not exported
     phieuGiamGiaLogic.setHienThiDanhSachPhieu(false);
     thanhToanLogic.capNhatTienKhachThanhToan(false);
+
+    setTimeout(() => {
+      dangLuuNoiBoRef.current = false;
+      if (canLuuPhiSauDongBo) {
+        luuHoaDonHienTaiRef.current?.().catch(() => {});
+      }
+    }, 300);
   }, [sanPhamLogic, khachHangLogic, gioHangLogic, phieuGiamGiaLogic, thanhToanLogic]);
 
   const dangLuuNoiBoRef = useRef(false);
@@ -522,7 +529,10 @@ export function useLogicBanHangTaiQuay() {
         sdtNguoiNhanGiaoHang,
         diaChiGiaoHang,
         tienKhachDua: thanhToanLogic.tienKhachDua,
+        tienMatKetHop: thanhToanLogic.tienMatKetHop,
+        tienChuyenKhoanKetHop: thanhToanLogic.tienChuyenKhoanKetHop,
         phuongThucThanhToan: thanhToanLogic.phuongThucThanhToan,
+        hienThiMaQrLon: thanhToanLogic.hienThiMaQrLon,
         ghiChuThanhToan: thanhToanLogic.ghiChuThanhToan,
         tuKhoaKhachHang: khachHangLogic.tuKhoaKhachHang,
         khachHangDuocChon: khachHangLogic.khachHangDuocChon
@@ -546,7 +556,10 @@ export function useLogicBanHangTaiQuay() {
     sdtNguoiNhanGiaoHang,
     diaChiGiaoHang,
     thanhToanLogic.tienKhachDua,
+    thanhToanLogic.tienMatKetHop,
+    thanhToanLogic.tienChuyenKhoanKetHop,
     thanhToanLogic.phuongThucThanhToan,
+    thanhToanLogic.hienThiMaQrLon,
     thanhToanLogic.ghiChuThanhToan,
     khachHangLogic.tuKhoaKhachHang,
     khachHangLogic.khachHangDuocChon,
@@ -556,6 +569,16 @@ export function useLogicBanHangTaiQuay() {
   ]);
 
   const chonHoaDonCho = useCallback(async (invoice) => {
+    if (!invoice) return;
+    if (hoaDonChoDaChon?.id === invoice.id && !dangTaiChiTietHoaDon) {
+      return;
+    }
+
+    if (boDemTuDongLuu.current) {
+      clearTimeout(boDemTuDongLuu.current);
+      boDemTuDongLuu.current = null;
+    }
+
     if (!isSyncingUIRef.current) {
       publishMessage('/topic/admin/pos-sync', {
         sender: sessionIdRef.current,
@@ -572,20 +595,20 @@ export function useLogicBanHangTaiQuay() {
       }
     }
 
+    setHoaDonChoDaChon(invoice);
     setDangTaiChiTietHoaDon(true);
     setThongBaoLoi("");
     try {
-      await sanPhamLogic.taiSanPham("");
+      await sanPhamLogic.taiSanPham("", true);
       const response = await layChiTietHoaDonCho(invoice.id);
       const detail = response?.data || response;
-      setHoaDonChoDaChon(invoice);
       chuyenHoaDonThanhBanNhap(detail);
     } catch (error) {
       setThongBaoLoi(error instanceof Error ? error.message : "Không thể tải hóa đơn chờ");
     } finally {
       setDangTaiChiTietHoaDon(false);
     }
-  }, [hoaDonChoDaChon, luuHoaDonHienTai, sanPhamLogic, chuyenHoaDonThanhBanNhap, publishMessage]);
+  }, [hoaDonChoDaChon, dangTaiChiTietHoaDon, luuHoaDonHienTai, sanPhamLogic, chuyenHoaDonThanhBanNhap, publishMessage]);
 
   const xuLyTaoHoaDonCho = useCallback(async () => {
     if (!gioHangLogic.validateGioHang(false)) {
@@ -662,12 +685,12 @@ export function useLogicBanHangTaiQuay() {
 
     const betterCouponInfo = await phieuGiamGiaLogic.kiemTraPhieuTotHonTruocThanhToan();
     if (betterCouponInfo) {
-      // Because we are porting Vue's SweetAlert which awaits, we would need to mock or handle showPaymentConfirmWithCoupon
-      // I'll skip the SweetAlert logic for now, or just show standard confirm
       const choice = await showConfirm(`Phiếu giảm giá ${betterCouponInfo.coupon.ma} tiết kiệm hơn. Bạn có muốn sử dụng không?`);
       if (choice) {
         phieuGiamGiaLogic.setMaPhieuGiamGia(betterCouponInfo.coupon.ma);
         await phieuGiamGiaLogic.xuLyApDungPhieu(true, betterCouponInfo.coupon.ma);
+      } else {
+        phieuGiamGiaLogic.tuChoiPhieuTotHon(betterCouponInfo.coupon.ma);
       }
     } else {
       // In React Native, window.confirm can be replaced by Alert.alert or alert util
@@ -707,9 +730,11 @@ export function useLogicBanHangTaiQuay() {
         soDienThoai: currentSdt,
         maPhieuGiamGia: phieuGiamGiaLogic.phieuGiamGiaDaApDung?.ma ?? null,
         hinhThucThanhToan: thanhToanLogic.phuongThucThanhToan,
-        tienKhachDua: thanhToanLogic.phuongThucThanhToan === 1 ? thanhToanLogic.tienKhachThanhToan : khachCanTra,
-        tienMat: null,
-        tienChuyenKhoan: null,
+        tienKhachDua: thanhToanLogic.phuongThucThanhToan === 1 
+          ? thanhToanLogic.tienKhachThanhToan 
+          : (thanhToanLogic.phuongThucThanhToan === 5 ? (thanhToanLogic.tienMatThanhToan + thanhToanLogic.tienChuyenKhoanThanhToan) : khachCanTra),
+        tienMat: thanhToanLogic.phuongThucThanhToan === 5 ? thanhToanLogic.tienMatThanhToan : null,
+        tienChuyenKhoan: thanhToanLogic.phuongThucThanhToan === 5 ? thanhToanLogic.tienChuyenKhoanThanhToan : null,
         ghiChu: thanhToanLogic.ghiChuThanhToan,
         thongTinGiaoHang: choPhepGiaoHang ? giaoHangLogic.taoPayloadGiaoHang() : null,
         items: gioHangLogic.taoDanhSachSanPhamThanhToan()
@@ -782,8 +807,7 @@ export function useLogicBanHangTaiQuay() {
       
       if (latestVariant) {
         productToAdd = {
-          ...latestVariant,
-          soLuongTon: Math.max((latestVariant.soLuongTon || 0) - (sanPhamLogic.soLuongDaChon || 1), 0)
+          ...latestVariant
         };
       }
     } catch (e) {
@@ -828,31 +852,23 @@ export function useLogicBanHangTaiQuay() {
 
     let cancelled = false;
     const syncAfterConnect = async () => {
-      isSyncingUIRef.current = true;
       try {
         const currentInvoiceId = latestRef.current.hoaDonChoDaChon?.id;
-        const invoices = await latestRef.current.taiDanhSachHoaDonCho();
+        const invoices = await latestRef.current.taiDanhSachHoaDonCho(true);
         if (cancelled || !currentInvoiceId) return;
 
         const currentInvoice = invoices.find((invoice) => invoice.id === currentInvoiceId);
-        if (currentInvoice) {
-          await latestRef.current.chonHoaDonCho(currentInvoice);
-        } else {
+        if (!currentInvoice) {
           latestRef.current.xoaBanNhap();
         }
       } catch (e) {
         console.error("Lỗi tải lại POS sau khi kết nối realtime:", e);
-      } finally {
-        if (!cancelled) {
-          isSyncingUIRef.current = false;
-        }
       }
     };
 
     syncAfterConnect();
     return () => {
       cancelled = true;
-      isSyncingUIRef.current = false;
     };
   }, [isConnected]);
 
@@ -864,10 +880,7 @@ export function useLogicBanHangTaiQuay() {
 
       if (rawMsg?.type === 'POS_INVOICE_CHANGED' || ['CREATED', 'UPDATED', 'CANCELLED', 'PAID'].includes(msg.action)) {
         try {
-          const response = await layDanhSachHoaDonCho();
-          const danhSachData = response?.data || response;
-          const newDanhSach = Array.isArray(danhSachData) ? danhSachData : [];
-          setDanhSachHoaDonCho(newDanhSach);
+          const invoices = await latestRef.current.taiDanhSachHoaDonCho(true);
 
           if (msg.action === 'PAID' || msg.action === 'CANCELLED') {
             if (latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId) {
@@ -881,16 +894,11 @@ export function useLogicBanHangTaiQuay() {
             return;
           }
 
-          const invoice = newDanhSach.find((hd) => hd.id === msg.invoiceId);
-          const currentInvoice = latestRef.current.hoaDonChoDaChon;
-          const shouldOpenInvoice = currentInvoice?.id === msg.invoiceId
-            || (!currentInvoice && msg.action === 'CREATED');
-          if (invoice && shouldOpenInvoice) {
-            isSyncingUIRef.current = true;
-            try {
+          // Chỉ tự động chọn hóa đơn nếu hiện tại CHƯA chọn hóa đơn nào và có hóa đơn mới được tạo
+          if (!latestRef.current.hoaDonChoDaChon && msg.action === 'CREATED') {
+            const invoice = (invoices || []).find((hd) => hd.id === msg.invoiceId);
+            if (invoice) {
               await latestRef.current.chonHoaDonCho(invoice);
-            } finally {
-              setTimeout(() => { isSyncingUIRef.current = false; }, 50);
             }
           }
         } catch (e) {
@@ -906,9 +914,9 @@ export function useLogicBanHangTaiQuay() {
           if (msg.invoiceId === null) {
             latestRef.current.xoaBanNhap();
           } else {
-            const invoices = await latestRef.current.taiDanhSachHoaDonCho();
+            const invoices = await latestRef.current.taiDanhSachHoaDonCho(true);
             const invoice = invoices.find(hd => hd.id === msg.invoiceId);
-            if (invoice) {
+            if (invoice && latestRef.current.hoaDonChoDaChon?.id !== msg.invoiceId) {
               await latestRef.current.chonHoaDonCho(invoice);
             }
           }
@@ -930,11 +938,14 @@ export function useLogicBanHangTaiQuay() {
           latestRef.current.setTenNguoiNhanGiaoHang(msg.state.tenNguoiNhanGiaoHang);
           latestRef.current.setSdtNguoiNhanGiaoHang(msg.state.sdtNguoiNhanGiaoHang);
           latestRef.current.setDiaChiGiaoHang(chuanHoaDiaChi(msg.state.diaChiGiaoHang));
-          latestRef.current.thanhToanLogic.setTienKhachDua(msg.state.tienKhachDua);
+          latestRef.current.thanhToanLogic.setTienKhachDua(msg.state.tienKhachDua || "");
+          latestRef.current.thanhToanLogic.setTienMatKetHop(msg.state.tienMatKetHop || "");
+          latestRef.current.thanhToanLogic.setTienChuyenKhoanKetHop(msg.state.tienChuyenKhoanKetHop || "");
           latestRef.current.thanhToanLogic.setPhuongThucThanhToan(msg.state.phuongThucThanhToan);
-          latestRef.current.thanhToanLogic.setGhiChuThanhToan(msg.state.ghiChuThanhToan);
-          latestRef.current.khachHangLogic.setTuKhoaKhachHang(msg.state.tuKhoaKhachHang);
-          latestRef.current.khachHangLogic.setKhachHangDuocChon(msg.state.khachHangDuocChon);
+          latestRef.current.thanhToanLogic.setHienThiMaQrLon(!!msg.state.hienThiMaQrLon);
+          latestRef.current.thanhToanLogic.setGhiChuThanhToan(msg.state.ghiChuThanhToan || "");
+          latestRef.current.khachHangLogic.setTuKhoaKhachHang(msg.state.tuKhoaKhachHang || "");
+          latestRef.current.khachHangLogic.setKhachHangDuocChon(msg.state.khachHangDuocChon || null);
           
           setTimeout(() => { 
             isSyncingUIRef.current = false; 
@@ -945,47 +956,14 @@ export function useLogicBanHangTaiQuay() {
     });
 
     const subSanPham = subscribeTopic('/topic/admin/san-pham', async (msg) => {
-      if (msg.type === 'PRODUCT_CHANGED' || msg.type === 'PRODUCT_UPDATED' || msg === 'PRODUCT_UPDATED') {
-        if (dangLuuNoiBoRef.current || latestRef.current.dangLuuHoaDonCho || latestRef.current.dangThanhToan) return;
-        
-        dangLuuNoiBoRef.current = true;
+      if (msg?.type === 'PRODUCT_CHANGED' || msg?.type === 'PRODUCT_UPDATED' || msg === 'PRODUCT_UPDATED' || msg === 'PRODUCT_CHANGED') {
         try {
-          // Lấy danh sách mới nhất
-          const response = await layDanhSachHoaDonCho();
-          const danhSachData = response?.data || response;
-          const newDanhSach = Array.isArray(danhSachData) ? danhSachData : [];
-          setDanhSachHoaDonCho(newDanhSach);
-
-          const currentInvoice = latestRef.current.hoaDonChoDaChon;
-          if (currentInvoice) {
-            const stillExists = newDanhSach.find(hd => hd.id === currentInvoice.id);
-            if (stillExists) {
-              layChiTietHoaDonCho(currentInvoice.id).then(detail => {
-                latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
-              });
-            } else {
-              const fallbackInvoice = newDanhSach.length > 0 ? newDanhSach[0] : null;
-              if (fallbackInvoice) {
-                setHoaDonChoDaChon(fallbackInvoice);
-                layChiTietHoaDonCho(fallbackInvoice.id).then(detail => {
-                  latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
-                });
-              } else {
-                latestRef.current.xoaBanNhap();
-              }
-            }
-          } else if (newDanhSach.length > 0) {
-            const fallbackInvoice = newDanhSach[0];
-            setHoaDonChoDaChon(fallbackInvoice);
-            layChiTietHoaDonCho(fallbackInvoice.id).then(detail => {
-              latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
-            });
+          // Chỉ làm mới danh sách sản phẩm để cập nhật số lượng tồn/giá mới
+          if (latestRef.current.sanPhamLogic?.taiSanPham) {
+            latestRef.current.sanPhamLogic.taiSanPham(latestRef.current.sanPhamLogic.tuKhoaSanPham);
           }
-
         } catch (e) {
-          console.error("Lỗi tải lại realtime:", e);
-        } finally {
-          setTimeout(() => { dangLuuNoiBoRef.current = false; }, 50);
+          console.error("Lỗi làm mới sản phẩm realtime:", e);
         }
       }
     });
