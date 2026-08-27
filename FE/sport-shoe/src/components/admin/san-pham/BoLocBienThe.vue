@@ -121,6 +121,7 @@ function handleFilterChange() {
           >
             <option :value="null">Tất cả trạng thái</option>
             <option :value="1">Đang bán</option>
+            <option :value="2">Hết hàng</option>
             <option :value="0">Ngừng bán</option>
           </select>
         </label>

@@ -110,7 +110,8 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                       and (
                         :trangThai is null
                         or (:trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0)
-                        or (:trangThai = 0 and (gct.kichHoat <> 1 or gct.soLuong <= 0))
+                        or (:trangThai = 2 and gct.kichHoat = 1 and gct.soLuong <= 0)
+                        or (:trangThai = 0 and gct.kichHoat = 0)
                       )
                     """,
             countQuery = """
@@ -130,7 +131,8 @@ public interface GiayChiTietRepository extends JpaRepository<GiayChiTiet, Intege
                       and (
                         :trangThai is null
                         or (:trangThai = 1 and gct.kichHoat = 1 and gct.soLuong > 0)
-                        or (:trangThai = 0 and (gct.kichHoat <> 1 or gct.soLuong <= 0))
+                        or (:trangThai = 2 and gct.kichHoat = 1 and gct.soLuong <= 0)
+                        or (:trangThai = 0 and gct.kichHoat = 0)
                       )
                     """
     )
