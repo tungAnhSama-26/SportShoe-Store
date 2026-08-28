@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { 
   ArrowRightLeft, 
@@ -26,6 +26,7 @@ import { useGiaoCa } from "../../../composable/useGiaoCa";
 import { layThongTinGiaoCaCurrent, layTuyChonBanGiao } from "../../../services/giao-ca";
 import { layDanhSachHoaDon } from "../../../services/hoa-don";
 import { layDanhSachCaLam } from "../../../services/ca-lam";
+import { layLichLamViec } from "../../../services/lich-lam";
 import ThuChiModal from "../../../components/admin/giao-ca/ThuChiModal.vue";
 
 const route = useRoute();
@@ -54,8 +55,6 @@ const lyDoKhongTheBanGiao = ref("");
 const currentStats = ref(null);
 const loadingStats = ref(false);
 const isPaidInvoicesCollapsed = ref(true);
-const adminAutoOpeningShift = ref(false);
-const skipAdminAutoOpenUntilNextEntry = ref(false);
 
 const pendingInvoices = computed(() => {
   return shiftTransactions.value.filter(tx => 
@@ -92,6 +91,8 @@ const ghiChuMoCaSángSớm = ref("");
 const lyDoMoCaMuon = ref("");
 const danhSachCaMo = ref([]);
 const caLamMoId = ref("");
+const thoiDiemHienTai = ref(Date.now());
+let dongHoMoCa = null;
 
 // Báo cáo sự cố
 const showsIncidentModal = ref(false);
@@ -129,6 +130,16 @@ const ghiChu = ref("");
 // Receiver confirmation note
 const ghiChuNhanCa = ref("");
 const tienNhanKiemDem = ref(null);
+const tienNhanKiemDemFormatted = computed({
+  get() {
+    if (tienNhanKiemDem.value === null) return "";
+    return new Intl.NumberFormat("vi-VN").format(tienNhanKiemDem.value);
+  },
+  set(newValue) {
+    const digits = String(newValue ?? "").replace(/\D/g, "");
+    tienNhanKiemDem.value = digits ? Number(digits) : null;
+  }
+});
 const lyDoTuChoi = ref("");
 
 const processing = ref(false);
@@ -151,33 +162,64 @@ const shouldRedirectAdminToHandover = computed(() => isAdmin.value && isMoCaSán
 const caLamDuocChon = computed(() =>
   danhSachCaMo.value.find((ca) => String(ca.id) === String(caLamMoId.value)) || null
 );
-const adminCanLyDoMoCa = computed(() => {
-  if (!isAdmin.value || !caLamDuocChon.value) return false;
-  const now = new Date();
+const soPhutMoCaMuon = computed(() => {
+  if (!caLamDuocChon.value) return 0;
+  const now = new Date(thoiDiemHienTai.value);
   const [hour, minute] = String(caLamDuocChon.value.gioBatDau).split(":").map(Number);
   const start = new Date(now);
   start.setHours(hour, minute, 0, 0);
-  const earliest = new Date(start.getTime() - 30 * 60 * 1000);
-  return now < earliest || now > start;
+  return Math.max(0, Math.ceil((now.getTime() - start.getTime()) / 60000));
+});
+const dangMoCaMuon = computed(() => soPhutMoCaMuon.value > 0);
+const batBuocLyDoMoCaMuon = computed(() => {
+  if (isAdmin.value || !caLamDuocChon.value) return false;
+  const now = thoiDiemHienTai.value;
+  const hienTai = new Date(now);
+  const [hour, minute] = String(caLamDuocChon.value.gioBatDau).split(":").map(Number);
+  const batDau = new Date(hienTai);
+  batDau.setHours(hour, minute, 0, 0);
+  return now > batDau.getTime() + 30 * 60 * 1000;
 });
 
+function dinhDangNgayDiaPhuong(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function caNamTrongKhungMo(ca, now) {
+  const [startHour, startMinute] = String(ca.gioBatDau).split(":").map(Number);
+  const [endHour, endMinute] = String(ca.gioKetThuc).split(":").map(Number);
+  const start = new Date(now);
+  const end = new Date(now);
+  start.setHours(startHour, startMinute, 0, 0);
+  end.setHours(endHour, endMinute, 0, 0);
+  if (end <= start) end.setDate(end.getDate() + 1);
+  return now >= new Date(start.getTime() - 30 * 60 * 1000) && now < end;
+}
+
 async function taiCaLamChoMoCa() {
-  if (!isAdmin.value) return;
   try {
     danhSachCaMo.value = (await layDanhSachCaLam()).filter((ca) => ca.trangThai);
-    if (!caLamMoId.value && danhSachCaMo.value.length) {
-      const now = new Date();
-      const phuHop = danhSachCaMo.value.find((ca) => {
-        const [sh, sm] = String(ca.gioBatDau).split(":").map(Number);
-        const [eh, em] = String(ca.gioKetThuc).split(":").map(Number);
-        const start = new Date(now);
-        const end = new Date(now);
-        start.setHours(sh, sm, 0, 0);
-        end.setHours(eh, em, 0, 0);
-        return now >= new Date(start.getTime() - 30 * 60 * 1000) && now < end;
-      });
+    if (caLamMoId.value || !danhSachCaMo.value.length) return;
+
+    const now = new Date();
+    if (isAdmin.value) {
+      const phuHop = danhSachCaMo.value.find((ca) => caNamTrongKhungMo(ca, now));
       caLamMoId.value = String((phuHop || danhSachCaMo.value[0]).id);
+      return;
     }
+
+    const homNay = dinhDangNgayDiaPhuong(now);
+    const lichTrongNgay = await layLichLamViec(homNay, homNay);
+    const idCaCuaNhanVien = new Set((Array.isArray(lichTrongNgay) ? lichTrongNgay : [])
+      .filter((lich) => String(lich.nhanVienId) === String(adminSession.value.id))
+      .map((lich) => String(lich.caLamId || lich.ca)));
+    const caPhuHop = danhSachCaMo.value.filter((ca) =>
+      idCaCuaNhanVien.has(String(ca.id)) && caNamTrongKhungMo(ca, now)
+    );
+    if (caPhuHop.length === 1) caLamMoId.value = String(caPhuHop[0].id);
   } catch (error) {
     showError(error?.message || "Không thể tải danh sách ca làm việc");
   }
@@ -193,6 +235,11 @@ const isCaDaChot = ref(false);
 
 const pendingHandover = computed(() => {
   return pendingHandovers.value && pendingHandovers.value.length > 0 ? pendingHandovers.value[0] : null;
+});
+const tienMatBanGiaoTheoHeThong = computed(() => {
+  if (!pendingHandover.value) return 0;
+  return Number(pendingHandover.value.tienDauCa ?? 0)
+    + Number(pendingHandover.value.tienMatTrongCa ?? 0);
 });
 const shouldShowOpenShiftScreen = computed(() =>
   isMoCaSángSớmMode.value && !isAdmin.value
@@ -225,7 +272,8 @@ async function taiThongKeCaHienTai() {
   try {
     const data = await layThongTinGiaoCaCurrent();
     currentStats.value = data;
-    tienThucTe.value = data.tienCuoiCaHeThong || 0;
+    tienThucTe.value = Number(activeShift.value?.tienDauCa ?? 0)
+      + Number(data.tienMatTrongCa ?? 0);
   } catch (err) {
     console.error("Lỗi tải thống kê ca:", err);
   } finally {
@@ -274,54 +322,11 @@ async function taiNhanVienGiaoCa() {
   }
 }
 
-async function adminVaoCaTuDong() {
-  if (!isAdmin.value || activeShift.value || pendingHandover.value || adminAutoOpeningShift.value) {
-    return false;
-  }
-  adminAutoOpeningShift.value = true;
-  try {
-    if (!danhSachCaMo.value.length || !caLamMoId.value) {
-      await taiCaLamChoMoCa();
-    }
-    if (!caLamMoId.value) {
-      showError("Chưa có ca làm việc đang hoạt động để admin vào ca.");
-      return false;
-    }
-    const res = await openShift(
-      0,
-      "Admin vào ca tự động",
-      caLamMoId.value,
-      "Admin vào ca không cần bước mở ca",
-    );
-    if (!res.success) {
-      showError(res.message);
-      return false;
-    }
-    showSuccess("Đã ghi nhận admin vào ca làm việc");
-    await loadActiveShift();
-    await loadPendingHandovers();
-    return true;
-  } finally {
-    adminAutoOpeningShift.value = false;
-  }
-}
-
-async function adminVaoCaTiep() {
-  skipAdminAutoOpenUntilNextEntry.value = false;
-  await loadActiveShift();
-  await loadPendingHandovers();
-  await syncState();
-}
-
 // State Machine Sync based on BE states
 async function syncState() {
   if (shouldRedirectAdminToHandover.value) {
     router.replace("/admin/ban-giao-ca");
     return;
-  }
-
-  if (isAdmin.value && !activeShift.value && !pendingHandover.value && !skipAdminAutoOpenUntilNextEntry.value) {
-    await adminVaoCaTuDong();
   }
 
   if (activeShift.value) {
@@ -350,10 +355,17 @@ async function syncState() {
 }
 
 onMounted(async () => {
+  dongHoMoCa = window.setInterval(() => {
+    thoiDiemHienTai.value = Date.now();
+  }, 30000);
   await taiCaLamChoMoCa();
   await loadActiveShift();
   await loadPendingHandovers();
   await syncState();
+});
+
+onBeforeUnmount(() => {
+  if (dongHoMoCa) window.clearInterval(dongHoMoCa);
 });
 
 watch([activeShift, pendingHandovers], () => {
@@ -361,9 +373,6 @@ watch([activeShift, pendingHandovers], () => {
 });
 
 watch(() => [route.path, route.query.vaoCa], () => {
-  if (isAdmin.value && route.path === "/admin/ban-giao-ca" && route.query.vaoCa) {
-    skipAdminAutoOpenUntilNextEntry.value = false;
-  }
   syncState();
 });
 
@@ -455,6 +464,10 @@ async function xacNhanMoCaSángSớmBtn() {
     showError("Số tiền mở ca không được âm");
     return;
   }
+  if (batBuocLyDoMoCaMuon.value && !lyDoMoCaMuon.value.trim()) {
+    showError("Bạn đang mở ca muộn quá 30 phút. Vui lòng nhập lý do mở ca muộn.");
+    return;
+  }
   showConfirm(
     `Số tiền mặt có trong két đếm được là: <strong>${formatVND(tienMoCaSángSớm.value)}</strong>`,
     "Xác nhận mở ca làm việc?"
@@ -464,7 +477,7 @@ async function xacNhanMoCaSángSớmBtn() {
       const res = await openShift(
         tienMoCaSángSớm.value,
         ghiChuMoCaSángSớm.value,
-        isAdmin.value ? caLamMoId.value : null,
+        caLamMoId.value || null,
         lyDoMoCaMuon.value.trim()
       );
       processing.value = false;
@@ -519,16 +532,11 @@ async function ketCaLamViecBtn() {
     return;
   }
   const confirmed = await showConfirm(
-    isAdmin.value
-      ? "Admin sẽ kết thúc ca hiện tại và không bàn giao cho nhân viên ca sau."
-      : "Đây là ca cuối trong ngày. Kết ca sẽ không mở ca mới.",
+    "Đây là ca cuối trong ngày. Kết ca sẽ không mở ca mới.",
     "Xác nhận kết ca làm việc?"
   );
   if (!confirmed) return;
   processing.value = true;
-  if (isAdmin.value) {
-    skipAdminAutoOpenUntilNextEntry.value = true;
-  }
   const res = await endShift({
     tienCuoiCaThucTe: tienThucTe.value,
     lyDoChenhLech: lyDoChenhLech.value,
@@ -539,9 +547,6 @@ async function ketCaLamViecBtn() {
     buocHienTai.value = 4;
     showSuccess(res.message);
   } else {
-    if (isAdmin.value) {
-      skipAdminAutoOpenUntilNextEntry.value = false;
-    }
     showError(res.message);
   }
 }
@@ -628,15 +633,23 @@ async function guiBaoCaoSuCo() {
 }
 
 // Computeds for dynamic finance display
-const tienDauCa = computed(() => activeShift.value?.tienDauCa || 0);
-const doanhThuTienMat = computed(() => currentStats.value?.tienMatTrongCa || 0);
+const tienDauCa = computed(() => Number(displayShift.value?.tienDauCa ?? 0));
+const doanhThuTienMat = computed(() => Number(
+  currentStats.value?.tienMatTrongCa ?? displayShift.value?.tienMatTrongCa ?? 0
+));
 const tongThuKhac = ref(0);
 const tongChiTrongCa = ref(0);
 const tongHoanTien = ref(0);
 
 const tienTheoHeThong = computed(() => {
-  if (!currentStats.value) return activeShift.value?.tienDauCa || 0;
-  return currentStats.value.tienCuoiCaHeThong;
+  if (!activeShift.value) {
+    return Number(pendingHandover.value?.tienCuoiCaHeThong ?? 0);
+  }
+  if (!currentStats.value) {
+    return Number(activeShift.value.tienCuoiCaHeThong ?? tienDauCa.value);
+  }
+  // Chỉ tiền đầu ca và doanh thu tiền mặt nằm trong két; chuyển khoản không bàn giao.
+  return tienDauCa.value + doanhThuTienMat.value;
 });
 
 const chenhLech = computed(() => {
@@ -736,48 +749,23 @@ function cuongCheKetThucCa() {
           </p>
         </div>
 
-        <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm space-y-2.5">
-          <div class="flex justify-between">
-            <span class="text-slate-400">Số tiền bàn giao:</span>
-            <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatVND(pendingHandover.tienCuoiCaThucTe) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-400">Giờ đóng ca:</span>
-            <span class="font-medium text-slate-700 dark:text-slate-200">{{ new Date(pendingHandover.thoiGianRa).toLocaleString('vi-VN') }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="font-semibold" :class="chenhLechDisplay.textClass">Chênh lệch:</span>
-            <span class="font-bold flex gap-1" :class="chenhLechDisplay.textClass">
-              {{ chenhLechDisplay.text }}
-              <span class="text-[11px] opacity-80 mt-0.5">{{ chenhLechDisplay.note }}</span>
-            </span>
-          </div>
-          <div class="pt-2 border-t border-slate-200/60">
-            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ghi chú từ đồng nghiệp:</p>
-            <p class="text-slate-600 dark:text-slate-300 text-xs italic bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/60">
-              "{{ pendingHandover.ghiChu || 'Không có ghi chú' }}"
-            </p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs font-medium">
-          <AlertTriangle class="h-4 w-4 shrink-0" />
-          <span>Vui lòng kiểm tra kỹ số tiền mặt thực tế trước khi đồng ý nhận bàn giao.</span>
-        </div>
-
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-            Tiền thực tế bạn kiểm đếm <span class="text-rose-500">*</span>
+            Tiền thực tế <span class="text-rose-500">*</span>
           </label>
-          <input
-            v-model.number="tienNhanKiemDem"
-            type="number"
-            min="0"
-            placeholder="Nhập số tiền bạn tự kiểm đếm..."
-            class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm font-bold text-blue-600 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800"
-          />
-          <p v-if="tienNhanKiemDem !== null && Number(tienNhanKiemDem) !== Number(pendingHandover.tienCuoiCaThucTe)" class="mt-1.5 text-xs font-semibold text-rose-600">
-            Chênh lệch với người giao: {{ formatVND(Number(tienNhanKiemDem) - Number(pendingHandover.tienCuoiCaThucTe || 0)) }}
+          <div class="relative">
+            <input
+              v-model="tienNhanKiemDemFormatted"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="Nhập số tiền mặt bạn tự kiểm đếm..."
+              class="w-full rounded-xl border border-slate-200 bg-transparent py-2 pl-3 pr-9 text-sm font-bold text-blue-600 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800"
+            />
+            <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">đ</span>
+          </div>
+          <p v-if="tienNhanKiemDem !== null && Number(tienNhanKiemDem) !== tienMatBanGiaoTheoHeThong" class="mt-1.5 text-xs font-semibold text-rose-600">
+            Chênh lệch tiền mặt: {{ formatVND(Number(tienNhanKiemDem) - tienMatBanGiaoTheoHeThong) }}
           </p>
         </div>
 
@@ -860,15 +848,21 @@ function cuongCheKetThucCa() {
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
               Lý do mở ca muộn
-              <span v-if="adminCanLyDoMoCa" class="text-rose-500">*</span>
+              <span v-if="batBuocLyDoMoCaMuon" class="text-rose-500">*</span>
             </label>
             <textarea
               v-model="lyDoMoCaMuon"
               rows="2"
               maxlength="300"
               class="w-full p-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-transparent text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-400 transition"
-              placeholder="Lý do..."
+              :placeholder="batBuocLyDoMoCaMuon ? 'Bắt buộc khi mở ca muộn quá 30 phút...' : 'Không bắt buộc nếu đi muộn không quá 30 phút...'"
             ></textarea>
+            <p v-if="batBuocLyDoMoCaMuon" class="mt-2 text-xs font-semibold text-rose-600 dark:text-rose-400">
+              Bạn đang mở ca muộn {{ soPhutMoCaMuon }} phút, vui lòng nhập lý do.
+            </p>
+            <p v-else-if="dangMoCaMuon" class="mt-2 text-xs text-amber-600 dark:text-amber-400">
+              Hệ thống sẽ ghi nhận đi muộn {{ soPhutMoCaMuon }} phút; chưa bắt buộc nhập lý do.
+            </p>
           </div>
 
           <!-- Input tiền mặt -->
@@ -1319,26 +1313,13 @@ function cuongCheKetThucCa() {
             Không có ca hoạt động
           </h2>
           <p v-if="isAdmin" class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-            Admin có thể vào ca làm việc bất kỳ lúc nào. Hệ thống sẽ tự ghi nhận lịch sử hoạt động.
+            Hiện chưa có ca nhân viên nào đang hoạt động để Admin hỗ trợ bán hàng.
           </p>
           <p v-else class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             Bạn hiện không có ca làm việc nào đang hoạt động và không có ca bàn giao nào cần xác nhận.
             Vui lòng mở ca làm việc để bắt đầu thực hiện bán hàng và quản lý ca.
           </p>
         </div>
-        <div
-          v-if="adminAutoOpeningShift"
-          class="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary"
-        >
-          Đang ghi nhận admin vào ca làm việc...
-        </div>
-        <button
-          v-if="isAdmin && !adminAutoOpeningShift"
-          @click="adminVaoCaTiep"
-          class="w-full py-3.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg transition"
-        >
-          Vào ca làm việc
-        </button>
         <button
           v-if="!isAdmin"
           @click="router.push('/admin/mo-ca')"
@@ -1428,13 +1409,13 @@ function cuongCheKetThucCa() {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <!-- Hệ thống -->
               <div class="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4 text-center">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Tiền theo hệ thống</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Tiền mặt theo hệ thống</span>
                 <p class="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1">{{ formatVND(tienTheoHeThong) }}</p>
               </div>
 
               <!-- Thực tế -->
               <div class="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl p-4 text-center">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tiền thực tế</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tiền mặt thực tế</span>
                 <p class="text-lg font-bold text-emerald-700 dark:text-emerald-300 mt-1">{{ formatVND(activeShift ? tienThucTe : pendingHandover?.tienCuoiCaThucTe) }}</p>
               </div>
 
@@ -1463,7 +1444,12 @@ function cuongCheKetThucCa() {
             <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Thông tin bàn giao</h3>
 
             <div v-if="isAdminSupportingShift" class="space-y-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300">
-              <h4 class="font-bold">Admin đang hỗ trợ ca của {{ activeShift?.nhanVienTrongCaTen }}</h4>
+              <div class="flex items-center justify-between gap-3">
+                <h4 class="font-bold">{{ adminSession?.hoTen || 'Admin' }} đang hỗ trợ ca của {{ activeShift?.nhanVienTrongCaTen }}</h4>
+                <span class="shrink-0 rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+                  Admin hỗ trợ
+                </span>
+              </div>
               <p>Bạn có thể vào bán hàng và thanh toán trong ca này. Quyền bàn giao và kết ca vẫn thuộc nhân viên mở ca.</p>
               <button
                 type="button"
@@ -1605,54 +1591,23 @@ function cuongCheKetThucCa() {
 
             <!-- Step 3: Xác nhận nhận ca -->
             <div v-else-if="buocHienTai === 3" class="space-y-5">
-              <!-- Review Data Submitted by Sender -->
-              <div class="rounded-xl border border-slate-100 dark:border-slate-700/60 p-4 bg-slate-50/50 dark:bg-slate-900/30 text-sm space-y-2.5">
-                <div class="flex justify-between">
-                  <span class="text-slate-400">Số tiền bàn giao:</span>
-                  <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatVND(pendingHandover?.tienCuoiCaThucTe) }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-400">Người bàn giao:</span>
-                  <span class="font-semibold text-slate-700 dark:text-slate-200">{{ pendingHandover?.nhanVienTrongCaTen }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="font-semibold" :class="chenhLechDisplay.textClass">Chênh lệch:</span>
-                  <span class="font-bold flex gap-1" :class="chenhLechDisplay.textClass">
-                    {{ chenhLechDisplay.text }}
-                    <span class="text-[11px] opacity-80 mt-0.5">{{ chenhLechDisplay.note }}</span>
-                  </span>
-                </div>
-                <div v-if="pendingHandover?.lyDoChenhLech" class="flex flex-col gap-1 border-t border-slate-100 dark:border-slate-700/50 pt-2">
-                  <span class="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Lý do chênh lệch:</span>
-                  <span class="text-xs text-rose-600 dark:text-rose-400">{{ pendingHandover.lyDoChenhLech }}</span>
-                </div>
-                <div class="pt-2 border-t border-slate-200/60">
-                  <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ghi chú từ {{ pendingHandover?.nhanVienTrongCaTen }}:</p>
-                  <p class="text-slate-600 dark:text-slate-300 text-xs italic bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/60">
-                    "{{ pendingHandover?.ghiChu || 'Không có ghi chú' }}"
-                  </p>
-                </div>
-              </div>
-
-              <!-- Warning Notice -->
-              <div class="flex items-start gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs font-medium">
-                <AlertTriangle class="h-4 w-4 shrink-0" />
-                <span>Vui lòng kiểm tra kỹ số tiền mặt thực tế tại két trước khi đồng ý nhận bàn giao ca.</span>
-              </div>
-
               <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Tiền thực tế bạn kiểm đếm <span class="text-rose-500">*</span>
+                  Tiền thực tế <span class="text-rose-500">*</span>
                 </label>
-                <input
-                  v-model.number="tienNhanKiemDem"
-                  type="number"
-                  min="0"
-                  placeholder="Nhập số tiền bạn tự kiểm đếm..."
-                  class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm font-bold text-blue-600 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800"
-                />
-                <p v-if="tienNhanKiemDem !== null && Number(tienNhanKiemDem) !== Number(pendingHandover?.tienCuoiCaThucTe)" class="mt-1.5 text-xs font-semibold text-rose-600">
-                  Chênh lệch với người giao: {{ formatVND(Number(tienNhanKiemDem) - Number(pendingHandover?.tienCuoiCaThucTe || 0)) }}
+                <div class="relative">
+                  <input
+                    v-model="tienNhanKiemDemFormatted"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    placeholder="Nhập số tiền mặt bạn tự kiểm đếm..."
+                    class="w-full rounded-xl border border-slate-200 bg-transparent py-2 pl-3 pr-9 text-sm font-bold text-blue-600 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-800"
+                  />
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">đ</span>
+                </div>
+                <p v-if="tienNhanKiemDem !== null && Number(tienNhanKiemDem) !== tienMatBanGiaoTheoHeThong" class="mt-1.5 text-xs font-semibold text-rose-600">
+                  Chênh lệch tiền mặt: {{ formatVND(Number(tienNhanKiemDem) - tienMatBanGiaoTheoHeThong) }}
                 </p>
               </div>
 

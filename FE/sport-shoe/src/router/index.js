@@ -574,6 +574,9 @@ router.beforeEach((to) => {
   }
 
   if (isAdminRole()) {
+    if (to.path.startsWith("/admin/mo-ca")) {
+      return "/admin/ban-hang";
+    }
     return true;
   }
 

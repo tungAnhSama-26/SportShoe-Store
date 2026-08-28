@@ -220,14 +220,16 @@ public class ThucThiThanhToanTaiQuayService {
     }
 
     private GiaoCa resolveCaThanhToan(NhanVien currentEmp) {
-        Optional<GiaoCa> caCuaNhanVien = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA");
-        if (currentEmp.getVaiTro() != null && currentEmp.getVaiTro() == 1) {
-            return caCuaNhanVien
-                    .or(() -> giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
-                    .orElse(null);
+        if (laAdmin(currentEmp)) {
+            return null;
         }
+        Optional<GiaoCa> caCuaNhanVien = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(currentEmp.getId(), "MO_CA");
         return caCuaNhanVien.orElseThrow(() -> new BusinessException(
                 "Nhân viên không có ca làm việc nào đang hoạt động. Vui lòng mở ca để thực hiện thanh toán."));
+    }
+
+    private boolean laAdmin(NhanVien nhanVien) {
+        return nhanVien != null && nhanVien.getVaiTro() != null && nhanVien.getVaiTro() == 1;
     }
 
     private HoaDon thanhToanHoaDonCho(ThanhToanTaiQuayRequest request) {
@@ -396,10 +398,10 @@ public class ThucThiThanhToanTaiQuayService {
             }
 
             GiaoCa activeShift = null;
-            if (hoaDon.getNhanVien() != null) {
+            if (hoaDon.getNhanVien() != null && !laAdmin(hoaDon.getNhanVien())) {
                 activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(hoaDon.getNhanVien().getId(), "MO_CA").orElse(null);
             }
-            if (activeShift == null) {
+            if (activeShift == null && !laAdmin(hoaDon.getNhanVien())) {
                 activeShift = giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")).orElse(null);
             }
 

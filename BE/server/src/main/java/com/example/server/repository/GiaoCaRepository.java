@@ -35,13 +35,19 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
 
     Optional<GiaoCa> findFirstByTrangThaiInOrderByThoiGianVaoDesc(List<String> trangThai);
 
+    Optional<GiaoCa> findFirstByTrangThaiAndNhanVienTrongCa_VaiTroNotOrderByThoiGianVaoDesc(
+            String trangThai,
+            Integer vaiTro
+    );
+
     List<GiaoCa> findByNhanVienNhanIdAndTrangThaiOrderByThoiGianVaoDesc(UUID nhanVienId, String trangThai);
 
     @Query("SELECT g FROM GiaoCa g WHERE " +
            "(:nhanVienId IS NULL OR g.nhanVienTrongCa.id = :nhanVienId) AND " +
            "(:trangThai IS NULL OR g.trangThai = :trangThai) AND " +
-           "(:tuNgay IS NULL OR g.thoiGianVao >= :tuNgay) AND " +
-           "(:denNgay IS NULL OR g.thoiGianVao <= :denNgay) AND " +
+           "(g.trangThai IN ('MO_CA', 'DANG_LAM', '0') OR (" +
+           " (:tuNgay IS NULL OR g.thoiGianVao >= :tuNgay) AND " +
+           " (:denNgay IS NULL OR g.thoiGianVao <= :denNgay))) AND " +
            "(:keyword IS NULL OR :keyword = '' OR " +
            " LOWER(g.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(g.nhanVienTrongCa.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -50,7 +56,8 @@ public interface GiaoCaRepository extends JpaRepository<GiaoCa, UUID> {
            " (g.ghiChu IS NOT NULL AND LOWER(g.ghiChu) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
            " (:isCaSang = true AND HOUR(g.thoiGianVao) < 13) OR " +
            " (:isCaChieu = true AND HOUR(g.thoiGianVao) >= 13 AND HOUR(g.thoiGianVao) < 18) OR " +
-           " (:isCaToi = true AND HOUR(g.thoiGianVao) >= 18))")
+           " (:isCaToi = true AND HOUR(g.thoiGianVao) >= 18)) " +
+           "ORDER BY g.thoiGianVao DESC")
     Page<GiaoCa> searchHistory(
             @Param("nhanVienId") UUID nhanVienId,
             @Param("trangThai") String trangThai,

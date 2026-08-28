@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw, ChevronDown, Download } from "lucide-vue-next";
+import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw, ChevronDown, Download, Eye } from "lucide-vue-next";
+import { useRouter } from "vue-router";
 import { layLichSuGiaoCa } from "../../../services/giao-ca.js";
 import { layDanhSachCaLam } from "../../../services/ca-lam.js";
 import { dinhDangTienViet } from "../../../utils/dinhDangTien.js";
@@ -9,6 +10,8 @@ import { exportRowsToExcel } from "../../../utils/export-excel.js";
 import { getDisplayErrorMessage } from "../../../utils/error-message.js";
 import AdminTableFooter from "../../../components/common/AdminTableFooter.vue";
 import Button from "../../../components/ui/Button.vue";
+
+const router = useRouter();
 
 // Trạng thái chung
 const dangTai = ref(false);
@@ -47,7 +50,7 @@ const danhSachHienThi = computed(() => {
       const v = parseInt(selectedVaiTro.value);
       const role = item.nhanVienTrongCaVaiTro || item.nhanVien?.vaiTro;
       // Note: If backend hasn't restarted, role might be undefined.
-      // We assume 1 is Quản lý, others are Nhân viên.
+      // Vai trò 1 là quản trị viên, các vai trò còn lại là nhân viên.
       if (v === 1) {
         isRoleMatch = role === 1;
       } else if (v === 2) {
@@ -86,6 +89,12 @@ const danhSachHienThi = computed(() => {
       gioCa.includes(q) ||
       ghiChu.includes(q)
     );
+  }).sort((a, b) => {
+    const thoiGianA = Date.parse(a.thoiGianVao || a.thoiGianMoCa || "");
+    const thoiGianB = Date.parse(b.thoiGianVao || b.thoiGianMoCa || "");
+    const timestampA = Number.isNaN(thoiGianA) ? Number.NEGATIVE_INFINITY : thoiGianA;
+    const timestampB = Number.isNaN(thoiGianB) ? Number.NEGATIVE_INFINITY : thoiGianB;
+    return timestampB - timestampA;
   });
 });
 
@@ -162,11 +171,11 @@ const xuatExcel = () => {
       { label: "STT", value: (_, index) => currentPage.value * pageSize.value + index + 1 },
       { label: "Mã nhân viên", value: (row) => row.nhanVienTrongCaMa || row.nhanVien?.ma || row.maNhanVien || "NV0000" },
       { label: "Tên nhân viên", value: (row) => row.nhanVienTrongCaTen || row.nhanVien?.tenNhanVien || row.nhanVien?.hoTen || row.tenTaiKhoan || "Chưa xác định" },
-      { label: "Vai trò", value: (row) => (row.nhanVienTrongCaVaiTro === 1 || row.nhanVien?.vaiTro === 1) ? "Quản lý" : "Nhân viên" },
-      { label: "Ca làm việc", value: (row) => getShiftName(row) },
+      { label: "Vai trò", value: (row) => (row.nhanVienTrongCaVaiTro === 1 || row.nhanVien?.vaiTro === 1) ? "Quản trị viên" : "Nhân viên" },
+      { label: "Ca / Hoạt động", value: (row) => getShiftName(row) },
       { label: "Thời gian vào", value: (row) => formatDateTime(row.thoiGianVao || row.thoiGianMoCa) || "—" },
       { label: "Thời gian ra", value: (row) => formatDateTime(row.thoiGianRa || row.thoiGianDongCa) || "—" },
-      { label: "Doanh thu", value: (row) => dinhDangTienViet(row.tienCuoiCaThucTe || 0) },
+      { label: "Doanh thu", value: (row) => dinhDangTienViet(getRevenue(row)) },
       { label: "Trạng thái", value: (row) => hienThiTrangThai(row) },
       { label: "Ghi chú", value: (row) => row.ghiChu || "Không có" },
     ],
@@ -183,6 +192,11 @@ const handlePageSizeChange = (newSize) => {
   pageSize.value = newSize;
   currentPage.value = 0;
   fetchLichSu();
+};
+
+const xemChiTietHoaDon = (item) => {
+  if (!item?.hoaDonId) return;
+  router.push({ name: "admin-hoa-don-chi-tiet", params: { id: item.hoaDonId } });
 };
 
 watch([tuNgay, denNgay], () => {
@@ -302,6 +316,20 @@ const getShiftDetails = (item) => {
 
 const getShiftName = (item) => item.caLamTen || getShiftDetails(item).tenCa;
 
+const getRevenue = (item) =>
+  Number(item?.tienMatTrongCa || item?.tienMatGiaoCa || 0)
+  + Number(item?.tienChuyenKhoanTrongCa || 0);
+
+const hienThiTrangThai = (item) => {
+  const trangThai = item?.trangThai;
+  if (trangThai === "DA_BAN_HANG") return "Đã bán hàng";
+  if (["MO_CA", "DANG_LAM", "0", 0].includes(trangThai)) return "Đang làm";
+  if (["DA_BAN_GIAO", "HOAN_TAT", "1", 1].includes(trangThai)) return "Đã bàn giao";
+  if (trangThai === "DA_KET_THUC") return "Đã kết thúc";
+  if (["CHO_BAN_GIAO", "2", 2].includes(trangThai)) return "Chờ xác nhận";
+  return trangThai || "—";
+};
+
 const setNgayMacDinh = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -381,7 +409,7 @@ const onSearchInput = () => {
             class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all bg-slate-50 focus:bg-white appearance-none"
           >
             <option value="">Tất cả</option>
-            <option value="1">Quản lý</option>
+            <option value="1">Quản trị viên</option>
             <option value="2">Nhân viên</option>
           </select>
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -458,19 +486,20 @@ const onSearchInput = () => {
               <th class="py-3 px-4 text-center">Mã nhân viên</th>
               <th class="py-3 px-4">Tên nhân viên</th>
               <th class="py-3 px-4 text-center">Vai trò</th>
-              <th class="py-3 px-4 text-center">Ca làm việc</th>
+              <th class="py-3 px-4 text-center">Ca / Hoạt động</th>
               <th class="py-3 px-4 text-center">Thời gian</th>
               <th class="py-3 px-4 text-right">Doanh thu</th>
               <th class="py-3 px-4 text-center whitespace-nowrap">Trạng thái</th>
               <th class="py-3 px-4">Ghi chú</th>
+              <th class="py-3 px-4 text-center whitespace-nowrap">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="dangTai" class="border-b border-slate-100">
-              <td colspan="9" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
+              <td colspan="10" class="py-8 text-center text-sm text-slate-400">Đang tải dữ liệu...</td>
             </tr>
             <tr v-else-if="danhSachHienThi.length === 0" class="border-b border-slate-100">
-              <td colspan="9" class="py-8 text-center">
+              <td colspan="10" class="py-8 text-center">
                 <div class="flex flex-col items-center justify-center text-slate-400">
                   <FileText class="w-10 h-10 mb-2 opacity-50" />
                   <span class="text-sm">Không tìm thấy dữ liệu lịch sử hoạt động</span>
@@ -500,7 +529,7 @@ const onSearchInput = () => {
 
               <!-- VAI TRÒ -->
               <td class="py-4 px-4 text-center text-slate-600 font-medium">
-                <span v-if="item.nhanVienTrongCaVaiTro === 1 || item.nhanVien?.vaiTro === 1">Quản lý</span>
+                <span v-if="item.nhanVienTrongCaVaiTro === 1 || item.nhanVien?.vaiTro === 1">Quản trị viên</span>
                 <span v-else>Nhân viên</span>
               </td>
 
@@ -524,13 +553,17 @@ const onSearchInput = () => {
               <!-- DOANH THU CA -->
               <td class="py-4 px-4 text-right">
                 <div class="text-[14px] font-bold text-slate-800 dark:text-slate-200">
-                  {{ dinhDangTienViet((item.tienMatTrongCa || item.tienMatGiaoCa || 0) + (item.tienChuyenKhoanTrongCa || 0)) }}
+                  {{ dinhDangTienViet(getRevenue(item)) }}
                 </div>
               </td>
 
               <!-- TRẠNG THÁI -->
               <td class="py-4 px-4 text-center whitespace-nowrap">
-                <span v-if="item.trangThai === 'MO_CA' || item.trangThai === 'DANG_LAM' || item.trangThai === '0' || item.trangThai === 0" 
+                <span v-if="item.trangThai === 'DA_BAN_HANG'"
+                      class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-blue-50 border border-blue-100 text-blue-600 dark:bg-blue-950/20 dark:border-blue-900/30 dark:text-blue-400">
+                  Đã bán hàng
+                </span>
+                <span v-else-if="item.trangThai === 'MO_CA' || item.trangThai === 'DANG_LAM' || item.trangThai === '0' || item.trangThai === 0"
                       class="inline-block px-3 py-1 rounded-full text-[12px] font-bold bg-orange-50 border border-orange-100 text-orange-500 dark:bg-orange-950/20 dark:border-orange-900/30 dark:text-orange-400">
                   Đang làm
                 </span>
@@ -558,6 +591,21 @@ const onSearchInput = () => {
                     {{ item.ghiChu || 'Không có' }}
                   </span>
                 </div>
+              </td>
+
+              <!-- THAO TÁC -->
+              <td class="py-4 px-4 text-center">
+                <button
+                  v-if="item.hoaDonId"
+                  type="button"
+                  @click="xemChiTietHoaDon(item)"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary/20"
+                  title="Xem chi tiết hóa đơn"
+                  aria-label="Xem chi tiết hóa đơn"
+                >
+                  <Eye class="h-4 w-4" />
+                </button>
+                <span v-else class="text-slate-300 dark:text-slate-600">—</span>
               </td>
             </tr>
           </tbody>

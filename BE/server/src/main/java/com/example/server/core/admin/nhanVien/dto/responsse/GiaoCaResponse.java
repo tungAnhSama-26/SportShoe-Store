@@ -7,6 +7,7 @@ import java.util.UUID;
 public record GiaoCaResponse(
         UUID id,
         String ma,
+        Integer hoaDonId,
         String caLamId,
         String caLamTen,
         String gioBatDau,

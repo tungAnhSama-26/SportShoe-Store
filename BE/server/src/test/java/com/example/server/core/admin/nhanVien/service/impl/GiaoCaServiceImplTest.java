@@ -1,5 +1,6 @@
 package com.example.server.core.admin.nhanVien.service.impl;
 
+import com.example.server.core.admin.nhanVien.dto.request.BanGiaoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.MoCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.KetCaRequest;
 import com.example.server.core.admin.nhanVien.dto.request.XacNhanBanGiaoRequest;
@@ -9,11 +10,13 @@ import com.example.server.core.admin.nhanVien.service.TrangThaiGiaoCa;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.CaLam;
 import com.example.server.entity.GiaoCa;
+import com.example.server.entity.HoaDon;
 import com.example.server.entity.LichLamViec;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.CaLamRepository;
 import com.example.server.repository.GiaoCaRepository;
+import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichLamViecRepository;
 import com.example.server.repository.NhanVienRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,8 +25,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -47,6 +54,7 @@ class GiaoCaServiceImplTest {
     @Mock private ThongBaoService thongBaoService;
     @Mock private LichLamViecRepository lichLamViecRepository;
     @Mock private CaLamRepository caLamRepository;
+    @Mock private HoaDonRepository hoaDonRepository;
 
     private GiaoCaServiceImpl service;
 
@@ -57,38 +65,24 @@ class GiaoCaServiceImplTest {
                 nhanVienRepository,
                 thongBaoService,
                 lichLamViecRepository,
-                caLamRepository
+                caLamRepository,
+                hoaDonRepository
         );
     }
 
     @Test
-    void adminMoCaDocLapKhongBiCaNhanVienDangMoChanVaKhongCanLyDoNgoaiGio() {
+    void adminKhongDuocMoCaLamViec() {
         NhanVien admin = nhanVien(UUID.randomUUID(), "AD001", "Admin", 1);
-        CaLam caToi = caLam("toi", "Ca tối", "18:00", "22:00");
 
         when(nhanVienRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
-        when(giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(admin.getId(), trangThaiChuaKetThuc()))
-                .thenReturn(false);
-        when(caLamRepository.findById("toi")).thenReturn(Optional.of(caToi));
-        when(giaoCaRepository.save(any(GiaoCa.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(giaoCaRepository.calculateTienMatTrongCa(any())).thenReturn(BigDecimal.ZERO);
-        when(giaoCaRepository.calculateTienChuyenKhoanTrongCa(any())).thenReturn(BigDecimal.ZERO);
 
-        GiaoCaResponse response = service.moCa(admin.getId(), new MoCaRequest(
-                BigDecimal.valueOf(500000),
-                "",
-                "toi",
-                ""
-        ));
+        assertThatThrownBy(() -> service.moCa(admin.getId(), new MoCaRequest(
+                BigDecimal.ZERO, "", "toi", ""
+        )))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Quản trị viên không sử dụng ca làm việc.");
 
-        assertThat(response.caLamId()).isEqualTo("toi");
-        assertThat(response.nhanVienTrongCaId()).isEqualTo(admin.getId());
-        assertThat(response.trangThai()).isEqualTo(TrangThaiGiaoCa.MO_CA.ma());
-
-        ArgumentCaptor<GiaoCa> captor = ArgumentCaptor.forClass(GiaoCa.class);
-        verify(giaoCaRepository).save(captor.capture());
-        assertThat(captor.getValue().getNhanVienTrongCa()).isSameAs(admin);
-        assertThat(captor.getValue().getCaLam()).isSameAs(caToi);
+        verify(giaoCaRepository, never()).save(any());
     }
 
     @Test
@@ -118,14 +112,30 @@ class GiaoCaServiceImplTest {
                 BigDecimal.valueOf(500000),
                 "Bắt đầu ca",
                 caHienTai.getId(),
-                "Xác nhận vào ca hiện tại"
+                ""
         ));
 
         assertThat(response.caLamId()).isEqualTo(caHienTai.getId());
         assertThat(response.nhanVienTrongCaId()).isEqualTo(nhanVien.getId());
         assertThat(response.trangThai()).isEqualTo(TrangThaiGiaoCa.MO_CA.ma());
+        assertThat(response.ghiChu()).isEqualTo("Bắt đầu ca");
         verify(giaoCaRepository).existsByNhanVienTrongCaIdAndTrangThaiIn(
                 nhanVien.getId(), trangThaiChuaKetThuc());
+    }
+
+    @Test
+    void lyDoMoCaChiBatBuocKhiMuonQuaBaMuoiPhut() {
+        CaLam caSang = caLam("sang", "Ca sáng", "08:00", "12:00");
+
+        assertThat(service.batBuocNhapLyDoMoCaMuon(caSang, LocalTime.of(8, 1))).isFalse();
+        assertThat(service.batBuocNhapLyDoMoCaMuon(caSang, LocalTime.of(8, 30))).isFalse();
+        assertThat(service.batBuocNhapLyDoMoCaMuon(
+                caSang, LocalTime.of(8, 30, 0, 1))).isTrue();
+
+        CaLam caQuaDem = caLam("dem", "Ca đêm", "23:45", "02:00");
+        assertThat(service.batBuocNhapLyDoMoCaMuon(caQuaDem, LocalTime.of(23, 55))).isFalse();
+        assertThat(service.batBuocNhapLyDoMoCaMuon(caQuaDem, LocalTime.of(0, 15))).isFalse();
+        assertThat(service.batBuocNhapLyDoMoCaMuon(caQuaDem, LocalTime.of(0, 16))).isTrue();
     }
 
     @Test
@@ -169,6 +179,43 @@ class GiaoCaServiceImplTest {
     }
 
     @Test
+    void banGiaoCaChiDoiChieuTienMatKhongCongChuyenKhoan() {
+        NhanVien nguoiGiao = nhanVien(UUID.randomUUID(), "NV001", "Người giao", 2);
+        NhanVien nguoiNhan = nhanVien(UUID.randomUUID(), "NV002", "Người nhận", 2);
+        CaLam caSang = caLam("sang", "Ca sáng", "08:00", "12:00");
+        CaLam caChieu = caLam("chieu", "Ca chiều", "13:00", "17:00");
+        LocalDate homNay = LocalDate.of(2026, 8, 28);
+        GiaoCa giaoCa = giaoCaDangMo(nguoiGiao, caSang, homNay);
+        giaoCa.setTienDauCa(BigDecimal.ZERO);
+
+        when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(
+                nguoiGiao.getId(), TrangThaiGiaoCa.MO_CA.ma())).thenReturn(Optional.of(giaoCa));
+        when(caLamRepository.findAll()).thenReturn(List.of(caSang, caChieu));
+        when(lichLamViecRepository.findByNgayAndCaLamId(homNay, caChieu.getId()))
+                .thenReturn(List.of(lichLamViec(nguoiNhan, caChieu, homNay)));
+        when(nhanVienRepository.findById(nguoiNhan.getId())).thenReturn(Optional.of(nguoiNhan));
+        when(giaoCaRepository.calculateTienMatTrongCa(giaoCa.getId()))
+                .thenReturn(new BigDecimal("13200000"));
+        when(giaoCaRepository.calculateTienChuyenKhoanTrongCa(giaoCa.getId()))
+                .thenReturn(new BigDecimal("500000"));
+        when(giaoCaRepository.save(any(GiaoCa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        GiaoCaResponse response = service.banGiaoCa(nguoiGiao.getId(), new BanGiaoCaRequest(
+                new BigDecimal("13200000"),
+                nguoiNhan.getId(),
+                "",
+                "Đã kiểm két"
+        ));
+
+        assertThat(response.tienMatTrongCa()).isEqualByComparingTo("13200000");
+        assertThat(response.tienChuyenKhoanTrongCa()).isEqualByComparingTo("500000");
+        assertThat(response.tienCuoiCaHeThong()).isEqualByComparingTo("13200000");
+        assertThat(response.tienCuoiCaThucTe()).isEqualByComparingTo("13200000");
+        assertThat(response.tienChenhLech()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(response.lyDoChenhLech()).isBlank();
+    }
+
+    @Test
     void xacNhanBanGiaoCaCuoiMoCaDauNgayKeTiepChoNguoiNhan() {
         NhanVien nguoiGiao = nhanVien(UUID.randomUUID(), "NV001", "Người giao", 2);
         NhanVien nguoiNhan = nhanVien(UUID.randomUUID(), "NV002", "Người nhận", 2);
@@ -201,15 +248,60 @@ class GiaoCaServiceImplTest {
     }
 
     @Test
-    void layCaHoatDongCuaAdminKhongLayCaDangMoCuaNhanVienKhac() {
+    void xacNhanBanGiaoChiDoiChieuTienMatKhongDoiChieuTienChuyenKhoan() {
+        NhanVien nguoiGiao = nhanVien(UUID.randomUUID(), "NV001", "Người giao", 2);
+        NhanVien nguoiNhan = nhanVien(UUID.randomUUID(), "NV002", "Người nhận", 2);
+        CaLam caSang = caLam("sang", "Ca sáng", "08:00", "12:00");
+        CaLam caChieu = caLam("chieu", "Ca chiều", "13:00", "17:00");
+        LocalDate homNay = LocalDate.of(2026, 8, 28);
+        GiaoCa giaoCa = giaoCaDangMo(nguoiGiao, caSang, homNay);
+        giaoCa.setTienDauCa(BigDecimal.ZERO);
+        giaoCa.setTrangThai(TrangThaiGiaoCa.CHO_BAN_GIAO.ma());
+        giaoCa.setNhanVienNhan(nguoiNhan);
+        giaoCa.setTienCuoiCaThucTe(new BigDecimal("13700000"));
+
+        when(giaoCaRepository.findByIdForUpdate(giaoCa.getId())).thenReturn(Optional.of(giaoCa));
+        when(nhanVienRepository.findById(nguoiNhan.getId())).thenReturn(Optional.of(nguoiNhan));
+        when(caLamRepository.findAll()).thenReturn(List.of(caSang, caChieu));
+        when(lichLamViecRepository.existsByNhanVienIdAndNgayAndCaLamId(
+                nguoiNhan.getId(), homNay, caChieu.getId())).thenReturn(true);
+        when(giaoCaRepository.calculateTienMatTrongCa(giaoCa.getId()))
+                .thenReturn(new BigDecimal("13200000"));
+        when(giaoCaRepository.calculateTienChuyenKhoanTrongCa(giaoCa.getId()))
+                .thenReturn(new BigDecimal("500000"));
+        when(giaoCaRepository.save(any(GiaoCa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.xacNhanBanGiao(nguoiNhan.getId(), giaoCa.getId(), new XacNhanBanGiaoRequest(
+                new BigDecimal("13200000"), "Đã kiểm tiền mặt"
+        ));
+
+        ArgumentCaptor<GiaoCa> caMoiCaptor = ArgumentCaptor.forClass(GiaoCa.class);
+        verify(giaoCaRepository).save(caMoiCaptor.capture());
+        assertThat(caMoiCaptor.getValue().getTienDauCa()).isEqualByComparingTo("13200000");
+    }
+
+    @Test
+    void layCaHoatDongCuaAdminTraVeCaNhanVienDeHoTro() {
         NhanVien admin = nhanVien(UUID.randomUUID(), "AD001", "Admin", 1);
+        NhanVien nhanVien = nhanVien(UUID.randomUUID(), "NV001", "Nhân viên bán hàng", 2);
+        GiaoCa caNhanVien = giaoCaDangMo(
+                nhanVien,
+                caLam("sang", "Ca sáng", "08:00", "12:00"),
+                LocalDate.of(2026, 8, 26)
+        );
         when(nhanVienRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
-        when(giaoCaRepository.findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(
-                admin.getId(), trangThaiChuaKetThuc())).thenReturn(Optional.empty());
+        when(giaoCaRepository.findFirstByTrangThaiAndNhanVienTrongCa_VaiTroNotOrderByThoiGianVaoDesc(
+                TrangThaiGiaoCa.MO_CA.ma(), 1)).thenReturn(Optional.of(caNhanVien));
+        when(giaoCaRepository.calculateTienMatTrongCa(caNhanVien.getId())).thenReturn(BigDecimal.ZERO);
+        when(giaoCaRepository.calculateTienChuyenKhoanTrongCa(caNhanVien.getId())).thenReturn(BigDecimal.ZERO);
 
         GiaoCaResponse response = service.layCaHoatDong(admin.getId());
 
-        assertThat(response).isNull();
+        assertThat(response).isNotNull();
+        assertThat(response.nhanVienTrongCaId()).isEqualTo(nhanVien.getId());
+        assertThat(response.nhanVienTrongCaVaiTro()).isNotEqualTo(1);
+        verify(giaoCaRepository, never()).findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(
+                any(), anyList());
         verify(giaoCaRepository, never()).findFirstByTrangThaiInOrderByThoiGianVaoDesc(anyList());
     }
 
@@ -256,6 +348,81 @@ class GiaoCaServiceImplTest {
         assertThat(options.coTheKetCa()).isTrue();
         assertThat(options.nhanVienNhanCa()).isEmpty();
         verify(caLamRepository, never()).findAll();
+    }
+
+    @Test
+    void lichSuHoatDongCoHoaDonAdminBanKhongCanCa() {
+        NhanVien admin = nhanVien(UUID.randomUUID(), "AD001", "Admin bán hàng", 1);
+        Instant ngayThanhToanLuuTrongDb = Instant.parse("2026-08-26T08:30:00Z");
+        HoaDon hoaDon = new HoaDon();
+        hoaDon.setId(101);
+        hoaDon.setMa("HD00101");
+        hoaDon.setNhanVien(admin);
+        hoaDon.setNgayThanhToan(ngayThanhToanLuuTrongDb);
+        hoaDon.setTongTienThanhToan(BigDecimal.valueOf(750000));
+
+        Pageable shiftSourcePageable = PageRequest.of(0, 10);
+        Pageable saleSourcePageable = PageRequest.of(0, 10);
+        when(giaoCaRepository.searchHistory(
+                null, null, null, null, null, false, false, false, shiftSourcePageable
+        )).thenReturn(Page.empty());
+        when(hoaDonRepository.searchAdminPosSalesWithoutShift(null, null, null, null, saleSourcePageable))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(hoaDon)));
+
+        Page<GiaoCaResponse> result = service.layLichSuGiaoCa(
+                null, null, null, null, null, PageRequest.of(0, 10)
+        );
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        GiaoCaResponse activity = result.getContent().get(0);
+        assertThat(activity.ma()).isEqualTo("HD00101");
+        assertThat(activity.hoaDonId()).isEqualTo(101);
+        assertThat(activity.caLamTen()).isEqualTo("Bán hàng tại quầy");
+        assertThat(activity.nhanVienTrongCaId()).isEqualTo(admin.getId());
+        assertThat(activity.thoiGianVao()).isEqualTo(Instant.parse("2026-08-26T01:30:00Z"));
+        assertThat(activity.tienMatTrongCa()).isEqualByComparingTo("750000");
+        assertThat(activity.trangThai()).isEqualTo("DA_BAN_HANG");
+    }
+
+    @Test
+    void lichSuHoatDongVanCoNhanVienDangLamVaSapXepMoiNhatLenDau() {
+        NhanVien nhanVien = nhanVien(UUID.randomUUID(), "NV001", "Nhân viên đang làm", 2);
+        GiaoCa caDangLam = giaoCaDangMo(
+                nhanVien,
+                caLam("sang", "Ca sáng", "08:00", "12:00"),
+                LocalDate.of(2026, 8, 26)
+        );
+        NhanVien admin = nhanVien(UUID.randomUUID(), "AD001", "Admin bán hàng", 1);
+        HoaDon hoaDon = new HoaDon();
+        hoaDon.setId(102);
+        hoaDon.setMa("HD00102");
+        hoaDon.setNhanVien(admin);
+        hoaDon.setNgayThanhToan(Instant.parse("2026-08-28T10:00:00Z"));
+        hoaDon.setTongTienThanhToan(BigDecimal.valueOf(500000));
+
+        Instant tuNgay = Instant.parse("2026-08-27T17:00:00Z");
+        Instant denNgay = Instant.parse("2026-08-28T16:59:59Z");
+        Instant tuNgayBanHang = Instant.parse("2026-08-28T00:00:00Z");
+        Instant denNgayBanHang = Instant.parse("2026-08-28T23:59:59Z");
+        Pageable sourcePageable = PageRequest.of(0, 10);
+        when(giaoCaRepository.searchHistory(
+                null, null, tuNgay, denNgay, null, false, false, false, sourcePageable
+        )).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(caDangLam)));
+        when(giaoCaRepository.calculateTienMatTrongCa(caDangLam.getId())).thenReturn(BigDecimal.ZERO);
+        when(giaoCaRepository.calculateTienChuyenKhoanTrongCa(caDangLam.getId())).thenReturn(BigDecimal.ZERO);
+        when(hoaDonRepository.searchAdminPosSalesWithoutShift(
+                null, tuNgayBanHang, denNgayBanHang, null, sourcePageable
+        )).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(hoaDon)));
+
+        Page<GiaoCaResponse> result = service.layLichSuGiaoCa(
+                null, null, tuNgay, denNgay, null, PageRequest.of(0, 10)
+        );
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).trangThai()).isEqualTo("DA_BAN_HANG");
+        assertThat(result.getContent().get(0).hoaDonId()).isEqualTo(102);
+        assertThat(result.getContent().get(1).nhanVienTrongCaId()).isEqualTo(nhanVien.getId());
+        assertThat(result.getContent().get(1).trangThai()).isEqualTo(TrangThaiGiaoCa.MO_CA.ma());
     }
 
     private List<String> trangThaiChuaKetThuc() {
