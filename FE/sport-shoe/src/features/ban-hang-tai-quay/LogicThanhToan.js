@@ -124,7 +124,7 @@ export function LogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
     tienChuyenKhoanKetHop.value = dinhDangTienNhap(value);
   }
 
-  watch(khachCanTra, () => {
+  watch([khachCanTra, () => cartItems.value.length], () => {
     capNhatTienKhachThanhToan(false, false);
   });
 

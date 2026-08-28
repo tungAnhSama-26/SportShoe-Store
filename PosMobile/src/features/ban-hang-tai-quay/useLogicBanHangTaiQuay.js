@@ -496,6 +496,13 @@ export function useLogicBanHangTaiQuay() {
       skipNextAutosave.current = false;
       return;
     }
+    if (hoaDonChoDaChon) {
+      setDanhSachHoaDonCho(prev => prev.map(hd => hd.id === hoaDonChoDaChon.id ? {
+        ...hd,
+        tongSanPham: gioHangLogic.cartItems.reduce((total, item) => total + (item.soLuong || 0), 0)
+      } : hd));
+    }
+
     if (dangLuuNoiBoRef.current || dangThanhToan) return;
     if (boDemTuDongLuu.current) clearTimeout(boDemTuDongLuu.current);
     boDemTuDongLuu.current = setTimeout(() => {
@@ -892,6 +899,15 @@ export function useLogicBanHangTaiQuay() {
               showToastSuccess(msg.message || `Hóa đơn ${msg.maHoaDon || ''} đã thanh toán thành công!`);
             }
             return;
+          }
+
+          if (latestRef.current.hoaDonChoDaChon?.id === msg.invoiceId && !latestRef.current.dangLuuHoaDonCho && !dangLuuAPIRef.current) {
+            try {
+              const detail = await layChiTietHoaDonCho(msg.invoiceId);
+              latestRef.current.chuyenHoaDonThanhBanNhap(detail?.data || detail);
+            } catch (err) {
+              console.error("Lỗi cập nhật chi tiết hóa đơn realtime:", err);
+            }
           }
 
           // Chỉ tự động chọn hóa đơn nếu hiện tại CHƯA chọn hóa đơn nào và có hóa đơn mới được tạo

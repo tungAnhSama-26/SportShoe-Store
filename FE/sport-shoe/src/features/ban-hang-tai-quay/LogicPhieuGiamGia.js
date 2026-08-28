@@ -39,12 +39,12 @@ export function LogicPhieuGiamGia({
       if (coupon.loai === 1) { 
           let calculated = (amountNum * giaTriNum) / 100;
           const giamToiDaNum = Number(coupon.giamToiDa) || 0;
-          if (coupon.giamToiDa && calculated > giamToiDaNum) {
+          if (coupon.giamToiDa && giamToiDaNum > 0 && calculated > giamToiDaNum) {
               calculated = giamToiDaNum;
           }
-          return calculated;
+          return Math.min(calculated, amountNum);
       }
-      return giaTriNum;
+      return Math.min(giaTriNum, amountNum);
   }
 
   const ketQuaTimKiemPhieuDaSapXep = computed(() => {
@@ -53,10 +53,7 @@ export function LogicPhieuGiamGia({
       const validB = tongTien.value >= (b.giaTriToiThieu || 0);
       if (validA !== validB) return validA ? -1 : 1;
       
-      const getDiscount = (c) => {
-         if (c.soTienGiam != null) return c.soTienGiam;
-         return tinhToanGiamGia(c, tongTien.value);
-      };
+      const getDiscount = (c) => tinhToanGiamGia(c, tongTien.value);
       return getDiscount(b) - getDiscount(a);
     });
   });
@@ -65,8 +62,8 @@ export function LogicPhieuGiamGia({
   let boDemThoiGianDanhSachPhieu;
 
   const tienGiam = computed(() => {
-    if (phieuGiamGiaDaApDung.value?.soTienGiam != null) {
-      return phieuGiamGiaDaApDung.value.soTienGiam;
+    if (phieuGiamGiaDaApDung.value) {
+      return tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
     }
     // If we loaded a pending invoice with a coupon, but haven't re-applied it yet, use its saved discount
     if (maPhieuGiamGia.value && hoaDonChoDaChon.value?.tienGiam != null) {
@@ -389,7 +386,10 @@ export function LogicPhieuGiamGia({
           if (!phieuGiamGiaDaApDung.value) {
               if (!danhSachPhieuTotHonDaTuChoi.value.has(currentBest.ma)) {
                   maPhieuGiamGia.value = currentBest.ma;
-                  phieuGiamGiaDaApDung.value = currentBest;
+                  phieuGiamGiaDaApDung.value = {
+                      ...currentBest,
+                      soTienGiam: bestDiscount
+                  };
                   capNhatTienKhachThanhToan();
               }
           } else {

@@ -278,6 +278,15 @@ function LogicBanHangTaiQuay() {
         // Cập nhật danh sách hóa đơn chờ một cách ngầm (silent) để không chớp nháy thanh tab
         await taiDanhSachHoaDonCho(true);
 
+        if (hoaDonChoDaChon.value?.id === msg.invoiceId && !dangLuuNoiBo && !dangLuuAPI) {
+          try {
+            const detail = await layChiTietHoaDonCho(msg.invoiceId);
+            chuyenHoaDonThanhBanNhap(detail);
+          } catch (err) {
+            console.error("Lỗi cập nhật chi tiết hóa đơn realtime:", err);
+          }
+        }
+
         // Chỉ tự động chọn nếu hiện tại chưa chọn hóa đơn nào và có hóa đơn mới được tạo
         if (!hoaDonChoDaChon.value && msg.action === 'CREATED') {
           const invoice = danhSachHoaDonCho.value.find((hd) => hd.id === msg.invoiceId);
@@ -1052,8 +1061,9 @@ function LogicBanHangTaiQuay() {
       if (index !== -1) {
         danhSachHoaDonCho.value[index] = {
           ...danhSachHoaDonCho.value[index],
-          tongSanPham: cartItems.value.reduce((total, item) => total + item.soLuong, 0)
+          tongSanPham: cartItems.value.reduce((total, item) => total + (item.soLuong || 0), 0)
         };
+        danhSachHoaDonCho.value = [...danhSachHoaDonCho.value];
       }
     }
 

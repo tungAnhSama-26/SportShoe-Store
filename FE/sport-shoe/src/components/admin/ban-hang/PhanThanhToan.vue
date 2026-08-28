@@ -271,7 +271,7 @@ const dongHoQrConLai = computed(() => {
               </div>
               <div class="flex items-center justify-between text-[13px]">
                  <span class="text-slate-500 dark:text-slate-400">Giá trị giảm:</span>
-                 <span class="font-bold text-emerald-600 dark:text-emerald-400">-{{ dinhDangTien(appliedCoupon.soTienGiam) }}</span>
+                 <span class="font-bold text-emerald-600 dark:text-emerald-400">-{{ dinhDangTien(tienGiam || appliedCoupon.soTienGiam) }}</span>
               </div>
            </div>
         </div>
@@ -539,13 +539,6 @@ const dongHoQrConLai = computed(() => {
           <span class="max-w-[65%] break-all text-right text-base font-bold text-slate-900 dark:text-slate-100">{{ dinhDangTien(tienThua) }}</span>
         </div>
 
-        <div v-if="paymentMethod === 2" class="flex items-start gap-2 rounded-md border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 p-3 text-xs text-slate-500 dark:text-slate-400 shadow-sm">
-          <QrCode class="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-          <span>
-            Bấm <b class="text-slate-700 dark:text-slate-200">Thanh toán</b> để hiện mã QR cho khách quét.
-            Hệ thống tự xác nhận và chuyển trạng thái hóa đơn ngay khi tiền về tài khoản.
-          </span>
-        </div>
         <div>
           <label class="mb-1.5 block text-sm text-slate-500 dark:text-slate-400">Ghi chú thanh toán</label>
           <textarea

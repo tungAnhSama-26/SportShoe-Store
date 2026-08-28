@@ -40,12 +40,12 @@ export function useLogicPhieuGiamGia({
     if (coupon.loai === 1) { 
       let calculated = (amountNum * giaTriNum) / 100;
       const giamToiDaNum = Number(coupon.giamToiDa) || 0;
-      if (coupon.giamToiDa && calculated > giamToiDaNum) {
+      if (coupon.giamToiDa && giamToiDaNum > 0 && calculated > giamToiDaNum) {
         calculated = giamToiDaNum;
       }
-      return calculated;
+      return Math.min(calculated, amountNum);
     }
-    return giaTriNum;
+    return Math.min(giaTriNum, amountNum);
   }, []);
 
   const ketQuaTimKiemPhieuDaSapXep = useMemo(() => {
@@ -54,23 +54,20 @@ export function useLogicPhieuGiamGia({
       const validB = tongTien >= (b.giaTriToiThieu || 0);
       if (validA !== validB) return validA ? -1 : 1;
       
-      const getDiscount = (c) => {
-         if (c.soTienGiam != null) return c.soTienGiam;
-         return tinhToanGiamGia(c, tongTien);
-      };
+      const getDiscount = (c) => tinhToanGiamGia(c, tongTien);
       return getDiscount(b) - getDiscount(a);
     });
   }, [ketQuaTimKiemPhieu, tongTien, tinhToanGiamGia]);
 
   const tienGiam = useMemo(() => {
-    if (phieuGiamGiaDaApDung?.soTienGiam != null) {
-      return phieuGiamGiaDaApDung.soTienGiam;
+    if (phieuGiamGiaDaApDung) {
+      return tinhToanGiamGia(phieuGiamGiaDaApDung, tongTien);
     }
     if (maPhieuGiamGia && hoaDonChoDaChon?.tienGiam != null) {
       return hoaDonChoDaChon.tienGiam;
     }
     return 0;
-  }, [phieuGiamGiaDaApDung, maPhieuGiamGia, hoaDonChoDaChon]);
+  }, [phieuGiamGiaDaApDung, tongTien, tinhToanGiamGia, maPhieuGiamGia, hoaDonChoDaChon]);
 
   const tongTienSauGiamHienThi = useMemo(() => Math.max(tongTien - tienGiam, 0), [tongTien, tienGiam]);
 
@@ -312,7 +309,10 @@ export function useLogicPhieuGiamGia({
       if (!phieuGiamGiaDaApDung) {
         if (!danhSachPhieuTotHonDaTuChoi.has(currentBest.ma)) {
           setMaPhieuGiamGia(currentBest.ma);
-          setPhieuGiamGiaDaApDung(currentBest);
+          setPhieuGiamGiaDaApDung({
+            ...currentBest,
+            soTienGiam: currentBestDiscount
+          });
           if (capNhatTienKhachThanhToan) capNhatTienKhachThanhToan();
         }
       } else {

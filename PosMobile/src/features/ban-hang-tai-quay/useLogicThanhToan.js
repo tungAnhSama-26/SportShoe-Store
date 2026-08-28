@@ -128,7 +128,7 @@ export function useLogicThanhToan({ cartItems, khachCanTra, hoaDonChoDaChon }) {
 
   useEffect(() => {
     capNhatTienKhachThanhToan(false, false);
-  }, [khachCanTra, capNhatTienKhachThanhToan]);
+  }, [khachCanTra, cartItems.length, capNhatTienKhachThanhToan]);
 
   const resetThanhToan = useCallback(() => {
     setPhuongThucThanhToan(PHUONG_THUC_THANH_TOAN.TIEN_MAT);
