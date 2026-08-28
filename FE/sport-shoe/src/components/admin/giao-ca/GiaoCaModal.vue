@@ -93,6 +93,10 @@ const banGiaoGhiChu = ref("");
 const listNhanVien = ref([]);
 const currentStats = ref(null);
 const loadingStats = ref(false);
+const tienMatTheoHeThong = computed(() => (
+  Number(activeShift.value?.tienDauCa ?? 0)
+  + Number(currentStats.value?.tienMatTrongCa ?? 0)
+));
 
 // Form accepting handover
 const confirmGhiChu = ref("");
@@ -129,7 +133,7 @@ async function taiThongKeCaHienTai() {
   try {
     const data = await layThongTinGiaoCaCurrent();
     currentStats.value = data;
-    tienCuoiCaThucTe.value = data.tienCuoiCaHeThong || 0;
+    tienCuoiCaThucTe.value = tienMatTheoHeThong.value;
   } catch (err) {
     console.error("Lỗi tải thống kê ca:", err);
   } finally {
@@ -140,7 +144,7 @@ async function taiThongKeCaHienTai() {
 // Discrepancy computation
 const chenhLech = computed(() => {
   if (!currentStats.value) return 0;
-  return (tienCuoiCaThucTe.value || 0) - currentStats.value.tienCuoiCaHeThong;
+  return Number(tienCuoiCaThucTe.value || 0) - tienMatTheoHeThong.value;
 });
 
 const getChenhLechDisplay = (amount) => {
@@ -379,7 +383,7 @@ async function submitNhanBanGiao(id) {
               <div class="rounded-2xl border border-emerald-100 bg-emerald-50/20 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/10">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Tổng tiền mặt hệ thống</span>
                 <p class="mt-1 text-base font-bold text-emerald-700 dark:text-emerald-400">
-                  {{ formatVND(currentStats.tienCuoiCaHeThong) }}
+                  {{ formatVND(tienMatTheoHeThong) }}
                 </p>
               </div>
             </div>

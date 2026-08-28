@@ -166,7 +166,7 @@ public class GiaoCaController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "thoiGianVao"));
         return ResponseEntity.ok(ApiResponse.success(
-                "Lấy lịch sử giao ca thành công",
+                "Lấy lịch sử hoạt động thành công",
                 giaoCaService.layLichSuGiaoCa(nhanVienId, trangThai, tuNgay, denNgay, keyword, pageable)
         ));
     }

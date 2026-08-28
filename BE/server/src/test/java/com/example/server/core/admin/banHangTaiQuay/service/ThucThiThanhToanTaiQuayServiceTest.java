@@ -3,7 +3,6 @@ package com.example.server.core.admin.banHangTaiQuay.service;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.TaoHoaDonChoItemRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.request.ThanhToanTaiQuayRequest;
 import com.example.server.core.admin.banHangTaiQuay.dto.response.HoaDonChoChiTietResponse;
-import com.example.server.entity.GiaoCa;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.service.EmailService;
@@ -74,16 +73,12 @@ class ThucThiThanhToanTaiQuayServiceTest {
     }
 
     @Test
-    void adminThanhToanTaiQuayGanVaoCaDangMoDeThongKeDoanhThu() {
+    void adminThanhToanTaiQuayKhongGanVaoCaLamViec() {
         NhanVien admin = new NhanVien();
         admin.setId(UUID.randomUUID());
         admin.setMa("AD001");
         admin.setHoTen("Admin bán hàng");
         admin.setVaiTro(1);
-
-        GiaoCa caDangMo = new GiaoCa();
-        caDangMo.setId(UUID.randomUUID());
-        caDangMo.setNhanVienTrongCa(admin);
 
         HoaDon hoaDon = new HoaDon();
         hoaDon.setId(101);
@@ -109,8 +104,6 @@ class ThucThiThanhToanTaiQuayServiceTest {
         );
 
         when(invoiceUseCase.resolveNhanVienDangDangNhap()).thenReturn(admin);
-        when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(admin.getId(), "MO_CA"))
-                .thenReturn(Optional.of(caDangMo));
         when(invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(null)).thenReturn(3);
         when(invoiceUseCase.taoHoaDon(
                 eq(null),
@@ -141,7 +134,7 @@ class ThucThiThanhToanTaiQuayServiceTest {
 
         ArgumentCaptor<HoaDon> hoaDonCaptor = ArgumentCaptor.forClass(HoaDon.class);
         verify(hoaDonRepository).save(hoaDonCaptor.capture());
-        assertThat(hoaDonCaptor.getValue().getGiaoCa()).isSameAs(caDangMo);
+        assertThat(hoaDonCaptor.getValue().getGiaoCa()).isNull();
         assertThat(hoaDonCaptor.getValue().getNhanVien()).isSameAs(admin);
 
         verify(invoiceUseCase).luuLichSuHoaDon(hoaDon, 3, "Admin bán hàng tại quầy");
@@ -179,10 +172,6 @@ class ThucThiThanhToanTaiQuayServiceTest {
         );
 
         when(invoiceUseCase.resolveNhanVienDangDangNhap()).thenReturn(admin);
-        when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(admin.getId(), "MO_CA"))
-                .thenReturn(Optional.empty());
-        when(giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")))
-                .thenReturn(Optional.empty());
         when(invoiceStateUseCase.xacDinhTrangThaiSauThanhToan(null)).thenReturn(3);
         when(invoiceUseCase.taoHoaDon(
                 eq(null),

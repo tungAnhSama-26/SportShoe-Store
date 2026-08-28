@@ -15,23 +15,30 @@ import com.example.server.core.admin.nhanVien.service.TrangThaiGiaoCa;
 import com.example.server.core.admin.thongbao.service.ThongBaoService;
 import com.example.server.entity.CaLam;
 import com.example.server.entity.GiaoCa;
+import com.example.server.entity.HoaDon;
 import com.example.server.entity.LichLamViec;
 import com.example.server.entity.NhanVien;
 import com.example.server.infrastructure.exception.BusinessException;
 import com.example.server.repository.CaLamRepository;
 import com.example.server.repository.GiaoCaRepository;
+import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.LichLamViecRepository;
 import com.example.server.repository.NhanVienRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -43,6 +50,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private static final ZoneId MUI_GIO = ZoneId.of("Asia/Bangkok");
     private static final int PHUT_CHO_PHEP_MO_CA = 30;
+    private static final int PHUT_MO_MUON_KHONG_CAN_LY_DO = 30;
     private static final List<String> TRANG_THAI_CHUA_KET_THUC = List.of(
             TrangThaiGiaoCa.MO_CA.ma(), TrangThaiGiaoCa.CHO_BAN_GIAO.ma());
 
@@ -51,19 +59,22 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     private final ThongBaoService thongBaoService;
     private final LichLamViecRepository lichLamViecRepository;
     private final CaLamRepository caLamRepository;
+    private final HoaDonRepository hoaDonRepository;
 
     public GiaoCaServiceImpl(
             GiaoCaRepository giaoCaRepository,
             NhanVienRepository nhanVienRepository,
             ThongBaoService thongBaoService,
             LichLamViecRepository lichLamViecRepository,
-            CaLamRepository caLamRepository
+            CaLamRepository caLamRepository,
+            HoaDonRepository hoaDonRepository
     ) {
         this.giaoCaRepository = giaoCaRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.thongBaoService = thongBaoService;
         this.lichLamViecRepository = lichLamViecRepository;
         this.caLamRepository = caLamRepository;
+        this.hoaDonRepository = hoaDonRepository;
     }
 
     @Override
@@ -72,8 +83,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
         if (laAdmin(nhanVien)) {
             return giaoCaRepository
-                    .findFirstByNhanVienTrongCaIdAndTrangThaiInOrderByThoiGianVaoDesc(
-                            nhanVienId, TRANG_THAI_CHUA_KET_THUC)
+                    .findFirstByTrangThaiAndNhanVienTrongCa_VaiTroNotOrderByThoiGianVaoDesc(
+                            TrangThaiGiaoCa.MO_CA.ma(), 1)
                     .map(this::mapToResponse)
                     .orElse(null);
         }
@@ -88,6 +99,9 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     @Transactional
     public GiaoCaResponse moCa(UUID nhanVienId, MoCaRequest request) {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
+        if (laAdmin(nhanVien)) {
+            throw new BusinessException("Quản trị viên không sử dụng ca làm việc.");
+        }
         kiemTraNhanVienKhongCoCaChuaKetThuc(nhanVienId);
         LocalTime hienTai = LocalTime.now(MUI_GIO);
         CaLam caLam = xacDinhCaDuocMo(
@@ -111,8 +125,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         }
         BigDecimal tienMat = tinhTienMat(giaoCa.getId());
         BigDecimal tienChuyenKhoan = tinhTienChuyenKhoan(giaoCa.getId());
-        BigDecimal tienDauCa = giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO;
-        return new GiaoCaStatsResponse(tienMat, tienChuyenKhoan, tienDauCa.add(tienMat));
+        return new GiaoCaStatsResponse(tienMat, tienChuyenKhoan, tinhTienMatTheoHeThong(giaoCa, tienMat));
     }
 
     @Override
@@ -137,7 +150,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
             throw new BusinessException("Nhân viên nhận không thuộc ca tiếp theo và không phải quản trị viên hợp lệ.");
         }
 
-        BigDecimal tienHeThong = giaoCa.getTienDauCa().add(tinhTienMat(giaoCa.getId()));
+        BigDecimal tienHeThong = tinhTienMatTheoHeThong(giaoCa);
         BigDecimal chenhLech = request.tienCuoiCaThucTe().subtract(tienHeThong);
         kiemTraLyDoChenhLech(chenhLech, request.lyDoChenhLech());
 
@@ -210,9 +223,9 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 .orElseThrow(() -> new BusinessException("Không còn ca tiếp theo để nhận bàn giao."));
         kiemTraNguoiNhanThuocCa(nguoiNhan, caKeTiep.caLam(), caKeTiep.ngay());
 
-        if (giaoCa.getTienCuoiCaThucTe() == null
-                || request.tienNhanKiemDem().compareTo(giaoCa.getTienCuoiCaThucTe()) != 0) {
-            throw new BusinessException("Số tiền người nhận kiểm đếm không khớp số tiền người giao bàn giao. Vui lòng từ chối hoặc báo cáo sự cố.");
+        BigDecimal tienMatTheoHeThong = tinhTienMatTheoHeThong(giaoCa);
+        if (request.tienNhanKiemDem().compareTo(tienMatTheoHeThong) != 0) {
+            throw new BusinessException("Số tiền người nhận kiểm đếm không khớp số tiền mặt theo hệ thống. Vui lòng từ chối hoặc báo cáo sự cố.");
         }
 
         giaoCa.setTienNhanKiemDem(request.tienNhanKiemDem());
@@ -315,9 +328,46 @@ public class GiaoCaServiceImpl implements GiaoCaService {
             caChieu = chuanHoa.contains("chieu") || chuanHoa.equals("ca2") || chuanHoa.equals("ca002");
             caToi = chuanHoa.contains("toi") || chuanHoa.equals("ca3") || chuanHoa.equals("ca003");
         }
-        return giaoCaRepository.searchHistory(
-                nhanVienId, trangThai, tuNgay, denNgay, tuKhoa, caSang, caChieu, caToi, pageable)
-                .map(this::mapToResponse);
+        int sourcePageSize = pageable.isUnpaged()
+                ? 0
+                : (int) Math.min(Integer.MAX_VALUE, pageable.getOffset() + pageable.getPageSize());
+        Pageable shiftSourcePageable = pageable.isUnpaged()
+                ? Pageable.unpaged()
+                : PageRequest.of(0, sourcePageSize);
+        Pageable saleSourcePageable = pageable.isUnpaged()
+                ? Pageable.unpaged()
+                : PageRequest.of(0, sourcePageSize);
+        Page<GiaoCa> lichSuCa = giaoCaRepository.searchHistory(
+                nhanVienId, trangThai, tuNgay, denNgay, tuKhoa, caSang, caChieu, caToi, shiftSourcePageable);
+        List<GiaoCaResponse> lichSu = new ArrayList<>(lichSuCa
+                .stream()
+                .map(this::mapToResponse)
+                .toList());
+
+        long tongBanGhi = lichSuCa.getTotalElements();
+        if (trangThai == null || trangThai.isBlank() || "DA_BAN_HANG".equalsIgnoreCase(trangThai)) {
+            Instant tuNgayBanHang = chuanHoaMocLocBanHang(tuNgay);
+            Instant denNgayBanHang = chuanHoaMocLocBanHang(denNgay);
+            Page<HoaDon> lichSuBanHangAdmin = hoaDonRepository.searchAdminPosSalesWithoutShift(
+                    nhanVienId, tuNgayBanHang, denNgayBanHang, tuKhoa, saleSourcePageable);
+            lichSuBanHangAdmin
+                    .stream()
+                    .map(this::mapAdminSaleToResponse)
+                    .forEach(lichSu::add);
+            tongBanGhi += lichSuBanHangAdmin.getTotalElements();
+        }
+
+        lichSu.sort(Comparator.comparing(
+                GiaoCaResponse::thoiGianVao,
+                Comparator.nullsLast(Comparator.reverseOrder())
+        ));
+
+        if (pageable.isUnpaged()) {
+            return new PageImpl<>(lichSu);
+        }
+        int fromIndex = (int) Math.min(pageable.getOffset(), lichSu.size());
+        int toIndex = Math.min(fromIndex + pageable.getPageSize(), lichSu.size());
+        return new PageImpl<>(lichSu.subList(fromIndex, toIndex), pageable, tongBanGhi);
     }
 
     private GiaoCaOptionsResponse taoTuyChonBanGiao(GiaoCa giaoCa) {
@@ -342,23 +392,13 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                         nhanVien.getId(), TRANG_THAI_CHUA_KET_THUC))
                 .toList();
 
-        if (nhanVienCaKeTiep.isEmpty()) {
-            nhanVienCaKeTiep = nhanVienRepository.findAll().stream()
-                    .filter(this::dangHoatDong)
-                    .filter(this::laAdmin)
-                    .filter(nhanVien -> !nhanVien.getId().equals(giaoCa.getNhanVienTrongCa().getId()))
-                    .filter(nhanVien -> !giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(
-                            nhanVien.getId(), TRANG_THAI_CHUA_KET_THUC))
-                    .toList();
-        }
-
         List<GiaoCaOptionsResponse.NhanVienNhanCaResponse> ungVien = nhanVienCaKeTiep.stream()
                 .map(nhanVien -> new GiaoCaOptionsResponse.NhanVienNhanCaResponse(
                         nhanVien.getId(), nhanVien.getMa(), nhanVien.getHoTen(), nhanVien.getVaiTro()))
                 .toList();
 
         String lyDo = ungVien.isEmpty()
-                ? "Ca tiếp theo chưa có nhân viên đủ điều kiện nhận. Vui lòng liên hệ quản trị viên để bổ sung lịch hoặc nhận ca."
+                ? "Ca tiếp theo chưa có nhân viên đủ điều kiện nhận. Vui lòng liên hệ quản trị viên để bổ sung lịch làm việc."
                 : null;
         return new GiaoCaOptionsResponse(false, caKeTiep.caLam().getId(), lyDo, ungVien);
     }
@@ -423,22 +463,32 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         if (!hienTai.isBefore(ketThuc)) {
             throw new BusinessException(caLam.getTen() + " đã kết thúc, nhân viên không thể mở ca này.");
         }
-        if (hienTai.isAfter(batDau) && (lyDoMoMuon == null || lyDoMoMuon.isBlank())) {
-            throw new BusinessException("Bạn đang mở ca muộn. Vui lòng nhập lý do mở ca muộn.");
+        if (batBuocNhapLyDoMoCaMuon(caLam, hienTai)
+                && (lyDoMoMuon == null || lyDoMoMuon.isBlank())) {
+            throw new BusinessException("Bạn đang mở ca muộn quá 30 phút. Vui lòng nhập lý do mở ca muộn.");
         }
     }
 
-    private boolean canLyDoMoMuonHoacNgoaiLe(CaLam caLam, LocalTime hienTai) {
+    boolean batBuocNhapLyDoMoCaMuon(CaLam caLam, LocalTime hienTai) {
         LocalTime batDau = LocalTime.parse(caLam.getGioBatDau());
-        LocalTime somNhat = batDau.minusMinutes(PHUT_CHO_PHEP_MO_CA);
         LocalTime ketThuc = LocalTime.parse(caLam.getGioKetThuc());
-        return hienTai.isBefore(somNhat) || hienTai.isAfter(batDau) || !hienTai.isBefore(ketThuc);
+        Duration doTre = Duration.between(batDau, hienTai);
+        if (!ketThuc.isAfter(batDau) && hienTai.isBefore(batDau)) {
+            if (!hienTai.isBefore(ketThuc)) {
+                return false;
+            }
+            doTre = doTre.plusHours(24);
+        }
+        return doTre.compareTo(Duration.ofMinutes(PHUT_MO_MUON_KHONG_CAN_LY_DO)) > 0;
     }
 
     private String taoGhiChuMoCa(NhanVien nhanVien, CaLam caLam, LocalTime hienTai, MoCaRequest request) {
-        boolean canLyDo = !laAdmin(nhanVien) && hienTai.isAfter(LocalTime.parse(caLam.getGioBatDau()));
         String lyDoMoMuon = request.lyDoMoMuon();
-        String ghiChuLyDo = canLyDo
+        boolean coLyDoMoMuon = !laAdmin(nhanVien)
+                && hienTai.isAfter(LocalTime.parse(caLam.getGioBatDau()))
+                && lyDoMoMuon != null
+                && !lyDoMoMuon.isBlank();
+        String ghiChuLyDo = coLyDoMoMuon
                 ? "Lý do mở ca muộn/ngoại lệ: " + lyDoMoMuon.trim()
                 : null;
         return ghepGhiChu(request.ghiChu(), ghiChuLyDo);
@@ -507,7 +557,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     }
 
     private void chotSoLieuCa(GiaoCa giaoCa, BigDecimal tienThucTe, String lyDo, String ghiChu, boolean batBuocLyDo) {
-        BigDecimal tienHeThong = giaoCa.getTienDauCa().add(tinhTienMat(giaoCa.getId()));
+        BigDecimal tienHeThong = tinhTienMatTheoHeThong(giaoCa);
         BigDecimal chenhLech = tienThucTe.subtract(tienHeThong);
         if (batBuocLyDo) {
             kiemTraLyDoChenhLech(chenhLech, lyDo);
@@ -546,7 +596,8 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         NhanVien nhanVien = layNhanVienHoatDong(nhanVienId);
         if (laAdmin(nhanVien)) {
             return giaoCaRepository
-                    .findByNhanVienTrongCaIdAndTrangThai(nhanVienId, TrangThaiGiaoCa.MO_CA.ma())
+                    .findFirstByTrangThaiAndNhanVienTrongCa_VaiTroNotOrderByThoiGianVaoDesc(
+                            TrangThaiGiaoCa.MO_CA.ma(), 1)
                     .orElse(null);
         }
         return layCaDangMoCuaNhanVien(nhanVienId);
@@ -583,6 +634,16 @@ public class GiaoCaServiceImpl implements GiaoCaService {
     private BigDecimal tinhTienMat(UUID giaoCaId) {
         BigDecimal giaTri = giaoCaRepository.calculateTienMatTrongCa(giaoCaId);
         return giaTri == null ? BigDecimal.ZERO : giaTri;
+    }
+
+    private BigDecimal tinhTienMatTheoHeThong(GiaoCa giaoCa) {
+        return tinhTienMatTheoHeThong(giaoCa, tinhTienMat(giaoCa.getId()));
+    }
+
+    private BigDecimal tinhTienMatTheoHeThong(GiaoCa giaoCa, BigDecimal tienMatTrongCa) {
+        BigDecimal tienDauCa = giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO;
+        // Tiền chuyển khoản chỉ dùng để báo cáo, không phải tiền mặt cần kiểm két/bàn giao.
+        return tienDauCa.add(tienMatTrongCa);
     }
 
     private BigDecimal tinhTienChuyenKhoan(UUID giaoCaId) {
@@ -633,8 +694,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         Instant now = Instant.now();
         for (GiaoCa giaoCa : caChuaDong) {
             try {
-                BigDecimal tienMat = tinhTienMat(giaoCa.getId());
-                BigDecimal tienHeThong = (giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO).add(tienMat);
+                BigDecimal tienHeThong = tinhTienMatTheoHeThong(giaoCa);
 
                 giaoCa.setThoiGianRa(now);
                 giaoCa.setTienCuoiCaThucTe(tienHeThong);
@@ -652,13 +712,14 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         if (giaoCa == null) return null;
         BigDecimal tienMat = tinhTienMat(giaoCa.getId());
         BigDecimal tienChuyenKhoan = tinhTienChuyenKhoan(giaoCa.getId());
-        BigDecimal tienHeThong = (giaoCa.getTienDauCa() != null ? giaoCa.getTienDauCa() : BigDecimal.ZERO).add(tienMat);
+        BigDecimal tienHeThong = tinhTienMatTheoHeThong(giaoCa, tienMat);
         BigDecimal chenhLech = giaoCa.getTienCuoiCaThucTe() == null
                 ? null : giaoCa.getTienCuoiCaThucTe().subtract(tienHeThong);
 
         return new GiaoCaResponse(
                 giaoCa.getId(),
                 giaoCa.getMa(),
+                null,
                 giaoCa.getCaLam() != null ? giaoCa.getCaLam().getId() : null,
                 giaoCa.getCaLam() != null ? giaoCa.getCaLam().getTen() : null,
                 giaoCa.getCaLam() != null ? giaoCa.getCaLam().getGioBatDau() : null,
@@ -685,5 +746,69 @@ public class GiaoCaServiceImpl implements GiaoCaService {
                 giaoCa.getTrangThai(),
                 giaoCa.getGhiChu()
         );
+    }
+
+    private GiaoCaResponse mapAdminSaleToResponse(HoaDon hoaDon) {
+        NhanVien admin = hoaDon.getNhanVien();
+        Instant thoiGianBanHang = chuanHoaThoiGianBanHang(hoaDon);
+        BigDecimal doanhThu = hoaDon.getTongTienThanhToan() != null
+                ? hoaDon.getTongTienThanhToan()
+                : BigDecimal.ZERO;
+        String maHoaDon = hoaDon.getMa() != null ? hoaDon.getMa() : String.valueOf(hoaDon.getId());
+        String ghiChu = "Hóa đơn " + maHoaDon;
+        if (hoaDon.getGhiChu() != null && !hoaDon.getGhiChu().isBlank()) {
+            ghiChu += " - " + hoaDon.getGhiChu().trim();
+        }
+
+        return new GiaoCaResponse(
+                UUID.nameUUIDFromBytes(("ADMIN_POS_" + hoaDon.getId()).getBytes(StandardCharsets.UTF_8)),
+                maHoaDon,
+                hoaDon.getId(),
+                null,
+                "Bán hàng tại quầy",
+                null,
+                null,
+                admin.getId(),
+                admin.getHoTen(),
+                admin.getMa(),
+                admin.getHinhAnh(),
+                admin.getVaiTro(),
+                null,
+                null,
+                null,
+                thoiGianBanHang,
+                null,
+                thoiGianBanHang,
+                BigDecimal.ZERO,
+                doanhThu,
+                BigDecimal.ZERO,
+                doanhThu,
+                null,
+                doanhThu,
+                BigDecimal.ZERO,
+                null,
+                "DA_BAN_HANG",
+                gioiHanGhiChu(ghiChu)
+        );
+    }
+
+    private Instant chuanHoaThoiGianBanHang(HoaDon hoaDon) {
+        Instant ngayThanhToan = hoaDon.getNgayThanhToan();
+        if (ngayThanhToan == null) {
+            return hoaDon.getNgayTao();
+        }
+
+        // Cột ngay_thanh_toan hiện lưu giờ địa phương trong kiểu datetimeoffset +00:00.
+        // Diễn giải lại giá trị đó theo múi giờ ứng dụng để frontend không cộng thừa 7 giờ.
+        int doLechGiay = MUI_GIO.getRules().getOffset(ngayThanhToan).getTotalSeconds();
+        return ngayThanhToan.minusSeconds(doLechGiay);
+    }
+
+    private Instant chuanHoaMocLocBanHang(Instant mocThoiGian) {
+        if (mocThoiGian == null) {
+            return null;
+        }
+        int doLechGiay = MUI_GIO.getRules().getOffset(mocThoiGian).getTotalSeconds();
+        return mocThoiGian.plusSeconds(doLechGiay);
     }
 }

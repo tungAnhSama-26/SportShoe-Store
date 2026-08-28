@@ -5,6 +5,8 @@ import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -119,6 +121,33 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("trangThai") Integer trangThai,
             @Param("tuNgay") Instant tuNgay,
             @Param("denNgay") Instant denNgay
+    );
+
+    @Query("""
+            select hd
+            from HoaDon hd
+            join hd.nhanVien nv
+            where hd.kenhBan = 1
+              and nv.vaiTro = 1
+              and hd.giaoCa is null
+              and hd.ngayThanhToan is not null
+              and (:nhanVienId is null or nv.id = :nhanVienId)
+              and (:tuNgay is null or hd.ngayThanhToan >= :tuNgay)
+              and (:denNgay is null or hd.ngayThanhToan <= :denNgay)
+              and (:keyword is null or :keyword = ''
+                   or lower(hd.ma) like lower(concat('%', :keyword, '%'))
+                   or lower(nv.hoTen) like lower(concat('%', :keyword, '%'))
+                   or lower(nv.tenDangNhap) like lower(concat('%', :keyword, '%'))
+                   or lower(nv.ma) like lower(concat('%', :keyword, '%'))
+                   or lower(coalesce(hd.ghiChu, '')) like lower(concat('%', :keyword, '%')))
+            order by hd.ngayThanhToan desc, hd.id desc
+            """)
+    Page<HoaDon> searchAdminPosSalesWithoutShift(
+            @Param("nhanVienId") UUID nhanVienId,
+            @Param("tuNgay") Instant tuNgay,
+            @Param("denNgay") Instant denNgay,
+            @Param("keyword") String keyword,
+            Pageable pageable
     );
 
     @Query("""
