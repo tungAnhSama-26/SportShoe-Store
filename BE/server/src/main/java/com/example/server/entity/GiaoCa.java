@@ -70,5 +70,5 @@ public class GiaoCa {
     private String ghiChu;
 
     @Column(name = "ca_chua_ket_thuc")
-    private Integer caChuaKetThuc;
+    private Byte caChuaKetThuc;
 }

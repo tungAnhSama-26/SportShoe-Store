@@ -5,14 +5,25 @@
     Có thể chạy lại script an toàn trên database đã triển khai.
 */
 
+USE giay;
+GO
+
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
 
 BEGIN TRY
     BEGIN TRANSACTION;
 
     IF OBJECT_ID(N'dbo.giao_ca', N'U') IS NULL
         THROW 50001, N'Không tìm thấy bảng dbo.giao_ca.', 1;
+
+    UPDATE dbo.giao_ca
+    SET ca_chua_ket_thuc = CASE
+        WHEN trang_thai IN ('MO_CA', 'CHO_BAN_GIAO') THEN 1
+        ELSE NULL
+    END;
 
     IF EXISTS (
         SELECT 1
@@ -35,7 +46,7 @@ BEGIN TRY
         WHERE ca_chua_ket_thuc = 1;
 
     COMMIT TRANSACTION;
-    PRINT N'Đã cho phép nhiều nhân viên mở ca đồng thời.';
+    PRINT N'Đã đồng bộ trạng thái ca và index ca chưa kết thúc theo nhân viên.';
 END TRY
 BEGIN CATCH
     IF @@TRANCOUNT > 0

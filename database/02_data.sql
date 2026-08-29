@@ -6,12 +6,19 @@ BEGIN TRANSACTION;
 
 DECLARE @NOW DATETIME2 = SYSDATETIME();
 
-DELETE FROM phieu_giam_gia_khach_hang;
-DELETE FROM dot_giam_gia_san_pham;
 DELETE FROM danh_gia;
+DELETE FROM phieu_giam_gia_khach_hang;
+DELETE FROM lich_su_hoa_don;
+DELETE FROM thanh_toan;
+DELETE FROM van_chuyen;
+DELETE FROM hoa_don_chi_tiet;
+DELETE FROM hoa_don;
+DELETE FROM tin_nhan;
+DELETE FROM cuoc_hoi_thoai;
+DELETE FROM thong_bao_khach_hang;
+DELETE FROM dot_giam_gia_san_pham;
 DELETE FROM hinh_anh_giay;
 DELETE FROM giay_thuoc_tinh;
-DELETE FROM hoa_don_chi_tiet;
 DELETE FROM giay_chi_tiet;
 DELETE FROM giay;
 DELETE FROM kich_co;
@@ -25,18 +32,11 @@ DELETE FROM loai_giay;
 DELETE FROM thuong_hieu;
 DELETE FROM dot_giam_gia;
 DELETE FROM phieu_giam_gia;
-DELETE FROM ca_lam;
 DELETE FROM tai_khoan_ngan_hang;
 DELETE FROM dia_chi_khach_hang;
-DELETE FROM lich_su_hoa_don;
-DELETE FROM thanh_toan;
-DELETE FROM van_chuyen;
-DELETE FROM hoa_don;
-DELETE FROM tin_nhan;
-DELETE FROM cuoc_hoi_thoai;
-DELETE FROM thong_bao_khach_hang;
 DELETE FROM lich_lam_viec;
 DELETE FROM giao_ca;
+DELETE FROM ca_lam;
 DELETE FROM nhan_vien;
 DELETE FROM khach_hang;
 DBCC CHECKIDENT ('kich_co', RESEED, 0);
@@ -175,6 +175,23 @@ INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao)
 INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH18', N'Salomon', N'Quốc tế', N'Thương hiệu Salomon', 'https://salomon.com', 1, @NOW);
 INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH19', N'Hoka', N'Quốc tế', N'Thương hiệu Hoka', 'https://hoka.com', 1, @NOW);
 INSERT INTO thuong_hieu (ma, ten, xuat_xu, mo_ta, website, trang_thai, ngay_tao) VALUES ('TH20', N'Brooks', N'Quốc tế', N'Thương hiệu Brooks', 'https://brooks.com', 1, @NOW);
+
+-- LOGO THƯƠNG HIỆU (dùng đường dẫn public do backend phục vụ từ BE/server/uploads)
+UPDATE thuong_hieu SET logo_url = '/uploads/unnamed.png' WHERE ma = 'TH01';
+UPDATE thuong_hieu SET logo_url = '/uploads/Adidas-Logo-2002-present.png' WHERE ma = 'TH02';
+UPDATE thuong_hieu SET logo_url = '/uploads/OIP.webp' WHERE ma = 'TH03';
+UPDATE thuong_hieu SET logo_url = '/uploads/R.png' WHERE ma = 'TH04';
+UPDATE thuong_hieu SET logo_url = '/uploads/Converse-Logo-2007-2011.png' WHERE ma = 'TH05';
+UPDATE thuong_hieu SET logo_url = '/uploads/asics-6-logo-png-transparent.png' WHERE ma = 'TH06';
+UPDATE thuong_hieu SET logo_url = '/uploads/Mizuno-Logo.png' WHERE ma = 'TH07';
+UPDATE thuong_hieu SET logo_url = '/uploads/OIP (1).webp' WHERE ma = 'TH08';
+UPDATE thuong_hieu SET logo_url = '/uploads/Reebok-Logo-Transparent.png' WHERE ma = 'TH09';
+UPDATE thuong_hieu SET logo_url = '/uploads/Fila-Logo.png' WHERE ma = 'TH10';
+UPDATE thuong_hieu SET logo_url = '/uploads/under-armor-vector-logo.png' WHERE ma = 'TH11';
+UPDATE thuong_hieu SET logo_url = '/uploads/saucony-2-logo-png-transparent.png' WHERE ma = 'TH12';
+UPDATE thuong_hieu SET logo_url = '/uploads/Skechers-Logo.jpg' WHERE ma = 'TH13';
+UPDATE thuong_hieu SET logo_url = '/uploads/Balenciaga-Logo-2017-present.png' WHERE ma = 'TH14';
+UPDATE thuong_hieu SET logo_url = '/uploads/Gucci-Emblem-1.png' WHERE ma = 'TH15';
 
 -- LOẠI GIÀY (15)
 INSERT INTO loai_giay (ma, ten, mo_ta, nhom_muc_dich, nhom_phong_cach, trang_thai, ngay_tao) VALUES ('LG01', N'Running', N'Loại giày Running', 'PURPOSE_RUNNING', 'STYLE_SPORT', 1, @NOW);
@@ -580,6 +597,30 @@ INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luon
 INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES ((SELECT id FROM giay_chi_tiet WHERE sku = 'SKU-SP20-YEL-36'), '/uploads/products/sku-sp20-yel-36.jpg', 1, 1, 1, @NOW);
 INSERT INTO giay_chi_tiet (giay_id, ma_bien_the, mau_sac_id, kich_co_id, so_luong, gia_goc, gia_ban, sku, kich_hoat, ngay_tao) VALUES ((SELECT id FROM giay WHERE ma = 'SP20'), 'VAR-SP20-YEL-37', (SELECT id FROM mau_sac WHERE ma = 'MS06'), (SELECT id FROM kich_co WHERE gia_tri = '37'), 50, 4150000, 3850000, 'SKU-SP20-YEL-37', 1, @NOW);
 INSERT INTO hinh_anh_giay (giay_chi_tiet_id, url, loai_hinh, la_hinh_chinh, trang_thai, ngay_tao) VALUES ((SELECT id FROM giay_chi_tiet WHERE sku = 'SKU-SP20-YEL-37'), '/uploads/products/sku-sp20-yel-37.jpg', 1, 1, 1, @NOW);
+
+-- GẮN ẢNH THẬT THEO MÀU BIẾN THỂ
+-- Các size cùng màu dùng chung ảnh; tất cả file bên dưới tồn tại trong BE/server/uploads.
+UPDATE hag
+SET hag.url = CASE
+    WHEN gct.sku LIKE '%-BLK-%' THEN '/uploads/05872a47-5260-4a56-a30b-f0f77b0cacbc.webp'
+    WHEN gct.sku LIKE '%-WHT-%' THEN '/uploads/a59f7b63-5b4f-450e-9d48-cc7a5aca254b.webp'
+    WHEN gct.sku LIKE '%-RED-%' THEN '/uploads/8ea2a51c-dc22-48ff-b72f-81aba7551632.webp'
+    WHEN gct.sku LIKE '%-BLU-%' THEN '/uploads/fc6a8b5f-fa5e-4eec-b7d7-1426a2537e9e.webp'
+    WHEN gct.sku LIKE '%-GRY-%' THEN '/uploads/louis-vuitton-run-away-sneaker--BWU01HJA54_PM2_Front view.webp'
+    WHEN gct.sku LIKE '%-YEL-%' THEN '/uploads/JI1784-3_1024x1024.webp'
+    WHEN gct.sku LIKE '%-ORG-%' THEN '/uploads/Giay-Louis-Vuitton-Trainer-Maxi-Orange-LV-Trainer-Maxi-Cam.jpg'
+    WHEN gct.sku LIKE '%-PUR-%' THEN '/uploads/louis-vuitton-lv-trainer-sneaker--BVU03ZPR17_PM2_Front view.webp'
+    WHEN gct.sku LIKE '%-BRN-%' THEN '/uploads/96892ec4-6213-4f3b-9326-bd475c77ee21.jpg'
+    WHEN gct.sku LIKE '%-PNK-%' THEN '/uploads/z5701102618832-d22bb68feb8e825e5d6b13ec54dd7692.webp'
+    WHEN gct.sku LIKE '%-GRN-%' THEN '/uploads/416df3a2-ffbd-47cd-abeb-e4a24e2ee31d-jpeg-1688640127885.webp'
+    WHEN gct.sku LIKE '%-SIL-%' THEN '/uploads/croon-court-cr36-mau-bac-sneaker-cool-cement-2_778a7ff2f0ed4ed38512f6cdafa3ee87_master.webp'
+    WHEN gct.sku LIKE '%-GLD-%' THEN '/uploads/JI1784-3_1024x1024.webp'
+    WHEN gct.sku LIKE '%-NVY-%' THEN '/uploads/fc6a8b5f-fa5e-4eec-b7d7-1426a2537e9e.webp'
+    WHEN gct.sku LIKE '%-BGE-%' THEN '/uploads/35bb834f-654e-4a44-960d-1c910ad1606d.webp'
+    ELSE hag.url
+END
+FROM hinh_anh_giay hag
+JOIN giay_chi_tiet gct ON gct.id = hag.giay_chi_tiet_id;
 
 -- ĐỢT GIẢM GIÁ (2)
 INSERT INTO dot_giam_gia (ma, ten, mo_ta, loai_giam, gia_tri_giam, ngay_bat_dau, ngay_ket_thuc, kich_hoat, ngay_tao) VALUES ('DGG_SUMMER', N'Siêu sale mùa hè', N'Giảm 15%', 1, 15, CAST('2025-06-01T00:00:00' AS DATETIME2), CAST('2026-12-31T23:59:59' AS DATETIME2), 1, @NOW);

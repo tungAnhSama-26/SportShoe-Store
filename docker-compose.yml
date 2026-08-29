@@ -134,6 +134,22 @@ services:
       - backend
     restart: unless-stopped
 
+  # 4. Container Ngrok Tunnel (Expose frontend/backend ra ngoài Internet)
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: sportshoe-ngrok
+    restart: unless-stopped
+    command:
+      - "http"
+      - "frontend:80"
+      - "--url=https://skirt-certified-coma.ngrok-free.dev"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - frontend
+
 volumes:
   mssql_data:
   ollama_models:

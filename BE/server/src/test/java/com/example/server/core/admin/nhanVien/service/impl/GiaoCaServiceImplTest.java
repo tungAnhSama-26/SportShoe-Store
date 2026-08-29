@@ -315,7 +315,7 @@ class GiaoCaServiceImplTest {
         giaoCa.setCaLam(caSang);
         giaoCa.setTienDauCa(BigDecimal.valueOf(500000));
         giaoCa.setTrangThai(TrangThaiGiaoCa.MO_CA.ma());
-        giaoCa.setCaChuaKetThuc(1);
+        giaoCa.setCaChuaKetThuc((byte) 1);
 
         when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(admin.getId(), TrangThaiGiaoCa.MO_CA.ma()))
                 .thenReturn(Optional.of(giaoCa));
@@ -458,7 +458,7 @@ class GiaoCaServiceImplTest {
         giaoCa.setThoiGianVao(ngay.atTime(20, 0).atZone(ZoneId.of("Asia/Bangkok")).toInstant());
         giaoCa.setTienDauCa(BigDecimal.valueOf(500000));
         giaoCa.setTrangThai(TrangThaiGiaoCa.MO_CA.ma());
-        giaoCa.setCaChuaKetThuc(1);
+        giaoCa.setCaChuaKetThuc((byte) 1);
         return giaoCa;
     }
 

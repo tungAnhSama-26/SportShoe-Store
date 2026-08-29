@@ -160,7 +160,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         giaoCa.setLyDoChenhLech(request.lyDoChenhLech());
         giaoCa.setNhanVienNhan(nguoiNhan);
         giaoCa.setTrangThai(TrangThaiGiaoCa.CHO_BAN_GIAO.ma());
-        giaoCa.setCaChuaKetThuc(1);
+        giaoCa.setCaChuaKetThuc((byte) 1);
         giaoCa.setGhiChu(gioiHanGhiChu(request.ghiChu()));
         GiaoCa daLuu = giaoCaRepository.save(giaoCa);
 
@@ -547,7 +547,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         giaoCa.setThoiGianVao(Instant.now());
         giaoCa.setTienDauCa(tienDauCa);
         giaoCa.setTrangThai(TrangThaiGiaoCa.MO_CA.ma());
-        giaoCa.setCaChuaKetThuc(1);
+        giaoCa.setCaChuaKetThuc((byte) 1);
         giaoCa.setGhiChu(gioiHanGhiChu(ghiChu));
         return giaoCa;
     }
@@ -570,7 +570,7 @@ public class GiaoCaServiceImpl implements GiaoCaService {
 
     private void khoiPhucCaDangMo(GiaoCa giaoCa, String ghiChuMoi) {
         giaoCa.setTrangThai(TrangThaiGiaoCa.MO_CA.ma());
-        giaoCa.setCaChuaKetThuc(1);
+        giaoCa.setCaChuaKetThuc((byte) 1);
         giaoCa.setNhanVienNhan(null);
         giaoCa.setThoiGianRa(null);
         giaoCa.setThoiGianXacNhan(null);
