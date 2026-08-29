@@ -123,6 +123,20 @@ const denominations = ref([
 
 // Handover form states
 const tienThucTe = ref(0);
+const tienThucTeFormatted = computed({
+  get() {
+    if (tienThucTe.value === 0 || !tienThucTe.value) return "";
+    return new Intl.NumberFormat("vi-VN").format(tienThucTe.value);
+  },
+  set(newValue) {
+    if (!newValue) {
+      tienThucTe.value = 0;
+      return;
+    }
+    const cleanValue = String(newValue).replace(/\D/g, "");
+    tienThucTe.value = Number(cleanValue) || 0;
+  }
+});
 const nhanVienNhanId = ref("");
 const lyDoChenhLech = ref("");
 const ghiChu = ref("");
@@ -1470,9 +1484,9 @@ function cuongCheKetThucCa() {
                 <div class="flex items-center gap-3">
                   <div class="relative flex-1">
                     <input 
-                      type="number"
-                      v-model.number="tienThucTe"
-                      min="0"
+                      type="text"
+                      inputmode="numeric"
+                      v-model="tienThucTeFormatted"
                       placeholder="Nhập số tiền mặt thực tế..."
                       class="w-full h-12 pl-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-lg font-bold text-blue-600 dark:text-blue-400 focus:outline-none focus:border-rose-400 transition"
                     />

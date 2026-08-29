@@ -1,6 +1,26 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import { Search, RefreshCw, Calendar as CalendarIcon, FileText, LogIn, LogOut, ListChecks, RotateCcw, ChevronDown, Download, Eye } from "lucide-vue-next";
+import { 
+  Search, 
+  RefreshCw, 
+  Calendar as CalendarIcon, 
+  FileText, 
+  LogIn, 
+  LogOut, 
+  ListChecks, 
+  RotateCcw, 
+  ChevronDown, 
+  Download, 
+  Eye,
+  X as CloseIcon,
+  Clock,
+  CheckCircle2,
+  Calculator,
+  AlertTriangle,
+  UserCheck,
+  FileCheck,
+  ArrowRightLeft
+} from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { layLichSuGiaoCa } from "../../../services/giao-ca.js";
 import { layDanhSachCaLam } from "../../../services/ca-lam.js";
@@ -197,6 +217,14 @@ const handlePageSizeChange = (newSize) => {
 const xemChiTietHoaDon = (item) => {
   if (!item?.hoaDonId) return;
   router.push({ name: "admin-hoa-don-chi-tiet", params: { id: item.hoaDonId } });
+};
+
+const xemChiTietCaLam = (item) => {
+  if (!item?.id) return;
+  router.push({
+    name: "admin-lich-su-hoat-dong-chi-tiet",
+    params: { id: item.id }
+  });
 };
 
 watch([tuNgay, denNgay], () => {
@@ -599,13 +627,22 @@ const onSearchInput = () => {
                   v-if="item.hoaDonId"
                   type="button"
                   @click="xemChiTietHoaDon(item)"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary/20"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary/20 shadow-sm"
                   title="Xem chi tiết hóa đơn"
                   aria-label="Xem chi tiết hóa đơn"
                 >
                   <Eye class="h-4 w-4" />
                 </button>
-                <span v-else class="text-slate-300 dark:text-slate-600">—</span>
+                <button
+                  v-else
+                  type="button"
+                  @click="xemChiTietCaLam(item)"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary/20 shadow-sm"
+                  title="Xem chi tiết bàn giao ca"
+                  aria-label="Xem chi tiết bàn giao ca"
+                >
+                  <Eye class="h-4 w-4" />
+                </button>
               </td>
             </tr>
           </tbody>

@@ -114,6 +114,9 @@ const {
   dongDanhSachSanPham,
   moChiTietSanPham,
   themTrucTiepBienThe,
+  itemDangDoiBienThe,
+  xuLyMoDoiBienTheInCart,
+  xuLyDoiBienTheInCart,
   xuLyQuetQrSanPham,
   tangSoLuong,
   giamSoLuong,
@@ -323,6 +326,7 @@ function xuLyMaQuet(keyword) {
               @decrease-item="giamSoLuong"
               @remove-item="xoaSanPham"
               @update-item="capNhatSoLuong"
+              @edit-item="xuLyMoDoiBienTheInCart"
             />
           </div>
 
@@ -458,6 +462,7 @@ function xuLyMaQuet(keyword) {
       :so-luong-ton-kha-dung-chi-tiet="soLuongTonKhaDungChiTiet"
       :dinh-dang-tien="dinhDangTien"
       :so-luong-con-lai="soLuongConLai"
+      :is-edit-mode="Boolean(itemDangDoiBienThe)"
       @close="dongChiTietSanPham"
       @select-color="chonMauSac"
       @select-size="chonKichCo"

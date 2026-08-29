@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { resolveHinhAnh } from "../../../utils/resolve-image";
+import { timSanPhamTaiQuay } from "../../../services/ban-hang-tai-quay";
 
 const props = defineProps({
   selectedProductDetail: {
@@ -74,11 +75,63 @@ const emit = defineEmits([
 
 const filterColor = ref("");
 const filterSize = ref("");
+const localVariants = ref([]);
+const dangTaiBienThe = ref(false);
+
+async function taiBienTheSanPham(product) {
+  if (!product) {
+    localVariants.value = [];
+    return;
+  }
+  const keyword = product.maSanPham || product.tenSanPham || "";
+  if (!keyword) return;
+  
+  dangTaiBienThe.value = true;
+  try {
+    const res = await timSanPhamTaiQuay(keyword);
+    if (res && res.length > 0) {
+      const matched = res.filter(
+        v => (product.maSanPham && v.maSanPham === product.maSanPham) ||
+             (product.tenSanPham && v.tenSanPham === product.tenSanPham)
+      );
+      localVariants.value = matched.length > 0 ? matched : res;
+    } else {
+      localVariants.value = [product];
+    }
+  } catch (err) {
+    console.error("Lỗi khi tải biến thể cho modal:", err);
+    localVariants.value = props.bienTheLienQuan && props.bienTheLienQuan.length > 0 ? props.bienTheLienQuan : [product];
+  } finally {
+    dangTaiBienThe.value = false;
+  }
+}
+
+watch(() => props.selectedProductDetail, (newVal) => {
+  filterColor.value = "";
+  filterSize.value = "";
+  if (newVal) {
+    void taiBienTheSanPham(newVal);
+  } else {
+    localVariants.value = [];
+  }
+}, { immediate: true });
+
+const allVariants = computed(() => {
+  if (localVariants.value && localVariants.value.length > 0) {
+    return localVariants.value;
+  }
+  if (props.bienTheLienQuan && props.bienTheLienQuan.length > 0) {
+    return props.bienTheLienQuan;
+  }
+  if (props.selectedProductDetail) {
+    return [props.selectedProductDetail];
+  }
+  return [];
+});
 
 const availableColors = computed(() => {
-  if (!props.bienTheLienQuan) return [];
   const set = new Set();
-  props.bienTheLienQuan.forEach(v => {
+  allVariants.value.forEach(v => {
     const val = v.mauSac || v.maBienThe;
     if (val) set.add(val);
   });
@@ -86,9 +139,8 @@ const availableColors = computed(() => {
 });
 
 const availableSizes = computed(() => {
-  if (!props.bienTheLienQuan) return [];
   const set = new Set();
-  props.bienTheLienQuan.forEach(v => {
+  allVariants.value.forEach(v => {
     if (v.kichCo) set.add(v.kichCo);
   });
   return Array.from(set).sort((a, b) => {
@@ -100,13 +152,20 @@ const availableSizes = computed(() => {
 });
 
 const filteredVariants = computed(() => {
-  if (!props.bienTheLienQuan) return [];
-  return props.bienTheLienQuan.filter(v => {
+  return allVariants.value.filter(v => {
     const matchColor = !filterColor.value || (v.mauSac || v.maBienThe) === filterColor.value;
     const matchSize = !filterSize.value || String(v.kichCo) === String(filterSize.value);
     return matchColor && matchSize;
   });
 });
+
+function getAvailableStock(variant) {
+  if (!variant) return 0;
+  if (typeof props.soLuongConLai === 'function') {
+    return props.soLuongConLai(variant.chiTietId, variant.soLuongTon ?? 0);
+  }
+  return Number(variant.soLuongTon ?? 0);
+}
 
 function isDiscounted(product) {
   return Number(product?.giaBan || 0) < Number(product?.giaGoc || 0);
@@ -259,10 +318,10 @@ function formatDiscountPercent(product) {
                       :key="variant.chiTietId"
                       class="transition-colors"
                       :class="[
-                        soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-50 cursor-not-allowed bg-slate-50',
+                        getAvailableStock(variant) > 0 ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-50 cursor-not-allowed bg-slate-50',
                         chiTietDangChon && chiTietDangChon.chiTietId === variant.chiTietId ? '!bg-red-50 !border-red-200' : ''
                       ]"
-                      @click="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 && emit('select-variant', variant)"
+                      @click="getAvailableStock(variant) > 0 && emit('select-variant', variant)"
                     >
                       <td class="px-2.5 py-2 text-center">
                         <img v-if="variant.hinhAnh" :src="resolveHinhAnh(variant.hinhAnh)" class="w-9 h-9 mx-auto rounded-md object-cover border border-slate-200" />
@@ -280,8 +339,8 @@ function formatDiscountPercent(product) {
                         </div>
                       </td>
                       <td class="px-2.5 py-2 text-center">
-                        <span :class="soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
-                          {{ soLuongConLai(variant.chiTietId, variant.soLuongTon) > 0 ? soLuongConLai(variant.chiTietId, variant.soLuongTon) : 'Hết hàng' }}
+                        <span :class="getAvailableStock(variant) > 0 ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'">
+                          {{ getAvailableStock(variant) > 0 ? getAvailableStock(variant) : 'Hết hàng' }}
                         </span>
                       </td>
                       <td class="px-2.5 py-2 text-center">
@@ -293,7 +352,12 @@ function formatDiscountPercent(product) {
                         <span v-else class="text-slate-400 dark:text-slate-500 text-xs">-</span>
                       </td>
                     </tr>
-                    <tr v-if="!bienTheLienQuan || bienTheLienQuan.length === 0">
+                    <tr v-if="dangTaiBienThe">
+                      <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                        Đang tải danh sách biến thể...
+                      </td>
+                    </tr>
+                    <tr v-else-if="!filteredVariants || filteredVariants.length === 0">
                       <td colspan="7" class="px-4 py-8 text-center text-slate-500">
                         Không có biến thể nào
                       </td>

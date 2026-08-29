@@ -88,3 +88,7 @@ export function layLichSuGiaoCa(filters) {
   const q = params.toString();
   return request(`/admin/giao-ca/history${q ? `?${q}` : ""}`);
 }
+
+export function layChiTietGiaoCa(id) {
+  return request(`/admin/giao-ca/detail/${id}`);
+}

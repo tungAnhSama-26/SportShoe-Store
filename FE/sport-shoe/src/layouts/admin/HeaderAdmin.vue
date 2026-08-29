@@ -238,6 +238,7 @@ const pageTitle = computed(() => {
     'admin-thu-chi': 'Quản lý thu / chi',
     'admin-mo-ca': 'Mở ca làm việc',
     'admin-lich-su-hoat-dong': 'Lịch sử hoạt động',
+    'admin-lich-su-hoat-dong-chi-tiet': 'Chi tiết bàn giao ca',
     'admin-profile': 'Hồ sơ cá nhân',
     'nhanvien-profile': 'Hồ sơ cá nhân'
   };
@@ -390,6 +391,13 @@ const subRouteBreadcrumbs = {
     parentTitle: 'Quản lý lịch làm',
     childTitle: 'Lịch sử hoạt động'
   },
+  'admin-lich-su-hoat-dong-chi-tiet': {
+    grandParentPath: '',
+    grandParentTitle: 'Quản lý lịch làm',
+    parentPath: '/admin/lich-su-hoat-dong',
+    parentTitle: 'Lịch sử hoạt động',
+    childTitle: 'Chi tiết bàn giao ca'
+  },
   'admin-khach-hang-them': {
     parentPath: '/admin/khach-hang',
     parentTitle: 'Khách hàng',
@@ -458,6 +466,16 @@ function dangXuat() {
           :class="currentSubRoute ? 'text-[20px]' : 'text-[28px]'"
         >
           <template v-if="currentSubRoute">
+            <template v-if="currentSubRoute.grandParentTitle">
+              <router-link
+                v-if="currentSubRoute.grandParentPath"
+                :to="currentSubRoute.grandParentPath"
+                class="text-slate-400 hover:text-[#B82220] transition dark:text-slate-500 dark:hover:text-red-400"
+                >{{ currentSubRoute.grandParentTitle }}</router-link
+              >
+              <span v-else class="text-slate-400 dark:text-slate-500">{{ currentSubRoute.grandParentTitle }}</span>
+              <span class="mx-2 text-slate-300 dark:text-slate-600">/</span>
+            </template>
             <router-link
               v-if="currentSubRoute.parentPath"
               :to="currentSubRoute.parentPath"

@@ -4,9 +4,8 @@ import { ref, onUnmounted } from 'vue';
 const getBrokerURL = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    // Nếu chạy local trực tiếp không qua proxy (ví dụ localhost:5173 kết nối tới localhost:8080)
-    if (host.includes('localhost') || host.includes('127.0.0.1')) {
-        return `${protocol}//localhost:8080/ws`;
+    if (window.location.port === '5173' || window.location.port === '3000') {
+        return `${protocol}//${window.location.hostname}:8080/ws`;
     }
     return `${protocol}//${host}/ws`;
 };

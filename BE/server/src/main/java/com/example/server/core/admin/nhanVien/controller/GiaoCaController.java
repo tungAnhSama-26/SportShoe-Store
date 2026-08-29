@@ -171,6 +171,16 @@ public class GiaoCaController {
         ));
     }
 
+    @GetMapping("/detail/{id}")
+    public ResponseEntity<ApiResponse<GiaoCaResponse>> layChiTietGiaoCa(
+            @PathVariable("id") UUID id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy chi tiết ca làm việc thành công",
+                giaoCaService.layChiTietGiaoCa(id)
+        ));
+    }
+
     private AdminPrincipal getPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof AdminPrincipal principal) {

@@ -42,6 +42,8 @@ public interface GiaoCaService {
 
     void baoCaoSuCo(UUID nhanVienId, UUID giaoCaId, BaoCaoSuCoGiaoCaRequest request);
 
+    GiaoCaResponse layChiTietGiaoCa(UUID giaoCaId);
+
     void checkActiveShiftOrThrow(UUID nhanVienId);
 
     Page<GiaoCaResponse> layLichSuGiaoCa(

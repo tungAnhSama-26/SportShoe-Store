@@ -560,10 +560,15 @@ function LogicBanHangTaiQuay() {
     void kiemTraLaiPhieuDangApDung(true);
   });
 
+  subscribeTopic('/topic/admin/phieu-giam-gia', () => {
+    lenLichDongBoGiaRealtime(50);
+    void kiemTraLaiPhieuDangApDung(true);
+  });
+
   function dongBoGiaKhiQuayLaiTab() {
     if (document.visibilityState === 'visible') {
       lenLichDongBoGiaRealtime(0);
-      void kiemTraLaiPhieuDangApDung(true);
+      void kiemTraLaiPhieuDangApDung(false);
     }
   }
 
@@ -686,9 +691,22 @@ function LogicBanHangTaiQuay() {
 
   async function xuLyMoDoiBienTheInCart(item) {
     itemDangDoiBienThe.value = item;
-    const products = await timSanPhamTaiQuay(item.maSanPham);
-    if (products && products.length > 0) {
-      moChiTietSanPham(products[0]);
+    dangTaiSanPham.value = true;
+    try {
+      const keyword = item.maSanPham || item.tenSanPham || "";
+      const products = await timSanPhamTaiQuay(keyword);
+      if (products && products.length > 0) {
+        ketQuaBienTheSanPham.value = products;
+        const currentVariant = products.find(p => Number(p.chiTietId) === Number(item.chiTietId)) || products[0];
+        moChiTietSanPham(currentVariant);
+      } else {
+        showError("Không tìm thấy thông tin biến thể của sản phẩm này");
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải biến thể:", err);
+      showError("Không thể tải danh sách biến thể");
+    } finally {
+      dangTaiSanPham.value = false;
     }
   }
 
@@ -963,6 +981,14 @@ function LogicBanHangTaiQuay() {
         }
         setTimeout(() => { dangLuuNoiBo = false; }, 50);
 
+        if (currentInvoiceId && !isSyncingUI) {
+          publishMessage('/topic/admin/pos-sync', {
+            sender: sessionId,
+            action: 'UPDATED',
+            invoiceId: currentInvoiceId
+          });
+        }
+
         if (pendingSave) {
           pendingSave = false;
           // loop again to save the latest state
@@ -1069,9 +1095,10 @@ function LogicBanHangTaiQuay() {
 
     if (dangLuuNoiBo || isSyncingUI || dangTaiChiTietHoaDon.value || dangThanhToan.value) return;
     if (boDemTuDongLuu) clearTimeout(boDemTuDongLuu);
+    const delay = cartItems.value.length === 0 ? 100 : 400;
     boDemTuDongLuu = setTimeout(() => {
       luuHoaDonHienTai().catch(() => {});
-    }, 500);
+    }, delay);
   }, { deep: true });
 
   let lastReceivedSyncState = null;
@@ -1654,6 +1681,12 @@ function LogicBanHangTaiQuay() {
           }));
 
           cartItems.value = mappedItems;
+          await luuHoaDonHienTai(true);
+          publishMessage('/topic/admin/pos-sync', {
+            sender: sessionId,
+            action: 'UPDATED',
+            invoiceId: hoaDonChoDaChon.value.id
+          });
         }
       } catch (err) {
         console.error("Lỗi khi khôi phục sản phẩm mua lại:", err);

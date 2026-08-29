@@ -505,6 +505,11 @@ const router = createRouter({
           component: LichSuHoatDong
         },
         {
+          path: "lich-su-hoat-dong/:id",
+          name: "admin-lich-su-hoat-dong-chi-tiet",
+          component: () => import("../pages/admin/lich-lam/ChiTietGiaoCa.vue")
+        },
+        {
           path: "chat",
           name: "admin-chat",
           component: ChatManagement

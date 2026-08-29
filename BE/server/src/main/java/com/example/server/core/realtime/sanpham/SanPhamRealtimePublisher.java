@@ -44,6 +44,7 @@ public class SanPhamRealtimePublisher {
         broker.publish(event);
         try {
             webSocketNotificationService.sendToTopic("/topic/admin/san-pham", loaiSuKien, event);
+            webSocketNotificationService.sendToTopic("/topic/admin/phieu-giam-gia", loaiSuKien, event);
             webSocketNotificationService.sendToTopic("/topic/admin/pos-sync", "PRODUCT_CHANGED", event);
         } catch (Exception ignored) {
         }

@@ -500,31 +500,40 @@ export function LogicPhieuGiamGia({
           }
         } else {
           // Phiếu vẫn đủ điều kiện -> kiểm tra xem có thay đổi thông tin / giá trị giảm không
-          const cuGiam = Number(cu?.soTienGiam != null ? cu.soTienGiam : (hoaDonChoDaChon.value?.tienGiam || 0));
-          const moiGiam = Number(moi.soTienGiam || 0);
-          const cuGiaTri = cu?.giaTri;
-          const moiGiaTri = moi.giaTri;
+          const cuGiam = cu ? Number(cu.soTienGiam != null ? cu.soTienGiam : tinhToanGiamGia(cu, tongTien.value)) : 0;
+          const moiGiam = Number(moi.soTienGiam != null ? moi.soTienGiam : tinhToanGiamGia(moi, tongTien.value));
+          const cuGiaTri = Number(cu?.giaTri || 0);
+          const moiGiaTri = Number(moi.giaTri || 0);
           const cuLoai = cu?.loai;
           const moiLoai = moi.loai;
+          const cuGiamToiDa = Number(cu?.giamToiDa || 0);
+          const moiGiamToiDa = Number(moi?.giamToiDa || 0);
 
-          const isDataChanged = cu && (
-            cuGiam !== moiGiam ||
+          const isConfigChanged = cu && (
             cuGiaTri !== moiGiaTri ||
             cuLoai !== moiLoai ||
+            cuGiamToiDa !== moiGiamToiDa ||
             cu.ma !== moi.ma
           );
 
-          const isActuallyChanged = 
-            phieuGiamGiaDaApDung.value?.ma !== moi.ma ||
-            Number(phieuGiamGiaDaApDung.value?.soTienGiam) !== Number(moi.soTienGiam);
+          const isDiscountAmountChanged = Math.abs(cuGiam - moiGiam) >= 1;
 
-          if (isActuallyChanged) {
-            phieuGiamGiaDaApDung.value = moi;
+          if (isConfigChanged || isDiscountAmountChanged) {
+            phieuGiamGiaDaApDung.value = {
+              ...moi,
+              soTienGiam: moiGiam
+            };
             maPhieuGiamGia.value = moi.ma;
             capNhatTienKhachThanhToan();
 
-            if (thongBaoKhiDoi && isDataChanged && cuGiam !== moiGiam) {
-              showWarning(`Thông tin phiếu giảm giá "${moi.ma}" đã thay đổi. Số tiền giảm đã được cập nhật từ ${dinhDangTien(cuGiam)} thành ${dinhDangTien(moiGiam)}.`);
+            if (thongBaoKhiDoi) {
+              if (isDiscountAmountChanged) {
+                showWarning(`Thông tin phiếu giảm giá "${moi.ma}" đã thay đổi. Số tiền giảm đã được cập nhật từ ${dinhDangTien(cuGiam)} thành ${dinhDangTien(moiGiam)}.`);
+              } else if (isConfigChanged) {
+                const moTaCu = cuLoai === 1 ? `${cuGiaTri}%` : dinhDangTien(cuGiaTri);
+                const moTaMoi = moiLoai === 1 ? `${moiGiaTri}%` : dinhDangTien(moiGiaTri);
+                showWarning(`Thông tin phiếu giảm giá "${moi.ma}" đã được cập nhật (${moTaCu} ➔ ${moTaMoi}).`);
+              }
             }
 
             if (hoaDonChoDaChon.value && typeof luuHoaDonHienTai === 'function') {

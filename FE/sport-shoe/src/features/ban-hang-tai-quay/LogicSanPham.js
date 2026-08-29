@@ -125,17 +125,26 @@ export function LogicSanPham({
     return ketQuaSanPham.value.slice(start, start + kichThuocTrang.value);
   });
 
+  const danhSachBienTheHienTai = ref([]);
+
   const bienTheLienQuan = computed(() => {
     if (!chiTietSanPhamDaChon.value) {
       return [];
     }
-    return ketQuaBienTheSanPham.value.filter(
-      (product) => product.maSanPham === chiTietSanPhamDaChon.value?.maSanPham &&
-        product.tenSanPham === chiTietSanPhamDaChon.value?.tenSanPham
-    ).map(p => ({
+    const targetMa = chiTietSanPhamDaChon.value?.maSanPham;
+    const targetTen = chiTietSanPhamDaChon.value?.tenSanPham;
+    
+    const sourceList = danhSachBienTheHienTai.value.length > 0
+      ? danhSachBienTheHienTai.value
+      : ketQuaBienTheSanPham.value.filter(
+          (product) => (targetMa && product.maSanPham === targetMa) ||
+            (targetTen && product.tenSanPham === targetTen)
+        );
+
+    return sourceList.map(p => ({
       ...p,
       _soLuongHienTai: p.chiTietId ? soLuongConLai(p.chiTietId, p.soLuongTon) : p.soLuongTon
-    })).filter(p => p._soLuongHienTai > 0);
+    }));
   });
   const luaChonMauSac = computed(() => {
     const grouped = new Map();
@@ -276,11 +285,28 @@ export function LogicSanPham({
     return ketQuaBienTheSanPham.value.find((product) => product.chiTietId === chiTietId)?.soLuongTon ?? fallback;
   }
 
-  function moChiTietSanPham(product) {
+  async function moChiTietSanPham(product) {
+    if (!product) return;
     chiTietSanPhamDaChon.value = product;
-    mauSacDaChon.value = product.mauSac || product.maBienThe;
+    mauSacDaChon.value = product.mauSac || product.maBienThe || "";
     kichCoDaChon.value = product.kichCo || "";
     soLuongDaChon.value = 1;
+
+    try {
+      const keyword = product.maSanPham || product.tenSanPham || "";
+      const variants = await timSanPhamTaiQuay(keyword);
+      if (variants && variants.length > 0) {
+        const matched = variants.filter(v => 
+          (product.maSanPham && v.maSanPham === product.maSanPham) ||
+          (product.tenSanPham && v.tenSanPham === product.tenSanPham)
+        );
+        danhSachBienTheHienTai.value = matched.length > 0 ? matched : variants;
+      } else {
+        danhSachBienTheHienTai.value = [product];
+      }
+    } catch (e) {
+      danhSachBienTheHienTai.value = [product];
+    }
   }
 
   function lamMoiBoLoc() {
@@ -298,8 +324,7 @@ export function LogicSanPham({
     mauSacDaChon.value = "";
     kichCoDaChon.value = "";
     soLuongDaChon.value = 1;
-    // Không đóng hienThiDanhSachSanPham và không gọi lamMoiBoLoc ở đây
-    // để người dùng có thể tiếp tục chọn sản phẩm khác
+    danhSachBienTheHienTai.value = [];
   }
 
   async function xuLyQuetQrSanPham(rawValue) {

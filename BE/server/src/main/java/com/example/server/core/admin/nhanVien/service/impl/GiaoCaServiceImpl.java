@@ -708,6 +708,14 @@ public class GiaoCaServiceImpl implements GiaoCaService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public GiaoCaResponse layChiTietGiaoCa(UUID giaoCaId) {
+        GiaoCa giaoCa = giaoCaRepository.findById(giaoCaId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy ca làm việc."));
+        return mapToResponse(giaoCa);
+    }
+
     private GiaoCaResponse mapToResponse(GiaoCa giaoCa) {
         if (giaoCa == null) return null;
         BigDecimal tienMat = tinhTienMat(giaoCa.getId());

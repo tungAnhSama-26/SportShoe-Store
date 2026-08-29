@@ -179,7 +179,7 @@ export function LogicGioHang({
 
   function giamSoLuong(cartItemId) {
     cartItems.value = cartItems.value
-      .map((item) => item.cartItemId === cartItemId ? { ...item, soLuong: item.soLuong - 1 } : item)
+      .map((item) => (item.cartItemId === cartItemId || item.chiTietId === cartItemId || item.hoaDonChiTietId === cartItemId) ? { ...item, soLuong: item.soLuong - 1 } : item)
       .filter((item) => item.soLuong > 0);
     danhDauCanApDungLaiPhieu();
     danhDauCanTinhLaiPhiVanChuyen();
@@ -187,7 +187,7 @@ export function LogicGioHang({
   }
 
   function xoaSanPham(cartItemId) {
-    cartItems.value = cartItems.value.filter((item) => item.cartItemId !== cartItemId);
+    cartItems.value = cartItems.value.filter((item) => item.cartItemId !== cartItemId && item.chiTietId !== cartItemId && item.hoaDonChiTietId !== cartItemId);
     danhDauCanApDungLaiPhieu();
     danhDauCanTinhLaiPhiVanChuyen();
     capNhatTienKhachThanhToan();
