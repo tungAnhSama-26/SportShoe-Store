@@ -61,7 +61,7 @@ DBCC CHECKIDENT ('tai_khoan_ngan_hang', RESEED, 0);
 DBCC CHECKIDENT ('dia_chi_khach_hang', RESEED, 0);
 
 -- NHÂN VIÊN (20)
-INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000001'), 'NV0001', 'thanh t', N'Nguyễn Quốc Huy', 'nv1@sportshoe.vn', '123456', '0901000001', N'Nam', N'Hà Nội', 1, 1, @NOW);
+INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000001'), 'NV0001', 'admin', N'Nguyễn Quốc Huy', 'nv1@sportshoe.vn', '123456', '0901000001', N'Nam', N'Hà Nội', 1, 1, @NOW);
 INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000002'), 'NV0002', 'nhanvien2', N'Trần Minh Anh', 'nv2@sportshoe.vn', '123456', '0901000002', N'Nữ', N'Hà Nội', 2, 1, @NOW);
 INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000003'), 'NV0003', 'nhanvien3', N'Lê Hoàng Nam', 'nv3@sportshoe.vn', '123456', '0901000003', N'Nam', N'Hà Nội', 2, 1, @NOW);
 INSERT INTO nhan_vien (id, ma, ten_dang_nhap, ho_ten, email, mat_khau, sdt, gioi_tinh, dia_chi, vai_tro, trang_thai, ngay_tao) VALUES (CONVERT(UNIQUEIDENTIFIER, '10000000-0000-0000-0000-000000000004'), 'NV0004', 'nhanvien4', N'Phạm Thu Trang', 'nv4@sportshoe.vn', '123456', '0901000004', N'Nữ', N'Hà Nội', 2, 1, @NOW);
