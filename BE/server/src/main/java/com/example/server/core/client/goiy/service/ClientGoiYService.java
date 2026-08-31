@@ -253,68 +253,108 @@ public class ClientGoiYService {
                 kq.put(loaiId, new String[]{"", ""});
                 continue;
             }
-            if (lg.getNhomMucDich() != null) {
-                kq.put(loaiId, new String[]{
-                        lg.getNhomMucDich(), lg.getNhomPhongCach() == null ? "" : lg.getNhomPhongCach()});
+            String m = lg.getNhomMucDich();
+            String p = lg.getNhomPhongCach();
+            // Nếu DB đã có mã chuẩn (di-lam, the-thao, dao-pho, du-tiec) thì dùng ngay
+            if (m != null && !m.isBlank() && (m.contains("di-lam") || m.contains("the-thao") || m.contains("dao-pho") || m.contains("du-tiec"))) {
+                kq.put(loaiId, new String[]{m, p == null ? "" : p});
                 continue;
             }
-            kq.put(loaiId, phanLoaiBangAi(lg));
+            // Phân loại siêu nhanh bằng Rule-based từ khóa (chống treo nghẽn do AI Ollama/Cloud)
+            kq.put(loaiId, phanLoaiNhanhBangRule(lg));
         }
         return kq;
     }
 
-    /** Gọi AI phân loại 1 loại giày -> [mucDichCsv, phongCachCsv], lưu vào DB. Lỗi -> trả rỗng, không lưu. */
-    private String[] phanLoaiBangAi(LoaiGiay lg) {
-        ChatClient.Builder builder = chatClientBuilderProvider.getIfAvailable();
-        if (builder == null) {
-            return new String[]{"", ""};
+    /** Phân loại cực nhanh bằng Rule-based theo tên & mô tả + map mã legacy trong DB (< 1ms). */
+    private String[] phanLoaiNhanhBangRule(LoaiGiay lg) {
+        String ten = (lg.getTen() == null ? "" : lg.getTen()).toLowerCase(Locale.ROOT);
+        String moTa = (lg.getMoTa() == null ? "" : lg.getMoTa()).toLowerCase(Locale.ROOT);
+        String curM = lg.getNhomMucDich() == null ? "" : lg.getNhomMucDich();
+        String curP = lg.getNhomPhongCach() == null ? "" : lg.getNhomPhongCach();
+
+        Set<String> mucDichSet = new HashSet<>();
+        Set<String> phongCachSet = new HashSet<>();
+
+        // Map legacy constants (PURPOSE_..., STYLE_...) từ DB 02_data.sql
+        if (curM.contains("PURPOSE_RUNNING") || curM.contains("PURPOSE_TRAINING") 
+                || curM.contains("PURPOSE_BASKETBALL") || curM.contains("PURPOSE_TENNIS") 
+                || curM.contains("PURPOSE_FOOTBALL") || curM.contains("PURPOSE_VOLLEYBALL")) {
+            mucDichSet.add("the-thao");
+            mucDichSet.add("di-lam");
         }
-        String moTa = lg.getMoTa() == null || lg.getMoTa().isBlank() ? "" : " (" + lg.getMoTa().trim() + ")";
-        String prompt = """
-                Phân loại loại giày sau vào các nhóm. Chỉ trả về ĐÚNG 2 dòng, không thêm gì.
-                Loại giày: "%s"%s
-
-                MỤC ĐÍCH sử dụng (chọn 1 hoặc nhiều mã, cách nhau bởi dấu phẩy):
-                - di-lam   : đi học, đi làm, mang hằng ngày
-                - the-thao : chơi thể thao, chạy bộ, tập luyện
-                - dao-pho  : đi chơi, dạo phố, cà phê
-                - du-tiec  : dự tiệc, sự kiện, cần lịch sự
-
-                PHONG CÁCH (chọn 1 hoặc nhiều mã):
-                - nang-dong : năng động, thể thao
-                - toi-gian  : đơn giản, tối giản
-                - ca-tinh   : cá tính, nổi bật
-                - co-dien   : cổ điển, retro
-
-                Định dạng:
-                MUC_DICH: <mã,mã>
-                PHONG_CACH: <mã,mã>
-                """.formatted(lg.getTen(), moTa);
-        try {
-            String kq = builder.build().prompt()
-                    .options(OpenAiChatOptions.builder().withMaxTokens(GIOI_HAN_TOKEN).withTemperature(0.0f).build())
-                    .user(prompt)
-                    .call().content();
-            String mucDich = "";
-            String phongCach = "";
-            for (String dong : (kq == null ? "" : kq).split("\\r?\\n")) {
-                String d = dong.trim();
-                if (d.regionMatches(true, 0, "MUC_DICH:", 0, 9)) {
-                    mucDich = locMa(d.substring(9), MA_MUC_DICH_HOP_LE);
-                } else if (d.regionMatches(true, 0, "PHONG_CACH:", 0, 11)) {
-                    phongCach = locMa(d.substring(11), MA_PHONG_CACH_HOP_LE);
-                }
-            }
-            lg.setNhomMucDich(mucDich);
-            lg.setNhomPhongCach(phongCach);
-            loaiGiayRepository.save(lg);
-            System.out.println("[AI GOI Y] Đã phân loại loại '" + lg.getTen() + "' -> mục đích=["
-                    + mucDich + "] phong cách=[" + phongCach + "]");
-            return new String[]{mucDich, phongCach};
-        } catch (Exception e) {
-            System.err.println("[AI GOI Y] Lỗi phân loại loại '" + lg.getTen() + "': " + e.getMessage());
-            return new String[]{"", ""};
+        if (curM.contains("PURPOSE_CASUAL") || curM.contains("PURPOSE_WALKING")) {
+            mucDichSet.add("di-lam");
+            mucDichSet.add("dao-pho");
         }
+        if (curM.contains("PURPOSE_SKATE") || curM.contains("PURPOSE_DANCE")) {
+            mucDichSet.add("dao-pho");
+            mucDichSet.add("di-lam");
+        }
+        if (curM.contains("PURPOSE_GOLF") || curM.contains("PURPOSE_HIKING")) {
+            mucDichSet.add("the-thao");
+            mucDichSet.add("dao-pho");
+        }
+        if (curP.contains("STYLE_SPORT") || curP.contains("STYLE_OUTDOOR")) {
+            phongCachSet.add("nang-dong");
+        }
+        if (curP.contains("STYLE_CASUAL")) {
+            phongCachSet.add("toi-gian");
+        }
+        if (curP.contains("STYLE_STREET")) {
+            phongCachSet.add("ca-tinh");
+        }
+
+        // Match theo từ khóa tiếng Việt / tiếng Anh trong tên loại giày & mô tả
+        if (ten.contains("run") || ten.contains("chạy") || ten.contains("sport") || ten.contains("thể thao")
+                || ten.contains("basket") || ten.contains("bóng") || ten.contains("train") || ten.contains("tennis")
+                || ten.contains("foot") || ten.contains("đá bóng") || ten.contains("volley") || ten.contains("gym")) {
+            mucDichSet.add("the-thao");
+            mucDichSet.add("di-lam");
+            phongCachSet.add("nang-dong");
+        }
+        if (ten.contains("sneak") || ten.contains("casual") || ten.contains("walk") || ten.contains("đi bộ")
+                || ten.contains("slip-on") || ten.contains("lười") || ten.contains("phố") || ten.contains("đời thường")) {
+            mucDichSet.add("di-lam");
+            mucDichSet.add("dao-pho");
+            phongCachSet.add("toi-gian");
+        }
+        if (ten.contains("skate") || ten.contains("dance") || ten.contains("retro") || ten.contains("vintage")
+                || ten.contains("classic") || ten.contains("cổ điển")) {
+            mucDichSet.add("dao-pho");
+            phongCachSet.add("ca-tinh");
+            phongCachSet.add("co-dien");
+        }
+        if (ten.contains("golf") || ten.contains("tiệc") || ten.contains("tây") || ten.contains("da") || ten.contains("lịch sự")) {
+            mucDichSet.add("du-tiec");
+            mucDichSet.add("di-lam");
+            phongCachSet.add("co-dien");
+            phongCachSet.add("toi-gian");
+        }
+
+        // Default fallback nếu không khớp từ khóa nào
+        if (mucDichSet.isEmpty()) {
+            mucDichSet.add("di-lam");
+            mucDichSet.add("dao-pho");
+        }
+        if (phongCachSet.isEmpty()) {
+            phongCachSet.add("nang-dong");
+            phongCachSet.add("toi-gian");
+        }
+
+        String resM = String.join(",", mucDichSet);
+        String resP = String.join(",", phongCachSet);
+
+        // Lưu vào DB để lần sau sử dụng ngay
+        if (!resM.equals(lg.getNhomMucDich()) || !resP.equals(lg.getNhomPhongCach())) {
+            lg.setNhomMucDich(resM);
+            lg.setNhomPhongCach(resP);
+            try {
+                loaiGiayRepository.save(lg);
+            } catch (Exception ignored) {}
+        }
+
+        return new String[]{resM, resP};
     }
 
     private String locMa(String csv, Set<String> hopLe) {
