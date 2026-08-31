@@ -42,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -155,6 +156,27 @@ class GiaoCaServiceImplTest {
     }
 
     @Test
+    void nhanVienKhongDuocMoCaKhiDaCoCaKhacDangHoatDongInCuahang() {
+        NhanVien nhanVien1 = nhanVien(UUID.randomUUID(), "NV001", "Nhân viên 1", 0);
+        NhanVien nhanVien2 = nhanVien(UUID.randomUUID(), "NV002", "Nhân viên 2", 0);
+        GiaoCa caDangHoatDong = giaoCaDangMo(nhanVien1, caLam("sang", "Ca sáng", "08:00", "12:00"), LocalDate.now());
+
+        when(nhanVienRepository.findById(nhanVien2.getId())).thenReturn(Optional.of(nhanVien2));
+        when(giaoCaRepository.existsByNhanVienTrongCaIdAndTrangThaiIn(
+                nhanVien2.getId(), trangThaiChuaKetThuc())).thenReturn(false);
+        when(giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(trangThaiChuaKetThuc()))
+                .thenReturn(Optional.of(caDangHoatDong));
+
+        assertThatThrownBy(() -> service.moCa(nhanVien2.getId(), new MoCaRequest(
+                BigDecimal.ZERO, "", "sang", ""
+        )))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("đang hoạt động. Không thể mở thêm ca mới.");
+
+        verify(lichLamViecRepository, never()).findByNhanVienIdAndNgay(any(), any());
+    }
+
+    @Test
     void nhanVienCaCuoiDuocBanGiaoChoNhanVienCaDauNgayKeTiep() {
         NhanVien nguoiGiao = nhanVien(UUID.randomUUID(), "NV001", "Người giao", 2);
         NhanVien nguoiNhan = nhanVien(UUID.randomUUID(), "NV002", "Người nhận", 2);
@@ -166,7 +188,8 @@ class GiaoCaServiceImplTest {
         when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(
                 nguoiGiao.getId(), TrangThaiGiaoCa.MO_CA.ma())).thenReturn(Optional.of(giaoCa));
         when(caLamRepository.findAll()).thenReturn(List.of(caToi, caSang));
-        when(lichLamViecRepository.findByNgayAndCaLamId(homNay.plusDays(1), caSang.getId()))
+        lenient().when(lichLamViecRepository.findByNgayAndCaLamId(homNay, caToi.getId())).thenReturn(List.of());
+        lenient().when(lichLamViecRepository.findByNgayAndCaLamId(homNay.plusDays(1), caSang.getId()))
                 .thenReturn(List.of(lichLamViec(nguoiNhan, caSang, homNay.plusDays(1))));
 
         GiaoCaOptionsResponse options = service.layTuyChonBanGiao(nguoiGiao.getId());
@@ -191,7 +214,8 @@ class GiaoCaServiceImplTest {
         when(giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(
                 nguoiGiao.getId(), TrangThaiGiaoCa.MO_CA.ma())).thenReturn(Optional.of(giaoCa));
         when(caLamRepository.findAll()).thenReturn(List.of(caSang, caChieu));
-        when(lichLamViecRepository.findByNgayAndCaLamId(homNay, caChieu.getId()))
+        lenient().when(lichLamViecRepository.findByNgayAndCaLamId(homNay, caSang.getId())).thenReturn(List.of());
+        lenient().when(lichLamViecRepository.findByNgayAndCaLamId(homNay, caChieu.getId()))
                 .thenReturn(List.of(lichLamViec(nguoiNhan, caChieu, homNay)));
         when(nhanVienRepository.findById(nguoiNhan.getId())).thenReturn(Optional.of(nguoiNhan));
         when(giaoCaRepository.calculateTienMatTrongCa(giaoCa.getId()))
