@@ -374,67 +374,11 @@ public class ThucThiThanhToanTaiQuayService {
                 continue;
             }
 
-            if (rawContent.contains(maHd)) {
-                BigDecimal tongCanThanhToan = hoaDon.getTongTienThanhToan();
-                long soTienKyVong = tongCanThanhToan == null ? 0L : tongCanThanhToan.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
-                if (soTienKyVong > 0 && soTien < soTienKyVong) {
-                    return null;
-                }
-
-                List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
-                if (items == null || items.isEmpty()) {
-                    return null;
-                }
-
-                GiaoCa activeShift = null;
-                if (hoaDon.getNhanVien() != null && !laAdmin(hoaDon.getNhanVien())) {
-                    activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(hoaDon.getNhanVien().getId(), "MO_CA").orElse(null);
-                }
-                if (activeShift == null && !laAdmin(hoaDon.getNhanVien())) {
-                    activeShift = giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")).orElse(null);
-                }
-
-                boolean coGiaoHang = vanChuyenRepository.findByHoaDonId(hoaDon.getId()).isPresent();
-                int trangThaiSauThanhToan = coGiaoHang
-                        ? com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_DA_XAC_NHAN
-                        : com.example.server.core.admin.banHangTaiQuay.constant.BanHangTaiQuayConstants.TRANG_THAI_HOA_DON_HOAN_THANH;
-
-                ThanhToan thanhToan = new ThanhToan();
-                thanhToan.setHoaDon(hoaDon);
-                thanhToan.setNhanVien(hoaDon.getNhanVien());
-                thanhToan.setHinhThuc(2); // 2: Chuyen khoan
-                thanhToan.setSoTien(tongCanThanhToan);
-                thanhToan.setTienThoiLai(BigDecimal.ZERO);
-                thanhToan.setCongThanhToan("Chuyen khoan (SePay Webhook)");
-                thanhToan.setNgayThanhToan(Instant.now());
-                thanhToan.setTrangThai(1);
-                thanhToan.setLoaiGiaoDich(1); // 1: Thanh toan
-                thanhToan.setMaGiaoDich(noiDung);
-                thanhToan.setGhiChu("Thanh toan tu dong qua SePay Webhook (" + noiDung + ")");
-                thanhToan.setNgayTao(Instant.now());
-                thanhToanRepository.save(thanhToan);
-
-                hoaDon.setTrangThai(trangThaiSauThanhToan);
-                hoaDon.setNgayThanhToan(Instant.now());
-                hoaDon.setNgayCapNhat(Instant.now());
-                if (activeShift != null) {
-                    hoaDon.setGiaoCa(activeShift);
-                }
-                hoaDonRepository.save(hoaDon);
-
-                invoiceUseCase.luuLichSuHoaDon(hoaDon, trangThaiSauThanhToan, "Thanh toan thanh cong qua chuyen khoan SePay Webhook (" + noiDung + ")");
-
-                if (coGiaoHang) {
-                    String emailNhan = hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getEmail() : null;
-                    if (emailNhan != null && !emailNhan.isBlank()) {
-                        BigDecimal phiShip = vanChuyenRepository.findByHoaDonId(hoaDon.getId())
-                                .map(com.example.server.entity.VanChuyen::getPhiVanChuyen).orElse(BigDecimal.ZERO);
-                        guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
-                                items, "Chuyen khoan (SePay)", phiShip);
-                    }
-                }
-
-                return hoaDon;
+            BigDecimal tongCanThanhToan = hoaDon.getTongTienThanhToan();
+            long soTienKyVong = tongCanThanhToan == null ? 0L : tongCanThanhToan.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+            if (soTienKyVong > 0 && soTien < soTienKyVong) {
+                log.warn("SePay POS: hoa don {} can thanh toan {}, nhung webhook tra ve {}", hoaDon.getMa(), soTienKyVong, soTien);
+                return null;
             }
 
             List<HoaDonChiTiet> items = hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId());
@@ -452,10 +396,10 @@ public class ThucThiThanhToanTaiQuayService {
             }
 
             GiaoCa activeShift = null;
-            if (hoaDon.getNhanVien() != null) {
+            if (hoaDon.getNhanVien() != null && !laAdmin(hoaDon.getNhanVien())) {
                 activeShift = giaoCaRepository.findByNhanVienTrongCaIdAndTrangThai(hoaDon.getNhanVien().getId(), "MO_CA").orElse(null);
             }
-            if (activeShift == null) {
+            if (activeShift == null && !laAdmin(hoaDon.getNhanVien())) {
                 activeShift = giaoCaRepository.findFirstByTrangThaiInOrderByThoiGianVaoDesc(List.of("MO_CA")).orElse(null);
             }
 
