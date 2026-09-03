@@ -49,6 +49,7 @@ import com.example.server.repository.DotGiamGiaSanPhamRepository;
 import com.example.server.entity.DotGiamGia;
 import com.example.server.entity.DotGiamGiaSanPham;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -58,6 +59,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -71,6 +74,7 @@ import com.example.server.infrastructure.service.EmailService;
 @Service
 public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
 
+    private static final Logger log = LoggerFactory.getLogger(QuanLyHoaDonServiceImpl.class);
     private static final ZoneId MUI_GIO_HOA_DON = ZoneId.of("Asia/Bangkok");
 
     private static final int KENH_BAN_TAI_QUAY = 1;
@@ -718,6 +722,9 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         TaiKhoanNganHang taiKhoan = refundBankAccountResolver.resolve(
                 hoaDon.getKhachHang(),
                 request.taiKhoanNganHangId(),
+                request.tenNganHang(),
+                request.soTaiKhoan(),
+                request.tenChuTaiKhoan(),
                 Objects.equals(hinhThuc, HINH_THUC_THANH_TOAN_CHUYEN_KHOAN)
         );
         if (taiKhoan != null) {
@@ -744,6 +751,92 @@ public class QuanLyHoaDonServiceImpl implements QuanLyHoaDonService {
         hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "HOAN_TIEN");
 
         return mapHoaDonDetail(findHoaDon(id));
+    }
+
+    @Override
+    @Transactional
+    public String xacNhanHoanTienTuDongSePay(String noiDung, long soTien, String maGiaoDich) {
+        if (noiDung == null || noiDung.isBlank()) {
+            return null;
+        }
+
+        String rawContent = noiDung.replaceAll("[^a-zA-Z0-9]", "").toUpperCase(Locale.ROOT);
+        List<ThanhToan> danhSachCanHoan = thanhToanRepository.findByTrangThaiAndLoaiGiaoDich(
+                TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN,
+                LOAI_GIAO_DICH_THANH_TOAN
+        );
+
+        if (danhSachCanHoan.isEmpty()) {
+            return null;
+        }
+
+        for (ThanhToan thanhToan : danhSachCanHoan) {
+            HoaDon hoaDon = thanhToan.getHoaDon();
+            if (hoaDon == null || hoaDon.getMa() == null) {
+                continue;
+            }
+
+            String maHd = hoaDon.getMa().replaceAll("[^a-zA-Z0-9]", "").toUpperCase(Locale.ROOT);
+            if (maHd.isEmpty() || !rawContent.contains(maHd)) {
+                continue;
+            }
+
+            BigDecimal soTienCanHoan = defaultMoney(thanhToan.getSoTien());
+            long soTienKyVong = soTienCanHoan.setScale(0, RoundingMode.HALF_UP).longValue();
+            if (soTienKyVong > 0 && soTien < soTienKyVong) {
+                log.warn("SePay Out: Hoa don {} can hoan {}, nhung webhook chuyen {}", hoaDon.getMa(), soTienKyVong, soTien);
+                return null;
+            }
+
+            if (thanhToanRepository.existsByGiaoDichGocIdAndLoaiGiaoDich(
+                    thanhToan.getId(),
+                    LOAI_GIAO_DICH_HOAN_TIEN
+            )) {
+                log.info("SePay Out: Giao dich cho hoa don {} da duoc hoan tien truoc do", hoaDon.getMa());
+                return hoaDon.getMa();
+            }
+
+            Instant now = Instant.now();
+            String maGiaoDichHoan = (maGiaoDich != null && !maGiaoDich.isBlank())
+                    ? maGiaoDich.trim()
+                    : "SPRF" + System.currentTimeMillis();
+
+            String ghiChu = String.format("Hệ thống tự động ghi nhận hoàn tiền qua SePay Webhook (%s)", noiDung);
+
+            ThanhToan giaoDichHoan = new ThanhToan();
+            giaoDichHoan.setHoaDon(hoaDon);
+            giaoDichHoan.setNhanVien(hoaDon.getNhanVien());
+            giaoDichHoan.setGiaoDichGoc(thanhToan);
+            giaoDichHoan.setSoTien(soTienCanHoan);
+            giaoDichHoan.setHinhThuc(HINH_THUC_THANH_TOAN_CHUYEN_KHOAN);
+            giaoDichHoan.setMaGiaoDich(maGiaoDichHoan);
+            giaoDichHoan.setLoaiGiaoDich(LOAI_GIAO_DICH_HOAN_TIEN);
+            giaoDichHoan.setTrangThai(TRANG_THAI_THANH_TOAN_DA_HOAN_TIEN);
+            giaoDichHoan.setNgayThanhToan(now);
+            giaoDichHoan.setNgayTao(now);
+            giaoDichHoan.setGhiChu(ghiChu);
+            giaoDichHoan.setCongThanhToan("Chuyen khoan (SePay Webhook Out)");
+            giaoDichHoan.setNganHang("MB");
+            giaoDichHoan.setNoiDungCk(noiDung);
+            thanhToanRepository.save(giaoDichHoan);
+
+            thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_THANH_CONG);
+            thanhToan.setGhiChu(taoGhiChuThanhToan(thanhToan, "Đã hoàn tiền tự động qua SePay: " + maGiaoDichHoan));
+            thanhToanRepository.save(thanhToan);
+
+            if (hoaDon.getTrangThai() == null || hoaDon.getTrangThai() != TRANG_THAI_GIAO_HANG_THAT_BAI) {
+                hoaDon.setTrangThai(TRANG_THAI_HUY);
+            }
+            hoaDon.setNgayCapNhat(now);
+            hoaDonRepository.save(hoaDon);
+            ghiLichSuHoaDon(hoaDon, "Xác nhận hoàn tiền", ghiChu);
+            hoaDonRealtimePublisher.publishAfterCommit(hoaDon, "HOAN_TIEN");
+
+            log.info("SePay Out: Da tu dong xac nhan hoan tien cho hoa don {} (so tien {})", hoaDon.getMa(), soTienCanHoan);
+            return hoaDon.getMa();
+        }
+
+        return null;
     }
 
     @Override

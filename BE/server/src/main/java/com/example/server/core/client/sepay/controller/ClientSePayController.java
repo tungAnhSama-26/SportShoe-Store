@@ -1,6 +1,7 @@
 package com.example.server.core.client.sepay.controller;
 
 import com.example.server.core.admin.banHangTaiQuay.service.BanHangTaiQuayService;
+import com.example.server.core.admin.quanlyhoadon.service.QuanLyHoaDonService;
 import com.example.server.core.client.vnpay.service.ClientVnPayService;
 import java.util.Locale;
 import java.util.Map;
@@ -15,10 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Nhận webhook từ SePay khi có chuyển khoản vào tài khoản ngân hàng.
+ * Nhận webhook từ SePay khi có chuyển khoản vào hoặc chuyển khoản hoàn tiền ra khỏi tài khoản ngân hàng.
  *
- * <p>SePay gửi POST kèm header {@code Authorization: Apikey <key>}. Sau khi xác thực,
- * khớp nội dung chuyển khoản + số tiền với phiên thanh toán Online hoặc Hóa đơn chờ tại quầy (POS).
+ * <p>SePay gửi POST kèm header {@code Authorization: Apikey <key>}. Sau khi xác thực:
+ * - Nếu tiền vào (transferType = in): khớp với đơn hàng Online hoặc Hóa đơn chờ tại quầy (POS).
+ * - Nếu tiền ra (transferType = out): khớp với hóa đơn cần hoàn tiền để tự động xác nhận hoàn tất.
  * Luôn trả 200 OK để SePay không gửi lại.</p>
  */
 @RestController
@@ -29,15 +31,18 @@ public class ClientSePayController {
 
     private final ClientVnPayService clientVnPayService;
     private final BanHangTaiQuayService banHangTaiQuayService;
+    private final QuanLyHoaDonService quanLyHoaDonService;
     private final String apiKey;
 
     public ClientSePayController(
             ClientVnPayService clientVnPayService,
             BanHangTaiQuayService banHangTaiQuayService,
+            QuanLyHoaDonService quanLyHoaDonService,
             @Value("${sepay.api-key:}") String apiKey
     ) {
         this.clientVnPayService = clientVnPayService;
         this.banHangTaiQuayService = banHangTaiQuayService;
+        this.quanLyHoaDonService = quanLyHoaDonService;
         this.apiKey = apiKey;
     }
 
@@ -52,12 +57,9 @@ public class ClientSePayController {
             return ResponseEntity.status(401).body(Map.of("success", false));
         }
 
-        // 2. Chỉ xử lý giao dịch TIỀN VÀO.
-        if (!"in".equalsIgnoreCase(String.valueOf(body.get("transferType")))) {
-            return ResponseEntity.ok(Map.of("success", true));
-        }
+        String transferType = String.valueOf(body.get("transferType"));
 
-        // 3. Lấy nội dung CK (ưu tiên mã SePay đã bóc tách) + số tiền.
+        // 2. Lấy nội dung CK (ưu tiên mã SePay đã bóc tách) + số tiền.
         Object code = body.get("code");
         Object content = body.get("content");
         Object description = body.get("description");
@@ -76,7 +78,29 @@ public class ClientSePayController {
 
         long soTien = body.get("transferAmount") instanceof Number n ? n.longValue() : 0L;
 
-        log.info("SePay webhook nhan thong tin chuyen khoan: noiDung='{}', soTien={}", noiDung, soTien);
+        log.info("SePay webhook nhan giao dich: type='{}', noiDung='{}', soTien={}", transferType, noiDung, soTien);
+
+        // 3. Xử lý TIỀN RA (transferType == "out"): Tự động xác nhận hoàn tiền cho đơn hàng.
+        if ("out".equalsIgnoreCase(transferType)) {
+            String ref = body.get("referenceCode") != null ? String.valueOf(body.get("referenceCode")) : String.valueOf(body.get("id"));
+            String refundMa = null;
+            try {
+                refundMa = quanLyHoaDonService.xacNhanHoanTienTuDongSePay(noiDung, soTien, ref);
+            } catch (RuntimeException e) {
+                log.error("SePay webhook loi khi doi chieu hoan tien (noiDung='{}')", noiDung, e);
+            }
+            if (refundMa != null) {
+                log.info("SePay webhook xac nhan HOAN TIEN don hang thanh cong: {}", refundMa);
+                return ResponseEntity.ok(Map.of("success", true, "orderCode", refundMa, "type", "REFUND"));
+            }
+            log.info("SePay webhook TIEN RA nhan thong tin nhung khong khop don can hoan tien nao (noi dung: '{}')", noiDung);
+            return ResponseEntity.ok(Map.of("success", true));
+        }
+
+        // 4. Nếu không phải TIỀN VÀO thì bỏ qua.
+        if (!"in".equalsIgnoreCase(transferType)) {
+            return ResponseEntity.ok(Map.of("success", true));
+        }
 
         // 4.1. Khớp đơn Online (Web Khách hàng).
         // Lỗi ở nhánh này không được chặn nhánh POS: tiền đã về, phải thử khớp nốt hóa đơn tại quầy.

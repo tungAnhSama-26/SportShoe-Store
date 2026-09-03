@@ -43,4 +43,5 @@ public interface QuanLyHoaDonService {
     List<HoaDonSummaryResponse> layDanhSachHoaDonTheoKhachHang(UUID khachHangId);
 
     com.example.server.core.admin.quanlyhoadon.dto.responsse.MuaLaiCheckResponse checkMuaLai(Integer id);
+    String xacNhanHoanTienTuDongSePay(String noiDung, long soTien, String maGiaoDich);
 }

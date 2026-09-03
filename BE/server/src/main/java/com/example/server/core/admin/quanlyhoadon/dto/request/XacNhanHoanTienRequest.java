@@ -9,6 +9,18 @@ public record XacNhanHoanTienRequest(
         BigDecimal soTienHoan,
         String maGiaoDichHoan,
         String ghiChu,
-        Integer taiKhoanNganHangId
+        Integer taiKhoanNganHangId,
+        String tenNganHang,
+        String soTaiKhoan,
+        String tenChuTaiKhoan
 ) {
+    public XacNhanHoanTienRequest(
+            Integer hinhThucHoanTien,
+            BigDecimal soTienHoan,
+            String maGiaoDichHoan,
+            String ghiChu,
+            Integer taiKhoanNganHangId
+    ) {
+        this(hinhThucHoanTien, soTienHoan, maGiaoDichHoan, ghiChu, taiKhoanNganHangId, null, null, null);
+    }
 }

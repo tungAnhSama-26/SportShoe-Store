@@ -3,11 +3,13 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { layDonHangCuaToi, yeuCauHuyDonHang } from '../services/don-hang';
 import { layKhachId, themVaoGio } from '../services/gio-hang';
+import { layDanhSachTaiKhoanNganHang } from '../services/client-profile';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
 import { getDisplayErrorMessage } from '../utils/error-message';
 import { resolveMediaUrl } from '../utils/media';
 import { ketNoiHoaDonRealtime } from '../services/hoa-don-realtime';
+import { Star } from 'lucide-vue-next';
 import anhMacDinh from '../assets/login-shoe.png';
 
 const router = useRouter();
@@ -142,8 +144,37 @@ async function muaLai(don) {
 }
 
 async function guiYeuCauHuy(don) {
+  const laDonDaThanhToan =
+    don.daThanhToan === true ||
+    don.hinhThucThanhToan === 'CHUYEN_KHOAN';
+
+  if (laDonDaThanhToan) {
+    const khId = layKhachId();
+    if (khId) {
+      try {
+        const accounts = await layDanhSachTaiKhoanNganHang(khId);
+        if (!accounts || accounts.length === 0) {
+          const res = await showConfirm(
+            'Sau khi hủy, số tiền đã thanh toán sẽ được chuyển trả vào tài khoản ngân hàng của bạn. Vui lòng thêm thông tin ngân hàng nhận tiền để tiếp tục.',
+            'Thông tin hoàn tiền',
+            'Thêm tài khoản ngay',
+            'Đóng',
+          );
+          if (res) {
+            router.push('/khachhang/profile?tab=nganHang');
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('Lỗi kiểm tra tài khoản ngân hàng:', err);
+      }
+    }
+  }
+
   const daXacNhan = await showConfirm(
-    'Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác. Nếu đơn đã thanh toán, cửa hàng sẽ hoàn tiền cho bạn.',
+    laDonDaThanhToan
+      ? 'Bạn chắc chắn muốn hủy đơn? Đơn đã thanh toán sẽ được cửa hàng hoàn tiền lại cho bạn.'
+      : 'Bạn chắc chắn muốn hủy đơn hàng này? Thao tác không thể hoàn tác.',
     'Hủy đơn hàng',
     'Hủy đơn',
     'Quay lại',
@@ -232,8 +263,12 @@ async function guiYeuCauHuy(don) {
               </div>
             </div>
 
-            <!-- Product list section -->
-            <div class="space-y-4 py-1 divide-y divide-slate-100/60">
+            <!-- Product list section (Click vào chuyển sang chi tiết đơn) -->
+            <div
+              class="space-y-4 py-1 divide-y divide-slate-100/60 cursor-pointer rounded-xl hover:bg-slate-50/80 p-2 -mx-2 transition"
+              @click="router.push(`/khachhang/don-hang/${don.id}`)"
+              title="Bấm để xem chi tiết đơn hàng"
+            >
               <div
                 v-for="sp in don.sanPhams"
                 :key="sp.giayChiTietId"
@@ -287,6 +322,15 @@ async function guiYeuCauHuy(don) {
                 >
                   {{ donDangGuiYeuCauHuy === don.id ? 'Đang xử lý...' : 'Hủy đơn' }}
                 </button>
+                <!-- Đánh giá button for Completed (5) -->
+                <button
+                  v-if="don.trangThai === 5"
+                  @click="router.push(`/khachhang/don-hang/${don.id}/danh-gia`)"
+                  class="px-5 py-2 text-xs md:text-sm font-semibold text-white bg-gradient-to-r from-rose-500 to-red-500 rounded-xl hover:opacity-95 transition shadow-sm inline-flex items-center gap-1.5"
+                >
+                  <Star class="h-3.5 w-3.5 fill-white" />
+                  Đánh giá
+                </button>
                 <!-- Mua Lại (Buy Again) button for Completed (5) or Cancelled (6) -->
                 <button
                   v-if="don.trangThai === 5 || don.trangThai === 6"
@@ -294,12 +338,6 @@ async function guiYeuCauHuy(don) {
                   class="px-5 py-2 text-xs md:text-sm font-semibold text-white bg-primary rounded-xl hover:bg-primary/95 transition shadow-sm"
                 >
                   Mua Lại
-                </button>
-                <button
-                  @click="router.push(`/khachhang/don-hang/${don.id}`)"
-                  class="px-5 py-2 text-xs md:text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition"
-                >
-                  Xem chi tiết
                 </button>
               </div>
             </div>

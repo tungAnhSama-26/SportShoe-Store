@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import {
   Save,
   User,
@@ -53,11 +53,21 @@ if (!khachHangId) {
   router.push("/login");
 }
 
+const route = useRoute();
 const dangTai = ref(false);
 const dangLuu = ref(false);
 const dangLuuNganHang = ref(false);
 const loiTrang = ref("");
-const tabHienTai = ref("thongTin"); // 'thongTin' | 'nganHang'
+const tabHienTai = ref(route.query?.tab === "nganHang" ? "nganHang" : "thongTin");
+
+watch(
+  () => route.query?.tab,
+  (newTab) => {
+    if (newTab === "nganHang" || newTab === "thongTin") {
+      tabHienTai.value = newTab;
+    }
+  }
+);
 
 // Profile Form State
 const form = ref({

@@ -7,7 +7,10 @@ import {
   xacNhanDaNhanHang,
   yeuCauHuyDonHang,
 } from '../services/don-hang';
-import { layDanhSachDiaChiProfile } from '../services/client-profile';
+import {
+  layDanhSachDiaChiProfile,
+  layDanhSachTaiKhoanNganHang,
+} from '../services/client-profile';
 import { layKhachId, layThongTinKhach } from '../services/gio-hang';
 import { dinhDangTienViet } from '../utils/dinhDangTien';
 import { showSuccess, showError, showConfirm } from '../utils/alert';
@@ -374,7 +377,33 @@ async function luuThongTinGiaoHang(payload) {
 }
 
 async function guiYeuCauHuy() {
-  const daThanhToanCK = don.value?.hinhThucThanhToan === 'CHUYEN_KHOAN';
+  const daThanhToanCK =
+    don.value?.daThanhToan === true ||
+    don.value?.hinhThucThanhToan === 'CHUYEN_KHOAN';
+
+  if (daThanhToanCK) {
+    const khId = layKhachId();
+    if (khId) {
+      try {
+        const accounts = await layDanhSachTaiKhoanNganHang(khId);
+        if (!accounts || accounts.length === 0) {
+          const res = await showConfirm(
+            'Sau khi hủy, số tiền đã thanh toán sẽ được chuyển trả vào tài khoản ngân hàng của bạn. Vui lòng thêm thông tin ngân hàng nhận tiền để tiếp tục.',
+            'Thông tin hoàn tiền',
+            'Thêm tài khoản ngay',
+            'Đóng',
+          );
+          if (res) {
+            router.push('/khachhang/profile?tab=nganHang');
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('Lỗi kiểm tra tài khoản ngân hàng:', err);
+      }
+    }
+  }
+
   const daXacNhan = await showConfirm(
     daThanhToanCK
       ? 'Bạn chắc chắn muốn hủy đơn? Đơn đã thanh toán sẽ được cửa hàng hoàn tiền lại cho bạn.'

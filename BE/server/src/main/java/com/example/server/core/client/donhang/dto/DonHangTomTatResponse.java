@@ -15,8 +15,24 @@ public record DonHangTomTatResponse(
         BigDecimal tongThanhToan,
         List<DongSanPhamTomTat> sanPhams,
         Instant ngayCapNhat,
-        Instant ngayGiao
+        Instant ngayGiao,
+        boolean daThanhToan,
+        String hinhThucThanhToan
 ) {
+    public DonHangTomTatResponse(
+            Integer id,
+            String ma,
+            Instant ngayLap,
+            Integer trangThai,
+            String trangThaiText,
+            int soLuong,
+            BigDecimal tongThanhToan,
+            List<DongSanPhamTomTat> sanPhams,
+            Instant ngayCapNhat,
+            Instant ngayGiao
+    ) {
+        this(id, ma, ngayLap, trangThai, trangThaiText, soLuong, tongThanhToan, sanPhams, ngayCapNhat, ngayGiao, false, null);
+    }
     public record DongSanPhamTomTat(
             Integer hoaDonChiTietId,
             Integer giayChiTietId,

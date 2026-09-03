@@ -1342,27 +1342,117 @@ export function useChiTietHoaDon() {
     }
   }
 
-  const qrHoanTienUrl = computed(() => {
-    if (!taiKhoanNganHangChon.value) return "";
-    const bank = taiKhoanNganHangChon.value.tenNganHang;
-    const account = taiKhoanNganHangChon.value.soTaiKhoan;
-    const name = encodeURIComponent(taiKhoanNganHangChon.value.tenChuTaiKhoan);
-    const amount = Number(formHoanTien.value.soTienHoan) || 0;
-    const desc = encodeURIComponent(
-      `HOAN TIEN DON ${hoaDon.value?.maHoaDon || hoaDon.value?.ma || ""}`,
-    );
-    return `https://img.vietqr.io/image/${bank}-${account}-compact2.png?amount=${amount}&addInfo=${desc}&accountName=${name}`;
+  const dsNganHangMacDinh = [
+    { code: "MB", shortName: "MBBank", name: "Ngân hàng Quân Đội (MBBank)" },
+    { code: "VCB", shortName: "Vietcombank", name: "Ngân hàng Ngoại Thương (Vietcombank)" },
+    { code: "TCB", shortName: "Techcombank", name: "Ngân hàng Kỹ Thương (Techcombank)" },
+    { code: "ACB", shortName: "ACB", name: "Ngân hàng Á Châu (ACB)" },
+    { code: "VPB", shortName: "VPBank", name: "Ngân hàng Việt Nam Thịnh Vượng (VPBank)" },
+    { code: "CTG", shortName: "VietinBank", name: "Ngân hàng Công Thương (VietinBank)" },
+    { code: "BIDV", shortName: "BIDV", name: "Ngân hàng Đầu Tư và Phát Triển (BIDV)" },
+    { code: "TPB", shortName: "TPBank", name: "Ngân hàng Tiên Phong (TPBank)" },
+    { code: "STB", shortName: "Sacombank", name: "Ngân hàng Sài Gòn Thương Tín (Sacombank)" },
+    { code: "HDB", shortName: "HDBank", name: "Ngân hàng Phát Triển TP.HCM (HDBank)" },
+    { code: "VIB", shortName: "VIB", name: "Ngân hàng Quốc Tế (VIB)" },
+    { code: "MSB", shortName: "MSB", name: "Ngân hàng Hàng Hải (MSB)" },
+    { code: "OCB", shortName: "OCB", name: "Ngân hàng Phương Đông (OCB)" },
+    { code: "LPB", shortName: "LPBank", name: "Ngân hàng Bưu Điện Liên Việt (LPBank)" },
+    { code: "SHB", shortName: "SHB", name: "Ngân hàng Sài Gòn - Hà Nội (SHB)" },
+    { code: "SEAB", shortName: "SeABank", name: "Ngân hàng Đông Nam Á (SeABank)" },
+    { code: "BAB", shortName: "BacABank", name: "Ngân hàng Bắc Á (BacABank)" },
+    { code: "NAB", shortName: "NamABank", name: "Ngân hàng Nam Á (NamABank)" },
+    { code: "KLB", shortName: "Kienlongbank", name: "Ngân hàng Kiên Long (Kienlongbank)" },
+    { code: "VAB", shortName: "VietBank", name: "Ngân hàng Việt Nam Thương Tín (VietBank)" },
+    { code: "BVB", shortName: "BaoVietBank", name: "Ngân hàng Bảo Việt (BaoVietBank)" },
+    { code: "PVCB", shortName: "PVcomBank", name: "Ngân hàng Đại Chúng (PVcomBank)" },
+    { code: "SGB", shortName: "SaigonBank", name: "Ngân hàng Sài Gòn Công Thương (SaigonBank)" },
+    { code: "PGB", shortName: "PGBank", name: "Ngân hàng Thịnh Vượng và Phát Triển (PGBank)" },
+    { code: "GPB", shortName: "GPBank", name: "Ngân hàng Dầu Khí Toàn Cầu (GPBank)" },
+    { code: "OCEANBANK", shortName: "OceanBank", name: "Ngân hàng Đại Dương (OceanBank)" },
+    { code: "CB", shortName: "CBBank", name: "Ngân hàng Xây Dựng (CBBank)" },
+    { code: "SCB", shortName: "SCB", name: "Ngân hàng Sài Gòn (SCB)" },
+    { code: "SHINHAN", shortName: "ShinhanBank", name: "Ngân hàng Shinhan Việt Nam" },
+    { code: "WOORI", shortName: "WooriBank", name: "Ngân hàng Woori Việt Nam" },
+    { code: "HSBC", shortName: "HSBC", name: "Ngân hàng HSBC Việt Nam" },
+    { code: "SCVN", shortName: "StandardChartered", name: "Ngân hàng Standard Chartered" },
+    { code: "PBVN", shortName: "PublicBank", name: "Ngân hàng Public Bank Việt Nam" },
+    { code: "HLBVN", shortName: "HongLeong", name: "Ngân hàng Hong Leong" },
+    { code: "UOB", shortName: "UOB", name: "Ngân hàng UOB Việt Nam" },
+    { code: "CIMB", shortName: "CIMB", name: "Ngân hàng CIMB Việt Nam" },
+    { code: "IVB", shortName: "IndovinaBank", name: "Ngân hàng TNHH Indovina" },
+    { code: "VRB", shortName: "VRB", name: "Ngân hàng Liên Doanh Việt - Nga" },
+    { code: "TIMO", shortName: "Timo", name: "Ngân hàng số Timo by BVBank" },
+    { code: "CAKE", shortName: "Cake", name: "Ngân hàng số Cake by VPBank" },
+    { code: "UBANK", shortName: "Ubank", name: "Ngân hàng số Ubank by VPBank" },
+    { code: "VNPTPAY", shortName: "VNPTMoney", name: "Ví điện tử VNPT Money" },
+    { code: "VIETTELMONEY", shortName: "ViettelMoney", name: "Viettel Money" },
+  ];
+
+  const dsNganHangPhoBien = ref(dsNganHangMacDinh);
+
+  async function taiDanhSachVietQrBanks() {
+    try {
+      const res = await fetch("https://api.vietqr.io/v2/banks");
+      const json = await res.json();
+      if (json.code === "00" && Array.isArray(json.data) && json.data.length > 0) {
+        dsNganHangPhoBien.value = json.data.map((b) => ({
+          code: b.code || b.shortName,
+          shortName: b.shortName || b.code,
+          name: `${b.shortName || b.code} - ${b.name}`,
+          logo: b.logo || "",
+        }));
+      }
+    } catch {
+      // Nếu mạng chậm/offline giữ nguyên danh sách mặc định
+    }
+  }
+
+  const thongTinNhanTien = computed(() => {
+    if (formHoanTien.value.cheDoTaiKhoan === "chon") {
+      if (!taiKhoanNganHangChon.value) return null;
+      return {
+        bank: taiKhoanNganHangChon.value.tenNganHang,
+        account: taiKhoanNganHangChon.value.soTaiKhoan,
+        name: taiKhoanNganHangChon.value.tenChuTaiKhoan,
+      };
+    }
+    if (!formHoanTien.value.soTaiKhoanNhap?.trim()) return null;
+    return {
+      bank: formHoanTien.value.nganHangNhap || "MB",
+      account: formHoanTien.value.soTaiKhoanNhap.trim(),
+      name: formHoanTien.value.tenChuTaiKhoanNhap?.trim() || hoaDon.value?.tenKhachHang || "",
+    };
   });
 
-  function moModalHoanTien() {
+  const qrHoanTienUrl = computed(() => {
+    const info = thongTinNhanTien.value;
+    if (!info || !info.bank || !info.account) return "";
+    const amount = Number(formHoanTien.value.soTienHoan) || Number(tongTienHoan.value) || 0;
+    const maHd = hoaDon.value?.maHoaDon || hoaDon.value?.ma || "";
+    const cleanMaHd = String(maHd).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    const desc = encodeURIComponent(`SHOEHT${cleanMaHd}`);
+    return `https://qr.sepay.vn/img?bank=${encodeURIComponent(info.bank)}&acc=${encodeURIComponent(info.account)}&amount=${amount}&des=${desc}&template=compact`;
+  });
+
+  async function moModalHoanTien() {
     if (!coTheHoanTien.value) return;
     formHoanTien.value = {
       hinhThucHoanTien: 2,
       soTienHoan: String(tongTienHoan.value || ""),
       maGiaoDichHoan: "",
       ghiChu: "Đã hoàn tiền cho khách hàng",
+      cheDoTaiKhoan: "chon",
+      nganHangNhap: "MB",
+      soTaiKhoanNhap: "",
+      tenChuTaiKhoanNhap: hoaDon.value?.tenKhachHang || "",
     };
-    taiTaiKhoanNganHangKhach();
+    await Promise.all([
+      taiTaiKhoanNganHangKhach(),
+      taiDanhSachVietQrBanks(),
+    ]);
+    if (!hoaDon.value?.khachHangId || dsTaiKhoanNganHangKhach.value.length === 0) {
+      formHoanTien.value.cheDoTaiKhoan = "nhap";
+    }
     hienModalHoanTien.value = true;
   }
 
@@ -1391,16 +1481,26 @@ export function useChiTietHoaDon() {
       return;
     }
 
-    if (
-      Number(formHoanTien.value.hinhThucHoanTien) === 2 &&
-      !taiKhoanNganHangChon.value?.id
-    ) {
-      hienThiThongBao(
-        "warning",
-        "Chưa chọn tài khoản nhận tiền",
-        "Vui lòng chọn tài khoản ngân hàng của khách trước khi xác nhận hoàn tiền.",
-      );
-      return;
+    const isChuyenKhoan = Number(formHoanTien.value.hinhThucHoanTien) === 2;
+    if (isChuyenKhoan) {
+      if (formHoanTien.value.cheDoTaiKhoan === "chon" && !taiKhoanNganHangChon.value?.id) {
+        hienThiThongBao(
+          "warning",
+          "Chưa chọn tài khoản nhận tiền",
+          "Vui lòng chọn tài khoản ngân hàng của khách hoặc chuyển sang tab nhập trực tiếp.",
+        );
+        return;
+      }
+      if (formHoanTien.value.cheDoTaiKhoan === "nhap") {
+        if (!formHoanTien.value.nganHangNhap || !formHoanTien.value.soTaiKhoanNhap?.trim()) {
+          hienThiThongBao(
+            "warning",
+            "Thiếu thông tin nhận tiền",
+            "Vui lòng chọn ngân hàng và nhập số tài khoản nhận tiền của khách.",
+          );
+          return;
+        }
+      }
     }
 
     dangXacNhanHoanTien.value = true;
@@ -1412,9 +1512,12 @@ export function useChiTietHoaDon() {
           maGiaoDichHoan: formHoanTien.value.maGiaoDichHoan,
           ghiChu: formHoanTien.value.ghiChu,
           taiKhoanNganHangId:
-            Number(formHoanTien.value.hinhThucHoanTien) === 2
+            isChuyenKhoan && formHoanTien.value.cheDoTaiKhoan === "chon"
               ? taiKhoanNganHangChon.value?.id
               : null,
+          tenNganHang: isChuyenKhoan ? thongTinNhanTien.value?.bank : null,
+          soTaiKhoan: isChuyenKhoan ? thongTinNhanTien.value?.account : null,
+          tenChuTaiKhoan: isChuyenKhoan ? thongTinNhanTien.value?.name : null,
         }),
       );
       hienThiThongBao(
@@ -1472,6 +1575,14 @@ export function useChiTietHoaDon() {
       authScope: "admin",
       onHoaDonThayDoi: (event) => {
         if (Number(event?.hoaDonId) !== Number(route.params.id)) return;
+        if (event?.loaiSuKien === "HOAN_TIEN" && hienModalHoanTien.value) {
+          hienModalHoanTien.value = false;
+          hienThiThongBao(
+            "success",
+            "Đã hoàn tiền thành công",
+            "Hệ thống đã tự động ghi nhận giao dịch hoàn tiền qua SePay!",
+          );
+        }
         if (Date.now() - lanCapNhatCucBoGanNhat < 2000) return;
         if (realtimeRefreshTimeout) clearTimeout(realtimeRefreshTimeout);
         realtimeRefreshTimeout = setTimeout(() => taiChiTiet(true), 150);
@@ -1715,6 +1826,8 @@ export function useChiTietHoaDon() {
     dsTaiKhoanNganHangKhach,
     dangTaiNganHangKhach,
     taiKhoanNganHangChon,
+    dsNganHangPhoBien,
+    thongTinNhanTien,
     qrHoanTienUrl,
     khongHoanKho,
     lyDoHuyDon,

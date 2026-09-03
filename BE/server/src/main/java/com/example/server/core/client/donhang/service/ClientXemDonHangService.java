@@ -159,11 +159,16 @@ public class ClientXemDonHangService {
                 ngayGiao = ngayThanhToan;
             }
 
+            boolean laCK = laChuyenKhoan(hd.getId());
+            boolean daThanhToan = laCK || coThanhToanThanhCong(hd);
+            String hinhThucThanhToan = laCK ? "CHUYEN_KHOAN" : "COD";
+
             result.add(new DonHangTomTatResponse(
                     hd.getId(), hd.getMa(), hd.getNgayLap(),
                     virtualStatus, virtualStatusText,
                     soLuong, hd.getTongTienThanhToan(), sanPhams,
-                    hd.getNgayCapNhat(), ngayGiao));
+                    hd.getNgayCapNhat(), ngayGiao,
+                    daThanhToan, hinhThucThanhToan));
         }
         return result;
     }
