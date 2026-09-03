@@ -21,6 +21,16 @@ import java.util.Optional;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    /**
+     * Lý do cụ thể khiến token bị từ chối (tài khoản bị khóa, không còn tồn tại...).
+     * SecurityConfig đọc thuộc tính này để trả đúng thông điệp 401 cho FE thay vì
+     * câu chung chung "Vui lòng đăng nhập để tiếp tục".
+     */
+    public static final String THUOC_TINH_LY_DO_TU_CHOI = "sportshoe.lyDoTuChoiToken";
+
+    /** Khách hàng đang đăng nhập bị admin khóa -> FE dựa vào cờ này để đưa về giao diện khách. */
+    public static final String THUOC_TINH_PHAM_VI = "sportshoe.phamViToken";
+
     private final JwtService jwtService;
     private final NhanVienRepository nhanVienRepository;
     private final KhachHangRepository khachHangRepository;
@@ -52,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authorization.substring(7).trim();
             ParsedSubjectToken subjectToken = jwtService.parseSubjectToken(token);
             if ("CUSTOMER".equals(subjectToken.role())) {
-                authenticateCustomer(token);
+                authenticateCustomer(token, request);
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -64,6 +74,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     || (nhanVienOpt.get().getTrangThai() != 1
                     && nhanVienOpt.get().getTrangThai() != 2)) {
                 SecurityContextHolder.clearContext();
+                ghiLyDoTuChoi(request, "admin", nhanVienOpt.isPresent()
+                        ? "Tài khoản nhân viên đã bị khóa. Vui lòng liên hệ quản trị viên."
+                        : "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại.");
             } else {
                 NhanVien nhanVien = nhanVienOpt.get();
                 Integer currentVaiTro = normalizeVaiTro(nhanVien.getVaiTro());
@@ -95,11 +108,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void authenticateCustomer(String token) {
+    private void authenticateCustomer(String token, HttpServletRequest request) {
         CustomerPrincipal tokenPrincipal = jwtService.parseCustomerToken(token).principal();
         Optional<KhachHang> customerOpt = khachHangRepository.findById(tokenPrincipal.id());
         if (customerOpt.isEmpty() || customerOpt.get().getTrangThai() != 1) {
             SecurityContextHolder.clearContext();
+            ghiLyDoTuChoi(request, "customer", customerOpt.isPresent()
+                    ? "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ cửa hàng để được hỗ trợ."
+                    : "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại.");
             return;
         }
 
@@ -116,6 +132,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    /** Ghi lại lý do + phạm vi (admin/customer) của token bị từ chối để trả về cho FE. */
+    private void ghiLyDoTuChoi(HttpServletRequest request, String phamVi, String lyDo) {
+        request.setAttribute(THUOC_TINH_LY_DO_TU_CHOI, lyDo);
+        request.setAttribute(THUOC_TINH_PHAM_VI, phamVi);
     }
 
     private String resolveRole(Integer vaiTro) {

@@ -91,14 +91,15 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { Eye, EyeOff } from "lucide-vue-next";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { login } from "../../services/auth";
 import { showSuccess } from "../../utils/alert";
 import "./Login.css";
 
 const router = useRouter();
+const route = useRoute();
 const loginForm = reactive({
   username: "",
   password: "",
@@ -127,6 +128,22 @@ const showToast = (message, type = "error") => {
   }, 3000);
 };
 
+// Khách bị admin khóa / hết phiên -> api-client đưa về đây kèm lý do, hiển thị ngay cho khách biết.
+// notice=session_terminated: phiên bị kết thúc từ tab khác (main.js theo dõi localStorage).
+onMounted(() => {
+  const thongBao = String(route.query.thongBao || "").trim()
+    || (route.query.notice === "session_terminated"
+      ? "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại."
+      : "");
+  if (thongBao) {
+    showToast(thongBao);
+    router.replace({
+      path: route.path,
+      query: route.query.redirect ? { redirect: route.query.redirect } : {},
+    });
+  }
+});
+
 const handleLogin = async () => {
   // Validation
   if (!loginForm.username.trim()) {
@@ -146,8 +163,11 @@ const handleLogin = async () => {
   try {
     await login(loginForm.username, loginForm.password);
     showToast("Đăng nhập thành công!", "success");
+    // Quay lại đúng trang khách đang xem lúc bị buộc đăng xuất (nếu có).
+    const quayLai = String(route.query.redirect || "").trim();
+    const dichDen = quayLai.startsWith("/") && !quayLai.startsWith("//") ? quayLai : "/";
     setTimeout(() => {
-      router.push("/");
+      router.push(dichDen);
     }, 800);
   } catch (error) {
     showToast(error.message || "Đăng nhập thất bại");

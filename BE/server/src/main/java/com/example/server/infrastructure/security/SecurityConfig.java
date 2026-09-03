@@ -64,12 +64,20 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Vui lòng đăng nhập để tiếp tục"))
+                                writeError(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                        layLyDoTuChoi(request, "Vui lòng đăng nhập để tiếp tục")))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                writeError(response, HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập chức năng này"))
+                                writeError(response, HttpServletResponse.SC_FORBIDDEN,
+                                        layLyDoTuChoi(request, "Bạn không có quyền truy cập chức năng này")))
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    /** Lấy lý do cụ thể do JwtAuthenticationFilter ghi lại (vd tài khoản bị khóa), nếu không có thì dùng mặc định. */
+    private String layLyDoTuChoi(jakarta.servlet.http.HttpServletRequest request, String macDinh) {
+        Object lyDo = request.getAttribute(JwtAuthenticationFilter.THUOC_TINH_LY_DO_TU_CHOI);
+        return lyDo instanceof String chuoi && !chuoi.isBlank() ? chuoi : macDinh;
     }
 
     private void writeError(HttpServletResponse response, int status, String message) throws java.io.IOException {

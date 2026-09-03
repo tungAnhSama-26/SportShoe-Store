@@ -123,6 +123,7 @@ async function moDanhSachVoucher() {
 
 // Đồng bộ lại danh sách voucher (vd admin vừa ngừng 1 phiếu -> phiếu đó tự ẩn khỏi danh sách).
 async function taiLaiDsVoucherNeuMo() {
+  if (dangHienQr.value) return;
   if (!hienDsVoucher.value && !dsVoucher.value.length) return;
   try {
     dsVoucher.value = await layVoucherKhaDung();
@@ -140,6 +141,16 @@ async function chonVoucher(v) {
 
 // VNPay (giả lập)
 const qrVnPay = ref(null); // { token, qrData, maGiaoDich, hetHanLuc }
+// Khi mã QR đang mở, voucher + hàng đã bị BE giữ chỗ (trừ lượt) cho phiên này.
+// Vì vậy toàn bộ giao diện phía sau phải "đứng im": không đồng bộ lại giỏ, không kiểm tra
+// lại voucher (kiểm sẽ báo "đã dùng/hết hạn" do chính phiên này giữ), không tính lại phí ship.
+const dangHienQr = computed(() => Boolean(qrVnPay.value));
+
+// Khóa cuộn trang nền khi QR đang mở để nền thực sự đứng yên.
+watch(dangHienQr, (dangMo) => {
+  document.body.style.overflow = dangMo ? 'hidden' : '';
+});
+
 let pollTimer = null;
 let countdownTimer = null;
 const soGiayQrConLai = ref(0);
@@ -170,6 +181,8 @@ const tongCanNang = computed(() =>
 
 let phiTimer = null;
 async function capNhatPhiShip() {
+  // Số tiền trên mã QR đã chốt -> không được đổi phí ship khi QR còn hiệu lực.
+  if (dangHienQr.value) return;
   const f = form.value;
   if (!f.tinhThanh.trim() || !f.phuongXa.trim() || !f.diaChiCuThe.trim()) {
     phiShip.value = null;
@@ -208,6 +221,7 @@ async function capNhatPhiShip() {
 watch(
   () => [form.value.tinhThanh, form.value.phuongXa, form.value.diaChiCuThe],
   () => {
+    if (dangHienQr.value) return;
     if (phiTimer) clearTimeout(phiTimer);
     phiTimer = setTimeout(capNhatPhiShip, 600);
   }
@@ -217,6 +231,8 @@ let ngatRealtimeSP = null;
 let timerDongBoSP = null;
 
 function lenLichDongBo() {
+  // QR đang mở -> nền đóng băng, mọi tín hiệu realtime/focus đều bỏ qua.
+  if (dangHienQr.value) return;
   if (timerDongBoSP) clearTimeout(timerDongBoSP);
   timerDongBoSP = setTimeout(reSyncGio, 300);
 }
@@ -235,6 +251,7 @@ onMounted(() => {
 });
 
 async function reSyncGio() {
+  if (dangHienQr.value) return;
   try {
     const ketQua = await dongBoGiaGio();
     gio.value = ketQua;
@@ -254,6 +271,7 @@ async function reSyncGio() {
 }
 
 onUnmounted(() => {
+  document.body.style.overflow = '';
   if (qrVnPay.value?.token) {
     huyVnPay(qrVnPay.value.token);
   }
@@ -344,6 +362,8 @@ function boVoucher() {
 // Trả về true nếu hợp lệ; nếu không -> gỡ phiếu + báo và trả về false (chặn thanh toán).
 async function kiemTraLaiVoucher() {
   if (!voucher.value) return true;
+  // Voucher đã bị trừ lượt lúc sinh mã QR -> kiểm lại lúc này chắc chắn báo sai.
+  if (dangHienQr.value) return true;
   // Giỏ đang có SP ngừng bán/hết -> đó là lỗi sản phẩm (chuanBi sẽ ném), không phải voucher.
   // Bỏ qua kiểm voucher để phần kiểm sản phẩm báo đúng thông điệp.
   if (coSanPhamKhongBan()) return true;
@@ -488,8 +508,12 @@ function batDauPoll() {
         qrVnPay.value = null;
         await hoanTatDatHang(ma);
       } else if (tt.trangThai === 'THAT_BAI') {
+        const tokenLoi = qrVnPay.value?.token;
         dungPoll();
         qrVnPay.value = null;
+        if (tokenLoi) {
+          try { await huyVnPay(tokenLoi); } catch { /* job dọn phiên của BE sẽ xử lý nốt */ }
+        }
         showError(tt.message || 'Số lượng sản phẩm không đủ.');
         await reSyncGio();
       } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
@@ -502,8 +526,13 @@ function batDauPoll() {
 }
 
 async function ngatHetHan() {
+  const token = qrVnPay.value?.token;
   dungPoll();
   qrVnPay.value = null;
+  // Nhả phiên ngay: BE hoàn lại lượt voucher và số lượng đang giữ, không đợi job dọn 60s.
+  if (token) {
+    try { await huyVnPay(token); } catch { /* job dọn phiên của BE sẽ xử lý nốt */ }
+  }
   showError('Phiên thanh toán không còn hiệu lực, vui lòng đặt lại đơn.');
   await reSyncGio();
 }
