@@ -482,9 +482,15 @@ public class HoaDonTaiQuayService {
             return null;
         }
 
+        var pgg = hoaDon.getPhieuGiamGia();
         return new ThongTinPhieuGiamGiaHoaDonResponse(
-                hoaDon.getPhieuGiamGia().getMa(),
-                hoaDon.getPhieuGiamGia().getTen(),
+                pgg.getId(),
+                pgg.getMa(),
+                pgg.getTen(),
+                pgg.getLoai(),
+                pgg.getGiaTri(),
+                pgg.getGiaTriToiThieu(),
+                pgg.getGiamToiDa(),
                 hoaDon.getTienGiam()
         );
     }

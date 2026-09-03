@@ -196,7 +196,8 @@ function LogicBanHangTaiQuay() {
     capNhatTienKhachThanhToan: (v) => { if (typeof capNhatTienKhachThanhToan === 'function') capNhatTienKhachThanhToan(v) },
     thongBaoLoi,
     thongBaoThanhCong,
-    xoaPhanHoi
+    xoaPhanHoi,
+    luuHoaDonHienTai: (...args) => luuHoaDonHienTai(...args)
   });
 
   const router = useRouter();
@@ -900,20 +901,23 @@ function LogicBanHangTaiQuay() {
       weight: 500
     };
     maPhieuGiamGia.value = invoice.phieuGiamGia?.ma ?? "";
-    phieuGiamGiaDaApDung.value = invoice.phieuGiamGia
-      ? {
-        id: 0,
+    if (invoice.phieuGiamGia) {
+      const existing = (phieuGiamGiaDaApDung.value?.ma === invoice.phieuGiamGia.ma) ? phieuGiamGiaDaApDung.value : null;
+      phieuGiamGiaDaApDung.value = {
+        id: invoice.phieuGiamGia.id || existing?.id || 0,
         ma: invoice.phieuGiamGia.ma,
         ten: invoice.phieuGiamGia.ten,
-        loai: 0,
-        giaTri: 0,
-        giaTriToiThieu: null,
-        giamToiDa: null,
-        soTienGiam: invoice.tienGiam || invoice.phieuGiamGia.soTienGiam,
+        loai: invoice.phieuGiamGia.loai != null && invoice.phieuGiamGia.loai !== 0 ? invoice.phieuGiamGia.loai : (existing?.loai || 0),
+        giaTri: invoice.phieuGiamGia.giaTri != null && invoice.phieuGiamGia.giaTri !== 0 ? invoice.phieuGiamGia.giaTri : (existing?.giaTri || 0),
+        giaTriToiThieu: invoice.phieuGiamGia.giaTriToiThieu ?? existing?.giaTriToiThieu ?? null,
+        giamToiDa: invoice.phieuGiamGia.giamToiDa ?? existing?.giamToiDa ?? null,
+        soTienGiam: invoice.tienGiam != null ? invoice.tienGiam : (existing?.soTienGiam || invoice.phieuGiamGia.soTienGiam),
         tongTienHang: invoice.tongTienHang || 0,
         tongTienSauGiam: Math.max((invoice.tongTienHang || 0) - (invoice.tienGiam || 0), 0)
-      }
-      : null;
+      };
+    } else {
+      phieuGiamGiaDaApDung.value = null;
+    }
     ketQuaTimKiemPhieu.value = [];
     hienThiDanhSachPhieu.value = false;
     capNhatTienKhachThanhToan(false);
