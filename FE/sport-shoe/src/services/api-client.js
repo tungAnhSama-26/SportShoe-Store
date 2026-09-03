@@ -9,6 +9,11 @@ const DEFAULT_FALLBACK =
 
 const ERROR_PAGE_STATUSES = new Set([401, 403]);
 
+// Màn đăng nhập của khách (khác hẳn màn đăng nhập nhân viên /admin/login).
+const DUONG_DAN_DANG_NHAP_KHACH = "/login";
+const THONG_BAO_HET_PHIEN_KHACH =
+  "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại.";
+
 function resolveAuthScope(path, authScope) {
   if (authScope === "admin" || authScope === "customer") {
     return authScope;
@@ -107,7 +112,7 @@ export async function apiRequest(path, options = {}) {
     if (response.status === 401) {
       clearStoredSession(resolvedAuthScope);
     }
-    redirectToErrorPage(response.status, message);
+    redirectToErrorPage(response.status, message, resolvedAuthScope);
 
     const requestError = createRequestError(
       message,
@@ -140,7 +145,7 @@ function clearStoredSession(authScope) {
   localStorage.removeItem("customerToken");
 }
 
-function redirectToErrorPage(status, message) {
+function redirectToErrorPage(status, message, authScope) {
   if (!ERROR_PAGE_STATUSES.has(status) || typeof window === "undefined") {
     return;
   }
@@ -148,11 +153,28 @@ function redirectToErrorPage(status, message) {
     return;
   }
 
+  const duongDanHienTai = window.location.pathname + window.location.search + window.location.hash;
+
+  // Khách hàng bị admin khóa (hoặc token hết hạn) -> đưa thẳng về màn đăng nhập của KHÁCH.
+  // Không dùng trang lỗi chung vì nút chính của trang đó trỏ sang đăng nhập nhân viên.
+  if (authScope === "customer" && status === 401) {
+    if (window.location.pathname === DUONG_DAN_DANG_NHAP_KHACH) {
+      return;
+    }
+    const queryKhach = new URLSearchParams();
+    queryKhach.set("thongBao", sanitizeErrorMessage(message, THONG_BAO_HET_PHIEN_KHACH));
+    queryKhach.set("redirect", duongDanHienTai);
+    window.location.assign(`${DUONG_DAN_DANG_NHAP_KHACH}?${queryKhach.toString()}`);
+    return;
+  }
+
   const query = new URLSearchParams();
   if (message) {
     query.set("message", sanitizeErrorMessage(message, String(message)));
   }
-  query.set("redirect", window.location.pathname + window.location.search + window.location.hash);
+  query.set("redirect", duongDanHienTai);
+  // Trang lỗi dựa vào phạm vi này để điều hướng đúng khu vực (khách / quản trị).
+  query.set("scope", authScope === "customer" ? "customer" : "admin");
 
   window.location.assign(`/error/${status}?${query.toString()}`);
 }

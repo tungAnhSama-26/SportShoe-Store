@@ -21,7 +21,20 @@ const status = computed(() => Number(route.params.status || route.query.status |
 const detailMessage = computed(() => String(route.query.message || "").trim());
 const redirectPath = computed(() => String(route.query.redirect || "").trim());
 
-const errorMap = {
+// Trang lỗi dùng chung cho cả khách lẫn quản trị -> phải biết mình đang phục vụ ai
+// để không đẩy khách hàng sang màn đăng nhập của nhân viên.
+const laKhachHang = computed(() => {
+  const scope = String(route.query.scope || "").trim();
+  if (scope === "customer") return true;
+  if (scope === "admin") return false;
+  // Không có scope (link cũ / redirect từ router): suy ra từ đường dẫn gốc.
+  const goc = redirectPath.value;
+  return Boolean(goc) && !/^\/(admin|nhanvien|pos)(\/|$)/.test(goc);
+});
+
+const errorMap = computed(() => laKhachHang.value ? errorMapKhach : errorMapQuanTri);
+
+const errorMapQuanTri = {
   401: {
     icon: LockKeyhole,
     eyebrow: "Yêu cầu đăng nhập",
@@ -88,7 +101,57 @@ const errorMap = {
   },
 };
 
-const config = computed(() => errorMap[status.value] || errorMap[500]);
+// Bản đồ lỗi cho khách hàng: mọi nút bấm đều ở lại khu vực khách (/login, /khachhang).
+const errorMapKhach = {
+  401: {
+    icon: LockKeyhole,
+    eyebrow: "Yêu cầu đăng nhập",
+    title: "Phiên đăng nhập đã kết thúc",
+    description:
+      "Tài khoản của bạn đã bị khóa hoặc phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục mua sắm.",
+    primaryText: "Đăng nhập",
+    primaryIcon: LogIn,
+    primaryAction: () =>
+      router.push({
+        path: "/login",
+        query: redirectPath.value ? { redirect: redirectPath.value } : {},
+      }),
+  },
+  403: {
+    icon: ShieldAlert,
+    eyebrow: "Không đủ quyền",
+    title: "Bạn không có quyền truy cập",
+    description:
+      "Tài khoản của bạn không được phép xem nội dung này. Vui lòng quay lại trang chủ để tiếp tục mua sắm.",
+    primaryText: "Về trang chủ",
+    primaryIcon: ArrowLeft,
+    primaryAction: () => router.push("/khachhang"),
+  },
+  404: {
+    icon: FileQuestion,
+    eyebrow: "Không tìm thấy",
+    title: "Đường dẫn không tồn tại",
+    description:
+      "Trang bạn vừa truy cập không còn tồn tại, bị sai đường dẫn hoặc đã được chuyển sang vị trí khác.",
+    primaryText: "Về trang chủ",
+    primaryIcon: ArrowLeft,
+    primaryAction: () => router.push("/khachhang"),
+  },
+  422: errorMapQuanTri[422],
+  429: errorMapQuanTri[429],
+  500: {
+    icon: AlertTriangle,
+    eyebrow: "Lỗi hệ thống",
+    title: "Máy chủ đang gặp sự cố",
+    description:
+      "Hệ thống đang gặp sự cố tạm thời. Vui lòng thử lại sau ít phút.",
+    primaryText: "Tải lại trang",
+    primaryIcon: RefreshCw,
+    primaryAction: () => window.location.reload(),
+  },
+};
+
+const config = computed(() => errorMap.value[status.value] || errorMap.value[500]);
 const Icon = computed(() => config.value.icon);
 const PrimaryIcon = computed(() => config.value.primaryIcon);
 
@@ -97,7 +160,7 @@ function goBack() {
     router.back();
     return;
   }
-  router.push("/");
+  router.push(laKhachHang.value ? "/khachhang" : "/");
 }
 </script>
 
