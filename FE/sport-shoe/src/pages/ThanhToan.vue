@@ -234,19 +234,34 @@ function lenLichDongBo() {
   // QR đang mở -> nền đóng băng, mọi tín hiệu realtime/focus đều bỏ qua.
   if (dangHienQr.value) return;
   if (timerDongBoSP) clearTimeout(timerDongBoSP);
-  timerDongBoSP = setTimeout(reSyncGio, 300);
+  timerDongBoSP = setTimeout(async () => {
+    if (qrVnPay.value?.token) {
+      await kiemTraTrangThaiVnPay();
+    }
+    await reSyncGio();
+  }, 200);
 }
 
 function dongBoKhiQuayLaiTab() {
-  if (document.visibilityState === 'visible') lenLichDongBo();
+  if (document.visibilityState === 'visible') {
+    if (qrVnPay.value?.token) {
+      kiemTraTrangThaiVnPay();
+    }
+    lenLichDongBo();
+  }
 }
 
 onMounted(() => {
   tai();
-  // Realtime: admin đổi giá / ngừng bán / ngừng phiếu -> đồng bộ lại giỏ + phiếu (ngầm).
+  // Realtime: admin đổi giá / ngừng bán / ngừng phiếu / bán tại quầy -> đồng bộ lại giỏ + kiểm QR ngay lập tức.
   ngatRealtimeSP = ketNoiSanPhamRealtime({ onSanPhamThayDoi: lenLichDongBo });
   // Dự phòng khi SSE lỡ tín hiệu: quay lại tab/cửa sổ này thì kiểm lại ngay (không cần reload).
-  window.addEventListener('focus', lenLichDongBo);
+  window.addEventListener('focus', () => {
+    if (qrVnPay.value?.token) {
+      kiemTraTrangThaiVnPay();
+    }
+    lenLichDongBo();
+  });
   document.addEventListener('visibilitychange', dongBoKhiQuayLaiTab);
 });
 
@@ -265,7 +280,10 @@ async function reSyncGio() {
     // bỏ qua lỗi mạng -> giữ giỏ hiện tại
   }
   // Phiếu đang áp vừa bị ngừng -> gỡ + báo ngay (không đợi tới lúc bấm thanh toán).
-  await kiemTraLaiVoucher();
+  // Không kiểm tra khi đang mở QR thanh toán vì voucher đã được khóa trên đơn.
+  if (!qrVnPay.value) {
+    await kiemTraLaiVoucher();
+  }
   // Danh sách voucher: phiếu vừa bị ad ngừng tự ẩn khỏi danh sách (không hiện disabled nữa).
   await taiLaiDsVoucherNeuMo();
 }
@@ -361,6 +379,8 @@ function boVoucher() {
 // Kiểm tra lại phiếu đang áp còn hiệu lực không (vd admin vừa ngừng hoạt động phiếu).
 // Trả về true nếu hợp lệ; nếu không -> gỡ phiếu + báo và trả về false (chặn thanh toán).
 async function kiemTraLaiVoucher() {
+  // Đang trong phiên thanh toán QR: voucher đã khóa vào đơn hàng, không kiểm lại hay gỡ giữa chừng
+  if (qrVnPay.value) return true;
   if (!voucher.value) return true;
   // Voucher đã bị trừ lượt lúc sinh mã QR -> kiểm lại lúc này chắc chắn báo sai.
   if (dangHienQr.value) return true;
@@ -489,6 +509,29 @@ async function moThanhToanVnPay() {
 // qrData từ backend đã là ảnh VietQR (SePay) -> dùng trực tiếp làm src.
 const anhQrVnPay = computed(() => (qrVnPay.value ? qrVnPay.value.qrData : ''));
 
+async function kiemTraTrangThaiVnPay() {
+  if (!qrVnPay.value?.token) return;
+  try {
+    const tt = await trangThaiVnPay(qrVnPay.value.token);
+    if (!tt) return;
+    if (tt.trangThai === 'DA_THANH_TOAN') {
+      dungPoll();
+      const ma = tt.maHoaDon;
+      qrVnPay.value = null;
+      await hoanTatDatHang(ma);
+    } else if (tt.trangThai === 'THAT_BAI') {
+      dungPoll();
+      qrVnPay.value = null;
+      showError(tt.message || 'Số lượng sản phẩm hiện không còn đủ để đáp ứng đơn hàng. Phiên giao dịch đã được hủy, vui lòng chọn lại sản phẩm khác.');
+      await reSyncGio();
+    } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
+      await ngatHetHan();
+    }
+  } catch {
+    // bỏ qua, thử lại lần poll sau
+  }
+}
+
 function batDauPoll() {
   dungPoll();
   const capNhatDemNguoc = () => {
@@ -499,30 +542,8 @@ function batDauPoll() {
   capNhatDemNguoc();
   countdownTimer = setInterval(capNhatDemNguoc, 1000);
   pollTimer = setInterval(async () => {
-    if (!qrVnPay.value) return;
-    try {
-      const tt = await trangThaiVnPay(qrVnPay.value.token);
-      if (tt.trangThai === 'DA_THANH_TOAN') {
-        dungPoll();
-        const ma = tt.maHoaDon;
-        qrVnPay.value = null;
-        await hoanTatDatHang(ma);
-      } else if (tt.trangThai === 'THAT_BAI') {
-        const tokenLoi = qrVnPay.value?.token;
-        dungPoll();
-        qrVnPay.value = null;
-        if (tokenLoi) {
-          try { await huyVnPay(tokenLoi); } catch { /* job dọn phiên của BE sẽ xử lý nốt */ }
-        }
-        showError(tt.message || 'Số lượng sản phẩm không đủ.');
-        await reSyncGio();
-      } else if (tt.trangThai === 'HET_HAN' || tt.trangThai === 'KHONG_TON_TAI') {
-        await ngatHetHan();
-      }
-    } catch {
-      // bỏ qua, thử lại lần poll sau
-    }
-  }, 2000);
+    await kiemTraTrangThaiVnPay();
+  }, 1500);
 }
 
 async function ngatHetHan() {

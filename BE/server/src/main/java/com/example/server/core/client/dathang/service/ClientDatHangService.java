@@ -51,10 +51,12 @@ public class ClientDatHangService {
 
     private static final int KENH_BAN_ONLINE = 2;
     private static final int TRANG_THAI_CHO_XAC_NHAN = 1;
+    private static final int TRANG_THAI_HOA_DON_HUY = 6;
     private static final int HINH_THUC_VNPAY = 3;
     private static final int HINH_THUC_COD = 4;
     private static final int TRANG_THAI_CHO_THANH_TOAN = 0;
     private static final int TRANG_THAI_DA_THANH_TOAN = 1;
+    private static final int TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN = 4;
     private static final int LOAI_GIAO_DICH_THANH_TOAN = 1;
     private static final int TRANG_THAI_KHACH_HANG_HOAT_DONG = 1;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -308,27 +310,45 @@ public class ClientDatHangService {
 
             if (gct.getKichHoat() == null || gct.getKichHoat() != 1
                     || gct.getGiay() == null || gct.getGiay().getTrangThai() == null || gct.getGiay().getTrangThai() != 1) {
-                hoaDon.setTrangThai(6); // Hủy đơn
-                thanhToan.setTrangThai(2); // Thất bại
-                String msg = "Sản phẩm \"" + (gct.getGiay() != null ? gct.getGiay().getTen() : "") + "\" đã ngừng kinh doanh. Đơn hàng đã bị hủy.";
-                thanhToan.setGhiChu(msg);
+                hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HUY); // Hủy đơn
+                hoaDon.setNgayCapNhat(now);
+                thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN); // 4: Cần hoàn tiền
+                thanhToan.setNgayThanhToan(now);
+                String msg = "Số lượng sản phẩm hiện không còn đủ để đáp ứng đơn hàng. Phiên giao dịch đã được hủy, vui lòng chọn lại sản phẩm khác.";
+                thanhToan.setGhiChu("Đã nhận tiền chuyển khoản nhưng sản phẩm \"" + (gct.getGiay() != null ? gct.getGiay().getTen() : "") + "\" đã ngừng kinh doanh. Cần hoàn tiền cho khách.");
                 thanhToanRepository.save(thanhToan);
                 hoaDonRepository.save(hoaDon);
                 sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
-                throw new BusinessException(msg);
+                thongBaoService.taoThongBao(
+                        "Đơn hàng online cần hoàn tiền",
+                        "Đơn hàng #" + hoaDon.getMa() + " khách đã chuyển khoản nhưng sản phẩm đã ngừng kinh doanh. Cần hoàn tiền: "
+                                + String.format("%,.0f", hoaDon.getTongTienThanhToan()) + "đ",
+                        "ORDER",
+                        "/admin/hoa-don/" + hoaDon.getId()
+                );
+                return null;
             }
 
             int tonThucTe = gct.getSoLuong() == null ? 0 : gct.getSoLuong();
             int soLuongMua = ct.getSoLuong() == null ? 0 : ct.getSoLuong();
             if (tonThucTe < soLuongMua) {
-                hoaDon.setTrangThai(6); // Hủy đơn
-                thanhToan.setTrangThai(2); // Thất bại
-                String msg = "Số lượng sản phẩm không đủ.";
-                thanhToan.setGhiChu(msg);
+                hoaDon.setTrangThai(TRANG_THAI_HOA_DON_HUY); // Hủy đơn
+                hoaDon.setNgayCapNhat(now);
+                thanhToan.setTrangThai(TRANG_THAI_THANH_TOAN_CAN_HOAN_TIEN); // 4: Cần hoàn tiền
+                thanhToan.setNgayThanhToan(now);
+                String msg = "Số lượng sản phẩm hiện không còn đủ để đáp ứng đơn hàng. Phiên giao dịch đã được hủy, vui lòng chọn lại sản phẩm khác.";
+                thanhToan.setGhiChu("Đã nhận tiền chuyển khoản nhưng sản phẩm không đủ tồn kho. Cần hoàn tiền cho khách.");
                 thanhToanRepository.save(thanhToan);
                 hoaDonRepository.save(hoaDon);
                 sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
-                throw new BusinessException(msg);
+                thongBaoService.taoThongBao(
+                        "Đơn hàng online cần hoàn tiền",
+                        "Đơn hàng #" + hoaDon.getMa() + " khách đã chuyển khoản nhưng sản phẩm không đủ tồn kho. Cần hoàn tiền: "
+                                + String.format("%,.0f", hoaDon.getTongTienThanhToan()) + "đ",
+                        "ORDER",
+                        "/admin/hoa-don/" + hoaDon.getId()
+                );
+                return null;
             }
         }
 

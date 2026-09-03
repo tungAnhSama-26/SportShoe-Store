@@ -45,6 +45,7 @@ public class HoaDonChoTaiQuayService {
     private final PhieuGiamGiaTaiQuayService voucherUseCase;
     private final TonKhoTaiQuayService inventoryUseCase;
     private final SanPhamTaiQuayService productUseCase;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public HoaDonChoTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -56,7 +57,8 @@ public class HoaDonChoTaiQuayService {
             HoaDonTaiQuayService invoiceUseCase,
             PhieuGiamGiaTaiQuayService voucherUseCase,
             TonKhoTaiQuayService inventoryUseCase,
-            SanPhamTaiQuayService productUseCase
+            SanPhamTaiQuayService productUseCase,
+            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -68,6 +70,7 @@ public class HoaDonChoTaiQuayService {
         this.voucherUseCase = voucherUseCase;
         this.inventoryUseCase = inventoryUseCase;
         this.productUseCase = productUseCase;
+        this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
     }
 
     @Transactional
@@ -215,6 +218,8 @@ public class HoaDonChoTaiQuayService {
         HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
         invoiceUseCase.dongBoVanChuyen(savedHoaDon, request.thongTinGiaoHang());
 
+        sanPhamRealtimePublisher.phatSauCommit("BAN_HANG_TAI_QUAY");
+
         return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, chiTietCanLuu, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
     }
 
@@ -275,6 +280,8 @@ public class HoaDonChoTaiQuayService {
         hoaDon.setNgayCapNhat(Instant.now());
         HoaDon savedHoaDon = hoaDonRepository.save(hoaDon);
 
+        sanPhamRealtimePublisher.phatSauCommit("BAN_HANG_TAI_QUAY");
+
         return invoiceUseCase.mapHoaDonChiTiet(savedHoaDon, items, vanChuyenRepository.findByHoaDonId(savedHoaDon.getId()).orElse(null));
     }
 
@@ -312,6 +319,8 @@ public class HoaDonChoTaiQuayService {
         hoaDon.setNhanVien(invoiceUseCase.resolveNhanVienDangDangNhap());
         hoaDonRepository.save(hoaDon);
         invoiceUseCase.luuLichSuHoaDon(hoaDon, TRANG_THAI_HOA_DON_HUY, hoaDon.getGhiChu());
+
+        sanPhamRealtimePublisher.phatSauCommit("BAN_HANG_TAI_QUAY");
     }
 
     @Scheduled(cron = "0 0 * * * *") // Chạy mỗi giờ 1 lần để dọn dẹp

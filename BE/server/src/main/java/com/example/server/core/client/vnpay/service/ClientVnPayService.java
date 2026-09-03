@@ -10,10 +10,12 @@ import com.example.server.core.client.vnpay.dto.TaoMaVnPayResponse;
 import com.example.server.core.client.voucher.service.ClientVoucherService;
 import com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher;
 
+import com.example.server.entity.GiayChiTiet;
 import com.example.server.entity.HoaDon;
 import com.example.server.entity.HoaDonChiTiet;
 import com.example.server.entity.ThanhToan;
 import com.example.server.infrastructure.exception.BusinessException;
+import com.example.server.repository.GiayChiTietRepository;
 import com.example.server.repository.HoaDonChiTietRepository;
 import com.example.server.repository.HoaDonRepository;
 import com.example.server.repository.ThanhToanRepository;
@@ -64,6 +66,7 @@ public class ClientVnPayService {
     private final HoaDonChiTietRepository hoaDonChiTietRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final VanChuyenRepository vanChuyenRepository;
+    private final GiayChiTietRepository giayChiTietRepository;
 
     private final String sepayBank;
     private final String sepayAccount;
@@ -91,6 +94,7 @@ public class ClientVnPayService {
             HoaDonChiTietRepository hoaDonChiTietRepository,
             ThanhToanRepository thanhToanRepository,
             VanChuyenRepository vanChuyenRepository,
+            GiayChiTietRepository giayChiTietRepository,
             @Value("${sepay.bank:}") String sepayBank,
             @Value("${sepay.account-number:}") String sepayAccount,
             @Value("${sepay.prefix:SHOE}") String sepayPrefix
@@ -104,6 +108,7 @@ public class ClientVnPayService {
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
         this.thanhToanRepository = thanhToanRepository;
         this.vanChuyenRepository = vanChuyenRepository;
+        this.giayChiTietRepository = giayChiTietRepository;
         this.sepayBank = sepayBank;
         this.sepayAccount = sepayAccount;
         this.sepayPrefix = (sepayPrefix == null || sepayPrefix.isBlank()) ? "SHOE" : sepayPrefix;
@@ -253,7 +258,7 @@ public class ClientVnPayService {
     }
 
     /** FE poll trạng thái phiên thanh toán + mã hóa đơn nếu đã tạo. */
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, String> trangThai(String token) {
         Map<String, String> result = new HashMap<>();
         ThanhToan thanhToan = thanhToanRepository
@@ -265,17 +270,59 @@ public class ClientVnPayService {
         HoaDon hoaDon = thanhToan.getHoaDon();
         Instant hetHanLuc = hoaDon.getNgayTao().plus(THOI_GIAN_HIEU_LUC_QR);
         result.put("hetHanLuc", hetHanLuc.toString());
+        String thongBaoLoiMacDinh = "Số lượng sản phẩm hiện không còn đủ để đáp ứng đơn hàng. Phiên giao dịch đã được hủy, vui lòng chọn lại sản phẩm khác.";
+
         if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == 1) {
             result.put("trangThai", TRANG_THAI_DA_THANH_TOAN);
             result.put("maHoaDon", hoaDon.getMa());
-        } else if (thanhToan.getTrangThai() != null && thanhToan.getTrangThai() == 2) {
+        } else if (thanhToan.getTrangThai() != null && (thanhToan.getTrangThai() == 2 || thanhToan.getTrangThai() == 4)) {
             result.put("trangThai", "THAT_BAI");
-            result.put("message", thanhToan.getGhiChu() != null ? thanhToan.getGhiChu() : "Số lượng sản phẩm không đủ.");
+            result.put("message", thongBaoLoiMacDinh);
         } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == 6) {
             result.put("trangThai", "THAT_BAI");
-            result.put("message", thanhToan.getGhiChu() != null ? thanhToan.getGhiChu() : "Số lượng sản phẩm không đủ.");
+            result.put("message", thongBaoLoiMacDinh);
         } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai() == 11
                 && !hetHanLuc.isBefore(Instant.now())) {
+            // Kiểm tra tồn kho thời gian thực: nếu đã bị quầy hoặc kênh khác mua hết
+            List<HoaDonChiTiet> chiTiets = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+            boolean hetHang = false;
+            for (HoaDonChiTiet ct : chiTiets) {
+                if (ct.getGiayChiTiet() != null) {
+                    var optGct = giayChiTietRepository.findById(ct.getGiayChiTiet().getId());
+                    if (optGct.isEmpty()) {
+                        hetHang = true;
+                        break;
+                    }
+                    GiayChiTiet gct = optGct.get();
+                    if (gct.getKichHoat() == null || gct.getKichHoat() != 1
+                            || gct.getGiay() == null || gct.getGiay().getTrangThai() == null || gct.getGiay().getTrangThai() != 1) {
+                        hetHang = true;
+                        break;
+                    }
+                    int ton = gct.getSoLuong() == null ? 0 : gct.getSoLuong();
+                    int soLuongMua = ct.getSoLuong() == null ? 0 : ct.getSoLuong();
+                    if (ton < soLuongMua) {
+                        hetHang = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hetHang) {
+                Instant now = Instant.now();
+                hoaDon.setTrangThai(6); // Hủy đơn
+                hoaDon.setNgayCapNhat(now);
+                thanhToan.setTrangThai(2); // Thất bại (chưa nhận tiền)
+                thanhToan.setGhiChu(thongBaoLoiMacDinh);
+                hoaDonRepository.save(hoaDon);
+                thanhToanRepository.save(thanhToan);
+                sanPhamRealtimePublisher.phatSauCommit("QR_GIAI_PHONG_HANG");
+
+                result.put("trangThai", "THAT_BAI");
+                result.put("message", thongBaoLoiMacDinh);
+                return result;
+            }
+
             result.put("trangThai", TRANG_THAI_CHO);
         } else {
             result.put("trangThai", "HET_HAN");
