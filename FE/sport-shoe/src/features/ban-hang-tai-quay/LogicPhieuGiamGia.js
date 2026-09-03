@@ -44,7 +44,13 @@ export function LogicPhieuGiamGia({
           }
           return Math.min(calculated, amountNum);
       }
-      return Math.min(giaTriNum, amountNum);
+      if (coupon.loai === 2 || giaTriNum > 0) {
+          return Math.min(giaTriNum, amountNum);
+      }
+      if (coupon.soTienGiam != null && Number(coupon.soTienGiam) > 0) {
+          return Math.min(Number(coupon.soTienGiam), amountNum);
+      }
+      return 0;
   }
 
   const ketQuaTimKiemPhieuDaSapXep = computed(() => {
@@ -63,7 +69,12 @@ export function LogicPhieuGiamGia({
 
   const tienGiam = computed(() => {
     if (phieuGiamGiaDaApDung.value) {
-      return tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
+      const calculated = tinhToanGiamGia(phieuGiamGiaDaApDung.value, tongTien.value);
+      if (calculated > 0) return calculated;
+      if (phieuGiamGiaDaApDung.value.soTienGiam != null && Number(phieuGiamGiaDaApDung.value.soTienGiam) > 0) {
+        return Math.min(Number(phieuGiamGiaDaApDung.value.soTienGiam), tongTien.value);
+      }
+      return 0;
     }
     // If we loaded a pending invoice with a coupon, but haven't re-applied it yet, use its saved discount
     if (maPhieuGiamGia.value && hoaDonChoDaChon.value?.tienGiam != null) {
@@ -161,6 +172,10 @@ export function LogicPhieuGiamGia({
     maPhieuGiamGia.value = coupon.ma;
     hienThiDanhSachPhieu.value = false;
     xoaPhanHoi();
+    if (coupon.ma) {
+      danhSachPhieuTotHonDaTuChoi.value.delete(coupon.ma);
+      void xuLyApDungPhieu(false, coupon.ma);
+    }
   }
 
   async function timPhieuPhuHopDeApDung() {
@@ -211,6 +226,10 @@ export function LogicPhieuGiamGia({
         showError("Vui lòng thêm sản phẩm vào hóa đơn trước khi áp dụng mã");
       }
       return;
+    }
+
+    if (maPhieuDeApDung) {
+      danhSachPhieuTotHonDaTuChoi.value.delete(maPhieuDeApDung);
     }
 
     dangApDungPhieu.value = true;
@@ -428,6 +447,11 @@ export function LogicPhieuGiamGia({
     ketQuaTimKiemPhieu.value = [];
     capNhatTienKhachThanhToan();
     xoaPhanHoi();
+    if (hoaDonChoDaChon.value && typeof luuHoaDonHienTai === 'function') {
+      setTimeout(() => {
+        void luuHoaDonHienTai(true);
+      }, 50);
+    }
   }
 
   function xoaCacBoDemThoiGianPhieu() {

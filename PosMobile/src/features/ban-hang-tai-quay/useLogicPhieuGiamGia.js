@@ -45,7 +45,13 @@ export function useLogicPhieuGiamGia({
       }
       return Math.min(calculated, amountNum);
     }
-    return Math.min(giaTriNum, amountNum);
+    if (coupon.loai === 2 || giaTriNum > 0) {
+      return Math.min(giaTriNum, amountNum);
+    }
+    if (coupon.soTienGiam != null && Number(coupon.soTienGiam) > 0) {
+      return Math.min(Number(coupon.soTienGiam), amountNum);
+    }
+    return 0;
   }, []);
 
   const ketQuaTimKiemPhieuDaSapXep = useMemo(() => {
@@ -61,7 +67,12 @@ export function useLogicPhieuGiamGia({
 
   const tienGiam = useMemo(() => {
     if (phieuGiamGiaDaApDung) {
-      return tinhToanGiamGia(phieuGiamGiaDaApDung, tongTien);
+      const calculated = tinhToanGiamGia(phieuGiamGiaDaApDung, tongTien);
+      if (calculated > 0) return calculated;
+      if (phieuGiamGiaDaApDung.soTienGiam != null && Number(phieuGiamGiaDaApDung.soTienGiam) > 0) {
+        return Math.min(Number(phieuGiamGiaDaApDung.soTienGiam), tongTien);
+      }
+      return 0;
     }
     if (maPhieuGiamGia && hoaDonChoDaChon?.tienGiam != null) {
       return hoaDonChoDaChon.tienGiam;
@@ -134,15 +145,6 @@ export function useLogicPhieuGiamGia({
     }, 150);
   }, []);
 
-  const chonPhieuGiamGia = useCallback((coupon) => {
-    if (boDemThoiGianDanhSachPhieu.current) {
-      window.clearTimeout(boDemThoiGianDanhSachPhieu.current);
-    }
-    setMaPhieuGiamGia(coupon.ma);
-    setHienThiDanhSachPhieu(false);
-    if (xoaPhanHoi) xoaPhanHoi();
-  }, [xoaPhanHoi]);
-
   const xuLyGoPhieu = useCallback(() => {
     setMaPhieuGiamGia("");
     setPhieuGiamGiaDaApDung(null);
@@ -186,6 +188,18 @@ export function useLogicPhieuGiamGia({
       setDangApDungPhieu(false);
     }
   }, [maPhieuGiamGia, cartItems.length, dangApDungPhieu, phieuGiamGiaDaApDung, hoaDonChoDaChon, layIdKhachHangHienTai, taoDanhSachSanPhamThanhToan, capNhatTienKhachThanhToan]);
+
+  const chonPhieuGiamGia = useCallback((coupon) => {
+    if (boDemThoiGianDanhSachPhieu.current) {
+      window.clearTimeout(boDemThoiGianDanhSachPhieu.current);
+    }
+    setMaPhieuGiamGia(coupon.ma);
+    setHienThiDanhSachPhieu(false);
+    if (xoaPhanHoi) xoaPhanHoi();
+    if (coupon.ma) {
+      void xuLyApDungPhieu(false, coupon.ma);
+    }
+  }, [xoaPhanHoi, xuLyApDungPhieu]);
 
   const taiTatCaPhieuKhaDung = useCallback(async () => {
     try {
