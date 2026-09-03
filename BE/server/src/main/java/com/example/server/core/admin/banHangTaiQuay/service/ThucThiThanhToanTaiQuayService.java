@@ -56,6 +56,7 @@ public class ThucThiThanhToanTaiQuayService {
     private final GiayChiTietRepository giayChiTietRepository;
     private final SanPhamTaiQuayService productUseCase;
     private final com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
+    private final com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     public ThucThiThanhToanTaiQuayService(
             HoaDonRepository hoaDonRepository,
@@ -71,7 +72,8 @@ public class ThucThiThanhToanTaiQuayService {
             TonKhoTaiQuayService inventoryUseCase,
             GiayChiTietRepository giayChiTietRepository,
             SanPhamTaiQuayService productUseCase,
-            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository
+            com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository,
+            com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher
     ) {
         this.hoaDonRepository = hoaDonRepository;
         this.hoaDonChiTietRepository = hoaDonChiTietRepository;
@@ -87,6 +89,7 @@ public class ThucThiThanhToanTaiQuayService {
         this.giayChiTietRepository = giayChiTietRepository;
         this.productUseCase = productUseCase;
         this.hinhAnhGiayRepository = hinhAnhGiayRepository;
+        this.sanPhamRealtimePublisher = sanPhamRealtimePublisher;
     }
 
     @Transactional
@@ -200,6 +203,8 @@ public class ThucThiThanhToanTaiQuayService {
             guiEmailXacNhanDon(hoaDon, emailNhan, invoiceUseCase.resolveTenKhachHangHoaDon(hoaDon),
                     hoaDonChiTietRepository.findByHoaDonIdWithProduct(hoaDon.getId()), hinhThucEmail, phiShipEmail);
         }
+
+        sanPhamRealtimePublisher.phatSauCommit("BAN_HANG_TAI_QUAY");
 
         return new ThanhToanTaiQuayResponse(
                 hoaDon.getId(),

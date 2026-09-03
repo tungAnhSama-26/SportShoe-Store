@@ -49,6 +49,7 @@ class ThucThiThanhToanTaiQuayServiceTest {
     @Mock private GiayChiTietRepository giayChiTietRepository;
     @Mock private SanPhamTaiQuayService productUseCase;
     @Mock private com.example.server.repository.HinhAnhGiayRepository hinhAnhGiayRepository;
+    @Mock private com.example.server.core.realtime.sanpham.SanPhamRealtimePublisher sanPhamRealtimePublisher;
 
     private ThucThiThanhToanTaiQuayService service;
 
@@ -68,7 +69,8 @@ class ThucThiThanhToanTaiQuayServiceTest {
                 inventoryUseCase,
                 giayChiTietRepository,
                 productUseCase,
-                hinhAnhGiayRepository
+                hinhAnhGiayRepository,
+                sanPhamRealtimePublisher
         );
     }
 
